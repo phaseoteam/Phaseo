@@ -29,6 +29,14 @@ type SearchableItem = {
 	searchKeywords: string[];
 };
 
+function normalizeSearchTerm(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/[\s._-]+/g, " ")
+		.replace(/[^a-z0-9 ]/g, "")
+		.trim();
+}
+
 let cachedSearchData: SearchData | null = null;
 let searchDataRequest: Promise<SearchData> | null = null;
 
@@ -59,16 +67,52 @@ async function fetchSearchData(): Promise<SearchData> {
 }
 
 function getMatchScore(item: SearchableItem, term: string): number {
+	const rawTerm = term.trim().toLowerCase();
+	const normalizedTerm = normalizeSearchTerm(rawTerm);
 	const itemId = item.id.toLowerCase();
 	const itemTitle = item.title.toLowerCase();
+	const normalizedItemId = normalizeSearchTerm(item.id);
+	const normalizedItemTitle = normalizeSearchTerm(item.title);
+	const hasNormalizedTerm = normalizedTerm.length > 0;
 
-	if (itemId === term) return 1000;
-	if (itemTitle === term) return 900;
-	if (itemTitle.startsWith(term)) return 800;
-	if (itemId.startsWith(term)) return 700;
-	if (itemId.includes(term)) return 600;
-	if (itemTitle.includes(term)) return 500;
-	if (item.searchKeywords.some((keyword) => keyword.toLowerCase().includes(term))) {
+	if (itemTitle === rawTerm || (hasNormalizedTerm && normalizedItemTitle === normalizedTerm)) {
+		return 1000;
+	}
+	if (itemId === rawTerm || (hasNormalizedTerm && normalizedItemId === normalizedTerm)) {
+		return 900;
+	}
+	if (
+		itemTitle.startsWith(rawTerm) ||
+		(hasNormalizedTerm && normalizedItemTitle.startsWith(normalizedTerm))
+	) {
+		return 800;
+	}
+	if (
+		itemId.startsWith(rawTerm) ||
+		(hasNormalizedTerm && normalizedItemId.startsWith(normalizedTerm))
+	) {
+		return 700;
+	}
+	if (
+		itemTitle.includes(rawTerm) ||
+		(hasNormalizedTerm && normalizedItemTitle.includes(normalizedTerm))
+	) {
+		return 600;
+	}
+	if (
+		itemId.includes(rawTerm) ||
+		(hasNormalizedTerm && normalizedItemId.includes(normalizedTerm))
+	) {
+		return 500;
+	}
+	if (
+		item.searchKeywords.some((keyword) => {
+			const keywordLower = keyword.toLowerCase();
+			if (keywordLower.includes(rawTerm)) return true;
+			if (!hasNormalizedTerm) return false;
+			return normalizeSearchTerm(keyword).includes(normalizedTerm);
+		})
+	) {
 		return 400;
 	}
 

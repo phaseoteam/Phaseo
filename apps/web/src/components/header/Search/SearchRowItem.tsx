@@ -28,12 +28,19 @@ export function SearchRowItem({
 	flagIso,
 	leftLogoId,
 	rightLogoId,
+	keywords,
 	onSelect,
 	type = "default",
 }: SearchRowItemProps) {
+	const commandKeywords = keywords.filter(Boolean);
+	const commandValue = [title, subtitle ?? "", href, ...commandKeywords]
+		.filter(Boolean)
+		.join(" ");
+
 	return (
 		<CommandItem
-			value={href}
+			value={commandValue}
+			keywords={commandKeywords}
 			onSelect={() => onSelect(href)}
 			className="flex items-center gap-3 rounded-xl px-3 py-2.5"
 		>
