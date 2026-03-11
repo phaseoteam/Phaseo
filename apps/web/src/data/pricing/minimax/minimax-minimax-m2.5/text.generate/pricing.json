@@ -1,8 +1,8 @@
 {
-  "key": "minimax-lightning:minimax/minimax-2.5:text.generate",
-  "api_provider_id": "minimax-lightning",
-  "provider_slug": "minimax-lightning",
-  "api_model_id": "minimax/minimax-2.5",
+  "key": "minimax:minimax/minimax-m2.5:text.generate",
+  "api_provider_id": "minimax",
+  "provider_slug": "minimax",
+  "api_model_id": "minimax/minimax-m2.5",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -22,7 +22,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2.4,
+      "price_per_unit": 1.2,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",

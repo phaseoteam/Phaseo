@@ -56,6 +56,7 @@ export type ExecutorExecuteArgs = {
 		returnUpstreamRequest?: boolean;
 		returnUpstreamResponse?: boolean;
 		upstreamStartMs?: number; // Timestamp when upstream request started
+		requestedModel?: string;
 		forceGatewayKey?: boolean;
 		beta?: RequestBetaOptions;
 	};

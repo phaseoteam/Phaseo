@@ -422,6 +422,10 @@ async function attemptProviderWithIR(
 					returnUpstreamRequest: true,
 					returnUpstreamResponse: true,
 					upstreamStartMs: ctx.meta.upstreamStartMs, // Pass timing to executor
+					requestedModel:
+						typeof (ctx.rawBody as any)?.model === "string"
+							? ((ctx.rawBody as any).model as string)
+							: undefined,
 					forceGatewayKey,
 				},
 			}) as ExecutorExecuteArgs;

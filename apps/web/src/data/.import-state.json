@@ -2834,15 +2834,15 @@
       }
     },
     "src/data/models/google/gemini-3-pro-image-preview-2025-11-20/model.json": {
-      "hash": "7b79cd60111c22305e8760ea78817699",
+      "hash": "c79c15388e46d4d743694ba8f06eeccc",
       "meta": {
         "model_id": "google/gemini-3-pro-image-preview-2025-11-20",
         "organisation_id": "google",
-        "previous_model_id": "google/gemini-2-5-flash-image-preview"
+        "previous_model_id": "google/gemini-2-5-flash-image-preview-2025-08-25"
       }
     },
     "src/data/models/google/gemini-3-pro-preview-2025-11-18/model.json": {
-      "hash": "032a362e68f8621e8d20def8abab804b",
+      "hash": "3a22e08dcf53573ea1acd4b1582e5648",
       "meta": {
         "model_id": "google/gemini-3-pro-preview-2025-11-18",
         "organisation_id": "google",
@@ -5114,7 +5114,7 @@
       }
     },
     "src/data/models/openai/chatgpt-4o-2024-05-13/model.json": {
-      "hash": "09e721ff26f7eebf29c4e2239b7f7340",
+      "hash": "f9e8667fc5359e465c6d00aed57e61bc",
       "meta": {
         "model_id": "openai/chatgpt-4o-2024-05-13",
         "organisation_id": "openai",
@@ -7617,14 +7617,6 @@
         "previous_model_id": "x-ai/grok-4-fast-reasoning-2025-09-20"
       }
     },
-    "src/data/models/x-ai/grok-4-2/model.json": {
-      "hash": "dd713798c12fe3bce2bf22a5200e44aa",
-      "meta": {
-        "model_id": "x-ai/grok-4-2",
-        "organisation_id": "x-ai",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/x-ai/grok-4-2025-07-10/model.json": {
       "hash": "277f8f1e5afe3b5aab4b62761a6700b6",
       "meta": {
@@ -8708,7 +8700,7 @@
       }
     },
     "src/data/api_providers/x-ai/models.json": {
-      "hash": "b09fafb721ad6d70fb19ece431daeba7",
+      "hash": "16aa967ff8a9cd16513710b99a4b6c0d",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -9253,15 +9245,6 @@
         "model_key": "minimax:minimax/m2-her:text.generate"
       }
     },
-    "src/data/pricing/minimax/minimax-minimax-2.5/text.generate/pricing.json": {
-      "hash": "d2604c78344186cae84276907fdf42f0",
-      "meta": {
-        "api_provider_id": "minimax",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-2.5",
-        "model_key": "minimax:minimax/minimax-2.5:text.generate"
-      }
-    },
     "src/data/pricing/minimax/minimax-minimax-m2/text.generate/pricing.json": {
       "hash": "c843a2e7040b3a4fba286927efb58d15",
       "meta": {
@@ -9278,15 +9261,6 @@
         "capability_id": "text.generate",
         "model_id": "minimax/minimax-m2.1",
         "model_key": "minimax:minimax/minimax-m2.1:text.generate"
-      }
-    },
-    "src/data/pricing/minimax-lightning/minimax-minimax-2.5/text.generate/pricing.json": {
-      "hash": "50191450a693092bf61d790209cf5d1b",
-      "meta": {
-        "api_provider_id": "minimax-lightning",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-2.5",
-        "model_key": "minimax-lightning:minimax/minimax-2.5:text.generate"
       }
     },
     "src/data/pricing/minimax-lightning/minimax-minimax-m2.1/text.generate/pricing.json": {
@@ -9568,15 +9542,6 @@
         "model_key": "novita:meta/llama-4-scout:text.generate"
       }
     },
-    "src/data/pricing/novita/minimax-minimax-2.5/text.generate/pricing.json": {
-      "hash": "9bdf8fe5ef1dcb2d84922319239c7fa1",
-      "meta": {
-        "api_provider_id": "novita",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-2.5",
-        "model_key": "novita:minimax/minimax-2.5:text.generate"
-      }
-    },
     "src/data/pricing/novita/minimax-minimax-m1-80k/text.generate/pricing.json": {
       "hash": "634c5a6248acab2a397c24496b705efb",
       "meta": {
@@ -9605,7 +9570,7 @@
       }
     },
     "src/data/pricing/novita/minimax-minimax-m2.5/text.generate/pricing.json": {
-      "hash": "11b4bd910762933cb7d73365e8d98baf",
+      "hash": "fee4a9420a3d515bd07d024f006a1b80",
       "meta": {
         "api_provider_id": "novita",
         "capability_id": "text.generate",
@@ -11191,7 +11156,7 @@
       }
     },
     "src/data/pricing/google-ai-studio/google-gemini-embedding-2-preview/text.embed/pricing.json": {
-      "hash": "055db012da598aa0484005f79a7a9db8",
+      "hash": "33adf23e7e340c80973a6b375ffd02ec",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.embed",
@@ -11200,12 +11165,56 @@
       }
     },
     "src/data/pricing/google-vertex/google-gemini-embedding-2-preview/text.embed/pricing.json": {
-      "hash": "5acda0eb5317401d0a420a26709ad992",
+      "hash": "c92b8e5c06b9180a2f99089e3f3b2c42",
       "meta": {
         "api_provider_id": "google-vertex",
         "capability_id": "text.embed",
         "model_id": "google/gemini-embedding-2-preview",
         "model_key": "google-vertex:google/gemini-embedding-2-preview:text.embed"
+      }
+    },
+    "src/data/models/x-ai/grok-4-20-2026-02-17/model.json": {
+      "hash": "5ee5d92c366f51f28af74a7c00dd8069",
+      "meta": {
+        "model_id": "x-ai/grok-4-20-2026-02-17",
+        "organisation_id": "x-ai",
+        "previous_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17"
+      }
+    },
+    "src/data/pricing/minimax/minimax-minimax-m2.5/text.generate/pricing.json": {
+      "hash": "21cd5b59504e962bac4d033ca5143f1f",
+      "meta": {
+        "api_provider_id": "minimax",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.5",
+        "model_key": "minimax:minimax/minimax-m2.5:text.generate"
+      }
+    },
+    "src/data/pricing/minimax-lightning/minimax-minimax-m2.5-highspeed/text.generate/pricing.json": {
+      "hash": "6248b49e887104bcf10c8ff6852b17a9",
+      "meta": {
+        "api_provider_id": "minimax-lightning",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.5-highspeed",
+        "model_key": "minimax-lightning:minimax/minimax-m2.5-highspeed:text.generate"
+      }
+    },
+    "src/data/pricing/x-ai/x-ai-grok-4.20-beta-0309/text.generate/pricing.json": {
+      "hash": "c6927a1c99b5c14c145558e9b58b517d",
+      "meta": {
+        "api_provider_id": "x-ai",
+        "capability_id": "text.generate",
+        "model_id": "x-ai/grok-4.20-beta-0309",
+        "model_key": "x-ai:x-ai/grok-4.20-beta-0309:text.generate"
+      }
+    },
+    "src/data/pricing/x-ai/x-ai-grok-4.20-multi-agent-beta-0309/text.generate/pricing.json": {
+      "hash": "d856d9778d0ad9b8a152a048403e89ea",
+      "meta": {
+        "api_provider_id": "x-ai",
+        "capability_id": "text.generate",
+        "model_id": "x-ai/grok-4.20-multi-agent-beta-0309",
+        "model_key": "x-ai:x-ai/grok-4.20-multi-agent-beta-0309:text.generate"
       }
     }
   }

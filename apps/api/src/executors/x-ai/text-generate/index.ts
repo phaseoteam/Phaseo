@@ -45,6 +45,38 @@ const XAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"grok-4-1": new Set(["none", "low", "medium", "high", "xhigh"]),
 };
 
+type XAiReasoningRouteFamily = {
+	baseAliases: string[];
+	explicitReasoningAliases: string[];
+	explicitNonReasoningAliases: string[];
+	reasoningSlug: string;
+	nonReasoningSlug: string;
+};
+
+const XAI_REASONING_ROUTE_FAMILIES: XAiReasoningRouteFamily[] = [
+	{
+		baseAliases: ["grok-4.1", "grok-4-1"],
+		explicitReasoningAliases: ["grok-4.1-thinking", "grok-4-1-thinking", "grok-4.1-reasoning"],
+		explicitNonReasoningAliases: ["grok-4-1-fast-non-reasoning", "grok-4.1-non-thinking"],
+		reasoningSlug: "grok-4.1-reasoning",
+		nonReasoningSlug: "grok-4-1-fast-non-reasoning",
+	},
+	{
+		baseAliases: ["grok-4-fast"],
+		explicitReasoningAliases: ["grok-4-fast-reasoning"],
+		explicitNonReasoningAliases: ["grok-4-fast-non-reasoning"],
+		reasoningSlug: "grok-4-fast-reasoning",
+		nonReasoningSlug: "grok-4-fast-non-reasoning",
+	},
+	{
+		baseAliases: ["grok-4.20-beta-0309"],
+		explicitReasoningAliases: ["grok-4.20-beta-0309-reasoning"],
+		explicitNonReasoningAliases: ["grok-4.20-beta-0309-non-reasoning"],
+		reasoningSlug: "grok-4.20-beta-0309-reasoning",
+		nonReasoningSlug: "grok-4.20-beta-0309-non-reasoning",
+	},
+];
+
 function normalizeModelName(model?: string | null): string {
 	if (!model) return "";
 	const value = model.trim();
@@ -53,13 +85,55 @@ function normalizeModelName(model?: string | null): string {
 	return parts[parts.length - 1] || value;
 }
 
-function resolveXAiModelForRequest(model: string, reasoning: IRReasoning | undefined): string {
+function findReasoningRouteFamily(model: string): XAiReasoningRouteFamily | null {
 	const normalized = normalizeModelName(model).toLowerCase();
-	const isGrok41Alias = normalized === "grok-4.1" || normalized === "grok-4-1";
-	if (!isGrok41Alias) return model;
-	return reasoning?.enabled === true
-		? "grok-4.1-reasoning"
-		: "grok-4-1-fast-non-reasoning";
+	if (!normalized) return null;
+	return (
+		XAI_REASONING_ROUTE_FAMILIES.find((family) => {
+			return (
+				family.baseAliases.includes(normalized) ||
+				family.explicitReasoningAliases.includes(normalized) ||
+				family.explicitNonReasoningAliases.includes(normalized)
+			);
+		}) ?? null
+	);
+}
+
+export function resolveXAiModelForRequest(
+	model: string,
+	reasoning: IRReasoning | undefined,
+	requestedModel?: string | null,
+): string {
+	const requestedNormalized = normalizeModelName(requestedModel).toLowerCase();
+	const explicitReasoningRequested = reasoning?.enabled === true;
+	const explicitNonReasoningRequested = reasoning?.enabled === false;
+
+	const requestedFamily = requestedNormalized
+		? findReasoningRouteFamily(requestedNormalized)
+		: null;
+	const routingFamily = requestedFamily ?? findReasoningRouteFamily(model);
+
+	if (!routingFamily) return model;
+
+	if (requestedNormalized) {
+		if (routingFamily.explicitReasoningAliases.includes(requestedNormalized)) {
+			if (explicitNonReasoningRequested) return routingFamily.nonReasoningSlug;
+			return routingFamily.reasoningSlug;
+		}
+		if (routingFamily.explicitNonReasoningAliases.includes(requestedNormalized)) {
+			if (explicitReasoningRequested) return routingFamily.reasoningSlug;
+			return routingFamily.nonReasoningSlug;
+		}
+		if (routingFamily.baseAliases.includes(requestedNormalized)) {
+			return explicitReasoningRequested
+				? routingFamily.reasoningSlug
+				: routingFamily.nonReasoningSlug;
+		}
+	}
+
+	return explicitReasoningRequested
+		? routingFamily.reasoningSlug
+		: routingFamily.nonReasoningSlug;
 }
 
 function getSupportedEfforts(model: string): ReasoningEffort[] {
@@ -296,6 +370,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const modelForRouting = resolveXAiModelForRequest(
 		modelForRoutingRaw,
 		irRequest.reasoning,
+		args.meta.requestedModel ?? irRequest.model,
 	);
 	const requestPayload = irToOpenAIResponses(
 		irRequest,

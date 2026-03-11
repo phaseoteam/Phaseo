@@ -1,0 +1,17 @@
+{
+  "model_id": "x-ai/grok-4-20-2026-02-17",
+  "organisation_id": "x-ai",
+  "name": "Grok 4.20",
+  "status": "Available",
+  "previous_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17",
+  "announced_date": "2026-02-17T00:00:00",
+  "release_date": "2026-02-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
