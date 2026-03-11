@@ -1,0 +1,77 @@
+---
+title: "xAI: Grok 4.20"
+description: "Gateway-focused migration notes for Grok 4.20, including reasoning toggle and multi-agent effort controls."
+---
+
+# xAI: Grok 4.20
+
+Use this guide when you are moving traffic onto Grok 4.20 through the AI Stats Gateway.
+
+Primary route in our catalog:
+
+- `x-ai/grok-4-20-2026-02-17`
+
+Optional multi-agent route exposed by provider model ID:
+
+- `x-ai/grok-4.20-multi-agent-beta-0309`
+
+## Migration requirement
+
+For most integrations, there is no required migration work beyond updating the model ID and re-running your normal validation set.
+
+Existing request and response patterns can remain the same.
+
+## What changed
+
+For the base Grok 4.20 route, there is no behavior change you need to migrate for in AI Stats Gateway.
+
+The only practical change is how to tune the multi-agent variant.
+
+For AI Stats Gateway usage:
+
+- base Grok 4.20 can still be toggled with `reasoning.enabled` as normal
+- multi-agent Grok 4.20 should be tuned with `reasoning.effort`
+- use `low`, `medium`, `high`, and `extra high`
+- as described in xAI guidance, `low` and `medium` map to 4 agents, while `high` and `extra high` use higher multi-agent configurations
+
+We do not use `agent_count` directly in gateway requests.
+
+### Base Grok 4.20 with reasoning toggle
+
+Use the base model and set `reasoning.enabled` directly:
+
+```json
+{
+  "model": "x-ai/grok-4-20-2026-02-17",
+  "input": "Explain this architecture",
+  "reasoning": {
+    "enabled": true
+  }
+}
+```
+
+### Multi-agent Grok 4.20 with effort control
+
+Use the multi-agent model and control depth with `reasoning.effort`:
+
+```json
+{
+  "model": "x-ai/grok-4.20-multi-agent-beta-0309",
+  "input": "Evaluate three rollout options with tradeoffs",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+Reasoning effort tiers:
+
+- `low`
+- `medium`
+- `high`
+- `extra high`
+
+## Sources
+
+- [xAI multi-agent capabilities](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [xAI migrating to new models](https://docs.x.ai/docs/guides/migrating-to-new-models)

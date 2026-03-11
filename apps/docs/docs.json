@@ -199,7 +199,8 @@
 											"v1/model-migrations/anthropic-claude-sonnet-4-5-to-4-6",
 											"v1/model-migrations/openai-migrating-to-gpt-5-4",
 											"v1/model-migrations/google-migrating-to-gemini-3-and-3-1",
-											"v1/model-migrations/google-nano-banana-1-to-nano-banana-2"
+											"v1/model-migrations/google-nano-banana-1-to-nano-banana-2",
+											"v1/model-migrations/xai-grok-4-20"
 										]
 									},
 									{
