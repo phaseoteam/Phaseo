@@ -15,7 +15,7 @@
   "details": [
     {
       "name": "input_context_length",
-      "value": 200000
+      "value": 1000000
     },
     {
       "name": "output_context_length",
