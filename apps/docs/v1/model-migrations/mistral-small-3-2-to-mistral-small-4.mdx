@@ -1,0 +1,62 @@
+---
+title: "Mistral: Mistral Small 3.2 to Mistral Small 4"
+description: "Gateway migration notes for upgrading Mistral Small traffic to Mistral Small 4, including reasoning_effort behavior."
+---
+
+# Mistral: Mistral Small 3.2 to Mistral Small 4
+
+Use this guide when migrating Mistral Small routes to:
+
+- `mistral/mistral-small-4-2026-03-16`
+
+Previous common route:
+
+- `mistral/mistral-small-3-2-2025-06-20`
+
+## What changed
+
+- Mistral Small 4 exposes a reasoning mode control via `reasoning_effort`.
+- For this model route, only two values are valid:
+  - `none`
+  - `high`
+- Gateway normalizes Mistral thinking blocks back into standard response fields:
+  - `message.content` for assistant-visible text
+  - `message.reasoning_content` and `message.reasoning_details` for reasoning text
+
+## Required request changes
+
+When you set reasoning effort for Mistral Small 4 through AI Stats Gateway:
+
+- pass `reasoning.effort: "none"` for lightweight behavior
+- pass `reasoning.effort: "high"` for deep reasoning
+- do not send other effort values for this route
+
+Example:
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## Response handling notes
+
+Mistral may return mixed assistant content blocks (for example `thinking` + `text`). Gateway maps that into a stable shape so you can consume:
+
+- final user-visible answer from `choices[0].message.content`
+- reasoning text from `choices[0].message.reasoning_content`
+
+This lets you preserve downstream behavior that expects OpenAI-style chat completion fields.
+
+## Rollout checklist
+
+1. Update model ID to `mistral/mistral-small-4-2026-03-16`.
+2. Validate reasoning controls using only `none` and `high`.
+3. Re-run output quality and schema tests on your high-effort routes.
+4. Compare latency/cost for `none` vs `high` before full cutover.
