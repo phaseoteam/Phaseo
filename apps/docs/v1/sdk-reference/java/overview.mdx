@@ -7,6 +7,19 @@ description: "Experimental Java client for the AI Stats Gateway."
   **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
 </Note>
 
-- Status: Preview (not yet on Maven Central).
+The Java SDK is currently a generated low-level client:
+
+- `ai.stats.gen.Client` configures base URL + headers.
+- `ai.stats.gen.Operations` exposes static methods for each endpoint.
+- Request bodies are passed as raw JSON strings.
+
+## Current status
+
+- Preview only (not yet published to Maven Central).
 - Source lives in `packages/sdk/sdk-java`.
-- Generated code is in `packages/sdk/sdk-java/src/gen`.
+- Generated code lives in `packages/sdk/sdk-java/src/gen`.
+
+## Next steps
+
+- [Installation](/v1/sdk-reference/java/installation)
+- [Usage](/v1/sdk-reference/java/usage)

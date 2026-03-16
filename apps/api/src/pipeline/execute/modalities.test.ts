@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterCandidatesByModalities } from "./modalities";
-import type { IRChatRequest } from "@core/ir";
+import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
+import type { IRChatRequest, IREmbeddingsRequest } from "@core/ir";
 import type { ProviderCandidate } from "../before/types";
 
 function buildTextImageRequest(model: string): IRChatRequest {
@@ -34,6 +34,20 @@ function candidate(partial: Partial<ProviderCandidate>): ProviderCandidate {
 	};
 }
 
+function buildImageEmbeddingRequest(model: string): IREmbeddingsRequest {
+	return {
+		model,
+		input: [
+			{ type: "text", text: "classify this product image" },
+			{
+				type: "image",
+				source: "url",
+				data: "https://example.com/image.jpg",
+			},
+		],
+	};
+}
+
 describe("filterCandidatesByModalities", () => {
 	it("keeps google image-preview candidates when modality metadata is missing", () => {
 		const ir = buildTextImageRequest("google/gemini-2-5-flash-image");
@@ -61,6 +75,40 @@ describe("filterCandidatesByModalities", () => {
 					providerId: "openai",
 					inputModalities: null,
 					outputModalities: null,
+				}),
+			],
+			ir,
+		);
+
+		expect(filtered).toHaveLength(0);
+	});
+});
+
+describe("filterEmbeddingCandidatesByModalities", () => {
+	it("keeps google gemini embeddings when modality metadata is missing", () => {
+		const ir = buildImageEmbeddingRequest("google/gemini-embedding-001");
+		const filtered = filterEmbeddingCandidatesByModalities(
+			[
+				candidate({
+					providerId: "google-ai-studio",
+					providerModelSlug: "gemini-embedding-001",
+					inputModalities: null,
+				}),
+			],
+			ir,
+		);
+
+		expect(filtered).toHaveLength(1);
+		expect(filtered[0].providerId).toBe("google-ai-studio");
+	});
+
+	it("filters text-only providers for image embedding inputs", () => {
+		const ir = buildImageEmbeddingRequest("openai/text-embedding-3-large");
+		const filtered = filterEmbeddingCandidatesByModalities(
+			[
+				candidate({
+					providerId: "openai",
+					inputModalities: ["text"],
 				}),
 			],
 			ir,

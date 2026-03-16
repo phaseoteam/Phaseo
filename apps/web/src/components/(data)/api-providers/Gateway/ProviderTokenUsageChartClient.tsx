@@ -40,10 +40,6 @@ function formatBucketLabel(value: string) {
 	return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function toBucket(date: Date): string {
-	return date.toISOString().slice(0, 10);
-}
-
 export default function ProviderTokenUsageChartClient({
 	models,
 	points,
@@ -62,6 +58,13 @@ export default function ProviderTokenUsageChartClient({
 			) as Record<string, string>,
 		[chartModelIds],
 	);
+	const modelIdBySeriesKey = useMemo(
+		() =>
+			new Map(
+				chartModelIds.map((modelId) => [keysByModelId[modelId], modelId]),
+			),
+		[chartModelIds, keysByModelId],
+	);
 
 	const colors = useMemo(() => assignSeriesColours(chartModelIds), [chartModelIds]);
 
@@ -70,10 +73,7 @@ export default function ProviderTokenUsageChartClient({
 		const rowByBucket = new Map<string, Record<string, number | string>>();
 
 		for (const bucket of buckets) {
-			rowByBucket.set(bucket, {
-				bucket,
-				label: formatBucketLabel(bucket),
-			});
+			rowByBucket.set(bucket, { bucket });
 		}
 
 		for (const point of points) {
@@ -85,10 +85,14 @@ export default function ProviderTokenUsageChartClient({
 		}
 
 		for (const row of rowByBucket.values()) {
+			let totalTokens = 0;
 			for (const modelId of chartModelIds) {
 				const key = keysByModelId[modelId];
-				if (row[key] == null) row[key] = 0;
+				const value = Number(row[key] ?? 0);
+				row[key] = Number.isFinite(value) ? value : 0;
+				totalTokens += Number(row[key] ?? 0);
 			}
+			row.totalTokens = totalTokens;
 		}
 
 		return buckets
@@ -139,36 +143,110 @@ export default function ProviderTokenUsageChartClient({
 	}, [appPoints]);
 
 	const buckets = useMemo(
-		() => Array.from(new Set(points.map((point) => point.bucket))).sort(),
-		[points],
+		() =>
+			chartData
+				.map((row) =>
+					typeof row.bucket === "string" ? row.bucket : null,
+				)
+				.filter((bucket): bucket is string => Boolean(bucket)),
+		[chartData],
 	);
+	const bucketSet = useMemo(() => new Set(buckets), [buckets]);
 
 	const hasBucket = (bucket: string | null): boolean =>
-		Boolean(bucket && buckets.includes(bucket));
+		Boolean(bucket && bucketSet.has(bucket));
 
-	const todayBucket = toBucket(new Date());
-	const yesterdayBucket = toBucket(new Date(Date.now() - 24 * 60 * 60 * 1000));
-	const latestBucket = buckets[buckets.length - 1] ?? null;
-
-	const activeBucket = hasBucket(hoveredBucket)
-		? hoveredBucket
-		: hasBucket(todayBucket)
-			? todayBucket
-			: hasBucket(yesterdayBucket)
-				? yesterdayBucket
-				: latestBucket;
+	const totalTokensByBucket = useMemo(
+		() =>
+			new Map(
+				chartData.map((row) => [
+					String(row.bucket),
+					Number(row.totalTokens ?? 0),
+				]),
+			),
+		[chartData],
+	);
+	const activeBucket = hasBucket(hoveredBucket) ? hoveredBucket : null;
+	const aggregateTotalTokens = useMemo(
+		() =>
+			Array.from(totalTokensByBucket.values()).reduce(
+				(sum, value) => sum + value,
+				0,
+			),
+		[totalTokensByBucket],
+	);
+	const aggregateModelTokens = useMemo(() => {
+		const totals = new Map<string, number>();
+		for (const point of points) {
+			totals.set(point.modelId, (totals.get(point.modelId) ?? 0) + point.tokens);
+		}
+		return totals;
+	}, [points]);
+	const aggregateAppTokens = useMemo(() => {
+		const totals = new Map<string, number>();
+		for (const point of appPoints) {
+			totals.set(point.appId, (totals.get(point.appId) ?? 0) + point.tokens);
+		}
+		return totals;
+	}, [appPoints]);
+	const aggregateRangeLabel = useMemo(() => {
+		if (!buckets.length) return "this period";
+		const first = buckets[0];
+		const last = buckets[buckets.length - 1];
+		if (first === last) return formatBucketLabel(first);
+		return `${formatBucketLabel(first)} - ${formatBucketLabel(last)}`;
+	}, [buckets]);
 
 	const activeTotalTokens = useMemo(() => {
-		if (!activeBucket) return 0;
-		return Array.from(modelTokensByBucket.get(activeBucket)?.values() ?? []).reduce(
-			(sum, value) => sum + value,
-			0,
-		);
-	}, [activeBucket, modelTokensByBucket]);
+		if (activeBucket) return totalTokensByBucket.get(activeBucket) ?? 0;
+		return aggregateTotalTokens;
+	}, [activeBucket, aggregateTotalTokens, totalTokensByBucket]);
+
+	const resolveBucketFromChartState = (state: any): string | null => {
+		const payloadBucket = state?.activePayload?.find(
+			(entry: any) => typeof entry?.payload?.bucket === "string",
+		)?.payload?.bucket;
+		if (typeof payloadBucket === "string" && hasBucket(payloadBucket)) {
+			return payloadBucket;
+		}
+
+		if (typeof state?.activeLabel === "string" && hasBucket(state.activeLabel)) {
+			return state.activeLabel;
+		}
+
+		if (Number.isInteger(state?.activeTooltipIndex)) {
+			const idx = Number(state.activeTooltipIndex);
+			const indexedBucket = chartData[idx]?.bucket;
+			if (typeof indexedBucket === "string" && hasBucket(indexedBucket)) {
+				return indexedBucket;
+			}
+		}
+
+		return null;
+	};
+
+	const resolveBucketFromBarState = (state: any): string | null => {
+		const directPayloadBucket = state?.payload?.bucket;
+		if (typeof directPayloadBucket === "string" && hasBucket(directPayloadBucket)) {
+			return directPayloadBucket;
+		}
+
+		const nestedPayloadBucket = state?.payload?.payload?.bucket;
+		if (typeof nestedPayloadBucket === "string" && hasBucket(nestedPayloadBucket)) {
+			return nestedPayloadBucket;
+		}
+
+		return resolveBucketFromChartState(state);
+	};
+	const resolveModelIdFromChartState = (state: any): string | null => {
+		if (typeof state?.activeDataKey !== "string") return null;
+		return modelIdBySeriesKey.get(state.activeDataKey) ?? null;
+	};
 
 	const activeModelRows = useMemo(() => {
-		if (!activeBucket) return [];
-		const modelMap = modelTokensByBucket.get(activeBucket) ?? new Map<string, number>();
+		const modelMap = activeBucket
+			? modelTokensByBucket.get(activeBucket) ?? new Map<string, number>()
+			: aggregateModelTokens;
 		return models
 			.map((model) => ({
 				id: model.modelId,
@@ -178,11 +256,12 @@ export default function ProviderTokenUsageChartClient({
 			.filter((row) => row.tokens > 0)
 			.sort((a, b) => b.tokens - a.tokens)
 			.slice(0, 6);
-	}, [activeBucket, modelTokensByBucket, models]);
+	}, [activeBucket, aggregateModelTokens, modelTokensByBucket, models]);
 
 	const activeAppRows = useMemo(() => {
-		if (!activeBucket) return [];
-		const appMap = appTokensByBucket.get(activeBucket) ?? new Map<string, number>();
+		const appMap = activeBucket
+			? appTokensByBucket.get(activeBucket) ?? new Map<string, number>()
+			: aggregateAppTokens;
 		return apps
 			.map((app) => ({
 				id: app.appId,
@@ -194,7 +273,7 @@ export default function ProviderTokenUsageChartClient({
 			.filter((row) => row.tokens > 0)
 			.sort((a, b) => b.tokens - a.tokens)
 			.slice(0, 20);
-	}, [activeBucket, appTokensByBucket, apps]);
+	}, [activeBucket, aggregateAppTokens, appTokensByBucket, apps]);
 
 	return (
 		<div className="space-y-4">
@@ -203,11 +282,14 @@ export default function ProviderTokenUsageChartClient({
 					data={chartData}
 					margin={{ top: 8, right: 12, left: 0, bottom: 12 }}
 					onMouseMove={(state: any) => {
-						const bucket =
-							typeof state?.activePayload?.[0]?.payload?.bucket === "string"
-								? state.activePayload[0].payload.bucket
-								: null;
-						setHoveredBucket(bucket);
+						const bucket = resolveBucketFromChartState(state);
+						const modelId = resolveModelIdFromChartState(state);
+						if (bucket) {
+							setHoveredBucket(bucket);
+						} else if (!state?.isTooltipActive) {
+							setHoveredBucket(null);
+						}
+						setHoveredModelId(modelId);
 					}}
 					onMouseLeave={() => {
 						setHoveredBucket(null);
@@ -216,7 +298,8 @@ export default function ProviderTokenUsageChartClient({
 				>
 					<CartesianGrid vertical={false} className="stroke-muted" />
 					<XAxis
-						dataKey="label"
+						dataKey="bucket"
+						tickFormatter={(value) => formatBucketLabel(String(value))}
 						tickLine={false}
 						axisLine={false}
 						minTickGap={24}
@@ -257,10 +340,7 @@ export default function ProviderTokenUsageChartClient({
 								radius={index === models.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
 								isAnimationActive={false}
 								onMouseMove={(state: any) => {
-									const bucket =
-										typeof state?.payload?.bucket === "string"
-											? state.payload.bucket
-											: null;
+									const bucket = resolveBucketFromBarState(state);
 									if (bucket) setHoveredBucket(bucket);
 									setHoveredModelId(model.modelId);
 								}}
@@ -276,7 +356,7 @@ export default function ProviderTokenUsageChartClient({
 						<div className="text-xs text-muted-foreground">
 							{activeBucket
 								? `Showing ${formatBucketLabel(activeBucket)} | Total ${formatCompact(activeTotalTokens)}${hoveredModelId ? ` | Hovering ${modelNameById.get(hoveredModelId) ?? hoveredModelId}` : ""}`
-								: "No daily usage data available"}
+								: `Showing ${aggregateRangeLabel} aggregate | Total ${formatCompact(activeTotalTokens)}`}
 						</div>
 
 					<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -305,7 +385,7 @@ export default function ProviderTokenUsageChartClient({
 															<Link
 																href={`/models/${model.id}`}
 																prefetch={false}
-																className={`truncate font-medium hover:text-primary ${
+																className={`truncate font-medium underline decoration-transparent underline-offset-2 transition-colors hover:text-primary hover:decoration-current ${
 																	hoveredModelId && hoveredModelId !== model.id
 																		? "text-muted-foreground/65"
 																		: "text-foreground"
@@ -331,7 +411,9 @@ export default function ProviderTokenUsageChartClient({
 													colSpan={2}
 													className="px-2 py-6 text-center text-xs text-muted-foreground"
 												>
-													0 tokens for this day.
+													{activeBucket
+														? "0 tokens for this day."
+														: "0 tokens in this period."}
 												</td>
 											</tr>
 										)}
@@ -361,7 +443,7 @@ export default function ProviderTokenUsageChartClient({
 													<td className="min-w-0 px-2 py-2">
 														<Link
 															href={`/apps/${app.id}`}
-															className="flex min-w-0 items-center gap-2"
+															className="group flex min-w-0 items-center gap-2"
 														>
 															<Avatar className="h-5 w-5 rounded-md border border-border/60">
 																<AvatarImage
@@ -373,7 +455,7 @@ export default function ProviderTokenUsageChartClient({
 																	{app.title.slice(0, 1).toUpperCase()}
 																</AvatarFallback>
 															</Avatar>
-															<span className="truncate font-medium text-foreground hover:text-primary">
+															<span className="truncate font-medium text-foreground underline decoration-transparent underline-offset-2 transition-colors group-hover:text-primary group-hover:decoration-current">
 																{app.title}
 															</span>
 														</Link>
@@ -387,7 +469,7 @@ export default function ProviderTokenUsageChartClient({
 																href={app.url}
 																target="_blank"
 																rel="noopener noreferrer"
-																className="text-xs font-medium text-foreground hover:text-primary"
+																className="text-xs font-medium text-foreground underline decoration-transparent underline-offset-2 transition-colors hover:text-primary hover:decoration-current"
 															>
 																Visit
 															</a>
@@ -403,7 +485,9 @@ export default function ProviderTokenUsageChartClient({
 													colSpan={3}
 													className="px-2 py-6 text-center text-xs text-muted-foreground"
 												>
-													0 tokens for this day.
+													{activeBucket
+														? "0 tokens for this day."
+														: "0 tokens in this period."}
 												</td>
 											</tr>
 										)}

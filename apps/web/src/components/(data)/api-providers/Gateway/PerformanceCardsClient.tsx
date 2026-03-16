@@ -171,7 +171,7 @@ function MiniModelLeaderboard({
 						>
 							<Link
 								href={`/models/${item.id}`}
-								className="truncate font-medium text-foreground hover:text-primary"
+								className="truncate font-medium text-foreground underline decoration-transparent underline-offset-2 transition-colors hover:text-primary hover:decoration-current"
 							>
 								{item.label}
 							</Link>
@@ -217,18 +217,40 @@ export default function PerformanceCardsClient({
 		() => Object.keys(dailyModelLeaderboards).sort(),
 		[dailyModelLeaderboards],
 	);
+	const bucketsWithData = useMemo(() => {
+		return new Set(
+			availableBuckets.filter((bucket) => {
+				const day = dailyModelLeaderboards[bucket];
+				if (!day) return false;
+				return (
+					day.throughput.length > 0 ||
+					day.latency.length > 0 ||
+					day.e2e.length > 0
+				);
+			}),
+		);
+	}, [availableBuckets, dailyModelLeaderboards]);
 
 	const hasBucket = (bucket: string | null): boolean =>
 		Boolean(bucket && dailyModelLeaderboards[bucket]);
+	const hasDataForBucket = (bucket: string | null): boolean =>
+		Boolean(bucket && bucketsWithData.has(bucket));
 
 	const latestBucket = availableBuckets[availableBuckets.length - 1] ?? null;
+	const latestBucketWithData = useMemo(() => {
+		for (let i = availableBuckets.length - 1; i >= 0; i -= 1) {
+			const bucket = availableBuckets[i];
+			if (bucketsWithData.has(bucket)) return bucket;
+		}
+		return null;
+	}, [availableBuckets, bucketsWithData]);
 	const activeBucket = hasBucket(hoveredBucket)
 		? hoveredBucket
-		: hasBucket(todayBucket)
+		: hasDataForBucket(todayBucket)
 			? todayBucket
-			: hasBucket(yesterdayBucket)
+			: hasDataForBucket(yesterdayBucket)
 				? yesterdayBucket
-				: latestBucket;
+				: latestBucketWithData ?? latestBucket;
 
 	const throughputLeaderboard = activeBucket
 		? dailyModelLeaderboards[activeBucket]?.throughput ?? []

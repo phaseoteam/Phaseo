@@ -9,6 +9,9 @@ import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { saveVideoJobMeta } from "@core/video-jobs";
+import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { releaseWalletReservation } from "@core/wallet-reservations";
+import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
 import { computeBill } from "@pipeline/pricing/engine";
 
 const XAI_VIDEO_PREFIX = "xaivid_";
@@ -37,9 +40,11 @@ function parseDurationSeconds(ir: IRVideoGenerationRequest): number | undefined 
 
 function toVideoStatus(value: unknown): IRVideoGenerationResponse["status"] {
 	const status = String(value ?? "").toLowerCase();
-	if (status === "completed" || status === "succeeded" || status === "success") return "completed";
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
-	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
+	if (status === "done" || status === "completed" || status === "succeeded" || status === "success") return "completed";
+	if (status === "expired" || status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
+		return "failed";
+	}
+	if (status === "pending" || status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	return "queued";
 }
 
@@ -75,6 +80,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model || "grok-video";
 	const seconds = parseDurationSeconds(ir);
+	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
+	const quality = ir.quality ?? null;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => {
@@ -88,8 +95,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		prompt: ir.prompt,
 	};
 	if (seconds != null) requestObject.duration = seconds;
-	if (ir.size) requestObject.size = ir.size;
-	if (ir.quality) requestObject.quality = ir.quality;
+	if (size) requestObject.size = size;
+	if (quality) requestObject.quality = quality;
 	if (ir.inputReference) requestObject.image_url = ir.inputReference;
 	if (typeof ir.seed === "number") requestObject.seed = ir.seed;
 
@@ -97,12 +104,139 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)
 		? requestBody
 		: undefined;
+	let reservationId: string | null = null;
+	let reservationStatus: string | null = null;
+	let reservedNanos: number | null = null;
+	let reservationGateError: { status: number; type: string; message: string } | null = null;
+	try {
+		const reserved = await reserveVideoGenerationCredits({
+			teamId: args.teamId,
+			videoId: `req_${args.requestId}`,
+			providerId: args.providerId,
+			model,
+			seconds: seconds ?? null,
+			pricingCard: args.pricingCard,
+			requestOptions: buildVideoPricingRequestOptions({
+				size,
+				resolution: ir.resolution,
+				quality,
+			}),
+			isByok: keyInfo.source === "byok",
+		});
+		reservationId = reserved.reservationId;
+		reservationStatus = reserved.status;
+		reservedNanos = reserved.amountNanos;
+		if (reserved.status === "skip_missing_seconds_or_pricing") {
+			reservationGateError = {
+				status: 400,
+				type: "missing_billing_dimensions",
+				message: "Video duration seconds and pricing must be resolvable before submission.",
+			};
+		}
+		if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+			reservationGateError = {
+				status: 503,
+				type: "reservation_not_held",
+				message: `Unable to secure wallet reservation before provider submission (status=${reserved.status}).`,
+			};
+		}
+	} catch (reserveErr) {
+		console.error("xai_video_reservation_failed_pre_submit", {
+			error: reserveErr,
+			teamId: args.teamId,
+			requestId: args.requestId,
+		});
+		reservationGateError = {
+			status: 503,
+			type: "reservation_unavailable",
+			message: "Unable to reserve credits for video generation.",
+		};
+	}
 
-	const res = await fetch(openAICompatUrl(args.providerId, "/videos/generations"), {
-		method: "POST",
-		headers: openAICompatHeaders(args.providerId, keyInfo.key),
-		body: requestBody,
-	});
+	const releaseReservationOnFailure = async () => {
+		if (!reservationId) return;
+		try {
+			await releaseWalletReservation({
+				teamId: args.teamId,
+				reservationId,
+				releaseRefId: args.requestId,
+			});
+		} catch (releaseErr) {
+			console.error("xai_video_reservation_release_failed", {
+				error: releaseErr,
+				teamId: args.teamId,
+				requestId: args.requestId,
+				reservationId,
+			});
+		}
+	};
+
+	if (reservationStatus === "insufficient_funds") {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "insufficient_funds",
+					message: "Insufficient available credits for video reservation hold.",
+				},
+			}),
+			{ status: 402, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+	if (reservationGateError) {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: reservationGateError.type,
+					message: reservationGateError.message,
+				},
+			}),
+			{ status: reservationGateError.status, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+
+	let res: Response;
+	try {
+		res = await fetch(openAICompatUrl(args.providerId, "/videos/generations"), {
+			method: "POST",
+			headers: openAICompatHeaders(args.providerId, keyInfo.key, {
+				"Idempotency-Key": args.requestId,
+			}),
+			body: requestBody,
+		});
+	} catch (fetchErr) {
+		await releaseReservationOnFailure();
+		throw fetchErr;
+	}
 
 	const bill = {
 		cost_cents: 0,
@@ -113,6 +247,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	};
 
 	if (!res.ok) {
+		await releaseReservationOnFailure();
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -133,22 +268,30 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				provider: args.providerId,
 				model,
 				seconds: seconds ?? null,
-				size: ir.size ?? null,
-				quality: ir.quality ?? null,
+				resolution: size ?? null,
+				quality,
+				reservationId,
+				reservedNanos,
+				reservationStatus,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			});
+			}, toVideoStatus(json?.status));
 		} catch (error) {
 			console.error("xai_video_job_meta_store_failed", {
 				error,
 				teamId: args.teamId,
 				videoId: encodedId,
 				requestId: args.requestId,
+				reservationId,
+				reservationStatus,
+				note: "reservation_retained_for_manual_reconciliation",
 			});
 		}
 	}
 
 	// Async create requests should only bill request metering.
-	// Completion-duration billing is handled by /videos/:id when the job is done.
+	// Completion-duration billing is finalized by webhook/reconciliation workers.
 	const usageMeters: Record<string, number> = {
 		requests: 1,
 	};
@@ -157,6 +300,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		bill.cost_cents = priced.pricing.total_cents;
 		bill.currency = priced.pricing.currency;
 		bill.usage = priced;
+	} else {
+		bill.usage = usageMeters;
 	}
 
 	const irResponse: IRVideoGenerationResponse = {

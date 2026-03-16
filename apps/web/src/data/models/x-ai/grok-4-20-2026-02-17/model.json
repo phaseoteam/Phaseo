@@ -16,10 +16,6 @@
     {
       "name": "input_context_length",
       "value": 2000000
-    },
-    {
-      "name": "output_context_length",
-      "value": null
     }
   ],
   "benchmarks": []

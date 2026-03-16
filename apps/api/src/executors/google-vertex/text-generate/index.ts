@@ -12,7 +12,6 @@ import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropi
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "@executors/google/shared/usage-fallback";
@@ -208,10 +207,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			usageNormalizationOptionsForRoute(route),
 		);
 		if (usageMeters) {
-			const priced = computeBill(usageMeters, args.pricingCard);
-			bill.cost_cents = priced.pricing.total_cents;
-			bill.currency = priced.pricing.currency;
-			bill.usage = priced;
+			bill.usage = usageMeters;
 		}
 		bill.finish_reason = ir?.choices?.[0]?.finishReason ?? null;
 
@@ -297,10 +293,7 @@ function finalizeResult(input: {
 
 	const usageMeters = normalizeTextUsageForPricing(ir.usage, usageNormalizationOptionsForRoute(route));
 	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
+		bill.usage = usageMeters;
 	}
 	bill.finish_reason = ir.choices?.[0]?.finishReason ?? null;
 

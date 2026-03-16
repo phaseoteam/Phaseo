@@ -76,6 +76,14 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("suno", "text.generate")).toBeNull();
 	});
 
+	it("resolves embeddings for openai-compatible providers", () => {
+		expect(resolveProviderExecutor("openai", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("google-ai-studio", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("together", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("mistral", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("anthropic", "embeddings")).toBeNull();
+	});
+
 	it("normalizes canonical provider ids used in routing hints", () => {
 		const variants = [
 			"OPENAI",

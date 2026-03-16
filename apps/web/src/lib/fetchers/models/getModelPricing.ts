@@ -106,6 +106,7 @@ export default async function getModelPricing(
         provider_api_model_id,
         provider_id,
         api_model_id,
+        model_id,
         provider_model_slug,
         internal_model_id,
         is_active_gateway,
@@ -136,6 +137,7 @@ export default async function getModelPricing(
         provider_api_model_id,
         provider_id,
         api_model_id,
+        model_id,
         provider_model_slug,
         internal_model_id,
         is_active_gateway,
@@ -169,12 +171,34 @@ export default async function getModelPricing(
         const res = await supabase
             .from("data_api_provider_models")
             .select(providerModelSelect)
-            .eq("internal_model_id", modelId);
+            .eq("model_id", modelId);
         pmRows = res.data as any[] | null;
         pmError = res.error;
     }
 
     if (pmError && isMissingProviderModelLimitColumnError(pmError)) {
+        const res = await supabase
+            .from("data_api_provider_models")
+            .select(providerModelSelectLegacy)
+            .eq("model_id", modelId);
+        pmRows = res.data as any[] | null;
+        pmError = res.error;
+    }
+
+    if (!pmError && (!pmRows || pmRows.length === 0)) {
+        const res = await supabase
+            .from("data_api_provider_models")
+            .select(providerModelSelect)
+            .eq("internal_model_id", modelId);
+        pmRows = res.data as any[] | null;
+        pmError = res.error;
+    }
+
+    if (
+        pmError &&
+        isMissingProviderModelLimitColumnError(pmError) &&
+        (!pmRows || pmRows.length === 0)
+    ) {
         const res = await supabase
             .from("data_api_provider_models")
             .select(providerModelSelectLegacy)
@@ -391,6 +415,7 @@ export async function getModelPricingCached(
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_pricing_rules");
     cacheTag("data:data_api_provider_models");
 

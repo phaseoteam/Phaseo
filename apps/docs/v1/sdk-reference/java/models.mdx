@@ -1,0 +1,19 @@
+---
+title: "Models"
+description: "List /gateway/models with the Java SDK."
+---
+
+**Method**: `Operations.listModels(...)`
+
+```java
+import ai.stats.gen.Operations;
+import java.util.HashMap;
+import java.util.Map;
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("privacy_scope", "shared");
+
+Object models = Operations.listModels(client, null, query, null, null);
+System.out.println(String.valueOf(models));
+```

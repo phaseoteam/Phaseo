@@ -20,9 +20,9 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("openai", "gpt-audio-mini")).toBe("chat");
 	});
 
-	it("routes openai legacy models to legacy completions", () => {
-		expect(resolveOpenAICompatRoute("openai", "openai/babbage-002")).toBe("legacy_completions");
-		expect(resolveOpenAICompatRoute("openai", "davinci-002")).toBe("legacy_completions");
+	it("routes openai legacy text-completion models to chat", () => {
+		expect(resolveOpenAICompatRoute("openai", "openai/babbage-002")).toBe("chat");
+		expect(resolveOpenAICompatRoute("openai", "davinci-002")).toBe("chat");
 	});
 
 	it("routes xai aliases to responses", () => {

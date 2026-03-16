@@ -1,33 +1,20 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
-import { Button } from "@/components/ui/button";
 import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
-import {
-	ArrowLeft as ArrowLeftIcon,
-	Grid as GridIcon,
-	Layers as LayersIcon,
-	Table as TableIcon,
-} from "lucide-react";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import CollectionDetailDisplay from "@/components/(data)/models/Collections/CollectionDetailDisplay";
 
 type CollectionPageProps = {
 	params: Promise<{ collectionId: string }>;
 };
 
-async function findCollection(collectionId: string) {
-	const collections = await getModelCollections(10);
+async function findCollection(collectionId: string, limit = 10) {
+	const collections = await getModelCollections(limit);
 	return collections.find((collection) => collection.id === collectionId) ?? null;
 }
 
 export async function generateStaticParams() {
-	const collections = await getModelCollections(10);
+	const collections = await getModelCollections(1);
 	return collections.map((collection) => ({ collectionId: collection.id }));
 }
 
@@ -35,7 +22,7 @@ export async function generateMetadata({
 	params,
 }: CollectionPageProps): Promise<Metadata> {
 	const { collectionId } = await params;
-	const collection = await findCollection(collectionId);
+	const collection = await findCollection(collectionId, 10);
 
 	if (!collection) {
 		return {
@@ -56,13 +43,21 @@ export async function generateMetadata({
 
 function CollectionDetailSkeleton() {
 	return (
-		<div className="space-y-6">
-			<div className="h-6 w-56 rounded bg-muted animate-pulse" />
-			<div className="h-4 w-96 max-w-full rounded bg-muted animate-pulse" />
-			<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-				{Array.from({ length: 8 }).map((_, index) => (
-					<div key={index} className="h-32 rounded-xl bg-muted animate-pulse" />
-				))}
+		<div className="flex min-h-screen flex-col">
+			<div className="border-b border-border/70 px-4 py-2.5 lg:px-8">
+				<div className="h-8 w-52 rounded bg-muted animate-pulse" />
+				<div className="mt-1 h-4 w-80 max-w-full rounded bg-muted animate-pulse" />
+				<div className="mt-2 h-8 w-full max-w-[460px] rounded bg-muted animate-pulse" />
+			</div>
+			<div className="px-4 pt-2 pb-5 lg:px-8 lg:pb-6">
+				<div className="space-y-px bg-border/70">
+					{Array.from({ length: 6 }).map((_, index) => (
+						<div
+							key={index}
+							className="h-40 bg-muted animate-pulse"
+						/>
+					))}
+				</div>
 			</div>
 		</div>
 	);
@@ -70,102 +65,21 @@ function CollectionDetailSkeleton() {
 
 async function CollectionDetailContent({ params }: CollectionPageProps) {
 	const { collectionId } = await params;
-	const collection = await findCollection(collectionId);
+	const collection = await findCollection(collectionId, 120);
 
 	if (!collection) {
 		notFound();
 	}
 
-	return (
-		<div className="space-y-8">
-			<header className="space-y-4">
-				<div className="flex items-center justify-between gap-3">
-					<h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
-					<div className="inline-flex rounded-md overflow-hidden border bg-background">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="sm"
-									asChild
-									variant="outline"
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-								>
-									<Link href="/models" aria-label="Card view">
-										<GridIcon className="h-4 w-4" />
-									</Link>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">Card view</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="sm"
-									asChild
-									variant="outline"
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-								>
-									<Link href="/models/table" aria-label="Table view">
-										<TableIcon className="h-4 w-4" />
-									</Link>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">Table view</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="sm"
-									asChild
-									variant="default"
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-								>
-									<Link href="/models/collections" aria-label="Collections view">
-										<LayersIcon className="h-4 w-4" />
-									</Link>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">Collections</TooltipContent>
-						</Tooltip>
-					</div>
-				</div>
-
-				<div className="space-y-2">
-					<Button variant="ghost" size="sm" asChild className="px-1 text-muted-foreground">
-						<Link href="/models/collections">
-							<ArrowLeftIcon className="h-4 w-4" />
-							Back to all collections
-						</Link>
-					</Button>
-					<h2 className="text-2xl font-semibold tracking-tight">{collection.title}</h2>
-					<p className="max-w-2xl text-sm text-muted-foreground">
-						{collection.description}
-					</p>
-					{collection.hint ? (
-						<p className="text-xs text-muted-foreground">{collection.hint}</p>
-					) : null}
-				</div>
-			</header>
-
-			<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-				{collection.models.map((model) => (
-					<ModelCard key={model.model_id} model={model} />
-				))}
-			</div>
-		</div>
-	);
+	return <CollectionDetailDisplay collection={collection} />;
 }
 
 export default function CollectionDetailPage(props: CollectionPageProps) {
 	return (
 		<main className="flex min-h-screen flex-col">
-			<div className="container mx-auto px-4 py-8">
-				<Suspense fallback={<CollectionDetailSkeleton />}>
-					<CollectionDetailContent {...props} />
-				</Suspense>
-			</div>
+			<Suspense fallback={<CollectionDetailSkeleton />}>
+				<CollectionDetailContent {...props} />
+			</Suspense>
 		</main>
 	);
 }

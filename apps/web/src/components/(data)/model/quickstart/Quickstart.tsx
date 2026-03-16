@@ -32,6 +32,8 @@ interface QuickstartProps {
         apiModelIds?: string[];
         primaryModelIdentifier?: string;
         acceptedModelIdentifiers?: string[];
+        primaryModelIdentifierByEndpoint?: Record<string, string>;
+        acceptedModelIdentifiersByEndpoint?: Record<string, string[]>;
         endpoint?: string | null;
         supportedEndpoints?: string[];
 }
@@ -249,6 +251,8 @@ export default function Quickstart({
 	apiModelIds,
 	primaryModelIdentifier,
 	acceptedModelIdentifiers,
+	primaryModelIdentifierByEndpoint,
+	acceptedModelIdentifiersByEndpoint,
 	endpoint,
 	supportedEndpoints = [],
 }: QuickstartProps) {
@@ -368,22 +372,37 @@ export default function Quickstart({
                 }
         }, [supportsStreaming, streamingEnabled]);
 
+        const normalizedSelectedEndpoint = normalizeEndpointValue(selectedEndpoint);
+
+        const endpointPrimaryModelIdentifier =
+                primaryModelIdentifierByEndpoint?.[normalizedSelectedEndpoint] ??
+                primaryModelIdentifier;
+
+        const endpointAcceptedIdentifiers =
+                acceptedModelIdentifiersByEndpoint?.[normalizedSelectedEndpoint] ??
+                acceptedModelIdentifiers ??
+                [];
+
         const decodedAcceptedIdentifiers = Array.from(
                 new Set([
-                        ...(acceptedModelIdentifiers?.map((identifier) =>
+                        ...(endpointAcceptedIdentifiers.map((identifier) =>
                                 safeDecodeURIComponent(identifier)
                         ) ?? []),
-                        ...(apiModelIds?.map((identifier) =>
-                                safeDecodeURIComponent(identifier)
-                        ) ?? []),
-                        ...(aliases?.map((alias) =>
-                                safeDecodeURIComponent(alias)
-                        ) ?? []),
+                        ...(endpointAcceptedIdentifiers.length === 0
+                                ? [
+                                          ...(apiModelIds?.map((identifier) =>
+                                                  safeDecodeURIComponent(identifier)
+                                          ) ?? []),
+                                          ...(aliases?.map((alias) =>
+                                                  safeDecodeURIComponent(alias)
+                                          ) ?? []),
+                                  ]
+                                : []),
                 ])
         ).filter(Boolean);
 
         const model =
-                safeDecodeURIComponent(primaryModelIdentifier) ||
+                safeDecodeURIComponent(endpointPrimaryModelIdentifier) ||
                 decodedAcceptedIdentifiers[0] ||
                 safeDecodeURIComponent(modelId) ||
                 "model_id_here";
@@ -774,7 +793,7 @@ console.log(response);`
 					Quickstart
 				</CardTitle>
 				<CardDescription>
-					Use any gateway-accepted identifier below when calling our API.
+					Use one of the accepted identifiers below for the selected endpoint.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">

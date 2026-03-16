@@ -77,6 +77,7 @@ function createTiming() {
 describe("doRequestWithIR pricing behavior in testing mode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		guardPricingFoundMock.mockResolvedValue({ ok: true });
 
 		guardAllFailedMock.mockResolvedValue({
 			ok: false,
@@ -386,7 +387,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(secondExecutor).toHaveBeenCalledTimes(1);
 	});
 
-	it("retries a transient single-provider upstream failure once", async () => {
+	it("does not retry transient single-provider upstream failures", async () => {
 		const pricingCard = {
 			provider: "openai",
 			model: "openai/gpt-image-1-mini",
@@ -413,18 +414,10 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 
 		const onlyExecutor = vi
 			.fn()
-			.mockResolvedValueOnce({
+			.mockResolvedValue({
 				kind: "completed",
 				ir: {},
 				upstream: new Response(JSON.stringify({ error: "temporary outage" }), { status: 503 }),
-				bill: { cost_cents: 0, currency: "USD" },
-				keySource: "gateway",
-				byokKeyId: null,
-			})
-			.mockResolvedValueOnce({
-				kind: "completed",
-				ir: { ok: true },
-				upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
 				bill: { cost_cents: 0, currency: "USD" },
 				keySource: "gateway",
 				byokKeyId: null,
@@ -439,9 +432,114 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			createTiming(),
 		);
 
-		expect((result as any).ok).toBe(true);
-		expect((result as any).result.provider).toBe("only");
-		expect(onlyExecutor).toHaveBeenCalledTimes(2);
-		expect(guardAllFailedMock).not.toHaveBeenCalled();
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(502);
+		expect(onlyExecutor).toHaveBeenCalledTimes(1);
+		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("fails immediately for single-provider upstream failures", async () => {
+		const pricingCard = {
+			provider: "openai",
+			model: "openai/gpt-image-1-mini",
+			endpoint: "image.generate",
+			currency: "USD",
+			rules: [],
+		};
+		const onlyCandidate = {
+			providerId: "only",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: [onlyCandidate],
+		});
+		rankProvidersMock.mockResolvedValue([
+			{ candidate: onlyCandidate, health: {} },
+		]);
+
+		const onlyExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {},
+			upstream: new Response(JSON.stringify({ error: "temporary outage" }), { status: 503 }),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		resolveProviderExecutorMock.mockImplementation((providerId: string) =>
+			providerId === "only" ? onlyExecutor : null,
+		);
+
+		const result = await doRequestWithIR(
+			createCtx({ testingMode: false }),
+			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
+			createTiming(),
+		);
+
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(502);
+		expect(onlyExecutor).toHaveBeenCalledTimes(1);
+		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("tries at most the top three providers when multiple candidates are available", async () => {
+		const pricingCard = {
+			provider: "openai",
+			model: "openai/gpt-image-1-mini",
+			endpoint: "image.generate",
+			currency: "USD",
+			rules: [],
+		};
+		const providers = ["first", "second", "third", "fourth"];
+		const candidates = providers.map((providerId) => ({
+			providerId,
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		}));
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: candidates,
+		});
+		rankProvidersMock.mockResolvedValue(
+			candidates.map((candidate) => ({ candidate, health: {} })),
+		);
+
+		const executors = Object.fromEntries(
+			providers.map((providerId) => [
+				providerId,
+				vi.fn().mockResolvedValue({
+					kind: "completed",
+					ir: {},
+					upstream: new Response(JSON.stringify({ error: `${providerId}_fail` }), { status: 503 }),
+					bill: { cost_cents: 0, currency: "USD" },
+					keySource: "gateway",
+					byokKeyId: null,
+				}),
+			]),
+		) as Record<string, ReturnType<typeof vi.fn>>;
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		const result = await doRequestWithIR(
+			createCtx({ testingMode: false }),
+			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
+			createTiming(),
+		);
+
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(502);
+		expect(executors.first).toHaveBeenCalledTimes(1);
+		expect(executors.second).toHaveBeenCalledTimes(1);
+		expect(executors.third).toHaveBeenCalledTimes(1);
+		expect(executors.fourth).not.toHaveBeenCalled();
+		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
 	});
 });

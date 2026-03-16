@@ -31,6 +31,12 @@ export default function ModelGateway({ metadata }: ModelGatewayProps) {
 						apiModelIds={metadata.apiModelIds}
 						primaryModelIdentifier={metadata.primaryModelIdentifier}
 						acceptedModelIdentifiers={metadata.acceptedModelIdentifiers}
+						primaryModelIdentifierByEndpoint={
+							metadata.primaryModelIdentifierByEndpoint
+						}
+						acceptedModelIdentifiersByEndpoint={
+							metadata.acceptedModelIdentifiersByEndpoint
+						}
 						endpoint={endpoint}
 						supportedEndpoints={supportedEndpoints}
 					/>

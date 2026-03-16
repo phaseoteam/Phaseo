@@ -164,7 +164,30 @@ export default function TeamSwitcher({
 									)}
 									onSelect={(e) => {
 										e.preventDefault();
-										if (isActive) return;
+										if (isActive) {
+											if (
+												typeof navigator === "undefined" ||
+												!navigator?.clipboard?.writeText
+											) {
+												toast.error("Clipboard is not available.", {
+													position: "bottom-right",
+												});
+												return;
+											}
+											void navigator.clipboard
+												.writeText(t.id)
+												.then(() => {
+													toast.success("Team UUID copied to clipboard.", {
+														position: "bottom-right",
+													});
+												})
+												.catch(() => {
+													toast.error("Failed to copy team UUID.", {
+														position: "bottom-right",
+													});
+												});
+											return;
+										}
 										const previous = activeTeamId;
 										setActiveTeamId(t.id);
 										toast.promise(SwapTeam(t.id), {

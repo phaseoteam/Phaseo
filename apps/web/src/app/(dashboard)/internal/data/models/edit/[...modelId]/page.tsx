@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { deleteModelAction } from "../../../actions";
 import ModelLegacyEditor from "./ModelLegacyEditor";
+import ModelRevalidationControls from "./ModelRevalidationControls";
 
 export default async function EditModelPage({
 	params,
@@ -42,6 +43,7 @@ export default async function EditModelPage({
 				initialTab={initialTab}
 				focusProviderId={focusProviderId}
 			/>
+			<ModelRevalidationControls modelId={modelId} />
 			<div className="flex">
 				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">
 					Back to models

@@ -1,0 +1,41 @@
+---
+title: "Tool Calling (AI SDK)"
+description: "Function/tool calling with Vercel AI SDK and AI Stats provider."
+---
+
+Use `tools` in `generateText` for function execution with typed parameters.
+
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { generateText } from "ai";
+import { z } from "zod";
+
+const result = await generateText({
+  model: aiStats("openai/gpt-5-nano"),
+  prompt: "What is 17 + 25? Use the calculator tool.",
+  tools: {
+    calculator: {
+      description: "Perform basic arithmetic",
+      parameters: z.object({
+        operation: z.enum(["add", "subtract", "multiply", "divide"]),
+        a: z.number(),
+        b: z.number(),
+      }),
+      execute: async ({ operation, a, b }) => {
+        if (operation === "add") return a + b;
+        if (operation === "subtract") return a - b;
+        if (operation === "multiply") return a * b;
+        return a / b;
+      },
+    },
+  },
+});
+
+console.log(result.text);
+```
+
+## Notes
+
+- Keep tool descriptions precise and parameters strict.
+- Validate external side effects inside `execute`.
+- Add retries/backoff for downstream tool APIs where needed.

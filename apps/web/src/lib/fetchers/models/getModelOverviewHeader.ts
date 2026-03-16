@@ -67,6 +67,8 @@ export default async function getModelOverviewHeader(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("data:models");
+	cacheTag(`model:data:${modelId}`);
 	cacheTag(`model:header:${modelId}`);
 
 	console.log("[cache] COMPUTE getModelOverviewHeader", modelId);

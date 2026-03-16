@@ -7,11 +7,13 @@ import getModelGatewayMetadata, {
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { Metadata } from "next";
 import {
-	getModelIdFromParams,
+	getModelPath,
+	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
+import { permanentRedirect } from "next/navigation";
 
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
@@ -34,10 +36,13 @@ export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const modelId = getModelIdFromParams(params);
 	const includeHidden = false;
+	const { canonicalModelId: modelId } = await resolveModelRouteIds(
+		params,
+		includeHidden,
+	);
 	const result = await fetchModel(modelId, includeHidden);
-	const path = `/models/${modelId}/gateway`;
+	const path = getModelPath(modelId, "quickstart");
 	const imagePath = `/og/models/${modelId}`;
 
 	if (!result) {
@@ -85,8 +90,15 @@ export default async function Page({
 	params: Promise<ModelRouteParams>;
 }) {
 	const routeParams = await params;
-	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const { requestedModelId, canonicalModelId } = await resolveModelRouteIds(
+		routeParams,
+		includeHidden,
+	);
+	if (canonicalModelId !== requestedModelId) {
+		permanentRedirect(getModelPath(canonicalModelId, "quickstart"));
+	}
+	const modelId = canonicalModelId;
 	const model = await fetchModel(modelId, includeHidden);
 
 	if (!model) {

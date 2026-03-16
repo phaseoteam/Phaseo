@@ -11,7 +11,7 @@ import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleSuccessAudit } from "./audit";
 import { recordUsageAndChargeOnce } from "./charge";
-import { shapeUsageForClient } from "../usage";
+import { shapeUsageForClient, stripUsagePricing } from "../usage";
 import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
 import { onCallEnd, reportProbeResult, maybeOpenOnRecentErrors } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
@@ -54,11 +54,24 @@ export async function handleStreamResponse(
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
     let cachedFinishReason: string | null = null;
+    let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
     const streamedToolCallKeys = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
     const requestedToolResultCount = countRequestedToolResults(ctx.body);
     let cachedOutputToolCallCount: number | null = null;
+    const withProviderHint = (usage: any) => {
+        if (!usage || typeof usage !== "object") return usage;
+        return {
+            ...usage,
+            _provider_id: result.provider,
+        };
+    };
+    const shapeStreamUsageForClient = (usage: any) =>
+        shapeUsageForClient(withProviderHint(usage), {
+            endpoint: ctx.endpoint,
+            body: ctx.body,
+        });
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
@@ -127,10 +140,7 @@ export async function handleStreamResponse(
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
                     next.usage = normalizeAnthropicUsage(next.usage);
                 } else if (card) {
-                    const shapedUsage = shapeUsageForClient(next.usage, {
-                        endpoint: ctx.endpoint,
-                        body: ctx.body,
-                    });
+                    const shapedUsage = shapeStreamUsageForClient(next.usage);
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const { pricedUsage } = calculatePricing(
                         shapedUsage,
@@ -146,13 +156,12 @@ export async function handleStreamResponse(
                             pricing: (pricedUsage as any)?.pricing ?? null,
                         });
                     }
-                    next.usage = presentUsageForClient(pricedUsage, { endpoint: ctx.endpoint });
+                    next.usage = presentUsageForClient(withProviderHint(pricedUsage), {
+                        endpoint: ctx.endpoint,
+                    });
                 } else {
                     next.usage = presentUsageForClient(
-                        shapeUsageForClient(next.usage, {
-                            endpoint: ctx.endpoint,
-                            body: ctx.body,
-                        }),
+                        shapeStreamUsageForClient(next.usage),
                         { endpoint: ctx.endpoint }
                     );
                 }
@@ -168,10 +177,7 @@ export async function handleStreamResponse(
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
                     next.response.usage = normalizeAnthropicUsage(next.response.usage);
                 } else if (card) {
-                    const shapedUsage = shapeUsageForClient(next.response.usage, {
-                        endpoint: ctx.endpoint,
-                        body: ctx.body,
-                    });
+                    const shapedUsage = shapeStreamUsageForClient(next.response.usage);
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const { pricedUsage } = calculatePricing(
                         shapedUsage,
@@ -187,13 +193,12 @@ export async function handleStreamResponse(
                             pricing: (pricedUsage as any)?.pricing ?? null,
                         });
                     }
-                    next.response.usage = presentUsageForClient(pricedUsage, { endpoint: ctx.endpoint });
+                    next.response.usage = presentUsageForClient(withProviderHint(pricedUsage), {
+                        endpoint: ctx.endpoint,
+                    });
                 } else {
                     next.response.usage = presentUsageForClient(
-                        shapeUsageForClient(next.response.usage, {
-                            endpoint: ctx.endpoint,
-                            body: ctx.body,
-                        }),
+                        shapeStreamUsageForClient(next.response.usage),
                         { endpoint: ctx.endpoint }
                     );
                 }
@@ -241,6 +246,11 @@ export async function handleStreamResponse(
                     next.upstream_request = result.mappedRequest;
                 }
             }
+            if (next.usage) {
+                latestStreamUsageRaw = stripUsagePricing(next.usage);
+            } else if (next.response?.usage) {
+                latestStreamUsageRaw = stripUsagePricing(next.response.usage);
+            }
             return next;
         },
         onStreamEvent,
@@ -261,8 +271,29 @@ export async function handleStreamResponse(
             }
         },
         onFinalUsage: async (usageRaw: any, info) => {
-            const releaseRuntime = ensureRuntimeForBackground();
+            let releaseRuntime: () => void = () => { };
             try {
+                releaseRuntime = ensureRuntimeForBackground();
+            } catch (error) {
+                console.error("[gateway] failed to initialize runtime for stream finalization", {
+                    requestId: ctx.requestId,
+                    endpoint: ctx.endpoint,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+            try {
+            const effectiveUsageRaw = usageRaw ?? latestStreamUsageRaw ?? stripUsagePricing(result.bill.usage);
+            const hasTextRequestFallbackEndpoint =
+                ctx.endpoint === "chat.completions" ||
+                ctx.endpoint === "responses" ||
+                ctx.endpoint === "messages";
+            const usageForShaping =
+                effectiveUsageRaw ??
+                (hasTextRequestFallbackEndpoint ? { requests: 1 } : null);
+            if (info?.aborted && !cachedFinishReason) {
+                cachedFinishReason = "cancel";
+                result.bill.finish_reason = "cancel";
+            }
             const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
             const maybeWriteStickyForUsage = async (usageForSticky: any) => {
                 if (!usageForSticky) return;
@@ -290,12 +321,12 @@ export async function handleStreamResponse(
                     requestId: ctx.requestId,
                     endpoint: ctx.endpoint,
                     provider: result.provider,
-                    usage: usageRaw,
+                    usage: effectiveUsageRaw,
                 });
             }
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = attachToolUsageMetrics(
-                shapeUsageForClient(usageRaw, { endpoint: ctx.endpoint, body: ctx.body }),
+                shapeStreamUsageForClient(usageForShaping),
                 {
                     request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
                     output_tool_call_count: cachedOutputToolCallCount,
@@ -335,35 +366,69 @@ export async function handleStreamResponse(
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
                 if (!bill) return false;
-                const usageWithToolMetrics = attachToolUsageMetrics(
-                    bill.usage ?? shapedUsage ?? result.bill.usage,
-                    {
-                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                        output_tool_call_count: cachedOutputToolCallCount,
-                    }
+                const toolUsage = {
+                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                    request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+                    output_tool_call_count: cachedOutputToolCallCount,
+                };
+                const usageFromBill = stripUsagePricing(bill.usage);
+                let usageWithToolMetrics = attachToolUsageMetrics(
+                    usageFromBill ?? shapedUsage ?? stripUsagePricing(result.bill.usage),
+                    toolUsage
                 );
-                const totalNanosOverride =
-                    bill.usage?.pricing?.total_nanos ??
-                    Math.round(bill.cost_cents * 1e7);
+                let totalCentsOverride = Number(
+                    bill.usage?.pricing?.total_cents ?? bill.cost_cents ?? 0
+                );
+                let totalNanosOverride = Number(
+                    bill.usage?.pricing?.total_nanos ?? Math.round(totalCentsOverride * 1e7)
+                );
+                let currencyHint = bill.currency ?? card?.currency ?? "USD";
+
+                // Stream finalizers can return either raw or pre-priced usage.
+                // Re-price from usage meters at the after-stage so billing stays
+                // usage-first and provider-consistent.
+                const usageHasMeters =
+                    usageWithToolMetrics &&
+                    typeof usageWithToolMetrics === "object" &&
+                    Object.values(usageWithToolMetrics).some(
+                        (value) => typeof value === "number" && Number.isFinite(value) && value >= 0
+                    );
+                if (card && usageHasMeters) {
+                    const tier = ctx.teamEnrichment?.tier ?? 'basic';
+                    const repriced = calculatePricing(
+                        shapeStreamUsageForClient(usageWithToolMetrics),
+                        card,
+                        ctx.body,
+                        tier
+                    );
+                    usageWithToolMetrics = attachToolUsageMetrics(repriced.pricedUsage, toolUsage);
+                    totalCentsOverride = repriced.totalCents;
+                    totalNanosOverride = repriced.totalNanos;
+                    currencyHint = repriced.currency ?? currencyHint;
+                }
+
                 const pricedWithByok = await applyByokServiceFee({
                     teamId: ctx.teamId,
                     isByok,
                     baseCostNanos: totalNanosOverride,
                     pricedUsage: usageWithToolMetrics,
-                    currencyHint: bill.currency ?? card?.currency ?? "USD",
+                    currencyHint,
                 });
                 result.bill.cost_cents = pricedWithByok.totalCents;
                 result.bill.currency = pricedWithByok.currency;
                 result.bill.usage = pricedWithByok.pricedUsage;
-                result.bill.finish_reason = bill.finish_reason ?? result.bill.finish_reason;
+                result.bill.finish_reason = bill.finish_reason ?? cachedFinishReason ?? result.bill.finish_reason;
                 await maybeWriteStickyForUsage(result.bill.usage);
 
                 // Normalize finish reason for consistent storage
                 const normalizedFinishReason = normalizeFinishReason(
-                    bill.finish_reason ?? null,
+                    bill.finish_reason ?? cachedFinishReason ?? null,
                     result.provider
                 );
+                if (normalizedFinishReason) {
+                    cachedFinishReason = normalizedFinishReason;
+                    result.bill.finish_reason = normalizedFinishReason;
+                }
 
                 await handleSuccessAudit(
                     ctx,
@@ -387,7 +452,7 @@ export async function handleStreamResponse(
                 return true;
             };
 
-            if (!usageRaw) {
+            if (!effectiveUsageRaw) {
                 const usageWithToolMetrics = attachToolUsageMetrics(null, {
                     request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
                     request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
@@ -395,11 +460,19 @@ export async function handleStreamResponse(
                 });
                 const finalized = result.usageFinalizer ? await result.usageFinalizer() : null;
                 if (await finalizeFromBill(finalized)) return;
+                const fallbackUsageWithToolMetrics = attachToolUsageMetrics(
+                    shapeStreamUsageForClient(usageForShaping),
+                    {
+                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+                        output_tool_call_count: cachedOutputToolCallCount,
+                    }
+                );
                 const pricedWithByok = await applyByokServiceFee({
                     teamId: ctx.teamId,
                     isByok,
                     baseCostNanos: 0,
-                    pricedUsage: usageWithToolMetrics,
+                    pricedUsage: fallbackUsageWithToolMetrics ?? usageWithToolMetrics,
                     currencyHint: result.bill.currency ?? card?.currency ?? "USD",
                 });
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);

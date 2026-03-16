@@ -53,7 +53,7 @@ describe("azure config", () => {
 				"https://ai-stats-resource.cognitiveservices.azure.com",
 		} as any);
 
-		expect(resolveAzureConfig().apiVersion).toBe("2024-02-15-preview");
+		expect(resolveAzureConfig().apiVersion).toBe("2024-10-21");
 	});
 
 	it("uses provider_model_slug before model id for deployment name", () => {

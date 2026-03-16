@@ -748,31 +748,109 @@ export type CreateEmbeddingParams = {
       trace_level?: "summary" | "full";
     };
     dimensions?: number;
-    embedding_options?: {
-      google?: {
-        output_dimensionality?: number;
-        task_type?:
-          | "TASK_TYPE_UNSPECIFIED"
-          | "RETRIEVAL_QUERY"
-          | "RETRIEVAL_DOCUMENT"
-          | "SEMANTIC_SIMILARITY"
-          | "CLASSIFICATION";
-        title?: string;
-      };
-      mistral?: {
-        output_dimension?: number | null;
-        output_dtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
-      };
-    };
-    encoding_format?: string;
-    input?: string | string[];
-    inputs?: string | string[];
-    model?: string;
+    encoding_format?: "float" | "base64";
+    input:
+      | string
+      | number[]
+      | {
+          content:
+            | {
+                text: string;
+                type: "text" | "input_text";
+              }
+            | {
+                image_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                type: "image_url" | "input_image" | "image";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }
+            | {
+                input_audio: {
+                  data?: string;
+                  format?: string;
+                  url?: string;
+                };
+                type: "input_audio";
+              }
+            | {
+                type: "input_video" | "video_url";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                video_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }[];
+        }
+      | string
+      | number[]
+      | {
+          content:
+            | {
+                text: string;
+                type: "text" | "input_text";
+              }
+            | {
+                image_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                type: "image_url" | "input_image" | "image";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }
+            | {
+                input_audio: {
+                  data?: string;
+                  format?: string;
+                  url?: string;
+                };
+                type: "input_audio";
+              }
+            | {
+                type: "input_video" | "video_url";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                video_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }[];
+        }[];
+    model: string;
     provider?: {
       ignore?: string[];
       include_alpha?: boolean;
       only?: string[];
       order?: string[];
+    };
+    provider_options?: {
+      google?: {
+        task_type?: string;
+        title?: string;
+      };
+      mistral?: {
+        output_dtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
+      };
     };
     user?: string;
   };
@@ -2875,6 +2953,8 @@ export async function invalidateGatewayKeyCache(
 export type ListDataModelsParams = {
   path?: Record<string, never>;
   query?: {
+    feed?: "json" | "rss" | "atom";
+    format?: "json" | "rss" | "atom";
     include_hidden?: boolean;
     limit?: number;
     offset?: number;
@@ -4828,6 +4908,8 @@ export type ListModelsParams = {
   path?: Record<string, never>;
   query?: {
     endpoints?: string[];
+    feed?: "json" | "rss" | "atom";
+    format?: "json" | "rss" | "atom";
     input_types?: string[];
     limit?: number;
     offset?: number;

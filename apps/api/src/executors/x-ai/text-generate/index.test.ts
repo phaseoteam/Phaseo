@@ -4,7 +4,6 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { executor } from "./index";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
-import { computeBill } from "@pipeline/pricing/engine";
 
 function buildArgs(overrides?: Partial<IRChatRequest>): ExecutorExecuteArgs {
 	const ir: IRChatRequest = {
@@ -111,7 +110,7 @@ describe("x-ai text executor", () => {
 		expect(mock.calls).toHaveLength(1);
 	});
 
-	it("prices cached input as subset (no double count)", async () => {
+	it("normalizes usage with cached input as subset (no double count)", async () => {
 		const card = {
 			provider: "x-ai",
 			model: "x-ai/grok-4-0709",
@@ -186,7 +185,10 @@ describe("x-ai text executor", () => {
 
 		expect(result.kind).toBe("completed");
 		if (result.kind !== "completed") return;
-		const priced = result.bill.usage ?? computeBill({}, card);
-		expect(priced.pricing.total_usd_str).toBe("0.0001788");
+		expect(result.bill.usage).toMatchObject({
+			input_text_tokens: 59,
+			cached_read_text_tokens: 64,
+			output_text_tokens: 8,
+		});
 	});
 });

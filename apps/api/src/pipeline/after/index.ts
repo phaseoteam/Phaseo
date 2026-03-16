@@ -242,7 +242,16 @@ async function handleNonStreamResponse(
     const payload = await ctx.timer.span("after_enrich_payload", () => enrichSuccessPayload(ctx, result));
     const usageFromPayload = payload?.usage ?? null;
     const usageFromBill = result.bill?.usage ?? null;
-    const usageNormalized = usageFromBill ?? usageFromPayload ?? {};
+    const payloadUsageObject =
+        usageFromPayload && typeof usageFromPayload === "object" ? usageFromPayload : null;
+    const billUsageObject =
+        usageFromBill && typeof usageFromBill === "object" ? usageFromBill : null;
+    // Keep payload usage authoritative for overlapping fields, but preserve
+    // bill-only meters (for providers that meter requests/non-token dimensions).
+    const usageNormalized = {
+        ...(billUsageObject ?? {}),
+        ...(payloadUsageObject ?? {}),
+    };
     const toolUsage = summarizeToolUsage({
         body: ctx.body,
         ir: result.ir,

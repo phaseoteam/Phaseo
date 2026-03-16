@@ -643,6 +643,13 @@ public sealed class Embedding
 
 }
 
+public sealed class EmbeddingsMultimodalInput
+{
+	[JsonPropertyName("content")]
+	public List<object> Content { get; set; }
+
+}
+
 public sealed class EmbeddingsRequest
 {
 	[JsonPropertyName("debug")]
@@ -651,23 +658,20 @@ public sealed class EmbeddingsRequest
 	[JsonPropertyName("dimensions")]
 	public int? Dimensions { get; set; }
 
-	[JsonPropertyName("embedding_options")]
-	public Dictionary<string, object>? EmbeddingOptions { get; set; }
-
 	[JsonPropertyName("encoding_format")]
 	public string? EncodingFormat { get; set; }
 
 	[JsonPropertyName("input")]
-	public object? Input { get; set; }
-
-	[JsonPropertyName("inputs")]
-	public object? Inputs { get; set; }
+	public object Input { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("user")]
 	public string? User { get; set; }

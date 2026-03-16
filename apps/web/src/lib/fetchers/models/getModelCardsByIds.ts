@@ -14,6 +14,8 @@ const MODEL_SELECT = `
     hidden,
     release_date,
     announcement_date,
+    input_types,
+    output_types,
     organisation: data_organisations (name, colour)
 `;
 

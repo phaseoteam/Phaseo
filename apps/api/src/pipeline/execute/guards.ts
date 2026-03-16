@@ -107,11 +107,20 @@ export async function guardAllFailed(
     const routingDiagnostics = (ctx as any)?.routingDiagnostics ?? null;
     const providerEnablement = (ctx as any)?.providerEnablementDiagnostics ?? null;
     const candidateBuild = (ctx as any)?.providerCandidateBuildDiagnostics ?? null;
+    const hasUpstreamPaymentRequired = failedStatuses.includes(402);
+    const paymentRequiredProvider = hasUpstreamPaymentRequired
+        ? (attemptErrors.find((entry) => Number(entry?.status ?? NaN) === 402)?.provider ?? null)
+        : null;
+    const paymentRequiredDescription = hasUpstreamPaymentRequired
+        ? `Oops, we forgot to pay our provider bills${typeof paymentRequiredProvider === "string" ? ` (${paymentRequiredProvider})` : ""}. Please let us know on GitHub or Discord if you see this error.`
+        : "All provider candidates failed. Inspect failure_sample for upstream diagnostics.";
 
     captureTimingSnapshot(ctx, timing);
-    const res = err("upstream_error", {
-        reason: "all_candidates_failed",
-        description: "All provider candidates failed. Inspect failure_sample for upstream diagnostics.",
+    const res = err(hasUpstreamPaymentRequired ? "provider_payment_required" : "upstream_error", {
+        reason: hasUpstreamPaymentRequired
+            ? "upstream_provider_payment_required"
+            : "all_candidates_failed",
+        description: paymentRequiredDescription,
         model: ctx.model,
         endpoint: ctx.endpoint,
         request_id: ctx.requestId,
@@ -119,6 +128,11 @@ export async function guardAllFailed(
         failed_providers: failedProviders.length ? failedProviders : null,
         failed_statuses: failedStatuses.length ? failedStatuses : null,
         failure_sample: failureSample.length ? failureSample : null,
+        provider_payment_required_provider:
+            typeof paymentRequiredProvider === "string" ? paymentRequiredProvider : null,
+        provider_payment_required_support_notice: hasUpstreamPaymentRequired
+            ? "Please let us know on GitHub or Discord if you see this error."
+            : null,
         routing_diagnostics: routingDiagnostics,
         provider_enablement: providerEnablement,
         provider_candidate_diagnostics: candidateBuild,

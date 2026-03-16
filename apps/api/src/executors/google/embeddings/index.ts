@@ -2,15 +2,27 @@
 // Why: Isolates provider-specific behavior per capability.
 // How: Maps IR embeddings to Google AI Studio embeddings and normalizes usage.
 
-import type { IREmbeddingsRequest, IREmbeddingsResponse } from "@core/ir";
+import type {
+	IREmbeddingsContentPart,
+	IREmbeddingsInput,
+	IREmbeddingsInputItem,
+	IREmbeddingsRequest,
+	IREmbeddingsResponse,
+} from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
-import { computeBill } from "@pipeline/pricing/engine";
 import { getBindings } from "@/runtime/env";
 import { normalizeGoogleUsage } from "@providers/google-ai-studio/usage";
 import { resolveProviderKey } from "@providers/keys";
 import type { ProviderExecutor } from "../../types";
+import { irPartToGeminiPart } from "../shared/media";
+import { resolveGoogleModelCandidates } from "../shared/model";
 
 const BASE_URL = "https://generativelanguage.googleapis.com";
+
+type GeminiEmbeddingContent = {
+	role: "user";
+	parts: Array<Record<string, any>>;
+};
 
 function baseHeaders() {
 	return {
@@ -18,15 +30,52 @@ function baseHeaders() {
 	};
 }
 
-function normalizeEmbeddingInput(input: string) {
-	return {
-		role: "user" as const,
-		parts: [{ text: input }],
-	};
+function isTokenArray(value: unknown): value is number[] {
+	return Array.isArray(value) && value.every((entry) => typeof entry === "number" && Number.isFinite(entry));
 }
 
-function coerceInput(value: string): string {
-	return typeof value === "string" ? value : String(value);
+function isEmbeddingsContentParts(value: unknown): value is IREmbeddingsContentPart[] {
+	return (
+		Array.isArray(value) &&
+		value.length > 0 &&
+		value.every((entry) => entry && typeof entry === "object" && typeof (entry as any).type === "string")
+	);
+}
+
+function normalizeEmbeddingsInputItems(input: IREmbeddingsInput): IREmbeddingsInputItem[] {
+	if (isTokenArray(input)) return [input];
+	if (!Array.isArray(input)) return [input];
+	if (input.length === 0) return [""];
+	if (isEmbeddingsContentParts(input)) return [input];
+	return input as IREmbeddingsInputItem[];
+}
+
+function tokenArrayToText(tokens: number[]): string {
+	return tokens.map((token) => Math.trunc(token)).join(" ");
+}
+
+async function normalizeEmbeddingInput(item: IREmbeddingsInputItem): Promise<GeminiEmbeddingContent> {
+	if (typeof item === "string") {
+		return {
+			role: "user",
+			parts: [{ text: item }],
+		};
+	}
+
+	if (isTokenArray(item)) {
+		return {
+			role: "user",
+			parts: [{ text: tokenArrayToText(item) }],
+		};
+	}
+
+	const parts = await Promise.all(
+		(item as IREmbeddingsContentPart[]).map((part) => irPartToGeminiPart(part)),
+	);
+	return {
+		role: "user",
+		parts: parts.length > 0 ? parts : [{ text: "" }],
+	};
 }
 
 function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
@@ -39,7 +88,6 @@ function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
 		}
 	};
 
-	mergeUsage(normalizeGoogleUsage(json?.usageMetadata));
 	const usageEntries: any[] = [];
 	if (json?.usageMetadata) usageEntries.push(json.usageMetadata);
 	if (Array.isArray(json?.embeddings)) {
@@ -89,8 +137,7 @@ function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
 		: usage;
 }
 
-async function fetchTokenCount(key: string, modelForUrl: string, inputs: string[]) {
-	const contents = inputs.map((input) => normalizeEmbeddingInput(coerceInput(input)));
+async function fetchTokenCount(key: string, modelForUrl: string, contents: GeminiEmbeddingContent[]) {
 	const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
 		method: "POST",
 		headers: baseHeaders(),
@@ -108,6 +155,11 @@ async function fetchTokenCount(key: string, modelForUrl: string, inputs: string[
 	return total;
 }
 
+function pickUsageNumber(usage: Record<string, number> | undefined, key: string): number | undefined {
+	const value = usage?.[key];
+	return typeof value === "number" ? value : undefined;
+}
+
 function mapGoogleToIr(json: any, model: string, usageOverride?: Record<string, number>): IREmbeddingsResponse {
 	const entries = Array.isArray(json?.embeddings)
 		? json.embeddings
@@ -121,9 +173,25 @@ function mapGoogleToIr(json: any, model: string, usageOverride?: Record<string, 
 	}));
 
 	const usage = usageOverride ?? extractEmbeddingUsage(json);
-	const inputTokens = usage?.input_text_tokens ?? usage?.input_tokens ?? usage?.embedding_tokens;
-	const totalTokens = usage?.total_tokens ?? inputTokens;
-	const embeddingTokens = usage?.embedding_tokens ?? inputTokens;
+	const derivedInputTokens = [
+		pickUsageNumber(usage, "input_text_tokens"),
+		pickUsageNumber(usage, "input_image_tokens"),
+		pickUsageNumber(usage, "input_audio_tokens"),
+		pickUsageNumber(usage, "input_video_tokens"),
+	].reduce((total, value) => total + (value ?? 0), 0);
+
+	const inputTokens =
+		pickUsageNumber(usage, "input_tokens") ??
+		(derivedInputTokens > 0 ? derivedInputTokens : undefined) ??
+		pickUsageNumber(usage, "embedding_tokens");
+	const totalTokens = pickUsageNumber(usage, "total_tokens") ?? inputTokens;
+	const embeddingTokens = pickUsageNumber(usage, "embedding_tokens") ?? inputTokens;
+
+	const ext = {
+		inputImageTokens: pickUsageNumber(usage, "input_image_tokens"),
+		inputAudioTokens: pickUsageNumber(usage, "input_audio_tokens"),
+		inputVideoTokens: pickUsageNumber(usage, "input_video_tokens"),
+	};
 
 	return {
 		object: "list",
@@ -134,6 +202,9 @@ function mapGoogleToIr(json: any, model: string, usageOverride?: Record<string, 
 				inputTokens: typeof inputTokens === "number" ? inputTokens : undefined,
 				totalTokens: typeof totalTokens === "number" ? totalTokens : undefined,
 				embeddingTokens: typeof embeddingTokens === "number" ? embeddingTokens : undefined,
+				_ext: Object.values(ext).some((value) => typeof value === "number")
+					? ext
+					: undefined,
 			}
 			: undefined,
 		rawResponse: json ?? null,
@@ -145,26 +216,31 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const keyInfo = resolveProviderKey(args as any, () => getBindings().GOOGLE_AI_STUDIO_API_KEY);
 	const key = keyInfo.key;
 
-	const modelForUrl = args.providerModelSlug || ir.model;
-	const inputs = Array.isArray(ir.input) ? ir.input : [ir.input];
-	const isBatch = Array.isArray(ir.input);
-	const googleOptions = ir.embeddingOptions?.google;
-	const outputDimensionality = googleOptions?.outputDimensionality ?? ir.dimensions;
+	const requestedModel = args.providerModelSlug || ir.model;
+	const modelForUrl = resolveGoogleModelCandidates(requestedModel)[0] || requestedModel;
+	const inputItems = normalizeEmbeddingsInputItems(ir.input);
+	const contents = await Promise.all(inputItems.map((item) => normalizeEmbeddingInput(item)));
+	const isBatch = inputItems.length > 1;
+	const googleOptions = ir.providerOptions?.google;
+	const outputDimensionality = ir.dimensions;
 	const taskType = googleOptions?.taskType;
 	const title = googleOptions?.title;
 	const requestModel = `models/${modelForUrl}`;
 	const payload = isBatch
 		? {
-			requests: inputs.map((input) => ({
+			requests: contents.map((content) => ({
 				model: requestModel,
-				content: normalizeEmbeddingInput(coerceInput(input)),
+				content,
 				...(taskType ? { taskType } : {}),
 				...(title ? { title } : {}),
 				...(typeof outputDimensionality === "number" ? { outputDimensionality } : {}),
 			})),
 		}
 		: {
-			content: normalizeEmbeddingInput(coerceInput(inputs[0])),
+			content: contents[0] ?? {
+				role: "user",
+				parts: [{ text: "" }],
+			},
 			...(taskType ? { taskType } : {}),
 			...(title ? { title } : {}),
 			...(typeof outputDimensionality === "number" ? { outputDimensionality } : {}),
@@ -183,7 +259,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let usage = json ? extractEmbeddingUsage(json) : undefined;
 	if (!usage) {
-		const totalTokens = await fetchTokenCount(key, modelForUrl, inputs);
+		const totalTokens = await fetchTokenCount(key, modelForUrl, contents);
 		if (typeof totalTokens === "number" && totalTokens > 0) {
 			usage = {
 				embedding_tokens: totalTokens,
@@ -209,12 +285,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		finish_reason: null,
 	};
 
-	if (usage) {
-		const priced = computeBill(usage, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
-	}
+	bill.usage = {
+		requests: 1,
+		...(usage ?? {}),
+	};
 
 	return {
 		kind: "completed",
@@ -229,4 +303,3 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 }
 
 export const executor: ProviderExecutor = async (args: ExecutorExecuteArgs) => execute(args);
-

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import {
   ANALYTICS_CONSENT_EVENT,
   ANALYTICS_CONSENT_STORAGE_KEY,
-  ANALYTICS_CONSENT_COOKIE_NAME,
   type AnalyticsConsent,
   parseAnalyticsConsent,
   persistAnalyticsConsent,
@@ -57,11 +56,16 @@ function applyGaConsent(consent: AnalyticsConsent, gaMeasurementId?: string) {
 export function CookieConsentManager({
   gaMeasurementId,
 }: CookieConsentManagerProps) {
-  const [consent, setConsent] = useState<AnalyticsConsent | null | "pending">("pending")
+  const [consent, setConsent] = useState<AnalyticsConsent | null | "pending">(() => {
+    if (typeof window === "undefined") return "pending"
+    return readAnalyticsConsent()
+  })
+  const shouldLoadGa = Boolean(gaMeasurementId && consent === "accepted")
 
   useEffect(() => {
+    if (consent !== "pending") return
     setConsent(readAnalyticsConsent())
-  }, [])
+  }, [consent])
 
   useEffect(() => {
     if (consent === "pending") return
@@ -99,70 +103,42 @@ export function CookieConsentManager({
 
   return (
     <>
-      {gaMeasurementId ? (
+      {shouldLoadGa ? (
         <>
           <Script
             id="google-analytics-loader"
             src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
-            strategy="afterInteractive"
+            strategy="lazyOnload"
           />
-          <Script id="google-analytics-init" strategy="afterInteractive">{`
+          <Script id="google-analytics-init" strategy="lazyOnload">{`
             window.dataLayer = window.dataLayer || [];
             function gtag(){window.dataLayer.push(arguments);}
             window.gtag = window.gtag || gtag;
             gtag('js', new Date());
-            gtag('consent', 'default', ${JSON.stringify(GA_DENIED_CONSENT)});
-            (function() {
-              var consent = null;
-              try {
-                consent = window.localStorage.getItem('${ANALYTICS_CONSENT_STORAGE_KEY}');
-              } catch {}
-              if (!consent) {
-                var key = '${ANALYTICS_CONSENT_COOKIE_NAME}=';
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                  var cookie = cookies[i].trim();
-                  if (cookie.indexOf(key) === 0) {
-                    consent = cookie.slice(key.length);
-                    break;
-                  }
-                }
-              }
-              gtag(
-                'consent',
-                'update',
-                consent === 'accepted'
-                  ? ${JSON.stringify(GA_GRANTED_CONSENT)}
-                  : ${JSON.stringify(GA_DENIED_CONSENT)}
-              );
-            })();
+            gtag('consent', 'default', ${JSON.stringify(GA_GRANTED_CONSENT)});
             gtag('config', '${gaMeasurementId}', { anonymize_ip: true });
           `}</Script>
         </>
       ) : null}
 
       {consent === null ? (
-        <div className="fixed bottom-4 left-4 right-4 z-[100] sm:left-auto sm:right-4 sm:w-[396px] sm:max-w-[calc(100vw-2rem)] rounded-lg border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="fixed bottom-3 left-1/2 z-[100] w-[min(14rem,calc(100vw-1rem))] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg sm:bottom-4 sm:left-auto sm:right-4 sm:w-[320px] sm:max-w-[calc(100vw-2rem)] sm:translate-x-0 dark:border-zinc-800 dark:bg-zinc-950">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
             Cookie Preferences
           </p>
-          <p className="mt-1.5 text-xs text-zinc-700 dark:text-zinc-300">
-            We collect anonymous analytics to improve AI Stats. Accept for
-            enhanced features like session replay.
-          </p>
-          <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Basic anonymous pageviews are always collected. Learn more in our{" "}
+          <p className="mt-1 text-[10px] leading-relaxed text-zinc-600 dark:text-zinc-300">
+            Manage analytics cookies. See our{" "}
             <Link className="underline" href="/privacy">
               Privacy Policy
             </Link>
             .
           </p>
-          <div className="mt-3 flex items-center gap-2">
-            <Button className="h-9 flex-1 px-3 text-xs" onClick={() => updateConsent("accepted")}>
+          <div className="mt-2.5 flex items-center gap-2">
+            <Button className="h-8 flex-1 px-2.5 text-xs" onClick={() => updateConsent("accepted")}>
               Accept
             </Button>
             <Button
-              className="h-9 flex-1 px-3 text-xs"
+              className="h-8 flex-1 px-2.5 text-xs"
               onClick={() => updateConsent("denied")}
               variant="outline"
             >

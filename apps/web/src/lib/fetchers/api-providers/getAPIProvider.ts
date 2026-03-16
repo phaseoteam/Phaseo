@@ -648,6 +648,9 @@ export async function getAPIProviderModelsListByAddedCached(
 
 	cacheLife("days");
 	cacheTag("data:api_providers");
+	cacheTag("data:data_api_provider_models");
+	cacheTag("data:data_api_pricing_rules");
+	cacheTag("data:models");
 
 	return getAPIProviderModelsListByAdded(apiProviderId, includeHidden);
 }

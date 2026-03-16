@@ -4,7 +4,6 @@
 
 import type { IRModerationsRequest, IRModerationsResponse, IRModerationsResult } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
-import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import type { ProviderExecutor } from "../../types";
 
@@ -32,7 +31,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const res = await fetch(openAICompatUrl(args.providerId, "/moderations"), {
 		method: "POST",
-		headers: openAICompatHeaders(args.providerId, key),
+		headers: openAICompatHeaders(args.providerId, key, {
+			"Idempotency-Key": args.requestId,
+		}),
 		body: JSON.stringify(requestBody),
 	});
 
@@ -55,15 +56,18 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	ir.rawRequest = requestBody;
 
-	const usageMeters = responseIr.usage
-		? {
-			input_tokens: responseIr.usage.inputTokens ?? 0,
-			input_text_tokens: responseIr.usage.inputTokens ?? 0,
-			output_tokens: responseIr.usage.outputTokens ?? 0,
-			output_text_tokens: responseIr.usage.outputTokens ?? 0,
-			total_tokens: responseIr.usage.totalTokens ?? 0,
-		}
-		: undefined;
+	const usageMeters: Record<string, number> = {
+		requests: 1,
+		...(responseIr.usage
+			? {
+				input_tokens: responseIr.usage.inputTokens ?? 0,
+				input_text_tokens: responseIr.usage.inputTokens ?? 0,
+				output_tokens: responseIr.usage.outputTokens ?? 0,
+				output_text_tokens: responseIr.usage.outputTokens ?? 0,
+				total_tokens: responseIr.usage.totalTokens ?? 0,
+			}
+			: {}),
+	};
 
 	const bill = {
 		cost_cents: 0,
@@ -73,12 +77,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		finish_reason: null,
 	};
 
-	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
-	}
+	bill.usage = usageMeters;
 
 	return {
 		kind: "completed",

@@ -9,6 +9,7 @@ type ProviderModelRow = {
     provider_api_model_id: string | null;
     provider_id: string | null;
     api_model_id: string | null;
+    model_id: string | null;
     internal_model_id: string | null;
     provider_model_slug?: string | null;
     is_active_gateway: boolean | null;
@@ -209,6 +210,16 @@ function normalizeStringSet(values?: string[]): string[] | undefined {
     return normalized.length ? normalized : undefined;
 }
 
+function chunkArray<T>(values: T[], size: number): T[][] {
+    if (!values.length) return [];
+    const chunkSize = Math.max(1, Math.floor(size));
+    const chunks: T[][] = [];
+    for (let i = 0; i < values.length; i += chunkSize) {
+        chunks.push(values.slice(i, i + chunkSize));
+    }
+    return chunks;
+}
+
 function parseModelKey(value?: string | null): { providerId: string; apiModelId: string; capabilityId: string } | null {
     if (!value) return null;
     const parts = value.split(":");
@@ -282,7 +293,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         .eq("hidden", false);
     const { data: modelRows, error: modelError } = await modelQuery;
     if (modelError) {
-        throw new Error(modelError.message || "Failed to load model metadata");
+        throw new Error(`Failed to load model metadata: ${modelError.message || "unknown error"}`);
     }
 
     const baseModels = new Map<
@@ -330,59 +341,87 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         return [];
     }
 
-    const { data: providerRows, error: providerError } = await supabase
-        .from("data_api_provider_models")
-        .select(
-            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
-        )
-        .in("internal_model_id", modelIds);
+    const providerRows: ProviderModelRow[] = [];
+    for (const modelIdChunk of chunkArray(modelIds, 200)) {
+        const { data, error: providerError } = await supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+            )
+            .in("model_id", modelIdChunk);
 
-    if (providerError) {
-        throw new Error(providerError.message || "Failed to load provider models");
+        if (providerError) {
+            throw new Error(`Failed to load provider models: ${providerError.message || "unknown error"}`);
+        }
+
+        const chunkRows = (data ?? []) as ProviderModelRow[];
+        providerRows.push(...chunkRows);
+        if (!chunkRows.length) {
+            const legacy = await supabase
+                .from("data_api_provider_models")
+                .select(
+                    "provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+                )
+                .in("internal_model_id", modelIdChunk);
+            if (legacy.error) {
+                throw new Error(
+                    `Failed to load provider models (legacy fallback): ${legacy.error.message || "unknown error"}`
+                );
+            }
+            providerRows.push(...((legacy.data ?? []) as ProviderModelRow[]));
+        }
     }
 
-    const providerModelIds = (providerRows ?? [])
+    const providerModelIds = providerRows
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
-    const { data: capabilityRowsRaw, error: capabilityError } = await supabase
-        .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id, capability_id, params")
-        .eq("status", "active")
-        .in("provider_api_model_id", providerModelIds);
-    if (capabilityError) {
-        throw new Error(capabilityError.message || "Failed to load provider capabilities");
+    let capabilityRows: CapabilityRow[] = [];
+    for (const providerModelIdChunk of chunkArray(providerModelIds, 200)) {
+        const { data: capabilityRowsRaw, error: capabilityError } = await supabase
+            .from("data_api_provider_model_capabilities")
+            .select("provider_api_model_id, capability_id, params")
+            .eq("status", "active")
+            .in("provider_api_model_id", providerModelIdChunk);
+        if (capabilityError) {
+            throw new Error(`Failed to load provider capabilities: ${capabilityError.message || "unknown error"}`);
+        }
+        capabilityRows.push(...((capabilityRowsRaw ?? []) as CapabilityRow[]));
     }
-    const capabilityRows = (capabilityRowsRaw ?? []) as CapabilityRow[];
 
     const aliasMap = new Map<string, string[]>();
     const apiModelIds = Array.from(
-        new Set((providerRows ?? []).map((row) => row.api_model_id).filter(Boolean))
+        new Set(providerRows.map((row) => row.api_model_id).filter(Boolean))
     );
     if (apiModelIds.length) {
-        const { data: aliases, error: aliasError } = await supabase
-            .from("data_api_model_aliases")
-            .select("alias_slug, api_model_id")
-            .eq("is_enabled", true)
-            .in("api_model_id", apiModelIds);
-        if (aliasError) {
-            throw new Error(aliasError.message || "Failed to load model aliases");
+        const aliases: Array<{ alias_slug: string | null; api_model_id: string | null }> = [];
+        for (const apiModelIdChunk of chunkArray(apiModelIds as string[], 200)) {
+            const { data, error: aliasError } = await supabase
+                .from("data_api_model_aliases")
+                .select("alias_slug, api_model_id")
+                .eq("is_enabled", true)
+                .in("api_model_id", apiModelIdChunk);
+            if (aliasError) {
+                throw new Error(`Failed to load model aliases: ${aliasError.message || "unknown error"}`);
+            }
+            aliases.push(...((data ?? []) as Array<{ alias_slug: string | null; api_model_id: string | null }>));
         }
         const aliasByApiModel = new Map<string, string[]>();
-        for (const alias of aliases ?? []) {
+        for (const alias of aliases) {
             if (!alias?.api_model_id || !alias?.alias_slug) continue;
             const existing = aliasByApiModel.get(alias.api_model_id) ?? [];
             existing.push(alias.alias_slug);
             aliasByApiModel.set(alias.api_model_id, existing);
         }
-        for (const row of providerRows ?? []) {
-            if (!row.internal_model_id || !row.api_model_id) continue;
+        for (const row of providerRows) {
+            const canonicalModelId = row.model_id ?? row.api_model_id ?? row.internal_model_id;
+            if (!canonicalModelId || !row.api_model_id) continue;
             const aliasesForApi = aliasByApiModel.get(row.api_model_id) ?? [];
             if (!aliasesForApi.length) continue;
-            const existing = aliasMap.get(row.internal_model_id) ?? [];
+            const existing = aliasMap.get(canonicalModelId) ?? [];
             for (const alias of aliasesForApi) {
                 if (!existing.includes(alias)) existing.push(alias);
             }
-            aliasMap.set(row.internal_model_id, existing);
+            aliasMap.set(canonicalModelId, existing);
         }
         for (const [key, list] of aliasMap) {
             aliasMap.set(key, list.slice().sort((a, b) => a.localeCompare(b)));
@@ -392,14 +431,15 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const now = new Date();
     const providersByModel = new Map<string, ProviderModelRow[]>();
     const providerIdSet = new Set<string>();
-    for (const row of providerRows ?? []) {
-        if (!row?.internal_model_id || !row?.provider_id) continue;
+    for (const row of providerRows) {
+        const canonicalModelId = row?.model_id ?? row?.api_model_id ?? row?.internal_model_id;
+        if (!canonicalModelId || !row?.provider_id) continue;
         providerIdSet.add(row.provider_id);
         if (!row.is_active_gateway) continue;
         if (!withinEffectiveWindow(row.effective_from, row.effective_to, now)) continue;
-        const existing = providersByModel.get(row.internal_model_id) ?? [];
+        const existing = providersByModel.get(canonicalModelId) ?? [];
         existing.push(row as ProviderModelRow);
-        providersByModel.set(row.internal_model_id, existing);
+        providersByModel.set(canonicalModelId, existing);
     }
 
     const capabilitiesByProviderModel = new Map<string, CapabilityRow[]>();
@@ -413,14 +453,18 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
     const providerMap = new Map<string, ProviderDetails>();
     if (providerIdSet.size) {
-        const { data: providerDetails, error: providerDetailsError } = await supabase
-            .from("data_api_providers")
-            .select("api_provider_id, api_provider_name, link, country_code")
-            .in("api_provider_id", Array.from(providerIdSet));
-        if (providerDetailsError) {
-            throw new Error(providerDetailsError.message || "Failed to load provider metadata");
+        const providerDetails: ProviderDetails[] = [];
+        for (const providerIdChunk of chunkArray(Array.from(providerIdSet), 200)) {
+            const { data, error: providerDetailsError } = await supabase
+                .from("data_api_providers")
+                .select("api_provider_id, api_provider_name, link, country_code")
+                .in("api_provider_id", providerIdChunk);
+            if (providerDetailsError) {
+                throw new Error(`Failed to load provider metadata: ${providerDetailsError.message || "unknown error"}`);
+            }
+            providerDetails.push(...((data ?? []) as ProviderDetails[]));
         }
-        for (const provider of providerDetails ?? []) {
+        for (const provider of providerDetails) {
             if (!provider?.api_provider_id) continue;
             providerMap.set(provider.api_provider_id, {
                 api_provider_id: provider.api_provider_id,
@@ -444,19 +488,23 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         ].join(","));
 
     if (pricingError) {
-        throw new Error(pricingError.message || "Failed to load pricing rules");
+        throw new Error(`Failed to load pricing rules: ${pricingError.message || "unknown error"}`);
     }
 
     const comboMap = new Map<string, { model_id: string | null; provider_id: string }>();
     for (const cap of capabilityRows) {
         if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
-        const providerModel = (providerRows ?? []).find(
+        const providerModel = providerRows.find(
             (row) => row.provider_api_model_id === cap.provider_api_model_id
         );
         if (!providerModel?.provider_id || !providerModel.api_model_id) continue;
         const comboKey = `${providerModel.provider_id}:${providerModel.api_model_id}:${cap.capability_id}`;
         comboMap.set(comboKey, {
-            model_id: providerModel.internal_model_id ?? null,
+            model_id:
+                providerModel.model_id ??
+                providerModel.api_model_id ??
+                providerModel.internal_model_id ??
+                null,
             provider_id: providerModel.provider_id,
         });
     }

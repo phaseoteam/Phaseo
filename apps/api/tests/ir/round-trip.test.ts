@@ -315,7 +315,7 @@ describe("Round-trip Transformations", () => {
 	});
 
 	describe("Edge Cases", () => {
-		it("should handle developer role as system", () => {
+		it("should preserve developer role messages", () => {
 			const originalRequest: ChatCompletionsRequest = {
 				model: "gpt-4",
 				messages: [{ role: "developer", content: "System instruction" }],
@@ -323,8 +323,7 @@ describe("Round-trip Transformations", () => {
 
 			const ir = decodeOpenAIChatRequest(originalRequest);
 
-			// Developer role should be normalized to system
-			expect(ir.messages[0].role).toBe("system");
+			expect(ir.messages[0].role).toBe("developer");
 		});
 
 		it("should handle empty content gracefully", () => {

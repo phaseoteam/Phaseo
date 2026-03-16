@@ -1,0 +1,31 @@
+---
+title: "Embeddings (AI SDK)"
+description: "Create embeddings with AI Stats provider models in Vercel AI SDK."
+---
+
+Use `aiStats.textEmbeddingModel(...)` (or `embeddingModel`) with `embed` and `embedMany`.
+
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { embed, embedMany } from "ai";
+
+const single = await embed({
+  model: aiStats.textEmbeddingModel("google/gemini-embedding-001"),
+  value: "Embeddings power semantic search.",
+});
+
+console.log(single.embedding.length);
+
+const batch = await embedMany({
+  model: aiStats.textEmbeddingModel("google/gemini-embedding-001"),
+  values: ["pricing", "latency", "quality"],
+});
+
+console.log(batch.embeddings.length);
+```
+
+## Notes
+
+- Keep query and corpus embeddings on the same model version.
+- Normalize vectors consistently before similarity scoring.
+- Cache stable embeddings for repeated content.

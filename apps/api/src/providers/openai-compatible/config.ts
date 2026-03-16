@@ -654,7 +654,7 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
     });
 }
 
-export type OpenAICompatRoute = "responses" | "chat" | "legacy_completions";
+export type OpenAICompatRoute = "responses" | "chat";
 
 function normalizeOpenAIModelName(model?: string | null): string {
     if (!model) return "";
@@ -670,7 +670,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 
     if (providerId === "openai") {
         if (OPENAI_LEGACY_COMPLETIONS_MODELS.has(model ?? "") || OPENAI_LEGACY_COMPLETIONS_MODELS.has(normalized)) {
-            return "legacy_completions";
+            return "chat";
         }
         if (OPENAI_CHAT_ONLY_MODELS.has(model ?? "") || OPENAI_CHAT_ONLY_MODELS.has(normalized)) {
             return "chat";

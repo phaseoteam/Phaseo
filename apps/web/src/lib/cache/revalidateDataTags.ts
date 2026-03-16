@@ -7,23 +7,40 @@ type RevalidateModelDataTagOptions = {
 	organisationIds?: Array<string | null | undefined>;
 };
 
-export function revalidateModelDataTags(
+const MODEL_DATA_GLOBAL_TAGS = [
+	"audit-models",
+	"search:data",
+	"data:model-updates",
+	"data:models",
+	"data:organisations",
+	"data:families",
+	"data:benchmarks",
+	"data:sign-in:models",
+	"data:sign-in:supported-models-stats",
+	"landing:db-stats",
+	"page:models",
+	"public-rankings",
+] as const;
+
+const MODEL_API_GLOBAL_TAGS = [
+	"data:api_providers",
+	"data:model_aliases",
+	"data:data_api_provider_models",
+	"data:data_api_pricing_rules",
+	"monitor-models",
+	"page:models",
+] as const;
+
+function revalidateTagList(tags: readonly string[]) {
+	for (const tag of tags) {
+		revalidateTag(tag, EXPIRE_NOW);
+	}
+}
+
+export function revalidateModelDataOnlyTags(
 	options: RevalidateModelDataTagOptions = {}
 ) {
-	revalidateTag("audit-models", EXPIRE_NOW);
-	revalidateTag("search:data", EXPIRE_NOW);
-	revalidateTag("data:model-updates", EXPIRE_NOW);
-	revalidateTag("data:models", EXPIRE_NOW);
-	revalidateTag("data:organisations", EXPIRE_NOW);
-	revalidateTag("data:api_providers", EXPIRE_NOW);
-	revalidateTag("data:families", EXPIRE_NOW);
-	revalidateTag("data:model_aliases", EXPIRE_NOW);
-	revalidateTag("data:data_api_provider_models", EXPIRE_NOW);
-	revalidateTag("data:data_api_pricing_rules", EXPIRE_NOW);
-	revalidateTag("data:benchmarks", EXPIRE_NOW);
-	revalidateTag("data:sign-in:models", EXPIRE_NOW);
-	revalidateTag("data:sign-in:supported-models-stats", EXPIRE_NOW);
-	revalidateTag("landing:db-stats", EXPIRE_NOW);
+	revalidateTagList(MODEL_DATA_GLOBAL_TAGS);
 
 	for (const organisationId of options.organisationIds ?? []) {
 		if (!organisationId) continue;
@@ -31,6 +48,7 @@ export function revalidateModelDataTags(
 	}
 
 	if (options.modelId) {
+		revalidateTag(`model:data:${options.modelId}`, EXPIRE_NOW);
 		revalidateTag(`model:header:${options.modelId}`, EXPIRE_NOW);
 		revalidateTag(`data:models:${options.modelId}`, EXPIRE_NOW);
 		revalidateTag(`data:benchmarks:model:${options.modelId}`, EXPIRE_NOW);
@@ -44,6 +62,27 @@ export function revalidateModelDataTags(
 			EXPIRE_NOW
 		);
 	}
+}
+
+export function revalidateModelApiInfoTags(
+	options: RevalidateModelDataTagOptions = {}
+) {
+	revalidateTagList(MODEL_API_GLOBAL_TAGS);
+
+	if (options.modelId) {
+		revalidateTag(`model:api:${options.modelId}`, EXPIRE_NOW);
+	}
+}
+
+/**
+ * Backward-compatible "full model refresh" helper.
+ * Revalidates both model data and model API info surfaces.
+ */
+export function revalidateModelDataTags(
+	options: RevalidateModelDataTagOptions = {}
+) {
+	revalidateModelDataOnlyTags(options);
+	revalidateModelApiInfoTags(options);
 }
 
 export function revalidateAppDataTags(appIds: string[] = []) {

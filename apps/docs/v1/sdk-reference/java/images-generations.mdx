@@ -1,0 +1,20 @@
+---
+title: "Image generations"
+description: "Call /images/generations with the Java SDK."
+---
+
+**Method**: `Operations.createImage(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "openai/gpt-image-1",
+  "prompt": "A minimalist poster of a lighthouse at dawn"
+}
+""";
+
+Object response = Operations.createImage(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```

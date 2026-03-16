@@ -434,11 +434,10 @@ describe("openai text executor HTTP mode", () => {
 
 		expect(result.kind).toBe("completed");
 		if (result.kind !== "completed") return;
-		expect(result.bill.usage?.pricing?.total_usd_str).toBe("0.0001848");
-		const lines = result.bill.usage?.pricing?.lines ?? [];
-		const byDim = new Map(lines.map((line: any) => [line.dimension, line]));
-		expect(byDim.get("input_text_tokens")?.quantity).toBe(59);
-		expect(byDim.get("cached_read_text_tokens")?.quantity).toBe(64);
-		expect(byDim.get("output_text_tokens")?.quantity).toBe(9);
+		const usage = result.bill.usage as Record<string, any> | undefined;
+		expect(usage?.input_text_tokens).toBe(59);
+		expect(usage?.cached_read_text_tokens).toBe(64);
+		expect(usage?.output_text_tokens).toBe(9);
+		expect(usage?.cached_read_tokens_are_subset_of_input).toBe(true);
 	});
 });

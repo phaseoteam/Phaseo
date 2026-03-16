@@ -100,6 +100,25 @@ paths:
             default: 0
             minimum: 0
             maximum: 5000
+        - name: format
+          in: query
+          description: Response format. Defaults to json.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+            default: json
+        - name: feed
+          in: query
+          description: Alias for format. Accepts json, rss, or atom.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
       responses:
         '200':
           description: List of models
@@ -107,6 +126,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GatewayModelsResponse'
+            application/rss+xml:
+              schema:
+                type: string
+                description: RSS 2.0 XML feed
+            application/atom+xml:
+              schema:
+                type: string
+                description: Atom XML feed
         '400':
           description: Invalid request parameters
           content:
@@ -805,17 +832,8 @@ paths:
       operationId: getAnalytics
       summary: Get analytics
       description: Returns aggregated analytics data.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                access_token:
-                  type: string
-                benchmark_id:
-                  $ref: '#/components/schemas/BenchmarkId'
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Analytics data
@@ -823,12 +841,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalyticsNotImplementedResponse'
-        '400':
-          description: Missing access token
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AnalyticsAccessTokenRequiredResponse'
+                $ref: '#/components/schemas/ErrorResponse'
   /credits:
     get:
       x-beta: true
@@ -1989,6 +2007,25 @@ paths:
             type: integer
             default: 0
             minimum: 0
+        - name: format
+          in: query
+          description: Response format. Defaults to json.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+            default: json
+        - name: feed
+          in: query
+          description: Alias for format. Accepts json, rss, or atom.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
       responses:
         '200':
           description: List of data models
@@ -2011,6 +2048,20 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/DataModel'
+            application/rss+xml:
+              schema:
+                type: string
+                description: RSS 2.0 XML feed
+            application/atom+xml:
+              schema:
+                type: string
+                description: Atom XML feed
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
         '500':
           description: Error
           content:
@@ -3302,8 +3353,122 @@ components:
             message:
               type: string
               example: Use WebSocket upgrade for /v1/responses/ws.
+    EmbeddingsMultimodalInput:
+      type: object
+      description: Google multimodal embeddings extension item.
+      required:
+        - content
+      properties:
+        content:
+          type: array
+          minItems: 1
+          items:
+            oneOf:
+              - type: object
+                required:
+                  - type
+                  - text
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - input_text
+                  text:
+                    type: string
+              - type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - image_url
+                      - input_image
+                      - image
+                  image_url:
+                    oneOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                  url:
+                    oneOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                anyOf:
+                  - required:
+                      - image_url
+                  - required:
+                      - url
+              - type: object
+                required:
+                  - type
+                  - input_audio
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - input_audio
+                  input_audio:
+                    type: object
+                    properties:
+                      data:
+                        type: string
+                      url:
+                        type: string
+                      format:
+                        type: string
+                    anyOf:
+                      - required:
+                          - data
+                      - required:
+                          - url
+              - type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - input_video
+                      - video_url
+                  video_url:
+                    oneOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                  url:
+                    oneOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                anyOf:
+                  - required:
+                      - video_url
+                  - required:
+                      - url
     EmbeddingsRequest:
       type: object
+      required:
+        - model
+        - input
       properties:
         model:
           type: string
@@ -3312,45 +3477,38 @@ components:
             - type: string
             - type: array
               items:
-                type: string
-        inputs:
-          description: Alias for input.
-          oneOf:
-            - type: string
+                type: integer
+            - $ref: '#/components/schemas/EmbeddingsMultimodalInput'
             - type: array
               items:
-                type: string
+                oneOf:
+                  - type: string
+                  - type: array
+                    items:
+                      type: integer
+                  - $ref: '#/components/schemas/EmbeddingsMultimodalInput'
         encoding_format:
           type: string
+          enum:
+            - float
+            - base64
         dimensions:
           type: integer
           minimum: 1
-        embedding_options:
+        provider_options:
           type: object
           properties:
             google:
               type: object
               properties:
-                output_dimensionality:
-                  type: integer
-                  minimum: 1
                 task_type:
                   type: string
-                  enum:
-                    - TASK_TYPE_UNSPECIFIED
-                    - RETRIEVAL_QUERY
-                    - RETRIEVAL_DOCUMENT
-                    - SEMANTIC_SIMILARITY
-                    - CLASSIFICATION
+                  pattern: ^[A-Z_]+$
                 title:
                   type: string
             mistral:
               type: object
               properties:
-                output_dimension:
-                  type: integer
-                  minimum: 1
-                  nullable: true
                 output_dtype:
                   type: string
                   enum:
@@ -3365,13 +3523,6 @@ components:
           $ref: '#/components/schemas/DebugOptions'
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
-      anyOf:
-        - required:
-            - model
-            - input
-        - required:
-            - model
-            - inputs
     EmbeddingsResponse:
       type: object
       properties:
@@ -3682,8 +3833,6 @@ components:
           oneOf:
             - type: integer
             - type: string
-        size:
-          type: string
         quality:
           type: string
         input_reference:

@@ -113,6 +113,20 @@ function toIsoDate(value: Date): string {
 	return value.toISOString().slice(0, 10);
 }
 
+function isUnknownAppIdentity(appId: string, title: string | null | undefined): boolean {
+	const normalizedId = appId.trim().toLowerCase();
+	const normalizedTitle = (title ?? "").trim().toLowerCase();
+	if (!normalizedId) return true;
+
+	return (
+		normalizedId === "unknown" ||
+		normalizedId === "unknown-app" ||
+		normalizedId === "unknown_app" ||
+		normalizedTitle === "unknown" ||
+		normalizedTitle === "unknown app"
+	);
+}
+
 async function fetchTopAppsForWindow(
 	apiProviderId: string,
 	sinceIso: string,
@@ -135,9 +149,13 @@ async function fetchTopAppsForWindow(
 		(row): row is Required<Pick<TopAppRpcRow, "app_id">> & TopAppRpcRow =>
 			Boolean(row.app_id),
 	);
-	if (!rows.length) return [];
+	const filteredRows = rows.filter((row) => {
+		const appId = String(row.app_id).trim();
+		return !isUnknownAppIdentity(appId, row.title);
+	});
+	if (!filteredRows.length) return [];
 
-	const appIds = rows
+	const appIds = filteredRows
 		.map((row) => String(row.app_id).trim())
 		.filter(Boolean);
 
@@ -157,7 +175,7 @@ async function fetchTopAppsForWindow(
 		imageById.set(id, ((appRow as any).image_url as string | null) ?? null);
 	}
 
-	return rows.map((row) => {
+	return filteredRows.map((row) => {
 		const appId = String(row.app_id).trim();
 		return {
 			appId,

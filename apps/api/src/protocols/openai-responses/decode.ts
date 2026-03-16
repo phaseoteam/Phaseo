@@ -13,7 +13,6 @@ import type {
 	IRReasoning,
 } from "@core/ir";
 import type { ResponsesRequest } from "@core/schemas";
-import { decodeOpenAIChatRequest } from "../openai-chat/decode";
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
 import {
 	normalizeImageConfig,
@@ -153,22 +152,6 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 							],
 						});
 					}
-				}
-				// Fallback: accept Chat Completions-style requests sent to /responses
-				else if (Array.isArray((req as any).messages)) {
-					flushPendingUserParts();
-					const fallback = decodeOpenAIChatRequest(req as any);
-					if (!openAIContextManagement) return fallback;
-					return {
-						...fallback,
-						vendor: {
-							...(fallback.vendor ?? {}),
-							openai: {
-								...((fallback.vendor as any)?.openai ?? {}),
-								context_management: openAIContextManagement,
-							},
-						},
-					};
 				}
 				// Function call item (assistant tool call)
 				else if (item.type === "function_call") {

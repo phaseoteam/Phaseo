@@ -16,8 +16,6 @@ import {
 	resolveOpenAICompatKey,
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
-import { computeBill } from "@pipeline/pricing/engine";
-import { irToOpenAICompletions, openAICompletionsToIR } from "./transform-legacy";
 import { getProviderQuirks } from "./quirks";
 import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
@@ -31,7 +29,7 @@ import {
 } from "./retry-policy";
 
 const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
-const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 0;
+const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)
@@ -46,17 +44,15 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = args.providerModelSlug ?? args.ir.model;
 	const defaultRoute = resolveOpenAICompatRoute(args.providerId, modelForRouting);
-	let route: "responses" | "chat" | "legacy_completions" = resolvePreferredRoute(args, defaultRoute);
+	let route: "responses" | "chat" = resolvePreferredRoute(args, defaultRoute);
 
-	const endpointForRoute = (targetRoute: "responses" | "chat" | "legacy_completions") =>
-		targetRoute === "responses" ? "/responses" : (targetRoute === "legacy_completions" ? "/completions" : "/chat/completions");
+	const endpointForRoute = (targetRoute: "responses" | "chat") =>
+		targetRoute === "responses" ? "/responses" : "/chat/completions";
 
-	const buildPayloadForRoute = (targetRoute: "responses" | "chat" | "legacy_completions"): Record<string, any> => {
+	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"
 			? irToOpenAIResponses(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams)
-			: (targetRoute === "legacy_completions"
-				? irToOpenAICompletions(args.ir, args.providerModelSlug)
-				: irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams));
+			: irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams);
 
 		const payload: Record<string, any> = {
 			...requestPayload,
@@ -72,7 +68,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	};
 
 	const sendPayload = async (
-		targetRoute: "responses" | "chat" | "legacy_completions",
+		targetRoute: "responses" | "chat",
 		payload: Record<string, any>,
 	) => {
 		const sanitized = sanitizeOpenAICompatRequest({
@@ -207,10 +203,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		// Calculate pricing
 		const usageMeters = normalizeTextUsageForPricing(usage);
 		if (usageMeters) {
-			const priced = computeBill(usageMeters, args.pricingCard);
-			bill.cost_cents = priced.pricing.total_cents;
-			bill.currency = priced.pricing.currency;
-			bill.usage = priced;
+			bill.usage = usageMeters;
 		}
 
 		return {
@@ -301,7 +294,7 @@ function normalizeResponsesEvent(event: string | null): string | null {
 export function resolveStreamForProtocol(
 	res: Response,
 	args: ExecutorExecuteArgs,
-	route: "responses" | "chat" | "legacy_completions",
+	route: "responses" | "chat",
 ): ReadableStream<Uint8Array> {
 	if (!res.body) {
 		throw new Error("openai_stream_missing_body");
@@ -311,9 +304,6 @@ export function resolveStreamForProtocol(
 	const state = createStreamAdapterState(args);
 
 	if (protocol === "openai.chat.completions") {
-		if (route === "legacy_completions") {
-			return transformLegacyCompletionsStream(res.body, args);
-		}
 		if (route === "responses") {
 			return transformResponsesStreamToChat(res.body, args, state);
 		}
@@ -321,19 +311,10 @@ export function resolveStreamForProtocol(
 	}
 
 	if (protocol === "openai.responses") {
-		if (route === "legacy_completions") {
-			const legacyStream = transformLegacyCompletionsStream(res.body, args);
-			return transformChatStreamToResponses(legacyStream, args, state);
-		}
 		return transformChatStreamToResponses(res.body, args, state);
 	}
 
 	if (protocol === "anthropic.messages") {
-		if (route === "legacy_completions") {
-			const legacyStream = transformLegacyCompletionsStream(res.body, args);
-			const responsesStream = transformChatStreamToResponses(legacyStream, args, state);
-			return transformResponsesStreamToAnthropic(responsesStream, args);
-		}
 		// Always normalize through chat->responses adapter first.
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
@@ -347,8 +328,8 @@ export function resolveStreamForProtocol(
 
 function resolvePreferredRoute(
 	args: ExecutorExecuteArgs,
-	defaultRoute: "responses" | "chat" | "legacy_completions",
-): "responses" | "chat" | "legacy_completions" {
+	defaultRoute: "responses" | "chat",
+): "responses" | "chat" {
 	// xAI compatibility currently has stricter /responses validation for structured output.
 	// Route structured requests via chat/completions for better interoperability.
 	if (
@@ -1413,7 +1394,7 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 export async function bufferStreamToIR(
 	res: Response,
 	args: ExecutorExecuteArgs,
-	route: "responses" | "chat" | "legacy_completions",
+	route: "responses" | "chat",
 	upstreamStartMs: number,
 ): Promise<{ ir: IRChatResponse; usage: any; rawResponse: any; firstByteMs: number | null; totalMs: number }> {
 	if (!res.body) {
@@ -1469,40 +1450,6 @@ export async function bufferStreamToIR(
 			else if (route === "chat") {
 				finalResponse = accumulateChatCompletion(finalResponse, payload);
 			}
-			else if (route === "legacy_completions") {
-				if (!finalResponse) {
-					finalResponse = {
-						id: payload.id,
-						object: payload.object ?? "text_completion",
-						created: payload.created,
-						model: payload.model,
-						choices: [],
-					};
-				}
-				if (Array.isArray(payload?.choices)) {
-					for (const chunk of payload.choices) {
-						const idx = chunk.index || 0;
-						if (!finalResponse.choices[idx]) {
-							finalResponse.choices[idx] = {
-								index: idx,
-								text: "",
-								finish_reason: null,
-								logprobs: null,
-							};
-						}
-						const choice = finalResponse.choices[idx];
-						if (typeof chunk.text === "string") {
-							choice.text = (choice.text || "") + chunk.text;
-						}
-						if (chunk.finish_reason) {
-							choice.finish_reason = chunk.finish_reason;
-						}
-					}
-				}
-				if (payload?.usage) {
-					finalResponse.usage = payload.usage;
-				}
-			}
 		}
 	}
 	buf += decoder.decode();
@@ -1534,9 +1481,7 @@ export async function bufferStreamToIR(
 	// Convert to IR using appropriate transformer
 	const ir = route === "responses"
 		? (isChatLikeResponse ? openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId) : openAIResponsesToIR(finalResponse, args.requestId, args.ir.model, args.providerId))
-		: (route === "legacy_completions"
-			? openAICompletionsToIR(finalResponse, args.requestId, args.ir.model, args.providerId)
-			: openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId));
+		: openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 
 	const totalMs = Math.max(0, Date.now() - upstreamStartMs);
 	return {
@@ -1562,67 +1507,6 @@ function createUsageFinalizer(
 		// For now, return null and let the existing finalizer handle it
 		return null;
 	};
-}
-
-function transformLegacyCompletionsStream(
-	stream: ReadableStream<Uint8Array>,
-	args: ExecutorExecuteArgs,
-): ReadableStream<Uint8Array> {
-	const reader = stream.getReader();
-	const decoder = new TextDecoder();
-	const encoder = new TextEncoder();
-	let buf = "";
-
-	return new ReadableStream<Uint8Array>({
-		async start(controller) {
-			try {
-				while (true) {
-					const { value, done } = await reader.read();
-					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
-
-					for (const raw of frames) {
-						let data = "";
-						for (const line of raw.split(/\n/)) {
-							const l = line.replace(/\r$/, "");
-							if (l.startsWith("data:")) data += l.slice(5).trimStart();
-						}
-						if (!data || data === "[DONE]") continue;
-
-						let payload: any;
-						try {
-							payload = JSON.parse(data);
-						} catch {
-							continue;
-						}
-
-						if (!Array.isArray(payload?.choices)) continue;
-
-						const chunk = {
-							id: payload.id ?? args.requestId,
-							object: "chat.completion.chunk",
-							created: payload.created ?? Math.floor(Date.now() / 1000),
-							model: payload.model ?? args.ir.model,
-							choices: payload.choices.map((choice: any) => ({
-								index: choice.index ?? 0,
-								delta: { content: choice.text ?? "" },
-								finish_reason: choice.finish_reason ?? null,
-							})),
-							...(payload.usage ? { usage: payload.usage } : {}),
-						};
-
-						controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-					}
-				}
-			} catch (err) {
-				console.error("openai legacy completions stream transform failed:", err);
-			} finally {
-				controller.close();
-			}
-		},
-	});
 }
 
 function isChatCompletionResponse(payload: any): boolean {

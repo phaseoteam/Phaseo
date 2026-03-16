@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags";
+import {
+	revalidateModelApiInfoTags,
+	revalidateModelDataOnlyTags,
+	revalidateModelDataTags,
+} from "@/lib/cache/revalidateDataTags";
 import { updateModel } from "@/app/(dashboard)/models/actions";
 
 async function requireAdmin() {
@@ -202,6 +206,109 @@ async function replaceOrganisationLinks(
 			}))
 		);
 	if (insertError) throw new Error(insertError.message);
+}
+
+type ProviderPair = { provider_id: string; api_model_id: string };
+
+function dedupeProviderPairs(pairs: ProviderPair[]): ProviderPair[] {
+	const unique = new Map<string, ProviderPair>();
+	for (const pair of pairs) {
+		const providerId = pair.provider_id?.trim();
+		const apiModelId = pair.api_model_id?.trim();
+		if (!providerId || !apiModelId) continue;
+		unique.set(`${providerId}:::${apiModelId}`, {
+			provider_id: providerId,
+			api_model_id: apiModelId,
+		});
+	}
+	return Array.from(unique.values());
+}
+
+async function deletePricingRulesForProviderPairs(
+	supabase: Awaited<ReturnType<typeof requireAdmin>>,
+	pairs: ProviderPair[]
+) {
+	for (const pair of dedupeProviderPairs(pairs)) {
+		const modelKeyPrefix = `${pair.provider_id}:${pair.api_model_id}:`;
+		const { error } = await supabase
+			.from("data_api_pricing_rules")
+			.delete()
+			.gte("model_key", modelKeyPrefix)
+			.lt("model_key", `${modelKeyPrefix}\uffff`);
+		if (error) throw new Error(error.message);
+	}
+}
+
+async function deleteModelGraph(
+	supabase: Awaited<ReturnType<typeof requireAdmin>>,
+	modelId: string
+) {
+	const { data: providerModelRows, error: providerRowsError } = await supabase
+		.from("data_api_provider_models")
+		.select("provider_api_model_id, provider_id, api_model_id")
+		.eq("internal_model_id", modelId);
+	if (providerRowsError) throw new Error(providerRowsError.message);
+
+	const providerApiModelIds = (providerModelRows ?? [])
+		.map((row) => row.provider_api_model_id)
+		.filter(Boolean);
+	if (providerApiModelIds.length > 0) {
+		const { error: capabilitiesDeleteError } = await supabase
+			.from("data_api_provider_model_capabilities")
+			.delete()
+			.in("provider_api_model_id", providerApiModelIds);
+		if (capabilitiesDeleteError) throw new Error(capabilitiesDeleteError.message);
+	}
+
+	await deletePricingRulesForProviderPairs(
+		supabase,
+		(providerModelRows ?? []).map((row) => ({
+			provider_id: row.provider_id,
+			api_model_id: row.api_model_id,
+		}))
+	);
+
+	const { error: providerModelsDeleteError } = await supabase
+		.from("data_api_provider_models")
+		.delete()
+		.eq("internal_model_id", modelId);
+	if (providerModelsDeleteError) throw new Error(providerModelsDeleteError.message);
+
+	const { error: aliasesDeleteError } = await supabase
+		.from("data_api_model_aliases")
+		.delete()
+		.eq("api_model_id", modelId);
+	if (aliasesDeleteError) throw new Error(aliasesDeleteError.message);
+
+	const { error: benchmarkDeleteError } = await supabase
+		.from("data_benchmark_results")
+		.delete()
+		.eq("model_id", modelId);
+	if (benchmarkDeleteError) throw new Error(benchmarkDeleteError.message);
+
+	const { error: detailsDeleteError } = await supabase
+		.from("data_model_details")
+		.delete()
+		.eq("model_id", modelId);
+	if (detailsDeleteError) throw new Error(detailsDeleteError.message);
+
+	const { error: linksDeleteError } = await supabase
+		.from("data_model_links")
+		.delete()
+		.eq("model_id", modelId);
+	if (linksDeleteError) throw new Error(linksDeleteError.message);
+
+	const { error: planModelsDeleteError } = await supabase
+		.from("data_subscription_plan_models")
+		.delete()
+		.eq("model_id", modelId);
+	if (planModelsDeleteError) throw new Error(planModelsDeleteError.message);
+
+	const { error: modelDeleteError } = await supabase
+		.from("data_models")
+		.delete()
+		.eq("model_id", modelId);
+	if (modelDeleteError) throw new Error(modelDeleteError.message);
 }
 
 export async function createOrganisationAction(formData: FormData) {
@@ -471,46 +578,49 @@ export async function createModelAction(formData: FormData) {
 		resolvedFamilyId = nextFamilyId;
 	}
 
-	const { error } = await supabase.from("data_models").insert({
-		model_id: modelId,
-		name,
-		organisation_id: organisationId,
-		family_id: resolvedFamilyId,
-		status: optionalString(formData.get("status")) ?? "active",
-		previous_model_id: optionalString(formData.get("previous_model_id")),
-		release_date: optionalString(formData.get("release_date")),
-		announcement_date: optionalString(formData.get("announcement_date")),
-		deprecation_date: optionalString(formData.get("deprecation_date")),
-		retirement_date: optionalString(formData.get("retirement_date")),
-		license: optionalString(formData.get("license")),
-		input_types: normalizeCoreTypes(formData.get("input_types")),
-		output_types: normalizeCoreTypes(formData.get("output_types")),
-		hidden: formData.get("hidden") === "on",
-	});
-	if (error) throw new Error(error.message);
+	let insertedModel = false;
+	try {
+		const { error } = await supabase.from("data_models").insert({
+			model_id: modelId,
+			name,
+			organisation_id: organisationId,
+			family_id: resolvedFamilyId,
+			status: optionalString(formData.get("status")) ?? "active",
+			previous_model_id: optionalString(formData.get("previous_model_id")),
+			release_date: optionalString(formData.get("release_date")),
+			announcement_date: optionalString(formData.get("announcement_date")),
+			deprecation_date: optionalString(formData.get("deprecation_date")),
+			retirement_date: optionalString(formData.get("retirement_date")),
+			license: optionalString(formData.get("license")),
+			input_types: normalizeCoreTypes(formData.get("input_types")),
+			output_types: normalizeCoreTypes(formData.get("output_types")),
+			hidden: formData.get("hidden") === "on",
+		});
+		if (error) throw new Error(error.message);
+		insertedModel = true;
 
-	if (newBenchmarks.length > 0) {
-		const benchmarkRows = newBenchmarks
-			.filter((benchmark) => benchmark.id && benchmark.name)
-			.map((benchmark) => {
-				let ascendingOrder: boolean | null = null;
-				if (benchmark.ascending_order === "higher" || benchmark.ascending_order === true) ascendingOrder = true;
-				if (benchmark.ascending_order === "lower" || benchmark.ascending_order === false) ascendingOrder = false;
-				return {
-					id: benchmark.id!.trim(),
-					name: benchmark.name!.trim(),
-					category: benchmark.category?.trim() || null,
-					link: benchmark.link?.trim() || null,
-					ascending_order: ascendingOrder,
-				};
-			});
-		if (benchmarkRows.length > 0) {
-			const { error: benchmarkError } = await supabase
-				.from("data_benchmarks")
-				.upsert(benchmarkRows, { onConflict: "id" });
-			if (benchmarkError) throw new Error(benchmarkError.message);
+		if (newBenchmarks.length > 0) {
+			const benchmarkRows = newBenchmarks
+				.filter((benchmark) => benchmark.id && benchmark.name)
+				.map((benchmark) => {
+					let ascendingOrder: boolean | null = null;
+					if (benchmark.ascending_order === "higher" || benchmark.ascending_order === true) ascendingOrder = true;
+					if (benchmark.ascending_order === "lower" || benchmark.ascending_order === false) ascendingOrder = false;
+					return {
+						id: benchmark.id!.trim(),
+						name: benchmark.name!.trim(),
+						category: benchmark.category?.trim() || null,
+						link: benchmark.link?.trim() || null,
+						ascending_order: ascendingOrder,
+					};
+				});
+			if (benchmarkRows.length > 0) {
+				const { error: benchmarkError } = await supabase
+					.from("data_benchmarks")
+					.upsert(benchmarkRows, { onConflict: "id" });
+				if (benchmarkError) throw new Error(benchmarkError.message);
+			}
 		}
-	}
 
 	const providerModelRows = providerModels
 		.filter((row) => row.provider_id && row.api_model_id)
@@ -596,23 +706,33 @@ export async function createModelAction(formData: FormData) {
 		})
 		.filter((row): row is { platform: (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]; url: string } => Boolean(row));
 
-	if (
-		providerModelRows.length ||
-		providerCapabilityRows.length ||
-		benchmarkRows.length ||
-		pricingRuleRows.length ||
-		modelDetailRows.length ||
-		modelLinkRows.length
-	) {
-		await updateModel({
-			modelId,
-			provider_models: providerModelRows,
-			provider_capabilities: providerCapabilityRows,
-			benchmark_results: benchmarkRows,
-			pricing_rules: pricingRuleRows,
-			model_details: modelDetailRows,
-			links: modelLinkRows,
-		});
+		if (
+			providerModelRows.length ||
+			providerCapabilityRows.length ||
+			benchmarkRows.length ||
+			pricingRuleRows.length ||
+			modelDetailRows.length ||
+			modelLinkRows.length
+		) {
+			await updateModel({
+				modelId,
+				provider_models: providerModelRows,
+				provider_capabilities: providerCapabilityRows,
+				benchmark_results: benchmarkRows,
+				pricing_rules: pricingRuleRows,
+				model_details: modelDetailRows,
+				links: modelLinkRows,
+			});
+		}
+	} catch (error) {
+		if (insertedModel) {
+			try {
+				await deleteModelGraph(supabase, modelId);
+			} catch (rollbackError) {
+				console.error("[createModelAction] rollback failed", rollbackError);
+			}
+		}
+		throw error;
 	}
 
 	revalidateModelDataTags({
@@ -651,9 +771,61 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 
 export async function deleteModelAction(modelId: string) {
 	const supabase = await requireAdmin();
-	const { error } = await supabase.from("data_models").delete().eq("model_id", modelId);
-	if (error) throw new Error(error.message);
+	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
+	await deleteModelGraph(supabase, modelId);
 
-	revalidateModelDataTags({ modelId });
+	revalidateModelDataTags({ modelId, organisationIds });
 	revalidatePath("/internal/data/models");
+}
+
+async function resolveModelOrganisationIds(
+	supabase: Awaited<ReturnType<typeof requireAdmin>>,
+	modelId: string
+) {
+	const { data } = await supabase
+		.from("data_models")
+		.select("organisation_id")
+		.eq("model_id", modelId)
+		.maybeSingle();
+
+	return data?.organisation_id ? [data.organisation_id] : [];
+}
+
+export async function revalidateSingleModelDataAction(modelId: string) {
+	const supabase = await requireAdmin();
+	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
+
+	revalidateModelDataOnlyTags({ modelId, organisationIds });
+	revalidatePath(`/internal/data/models/edit/${modelId}`);
+	revalidatePath("/models");
+	revalidatePath("/models/**");
+
+	return { ok: true as const, message: "Model data cache revalidated." };
+}
+
+export async function revalidateSingleModelApiInfoAction(modelId: string) {
+	await requireAdmin();
+
+	revalidateModelApiInfoTags({ modelId });
+	revalidatePath(`/internal/data/models/edit/${modelId}`);
+	revalidatePath("/models");
+	revalidatePath("/models/**");
+	revalidatePath("/api-providers");
+	revalidatePath("/api-providers/**");
+
+	return { ok: true as const, message: "Model API info cache revalidated." };
+}
+
+export async function revalidateSingleModelAllAction(modelId: string) {
+	const supabase = await requireAdmin();
+	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
+
+	revalidateModelDataTags({ modelId, organisationIds });
+	revalidatePath(`/internal/data/models/edit/${modelId}`);
+	revalidatePath("/models");
+	revalidatePath("/models/**");
+	revalidatePath("/api-providers");
+	revalidatePath("/api-providers/**");
+
+	return { ok: true as const, message: "All model caches revalidated." };
 }

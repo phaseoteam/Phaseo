@@ -1,0 +1,94 @@
+{
+  "key": "minimax:minimax/hailuo-02:video.generate",
+  "api_provider_id": "minimax",
+  "provider_slug": "minimax",
+  "api_model_id": "minimax/hailuo-02",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.015,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Derived from MiniMax PAYG table (Hailuo-02, 512P, 10s).",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "512p",
+            "512P"
+          ]
+        }
+      ],
+      "priority": 200,
+      "effective_from": "2025-11-12T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.056,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Derived from MiniMax PAYG table (Hailuo-02, 768P, 10s).",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "768p",
+            "768P"
+          ]
+        }
+      ],
+      "priority": 200,
+      "effective_from": "2025-11-12T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.081666667,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Derived from MiniMax PAYG table (Hailuo-02, 1080P, 6s).",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080p",
+            "1080P"
+          ]
+        }
+      ],
+      "priority": 200,
+      "effective_from": "2025-11-12T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.056,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Fallback: 768P baseline when size is omitted.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-11-12T00:00:00"
+    }
+  ]
+}

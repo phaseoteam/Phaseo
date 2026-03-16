@@ -328,5 +328,26 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-super-120b-a12b",
+    "provider_api_model_id": "weights-and-biases:nvidia/nemotron-3-super-120b-a12b",
+    "provider_model_slug": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8",
+    "internal_model_id": "nvidia/nemotron-3-super-2026-03-11",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

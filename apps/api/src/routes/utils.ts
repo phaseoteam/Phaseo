@@ -53,16 +53,78 @@ function stringifyJsonBody(body: unknown): string {
 }
 
 export function withRuntime(handler: Handler) {
+    const isSseResponse = (response: Response): boolean => {
+        const contentType = response.headers.get("content-type") ?? "";
+        return Boolean(response.body) && contentType.toLowerCase().includes("text/event-stream");
+    };
+
+    const wrapSseLifecycle = (response: Response, cleanup: () => void): Response => {
+        if (!response.body) {
+            cleanup();
+            return response;
+        }
+
+        const reader = response.body.getReader();
+        let cleaned = false;
+        const finish = () => {
+            if (cleaned) return;
+            cleaned = true;
+            cleanup();
+        };
+
+        const passthrough = new ReadableStream<Uint8Array>({
+            async pull(controller) {
+                try {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        finish();
+                        controller.close();
+                        return;
+                    }
+                    if (value) controller.enqueue(value);
+                } catch (error) {
+                    finish();
+                    controller.error(error);
+                }
+            },
+            async cancel(reason) {
+                try {
+                    await reader.cancel(reason);
+                } catch {
+                    // ignore
+                } finally {
+                    finish();
+                }
+            },
+        });
+
+        return new Response(passthrough, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+        });
+    };
+
     return async (c: Context<{ Bindings: GatewayBindings }>) => {
         configureRuntime(c.env);
         const waitUntil = c.executionCtx?.waitUntil?.bind(c.executionCtx);
         const releaseWaitUntil = setWaitUntil(waitUntil);
-        const sanitized = sanitizeRequestHeaders(c.req.raw, { preserve: ["authorization"] });
-        try {
-            return await handler(sanitized);
-        } finally {
+        const cleanup = () => {
             releaseWaitUntil();
             clearRuntime();
+        };
+        const sanitized = sanitizeRequestHeaders(c.req.raw, { preserve: ["authorization"] });
+
+        try {
+            const response = await handler(sanitized);
+            if (!isSseResponse(response)) {
+                cleanup();
+                return response;
+            }
+            return wrapSseLifecycle(response, cleanup);
+        } catch (error) {
+            cleanup();
+            throw error;
         }
     };
 }

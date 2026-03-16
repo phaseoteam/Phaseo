@@ -261,15 +261,18 @@ pub struct Embedding {
 	pub object: Option<String>,
 }
 
+pub struct EmbeddingsMultimodalInput {
+	pub content: Vec<String>,
+}
+
 pub struct EmbeddingsRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub dimensions: Option<i64>,
-	pub embedding_options: Option<HashMap<String, String>>,
 	pub encoding_format: Option<String>,
-	pub input: Option<String>,
-	pub inputs: Option<String>,
-	pub model: Option<String>,
+	pub input: String,
+	pub model: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub user: Option<String>,
 }
 

@@ -250,45 +250,116 @@ export const ResponsesSchema = z.object({
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
 // Embeddings schema
-const EmbeddingOptionsSchema = z.object({
+const EmbeddingsInputTextPartSchema = z.object({
+	type: z.enum(["text", "input_text"]),
+	text: z.string(),
+}).passthrough();
+
+const EmbeddingsInputImagePartSchema = z.object({
+	type: z.enum(["image_url", "input_image", "image"]),
+	image_url: z.union([
+		z.string().min(1),
+		z.object({
+			url: z.string().min(1),
+		}).passthrough(),
+	]).optional(),
+	url: z.union([
+		z.string().min(1),
+		z.object({
+			url: z.string().min(1),
+		}).passthrough(),
+	]).optional(),
+}).passthrough().refine((value) => value.image_url != null || value.url != null, {
+	message: "image input parts require image_url or url",
+});
+
+const EmbeddingsInputAudioPartSchema = z.object({
+	type: z.literal("input_audio"),
+	input_audio: z.object({
+		data: z.string().optional(),
+		url: z.string().min(1).optional(),
+		format: z.string().optional(),
+	}).passthrough().refine((value) => value.data != null || value.url != null, {
+		message: "input_audio.data or input_audio.url is required",
+	}),
+}).passthrough();
+
+const EmbeddingsInputVideoPartSchema = z.object({
+	type: z.enum(["input_video", "video_url"]),
+	video_url: z.union([
+		z.string().min(1),
+		z.object({
+			url: z.string().min(1),
+		}).passthrough(),
+	]).optional(),
+	url: z.union([
+		z.string().min(1),
+		z.object({
+			url: z.string().min(1),
+		}).passthrough(),
+	]).optional(),
+}).passthrough().refine((value) => value.video_url != null || value.url != null, {
+	message: "video input parts require video_url or url",
+});
+
+const EmbeddingsInputPartSchema = z.union([
+	EmbeddingsInputTextPartSchema,
+	EmbeddingsInputImagePartSchema,
+	EmbeddingsInputAudioPartSchema,
+	EmbeddingsInputVideoPartSchema,
+]);
+
+const EmbeddingsMultimodalContentSchema = z.array(EmbeddingsInputPartSchema).min(1);
+
+const EmbeddingsInputObjectSchema = z.object({
+	content: EmbeddingsMultimodalContentSchema,
+}).passthrough();
+
+const EmbeddingsInputTokenArraySchema = z.array(z.number().int());
+
+const EmbeddingsInputItemSchema = z.union([
+	z.string(),
+	EmbeddingsInputTokenArraySchema,
+	EmbeddingsInputObjectSchema,
+]);
+
+const EmbeddingsInputSchema = z.union([
+	z.string(),
+	EmbeddingsInputTokenArraySchema,
+	EmbeddingsInputObjectSchema,
+	z.array(EmbeddingsInputItemSchema),
+]);
+
+const EmbeddingsProviderOptionsSchema = z.object({
     google: z.object({
-        output_dimensionality: z.number().int().positive().optional(),
-        task_type: z.enum(["TASK_TYPE_UNSPECIFIED", "RETRIEVAL_QUERY", "RETRIEVAL_DOCUMENT", "SEMANTIC_SIMILARITY", "CLASSIFICATION"]).optional(),
+        task_type: z.string().regex(/^[A-Z_]+$/).optional(),
         title: z.string().optional(),
     }).optional(),
     mistral: z.object({
-        output_dimension: z.number().int().positive().optional(),
         output_dtype: z.enum(["float", "int8", "uint8", "binary", "ubinary"]).optional(),
     }).optional(),
 }).optional();
 
 export const EmbeddingsSchema = z.object({
     model: z.string().min(1),
-    input: z.union([
-        z.string(),
-        z.array(z.string())
-    ]).optional(),
-    inputs: z.union([
-        z.string(),
-        z.array(z.string())
-    ]).optional(),
-    encoding_format: z.string().optional(),
+    input: EmbeddingsInputSchema,
+    encoding_format: z.enum(["float", "base64"]).optional(),
     dimensions: z.number().int().positive().optional(),
-    embedding_options: EmbeddingOptionsSchema,
+    provider_options: EmbeddingsProviderOptionsSchema,
+    // Back-compat alias; normalized to provider_options below.
+    embedding_options: EmbeddingsProviderOptionsSchema.optional(),
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).refine((obj) => obj.input != null || obj.inputs != null, {
-    message: "input or inputs is required",
-    path: ["input"],
 }).transform((obj) => {
-    const next: any = { ...obj };
-    if (next.input == null && next.inputs != null) {
-        next.input = next.inputs;
-    }
-    delete next.inputs;
+    const provider_options = obj.provider_options ?? obj.embedding_options;
+    const next: any = {
+        ...obj,
+        provider_options,
+    };
+    delete next.embedding_options;
     return next;
 });
 export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
@@ -743,6 +814,7 @@ const VideoGoogleConfigSchema = z.object({
 	generateAudio: z.boolean().optional(),
 	negative_prompt: z.string().optional(),
 	negativePrompt: z.string().optional(),
+	size: z.string().optional(),
 	resolution: z.string().optional(),
 	person_generation: z.string().optional(),
 	personGeneration: z.string().optional(),
@@ -803,6 +875,18 @@ export const VideoGenerationSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+}).transform((obj) => {
+	const size =
+		obj.size ??
+		obj.resolution ??
+		obj.config?.google?.size ??
+		obj.config?.google?.resolution;
+	return {
+		...obj,
+		size,
+		// Keep alias in sync for existing internal call-sites while migrating to size.
+		resolution: size,
+	};
 });
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
 

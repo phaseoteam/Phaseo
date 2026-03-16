@@ -33,10 +33,11 @@ function mapGatewayToGoogleVideo(body: VideoGenerationRequest) {
                     ? body.seconds
                     : undefined;
     const aspectRatio = body.aspect_ratio ?? body.ratio;
+    const size = body.size ?? body.resolution ?? body.config?.google?.size ?? body.config?.google?.resolution;
     const parameters: Record<string, any> = {
         ...(typeof durationSeconds === "number" && !Number.isNaN(durationSeconds) ? { durationSeconds } : {}),
         ...(aspectRatio ? { aspectRatio } : {}),
-        ...(body.resolution ? { resolution: body.resolution } : {}),
+        ...(size ? { resolution: size } : {}),
         ...(body.negative_prompt ? { negativePrompt: body.negative_prompt } : {}),
         ...(body.sample_count ? { sampleCount: body.sample_count } : {}),
         ...(typeof body.seed === "number" ? { seed: body.seed } : {}),

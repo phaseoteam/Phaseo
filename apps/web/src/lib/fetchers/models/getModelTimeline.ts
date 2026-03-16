@@ -160,6 +160,7 @@ export async function getModelTimelineCached(
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:data:${modelId}`);
 
     return getModelTimeline(modelId, includeHidden);
 }

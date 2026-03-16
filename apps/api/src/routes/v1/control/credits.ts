@@ -76,7 +76,7 @@ async function handleCredits(req: Request) {
 
 		const { data: wallet, error } = await supabase
 			.from("wallets")
-			.select("balance_nanos")
+			.select("balance_nanos,reserved_nanos")
 			.eq("team_id", teamId)
 			.maybeSingle();
 
@@ -102,11 +102,18 @@ async function handleCredits(req: Request) {
 			0
 		);
 
+		const balanceNanos = Number(wallet?.balance_nanos ?? 0) || 0;
+		const reservedNanos = Number((wallet as any)?.reserved_nanos ?? 0) || 0;
+		const availableNanos = Math.max(0, balanceNanos - reservedNanos);
+
 		return json(
 			{
 				ok: true,
 				credits: {
-					remaining: wallet?.balance_nanos ?? 0,
+					remaining: availableNanos,
+					balance_nanos: balanceNanos,
+					reserved_nanos: reservedNanos,
+					available_nanos: availableNanos,
 					thirty_day_usage: thirtyDayUsage,
 					thirty_day_requests: requestCount ?? 0,
 				},

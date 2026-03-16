@@ -26,6 +26,7 @@ export type { DataModel } from "./DataModel.js";
 export type { DataModelOrganisation } from "./DataModelOrganisation.js";
 export type { DebugOptions } from "./DebugOptions.js";
 export type { Embedding } from "./Embedding.js";
+export type { EmbeddingsMultimodalInput } from "./EmbeddingsMultimodalInput.js";
 export type { EmbeddingsRequest } from "./EmbeddingsRequest.js";
 export type { EmbeddingsResponse } from "./EmbeddingsResponse.js";
 export type { ErrorResponse } from "./ErrorResponse.js";

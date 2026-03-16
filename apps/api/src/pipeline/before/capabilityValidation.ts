@@ -128,7 +128,7 @@ function preferProvidersByRequestedParams(args: {
 	}
 	if (!Number.isFinite(minUnsupported)) return args.providers;
 
-	// Routing fallback rule: if nobody supports any requested params, keep the full pool.
+	// If nobody supports any requested params, keep the full pool.
 	if (minUnsupported >= args.requestedParams.length) {
 		return args.providers;
 	}

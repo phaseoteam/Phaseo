@@ -17,6 +17,7 @@
 		"validate:pricing": "tsx src/data/validate.ts --preset pricing",
 		"validate:gateway": "tsx src/data/validate-gateway.ts",
 		"update-db": "tsx scripts/importer/main.ts",
+		"db:reconcile-api-model-links": "tsx scripts/importer/reconcile-api-model-links.ts",
 		"db-progress": "cd src/data && python -X utf8 progressCalc.py",
 		"test": "jest --runInBand"
 	},
@@ -62,6 +63,7 @@
 		"@supabase/ssr": "^0.9.0",
 		"@supabase/supabase-js": "^2.56.1",
 		"@tanstack/react-table": "^8.21.3",
+		"@tanstack/react-virtual": "^3.13.21",
 		"@upstash/ratelimit": "^2.0.6",
 		"@upstash/redis": "^1.35.3",
 		"@vercel/analytics": "^1.5.0",

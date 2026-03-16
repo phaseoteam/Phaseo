@@ -127,6 +127,11 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		output_tokens: outputTokens,
 		total_tokens: totalTokens,
 	};
+	(result as any).prompt_tokens = inputTokens;
+	(result as any).completion_tokens = outputTokens;
+	if (typeof usage.reasoningTokens === "number") {
+		result.reasoning_tokens = usage.reasoningTokens;
+	}
 
 	if (usage.cachedInputTokens || usage._ext?.inputImageTokens || usage._ext?.inputAudioTokens || usage._ext?.inputVideoTokens) {
 		result.input_details = {

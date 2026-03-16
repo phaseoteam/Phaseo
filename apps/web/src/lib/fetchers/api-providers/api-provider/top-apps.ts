@@ -9,6 +9,20 @@ export type AppStats = {
     total_tokens: number;
 };
 
+function isUnknownAppIdentity(appId: string, title: string | null | undefined): boolean {
+    const normalizedId = appId.trim().toLowerCase();
+    const normalizedTitle = (title ?? "").trim().toLowerCase();
+    if (!normalizedId) return true;
+
+    return (
+        normalizedId === "unknown" ||
+        normalizedId === "unknown-app" ||
+        normalizedId === "unknown_app" ||
+        normalizedTitle === "unknown" ||
+        normalizedTitle === "unknown app"
+    );
+}
+
 export async function getTopApps(
     apiProviderId: string,
     period: 'day' | 'week' | 'month' = 'day',
@@ -48,7 +62,12 @@ export async function getTopApps(
             return [];
         }
 
-        const appIds = data
+        const filteredRows = data.filter((row: any) => {
+            const appId = String(row?.app_id ?? "").trim();
+            return !isUnknownAppIdentity(appId, row?.title ?? null);
+        });
+
+        const appIds = filteredRows
             .map((row: any) => String(row?.app_id ?? "").trim())
             .filter(Boolean);
 
@@ -65,9 +84,9 @@ export async function getTopApps(
             }
         }
 
-        return data.map((row: any) => ({
+        return filteredRows.map((row: any) => ({
             app_id: row.app_id,
-            title: row.title || 'Unknown App',
+            title: row.title || row.app_id,
             url: row.url || null,
             image_url: imageById.get(row.app_id) ?? null,
             total_tokens: Number(row.total_tokens),

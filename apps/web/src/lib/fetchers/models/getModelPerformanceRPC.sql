@@ -4,9 +4,11 @@ with
 model_ids as (
   select p_model_id as model_id
   union
-  select pm.api_model_id
+  select coalesce(pm.model_id, pm.api_model_id)
   from public.data_api_provider_models pm
-  where pm.internal_model_id = p_model_id
+  where pm.model_id = p_model_id
+     or pm.api_model_id = p_model_id
+     or pm.internal_model_id = p_model_id
 ),
 
 -- 2) Anchor times in UTC as timestamptz (safe to compare with created_at timestamptz)

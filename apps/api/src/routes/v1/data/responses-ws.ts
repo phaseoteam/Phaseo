@@ -20,6 +20,8 @@ const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 	"websocket_connection_limit_reached",
 ]);
 const OPENAI_WEBSOCKET_MAX_RECONNECTS = 1;
+const WEBSOCKET_MAX_BUFFERED_BYTES = 2 * 1024 * 1024;
+const MAX_CHARGED_RESPONSE_IDS = 4096;
 
 type NormalizedResponseCreate = {
 	ok: true;
@@ -47,6 +49,48 @@ type WsState = {
 	teamTier: string | null;
 	chargedResponseIds: Set<string>;
 };
+
+function rememberChargedResponseId(state: WsState, responseId: string | null): void {
+	if (!responseId) return;
+	state.chargedResponseIds.add(responseId);
+	if (state.chargedResponseIds.size <= MAX_CHARGED_RESPONSE_IDS) return;
+	const oldest = state.chargedResponseIds.values().next().value;
+	if (oldest) state.chargedResponseIds.delete(oldest);
+}
+
+function hashStringFNV1a(input: string): string {
+	let hash = 0x811c9dc5;
+	for (let i = 0; i < input.length; i += 1) {
+		hash ^= input.charCodeAt(i);
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function buildWebsocketChargeRequestId(state: WsState, payload: any, responseId: string | null): string {
+	if (responseId) return responseId;
+	let fingerprint = "";
+	try {
+		fingerprint = hashStringFNV1a(JSON.stringify(payload?.response ?? payload ?? {}));
+	} catch {
+		fingerprint = hashStringFNV1a(String(Date.now()));
+	}
+	return `${state.requestId}:ws:${fingerprint}`;
+}
+
+async function chargeWithRetry(op: () => Promise<void>, attempts = 3): Promise<void> {
+	let delayMs = 100;
+	for (let attempt = 1; attempt <= attempts; attempt += 1) {
+		try {
+			await op();
+			return;
+		} catch (error) {
+			if (attempt >= attempts) throw error;
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			delayMs *= 2;
+		}
+	}
+}
 
 export function normalizeOpenAIWsResponseCreateEvent(raw: unknown): NormalizedResponseCreate {
 	if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -212,20 +256,24 @@ async function maybeChargeCompletedResponse(state: WsState, payload: any): Promi
 		state.teamTier,
 	);
 	if (!Number.isFinite(totalNanos) || totalNanos <= 0) {
-		if (responseId) state.chargedResponseIds.add(responseId);
+		rememberChargedResponseId(state, responseId);
 		return;
 	}
 
+	const chargeRequestId = buildWebsocketChargeRequestId(state, payload, responseId);
 	try {
-		await recordUsageAndCharge({
-			requestId: responseId ?? state.requestId,
-			teamId: state.teamId,
-			cost_nanos: Math.round(totalNanos),
+		await chargeWithRetry(async () => {
+			await recordUsageAndCharge({
+				requestId: chargeRequestId,
+				teamId: state.teamId,
+				cost_nanos: Math.round(totalNanos),
+			});
 		});
-		if (responseId) state.chargedResponseIds.add(responseId);
+		rememberChargedResponseId(state, responseId);
 	} catch (error) {
 		console.error("[responses-ws] billing failed", {
 			requestId: state.requestId,
+			chargeRequestId,
 			responseId,
 			teamId: state.teamId,
 			totalNanos,
@@ -322,6 +370,13 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 				if (upstreamWs !== state.upstreamWs) return;
 				const text = await decodeWebSocketMessageData(event.data);
 				if (!text) return;
+				if (
+					typeof (gatewayWs as any).bufferedAmount === "number" &&
+					(gatewayWs as any).bufferedAmount > WEBSOCKET_MAX_BUFFERED_BYTES
+				) {
+					closeGatewaySocket(1009, "gateway_backpressure_limit");
+					return;
+				}
 				try {
 					gatewayWs.send(text);
 				} catch {

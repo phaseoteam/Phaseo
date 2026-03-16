@@ -278,17 +278,15 @@ export type IRChatRequest = {
 
 export type IREmbeddingsRequest = {
 	model: string;
-	input: string | string[];
+	input: IREmbeddingsInput;
 	encodingFormat?: string;
 	dimensions?: number;
-	embeddingOptions?: {
+	providerOptions?: {
 		google?: {
-			outputDimensionality?: number;
 			taskType?: string;
 			title?: string;
 		};
 		mistral?: {
-			outputDimension?: number;
 			outputDtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
 		};
 	};
@@ -297,6 +295,20 @@ export type IREmbeddingsRequest = {
 	// Debug-only fields (never logged)
 	rawRequest?: any;
 };
+
+export type IREmbeddingsContentPart = Extract<
+	IRContentPart,
+	{ type: "text" | "image" | "audio" | "video" }
+>;
+
+export type IREmbeddingsInputItem =
+	| string
+	| number[]
+	| IREmbeddingsContentPart[];
+
+export type IREmbeddingsInput =
+	| IREmbeddingsInputItem
+	| IREmbeddingsInputItem[];
 
 export type IREmbedding = {
 	index: number;
@@ -307,6 +319,11 @@ export type IREmbeddingsUsage = {
 	inputTokens?: number;
 	totalTokens?: number;
 	embeddingTokens?: number;
+	_ext?: {
+		inputImageTokens?: number;
+		inputAudioTokens?: number;
+		inputVideoTokens?: number;
+	};
 };
 
 export type IREmbeddingsResponse = {
@@ -476,7 +493,11 @@ export type IRVideoGenerationRequest = {
 	model: string;
 	prompt: string;
 	seconds?: number | string;
+	// Canonical size key used across video pricing and executors.
+	// Example values: "768p", "1080p", "1280x720".
 	size?: string;
+	// Legacy alias retained while callers migrate to size.
+	resolution?: string;
 	quality?: string;
 	inputReference?: string;
 	inputReferenceMimeType?: string;
@@ -494,7 +515,6 @@ export type IRVideoGenerationRequest = {
 	durationSeconds?: number;
 	ratio?: string;
 	aspectRatio?: string;
-	resolution?: string;
 	compressionQuality?: number;
 	negativePrompt?: string;
 	sampleCount?: number;

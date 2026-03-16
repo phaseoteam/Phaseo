@@ -24,8 +24,23 @@ const CACHED_READ_SUBSET_PROVIDERS = new Set([
     "openai",
     "google",
     "google-ai-studio",
-    "google-vertex",
 ]);
+
+/**
+ * Remove billing outputs from a usage payload so downstream pricing
+ * always derives from raw usage meters.
+ */
+export function stripUsagePricing(usage: any) {
+    if (!usage || typeof usage !== "object") return usage;
+    const base: any = { ...usage };
+    delete base.pricing;
+    delete base.pricing_breakdown;
+    delete base.cost_usd;
+    delete base.cost_usd_str;
+    delete base.cost_cents;
+    delete base.currency;
+    return base;
+}
 
 /**
  * Shape usage for client-facing responses:
@@ -37,6 +52,10 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     if (!usage || typeof usage !== "object") return usage;
 
     const base: any = { ...usage };
+    const textEndpoint =
+        ctx?.endpoint === "chat.completions" ||
+        ctx?.endpoint === "responses" ||
+        ctx?.endpoint === "messages";
 
     // Derive multimodal counts when upstream usage omits them.
     if (ctx?.endpoint === "chat.completions") {
@@ -184,6 +203,10 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
         const requestCount = resolveRequestCountUsage(base);
         if (typeof requestCount === "number") {
             base.requests = requestCount;
+        } else if (textEndpoint) {
+            // Ensure text surfaces always expose at least one request meter when usage exists
+            // but token counts are missing or zero.
+            base.requests = 1;
         }
     }
 

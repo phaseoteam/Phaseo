@@ -60,8 +60,8 @@ export default async function SettingsLayout({
 			<SidebarProvider defaultOpen className="flex flex-1 min-h-0">
 				<Sidebar
 					// Use shadcn's fixed desktop sidebar so it does not move when the page scrolls.
-					// Offset by the sticky site header height (navbar + announcement bar).
-					className="top-[6.25rem] h-auto bg-white dark:bg-zinc-950"
+					// Offset by the sticky site header height.
+					className="top-16 h-auto bg-white dark:bg-zinc-950"
 				>
 					<SettingsSidebar showBroadcast={showBroadcast} />
 				</Sidebar>

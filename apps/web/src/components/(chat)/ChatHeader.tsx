@@ -121,8 +121,11 @@ const CAPABILITY_LABELS: Record<UnifiedChatEndpoint, string> = {
 	responses: "Text",
 	"images.generations": "Image",
 	"video.generation": "Video",
-	"music.generate": "Music",
 	"audio.speech": "Audio",
+	"audio.transcription": "Transcription",
+	"audio.translation": "Translation",
+	moderations: "Moderation",
+	embeddings: "Embeddings",
 };
 
 const getModelBadgeProps = (suffix: string) => {

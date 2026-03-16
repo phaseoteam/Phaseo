@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	Sidebar,
@@ -19,6 +18,7 @@ import type {
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
 import { deleteChat, getAllChats, upsertChat } from "@/lib/indexeddb/chats";
+import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { FEATURED_MODEL_IDS } from "@/components/(chat)/playgroundConfig";
 import {
 	ChatConversation,
@@ -48,14 +48,11 @@ import {
 	capabilityIdsToUnifiedEndpoints,
 	getPrimaryUnifiedCapability,
 	inferModelCapabilityEndpoint,
-	inferUnifiedEndpoint,
 	supportsAudioInputByCapabilities,
 } from "@/components/(chat)/playground/capability-utils";
 import {
 	APP_HEADERS,
-	COMPLETED_STATUSES,
 	DEFAULT_SETTINGS,
-	PENDING_STATUSES,
 	STORAGE_KEYS,
 	TEMP_CHAT_ID,
 	buildDefaultSystemPrompt,
@@ -63,22 +60,17 @@ import {
 	buildTitle,
 	ensureModelOverridesForIds,
 	ensureVariants,
-	extractGenerationResourceId,
 	extractTotalCostUsd,
-	extractUnifiedMediaUrl,
 	formatModelLabel,
 	formatOrgLabel,
 	generateId,
 	getChangedSettings,
 	getEffectiveModelSettings,
-	getEndpointResultLabel,
 	getOrgId,
 	isModelExpired,
 	normalizeBaseUrl,
-	normalizeGenerationStatus,
 	nowIso,
 	shouldRequestImageModalities,
-	wait,
 	type ModelOption,
 	type PersonalizationSettings,
 	type SettingChange,
@@ -92,7 +84,6 @@ type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
 	modelParam?: string | null;
 	promptParam?: string | null;
-	mode?: "classic" | "unified";
 };
 
 type ChatUser = {
@@ -101,9 +92,6 @@ type ChatUser = {
 	name: string;
 	avatarUrl: string | null;
 };
-
-const CHAT_BETA_ISSUES_HREF =
-	"https://github.com/AI-Stats/AI-Stats/issues/new/choose";
 
 const canonicalizeModelKey = (value: string) =>
 	value
@@ -138,9 +126,8 @@ function ChatPlaygroundContent({
 	models,
 	modelParam,
 	promptParam,
-	mode = "classic",
 }: ChatPlaygroundProps) {
-	const isUnified = mode === "unified";
+	const isUnified = true;
 	const [threads, setThreads] = useState<ChatThread[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
@@ -179,7 +166,10 @@ function ChatPlaygroundContent({
 	const [groupingNowMs, setGroupingNowMs] = useState<number | null>(null);
 
 	const selectableModels = useMemo(
-		() => models.filter((model) => !isModelExpired(model)),
+		() =>
+			filterModelsForRoom(models, "text").filter(
+				(model) => !isModelExpired(model),
+			),
 		[models],
 	);
 	const defaultModelId = selectableModels[0]?.modelId ?? "";
@@ -405,7 +395,7 @@ function ChatPlaygroundContent({
 	}, []);
 
 	const handleExportChats = useCallback(async () => {
-		const chats = await getAllChats();
+		const chats = await getAllChats("text");
 		const payload = {
 			exportedAt: new Date().toISOString(),
 			chats,
@@ -493,9 +483,9 @@ function ChatPlaygroundContent({
 		[getModelCapabilities],
 	);
 	const activeModelCapability = useMemo(() => {
-		if (!isUnified || !activeThread?.modelId) return null;
-		return getPrimaryCapabilityForModel(activeThread.modelId);
-	}, [getPrimaryCapabilityForModel, isUnified, activeThread?.modelId]);
+		if (!activeThread?.modelId) return null;
+		return "responses" as UnifiedChatEndpoint;
+	}, [activeThread?.modelId]);
 
 	const sortedThreads = useMemo(() => {
 		return [...threads].sort((a, b) =>
@@ -561,7 +551,7 @@ function ChatPlaygroundContent({
 	}, [groupingNowMs, sortedThreads]);
 
 	const persistThread = useCallback(async (thread: ChatThread) => {
-		await upsertChat(thread);
+		await upsertChat(thread, "text");
 	}, []);
 
 	const setActiveThread = useCallback(
@@ -598,7 +588,7 @@ function ChatPlaygroundContent({
 					systemPrompt: buildDefaultSystemPrompt(preferredModelId),
 				},
 			};
-			await upsertChat(newThread);
+			await upsertChat(newThread, "text");
 			return [newThread];
 		},
 		[],
@@ -646,7 +636,7 @@ function ChatPlaygroundContent({
 				accentColor: storedAccent,
 			});
 
-			const chats = await getAllChats();
+			const chats = await getAllChats("text");
 			const normalized = await ensureInitialThread(chats, resolvedModel);
 			if (!mounted) return;
 			setThreads(normalized);
@@ -780,7 +770,7 @@ function ChatPlaygroundContent({
 					modelOverridesById,
 				},
 			};
-			await upsertChat(newThread);
+			await upsertChat(newThread, "text");
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
 		},
@@ -1043,13 +1033,7 @@ function ChatPlaygroundContent({
 					?.content.trim() ||
 				sendPayload?.content.trim() ||
 				"";
-			const endpoint: UnifiedChatEndpoint = isUnified
-				? inferUnifiedEndpoint({
-						modelId: effectiveModelId,
-						defaultCapability:
-							getPrimaryCapabilityForModel(effectiveModelId),
-					})
-				: "responses";
+			const endpoint: UnifiedChatEndpoint = "responses";
 			const wantsImageModalities =
 				endpoint === "responses" &&
 				(thread.settings.imageOutputEnabled ||
@@ -1104,6 +1088,11 @@ function ChatPlaygroundContent({
 									format: formatFromMime || "wav",
 								},
 							});
+						} else if (attachment.isVideo) {
+							contentParts.push({
+								type: "input_video",
+								url: attachment.dataUrl,
+							});
 						} else {
 							contentParts.push({
 								type: "input_file",
@@ -1133,25 +1122,6 @@ function ChatPlaygroundContent({
 				) {
 					requestBody.tools = [{ type: "web_search_preview" }];
 				}
-			} else if (endpoint === "images.generations") {
-				requestBody.prompt = latestUserPrompt || "Generate an image.";
-			} else if (endpoint === "video.generation") {
-				requestBody.prompt =
-					latestUserPrompt || "Generate a short cinematic video.";
-				const firstImage = preparedAttachments.find(
-					(attachment) => attachment.isImage,
-				);
-				if (firstImage) {
-					requestBody.image = firstImage.dataUrl;
-				}
-			} else if (endpoint === "music.generate") {
-				requestBody.prompt =
-					latestUserPrompt || "Generate a short ambient music loop.";
-			} else if (endpoint === "audio.speech") {
-				requestBody.input =
-					latestUserPrompt || "Hello from AI Stats unified chat.";
-				requestBody.voice = "alloy";
-				requestBody.format = "mp3";
 			}
 
 			if (
@@ -1264,25 +1234,18 @@ function ChatPlaygroundContent({
 			});
 
 			try {
-				const useUnifiedRoute = isUnified || endpoint !== "responses";
-				const response = await fetch(
-					useUnifiedRoute
-						? "/api/chat/unified"
-						: "/api/chat/playground",
-					{
+				const response = await fetch("/api/chat/text", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						baseUrl: base,
-						...(useUnifiedRoute ? { endpoint } : {}),
 						requestBody,
 						appHeaders: APP_HEADERS,
 						debug: shouldDebug,
 					}),
-					},
-				);
+				});
 				// eslint-disable-next-line no-console
 				console.log(
 					"[chat] response",
@@ -1337,15 +1300,12 @@ function ChatPlaygroundContent({
 					} else {
 						const blob = await response.blob();
 						const objectUrl = URL.createObjectURL(blob);
-						assistantContent = `[${getEndpointResultLabel(endpoint)}](${objectUrl})`;
+						assistantContent = `[Open result](${objectUrl})`;
 					}
 
 					if (data) {
 						const reply = extractResponseText(data);
 						const images = extractResponseImages(data);
-						const mediaUrl = extractUnifiedMediaUrl(data);
-						const status = normalizeGenerationStatus(data);
-						const resourceId = extractGenerationResourceId(data);
 						finalUsage =
 							data?.usage ??
 							data?.response?.usage ??
@@ -1366,70 +1326,8 @@ function ChatPlaygroundContent({
 							mergedMeta.total_cost_usd = totalCostUsd;
 						}
 						assistantContent = appendImagesToText(reply, images);
-						if (mediaUrl) {
-							const mediaLabel = getEndpointResultLabel(endpoint);
-							assistantContent = [assistantContent, `[${mediaLabel}](${mediaUrl})`]
-								.filter(Boolean)
-								.join("\n\n");
-						}
 						if (!assistantContent) {
-							assistantContent =
-								status && PENDING_STATUSES.has(status)
-									? "Generating..."
-									: "Request completed.";
-						}
-						if (
-							endpoint === "video.generation" &&
-							resourceId &&
-							status &&
-							PENDING_STATUSES.has(status)
-						) {
-							for (let attempt = 1; attempt <= 80; attempt += 1) {
-								await wait(2500);
-								const pollResponse = await fetch("/api/chat/unified", {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/json",
-									},
-									body: JSON.stringify({
-										baseUrl: base,
-										endpoint,
-										poll: { resourceId },
-										appHeaders: APP_HEADERS,
-										debug: shouldDebug,
-									}),
-								});
-								if (!pollResponse.ok) continue;
-								const pollType =
-									pollResponse.headers.get("content-type") ?? "";
-								if (!pollType.includes("application/json")) {
-									const pollBlob = await pollResponse.blob();
-									const pollUrl = URL.createObjectURL(pollBlob);
-									assistantContent = `[${getEndpointResultLabel(endpoint)}](${pollUrl})`;
-									break;
-								}
-								const pollData = await pollResponse.json();
-								const pollUrl = extractUnifiedMediaUrl(pollData);
-								const pollStatus = normalizeGenerationStatus(pollData);
-								if (pollUrl) {
-									assistantContent = `[${getEndpointResultLabel(endpoint)}](${pollUrl})`;
-									break;
-								}
-								if (pollStatus && COMPLETED_STATUSES.has(pollStatus)) {
-									assistantContent = "Video generation completed.";
-									break;
-								}
-								assistantContent = `Generating... (${attempt})`;
-								latestThread = updateAssistantVariant(
-									latestThread,
-									assistantId,
-									variantIndex,
-									assistantContent,
-									finalUsage,
-									mergedMeta,
-								);
-								await updateThreadState(latestThread, false);
-							}
+							assistantContent = "Request completed.";
 						}
 						if (shouldDebug) {
 							// eslint-disable-next-line no-console
@@ -2033,13 +1931,7 @@ function ChatPlaygroundContent({
 			}
 
 			await updateThreadState(updatedThread, !temporaryMode);
-			const inferredEndpoint = isUnified
-				? inferUnifiedEndpoint({
-						modelId: updatedThread.modelId,
-						defaultCapability:
-							getPrimaryCapabilityForModel(updatedThread.modelId),
-					})
-				: "responses";
+			const inferredEndpoint: UnifiedChatEndpoint = "responses";
 			if (
 				isUnified &&
 				!isModelCapabilityCompatible(
@@ -2066,15 +1958,12 @@ function ChatPlaygroundContent({
 				setModelPickerOpen(true);
 				return;
 			}
-			const candidateModelIds =
-				isUnified && inferredEndpoint === "responses"
-					? Array.from(
-							new Set([
-								updatedThread.modelId,
-								...(updatedThread.settings.compareModelIds ?? []),
-							]),
-						).filter(Boolean)
-					: [updatedThread.modelId].filter(Boolean);
+			const candidateModelIds = Array.from(
+				new Set([
+					updatedThread.modelId,
+					...(updatedThread.settings.compareModelIds ?? []),
+				]),
+			).filter(Boolean);
 			const enabledModelIds = candidateModelIds.filter((modelId) => {
 				const modelSettings = getEffectiveModelSettings(
 					updatedThread,
@@ -2373,7 +2262,7 @@ function ChatPlaygroundContent({
 				messages,
 				settings: { ...activeThread.settings },
 			};
-			await upsertChat(newThread);
+		await upsertChat(newThread, "text");
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
 		},
@@ -2589,12 +2478,10 @@ function ChatPlaygroundContent({
 		updateActiveModel(queryModelId);
 	}, [activeThread, queryModelId, queryModelIsValid, updateActiveModel]);
 	useEffect(() => {
-		if (!isUnified || !activeThread?.modelId) return;
+		if (!activeThread?.modelId) return;
 		const compareIds = activeThread.settings.compareModelIds ?? [];
 		if (!compareIds.length) return;
-		const requiredCapability = getPrimaryCapabilityForModel(
-			activeThread.modelId,
-		);
+		const requiredCapability: UnifiedChatEndpoint = "responses";
 		const normalizedCompareIds = compareIds.filter(
 			(id) =>
 				id &&
@@ -2622,9 +2509,7 @@ function ChatPlaygroundContent({
 	}, [
 		activeThread,
 		composerRequiresAudioInput,
-		getPrimaryCapabilityForModel,
 		isModelSelectableForContext,
-		isUnified,
 		temporaryMode,
 		updateThreadState,
 	]);
@@ -2649,7 +2534,7 @@ function ChatPlaygroundContent({
 	const handleDeleteThread = async () => {
 		if (!deleteTarget) return;
 		const threadId = deleteTarget.id;
-		await deleteChat(threadId);
+		await deleteChat(threadId, "text");
 		setThreads((prev) => prev.filter((thread) => thread.id !== threadId));
 		if (activeId === threadId) {
 			const remaining = threads.filter(
@@ -2761,7 +2646,7 @@ function ChatPlaygroundContent({
 	}, [activeThread?.settings.modelOverridesById, selectedModelIds]);
 	const modelSettingsChoices = useMemo(
 		() => {
-			const requiredCapability = isUnified ? activeModelCapability : null;
+			const requiredCapability = activeModelCapability;
 			const requiresAudioInput = composerRequiresAudioInput;
 			const byId = new Map<
 				string,
@@ -3074,7 +2959,7 @@ function ChatPlaygroundContent({
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
 					onDebugChange={handleDebugChange}
-					allowModelCompare={isUnified}
+					allowModelCompare
 					compareModelIds={
 						activeThread?.settings.compareModelIds ?? []
 					}
@@ -3089,40 +2974,10 @@ function ChatPlaygroundContent({
 					requiredCapability={activeModelCapability}
 					requireAudioInput={composerRequiresAudioInput}
 				/>
-				{isUnified ? (
-					<div className="border-b border-border bg-amber-50/40 px-4 py-2 md:px-8 dark:bg-amber-950/20">
-						<p className="text-xs text-muted-foreground">
-							<span className="font-medium text-foreground">Beta:</span>{" "}
-							The unified chat playground is in beta. Please report any issues on{" "}
-							<Link
-								href={CHAT_BETA_ISSUES_HREF}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
-							>
-								GitHub
-							</Link>
-							.
-						</p>
-					</div>
-				) : (
-					<div className="border-b border-border px-4 py-2 md:px-8">
-						<p className="text-xs text-muted-foreground">
-							Try the unified chat experience for multimodal endpoints and side-by-side model comparisons.{" "}
-							<Link
-								href="/chat"
-								className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
-							>
-								Open unified playground
-							</Link>
-							.
-						</p>
-					</div>
-				)}
 				<ChatConversation
 					activeThread={activeThread}
 					isSending={isSending}
-					mode={mode}
+					mode="unified"
 					webSearchEnabled={
 						activeThread?.settings.webSearchEnabled ?? false
 					}

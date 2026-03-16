@@ -218,9 +218,7 @@ function encodeResponsesUsage(usage: IRUsage) {
         outputDetails.output_videos = usage._ext.outputVideoTokens;
     }
 
-    const inputTextTokens = typeof usage.cachedInputTokens === "number"
-        ? Math.max(0, usage.inputTokens - usage.cachedInputTokens)
-        : usage.inputTokens;
+    const inputTextTokens = usage.inputTokens;
     const out: any = {
         input_tokens: usage.inputTokens,
         output_tokens: usage.outputTokens,
@@ -230,7 +228,6 @@ function encodeResponsesUsage(usage: IRUsage) {
     };
     if (typeof usage.cachedInputTokens === "number") {
         out.cached_read_text_tokens = usage.cachedInputTokens;
-        out.cached_read_tokens_are_subset_of_input = true;
     }
     if (typeof usage.reasoningTokens === "number") {
         out.reasoning_tokens = usage.reasoningTokens;
@@ -602,9 +599,7 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
 }
 
 function encodeChatUsage(usage: IRUsage) {
-    const inputTextTokens = typeof usage.cachedInputTokens === "number"
-        ? Math.max(0, usage.inputTokens - usage.cachedInputTokens)
-        : usage.inputTokens;
+    const inputTextTokens = usage.inputTokens;
     return {
         input_tokens: usage.inputTokens,
         output_tokens: usage.outputTokens,
@@ -630,7 +625,7 @@ function encodeChatUsage(usage: IRUsage) {
         input_text_tokens: inputTextTokens,
         output_text_tokens: usage.outputTokens,
         cached_read_text_tokens: usage.cachedInputTokens,
-        cached_read_tokens_are_subset_of_input: usage.cachedInputTokens != null ? true : undefined,
+        cached_read_tokens_are_subset_of_input: undefined,
         reasoning_tokens: usage.reasoningTokens,
         cached_write_text_tokens: usage._ext?.cachedWriteTokens,
     };

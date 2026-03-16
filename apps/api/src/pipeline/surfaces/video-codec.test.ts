@@ -23,6 +23,7 @@ describe("video codec (OpenAI edge shape <-> video IR)", () => {
 		expect(ir.prompt).toContain("Cinematic");
 		expect(ir.seconds).toBe(8);
 		expect(ir.size).toBe("1280x720");
+		expect(ir.resolution).toBe("1280x720");
 		expect(ir.inputReference).toBe("https://example.com/reference.png");
 		expect(ir.aspectRatio).toBe("16:9");
 		expect(ir.numberOfVideos).toBe(2);
@@ -52,6 +53,7 @@ describe("video codec (OpenAI edge shape <-> video IR)", () => {
 		expect(ir.durationSeconds).toBe(7);
 		expect(ir.generateAudio).toBe(true);
 		expect(ir.negativePrompt).toBe("low detail");
+		expect(ir.size).toBe("1080p");
 		expect(ir.resolution).toBe("1080p");
 	});
 

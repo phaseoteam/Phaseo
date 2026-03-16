@@ -4,10 +4,12 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import {
-	getModelIdFromParams,
+	getModelPath,
+	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
+import { permanentRedirect } from "next/navigation";
 
 async function fetchModelForMetadata(modelId: string, includeHidden: boolean) {
 	try {
@@ -25,10 +27,13 @@ export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const modelId = getModelIdFromParams(params);
 	const includeHidden = false;
+	const { canonicalModelId: modelId } = await resolveModelRouteIds(
+		params,
+		includeHidden,
+	);
 	const model = await fetchModelForMetadata(modelId, includeHidden);
-	const path = `/models/${modelId}`;
+	const path = getModelPath(modelId);
 	const imagePath = `/og/models/${modelId}`;
 
 	// Fallback if the model can't be loaded
@@ -103,8 +108,15 @@ export default async function Page({
 	params: Promise<ModelRouteParams>;
 }) {
 	const routeParams = await params;
-	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const { requestedModelId, canonicalModelId } = await resolveModelRouteIds(
+		routeParams,
+		includeHidden,
+	);
+	if (canonicalModelId !== requestedModelId) {
+		permanentRedirect(getModelPath(canonicalModelId));
+	}
+	const modelId = canonicalModelId;
 
 	const model = await getModelOverviewCached(modelId, includeHidden);
 

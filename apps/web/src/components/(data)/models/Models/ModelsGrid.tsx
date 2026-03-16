@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
@@ -6,112 +7,245 @@ interface ModelsGridProps {
 	filteredModels: ModelCardType[];
 }
 
-type Group = {
-	key: string; // YYYY-MM
-	label: string; // e.g. "October 2025"
-	date: number; // timestamp of group start month
+type ModelRow = {
+	key: string;
 	models: ModelCardType[];
 };
 
-function createGroupEntry(key: string): Group | null {
-	const [yearStr, monthStr] = key.split("-");
-	const year = Number(yearStr);
-	const month = Number(monthStr);
-	if (
-		Number.isNaN(year) ||
-		Number.isNaN(month) ||
-		month < 1 ||
-		month > 12
-	) {
-		return null;
+const VIRTUALIZE_AFTER_ROWS = 60;
+const VIRTUAL_OVERSCAN_ROWS = 14;
+const DEFAULT_DESKTOP_ROW_HEIGHT = 208;
+const DEFAULT_MOBILE_ROW_HEIGHT = 320;
+const DEFAULT_WIDE_DESKTOP_ROW_HEIGHT = 196;
+
+function chunkModels(models: ModelCardType[], columns: number): ModelRow[] {
+	const rows: ModelRow[] = [];
+	for (let index = 0; index < models.length; index += columns) {
+		const rowModels = models.slice(index, index + columns);
+		rows.push({
+			key: rowModels.map((model) => model.model_id).join("__") || `row-${index}`,
+			models: rowModels,
+		});
 	}
-	const groupDate = new Date(year, month - 1, 1);
-	return {
-		key,
-		label: groupDate.toLocaleString(undefined, {
-			month: "long",
-			year: "numeric",
-		}),
-		date: groupDate.getTime(),
-		models: [],
-	};
+	return rows;
+}
+
+function useColumnCount(): number {
+	const [columnCount, setColumnCount] = useState(() => {
+		if (typeof window === "undefined") return 2;
+		if (window.matchMedia("(min-width: 1536px)").matches) return 3;
+		if (window.matchMedia("(min-width: 768px)").matches) return 2;
+		return 1;
+	});
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const desktopQuery = window.matchMedia("(min-width: 768px)");
+		const wideDesktopQuery = window.matchMedia("(min-width: 1536px)");
+		const update = () => {
+			if (wideDesktopQuery.matches) {
+				setColumnCount(3);
+				return;
+			}
+			if (desktopQuery.matches) {
+				setColumnCount(2);
+				return;
+			}
+			setColumnCount(1);
+		};
+		update();
+		desktopQuery.addEventListener("change", update);
+		wideDesktopQuery.addEventListener("change", update);
+		return () => {
+			desktopQuery.removeEventListener("change", update);
+			wideDesktopQuery.removeEventListener("change", update);
+		};
+	}, []);
+
+	return columnCount;
+}
+
+function getRenderedColumns(targetColumns: number, itemCount: number): number {
+	return Math.max(1, Math.min(targetColumns, Math.max(1, itemCount)));
+}
+
+function getRowGridClass(targetColumns: number, itemCount: number): string {
+	const columns = getRenderedColumns(targetColumns, itemCount);
+	if (columns >= 3) return "grid grid-cols-1 gap-px bg-border/70 md:grid-cols-2 2xl:grid-cols-3";
+	if (columns === 2) return "grid grid-cols-1 gap-px bg-border/70 md:grid-cols-2";
+	return "grid grid-cols-1 gap-px bg-transparent";
+}
+
+function getCellPaddingClass(rowColumnIndex: number, renderedColumns: number): string {
+	if (renderedColumns === 2) {
+		return rowColumnIndex === 0 ? "md:pr-3" : "md:pl-3";
+	}
+	if (renderedColumns === 3) {
+		if (rowColumnIndex === 0) return "2xl:pr-3";
+		if (rowColumnIndex === 1) return "2xl:px-3";
+		return "2xl:pl-3";
+	}
+	return "";
 }
 
 function ModelsGridImpl({ filteredModels }: ModelsGridProps) {
-	const groupsMap = new Map<string, Group>();
-	const unknownModels: ModelCardType[] = [];
-
-	filteredModels.forEach((model) => {
-		const groupKey = model.primary_group_key;
-		if (!groupKey) {
-			unknownModels.push(model);
-			return;
-		}
-
-		if (!groupsMap.has(groupKey)) {
-			const groupEntry = createGroupEntry(groupKey);
-			if (!groupEntry) {
-				unknownModels.push(model);
-				return;
-			}
-			groupsMap.set(groupKey, groupEntry);
-		}
-		groupsMap.get(groupKey)!.models.push(model);
-	});
-
-	// Convert groups to array and sort by date desc (newest month first)
-	const sortedGroups = Array.from(groupsMap.values()).sort(
-		(a, b) => b.date - a.date
-	);
-
-	const getTimestamp = (model: ModelCardType) => model.primary_timestamp ?? 0;
-
 	if (filteredModels.length === 0) {
 		return (
-			<div className="col-span-full text-center text-muted-foreground py-12">
+			<div className="rounded-2xl border bg-card px-4 py-10 text-center text-muted-foreground">
 				No models found for the selected filters.
 			</div>
 		);
 	}
 
-	return (
-		<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-			{/* Show other models grouped by month, with Unknown at the bottom */}
-			{sortedGroups.map((group) => (
-				<React.Fragment key={group.key}>
-					{/* Group header */}
-					<div
-						key={group.key}
-						className="col-span-full flex items-center my-2"
-					>
-						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
-						<span className="mx-4 text-xs text-muted-foreground tracking-wider font-semibold">
-							{group.label}
-						</span>
-						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
-					</div>
-					{group.models
-						.sort((a, b) => getTimestamp(b) - getTimestamp(a))
-						.map((model) => (
-							<ModelCard key={model.model_id} model={model} />
-						))}
-				</React.Fragment>
-			))}
+	const columns = useColumnCount();
+	const rows = useMemo(
+		() => chunkModels(filteredModels, columns),
+		[filteredModels, columns],
+	);
+	const shouldVirtualize = rows.length > VIRTUALIZE_AFTER_ROWS;
+	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [scrollMargin, setScrollMargin] = useState(0);
+	const lastNonEmptyVirtualRowsRef = useRef<VirtualItem[]>([]);
+	const hasCalibratedEstimateRef = useRef(false);
+	const baseEstimatedRowHeight =
+		columns >= 3
+			? DEFAULT_WIDE_DESKTOP_ROW_HEIGHT
+			: columns === 2
+				? DEFAULT_DESKTOP_ROW_HEIGHT
+				: DEFAULT_MOBILE_ROW_HEIGHT;
+	const [estimatedRowHeight, setEstimatedRowHeight] = useState(
+		baseEstimatedRowHeight,
+	);
 
-			{unknownModels.length > 0 && (
-				<>
-					<div className="col-span-full flex items-center my-2">
-						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
-						<span className="mx-4 text-xs text-muted-foreground tracking-wider font-semibold">
-							Unknown
-						</span>
-						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
-					</div>
-					{unknownModels.map((model) => (
-						<ModelCard key={model.model_id} model={model} />
+	useEffect(() => {
+		setEstimatedRowHeight(baseEstimatedRowHeight);
+		hasCalibratedEstimateRef.current = false;
+	}, [baseEstimatedRowHeight]);
+
+	useEffect(() => {
+		if (!shouldVirtualize || typeof window === "undefined") return;
+		const updateScrollMargin = () => {
+			if (!containerRef.current) return;
+			const rect = containerRef.current.getBoundingClientRect();
+			setScrollMargin(rect.top + window.scrollY);
+		};
+
+		updateScrollMargin();
+		window.addEventListener("resize", updateScrollMargin);
+		return () => window.removeEventListener("resize", updateScrollMargin);
+	}, [shouldVirtualize, rows.length, columns]);
+
+	const rowVirtualizer = useWindowVirtualizer({
+		count: rows.length,
+		estimateSize: () => estimatedRowHeight,
+		overscan: VIRTUAL_OVERSCAN_ROWS,
+		scrollMargin,
+		enabled: shouldVirtualize,
+	});
+
+	const virtualRows = rowVirtualizer.getVirtualItems();
+	const measureRowElement = useCallback(
+		(node: HTMLDivElement | null) => {
+			if (!node) return;
+			rowVirtualizer.measureElement(node);
+
+			if (hasCalibratedEstimateRef.current) return;
+			const measuredHeight = Math.ceil(node.getBoundingClientRect().height);
+			if (measuredHeight <= 0) return;
+			hasCalibratedEstimateRef.current = true;
+			if (Math.abs(measuredHeight - estimatedRowHeight) > 8) {
+				setEstimatedRowHeight(measuredHeight);
+			}
+		},
+		[rowVirtualizer, estimatedRowHeight],
+	);
+
+	useEffect(() => {
+		lastNonEmptyVirtualRowsRef.current = [];
+	}, [rows.length, columns]);
+
+	if (virtualRows.length > 0) {
+		lastNonEmptyVirtualRowsRef.current = virtualRows;
+	}
+
+	if (!shouldVirtualize) {
+		return (
+			<div className="bg-border/70">
+				<div className="space-y-px">
+					{rows.map((row) => (
+						<div
+							key={row.key}
+							className={getRowGridClass(columns, row.models.length)}
+						>
+							{row.models.map((model, rowColumnIndex) => {
+								const renderedColumns = getRenderedColumns(
+									columns,
+									row.models.length,
+								);
+								const sideClass = getCellPaddingClass(
+									rowColumnIndex,
+									renderedColumns,
+								);
+								return (
+									<div key={model.model_id} className={`bg-background ${sideClass}`}>
+										<ModelCard model={model} />
+									</div>
+								);
+							})}
+						</div>
 					))}
-				</>
-			)}
+				</div>
+			</div>
+		);
+	}
+
+	const rowsToRender =
+		virtualRows.length > 0 ? virtualRows : lastNonEmptyVirtualRowsRef.current;
+
+	return (
+		<div ref={containerRef} className="relative bg-background">
+			<div
+				className="relative"
+				style={{
+					height: `${Math.max(rowVirtualizer.getTotalSize(), estimatedRowHeight)}px`,
+				}}
+			>
+				{rowsToRender.map((virtualRow) => {
+					const row = rows[virtualRow.index];
+					const isLastRow = virtualRow.index === rows.length - 1;
+					return (
+						<div
+							key={row.key}
+							data-index={virtualRow.index}
+							ref={measureRowElement}
+							className={`absolute left-0 top-0 w-full bg-background ${
+								isLastRow ? "" : "border-b border-border/70"
+							}`}
+						style={{
+								transform: `translateY(${virtualRow.start - rowVirtualizer.options.scrollMargin}px)`,
+							}}
+						>
+							<div className={getRowGridClass(columns, row.models.length)}>
+								{row.models.map((model, rowColumnIndex) => {
+									const renderedColumns = getRenderedColumns(
+										columns,
+										row.models.length,
+									);
+									const sideClass = getCellPaddingClass(
+										rowColumnIndex,
+										renderedColumns,
+									);
+									return (
+										<div key={model.model_id} className={`bg-background ${sideClass}`}>
+											<ModelCard model={model} />
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					);
+				})}
+			</div>
 		</div>
 	);
 }

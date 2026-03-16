@@ -20,10 +20,9 @@ function mapGatewayToOpenAIEmbeddings(body: EmbeddingsRequest, providerId: strin
         user: body.user,
     };
     if (providerId === "mistral") {
-        const mistralOptions = body.embedding_options?.mistral;
-        const outputDimension = mistralOptions?.output_dimension ?? body.dimensions;
-        if (typeof outputDimension === "number") {
-            req.output_dimension = outputDimension;
+        const mistralOptions = body.provider_options?.mistral;
+        if (typeof body.dimensions === "number") {
+            req.output_dimension = body.dimensions;
         }
         if (mistralOptions?.output_dtype) {
             req.output_dtype = mistralOptions.output_dtype;

@@ -14,6 +14,12 @@ export function decodeOpenAIVideoRequestToIR(body: any): IRVideoGenerationReques
 	const googleConfig = body?.config?.google && typeof body.config.google === "object"
 		? body.config.google
 		: undefined;
+	const canonicalSize = firstDefined(
+		body?.size,
+		body?.resolution,
+		googleConfig?.size,
+		googleConfig?.resolution,
+	);
 	const referenceImages = Array.isArray(body?.reference_images)
 		? body.reference_images
 		: Array.isArray(input?.reference_images)
@@ -30,7 +36,6 @@ export function decodeOpenAIVideoRequestToIR(body: any): IRVideoGenerationReques
 			googleConfig?.duration_seconds,
 			googleConfig?.durationSeconds,
 		),
-		size: body?.size,
 		quality: body?.quality,
 		inputReference: body?.input_reference,
 		inputReferenceMimeType: body?.input_reference_mime_type,
@@ -58,7 +63,8 @@ export function decodeOpenAIVideoRequestToIR(body: any): IRVideoGenerationReques
 			googleConfig?.aspect_ratio,
 			googleConfig?.aspectRatio,
 		),
-		resolution: firstDefined(body?.resolution, googleConfig?.resolution),
+		size: canonicalSize,
+		resolution: canonicalSize,
 		compressionQuality: firstDefined(
 			body?.compression_quality,
 			googleConfig?.compression_quality,
@@ -116,8 +122,27 @@ export function encodeVideoIRToOpenAIResponse(
 			input_tokens: ir.usage.inputTokens ?? 0,
 			output_tokens: ir.usage.outputTokens ?? 0,
 			total_tokens: ir.usage.totalTokens ?? ((ir.usage.inputTokens ?? 0) + (ir.usage.outputTokens ?? 0)),
-			...((ir.status === "completed" && (ir.usage as any).output_video_seconds != null)
-				? { output_video_seconds: Number((ir.usage as any).output_video_seconds) }
+			...(typeof (ir.usage as any).requests === "number" ? { requests: (ir.usage as any).requests } : {}),
+			...(typeof (ir.usage as any).output_video_seconds === "number"
+				? { output_video_seconds: (ir.usage as any).output_video_seconds }
+				: {}),
+			...(typeof (ir.usage as any).input_image_tokens === "number"
+				? { input_image_tokens: (ir.usage as any).input_image_tokens }
+				: {}),
+			...(typeof (ir.usage as any).input_audio_tokens === "number"
+				? { input_audio_tokens: (ir.usage as any).input_audio_tokens }
+				: {}),
+			...(typeof (ir.usage as any).input_video_tokens === "number"
+				? { input_video_tokens: (ir.usage as any).input_video_tokens }
+				: {}),
+			...(typeof (ir.usage as any).output_image_tokens === "number"
+				? { output_image_tokens: (ir.usage as any).output_image_tokens }
+				: {}),
+			...(typeof (ir.usage as any).output_audio_tokens === "number"
+				? { output_audio_tokens: (ir.usage as any).output_audio_tokens }
+				: {}),
+			...(typeof (ir.usage as any).output_video_tokens === "number"
+				? { output_video_tokens: (ir.usage as any).output_video_tokens }
 				: {}),
 		}
 		: undefined;

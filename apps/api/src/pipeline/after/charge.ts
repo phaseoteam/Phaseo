@@ -15,7 +15,6 @@ export async function recordUsageAndChargeOnce(args: {
 
 	const meta = ctx.meta as Record<string, unknown>;
 	if (meta.__usageChargeRecorded === true) return;
-	meta.__usageChargeRecorded = true;
 
 	try {
 		await recordUsageAndCharge({
@@ -23,6 +22,7 @@ export async function recordUsageAndChargeOnce(args: {
 			teamId: ctx.teamId,
 			cost_nanos: costNanos,
 		});
+		meta.__usageChargeRecorded = true;
 	} catch (chargeErr) {
 		console.error("recordUsageAndCharge failed", {
 			error: chargeErr,

@@ -1,0 +1,20 @@
+---
+title: "Embeddings"
+description: "Call /embeddings with the Java SDK."
+---
+
+**Method**: `Operations.createEmbedding(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "google/gemini-embedding-001",
+  "input": "Vector search uses embeddings to compare meaning"
+}
+""";
+
+Object response = Operations.createEmbedding(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```

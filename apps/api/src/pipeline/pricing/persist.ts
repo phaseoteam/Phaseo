@@ -14,10 +14,6 @@ type ChargeRpcResult = {
     already_applied?: boolean;
 };
 
-let chargeOnceRpcAvailable: boolean | null = null;
-let chargeOnceRpcRetryAfterMs = 0;
-const CHARGE_ONCE_RPC_RETRY_BACKOFF_MS = 60_000;
-
 function getStripe(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
@@ -60,26 +56,10 @@ function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
     };
 }
 
-function isMissingRpcFunction(error: any, functionName: string): boolean {
-    const message = String(error?.message ?? "");
-    const details = String(error?.details ?? "");
-    return (
-        message.includes(functionName) ||
-        details.includes(functionName) ||
-        message.includes("Could not find the function")
-    );
-}
-
-function isChargeOnceRpcIncompatible(error: any): boolean {
-    const code = String(error?.code ?? "");
-    const message = String(error?.message ?? "").toLowerCase();
-    const details = String(error?.details ?? "").toLowerCase();
-    if (code === "42703") return true;
-    return (
-        (message.includes("v_result") && message.includes("status")) ||
-        (details.includes("v_result") && details.includes("status")) ||
-        message.includes("has no field")
-    );
+function buildAutoTopUpIdempotencyKey(args: { teamId: string; requestId: string }): string {
+    const normalizedTeamId = args.teamId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const normalizedRequestId = args.requestId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    return `auto_top_up:${normalizedTeamId}:${normalizedRequestId}`.slice(0, 255);
 }
 
 // src/lib/gateway/pricing/persist.ts
@@ -91,60 +71,15 @@ export async function recordUsageAndCharge(args: {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const supabase = getSupabaseAdmin();
-
-        // Enterprise invoice mode is post-paid: skip wallet debit + auto top-up.
-        // Usage is still recorded in gateway_requests during the after-stage.
-        try {
-            const { data: teamRow, error: teamErr } = await supabase
-                .from("teams")
-                .select("tier,billing_mode")
-                .eq("id", args.teamId)
-                .maybeSingle();
-            if (!teamErr) {
-                const tier = String(teamRow?.tier ?? "basic").toLowerCase();
-                const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();
-                if (tier === "enterprise" && billingMode === "invoice") {
-                    return;
-                }
-            }
-        } catch {
-            // Continue with wallet flow if team billing state cannot be read.
-        }
-
-        let chargeResult: ChargeRpcResult | null = null;
-        const now = Date.now();
-        const shouldTryChargeOnceRpc =
-            chargeOnceRpcAvailable !== false || now >= chargeOnceRpcRetryAfterMs;
-        if (shouldTryChargeOnceRpc) {
-            const onceRpc = await supabase.rpc("gateway_deduct_and_check_top_up_once", {
-                p_team_id: args.teamId,
-                p_request_id: args.requestId,
-                p_cost_nanos: args.cost_nanos,
-            });
-            if (onceRpc.error) {
-                if (
-                    !isMissingRpcFunction(onceRpc.error, "gateway_deduct_and_check_top_up_once") &&
-                    !isChargeOnceRpcIncompatible(onceRpc.error)
-                ) {
-                    throw onceRpc.error;
-                }
-                chargeOnceRpcAvailable = false;
-                chargeOnceRpcRetryAfterMs = now + CHARGE_ONCE_RPC_RETRY_BACKOFF_MS;
-            } else {
-                chargeOnceRpcAvailable = true;
-                chargeOnceRpcRetryAfterMs = 0;
-                chargeResult = normalizeChargeRpcResult(onceRpc.data);
-            }
-        }
-
-        if (!chargeResult) {
-            const fallbackRpc = await supabase.rpc("deduct_and_check_top_up", {
-                p_team_id: args.teamId,
-                p_cost_nanos: args.cost_nanos,
-            });
-            if (fallbackRpc.error) throw fallbackRpc.error;
-            chargeResult = normalizeChargeRpcResult(fallbackRpc.data);
-        }
+        // Invoicing is intentionally disabled right now; all charges must flow through
+        // the idempotent gateway_deduct_and_check_top_up_once RPC.
+        const onceRpc = await supabase.rpc("gateway_deduct_and_check_top_up_once", {
+            p_team_id: args.teamId,
+            p_request_id: args.requestId,
+            p_cost_nanos: args.cost_nanos,
+        });
+        if (onceRpc.error) throw onceRpc.error;
+        const chargeResult = normalizeChargeRpcResult(onceRpc.data);
 
         if (!chargeResult) return;
         if (chargeResult.already_applied) return;
@@ -178,15 +113,31 @@ export async function recordUsageAndCharge(args: {
                 return;
             }
 
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: amount_cents,
-                currency: 'usd',
-                customer: chargeResult.stripe_customer_id,
-                payment_method: paymentMethod,
-                off_session: true,
-                confirm: true,
-                metadata: { purpose: 'credits_topup_offsession' }
-            });
+            const topUpMetadata: Record<string, string> = {
+                purpose: "credits_topup_offsession",
+                team_id: args.teamId,
+                request_id: args.requestId,
+                auto_top_up_amount_nanos: String(chargeResult.auto_top_up_amount_nanos),
+                auto_top_up_payment_method_id: paymentMethod,
+            };
+
+            const paymentIntent = await stripe.paymentIntents.create(
+                {
+                    amount: amount_cents,
+                    currency: "usd",
+                    customer: chargeResult.stripe_customer_id ?? undefined,
+                    payment_method: paymentMethod,
+                    off_session: true,
+                    confirm: true,
+                    metadata: topUpMetadata,
+                },
+                {
+                    idempotencyKey: buildAutoTopUpIdempotencyKey({
+                        teamId: args.teamId,
+                        requestId: args.requestId,
+                    }),
+                }
+            );
 
             // Log success or handle failure
             console.log(`[auto-recharge] Initiated for team ${args.teamId}, payment intent ${paymentIntent.id}, amount: $${(amount_cents / 100).toFixed(2)}`);

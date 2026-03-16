@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 import {
-	getModelIdFromParams,
+	getModelPath,
+	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 
@@ -21,6 +22,10 @@ export default async function Page({
 	params: Promise<ModelRouteParams>;
 }) {
 	const routeParams = await params;
-	const modelId = getModelIdFromParams(routeParams);
-	redirect(`/models/${modelId}/providers`);
+	const includeHidden = false;
+	const { canonicalModelId } = await resolveModelRouteIds(
+		routeParams,
+		includeHidden,
+	);
+	permanentRedirect(getModelPath(canonicalModelId, "providers"));
 }

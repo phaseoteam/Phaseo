@@ -1,0 +1,28 @@
+---
+title: "Batches"
+description: "Call /batches with the Java SDK."
+---
+
+**Methods**: `Operations.createBatch(...)`, `Operations.retrieveBatch(...)`
+
+```java
+import ai.stats.gen.Operations;
+import java.util.HashMap;
+import java.util.Map;
+
+String createBody = """
+{
+  "endpoint": "responses",
+  "input_file_id": "file_123",
+  "completion_window": "24h"
+}
+""";
+
+Object created = Operations.createBatch(client, null, null, null, createBody);
+System.out.println(String.valueOf(created));
+
+Map<String, String> path = new HashMap<>();
+path.put("batch_id", "batch_123");
+Object retrieved = Operations.retrieveBatch(client, path, null, null, null);
+System.out.println(String.valueOf(retrieved));
+```

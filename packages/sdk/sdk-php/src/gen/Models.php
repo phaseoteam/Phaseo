@@ -288,16 +288,20 @@ class Embedding
 	public $object;
 }
 
+class EmbeddingsMultimodalInput
+{
+	public $content;
+}
+
 class EmbeddingsRequest
 {
 	public $debug;
 	public $dimensions;
-	public $embedding_options;
 	public $encoding_format;
 	public $input;
-	public $inputs;
 	public $model;
 	public $provider;
+	public $provider_options;
 	public $user;
 }
 

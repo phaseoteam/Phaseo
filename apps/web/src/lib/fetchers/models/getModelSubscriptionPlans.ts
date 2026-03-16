@@ -152,6 +152,7 @@ export async function getModelSubscriptionPlansCached(
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:data:${modelId}`);
     cacheTag("data:subscription_plans");
     cacheTag("data:subscription_plan_models");
 

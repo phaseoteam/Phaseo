@@ -26,6 +26,8 @@ const IMAGE_MODEL_HINTS = [
 
 const MUSIC_MODEL_HINTS = ["music", "udio", "suno", "melody"];
 const SPEECH_MODEL_HINTS = ["tts", "text-to-speech", "speech", "voice"];
+const MODERATION_MODEL_HINTS = ["moderation"];
+const EMBEDDING_MODEL_HINTS = ["embedding", "embed"];
 
 export const AUDIO_INPUT_MODEL_HINTS = [
 	"audio",
@@ -96,11 +98,23 @@ function capabilityIdToUnifiedEndpoint(
 	) {
 		return "video.generation";
 	}
-	if (normalized === "music.generate") {
-		return "music.generate";
-	}
 	if (normalized === "audio.speech" || normalized === "audio.generate") {
 		return "audio.speech";
+	}
+	if (
+		normalized === "audio.transcribe" ||
+		normalized === "audio.transcription"
+	) {
+		return "audio.transcription";
+	}
+	if (normalized === "audio.translate" || normalized === "audio.translation") {
+		return "audio.translation";
+	}
+	if (normalized === "moderation" || normalized === "moderations.create") {
+		return "moderations";
+	}
+	if (normalized === "text.embed" || normalized === "embeddings") {
+		return "embeddings";
 	}
 	return null;
 }
@@ -125,10 +139,16 @@ export function inferModelCapabilityEndpoint(
 	if (includesAnyHint(normalized, VIDEO_MODEL_HINTS)) {
 		return "video.generation";
 	}
-	if (includesAnyHint(normalized, MUSIC_MODEL_HINTS)) {
-		return "music.generate";
+	if (includesAnyHint(normalized, MODERATION_MODEL_HINTS)) {
+		return "moderations";
+	}
+	if (includesAnyHint(normalized, EMBEDDING_MODEL_HINTS)) {
+		return "embeddings";
 	}
 	if (includesAnyHint(normalized, SPEECH_MODEL_HINTS)) {
+		return "audio.speech";
+	}
+	if (includesAnyHint(normalized, MUSIC_MODEL_HINTS)) {
 		return "audio.speech";
 	}
 	if (includesAnyHint(normalized, IMAGE_MODEL_HINTS)) {
@@ -142,8 +162,11 @@ export function getPrimaryUnifiedCapability(
 ): UnifiedChatEndpoint {
 	if (endpoints.includes("responses")) return "responses";
 	if (endpoints.includes("video.generation")) return "video.generation";
-	if (endpoints.includes("music.generate")) return "music.generate";
+	if (endpoints.includes("moderations")) return "moderations";
+	if (endpoints.includes("embeddings")) return "embeddings";
 	if (endpoints.includes("audio.speech")) return "audio.speech";
+	if (endpoints.includes("audio.transcription")) return "audio.transcription";
+	if (endpoints.includes("audio.translation")) return "audio.translation";
 	if (endpoints.includes("images.generations")) return "images.generations";
 	return "responses";
 }

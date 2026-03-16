@@ -28,7 +28,8 @@ module AiStats
     DataModelOrganisation = Object
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
     Embedding = Struct.new(:embedding, :index, :object, keyword_init: true)
-    EmbeddingsRequest = Struct.new(:debug, :dimensions, :embedding_options, :encoding_format, :input, :inputs, :model, :provider, :user, keyword_init: true)
+    EmbeddingsMultimodalInput = Struct.new(:content, keyword_init: true)
+    EmbeddingsRequest = Struct.new(:debug, :dimensions, :encoding_format, :input, :model, :provider, :provider_options, :user, keyword_init: true)
     EmbeddingsResponse = Struct.new(:data, :model, :object, :usage, keyword_init: true)
     ErrorResponse = Struct.new(:description, :error, :message, :ok, keyword_init: true)
     FileResponse = Struct.new(:bytes, :created_at, :filename, :id, :object, :purpose, :status, :status_details, keyword_init: true)
