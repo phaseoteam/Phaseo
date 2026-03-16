@@ -19,6 +19,29 @@ const pickNumber = (obj: any, path: string): number | undefined => {
     return typeof cur === "number" ? cur : undefined;
 };
 
+const CACHED_READ_SUBSET_PROVIDERS = new Set([
+    "x-ai",
+    "openai",
+    "google",
+    "google-ai-studio",
+]);
+
+/**
+ * Remove billing outputs from a usage payload so downstream pricing
+ * always derives from raw usage meters.
+ */
+export function stripUsagePricing(usage: any) {
+    if (!usage || typeof usage !== "object") return usage;
+    const base: any = { ...usage };
+    delete base.pricing;
+    delete base.pricing_breakdown;
+    delete base.cost_usd;
+    delete base.cost_usd_str;
+    delete base.cost_cents;
+    delete base.currency;
+    return base;
+}
+
 /**
  * Shape usage for client-facing responses:
  * - Prefer OpenAI-style keys (input_tokens, output_tokens, total_tokens)
@@ -29,6 +52,10 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     if (!usage || typeof usage !== "object") return usage;
 
     const base: any = { ...usage };
+    const textEndpoint =
+        ctx?.endpoint === "chat.completions" ||
+        ctx?.endpoint === "responses" ||
+        ctx?.endpoint === "messages";
 
     // Derive multimodal counts when upstream usage omits them.
     if (ctx?.endpoint === "chat.completions") {
@@ -111,6 +138,17 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
         pickNumber(base, "output_tokens_details.cached_tokens") ??
         pickNumber(base, "cache_creation_input_tokens");
     const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
+    const cachedReadIsSubsetHint = ((): boolean => {
+        const explicit = (base as any).cached_read_tokens_are_subset_of_input;
+        if (explicit === false) return false;
+        if (explicit === true) return true;
+        const providerHintRaw =
+            (base as any)._provider_id ??
+            (base as any).provider_id ??
+            (base as any).provider;
+        const providerHint = typeof providerHintRaw === "string" ? providerHintRaw.toLowerCase() : "";
+        return CACHED_READ_SUBSET_PROVIDERS.has(providerHint);
+    })();
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
     const inputImageTokens =
@@ -165,11 +203,23 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
         const requestCount = resolveRequestCountUsage(base);
         if (typeof requestCount === "number") {
             base.requests = requestCount;
+        } else if (textEndpoint) {
+            // Ensure text surfaces always expose at least one request meter when usage exists
+            // but token counts are missing or zero.
+            base.requests = 1;
         }
     }
 
     // Preserve legacy fields for billing/past consumers
-    base.input_text_tokens = pickNumber(base, "input_text_tokens") ?? tokensIn;
+    const inputTextExplicit = pickNumber(base, "input_text_tokens");
+    const inputTextFromCanonical =
+        cachedReadIsSubsetHint && cachedRead !== undefined
+            ? Math.max(0, tokensIn - cachedRead)
+            : tokensIn;
+    base.input_text_tokens =
+        inputTextExplicit !== undefined && (!cachedReadIsSubsetHint || inputTextExplicit !== tokensIn)
+            ? inputTextExplicit
+            : inputTextFromCanonical;
     base.output_text_tokens = pickNumber(base, "output_text_tokens") ?? tokensOut;
     if (cachedRead !== undefined) base.cached_read_text_tokens = cachedRead;
     if (cachedWrite !== undefined) base.cached_write_text_tokens = cachedWrite;

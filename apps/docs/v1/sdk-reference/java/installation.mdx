@@ -9,13 +9,39 @@ description: "How to build and use the preview Java SDK"
 
 <Note type="warning">This package is not yet published to Maven Central.</Note>
 
-## Local build
+## Requirements
 
-- Requires a recent Java JDK and Maven.
-- From the repo root, go to `packages/sdk/sdk-java`.
-- Build with Maven and use the jar from `target/` in your project.
+- Java 17+
+- Maven 3.8+
+
+## Build locally
 
 ```bash
 cd packages/sdk/sdk-java
 mvn -DskipTests package
+```
+
+This produces `target/sdk-java-0.0.0-local.jar`.
+
+## Use in your project
+
+Install the generated jar into your local Maven cache:
+
+```bash
+mvn install:install-file \
+  -Dfile=target/sdk-java-0.0.0-local.jar \
+  -DgroupId=ai.stats \
+  -DartifactId=sdk-java \
+  -Dversion=0.0.0-local \
+  -Dpackaging=jar
+```
+
+Then add it as a dependency in your app `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>ai.stats</groupId>
+  <artifactId>sdk-java</artifactId>
+  <version>0.0.0-local</version>
+</dependency>
 ```

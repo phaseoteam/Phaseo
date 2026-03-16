@@ -45,13 +45,31 @@ export default async function getModelAvailability(
         throw new Error("Model not found");
     }
 
-    const { data: providerModels, error: providerError } = await supabase
-        .from("data_api_provider_models")
-        .select(
-            "provider_api_model_id, provider_id, api_model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
-        )
-        .eq("internal_model_id", modelId)
-        .order("provider_id", { ascending: true });
+    let providerModels: any[] | null = null;
+    let providerError: { message?: string } | null = null;
+    {
+        const res = await supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
+            )
+            .eq("model_id", modelId)
+            .order("provider_id", { ascending: true });
+        providerModels = res.data ?? null;
+        providerError = res.error;
+    }
+
+    if (!providerError && (!providerModels || providerModels.length === 0)) {
+        const res = await supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
+            )
+            .eq("internal_model_id", modelId)
+            .order("provider_id", { ascending: true });
+        providerModels = res.data ?? null;
+        providerError = res.error;
+    }
 
     if (providerError) {
         throw new Error(providerError.message || "Failed to fetch model availability");
@@ -150,6 +168,7 @@ export async function getModelAvailabilityCached(
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_provider_models");
 
     console.log("[fetch] HIT DB for model availability", modelId);

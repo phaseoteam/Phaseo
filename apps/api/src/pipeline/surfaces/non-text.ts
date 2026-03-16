@@ -115,11 +115,6 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		}
 	}
 
-	const pricing = (usage as any).pricing ?? (usage as any).pricing_breakdown;
-	if (pricing && typeof pricing === "object") {
-		output.pricing = pricing;
-	}
-
 	return output;
 }
 

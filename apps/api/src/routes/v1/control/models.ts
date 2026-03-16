@@ -12,6 +12,7 @@ import {
     type PricingMeterSummary,
     type PricingSummary,
 } from "./models.catalogue";
+import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
 type PrivacyScope = "shared" | "team";
 
@@ -221,6 +222,20 @@ async function handleModels(req: Request) {
         return (auth as GuardErr).response;
     }
 
+    const requestedFormat = parseFeedFormat(url);
+    if (requestedFormat.ok === false) {
+        return json(
+            {
+                ok: false,
+                error: "invalid_request",
+                message: "format must be one of: json, rss, atom",
+                provided: requestedFormat.raw,
+            },
+            400,
+            { "Cache-Control": "no-store" }
+        );
+    }
+
     const privacyScope = parsePrivacyScope(url);
     if (!privacyScope) {
         return json(
@@ -272,10 +287,27 @@ async function handleModels(req: Request) {
         });
         const models = catalogue.map(toRichModel);
         const paged = models.slice(offset, offset + limit);
+        const headers = cacheHeaders(cacheOptions);
+        if (requestedFormat.format !== "json") {
+            const items: FeedItem[] = paged.map((model) => ({
+                id: model.model_id,
+                title: model.name?.trim() || model.model_id,
+                summary: model.description,
+                updatedAt: model.release_date,
+            }));
+            return buildFeedResponse({
+                url,
+                format: requestedFormat.format,
+                title: "AI Stats Gateway Models",
+                description: "Gateway-served AI models available via AI Stats.",
+                items,
+                headers,
+            });
+        }
         return json(
             { ok: true, privacy_scope: privacyScope, limit, offset, total: models.length, models: paged },
             200,
-            cacheHeaders(cacheOptions)
+            headers
         );
     } catch (error: any) {
         return json(

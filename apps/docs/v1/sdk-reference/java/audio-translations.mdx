@@ -1,0 +1,20 @@
+---
+title: "Audio translations"
+description: "Call /audio/translations with the Java SDK."
+---
+
+**Method**: `Operations.createTranslation(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "openai/whisper-1",
+  "file": "data:audio/mpeg;base64,..."
+}
+""";
+
+Object response = Operations.createTranslation(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```

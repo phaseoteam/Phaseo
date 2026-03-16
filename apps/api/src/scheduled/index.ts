@@ -11,6 +11,7 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 
 const SHARD_ROTATION_WINDOW_MS = 5 * 60 * 1000;
 
@@ -55,6 +56,31 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 	}
 }
 
+async function handleVideoReconciliationScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.VIDEO_RECONCILIATION_ENABLED, true)) {
+		return;
+	}
+
+	const limit = toInt(env.VIDEO_RECONCILIATION_LIMIT, 100);
+	const concurrency = toInt(env.VIDEO_RECONCILIATION_CONCURRENCY, 4);
+	configureRuntime(env);
+	try {
+		const summary = await runVideoReconciliationJob({ limit, concurrency });
+		console.log("video_reconciliation_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
-	await handleModelDiscoveryScheduledEvent(event, env);
+	try {
+		await handleVideoReconciliationScheduledEvent(event, env);
+	} catch (error) {
+		console.error("video_reconciliation_scheduled_failed", { error });
+	}
+	try {
+		await handleModelDiscoveryScheduledEvent(event, env);
+	} catch (error) {
+		console.error("model_discovery_scheduled_failed", { error });
+	}
 }

@@ -748,31 +748,109 @@ export type CreateEmbeddingParams = {
       trace_level?: "summary" | "full";
     };
     dimensions?: number;
-    embedding_options?: {
-      google?: {
-        output_dimensionality?: number;
-        task_type?:
-          | "TASK_TYPE_UNSPECIFIED"
-          | "RETRIEVAL_QUERY"
-          | "RETRIEVAL_DOCUMENT"
-          | "SEMANTIC_SIMILARITY"
-          | "CLASSIFICATION";
-        title?: string;
-      };
-      mistral?: {
-        output_dimension?: number | null;
-        output_dtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
-      };
-    };
-    encoding_format?: string;
-    input?: string | string[];
-    inputs?: string | string[];
-    model?: string;
+    encoding_format?: "float" | "base64";
+    input:
+      | string
+      | number[]
+      | {
+          content:
+            | {
+                text: string;
+                type: "text" | "input_text";
+              }
+            | {
+                image_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                type: "image_url" | "input_image" | "image";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }
+            | {
+                input_audio: {
+                  data?: string;
+                  format?: string;
+                  url?: string;
+                };
+                type: "input_audio";
+              }
+            | {
+                type: "input_video" | "video_url";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                video_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }[];
+        }
+      | string
+      | number[]
+      | {
+          content:
+            | {
+                text: string;
+                type: "text" | "input_text";
+              }
+            | {
+                image_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                type: "image_url" | "input_image" | "image";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }
+            | {
+                input_audio: {
+                  data?: string;
+                  format?: string;
+                  url?: string;
+                };
+                type: "input_audio";
+              }
+            | {
+                type: "input_video" | "video_url";
+                url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+                video_url?:
+                  | string
+                  | {
+                      url: string;
+                    };
+              }[];
+        }[];
+    model: string;
     provider?: {
       ignore?: string[];
       include_alpha?: boolean;
       only?: string[];
       order?: string[];
+    };
+    provider_options?: {
+      google?: {
+        task_type?: string;
+        title?: string;
+      };
+      mistral?: {
+        output_dtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
+      };
     };
     user?: string;
   };
@@ -1618,7 +1696,6 @@ export type CreateVideoParams = {
     sample_count?: number;
     seconds?: number | string;
     seed?: number;
-    size?: string;
   };
 };
 
@@ -1708,7 +1785,6 @@ export type CreateVideoAliasParams = {
     sample_count?: number;
     seconds?: number | string;
     seed?: number;
-    size?: string;
   };
 };
 
@@ -2110,149 +2186,7 @@ export type GetAnalyticsParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
-  body?: {
-    access_token?: string;
-    benchmark_id?:
-      | "ace-bench"
-      | "ai2-sciarena"
-      | "ai2d"
-      | "aidanbench"
-      | "aider-polyglot"
-      | "aime-2024"
-      | "aime-2025"
-      | "amc"
-      | "apex-agents"
-      | "arc-agi-1"
-      | "arc-agi-2"
-      | "arena-hard"
-      | "autologi"
-      | "balrog-ai"
-      | "bfcl-overall-fc-v4"
-      | "bigcodebench"
-      | "browsecomp"
-      | "browsecomp-long-context-128k"
-      | "browsecomp-long-context-256k"
-      | "c-eval"
-      | "chartqa"
-      | "charxiv-reasoning"
-      | "cnmo-2024"
-      | "codeforces"
-      | "collie"
-      | "confabulations"
-      | "creative-story-writing"
-      | "csimpleqa"
-      | "docvqa"
-      | "dubesor-llm"
-      | "elimination-game"
-      | "eqbench"
-      | "erqa"
-      | "evalplus"
-      | "facts"
-      | "facts-benchmark-suite"
-      | "factscore-halluciation-rate"
-      | "fiction-live-bench"
-      | "frontier-math"
-      | "galileo-agent"
-      | "gdpval-aa"
-      | "global-pica"
-      | "gpqa"
-      | "gpqa-diamond"
-      | "graphwalks-bfs-lt-128k"
-      | "graphwalks-parents-lt-128k"
-      | "gsm8k"
-      | "healthbench"
-      | "healthbench-concensus"
-      | "healthbench-hard"
-      | "hmmt-2025"
-      | "humaneval"
-      | "humanitys-last-exam"
-      | "if-bench"
-      | "if-eval"
-      | "imoanswerbench"
-      | "iq-bench"
-      | "lisanbench"
-      | "livebench"
-      | "livecodebench"
-      | "livecodebench-coding"
-      | "livecodebench-pro"
-      | "livecodebench-v5"
-      | "livecodebench-v6"
-      | "lmarena-text"
-      | "lmarena-webdev"
-      | "longcodebench-1m"
-      | "longfact-concepts-hallucination-rate"
-      | "longfact-objects-hallucination-rate"
-      | "math"
-      | "math-500"
-      | "matharena"
-      | "matharena-apex"
-      | "mathvista"
-      | "mc-bench"
-      | "metr"
-      | "misguided-attention"
-      | "mle-bench"
-      | "mm-mt-bench"
-      | "mmlu"
-      | "mmlu-multilingual"
-      | "mmlu-pro"
-      | "mmlu-redux"
-      | "mmlu-redux-2.0"
-      | "mmmlu"
-      | "mmmu"
-      | "mmmu-pro"
-      | "multi-challenge"
-      | "multiPL-E"
-      | "nyt-connections"
-      | "ocrbench-v2"
-      | "ojbench"
-      | "omnidocbench-1.5"
-      | "openai-mrcr-2-needle-128k"
-      | "openai-mrcr-2-needle-256k"
-      | "openai-mrcr-8-needle-128k"
-      | "openai-mrcr-8-needle-1m"
-      | "os-world"
-      | "paperbench"
-      | "phybench"
-      | "polymath-en"
-      | "qvhighlights"
-      | "realkie"
-      | "scale-mcp-atlas"
-      | "scicode"
-      | "screenspot"
-      | "screenspot-pro"
-      | "seal-multichallenege"
-      | "simplebench"
-      | "simpleqa"
-      | "smolagents-llm"
-      | "snake-bench"
-      | "solo-bench"
-      | "supergpqa"
-      | "swe-bench"
-      | "swe-bench-live"
-      | "swe-bench-multilingual"
-      | "swe-bench-pro"
-      | "swe-lancer"
-      | "symflower-coding"
-      | "tau-2-airline"
-      | "tau-2-bench"
-      | "tau-2-retail"
-      | "tau-2-telecom"
-      | "tau-bench"
-      | "tau-bench-airline"
-      | "tau-bench-retail"
-      | "terminal-bench"
-      | "terminal-bench-2.0"
-      | "thematic-generalisation"
-      | "triviaqa"
-      | "usamo-2025"
-      | "vending-bench-2"
-      | "video-mmmu"
-      | "videomme"
-      | "weirdml"
-      | "wildbench"
-      | "xlang-agent"
-      | "zebralogic";
-  };
+  body?: never;
 };
 
 /**
@@ -2875,6 +2809,8 @@ export async function invalidateGatewayKeyCache(
 export type ListDataModelsParams = {
   path?: Record<string, never>;
   query?: {
+    feed?: "json" | "rss" | "atom";
+    format?: "json" | "rss" | "atom";
     include_hidden?: boolean;
     limit?: number;
     offset?: number;
@@ -4828,6 +4764,8 @@ export type ListModelsParams = {
   path?: Record<string, never>;
   query?: {
     endpoints?: string[];
+    feed?: "json" | "rss" | "atom";
+    format?: "json" | "rss" | "atom";
     input_types?: string[];
     limit?: number;
     offset?: number;

@@ -10,7 +10,6 @@ import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from
 import type { IRChatRequest, IRChatResponse, IRChoice, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
-import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
@@ -121,10 +120,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			// Calculate pricing
 			const usageMeters = normalizeTextUsageForPricing(ir.usage);
 			if (usageMeters) {
-				const priced = computeBill(usageMeters, args.pricingCard);
-				bill.cost_cents = priced.pricing.total_cents;
-				bill.currency = priced.pricing.currency;
-				bill.usage = priced;
+				bill.usage = usageMeters;
 			}
 
                         return {

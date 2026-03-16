@@ -7,7 +7,6 @@ import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor, Bill } from
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
-import { computeBill } from "@pipeline/pricing/engine";
 import { azureDeployment, azureHeaders, azureUrl, resolveAzureConfig, resolveAzureKey } from "@providers/azure/config";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 
@@ -82,10 +81,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, "chat", upstreamStartMs);
 	const usageMeters = normalizeTextUsageForPricing(usage);
 	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
+		bill.usage = usageMeters;
 	}
 
 	return {

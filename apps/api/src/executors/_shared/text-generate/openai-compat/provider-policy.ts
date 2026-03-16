@@ -2,7 +2,7 @@
 // Why: Keep gateway payloads stable; do not proactively strip provider params.
 // How: Preserve request shape and defer compatibility adaptation to retry-policy.
 
-type OpenAICompatRoute = "responses" | "chat" | "legacy_completions";
+type OpenAICompatRoute = "responses" | "chat";
 
 export function sanitizeOpenAICompatRequest(args: {
 	providerId: string;

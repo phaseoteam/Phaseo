@@ -30,8 +30,8 @@ function normalizeEmbeddingInput(input: string) {
     };
 }
 
-function coerceInput(value: string): string {
-    return typeof value === "string" ? value : String(value);
+function coerceInput(value: unknown): string {
+    return typeof value === "string" ? value : String(value ?? "");
 }
 
 function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
@@ -122,7 +122,7 @@ function mapGoogleToGatewayEmbeddings(json: any, model: string, usageOverride?: 
     };
 }
 
-async function fetchTokenCount(key: string, modelForUrl: string, inputs: string[]) {
+async function fetchTokenCount(key: string, modelForUrl: string, inputs: unknown[]) {
     const contents = inputs.map((input) => normalizeEmbeddingInput(coerceInput(input)));
     const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
         method: "POST",
@@ -152,8 +152,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const modelForUrl = args.providerModelSlug || args.model;
     const inputs = Array.isArray(modifiedBody.input) ? modifiedBody.input : [modifiedBody.input];
     const isBatch = Array.isArray(modifiedBody.input);
-    const googleOptions = modifiedBody.embedding_options?.google;
-    const outputDimensionality = googleOptions?.output_dimensionality ?? modifiedBody.dimensions;
+    const googleOptions = modifiedBody.provider_options?.google;
+    const outputDimensionality = modifiedBody.dimensions;
     const taskType = googleOptions?.task_type;
     const title = googleOptions?.title;
     const requestModel = `models/${modelForUrl}`;

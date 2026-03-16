@@ -7,6 +7,7 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
 import { json, withRuntime, cacheHeaders } from "@/routes/utils";
+import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
 type OrganisationDetails = {
     organisation_id?: string | null;
@@ -109,9 +110,24 @@ function compareRows(a: DataModelRow, b: DataModelRow): number {
 }
 
 async function handleDataModels(req: Request) {
+    const url = new URL(req.url);
     const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
         return (auth as GuardErr).response;
+    }
+
+    const requestedFormat = parseFeedFormat(url);
+    if (requestedFormat.ok === false) {
+        return json(
+            {
+                ok: false,
+                error: "invalid_request",
+                message: "format must be one of: json, rss, atom",
+                provided: requestedFormat.raw,
+            },
+            400,
+            { "Cache-Control": "no-store" }
+        );
     }
     const cacheOptions = {
         scope: "data-models:shared:v1",
@@ -120,7 +136,6 @@ async function handleDataModels(req: Request) {
         varyHeaders: [],
     };
 
-    const url = new URL(req.url);
     const includeHidden = parseBooleanParam(url.searchParams.get("include_hidden"), false);
     const statuses = parseMultiValue(url.searchParams, "status");
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
@@ -178,6 +193,27 @@ async function handleDataModels(req: Request) {
             };
         });
 
+        const headers = cacheHeaders(cacheOptions);
+        if (requestedFormat.format !== "json") {
+            const items: FeedItem[] = models.map((model) => ({
+                id: String(model.model_id ?? ""),
+                title: String(model.name ?? model.model_id ?? "Unknown model"),
+                summary: [
+                    model.status ? `Status: ${model.status}` : null,
+                    model.organisation?.name ? `Organisation: ${model.organisation.name}` : null,
+                ].filter(Boolean).join(" | ") || "AI model in AI Stats catalogue.",
+                updatedAt: model.release_date,
+            }));
+            return buildFeedResponse({
+                url,
+                format: requestedFormat.format,
+                title: "AI Stats Data Models",
+                description: "Source-of-truth model catalogue available in AI Stats.",
+                items,
+                headers,
+            });
+        }
+
         return json(
             {
                 ok: true,
@@ -188,7 +224,7 @@ async function handleDataModels(req: Request) {
                 models,
             },
             200,
-            cacheHeaders(cacheOptions)
+            headers
         );
     } catch (error: any) {
         return json(

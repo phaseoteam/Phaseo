@@ -2,7 +2,11 @@
 
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
-import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags"
+import {
+  revalidateModelApiInfoTags,
+  revalidateModelDataOnlyTags,
+  revalidateModelDataTags,
+} from "@/lib/cache/revalidateDataTags"
 
 const CORE_TYPE_OPTIONS = ["text", "image", "audio", "video"] as const
 const MODEL_DETAIL_NAME_OPTIONS = [
@@ -174,6 +178,50 @@ function buildProviderApiModelId(providerId: string, apiModelId: string) {
   return `${providerId}:${apiModelId}:chat/completions`
 }
 
+function buildPricingModelKey(
+  providerId: string,
+  apiModelId: string,
+  capabilityId: string
+) {
+  return `${providerId}:${apiModelId}:${capabilityId || "text.generate"}`
+}
+
+type ProviderPair = { provider_id: string; api_model_id: string }
+
+function dedupeProviderPairs(pairs: ProviderPair[]): ProviderPair[] {
+  const byPair = new Map<string, ProviderPair>()
+  for (const pair of pairs) {
+    const provider = pair.provider_id?.trim()
+    const apiModel = pair.api_model_id?.trim()
+    if (!provider || !apiModel) continue
+    byPair.set(`${provider}:::${apiModel}`, {
+      provider_id: provider,
+      api_model_id: apiModel,
+    })
+  }
+  return Array.from(byPair.values())
+}
+
+async function deletePricingRulesForProviderPairs(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  pairs: ProviderPair[]
+) {
+  const uniquePairs = dedupeProviderPairs(pairs)
+  for (const pair of uniquePairs) {
+    const modelKeyPrefix = `${pair.provider_id}:${pair.api_model_id}:`
+    const { error } = await supabase
+      .from("data_api_pricing_rules")
+      .delete()
+      .gte("model_key", modelKeyPrefix)
+      .lt("model_key", `${modelKeyPrefix}\uffff`)
+
+    if (error) {
+      console.error("[updateModel] Error deleting pricing rules for pair:", pair, error)
+      throw new Error(error.message)
+    }
+  }
+}
+
 export async function updateModel(payload: ModelUpdatePayload) {
   const supabase = await createClient()
 
@@ -219,11 +267,12 @@ export async function updateModel(payload: ModelUpdatePayload) {
     family,
   } = payload
 
+  const nowIso = new Date().toISOString()
   const normalizedInputTypes = normalizeCoreTypes(input_types)
   const normalizedOutputTypes = normalizeCoreTypes(output_types)
 
   const modelUpdate: Record<string, any> = {
-    updated_at: new Date().toISOString(),
+    updated_at: nowIso,
   }
 
   if (name !== undefined) modelUpdate.name = name
@@ -248,6 +297,9 @@ export async function updateModel(payload: ModelUpdatePayload) {
     .select("organisation_id")
     .eq("model_id", modelId)
     .maybeSingle()
+  if (!existingModelRow) {
+    throw new Error(`Model not found: ${modelId}`)
+  }
 
   const { error: modelError } = await supabase
     .from("data_models")
@@ -282,8 +334,8 @@ export async function updateModel(payload: ModelUpdatePayload) {
             model_id: modelId,
             detail_name: detailName,
             detail_value: detailValue,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            created_at: nowIso,
+            updated_at: nowIso,
           }
         })
         .filter(
@@ -332,8 +384,8 @@ export async function updateModel(payload: ModelUpdatePayload) {
             model_id: modelId,
             platform,
             url,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            created_at: nowIso,
+            updated_at: nowIso,
           }
         })
         .filter(
@@ -362,120 +414,82 @@ export async function updateModel(payload: ModelUpdatePayload) {
   }
 
   if (benchmark_results !== undefined) {
-    const existingIds = benchmark_results.filter((r) => r.id).map((r) => r.id)
-    if (existingIds.length > 0) {
-      const { error: deleteBenchmarksError } = await supabase
-        .from("data_benchmark_results")
-        .delete()
-        .eq("model_id", modelId)
-        .not("id", "in", `(${existingIds.join(",")})`)
+    const { error: deleteBenchmarksError } = await supabase
+      .from("data_benchmark_results")
+      .delete()
+      .eq("model_id", modelId)
 
-      if (deleteBenchmarksError) {
-        console.error("[updateModel] Error deleting old benchmarks:", deleteBenchmarksError)
-        throw new Error(deleteBenchmarksError.message)
-      }
-    } else {
-      const { error: deleteBenchmarksError } = await supabase
-        .from("data_benchmark_results")
-        .delete()
-        .eq("model_id", modelId)
-
-      if (deleteBenchmarksError) {
-        console.error("[updateModel] Error deleting old benchmarks:", deleteBenchmarksError)
-        throw new Error(deleteBenchmarksError.message)
-      }
+    if (deleteBenchmarksError) {
+      console.error("[updateModel] Error replacing benchmarks:", deleteBenchmarksError)
+      throw new Error(deleteBenchmarksError.message)
     }
 
-    if (benchmark_results.length > 0) {
-      for (const result of benchmark_results) {
-        if (!result.benchmark_id) continue
+    const benchmarkRowsToInsert = benchmark_results
+      .filter((result) => result.benchmark_id?.trim())
+      .map((result) => ({
+        model_id: modelId,
+        benchmark_id: result.benchmark_id.trim(),
+        score: result.score?.toString() ?? "",
+        is_self_reported: result.is_self_reported ?? false,
+        other_info: result.other_info?.trim() || null,
+        source_link: result.source_link?.trim() || null,
+        variant: result.variant?.trim() || null,
+        rank: result.rank ?? null,
+        created_at: nowIso,
+        updated_at: nowIso,
+      }))
 
-        const benchmarkData = {
-          model_id: modelId,
-          benchmark_id: result.benchmark_id,
-          score: result.score?.toString() ?? "",
-          is_self_reported: result.is_self_reported ?? false,
-          other_info: result.other_info ?? null,
-          source_link: result.source_link ?? null,
-          variant: result.variant ?? null,
-          updated_at: new Date().toISOString(),
-        }
+    if (benchmarkRowsToInsert.length > 0) {
+      const { error: insertBenchmarksError } = await supabase
+        .from("data_benchmark_results")
+        .insert(benchmarkRowsToInsert)
 
-        if (result.id) {
-          const { error: updateError } = await supabase
-            .from("data_benchmark_results")
-            .update(benchmarkData)
-            .eq("id", result.id)
-
-          if (updateError) {
-            console.error("[updateModel] Error updating benchmark:", updateError)
-            throw new Error(updateError.message)
-          }
-        } else {
-          const { error: insertError } = await supabase
-            .from("data_benchmark_results")
-            .insert({ ...benchmarkData, created_at: new Date().toISOString() })
-
-          if (insertError) {
-            console.error("[updateModel] Error inserting benchmark:", insertError)
-            throw new Error(insertError.message)
-          }
-        }
+      if (insertBenchmarksError) {
+        console.error("[updateModel] Error inserting benchmark replacements:", insertBenchmarksError)
+        throw new Error(insertBenchmarksError.message)
       }
     }
   }
 
-  if (pricing_rules !== undefined) {
-    const existingIds = pricing_rules.filter((r) => r.id).map((r) => r.id)
-    if (existingIds.length > 0) {
-      const { error: deletePricingError } = await supabase
-        .from("data_api_pricing_rules")
-        .delete()
-        .in("rule_id", existingIds)
-
-      if (deletePricingError) {
-        console.error("[updateModel] Error deleting old pricing rules:", deletePricingError)
-        throw new Error(deletePricingError.message)
-      }
-    }
-
-    if (pricing_rules.length > 0) {
-      const rulesToInsert = pricing_rules.map((rule) => {
-        const capabilityId = rule.capability_id?.trim() || "text.generate"
-        return {
-          model_key: `${rule.provider_id}:${rule.api_model_id}:${capabilityId}`,
-          capability_id: capabilityId,
-          pricing_plan: rule.pricing_plan ?? "standard",
-          meter: rule.meter,
-          unit: rule.unit ?? "token",
-          unit_size: rule.unit_size ?? 1,
-          price_per_unit: Number(rule.price_per_unit) ?? 0,
-          currency: rule.currency ?? "USD",
-          note: rule.note ?? null,
-          match: Array.isArray(rule.match) ? rule.match : [],
-          priority: rule.priority ?? 100,
-          effective_from: rule.effective_from ?? null,
-          effective_to: rule.effective_to ?? null,
-          updated_at: new Date().toISOString(),
-        }
-      })
-
-      const { error: insertPricingError } = await supabase
-        .from("data_api_pricing_rules")
-        .insert(rulesToInsert)
-
-      if (insertPricingError) {
-        console.error("[updateModel] Error inserting pricing rules:", insertPricingError)
-        throw new Error(insertPricingError.message)
-      }
-    }
-  }
+  const normalizedPricingRules =
+    pricing_rules === undefined
+      ? undefined
+      : pricing_rules
+          .filter((rule) => rule.provider_id && rule.api_model_id && rule.meter)
+          .map((rule) => {
+            const capabilityId = rule.capability_id?.trim() || "text.generate"
+            const unitSize = Number(rule.unit_size ?? 1)
+            const pricePerUnit = Number(rule.price_per_unit ?? 0)
+            const priority = Number(rule.priority ?? 100)
+            return {
+              provider_id: rule.provider_id.trim(),
+              api_model_id: rule.api_model_id.trim(),
+              capability_id: capabilityId,
+              model_key: buildPricingModelKey(
+                rule.provider_id.trim(),
+                rule.api_model_id.trim(),
+                capabilityId
+              ),
+              pricing_plan: rule.pricing_plan?.trim() || "standard",
+              meter: rule.meter.trim(),
+              unit: rule.unit?.trim() || "token",
+              unit_size:
+                Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
+              price_per_unit: Number.isFinite(pricePerUnit) ? pricePerUnit : 0,
+              currency: rule.currency?.trim() || "USD",
+              note: rule.note?.trim() || null,
+              match: Array.isArray(rule.match) ? rule.match : [],
+              priority: Number.isFinite(priority) ? priority : 100,
+              effective_from: rule.effective_from ?? null,
+              effective_to: rule.effective_to ?? null,
+              updated_at: nowIso,
+            }
+          })
 
   if (provider_models !== undefined) {
-    const nowIso = new Date().toISOString()
     const { data: existingProviderModelRows, error: existingProviderModelRowsError } = await supabase
       .from("data_api_provider_models")
-      .select("provider_api_model_id")
+      .select("provider_api_model_id, provider_id, api_model_id")
       .eq("internal_model_id", modelId)
 
     if (existingProviderModelRowsError) {
@@ -497,6 +511,13 @@ export async function updateModel(payload: ModelUpdatePayload) {
         throw new Error(deleteChildCapabilitiesError.message)
       }
     }
+
+    const existingProviderPairs = dedupeProviderPairs(
+      (existingProviderModelRows ?? []).map((row) => ({
+        provider_id: row.provider_id,
+        api_model_id: row.api_model_id,
+      }))
+    )
 
     const { error: deleteProvidersError } = await supabase
       .from("data_api_provider_models")
@@ -529,6 +550,22 @@ export async function updateModel(payload: ModelUpdatePayload) {
         updated_at: nowIso,
       }))
 
+    const incomingProviderPairs = dedupeProviderPairs(
+      providerRows.map((row) => ({
+        provider_id: row.provider_id,
+        api_model_id: row.api_model_id,
+      }))
+    )
+    const incomingPairKeys = new Set(
+      incomingProviderPairs.map((pair) => `${pair.provider_id}:::${pair.api_model_id}`)
+    )
+    const removedProviderPairs = existingProviderPairs.filter(
+      (pair) => !incomingPairKeys.has(`${pair.provider_id}:::${pair.api_model_id}`)
+    )
+    if (removedProviderPairs.length > 0) {
+      await deletePricingRulesForProviderPairs(supabase, removedProviderPairs)
+    }
+
     if (providerRows.length > 0) {
       const { error: insertProvidersError } = await supabase
         .from("data_api_provider_models")
@@ -542,7 +579,6 @@ export async function updateModel(payload: ModelUpdatePayload) {
   }
 
   if (provider_capabilities !== undefined) {
-    const nowIso = new Date().toISOString()
     const { data: providerModelRows, error: providerModelsError } = await supabase
       .from("data_api_provider_models")
       .select("provider_api_model_id, provider_id, api_model_id")
@@ -646,149 +682,173 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
   }
 
-  if (pricing_rules !== undefined && pricing_rules.length > 0) {
-    const nowIso = new Date().toISOString()
-    const pricingPairs = Array.from(
-      new Set(
-        pricing_rules
-          .filter((rule) => rule.provider_id && rule.api_model_id)
-          .map((rule) => `${rule.provider_id}:${rule.api_model_id}`)
-      )
+  if (normalizedPricingRules !== undefined) {
+    const pricingPairs = dedupeProviderPairs(
+      normalizedPricingRules.map((rule) => ({
+        provider_id: rule.provider_id,
+        api_model_id: rule.api_model_id,
+      }))
     )
 
-    if (pricingPairs.length > 0) {
-      const { data: providerModelRows, error: providerModelsError } = await supabase
+    const { data: providerModelRows, error: providerModelsError } = await supabase
+      .from("data_api_provider_models")
+      .select("provider_api_model_id, provider_id, api_model_id")
+      .eq("internal_model_id", modelId)
+
+    if (providerModelsError) {
+      console.error("[updateModel] Error loading provider models for pricing:", providerModelsError)
+      throw new Error(providerModelsError.message)
+    }
+
+    const providerApiModelIdByPair = new Map<string, string>(
+      (providerModelRows ?? []).map((row) => [
+        `${row.provider_id}:${row.api_model_id}`,
+        row.provider_api_model_id,
+      ])
+    )
+
+    const missingProviderRows = pricingPairs
+      .filter((pair) => !providerApiModelIdByPair.has(`${pair.provider_id}:${pair.api_model_id}`))
+      .map((pair) => ({
+        provider_api_model_id: buildProviderApiModelId(pair.provider_id, pair.api_model_id),
+        provider_id: pair.provider_id,
+        api_model_id: pair.api_model_id,
+        internal_model_id: modelId,
+        is_active_gateway: false,
+        created_at: nowIso,
+        updated_at: nowIso,
+      }))
+
+    if (missingProviderRows.length > 0) {
+      const { error: insertMissingProviderError } = await supabase
         .from("data_api_provider_models")
-        .select("provider_api_model_id, provider_id, api_model_id")
-        .eq("internal_model_id", modelId)
+        .upsert(missingProviderRows, { onConflict: "provider_api_model_id" })
 
-      if (providerModelsError) {
-        console.error("[updateModel] Error loading provider models for pricing capabilities:", providerModelsError)
-        throw new Error(providerModelsError.message)
+      if (insertMissingProviderError) {
+        console.error(
+          "[updateModel] Error creating provider models from pricing rules:",
+          insertMissingProviderError
+        )
+        throw new Error(insertMissingProviderError.message)
       }
+    }
 
-      const providerApiModelIdByPair = new Map<string, string>(
-        (providerModelRows ?? []).map((row) => [
-          `${row.provider_id}:${row.api_model_id}`,
-          row.provider_api_model_id,
-        ])
+    const { data: providerModelRowsAfter, error: providerModelsAfterError } = await supabase
+      .from("data_api_provider_models")
+      .select("provider_api_model_id, provider_id, api_model_id")
+      .eq("internal_model_id", modelId)
+
+    if (providerModelsAfterError) {
+      console.error(
+        "[updateModel] Error reloading provider models for pricing capabilities:",
+        providerModelsAfterError
       )
+      throw new Error(providerModelsAfterError.message)
+    }
 
-      const missingProviderRows = pricingPairs
-        .filter((pair) => !providerApiModelIdByPair.has(pair))
-        .map((pair) => {
-          const [providerId, apiModelId] = pair.split(":")
-          return {
-            provider_api_model_id: buildProviderApiModelId(providerId, apiModelId),
-            provider_id: providerId,
-            api_model_id: apiModelId,
-            internal_model_id: modelId,
-            is_active_gateway: false,
-            created_at: nowIso,
-            updated_at: nowIso,
-          }
+    const providerApiModelIdByPairAfter = new Map<string, string>(
+      (providerModelRowsAfter ?? []).map((row) => [
+        `${row.provider_id}:${row.api_model_id}`,
+        row.provider_api_model_id,
+      ])
+    )
+
+    const capabilityRows = Array.from(
+      new Set(
+        normalizedPricingRules
+          .map((rule) => {
+            const providerApiModelId = providerApiModelIdByPairAfter.get(
+              `${rule.provider_id}:${rule.api_model_id}`
+            )
+            return providerApiModelId
+              ? `${providerApiModelId}:::${rule.capability_id}`
+              : null
+          })
+          .filter((value): value is string => Boolean(value))
+      )
+    ).map((value) => {
+      const [provider_api_model_id, capability_id] = value.split(":::")
+      return {
+        provider_api_model_id,
+        capability_id,
+        updated_at: nowIso,
+      }
+    })
+
+    if (capabilityRows.length > 0) {
+      const { error: capabilityUpsertError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .upsert(capabilityRows, {
+          onConflict: "provider_api_model_id,capability_id",
         })
 
-      if (missingProviderRows.length > 0) {
-        const { error: insertMissingProviderError } = await supabase
-          .from("data_api_provider_models")
-          .upsert(missingProviderRows, { onConflict: "provider_api_model_id" })
-
-        if (insertMissingProviderError) {
-          console.error("[updateModel] Error creating provider models from pricing rules:", insertMissingProviderError)
-          throw new Error(insertMissingProviderError.message)
-        }
+      if (capabilityUpsertError) {
+        console.error("[updateModel] Error upserting pricing capabilities:", capabilityUpsertError)
+        throw new Error(capabilityUpsertError.message)
       }
+    }
 
-      const { data: providerModelRowsAfter, error: providerModelsAfterError } = await supabase
-        .from("data_api_provider_models")
-        .select("provider_api_model_id, provider_id, api_model_id")
-        .eq("internal_model_id", modelId)
+    const replacementPairs = dedupeProviderPairs([
+      ...(providerModelRowsAfter ?? []).map((row) => ({
+        provider_id: row.provider_id,
+        api_model_id: row.api_model_id,
+      })),
+      ...pricingPairs,
+    ])
+    if (replacementPairs.length > 0) {
+      await deletePricingRulesForProviderPairs(supabase, replacementPairs)
+    }
 
-      if (providerModelsAfterError) {
-        console.error("[updateModel] Error reloading provider models for pricing capabilities:", providerModelsAfterError)
-        throw new Error(providerModelsAfterError.message)
-      }
-
-      const providerApiModelIdByPairAfter = new Map<string, string>(
-        (providerModelRowsAfter ?? []).map((row) => [
-          `${row.provider_id}:${row.api_model_id}`,
-          row.provider_api_model_id,
-        ])
-      )
-
-      const capabilityRows = Array.from(
-        new Set(
-          pricing_rules
-            .filter((rule) => rule.provider_id && rule.api_model_id)
-            .map((rule) => {
-              const capabilityId = rule.capability_id?.trim() || "text.generate"
-              const providerApiModelId = providerApiModelIdByPairAfter.get(
-                `${rule.provider_id}:${rule.api_model_id}`
-              )
-              return providerApiModelId ? `${providerApiModelId}:::${capabilityId}` : null
-            })
-            .filter((value): value is string => Boolean(value))
+    if (normalizedPricingRules.length > 0) {
+      const { error: insertPricingError } = await supabase
+        .from("data_api_pricing_rules")
+        .insert(
+          normalizedPricingRules.map((rule) => ({
+            model_key: rule.model_key,
+            capability_id: rule.capability_id,
+            pricing_plan: rule.pricing_plan,
+            meter: rule.meter,
+            unit: rule.unit,
+            unit_size: rule.unit_size,
+            price_per_unit: rule.price_per_unit,
+            currency: rule.currency,
+            note: rule.note,
+            match: rule.match,
+            priority: rule.priority,
+            effective_from: rule.effective_from,
+            effective_to: rule.effective_to,
+            updated_at: rule.updated_at,
+          }))
         )
-      ).map((value) => {
-        const [providerApiModelId, capabilityId] = value.split(":::")
-        return {
-          provider_api_model_id: providerApiModelId,
-          capability_id: capabilityId,
-          updated_at: nowIso,
-        }
-      })
 
-      if (capabilityRows.length > 0) {
-        const { error: capabilityUpsertError } = await supabase
-          .from("data_api_provider_model_capabilities")
-          .upsert(capabilityRows, {
-            onConflict: "provider_api_model_id,capability_id",
-          })
-
-        if (capabilityUpsertError) {
-          console.error("[updateModel] Error upserting pricing capabilities:", capabilityUpsertError)
-          throw new Error(capabilityUpsertError.message)
-        }
+      if (insertPricingError) {
+        console.error("[updateModel] Error inserting pricing rules:", insertPricingError)
+        throw new Error(insertPricingError.message)
       }
     }
   }
 
   if (aliases !== undefined) {
-    const existingSlugs = aliases.filter((a) => a.alias_slug).map((a) => a.alias_slug)
-    if (existingSlugs.length > 0) {
-      const { error: deleteAliasesError } = await supabase
-        .from("data_api_model_aliases")
-        .delete()
-        .eq("api_model_id", modelId)
-        .not("alias_slug", "in", `(${existingSlugs.join(",")})`)
+    const { error: deleteAliasesError } = await supabase
+      .from("data_api_model_aliases")
+      .delete()
+      .eq("api_model_id", modelId)
 
-      if (deleteAliasesError) {
-        console.error("[updateModel] Error deleting old aliases:", deleteAliasesError)
-        throw new Error(deleteAliasesError.message)
-      }
-    } else {
-      const { error: deleteAliasesError } = await supabase
-        .from("data_api_model_aliases")
-        .delete()
-        .eq("api_model_id", modelId)
-
-      if (deleteAliasesError) {
-        console.error("[updateModel] Error deleting old aliases:", deleteAliasesError)
-        throw new Error(deleteAliasesError.message)
-      }
+    if (deleteAliasesError) {
+      console.error("[updateModel] Error replacing aliases:", deleteAliasesError)
+      throw new Error(deleteAliasesError.message)
     }
 
     if (aliases.length > 0) {
       const aliasesToInsert = aliases
         .filter((a) => a.alias_slug && a.alias_slug.trim() !== "")
         .map((alias) => ({
-          alias_slug: alias.alias_slug,
+          alias_slug: alias.alias_slug.trim(),
           api_model_id: modelId,
           is_enabled: alias.is_enabled ?? true,
-          channel: alias.channel ?? null,
-          notes: alias.notes ?? null,
-          updated_at: new Date().toISOString(),
+          channel: alias.channel?.trim() || null,
+          notes: alias.notes?.trim() || null,
+          updated_at: nowIso,
         }))
 
       if (aliasesToInsert.length > 0) {
@@ -878,7 +938,7 @@ export async function deleteBenchmarkResult(id: string) {
     throw new Error(error.message)
   }
 
-  revalidateModelDataTags({ modelId: benchmarkRow?.model_id ?? null })
+  revalidateModelDataOnlyTags({ modelId: benchmarkRow?.model_id ?? null })
   revalidatePath(`/models/**`)
   return { ok: true }
 }
@@ -912,7 +972,7 @@ export async function deletePricingRule(id: string) {
     throw new Error(error.message)
   }
 
-  revalidateModelDataTags()
+  revalidateModelApiInfoTags()
   revalidatePath(`/models/**`)
   return { ok: true }
 }
@@ -952,7 +1012,7 @@ export async function deleteProviderModel(id: string) {
     throw new Error(error.message)
   }
 
-  revalidateModelDataTags({ modelId: providerModelRow?.internal_model_id ?? null })
+  revalidateModelApiInfoTags({ modelId: providerModelRow?.internal_model_id ?? null })
   revalidatePath(`/models/**`)
   return { ok: true }
 }

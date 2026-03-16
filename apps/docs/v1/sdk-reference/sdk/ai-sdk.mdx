@@ -1,17 +1,17 @@
 ---
-title: "AI SDK (Vercel)"
-description: "Use the AI Stats provider with the Vercel AI SDK."
+title: "AI SDK (Vercel) Overview"
+description: "Use the official AI Stats provider with Vercel AI SDK v6."
 ---
 
-Use `@ai-stats/ai-sdk-provider` to connect the Vercel AI SDK to the AI Stats Gateway.
+Use `@ai-stats/ai-sdk-provider` to connect Vercel AI SDK v6 to AI Stats Gateway.
 
-## Install
+## Install packages
 
 ```bash
 npm install @ai-stats/ai-sdk-provider ai@^6
 ```
 
-## Basic text generation
+## Quick start
 
 ```typescript
 import { aiStats } from "@ai-stats/ai-sdk-provider";
@@ -19,57 +19,70 @@ import { generateText } from "ai";
 
 const result = await generateText({
   model: aiStats("openai/gpt-5-nano"),
-  prompt: "Summarise the benefits of vector search.",
+  prompt: "Summarize the benefits of vector search.",
 });
 
 console.log(result.text);
 ```
 
-## Streaming
+## Environment variables
 
-```typescript
-import { aiStats } from "@ai-stats/ai-sdk-provider";
-import { streamText } from "ai";
+Set one of the following:
 
-const { textStream } = await streamText({
-  model: aiStats("openai/gpt-5-nano"),
-  prompt: "Stream a short greeting.",
-});
+- `AI_STATS_API_KEY` (recommended)
+- `OPENAI_GATEWAY_API_KEY` (compatibility fallback)
 
-for await (const chunk of textStream) {
-  process.stdout.write(chunk);
-}
-```
+Optional base URL:
 
-## Embeddings
+- `AI_STATS_BASE_URL`
+- `OPENAI_GATEWAY_URL` (compatibility fallback)
 
-```typescript
-import { aiStats } from "@ai-stats/ai-sdk-provider";
-import { embed } from "ai";
-
-const { embedding } = await embed({
-  model: aiStats.textEmbeddingModel("google/gemini-embedding-001"),
-  value: "Vector search uses embeddings to find similar items.",
-});
-
-console.log(embedding.length);
-```
-
-## Custom configuration
+## Custom provider instance
 
 ```typescript
 import { createAIStats } from "@ai-stats/ai-sdk-provider";
 import { generateText } from "ai";
 
-const aiStats = createAIStats({
+const provider = createAIStats({
   apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: process.env.AI_STATS_BASE_URL,
+  baseURL: process.env.AI_STATS_BASE_URL ?? "https://api.phaseo.app/v1",
+  headers: {
+    "x-title": "My App",
+    "http-referer": "https://example.com",
+  },
 });
 
 const result = await generateText({
-  model: aiStats("openai/gpt-5-nano"),
-  prompt: "Hello from a custom gateway.",
+  model: provider("openai/gpt-5-nano"),
+  prompt: "Hello from a custom provider instance.",
 });
 
 console.log(result.text);
+```
+
+## What this reference covers
+
+- [Generate Text](/v1/sdk-reference/sdk/generate-text/index)
+- [Stream Text](/v1/sdk-reference/sdk/stream-text/index)
+- [Tool Calling](/v1/sdk-reference/sdk/tool-calling/index)
+- [Structured Output](/v1/sdk-reference/sdk/structured-output/index)
+- [Embeddings](/v1/sdk-reference/sdk/embeddings/index)
+- [Images](/v1/sdk-reference/sdk/images/index)
+- [Audio](/v1/sdk-reference/sdk/audio/index)
+- [Model Discovery](/v1/sdk-reference/sdk/get-models/index)
+
+## Streaming example
+
+```typescript
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { streamText } from "ai";
+
+const result = streamText({
+  model: aiStats("openai/gpt-5-nano"),
+  prompt: "Stream a short greeting.",
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
 ```

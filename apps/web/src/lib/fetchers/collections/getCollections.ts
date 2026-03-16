@@ -163,6 +163,89 @@ async function getImageGenerationModels(args: {
 	return uniqueModels(sortByReleaseDate(mapped), args.limit);
 }
 
+async function getVideoGenerationModels(args: {
+	limit: number;
+	includeHidden: boolean;
+}): Promise<ModelCard[]> {
+	const supabase = createAdminClient();
+	const { data, error } = await supabase
+		.from("data_models")
+		.select(
+			`
+      model_id,
+      name,
+      status,
+      release_date,
+      announcement_date,
+      hidden,
+      organisation_id,
+      output_types,
+      organisation: data_organisations (
+        organisation_id,
+        name,
+        colour
+      )
+    `
+		)
+		.ilike("output_types", "%video%")
+		.order("release_date", { ascending: false })
+		.limit(args.limit * 4);
+
+	if (error) {
+		// eslint-disable-next-line no-console
+		console.warn("[collections] video models query failed", error.message);
+		return [];
+	}
+
+	const mapped = (data ?? [])
+		.filter((model: any) => (args.includeHidden ? true : !model.hidden))
+		.map((model: ModelRow) => mapRawToModelCard(normalizeModelRow(model)));
+
+	return uniqueModels(sortByReleaseDate(mapped), args.limit);
+}
+
+async function getAudioModels(args: {
+	limit: number;
+	includeHidden: boolean;
+}): Promise<ModelCard[]> {
+	const supabase = createAdminClient();
+	const { data, error } = await supabase
+		.from("data_models")
+		.select(
+			`
+      model_id,
+      name,
+      status,
+      release_date,
+      announcement_date,
+      hidden,
+      organisation_id,
+      input_types,
+      output_types,
+      organisation: data_organisations (
+        organisation_id,
+        name,
+        colour
+      )
+    `
+		)
+		.or("input_types.ilike.%audio%,output_types.ilike.%audio%")
+		.order("release_date", { ascending: false })
+		.limit(args.limit * 4);
+
+	if (error) {
+		// eslint-disable-next-line no-console
+		console.warn("[collections] audio models query failed", error.message);
+		return [];
+	}
+
+	const mapped = (data ?? [])
+		.filter((model: any) => (args.includeHidden ? true : !model.hidden))
+		.map((model: ModelRow) => mapRawToModelCard(normalizeModelRow(model)));
+
+	return uniqueModels(sortByReleaseDate(mapped), args.limit);
+}
+
 async function getFreeModels(args: {
 	limit: number;
 	includeHidden: boolean;
@@ -251,6 +334,27 @@ async function getToolModels(args: {
 	limit: number;
 	includeHidden: boolean;
 }): Promise<ModelCard[]> {
+	return getFeatureModels({
+		...args,
+		feature: "tools",
+	});
+}
+
+async function getReasoningModels(args: {
+	limit: number;
+	includeHidden: boolean;
+}): Promise<ModelCard[]> {
+	return getFeatureModels({
+		...args,
+		feature: "reasoning",
+	});
+}
+
+async function getFeatureModels(args: {
+	limit: number;
+	includeHidden: boolean;
+	feature: "tools" | "reasoning";
+}): Promise<ModelCard[]> {
 	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_api_provider_model_capabilities")
@@ -283,11 +387,11 @@ async function getToolModels(args: {
 
 	if (error) {
 		// eslint-disable-next-line no-console
-		console.warn("[collections] tool models query failed", error.message);
+		console.warn("[collections] feature models query failed", error.message);
 		return [];
 	}
 
-	const toolModels: ModelCard[] = [];
+	const matchedModels: ModelCard[] = [];
 	for (const row of data ?? []) {
 		const providerModel = Array.isArray(row.provider_model)
 			? row.provider_model[0]
@@ -300,11 +404,11 @@ async function getToolModels(args: {
 		const normalizedModel = normalizeModelRow(modelRow);
 		if (!args.includeHidden && normalizedModel.hidden) continue;
 		const features = extractFeatureKeys(row.params ?? {});
-		if (!features.includes("tools")) continue;
-		toolModels.push(mapRawToModelCard(normalizedModel));
+		if (!features.includes(args.feature)) continue;
+		matchedModels.push(mapRawToModelCard(normalizedModel));
 	}
 
-	return uniqueModels(sortByReleaseDate(toolModels), args.limit);
+	return uniqueModels(sortByReleaseDate(matchedModels), args.limit);
 }
 
 export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelCollection[]> {
@@ -318,13 +422,19 @@ export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelC
 	const [
 		freeModels,
 		imageModels,
+		videoModels,
+		audioModels,
 		toolModels,
+		reasoningModels,
 		codingModels,
 		imageUnderstandingModels,
 	] = await Promise.all([
 		getFreeModels({ limit, includeHidden }),
 		getImageGenerationModels({ limit, includeHidden }),
+		getVideoGenerationModels({ limit, includeHidden }),
+		getAudioModels({ limit, includeHidden }),
 		getToolModels({ limit, includeHidden }),
+		getReasoningModels({ limit, includeHidden }),
 		getBenchmarkTopModels({
 			benchmarkId: "aider-polyglot",
 			limit,
@@ -351,10 +461,28 @@ export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelC
 			models: imageModels,
 		},
 		{
+			id: "video-generation",
+			title: "Video generation",
+			description: "Models that can generate, transform, or reason about video.",
+			models: videoModels,
+		},
+		{
+			id: "audio-models",
+			title: "Audio models",
+			description: "Models for speech, transcription, and audio-native workflows.",
+			models: audioModels,
+		},
+		{
 			id: "tools",
 			title: "Tool calling",
 			description: "Models with native tool/function calling support.",
 			models: toolModels,
+		},
+		{
+			id: "reasoning",
+			title: "Reasoning models",
+			description: "Models with explicit reasoning capabilities in active providers.",
+			models: reasoningModels,
 		},
 		{
 			id: "coding",

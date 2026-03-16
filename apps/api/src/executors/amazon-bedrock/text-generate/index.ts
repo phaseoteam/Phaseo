@@ -11,7 +11,6 @@ import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { shouldFallbackToChatFromError, readErrorPayload } from "@executors/_shared/text-generate/openai-compat/retry-policy";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey } from "@providers/keys";
 import { getBindings } from "@/runtime/env";
 import type { ProviderExecutor } from "../../types";
@@ -142,10 +141,7 @@ async function executeBedrockConverse(
 
 				const usageMeters = normalizeTextUsageForPricing(ir.usage);
 				if (usageMeters) {
-					const priced = computeBill(usageMeters, args.pricingCard);
-					streamBill.cost_cents = priced.pricing.total_cents;
-					streamBill.currency = priced.pricing.currency;
-					streamBill.usage = priced;
+					streamBill.usage = usageMeters;
 				}
 				streamBill.finish_reason = ir?.choices?.[0]?.finishReason ?? null;
 
@@ -211,10 +207,7 @@ async function executeBedrockConverse(
 		);
 		const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
 		if (usageMeters) {
-			const priced = computeBill(usageMeters, args.pricingCard);
-			streamBill.cost_cents = priced.pricing.total_cents;
-			streamBill.currency = priced.pricing.currency;
-			streamBill.usage = priced;
+			streamBill.usage = usageMeters;
 		}
 		streamBill.finish_reason = ir?.choices?.[0]?.finishReason ?? null;
 
@@ -318,10 +311,7 @@ async function executeBedrockConverse(
 
 	const usageMeters = normalizeTextUsageForPricing(ir.usage);
 	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
+		bill.usage = usageMeters;
 	}
 	bill.finish_reason = ir.choices?.[0]?.finishReason ?? null;
 
@@ -450,10 +440,7 @@ async function executeBedrockOpenAI(
 		);
 		const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
 		if (usageMeters) {
-			const priced = computeBill(usageMeters, args.pricingCard);
-			bill.cost_cents = priced.pricing.total_cents;
-			bill.currency = priced.pricing.currency;
-			bill.usage = priced;
+			bill.usage = usageMeters;
 		}
 		bill.finish_reason = ir?.choices?.[0]?.finishReason ?? null;
 
@@ -482,10 +469,7 @@ async function executeBedrockOpenAI(
 		: openAIChatToIR(json ?? {}, args.requestId, model, args.providerId);
 	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir?.usage);
 	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
+		bill.usage = usageMeters;
 	}
 	bill.finish_reason = ir?.choices?.[0]?.finishReason ?? null;
 

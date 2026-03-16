@@ -166,25 +166,25 @@ describe("OpenAPI Runtime Response Contract", () => {
 		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
 	});
 
-	it("matches /analytics 400 response schema when access_token is missing", async () => {
+	it("matches /analytics 401 response schema when authorization is missing", async () => {
 		const result = await requestJson("/v1/analytics", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({}),
 		});
-		expect(result.status).toBe(400);
-		const schema = schemaForResponse("/analytics", "post", "400");
+		expect(result.status).toBe(401);
+		const schema = schemaForResponse("/analytics", "post", "401");
 		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
 	});
 
-	it("matches /analytics 200 response schema when access_token is provided", async () => {
+	it("matches /analytics 401 response schema when body access_token is provided without authorization", async () => {
 		const result = await requestJson("/v1/analytics", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ access_token: "demo-token" }),
 		});
-		expect(result.status).toBe(200);
-		const schema = schemaForResponse("/analytics", "post", "200");
+		expect(result.status).toBe(401);
+		const schema = schemaForResponse("/analytics", "post", "401");
 		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
 	});
 

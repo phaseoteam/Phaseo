@@ -12,6 +12,11 @@
   "input_types": "text,image",
   "output_types": "text",
   "links": [],
-  "details": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 2000000
+    }
+  ],
   "benchmarks": []
 }

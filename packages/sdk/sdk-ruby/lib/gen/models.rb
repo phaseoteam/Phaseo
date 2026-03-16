@@ -28,7 +28,8 @@ module AiStats
     DataModelOrganisation = Object
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
     Embedding = Struct.new(:embedding, :index, :object, keyword_init: true)
-    EmbeddingsRequest = Struct.new(:debug, :dimensions, :embedding_options, :encoding_format, :input, :inputs, :model, :provider, :user, keyword_init: true)
+    EmbeddingsMultimodalInput = Struct.new(:content, keyword_init: true)
+    EmbeddingsRequest = Struct.new(:debug, :dimensions, :encoding_format, :input, :model, :provider, :provider_options, :user, keyword_init: true)
     EmbeddingsResponse = Struct.new(:data, :model, :object, :usage, keyword_init: true)
     ErrorResponse = Struct.new(:description, :error, :message, :ok, keyword_init: true)
     FileResponse = Struct.new(:bytes, :created_at, :filename, :id, :object, :purpose, :status, :status_details, keyword_init: true)
@@ -92,7 +93,7 @@ module AiStats
     Usage = Struct.new(:completion_tokens, :prompt_tokens, :total_tokens, keyword_init: true)
     VideoContentPart = Struct.new(:type, :video_url, keyword_init: true)
     VideoDeleteResponse = Struct.new(:deleted, :id, :object, keyword_init: true)
-    VideoGenerationRequest = Struct.new(:aspect_ratio, :duration, :duration_seconds, :enhance_prompt, :generate_audio, :input, :input_image, :input_last_frame, :input_reference, :input_reference_mime_type, :input_video, :last_frame, :model, :negative_prompt, :number_of_videos, :output_storage_uri, :person_generation, :prompt, :provider, :quality, :ratio, :reference_images, :resolution, :sample_count, :seconds, :seed, :size, keyword_init: true)
+    VideoGenerationRequest = Struct.new(:aspect_ratio, :duration, :duration_seconds, :enhance_prompt, :generate_audio, :input, :input_image, :input_last_frame, :input_reference, :input_reference_mime_type, :input_video, :last_frame, :model, :negative_prompt, :number_of_videos, :output_storage_uri, :person_generation, :prompt, :provider, :quality, :ratio, :reference_images, :resolution, :sample_count, :seconds, :seed, keyword_init: true)
     VideoGenerationResponse = Struct.new(:created, :id, :model, :object, :output, :status, keyword_init: true)
   end
 end

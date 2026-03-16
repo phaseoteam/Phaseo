@@ -4,7 +4,6 @@
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
-import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
@@ -76,6 +75,7 @@ const XAI_REASONING_ROUTE_FAMILIES: XAiReasoningRouteFamily[] = [
 		nonReasoningSlug: "grok-4.20-beta-0309-non-reasoning",
 	},
 ];
+const XAI_MAX_ADAPTIVE_RETRIES = 0;
 
 function normalizeModelName(model?: string | null): string {
 	if (!model) return "";
@@ -380,6 +380,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	);
 
 	requestPayload.stream = true;
+	requestPayload.store = false;
 	requestPayload.stream_options = {
 		...(requestPayload.stream_options ?? {}),
 		include_usage: true,
@@ -392,6 +393,8 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			model: modelForRouting,
 		});
 	}
+	// Enforce non-persistent storage semantics for xAI requests.
+	requestPayload.store = false;
 
 	const captureRequest = Boolean(
 		args.meta.returnUpstreamRequest ||
@@ -418,13 +421,14 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			// ignore if readonly
 		}
 		const requestBody = JSON.stringify(sanitized.request);
-		const response = await fetch(openAICompatUrl(args.providerId, "/responses"), {
-			method: "POST",
-			headers: openAICompatHeaders(args.providerId, keyInfo.key, {
-				"x-grok-conv-id": irRequest.xaiConversationId,
-			}),
-			body: requestBody,
-		});
+			const response = await fetch(openAICompatUrl(args.providerId, "/responses"), {
+				method: "POST",
+				headers: openAICompatHeaders(args.providerId, keyInfo.key, {
+					"x-grok-conv-id": irRequest.xaiConversationId,
+					"Idempotency-Key": args.requestId,
+				}),
+				body: requestBody,
+			});
 		return {
 			response,
 			request: sanitized.request,
@@ -436,9 +440,14 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	let res = attempt.response;
 	let requestBody = attempt.requestBody;
 	let mappedRequest = captureRequest ? requestBody : undefined;
+	const seenRequestBodies = new Set<string>([requestBody]);
 
 	let adaptiveRetryCount = 0;
-	while (!res.ok && adaptiveRetryCount < 3) {
+	while (!res.ok && adaptiveRetryCount < XAI_MAX_ADAPTIVE_RETRIES) {
+		// Restrict adaptive replay to validation-style failures.
+		if (res.status !== 400 && res.status !== 422) {
+			break;
+		}
 		const { errorText, errorPayload } = await readErrorPayload(res);
 		const adapted = adaptRequestFromUpstreamError({
 			providerId: args.providerId,
@@ -450,6 +459,10 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		if (!adapted.changed) {
 			break;
 		}
+		const nextRequestBody = JSON.stringify(adapted.request);
+		if (seenRequestBodies.has(nextRequestBody)) {
+			break;
+		}
 		if (args.meta.debug?.enabled) {
 			console.log("[gateway-debug] x-ai request adapted from upstream error", {
 				provider: args.providerId,
@@ -458,6 +471,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			});
 		}
 		attempt = await sendPayload(adapted.request);
+		seenRequestBodies.add(attempt.requestBody);
 		res = attempt.response;
 		requestBody = attempt.requestBody;
 		mappedRequest = captureRequest ? requestBody : undefined;
@@ -521,7 +535,9 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMetersBase = normalizeTextUsageForPricing((rawResponse as any)?.usage ?? usage);
+	const usageMetersBase = normalizeTextUsageForPricing((rawResponse as any)?.usage ?? usage, {
+		cachedReadTokensAreSubsetOfInput: true,
+	});
 	const usageMeters = usageMetersBase
 		? { ...usageMetersBase, requests: usageMetersBase.requests ?? 1 }
 		: {
@@ -532,12 +548,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			output_text_tokens: 0,
 			total_tokens: 0,
 		};
-	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
-	}
+	bill.usage = usageMeters;
 
 	return {
 		kind: "completed",

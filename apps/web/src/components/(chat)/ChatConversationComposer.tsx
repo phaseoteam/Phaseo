@@ -68,6 +68,9 @@ interface ChatConversationComposerProps {
 	isStartingRecording: boolean;
 	recordingSupported: boolean;
 	onToggleRecording: () => void;
+	speechToTextSupported: boolean;
+	isSpeechToTextActive: boolean;
+	onToggleSpeechToText: () => void;
 	onOpenModelPicker: () => void;
 	onSubmit: () => void;
 	onComposerChange: (value: string) => void;
@@ -104,6 +107,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		isStartingRecording,
 		recordingSupported,
 		onToggleRecording,
+		speechToTextSupported,
+		isSpeechToTextActive,
+		onToggleSpeechToText,
 		onOpenModelPicker,
 		onSubmit,
 		onComposerChange,
@@ -236,7 +242,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent>
-									{isUnified ? "Add files" : "Available in unified chat"}
+									{isUnified ? "Add files" : "Not available in this room"}
 								</TooltipContent>
 							</Tooltip>
 							<Tooltip>
@@ -297,7 +303,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										? webSearchEnabled
 											? "Disable web search"
 											: "Enable web search"
-										: "Available in unified chat"}
+										: "Not available in this room"}
 								</TooltipContent>
 							</Tooltip>
 							<Popover
@@ -355,17 +361,57 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								</PopoverContent>
 							</Popover>
 						</div>
-						<Button
-							size="icon"
-							onClick={onSubmit}
-							disabled={isSending || (!composer.trim() && attachments.length === 0)}
-						>
-							{isSending ? (
-								<Spinner className="h-4 w-4" />
-							) : (
-								<SendHorizontal className="h-4 w-4" />
-							)}
-						</Button>
+						<div className="flex items-center gap-2">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className={cn(
+											"h-8 w-8",
+											isSpeechToTextActive
+												? "bg-primary/12 text-primary hover:bg-primary/20 hover:text-primary"
+												: "",
+										)}
+										disabled={!speechToTextSupported}
+										onClick={onToggleSpeechToText}
+										aria-label={
+											isSpeechToTextActive
+												? "Stop speech to text"
+												: "Start speech to text"
+										}
+									>
+										{isSpeechToTextActive ? (
+											<Square className="h-3.5 w-3.5 fill-current" />
+										) : (
+											<Mic className="h-4 w-4" />
+										)}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									{speechToTextSupported
+										? isSpeechToTextActive
+											? "Stop voice dictation"
+											: "Dictate prompt from microphone"
+										: "Speech recognition is unavailable in this browser"}
+								</TooltipContent>
+							</Tooltip>
+							<Button
+								size="icon"
+								onClick={onSubmit}
+								disabled={
+									isSending ||
+									(!composer.trim() && attachments.length === 0)
+								}
+							>
+								{isSending ? (
+									<Spinner className="h-4 w-4" />
+								) : (
+									<SendHorizontal className="h-4 w-4" />
+								)}
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>

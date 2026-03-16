@@ -31,6 +31,7 @@
     "models/DataModelOrganisation.ts",
     "models/DebugOptions.ts",
     "models/Embedding.ts",
+    "models/EmbeddingsMultimodalInput.ts",
     "models/EmbeddingsRequest.ts",
     "models/EmbeddingsResponse.ts",
     "models/ErrorResponse.ts",

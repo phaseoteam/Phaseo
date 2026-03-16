@@ -92,6 +92,7 @@ describe("OpenAI-compatible video endpoint payload mapping", () => {
 		expect(capturedBody.prompt).toContain("cinematic");
 		expect(capturedBody.seconds).toBe(8);
 		expect(capturedBody.size).toBe("1280x720");
+		expect(capturedBody.resolution).toBe("1280x720");
 		expect(capturedBody.input_reference).toBe(
 			"https://storage.googleapis.com/reference.png",
 		);

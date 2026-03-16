@@ -57,6 +57,7 @@ declare
   team_created_at timestamptz;
   team_tier text;
   team_balance_nanos bigint;
+  team_reserved_nanos bigint;
 
   -- Key aggregates
   key_name text;
@@ -180,10 +181,23 @@ begin
   credit_status :=
     coalesce((
       select case
-        when coalesce(w.balance_nanos, 0)::bigint >= min_balance_nanos then
-          jsonb_build_object('ok', true,  'balance_nanos', w.balance_nanos)
+        when greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0) >= min_balance_nanos then
+          jsonb_build_object(
+            'ok', true,
+            'balance_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+            'raw_balance_nanos', coalesce(w.balance_nanos, 0)::bigint,
+            'reserved_nanos', coalesce(w.reserved_nanos, 0)::bigint,
+            'available_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0)
+          )
         else
-          jsonb_build_object('ok', false, 'reason', 'insufficient_funds', 'balance_nanos', coalesce(w.balance_nanos, 0))
+          jsonb_build_object(
+            'ok', false,
+            'reason', 'insufficient_funds',
+            'balance_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+            'raw_balance_nanos', coalesce(w.balance_nanos, 0)::bigint,
+            'reserved_nanos', coalesce(w.reserved_nanos, 0)::bigint,
+            'available_nanos', greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0)
+          )
       end
       from public.wallets w
       where w.team_id = gateway_fetch_request_context.team_id
@@ -252,11 +266,13 @@ begin
   select
     t.created_at,
     coalesce(t.tier, 'basic'),
-    coalesce(w.balance_nanos, 0)
+    greatest(coalesce(w.balance_nanos, 0)::bigint - coalesce(w.reserved_nanos, 0)::bigint, 0),
+    coalesce(w.reserved_nanos, 0)::bigint
   into
     team_created_at,
     team_tier,
-    team_balance_nanos
+    team_balance_nanos,
+    team_reserved_nanos
   from public.teams t
   left join public.wallets w on w.team_id = t.id
   where t.id = gateway_fetch_request_context.team_id
@@ -292,6 +308,8 @@ begin
     'created_at', to_jsonb(team_created_at),
     'account_age_days', extract(epoch from (now_utc - team_created_at)) / 86400,
     'balance_nanos', team_balance_nanos,
+    'available_nanos', team_balance_nanos,
+    'reserved_nanos', team_reserved_nanos,
     'balance_usd', round((team_balance_nanos::numeric / 1000000000.0)::numeric, 2),
     'balance_is_low', team_balance_nanos < min_balance_nanos,
     'total_requests', team_total_requests,

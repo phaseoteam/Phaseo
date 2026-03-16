@@ -8,6 +8,12 @@ import {
 	resolveRequestCountUsage,
 } from "@core/usage-normalization";
 
+type TextUsageNormalizationOptions = {
+	// When true, cached-read tokens are treated as a subset of input tokens.
+	// Pricing then uses uncached input meter + cached-read meter (no double count).
+	cachedReadTokensAreSubsetOfInput?: boolean;
+};
+
 function pickNumber(source: any, path: string): number | undefined {
 	if (!source || typeof source !== "object") return undefined;
 	const parts = path.split(".");
@@ -23,7 +29,10 @@ function pickFirstNumber(source: any, paths: string[]): number | undefined {
 	return pickFirstFiniteNumber(source, paths);
 }
 
-export function normalizeTextUsageForPricing(usageRaw: any): Record<string, number> | undefined {
+export function normalizeTextUsageForPricing(
+	usageRaw: any,
+	options?: TextUsageNormalizationOptions,
+): Record<string, any> | undefined {
 	if (!usageRaw || typeof usageRaw !== "object") return undefined;
 
 	const tokenUsage = resolveCanonicalTokenUsage(usageRaw);
@@ -83,10 +92,15 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 		"output_tokens_details.output_videos",
 	]);
 	const requests = resolveRequestCountUsage(usageRaw);
+	const cachedReadAsSubset = options?.cachedReadTokensAreSubsetOfInput === true;
+	const cachedReadValue = typeof cachedReadTokens === "number" ? Math.max(0, Math.round(cachedReadTokens)) : 0;
+	const uncachedInputTokens = cachedReadAsSubset
+		? Math.max(0, tokenUsage.inputTokens - cachedReadValue)
+		: tokenUsage.inputTokens;
 
 	const meters: Record<string, number> = {
 		input_tokens: tokenUsage.inputTokens,
-		input_text_tokens: tokenUsage.inputTokens,
+		input_text_tokens: uncachedInputTokens,
 		output_tokens: tokenUsage.outputTokens,
 		output_text_tokens: tokenUsage.outputTokens,
 		total_tokens: tokenUsage.totalTokens,
@@ -102,6 +116,9 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 	if (typeof outputAudioTokens === "number") meters.output_audio_tokens = outputAudioTokens;
 	if (typeof outputVideoTokens === "number") meters.output_video_tokens = outputVideoTokens;
 	if (typeof requests === "number") meters.requests = requests;
+	if (cachedReadAsSubset && typeof cachedReadTokens === "number") {
+		(meters as Record<string, any>).cached_read_tokens_are_subset_of_input = true;
+	}
 
 	return meters;
 }

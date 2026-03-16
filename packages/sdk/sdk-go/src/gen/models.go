@@ -402,15 +402,18 @@ type Embedding struct {
 	Object *string `json:"object,omitempty"`
 }
 
+type EmbeddingsMultimodalInput struct {
+	Content []interface{} `json:"content"`
+}
+
 type EmbeddingsRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	Dimensions *int `json:"dimensions,omitempty"`
-	EmbeddingOptions *map[string]interface{} `json:"embedding_options,omitempty"`
 	EncodingFormat *string `json:"encoding_format,omitempty"`
-	Input interface{} `json:"input,omitempty"`
-	Inputs interface{} `json:"inputs,omitempty"`
-	Model *string `json:"model,omitempty"`
+	Input interface{} `json:"input"`
+	Model string `json:"model"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	User *string `json:"user,omitempty"`
 }
 
@@ -1828,7 +1831,6 @@ type VideoGenerationRequest struct {
 	SampleCount *int `json:"sample_count,omitempty"`
 	Seconds interface{} `json:"seconds,omitempty"`
 	Seed *int `json:"seed,omitempty"`
-	Size *string `json:"size,omitempty"`
 }
 
 type VideoGenerationResponse struct {

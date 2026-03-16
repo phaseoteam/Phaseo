@@ -264,15 +264,18 @@ public final class Models {
 		public String object;
 	}
 
+	public static class EmbeddingsMultimodalInput {
+		public java.util.List<Object> content;
+	}
+
 	public static class EmbeddingsRequest {
 		public Object debug;
 		public Integer dimensions;
-		public Object embedding_options;
-		public String encoding_format;
+		public Object encoding_format;
 		public Object input;
-		public Object inputs;
 		public String model;
 		public Object provider;
+		public Object provider_options;
 		public String user;
 	}
 
@@ -806,7 +809,6 @@ public final class Models {
 		public Integer sample_count;
 		public Object seconds;
 		public Integer seed;
-		public String size;
 	}
 
 	public static class VideoGenerationResponse {

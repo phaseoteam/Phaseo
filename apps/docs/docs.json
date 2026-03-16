@@ -262,15 +262,9 @@
 								"group": "Start Here",
 								"expanded": true,
 								"pages": [
-									{
-										"group": "Basics",
-										"expanded": true,
-										"pages": [
-											"v1/api-reference/introduction",
-											"v1/api-reference/authentication",
-											"v1/api-reference/errors"
-										]
-									}
+									"v1/api-reference/introduction",
+									"v1/api-reference/authentication",
+									"v1/api-reference/errors"
 								]
 							},
 							{
@@ -306,11 +300,23 @@
 										]
 									},
 									{
-										"group": "Safety and Vector",
+										"group": "Embeddings",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/moderations",
-											"v1/api-reference/endpoint/embeddings",
+											"v1/api-reference/endpoint/embeddings"
+										]
+									},
+									{
+										"group": "Moderations",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/moderations"
+										]
+									},
+									{
+										"group": "OCR",
+										"expanded": false,
+										"pages": [
 											"v1/api-reference/endpoint/ocr"
 										]
 									},
@@ -364,34 +370,58 @@
 								"expanded": false,
 								"pages": [
 									{
-										"group": "Discovery and Health",
+										"group": "Models",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/models",
-											"v1/api-reference/endpoint/providers",
-											"v1/api-reference/endpoint/health",
+											"v1/api-reference/endpoint/models"
+										]
+									},
+									{
+										"group": "Providers",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/providers"
+										]
+									},
+									{
+										"group": "Health",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/health"
+										]
+									},
+									{
+										"group": "Activity",
+										"expanded": false,
+										"pages": [
 											"v1/api-reference/endpoint/activity"
 										]
 									},
 									{
-										"group": "Billing and Usage",
+										"group": "Credits",
 										"expanded": false,
 										"pages": [
 											"v1/api-reference/endpoint/credits"
 										]
 									},
 									{
-										"group": "Generation Lookup",
+										"group": "Generation",
 										"expanded": false,
 										"pages": [
 											"v1/api-reference/endpoint/generation"
 										]
 									},
 									{
-										"group": "Management API Keys",
+										"group": "Management API Keys Overview",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/management/index",
+											"v1/api-reference/endpoint/management/index"
+										]
+									},
+									{
+										"group": "API Keys",
+										"expanded": false,
+										"pages": [
 											"v1/api-reference/endpoint/management/keys-create",
 											"v1/api-reference/endpoint/management/keys-list",
 											"v1/api-reference/endpoint/management/keys-get",
@@ -411,9 +441,32 @@
 								"item": "AI SDK (Vercel)",
 								"groups": [
 									{
-										"group": "Overview",
+										"group": "Introduction",
 										"pages": [
 											"v1/sdk-reference/sdk/ai-sdk"
+										]
+									},
+									{
+										"group": "Text",
+										"pages": [
+											"v1/sdk-reference/sdk/generate-text/index",
+											"v1/sdk-reference/sdk/stream-text/index",
+											"v1/sdk-reference/sdk/tool-calling/index",
+											"v1/sdk-reference/sdk/structured-output/index"
+										]
+									},
+									{
+										"group": "Multimodal",
+										"pages": [
+											"v1/sdk-reference/sdk/embeddings/index",
+											"v1/sdk-reference/sdk/images/index",
+											"v1/sdk-reference/sdk/audio/index"
+										]
+									},
+									{
+										"group": "Models",
+										"pages": [
+											"v1/sdk-reference/sdk/get-models/index"
 										]
 									}
 								]
@@ -524,6 +577,51 @@
 											"v1/sdk-reference/go/installation",
 											"v1/sdk-reference/go/usage"
 										]
+									},
+									{
+										"group": "Text",
+										"pages": [
+											"v1/sdk-reference/go/responses",
+											"v1/sdk-reference/go/chat-completions"
+										]
+									},
+									{
+										"group": "Image",
+										"pages": [
+											"v1/sdk-reference/go/images-generations",
+											"v1/sdk-reference/go/images-edits"
+										]
+									},
+									{
+										"group": "Audio",
+										"pages": [
+											"v1/sdk-reference/go/audio-speech",
+											"v1/sdk-reference/go/audio-transcriptions",
+											"v1/sdk-reference/go/audio-translations"
+										]
+									},
+									{
+										"group": "Video",
+										"pages": [
+											"v1/sdk-reference/go/video-generation"
+										]
+									},
+									{
+										"group": "Specialised",
+										"pages": [
+											"v1/sdk-reference/go/embeddings",
+											"v1/sdk-reference/go/moderations",
+											"v1/sdk-reference/go/batches",
+											"v1/sdk-reference/go/files"
+										]
+									},
+									{
+										"group": "Admin",
+										"pages": [
+											"v1/sdk-reference/go/models",
+											"v1/sdk-reference/go/generation",
+											"v1/sdk-reference/go/health"
+										]
 									}
 								]
 							},
@@ -536,6 +634,51 @@
 											"v1/sdk-reference/csharp/overview",
 											"v1/sdk-reference/csharp/installation",
 											"v1/sdk-reference/csharp/usage"
+										]
+									},
+									{
+										"group": "Text",
+										"pages": [
+											"v1/sdk-reference/csharp/responses",
+											"v1/sdk-reference/csharp/chat-completions"
+										]
+									},
+									{
+										"group": "Image",
+										"pages": [
+											"v1/sdk-reference/csharp/images-generations",
+											"v1/sdk-reference/csharp/images-edits"
+										]
+									},
+									{
+										"group": "Audio",
+										"pages": [
+											"v1/sdk-reference/csharp/audio-speech",
+											"v1/sdk-reference/csharp/audio-transcriptions",
+											"v1/sdk-reference/csharp/audio-translations"
+										]
+									},
+									{
+										"group": "Video",
+										"pages": [
+											"v1/sdk-reference/csharp/video-generation"
+										]
+									},
+									{
+										"group": "Specialised",
+										"pages": [
+											"v1/sdk-reference/csharp/embeddings",
+											"v1/sdk-reference/csharp/moderations",
+											"v1/sdk-reference/csharp/batches",
+											"v1/sdk-reference/csharp/files"
+										]
+									},
+									{
+										"group": "Admin",
+										"pages": [
+											"v1/sdk-reference/csharp/models",
+											"v1/sdk-reference/csharp/generation",
+											"v1/sdk-reference/csharp/health"
 										]
 									}
 								]
@@ -550,6 +693,51 @@
 											"v1/sdk-reference/php/installation",
 											"v1/sdk-reference/php/usage"
 										]
+									},
+									{
+										"group": "Text",
+										"pages": [
+											"v1/sdk-reference/php/responses",
+											"v1/sdk-reference/php/chat-completions"
+										]
+									},
+									{
+										"group": "Image",
+										"pages": [
+											"v1/sdk-reference/php/images-generations",
+											"v1/sdk-reference/php/images-edits"
+										]
+									},
+									{
+										"group": "Audio",
+										"pages": [
+											"v1/sdk-reference/php/audio-speech",
+											"v1/sdk-reference/php/audio-transcriptions",
+											"v1/sdk-reference/php/audio-translations"
+										]
+									},
+									{
+										"group": "Video",
+										"pages": [
+											"v1/sdk-reference/php/video-generation"
+										]
+									},
+									{
+										"group": "Specialised",
+										"pages": [
+											"v1/sdk-reference/php/embeddings",
+											"v1/sdk-reference/php/moderations",
+											"v1/sdk-reference/php/batches",
+											"v1/sdk-reference/php/files"
+										]
+									},
+									{
+										"group": "Admin",
+										"pages": [
+											"v1/sdk-reference/php/models",
+											"v1/sdk-reference/php/generation",
+											"v1/sdk-reference/php/health"
+										]
 									}
 								]
 							},
@@ -563,6 +751,51 @@
 											"v1/sdk-reference/ruby/installation",
 											"v1/sdk-reference/ruby/usage"
 										]
+									},
+									{
+										"group": "Text",
+										"pages": [
+											"v1/sdk-reference/ruby/responses",
+											"v1/sdk-reference/ruby/chat-completions"
+										]
+									},
+									{
+										"group": "Image",
+										"pages": [
+											"v1/sdk-reference/ruby/images-generations",
+											"v1/sdk-reference/ruby/images-edits"
+										]
+									},
+									{
+										"group": "Audio",
+										"pages": [
+											"v1/sdk-reference/ruby/audio-speech",
+											"v1/sdk-reference/ruby/audio-transcriptions",
+											"v1/sdk-reference/ruby/audio-translations"
+										]
+									},
+									{
+										"group": "Video",
+										"pages": [
+											"v1/sdk-reference/ruby/video-generation"
+										]
+									},
+									{
+										"group": "Specialised",
+										"pages": [
+											"v1/sdk-reference/ruby/embeddings",
+											"v1/sdk-reference/ruby/moderations",
+											"v1/sdk-reference/ruby/batches",
+											"v1/sdk-reference/ruby/files"
+										]
+									},
+									{
+										"group": "Admin",
+										"pages": [
+											"v1/sdk-reference/ruby/models",
+											"v1/sdk-reference/ruby/generation",
+											"v1/sdk-reference/ruby/health"
+										]
 									}
 								]
 							},
@@ -573,7 +806,53 @@
 										"group": "Introduction",
 										"pages": [
 											"v1/sdk-reference/java/overview",
-											"v1/sdk-reference/java/installation"
+											"v1/sdk-reference/java/installation",
+											"v1/sdk-reference/java/usage"
+										]
+									},
+									{
+										"group": "Text",
+										"pages": [
+											"v1/sdk-reference/java/responses",
+											"v1/sdk-reference/java/chat-completions"
+										]
+									},
+									{
+										"group": "Image",
+										"pages": [
+											"v1/sdk-reference/java/images-generations",
+											"v1/sdk-reference/java/images-edits"
+										]
+									},
+									{
+										"group": "Audio",
+										"pages": [
+											"v1/sdk-reference/java/audio-speech",
+											"v1/sdk-reference/java/audio-transcriptions",
+											"v1/sdk-reference/java/audio-translations"
+										]
+									},
+									{
+										"group": "Video",
+										"pages": [
+											"v1/sdk-reference/java/video-generation"
+										]
+									},
+									{
+										"group": "Specialised",
+										"pages": [
+											"v1/sdk-reference/java/embeddings",
+											"v1/sdk-reference/java/moderations",
+											"v1/sdk-reference/java/batches",
+											"v1/sdk-reference/java/files"
+										]
+									},
+									{
+										"group": "Admin",
+										"pages": [
+											"v1/sdk-reference/java/models",
+											"v1/sdk-reference/java/generation",
+											"v1/sdk-reference/java/health"
 										]
 									}
 								]

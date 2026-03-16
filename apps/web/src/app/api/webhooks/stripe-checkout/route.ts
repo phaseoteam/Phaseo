@@ -33,6 +33,101 @@ function readTeamIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | null {
     return raw.length > 0 ? raw : null;
 }
 
+function readCustomerIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | null {
+    if (typeof pi.customer === "string" && pi.customer.trim().length > 0) {
+        return pi.customer;
+    }
+    if (pi.customer && typeof pi.customer === "object" && "id" in pi.customer) {
+        const id = (pi.customer as Stripe.Customer | Stripe.DeletedCustomer).id;
+        return typeof id === "string" && id.trim().length > 0 ? id : null;
+    }
+    return null;
+}
+
+type WalletAttributionRow = {
+    team_id: string;
+    stripe_customer_id: string | null;
+    balance_nanos?: number | null;
+};
+
+async function resolveWalletForTopUpPaymentIntent(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    paymentIntentId: string;
+    stripeCustomerId: string | null;
+    metadataTeamId: string | null;
+    includeBalance?: boolean;
+}): Promise<WalletAttributionRow | null> {
+    const { supabase, paymentIntentId, stripeCustomerId, metadataTeamId, includeBalance = false } = args;
+    const walletSelect = includeBalance
+        ? "team_id,stripe_customer_id,balance_nanos"
+        : "team_id,stripe_customer_id";
+
+    if (stripeCustomerId) {
+        const { data: byCustomerWalletRaw, error: byCustomerErr } = await supabase
+            .from("wallets")
+            .select(walletSelect as any)
+            .eq("stripe_customer_id", stripeCustomerId)
+            .maybeSingle();
+        if (byCustomerErr) throw byCustomerErr;
+        const byCustomerWallet = (byCustomerWalletRaw ?? null) as WalletAttributionRow | null;
+        if (byCustomerWallet?.team_id) {
+            return byCustomerWallet;
+        }
+    }
+
+    if (!metadataTeamId) return null;
+
+    const { data: byTeamWalletRaw, error: byTeamErr } = await supabase
+        .from("wallets")
+        .select(walletSelect as any)
+        .eq("team_id", metadataTeamId)
+        .maybeSingle();
+    if (byTeamErr) throw byTeamErr;
+    const byTeamWallet = (byTeamWalletRaw ?? null) as WalletAttributionRow | null;
+    if (!byTeamWallet?.team_id) return null;
+
+    const resolvedWallet = byTeamWallet;
+    if (!stripeCustomerId || resolvedWallet.stripe_customer_id === stripeCustomerId) {
+        if (!stripeCustomerId) {
+            console.warn("[stripe-webhook] Resolved wallet without customer via metadata team_id fallback", {
+                paymentIntentId,
+                teamId: resolvedWallet.team_id,
+            });
+        }
+        return resolvedWallet;
+    }
+
+    const updateQuery = supabase
+        .from("wallets")
+        .update({ stripe_customer_id: stripeCustomerId })
+        .eq("team_id", resolvedWallet.team_id);
+    if (resolvedWallet.stripe_customer_id) {
+        updateQuery.eq("stripe_customer_id", resolvedWallet.stripe_customer_id);
+    } else {
+        updateQuery.is("stripe_customer_id", null);
+    }
+
+    const { error: backfillErr } = await updateQuery;
+    if (backfillErr) {
+        console.warn("[stripe-webhook] Failed to refresh wallet stripe_customer_id from metadata fallback", {
+            paymentIntentId,
+            teamId: resolvedWallet.team_id,
+            existingCustomerId: resolvedWallet.stripe_customer_id,
+            newCustomerId: stripeCustomerId,
+            error: backfillErr.message,
+        });
+        return resolvedWallet;
+    }
+
+    console.log("[stripe-webhook] Refreshed wallet stripe_customer_id from metadata fallback", {
+        paymentIntentId,
+        teamId: resolvedWallet.team_id,
+        previousCustomerId: resolvedWallet.stripe_customer_id,
+        newCustomerId: stripeCustomerId,
+    });
+    return { ...resolvedWallet, stripe_customer_id: stripeCustomerId };
+}
+
 async function ensureReusablePaymentMethod(
     stripe: Stripe,
     customerId: string,
@@ -263,34 +358,16 @@ export async function POST(req: Request) {
                 const purpose = readPaymentIntentPurpose(pi);
                 if (!purpose || !TOP_UP_PURPOSES.has(purpose)) break;
 
-                const stripeCustomerId = (pi.customer as string) ?? null;
-                if (!stripeCustomerId) break;
+                const stripeCustomerId = readCustomerIdFromPaymentIntent(pi);
                 const metadataTeamId = readTeamIdFromPaymentIntent(pi);
 
-                let { data: wallet } = await supabase
-                    .from("wallets")
-                    .select("team_id, stripe_customer_id, balance_nanos")
-                    .eq("stripe_customer_id", stripeCustomerId)
-                    .maybeSingle();
-
-                if (!wallet?.team_id && metadataTeamId) {
-                    const { data: byTeamWallet } = await supabase
-                        .from("wallets")
-                        .select("team_id, stripe_customer_id, balance_nanos")
-                        .eq("team_id", metadataTeamId)
-                        .maybeSingle();
-
-                    if (byTeamWallet?.team_id) {
-                        wallet = byTeamWallet;
-                        // Only backfill customer ID if the wallet doesn't have one yet
-                        if (!byTeamWallet.stripe_customer_id) {
-                            await supabase
-                                .from("wallets")
-                                .update({ stripe_customer_id: stripeCustomerId })
-                                .eq("team_id", byTeamWallet.team_id);
-                        }
-                    }
-                }
+                const wallet = await resolveWalletForTopUpPaymentIntent({
+                    supabase,
+                    paymentIntentId: pi.id,
+                    stripeCustomerId,
+                    metadataTeamId,
+                    includeBalance: true,
+                });
 
                 if (!wallet?.team_id) break;
 
@@ -330,35 +407,16 @@ export async function POST(req: Request) {
                     break;
                 }
 
-                const stripeCustomerId = (pi.customer as string) ?? null;
-                if (!stripeCustomerId) break;
+                const stripeCustomerId = readCustomerIdFromPaymentIntent(pi);
                 const paymentMethodId = readPaymentMethodId(pi);
                 const metadataTeamId = readTeamIdFromPaymentIntent(pi);
 
-                let { data: wallet } = await supabase
-                    .from("wallets")
-                    .select("team_id, stripe_customer_id")
-                    .eq("stripe_customer_id", stripeCustomerId)
-                    .maybeSingle();
-
-                if (!wallet?.team_id && metadataTeamId) {
-                    const { data: byTeamWallet } = await supabase
-                        .from("wallets")
-                        .select("team_id, stripe_customer_id")
-                        .eq("team_id", metadataTeamId)
-                        .maybeSingle();
-
-                    if (byTeamWallet?.team_id) {
-                        wallet = byTeamWallet;
-                        // Only backfill customer ID if the wallet doesn't have one yet
-                        if (!byTeamWallet.stripe_customer_id) {
-                            await supabase
-                                .from("wallets")
-                                .update({ stripe_customer_id: stripeCustomerId })
-                                .eq("team_id", byTeamWallet.team_id);
-                        }
-                    }
-                }
+                const wallet = await resolveWalletForTopUpPaymentIntent({
+                    supabase,
+                    paymentIntentId: pi.id,
+                    stripeCustomerId,
+                    metadataTeamId,
+                });
 
                 if (!wallet?.team_id) break;
 
@@ -383,7 +441,7 @@ export async function POST(req: Request) {
 
                 console.log(`[stripe-webhook] Team ${wallet.team_id} tier: ${tier}, fee: ${feePct}%`);
 
-                if (paymentMethodId) {
+                if (paymentMethodId && stripeCustomerId) {
                     try {
                         await ensureReusablePaymentMethod(stripe, stripeCustomerId, paymentMethodId);
                     } catch (pmErr) {

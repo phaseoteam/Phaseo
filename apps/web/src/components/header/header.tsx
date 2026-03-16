@@ -1,5 +1,6 @@
 // components/header/Header.tsx  (STATIC)
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";
@@ -20,15 +21,21 @@ export default function Header() {
 					href="/"
 					className="flex shrink-0 items-center text-2xl font-semibold tracking-tight"
 				>
-					<img
+					<Image
 						src="/wordmark_light.svg"
 						alt="AI Stats"
-						className="h-10 select-none dark:hidden"
+						width={154}
+						height={40}
+						className="h-10 w-auto select-none dark:hidden"
+						priority
 					/>
-					<img
+					<Image
 						src="/wordmark_dark.svg"
 						alt="AI Stats"
-						className="hidden h-10 select-none dark:block"
+						width={154}
+						height={40}
+						className="hidden h-10 w-auto select-none dark:block"
+						priority
 					/>
 				</Link>
 				<div className="hidden h-6 w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />

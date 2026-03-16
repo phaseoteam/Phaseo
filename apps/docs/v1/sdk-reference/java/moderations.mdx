@@ -1,0 +1,20 @@
+---
+title: "Moderations"
+description: "Call /moderations with the Java SDK."
+---
+
+**Method**: `Operations.createModeration(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "openai/omni-moderation",
+  "input": "Please rate this message for safety"
+}
+""";
+
+Object response = Operations.createModeration(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```

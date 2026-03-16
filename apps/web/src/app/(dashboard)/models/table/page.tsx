@@ -1,8 +1,10 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import ModelsTableHeader from "@/components/(data)/models/Models/ModelsTableHeader";
-import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import ModelsTableDisplay from "@/components/(data)/models/Models/ModelsTableDisplay";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
+import {
+	getRankings,
+	type RankingModel,
+} from "@/lib/fetchers/rankings/getRankingsData";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = {
@@ -15,8 +17,30 @@ export const metadata: Metadata = {
 	},
 };
 
+function normalizeRankingModelKey(value: string): string {
+	return String(value ?? "").trim().toLowerCase();
+}
+
+function buildWeeklyTokensByModel(
+	rankingRows: RankingModel[],
+): Record<string, number> {
+	const tokensByModel = new Map<string, number>();
+	for (const row of rankingRows) {
+		const key = normalizeRankingModelKey(row.model_id);
+		if (!key || key === "unknown" || key === "other") continue;
+		const tokens = Number(row.total_tokens ?? 0);
+		if (!Number.isFinite(tokens) || tokens < 0) continue;
+		tokensByModel.set(key, (tokensByModel.get(key) ?? 0) + tokens);
+	}
+	return Object.fromEntries(tokensByModel.entries());
+}
+
 export default async function ModelsTablePage() {
 	const includeHidden = await resolveIncludeHidden();
+	const [monitorResult, rankingsResult] = await Promise.all([
+		getMonitorModels({}, includeHidden),
+		getRankings("week", "tokens", 4000),
+	]);
 	const {
 		models: modelData,
 		allTiers,
@@ -24,30 +48,19 @@ export default async function ModelsTablePage() {
 		allModalities,
 		allFeatures,
 		allStatuses,
-	} = await getMonitorModels({}, includeHidden);
+	} = monitorResult;
+	const weeklyTokensByModel = buildWeeklyTokensByModel(rankingsResult.rankings);
 
 	return (
-		<div className="mx-8 py-8">
-			<div className="mb-8">
-				<ModelsTableHeader
-					allEndpoints={allEndpoints}
-					allModalities={allModalities}
-					allFeatures={allFeatures}
-					allTiers={allTiers}
-					allStatuses={allStatuses}
-				/>
-			</div>
-
-			<Suspense
-				fallback={
-					<div className="flex items-center justify-center py-8">
-						Loading table...
-					</div>
-				}
-			>
-				<MonitorTableClient initialModelData={modelData} />
-			</Suspense>
-		</div>
+		<ModelsTableDisplay
+			initialModelData={modelData}
+			allEndpoints={allEndpoints}
+			allModalities={allModalities}
+			allFeatures={allFeatures}
+			allTiers={allTiers}
+			allStatuses={allStatuses}
+			weeklyTokensByModel={weeklyTokensByModel}
+		/>
 	);
 }
 

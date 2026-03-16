@@ -51,6 +51,7 @@ export default async function getAPIProviderHeader(
     "use cache";
 
     cacheLife("days");
+    cacheTag("data:api_providers");
     cacheTag(`api_provider:header:${apiProviderId}`);
 
     console.log("[cache] COMPUTE getAPIProviderHeader", apiProviderId);

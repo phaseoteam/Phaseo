@@ -31,10 +31,42 @@ export interface GatewayProviderModel {
 export interface ModelGatewayMetadata {
     modelId: string;
     aliases: string[];
+    apiModelIds: string[];
+    primaryModelIdentifier: string;
+    acceptedModelIdentifiers: string[];
+    primaryModelIdentifierByEndpoint: Record<string, string>;
+    acceptedModelIdentifiersByEndpoint: Record<string, string[]>;
     providers: GatewayProviderModel[];
     activeProviders: GatewayProviderModel[];
     inactiveProviders: GatewayProviderModel[];
 }
+
+type ProviderModelRow = Record<string, any>;
+
+const normalizeIdentifier = (value: string | null | undefined): string | null => {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+};
+
+const dedupeIdentifiers = (values: Array<string | null | undefined>): string[] =>
+    Array.from(
+        new Set(
+            values
+                .map((value) => normalizeIdentifier(value))
+                .filter((value): value is string => Boolean(value))
+        )
+    );
+
+const sortApiModelIdsByRank = (
+    ids: string[],
+    rank: Map<string, number>
+): string[] =>
+    [...ids].sort((a, b) => {
+        const aRank = rank.get(a) ?? Number.MAX_SAFE_INTEGER;
+        const bRank = rank.get(b) ?? Number.MAX_SAFE_INTEGER;
+        if (aRank !== bRank) return aRank - bRank;
+        return a.localeCompare(b);
+    });
 
 function isWithinEffectiveWindow(
     effectiveFrom?: string | null,
@@ -74,12 +106,29 @@ export default async function getModelGatewayMetadata(
         throw new Error("Model not found");
     }
 
-	const { data: providerModels, error: providerError } = await supabase
-		.from("data_api_provider_models")
-		.select(
-			"provider_api_model_id, provider_id, api_model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
-		)
-		.eq("internal_model_id", modelId);
+	let providerModels: ProviderModelRow[] | null = null;
+	let providerError: { message?: string } | null = null;
+	{
+		const res = await supabase
+			.from("data_api_provider_models")
+			.select(
+				"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+			)
+			.eq("model_id", modelId);
+		providerModels = res.data ?? null;
+		providerError = res.error;
+	}
+
+	if (!providerError && (!providerModels || providerModels.length === 0)) {
+		const res = await supabase
+			.from("data_api_provider_models")
+			.select(
+				"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+			)
+			.eq("internal_model_id", modelId);
+		providerModels = res.data ?? null;
+		providerError = res.error;
+	}
 
     if (providerError) {
         throw new Error(providerError.message ?? "Failed to load gateway providers");
@@ -88,6 +137,38 @@ export default async function getModelGatewayMetadata(
     const providerModelIds = (providerModels ?? [])
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
+
+    const apiModelStats = new Map<
+        string,
+        { activeCount: number; totalCount: number }
+    >();
+    for (const row of providerModels ?? []) {
+        const apiModelId = row.api_model_id?.trim();
+        if (!apiModelId) continue;
+        const current = apiModelStats.get(apiModelId) ?? {
+            activeCount: 0,
+            totalCount: 0,
+        };
+        current.totalCount += 1;
+        if (
+            row.is_active_gateway &&
+            isWithinEffectiveWindow(row.effective_from, row.effective_to)
+        ) {
+            current.activeCount += 1;
+        }
+        apiModelStats.set(apiModelId, current);
+    }
+    const apiModelIds = Array.from(apiModelStats.entries())
+        .sort((a, b) => {
+            if (a[1].activeCount !== b[1].activeCount) {
+                return b[1].activeCount - a[1].activeCount;
+            }
+            if (a[1].totalCount !== b[1].totalCount) {
+                return b[1].totalCount - a[1].totalCount;
+            }
+            return a[0].localeCompare(b[0]);
+        })
+        .map(([apiModelId]) => apiModelId);
 
 	const { data: caps, error: capsError } = await supabase
 		.from("data_api_provider_model_capabilities")
@@ -119,7 +200,7 @@ export default async function getModelGatewayMetadata(
         });
     }
 
-	const providerModelMap = new Map<string, (typeof providerModels)[number]>();
+	const providerModelMap = new Map<string, ProviderModelRow>();
 	for (const row of providerModels ?? []) {
 		if (!row.provider_api_model_id) continue;
 		providerModelMap.set(row.provider_api_model_id, row);
@@ -157,11 +238,13 @@ export default async function getModelGatewayMetadata(
 
     // console.log("[fetch] Fetching aliases for model", modelId);
 
+    const aliasLookupIds = Array.from(new Set([modelId, ...apiModelIds]));
     const { data: aliasesResponse, error: aliasesError } = await supabase
         .from("data_api_model_aliases")
-        .select("alias_slug")
-        .eq("api_model_id", modelId)
+        .select("api_model_id, alias_slug")
+        .in("api_model_id", aliasLookupIds)
         .eq("is_enabled", true)
+        .order("api_model_id", { ascending: true })
         .order("alias_slug", { ascending: true });
 
     // console.log("[fetch] aliasesResponse:", JSON.stringify(aliasesResponse, null, 2));
@@ -170,11 +253,10 @@ export default async function getModelGatewayMetadata(
         throw new Error(aliasesError.message ?? "Failed to load model aliases");
     }
 
-    const aliasRows = (aliasesResponse ?? []) as { alias_slug: string }[];
-    const aliases = aliasRows.map((alias) => alias.alias_slug);
-
-    // console.log("[fetch] Aliases for model", modelId, ":", aliases);
-
+    const aliasRows = (aliasesResponse ?? []) as {
+        api_model_id: string;
+        alias_slug: string;
+    }[];
     const now = new Date();
 
     const activeProviders = providers.filter(
@@ -197,9 +279,89 @@ export default async function getModelGatewayMetadata(
             )
     );
 
+    const aliasRowsByApiModelId = new Map<string, string[]>();
+    for (const alias of aliasRows) {
+        const apiModelId = normalizeIdentifier(alias.api_model_id);
+        const aliasSlug = normalizeIdentifier(alias.alias_slug);
+        if (!apiModelId || !aliasSlug) continue;
+        const current = aliasRowsByApiModelId.get(apiModelId) ?? [];
+        current.push(aliasSlug);
+        aliasRowsByApiModelId.set(apiModelId, current);
+    }
+
+    const apiModelRank = new Map(apiModelIds.map((id, index) => [id, index]));
+    const activeApiModelIds = sortApiModelIdsByRank(
+        dedupeIdentifiers(activeProviders.map((provider) => provider.model_id)),
+        apiModelRank
+    );
+
+    const aliases = dedupeIdentifiers(
+        activeApiModelIds.flatMap(
+            (apiModelId) => aliasRowsByApiModelId.get(apiModelId) ?? []
+        )
+    );
+
+    const acceptedModelIdentifiers = dedupeIdentifiers([
+        ...activeApiModelIds,
+        ...aliases,
+    ]);
+
+    const fallbackAcceptedIdentifiers = dedupeIdentifiers([
+        ...apiModelIds,
+        ...dedupeIdentifiers(aliasRows.map((alias) => alias.alias_slug)),
+    ]);
+    const normalizedAcceptedModelIdentifiers =
+        acceptedModelIdentifiers.length > 0
+            ? acceptedModelIdentifiers
+            : fallbackAcceptedIdentifiers;
+
+    const primaryModelIdentifier =
+        normalizedAcceptedModelIdentifiers[0] ?? modelId;
+
+    const acceptedModelIdentifiersByEndpoint: Record<string, string[]> = {};
+    const primaryModelIdentifierByEndpoint: Record<string, string> = {};
+    const endpointApiModelIds = new Map<string, string[]>();
+
+    for (const provider of activeProviders) {
+        const endpoint = normalizeIdentifier(provider.endpoint);
+        const apiModelId = normalizeIdentifier(provider.model_id);
+        if (!endpoint || !apiModelId) continue;
+        const ids = endpointApiModelIds.get(endpoint) ?? [];
+        ids.push(apiModelId);
+        endpointApiModelIds.set(endpoint, ids);
+    }
+
+    for (const [endpoint, ids] of endpointApiModelIds.entries()) {
+        const sortedIds = sortApiModelIdsByRank(
+            dedupeIdentifiers(ids),
+            apiModelRank
+        );
+        const endpointAliases = dedupeIdentifiers(
+            sortedIds.flatMap(
+                (apiModelId) => aliasRowsByApiModelId.get(apiModelId) ?? []
+            )
+        );
+        const endpointAccepted = dedupeIdentifiers([
+            ...sortedIds,
+            ...endpointAliases,
+        ]);
+        const normalizedEndpointAccepted =
+            endpointAccepted.length > 0
+                ? endpointAccepted
+                : normalizedAcceptedModelIdentifiers;
+        acceptedModelIdentifiersByEndpoint[endpoint] = normalizedEndpointAccepted;
+        primaryModelIdentifierByEndpoint[endpoint] =
+            normalizedEndpointAccepted[0] ?? primaryModelIdentifier;
+    }
+
     return {
         modelId,
         aliases,
+        apiModelIds,
+        primaryModelIdentifier,
+        acceptedModelIdentifiers: normalizedAcceptedModelIdentifiers,
+        primaryModelIdentifierByEndpoint,
+        acceptedModelIdentifiersByEndpoint,
         providers,
         activeProviders,
         inactiveProviders,
@@ -222,6 +384,7 @@ export async function getModelGatewayMetadataCached(
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_provider_models");
     cacheTag("data:model_aliases");
 

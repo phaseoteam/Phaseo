@@ -61,8 +61,9 @@ import type {
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
-import { filterCandidatesByModalities } from "./modalities";
+import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
+import { stripUsagePricing } from "../usage";
 
 function shouldFallbackFromByok(status: number | null | undefined): boolean {
 	const code = Number(status ?? 0);
@@ -72,7 +73,15 @@ function shouldFallbackFromByok(status: number | null | undefined): boolean {
 }
 
 const ATTEMPT_PREVIEW_LIMIT = 320;
-const MAX_RETRYABLE_EXECUTOR_RETRIES = 1;
+const MAX_RETRYABLE_EXECUTOR_RETRIES = 0;
+const SINGLE_PROVIDER_FAILURE_RETRIES = 0;
+
+function shouldRetrySingleProviderStatus(status: number | null | undefined): boolean {
+	const code = Number(status ?? 0);
+	if (!Number.isFinite(code)) return false;
+	if (code === 408 || code === 429) return true;
+	return code >= 500;
+}
 
 function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): string | null {
 	if (typeof value !== "string") return null;
@@ -235,10 +244,22 @@ export async function doRequestWithIR(
 	if (!candidatesGuard.ok) return (candidatesGuard as { ok: false; response: Response }).response;
 	let candidates = candidatesGuard.value;
 
-	// 1.5) Filter providers by requested input/output modalities (text.generate only)
+	// 1.5) Filter providers by requested input/output modalities
 	const normalizedCapability = normalizeCapability(ctx.capability);
 	if (normalizedCapability === "text.generate") {
 		const filtered = filterCandidatesByModalities(candidates, ir as IRChatRequest);
+		if (!filtered.length) {
+			return err("unsupported_modalities", {
+				model: ctx.model,
+				endpoint: ctx.endpoint,
+				request_id: ctx.requestId,
+				reason: "unsupported_modalities",
+			});
+		}
+		candidates = filtered;
+	}
+	if (normalizedCapability === "embeddings") {
+		const filtered = filterEmbeddingCandidatesByModalities(candidates, ir as IREmbeddingsRequest);
 		if (!filtered.length) {
 			return err("unsupported_modalities", {
 				model: ctx.model,
@@ -268,7 +289,14 @@ export async function doRequestWithIR(
 		const choice = ranked[attempt];
 
 		// Use IR-aware attempt function
-		const result = await attemptProviderWithIR(choice, ctx, ir, timing, baseModel);
+		const result = await attemptProviderWithIR(
+			choice,
+			ctx,
+			ir,
+			timing,
+			baseModel,
+			maxTries === 1,
+		);
 
 		if (result.ok) {
 			return result;
@@ -314,6 +342,7 @@ async function attemptProviderWithIR(
 		| IRMusicGenerateRequest,
 	timing: PipelineTiming,
 	baseModel: string,
+	allowSingleProviderRetry: boolean,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string }> {
 	const attemptErrors: Array<Record<string, unknown>> = ((ctx as any).attemptErrors ??= []);
 
@@ -432,7 +461,10 @@ async function attemptProviderWithIR(
 
 		const executeWithRetry = async () => {
 			let lastErr: unknown = null;
-			for (let retryAttempt = 0; retryAttempt <= MAX_RETRYABLE_EXECUTOR_RETRIES; retryAttempt += 1) {
+			const maxRetries = allowSingleProviderRetry
+				? SINGLE_PROVIDER_FAILURE_RETRIES
+				: MAX_RETRYABLE_EXECUTOR_RETRIES;
+			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
 				try {
 					let nextResult = await executor(buildExecutorArgs(false, candidate.byokMeta || []));
 					if (
@@ -444,11 +476,20 @@ async function attemptProviderWithIR(
 						(nextResult as any).fallbackAttempted = true;
 						nextResult = await executor(buildExecutorArgs(true, []));
 					}
+					const shouldRetryStatus =
+						allowSingleProviderRetry &&
+						!nextResult.upstream.ok &&
+						shouldRetrySingleProviderStatus(nextResult.upstream.status);
+					const hasRetryLeft = retryAttempt < maxRetries;
+					if (shouldRetryStatus && hasRetryLeft) {
+						await new Promise((resolve) => setTimeout(resolve, 120));
+						continue;
+					}
 					return nextResult;
 				} catch (err) {
 					lastErr = err;
 					const retryable = (err as any)?.retryable === true;
-					const hasRetryLeft = retryAttempt < MAX_RETRYABLE_EXECUTOR_RETRIES;
+					const hasRetryLeft = retryAttempt < maxRetries;
 					if (!retryable || !hasRetryLeft) {
 						throw err;
 					}
@@ -542,7 +583,10 @@ async function attemptProviderWithIR(
 			usageFinalizer: executorResult.kind === "stream" ? executorResult.usageFinalizer : undefined,
 			provider: candidate.providerId,
 			generationTimeMs,
-			bill: executorResult.bill,
+			bill: {
+				...executorResult.bill,
+				usage: stripUsagePricing(executorResult.bill?.usage),
+			},
 			keySource: executorResult.keySource,
 			byokKeyId: executorResult.byokKeyId,
 			mappedRequest: executorResult.mappedRequest,

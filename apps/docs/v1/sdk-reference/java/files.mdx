@@ -1,0 +1,35 @@
+---
+title: "Files"
+description: "Call /files with the Java SDK."
+---
+
+**Methods**: `Operations.uploadFile(...)`, `Operations.listFiles(...)`, `Operations.retrieveFile(...)`
+
+```java
+import ai.stats.gen.Operations;
+import java.util.HashMap;
+import java.util.Map;
+
+String uploadBody = """
+{
+  "purpose": "batch",
+  "file": "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+}
+""";
+
+Object uploaded = Operations.uploadFile(client, null, null, null, uploadBody);
+System.out.println(String.valueOf(uploaded));
+
+Object files = Operations.listFiles(client, null, null, null, null);
+System.out.println(String.valueOf(files));
+
+Map<String, String> path = new HashMap<>();
+path.put("file_id", "file_123");
+Object file = Operations.retrieveFile(client, path, null, null, null);
+System.out.println(String.valueOf(file));
+```
+
+<Note>
+The preview Java client is low-level and body handling is JSON-string based. If you need strict multipart upload behavior,
+use direct REST calls until higher-level Java helpers are available.
+</Note>

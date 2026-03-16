@@ -165,6 +165,27 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         delete context.context;
     }
 
+    const inputTextTokens = meters.input_text_tokens;
+    const cachedReadTokens = meters.cached_read_text_tokens;
+    const canonicalInputTokens =
+        typeof usageRaw?.input_tokens === "number"
+            ? usageRaw.input_tokens
+            : (typeof usageRaw?.prompt_tokens === "number" ? usageRaw.prompt_tokens : undefined);
+    const cachedReadIsSubsetHint = usageRaw?.cached_read_tokens_are_subset_of_input;
+    const shouldTreatCachedReadAsSubset =
+        cachedReadIsSubsetHint === true &&
+        typeof inputTextTokens === "number" &&
+        typeof canonicalInputTokens === "number" &&
+        inputTextTokens === canonicalInputTokens;
+    if (
+        shouldTreatCachedReadAsSubset &&
+        typeof inputTextTokens === "number" &&
+        typeof cachedReadTokens === "number" &&
+        cachedReadTokens > 0
+    ) {
+        meters.input_text_tokens = Math.max(0, inputTextTokens - cachedReadTokens);
+    }
+
     // Anthropic 1M pricing thresholds are based on input + cache read + cache write tokens.
     context.long_context_input_tokens =
         (meters.input_text_tokens ?? 0) +

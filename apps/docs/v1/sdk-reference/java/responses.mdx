@@ -1,0 +1,27 @@
+---
+title: "Responses"
+description: "Call /responses with the Java SDK."
+---
+
+**Method**: `Operations.createResponse(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "input_text", "text": "Reply with: java sdk works" }
+      ]
+    }
+  ]
+}
+""";
+
+Object response = Operations.createResponse(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```

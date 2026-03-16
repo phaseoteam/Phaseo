@@ -76,4 +76,42 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.cached_read_text_tokens).toBe(800);
 		expect(usage?.cached_write_text_tokens).toBe(500);
 	});
+
+	it("can treat cached read tokens as subset of input tokens", () => {
+		const usage = normalizeTextUsageForPricing(
+			{
+				input_tokens: 123,
+				output_tokens: 8,
+				total_tokens: 131,
+				input_tokens_details: {
+					cached_tokens: 64,
+				},
+			},
+			{
+				cachedReadTokensAreSubsetOfInput: true,
+			},
+		);
+
+		expect(usage?.input_tokens).toBe(123);
+		expect(usage?.input_text_tokens).toBe(59);
+		expect(usage?.cached_read_text_tokens).toBe(64);
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBe(true);
+		expect(usage?.output_text_tokens).toBe(8);
+		expect(usage?.total_tokens).toBe(131);
+	});
+
+	it("does not subtract cached read tokens unless subset option is enabled", () => {
+		const usage = normalizeTextUsageForPricing({
+			input_tokens: 123,
+			output_tokens: 8,
+			total_tokens: 131,
+			input_tokens_details: {
+				cached_tokens: 64,
+			},
+		});
+
+		expect(usage?.input_text_tokens).toBe(123);
+		expect(usage?.cached_read_text_tokens).toBe(64);
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBeUndefined();
+	});
 });

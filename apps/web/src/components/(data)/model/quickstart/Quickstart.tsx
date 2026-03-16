@@ -29,6 +29,11 @@ import { useEffect, useMemo, useState } from "react";
 interface QuickstartProps {
         modelId?: string;
         aliases?: string[];
+        apiModelIds?: string[];
+        primaryModelIdentifier?: string;
+        acceptedModelIdentifiers?: string[];
+        primaryModelIdentifierByEndpoint?: Record<string, string>;
+        acceptedModelIdentifiersByEndpoint?: Record<string, string[]>;
         endpoint?: string | null;
         supportedEndpoints?: string[];
 }
@@ -152,8 +157,6 @@ function buildExamplePayload(
 	}
 }
 
-const escapeForSingleQuotedShell = (json: string) => json.replace(/'/g, "\\'");
-
 const jsonToPythonLiteral = (json: string) =>
         json
                 .replace(/true/g, "True")
@@ -243,6 +246,11 @@ const OPENAI_METHODS: Record<string, { ts: string; py: string }> = {
 export default function Quickstart({
 	modelId,
 	aliases,
+	apiModelIds,
+	primaryModelIdentifier,
+	acceptedModelIdentifiers,
+	primaryModelIdentifierByEndpoint,
+	acceptedModelIdentifiersByEndpoint,
 	endpoint,
 	supportedEndpoints = [],
 }: QuickstartProps) {
@@ -362,7 +370,40 @@ export default function Quickstart({
                 }
         }, [supportsStreaming, streamingEnabled]);
 
-        const model = safeDecodeURIComponent(modelId) || "model_id_here";       
+        const normalizedSelectedEndpoint = normalizeEndpointValue(selectedEndpoint);
+
+        const endpointPrimaryModelIdentifier =
+                primaryModelIdentifierByEndpoint?.[normalizedSelectedEndpoint] ??
+                primaryModelIdentifier;
+
+        const endpointAcceptedIdentifiers =
+                acceptedModelIdentifiersByEndpoint?.[normalizedSelectedEndpoint] ??
+                acceptedModelIdentifiers ??
+                [];
+
+        const decodedAcceptedIdentifiers = Array.from(
+                new Set([
+                        ...(endpointAcceptedIdentifiers.map((identifier) =>
+                                safeDecodeURIComponent(identifier)
+                        ) ?? []),
+                        ...(endpointAcceptedIdentifiers.length === 0
+                                ? [
+                                          ...(apiModelIds?.map((identifier) =>
+                                                  safeDecodeURIComponent(identifier)
+                                          ) ?? []),
+                                          ...(aliases?.map((alias) =>
+                                                  safeDecodeURIComponent(alias)
+                                          ) ?? []),
+                                  ]
+                                : []),
+                ])
+        ).filter(Boolean);
+
+        const model =
+                safeDecodeURIComponent(endpointPrimaryModelIdentifier) ||
+                decodedAcceptedIdentifiers[0] ||
+                safeDecodeURIComponent(modelId) ||
+                "model_id_here";
         const endpointPath = resolveGatewayPath(selectedEndpoint);
         const endpointUrl = `${BASE_URL}${endpointPath}`;
         const payload = buildExamplePayload(selectedEndpoint, model);
@@ -372,7 +413,6 @@ export default function Quickstart({
                 : payloadJson;
         const shouldStream = supportsStreaming && streamingEnabled;
         const activePayloadJson = shouldStream ? payloadJsonStream : payloadJson;
-        const payloadJsonCurl = escapeForSingleQuotedShell(activePayloadJson);  
         const payloadJsonNode = activePayloadJson
                 .split("\n")
                 .map((line) => `        ${line}`)
@@ -386,7 +426,7 @@ export default function Quickstart({
         const aliasList = Array.from(
                 new Set([
                         model,
-                        ...(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []),
+                        ...decodedAcceptedIdentifiers,
                 ])
         ).filter(Boolean);
         const streamingDiff = supportsStreaming
@@ -429,7 +469,9 @@ export AI_STATS_API_KEY="sk-live-***"
 curl ${curlFlags} ${endpointUrl} \\
 -H "Authorization: Bearer $AI_STATS_API_KEY" \\
 -H "Content-Type: application/json" \\
--d '${payloadJsonCurl}'`;
+--data-raw @- <<'JSON'
+${activePayloadJson}
+JSON`;
 
 	const nodeQuickstart =
 		`// 1) Set your key
@@ -750,7 +792,7 @@ console.log(response);`
 					Quickstart
 				</CardTitle>
 				<CardDescription>
-					Use any of the identifiers below when calling our API.
+					Use one of the accepted identifiers below for the selected endpoint.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">

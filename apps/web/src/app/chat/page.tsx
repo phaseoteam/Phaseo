@@ -3,20 +3,20 @@ import type { Metadata } from "next";
 import type { SearchParams } from "nuqs/server";
 import { buildMetadata } from "@/lib/seo";
 import ChatPlaygroundShell from "@/components/(chat)/ChatPlaygroundShell";
-import UnifiedPlayground from "@/components/(chat)/UnifiedPlayground";
+import ChatPlayground from "@/components/(chat)/ChatPlayground";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Chat playground - AI Stats Chat",
+	title: "Text Chat - AI Stats Chat",
 	description:
-		"Use the AI Stats chat playground to compare models across text, image, video, music, and audio endpoints in one unified workspace.",
+		"Text room for model comparison with multimodal inputs and text responses.",
 	path: "/chat",
 	keywords: [
 		"AI chat",
-		"playground",
+		"text room",
 		"AI Stats",
 		"gateway",
-		"multimodal",
+		"multimodal input",
 		"model comparison",
 	],
 });
@@ -46,7 +46,7 @@ async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
 		: promptParamRaw;
 
 	return (
-		<UnifiedPlayground
+		<ChatPlayground
 			models={models}
 			modelParam={modelParam ?? null}
 			promptParam={promptParam ?? null}

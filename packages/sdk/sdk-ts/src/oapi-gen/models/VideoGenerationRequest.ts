@@ -40,5 +40,4 @@ export interface VideoGenerationRequest {
   sample_count?: number;
   seconds?: number | string;
   seed?: number;
-  size?: string;
 }

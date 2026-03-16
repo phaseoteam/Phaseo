@@ -86,6 +86,75 @@ export const extractFeatureKeys = (params: unknown): string[] => {
     return Array.from(features);
 };
 
+const IGNORED_PARAMETER_KEYS = new Set<string>([
+    "type",
+    "title",
+    "description",
+    "default",
+    "minimum",
+    "maximum",
+    "enum",
+    "oneof",
+    "anyof",
+    "allof",
+    "items",
+    "properties",
+    "required",
+    "nullable",
+    "additionalproperties",
+    "$schema",
+    "$id",
+    "strict",
+]);
+
+function collectParamKeys(value: unknown, keys: string[] = []): string[] {
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            collectParamKeys(item, keys);
+        }
+        return keys;
+    }
+
+    if (value && typeof value === "object") {
+        for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+            keys.push(String(key));
+            collectParamKeys(val, keys);
+        }
+    }
+
+    return keys;
+}
+
+function normalizeSupportedParameterKey(raw: string): string | null {
+    const normalized = raw
+        .trim()
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .replace(/[\s./-]+/g, "_")
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "");
+
+    if (!normalized) return null;
+    if (IGNORED_PARAMETER_KEYS.has(normalized)) return null;
+    if (/^\d+$/.test(normalized)) return null;
+    if (normalized.length < 2) return null;
+
+    return normalized;
+}
+
+export const extractSupportedParameters = (params: unknown): string[] => {
+    const keys = collectParamKeys(params);
+    const normalized = new Set<string>();
+
+    for (const key of keys) {
+        const param = normalizeSupportedParameterKey(key);
+        if (param) normalized.add(param);
+    }
+
+    return Array.from(normalized).sort((a, b) => a.localeCompare(b));
+};
+
 export const normalizeGatewayModel = (raw: any): GatewayModel => {
     const providerRaw = Array.isArray(raw?.provider)
         ? raw.provider[0]
@@ -98,11 +167,50 @@ export const normalizeGatewayModel = (raw: any): GatewayModel => {
         key: raw?.key,
         endpoint: raw?.endpoint,
         is_active_gateway: raw?.is_active_gateway,
+        capability_status: raw?.capability_status,
         input_modalities: raw?.input_modalities,
         output_modalities: raw?.output_modalities,
         params: raw?.params,
         provider: providerRaw ?? null,
     };
+};
+
+export const normalizeCapabilityStatus = (value: unknown): string => {
+    const normalized = String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
+    if (!normalized) return "";
+    if (normalized === "not_active") return "inactive";
+    if (normalized === "de_ranked" || normalized === "deranked") {
+        return "deranked_lvl1";
+    }
+    if (normalized === "deranked_lvl_1") return "deranked_lvl1";
+    if (normalized === "deranked_lvl_2") return "deranked_lvl2";
+    if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+    return normalized;
+};
+
+export const resolveGatewayStatus = (
+    isActiveGateway: boolean | null | undefined,
+    capabilityStatus: unknown
+): string => {
+    const normalizedCapabilityStatus = normalizeCapabilityStatus(capabilityStatus);
+
+    if (normalizedCapabilityStatus === "disabled") return "disabled";
+    if (normalizedCapabilityStatus.startsWith("deranked")) {
+        return normalizedCapabilityStatus;
+    }
+    if (
+        normalizedCapabilityStatus &&
+        normalizedCapabilityStatus !== "active" &&
+        normalizedCapabilityStatus !== "inactive"
+    ) {
+        return normalizedCapabilityStatus;
+    }
+
+    if (normalizedCapabilityStatus === "inactive") return "inactive";
+    return isActiveGateway ? "active" : "inactive";
 };
 
 export const normalizeEndpoint = (endpoint?: string | null) => {

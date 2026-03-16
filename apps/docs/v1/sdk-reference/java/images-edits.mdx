@@ -1,0 +1,26 @@
+---
+title: "Image edits"
+description: "Call /images/edits with the Java SDK."
+---
+
+**Method**: `Operations.createImageEdit(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "openai/gpt-image-1",
+  "prompt": "Make this image warmer",
+  "image": "data:image/png;base64,..."
+}
+""";
+
+Object response = Operations.createImageEdit(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```
+
+<Note>
+The preview Java client sends JSON request bodies directly. For advanced multipart workflows,
+use direct REST calls until higher-level helpers are added.
+</Note>

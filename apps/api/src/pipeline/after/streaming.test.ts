@@ -20,6 +20,37 @@ function makeSseResponse(frames: Array<{ event?: string; data: any }>): Response
 	});
 }
 
+function makeDelayedSseResponse(
+	frames: Array<{ event?: string; data: any }>,
+	delayMs = 8,
+): { response: Response; wasCancelled: () => boolean } {
+	let cancelled = false;
+	let index = 0;
+	const stream = new ReadableStream<Uint8Array>({
+		async pull(controller) {
+			if (index >= frames.length) {
+				controller.close();
+				return;
+			}
+			const frame = frames[index++];
+			const eventLine = frame?.event ? `event: ${frame.event}\n` : "";
+			const chunk = `${eventLine}data: ${JSON.stringify(frame?.data ?? {})}\n\n`;
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			controller.enqueue(new TextEncoder().encode(chunk));
+		},
+		cancel() {
+			cancelled = true;
+		},
+	});
+	return {
+		response: new Response(stream, {
+			status: 200,
+			headers: { "Content-Type": "text/event-stream" },
+		}),
+		wasCancelled: () => cancelled,
+	};
+}
+
 async function drain(response: Response): Promise<string> {
 	return await response.text();
 }
@@ -318,5 +349,105 @@ describe("passthroughWithPricing", () => {
 
 		resolveFinalUsage?.();
 		await finalUsageDone;
+	});
+
+	it("cancels upstream stream when downstream disconnects and provider supports cancellation", async () => {
+		const usageCalls: Array<{ usage: any; info: any }> = [];
+		let resolveUsage: (() => void) | null = null;
+		const usageSettled = new Promise<void>((resolve) => {
+			resolveUsage = resolve;
+		});
+		const upstream = makeDelayedSseResponse([
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "partial" }, finish_reason: null }],
+					usage: { prompt_tokens: 6, completion_tokens: 1, total_tokens: 7 },
+				},
+			},
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "more" }, finish_reason: null }],
+				},
+			},
+		], 15);
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx: baseCtx({
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+			}),
+			provider: "openai",
+			priceCard: null,
+			onFinalUsage: (usage, info) => {
+				usageCalls.push({ usage, info });
+				resolveUsage?.();
+			},
+		});
+
+		const reader = response.body?.getReader();
+		expect(reader).toBeTruthy();
+		await reader?.read();
+		await reader?.cancel();
+
+		await usageSettled;
+		expect(upstream.wasCancelled()).toBe(true);
+		expect(usageCalls).toHaveLength(1);
+		expect(usageCalls[0]?.info?.aborted).toBe(true);
+		expect(usageCalls[0]?.info?.sawFinalUsage).toBe(false);
+	});
+
+	it("keeps draining upstream when downstream disconnects and provider cancellation is unsupported", async () => {
+		const usageCalls: Array<{ usage: any; info: any }> = [];
+		let resolveUsage: (() => void) | null = null;
+		const usageSettled = new Promise<void>((resolve) => {
+			resolveUsage = resolve;
+		});
+		const upstream = makeDelayedSseResponse([
+			{
+				event: "response.created",
+				data: { response: { id: "resp_keep", object: "response", status: "in_progress" } },
+			},
+			{
+				event: "response.completed",
+				data: {
+					response: {
+						id: "resp_keep",
+						object: "response",
+						status: "completed",
+						usage: { input_tokens: 9, output_tokens: 3, total_tokens: 12 },
+					},
+				},
+			},
+		], 15);
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx: baseCtx(),
+			provider: "groq",
+			priceCard: null,
+			onFinalUsage: (usage, info) => {
+				usageCalls.push({ usage, info });
+				resolveUsage?.();
+			},
+		});
+
+		const reader = response.body?.getReader();
+		expect(reader).toBeTruthy();
+		await reader?.read();
+		await reader?.cancel();
+
+		await usageSettled;
+		expect(upstream.wasCancelled()).toBe(false);
+		expect(usageCalls).toHaveLength(1);
+		expect(usageCalls[0]?.info?.aborted).toBe(false);
+		expect(usageCalls[0]?.info?.sawFinalUsage).toBe(true);
+		expect(usageCalls[0]?.usage).toEqual({
+			input_tokens: 9,
+			output_tokens: 3,
+			total_tokens: 12,
+		});
 	});
 });

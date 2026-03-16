@@ -94,6 +94,48 @@ export async function upsertAsyncOperation(args: {
 	if (error) throw error;
 }
 
+export async function listAsyncOperations(args: {
+	kind: AsyncOperationKind;
+	limit?: number;
+	providers?: string[];
+	statuses?: string[];
+	unbilledOnly?: boolean;
+}): Promise<AsyncOperationRecord[]> {
+	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
+	let query = getSupabaseAdmin()
+		.from("gateway_async_operations")
+		.select(
+			"team_id,kind,internal_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+		)
+		.eq("kind", args.kind)
+		.order("updated_at", { ascending: true })
+		.limit(limit);
+
+	if (args.unbilledOnly) {
+		query = query.is("billed_at", null);
+	}
+	if (args.providers && args.providers.length > 0) {
+		const providers = args.providers
+			.map((value) => normalizeText(value))
+			.filter((value): value is string => Boolean(value));
+		if (providers.length > 0) {
+			query = query.in("provider", providers);
+		}
+	}
+	if (args.statuses && args.statuses.length > 0) {
+		const statuses = args.statuses
+			.map((value) => normalizeText(value))
+			.filter((value): value is string => Boolean(value));
+		if (statuses.length > 0) {
+			query = query.in("status", statuses);
+		}
+	}
+
+	const { data, error } = await query;
+	if (error) throw error;
+	return (data ?? []).map((row) => mapRow(row as AsyncOperationRow));
+}
+
 export async function getAsyncOperation(
 	teamIdRaw: string,
 	kind: AsyncOperationKind,
@@ -115,6 +157,41 @@ export async function getAsyncOperation(
 	if (error) throw error;
 	if (!data) return null;
 	return mapRow(data as AsyncOperationRow);
+}
+
+export async function findAsyncOperationByNativeId(
+	kind: AsyncOperationKind,
+	providerRaw: string,
+	nativeIdRaw: string,
+): Promise<AsyncOperationRecord | null> {
+	const provider = normalizeText(providerRaw);
+	const nativeId = normalizeText(nativeIdRaw);
+	if (!provider || !nativeId) return null;
+
+	const { data, error } = await getSupabaseAdmin()
+		.from("gateway_async_operations")
+		.select(
+			"team_id,kind,internal_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+		)
+		.eq("kind", kind)
+		.eq("provider", provider)
+		.eq("native_id", nativeId)
+		.order("created_at", { ascending: false })
+		.limit(2);
+	if (error) throw error;
+	const rows = Array.isArray(data) ? data : [];
+	if (rows.length > 1) {
+		console.error("async_operation_native_id_ambiguous", {
+			kind,
+			provider,
+			nativeId,
+			matchCount: rows.length,
+		});
+		return null;
+	}
+	const row = rows[0] ?? null;
+	if (!row) return null;
+	return mapRow(row as AsyncOperationRow);
 }
 
 export async function isAsyncOperationBilled(
@@ -158,4 +235,47 @@ export async function markAsyncOperationBilled(
 		.maybeSingle();
 	if (error) throw error;
 	return Boolean(data);
+}
+
+export async function setAsyncOperationStatus(args: {
+	teamId: string;
+	kind: AsyncOperationKind;
+	internalId: string;
+	status: string;
+	metaPatch?: Record<string, unknown>;
+}): Promise<void> {
+	const teamId = normalizeText(args.teamId);
+	const internalId = normalizeText(args.internalId);
+	const status = normalizeText(args.status);
+	if (!teamId || !internalId || !status) return;
+
+	const now = new Date().toISOString();
+	const patch: Record<string, unknown> = {
+		status,
+		updated_at: now,
+	};
+
+	if (args.metaPatch && typeof args.metaPatch === "object" && !Array.isArray(args.metaPatch)) {
+		const { data: existing, error: readError } = await getSupabaseAdmin()
+			.from("gateway_async_operations")
+			.select("meta")
+			.eq("team_id", teamId)
+			.eq("kind", args.kind)
+			.eq("internal_id", internalId)
+			.maybeSingle();
+		if (readError) throw readError;
+		const currentMeta = normalizeMeta((existing as { meta?: unknown } | null)?.meta);
+		patch.meta = {
+			...currentMeta,
+			...args.metaPatch,
+		};
+	}
+
+	const { error } = await getSupabaseAdmin()
+		.from("gateway_async_operations")
+		.update(patch)
+		.eq("team_id", teamId)
+		.eq("kind", args.kind)
+		.eq("internal_id", internalId);
+	if (error) throw error;
 }

@@ -52,7 +52,7 @@ async function handlePricingModels(req: Request) {
 
         const { data: providerModels, error: pmError } = await supabase
             .from("data_api_provider_models")
-            .select("provider_api_model_id, provider_id, api_model_id, internal_model_id, is_active_gateway, effective_from, effective_to")
+            .select("provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id, is_active_gateway, effective_from, effective_to")
             .eq("is_active_gateway", true)
             .lte("effective_from", nowIso)
             .or(`effective_to.is.null,effective_to.gt.${nowIso}`);
@@ -79,7 +79,11 @@ async function handlePricingModels(req: Request) {
 
         // Get model names
         const modelIds = Array.from(
-            new Set((providerModels ?? []).map(pm => pm.internal_model_id).filter(Boolean))
+            new Set(
+                (providerModels ?? [])
+                    .map((pm) => pm.model_id ?? pm.api_model_id ?? pm.internal_model_id)
+                    .filter(Boolean)
+            )
         );
         const { data: models, error: mError } = await supabase
             .from("data_models")
@@ -121,13 +125,15 @@ async function handlePricingModels(req: Request) {
             if (row.provider_api_model_id) providerById.set(row.provider_api_model_id, row);
         }
 
-        const comboMap = new Map<string, { internal_model_id: string | null }>();
+        const comboMap = new Map<string, { model_id: string | null }>();
         for (const cap of capabilities ?? []) {
             if (!cap.provider_api_model_id || !cap.capability_id) continue;
             const pm = providerById.get(cap.provider_api_model_id);
             if (!pm) continue;
             const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
-            comboMap.set(comboKey, { internal_model_id: pm.internal_model_id ?? null });
+            comboMap.set(comboKey, {
+                model_id: pm.model_id ?? pm.api_model_id ?? pm.internal_model_id ?? null,
+            });
         }
 
         const modelMap = new Map<string, PricingModel>();
@@ -138,10 +144,10 @@ async function handlePricingModels(req: Request) {
             const comboKey = `${parsedKey.providerId}:${parsedKey.apiModelId}:${capabilityId}`;
             const combo = comboMap.get(comboKey);
             if (!combo) continue;
-            if (combo.internal_model_id && !visibleModelIds.has(combo.internal_model_id)) {
+            if (combo.model_id && !visibleModelIds.has(combo.model_id)) {
                 continue;
             }
-            const modelId = combo.internal_model_id ?? parsedKey.apiModelId;
+            const modelId = combo.model_id ?? parsedKey.apiModelId;
             const key = `${parsedKey.providerId}:${modelId}:${capabilityId}:${rule.pricing_plan || "standard"}`;
 
             if (!modelMap.has(key)) {
@@ -149,8 +155,8 @@ async function handlePricingModels(req: Request) {
                     provider: parsedKey.providerId,
                     model: modelId,
                     endpoint: capabilityId,
-                    display_name: combo.internal_model_id
-                        ? modelNameMap.get(combo.internal_model_id)
+                    display_name: combo.model_id
+                        ? modelNameMap.get(combo.model_id)
                         : undefined,
                     meters: [],
                 });

@@ -10,7 +10,6 @@ import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamCh
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
-import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveProviderKey } from "@providers/keys";
 import { getBindings } from "@/runtime/env";
@@ -437,12 +436,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				currency: "USD",
 			};
 
-			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage);
-			if (usageMeters && pricingCard) {
-				const priced = computeBill(usageMeters, pricingCard);
-				bill.cost_cents = priced.pricing.total_cents;
-				bill.currency = priced.pricing.currency;
-				bill.usage = priced;
+			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage, {
+				cachedReadTokensAreSubsetOfInput: true,
+			});
+			if (usageMeters) {
+				bill.usage = usageMeters;
 			}
 
 			return {
@@ -471,12 +469,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			currency: "USD",
 		};
 
-		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
-		if (usageMeters && pricingCard) {
-			const priced = computeBill(usageMeters, pricingCard);
-			bill.cost_cents = priced.pricing.total_cents;
-			bill.currency = priced.pricing.currency;
-			bill.usage = priced;
+		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata, {
+			cachedReadTokensAreSubsetOfInput: true,
+		});
+		if (usageMeters) {
+			bill.usage = usageMeters;
 		}
 
 		const totalMs = Date.now() - upstreamStartMs;

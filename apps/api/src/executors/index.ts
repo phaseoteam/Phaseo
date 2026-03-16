@@ -102,6 +102,7 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 
 const OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST = new Set<string>([
 ]);
+const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([]);
 
 export function normalizeCapability(capability: string): Capability {
 	return CAPABILITY_ALIASES[capability] ?? (capability as Capability);
@@ -171,6 +172,13 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 	) {
 		return openAICompatText;
 	}
+	if (
+		normalizedCapability === "embeddings" &&
+		isOpenAICompatProvider(providerId) &&
+		!OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)
+	) {
+		return openaiEmbeddings;
+	}
 	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
 	if (
 		adapterEndpoint &&
@@ -189,6 +197,13 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 		normalizedCapability === "text.generate" &&
 		isOpenAICompatProvider(providerId) &&
 		!OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST.has(providerId)
+	) {
+		return true;
+	}
+	if (
+		normalizedCapability === "embeddings" &&
+		isOpenAICompatProvider(providerId) &&
+		!OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)
 	) {
 		return true;
 	}

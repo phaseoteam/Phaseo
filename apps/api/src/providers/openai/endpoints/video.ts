@@ -24,13 +24,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const googleConfig = body.config?.google ?? {};
 
-    const seconds = body.seconds
-        ?? body.duration_seconds
-        ?? body.duration
-        ?? googleConfig.duration_seconds
-        ?? googleConfig.durationSeconds;
-    const size = body.size;
-    const resolution = body.resolution ?? googleConfig.resolution;
+	const seconds = body.seconds
+		?? body.duration_seconds
+		?? body.duration
+		?? googleConfig.duration_seconds
+		?? googleConfig.durationSeconds;
+	const size = body.size ?? body.resolution ?? googleConfig.size ?? googleConfig.resolution;
     const compressionQuality = body.compression_quality
         ?? googleConfig.compression_quality
         ?? googleConfig.compressionQuality;
@@ -65,11 +64,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     let requestBody: BodyInit;
 
     if (sendAsMultipart) {
-        const form = new FormData();
-        form.append("model", body.model);
-        form.append("prompt", body.prompt);
-        if (seconds != null) form.append("seconds", String(seconds));
-        if (size) form.append("size", size);
+		const form = new FormData();
+		form.append("model", body.model);
+		form.append("prompt", body.prompt);
+		if (seconds != null) form.append("seconds", String(seconds));
+		if (size) form.append("size", size);
 
         const ref = body.input_reference ?? "";
         let fileBlob: Blob | null = null;
@@ -107,11 +106,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         delete (headers as any)["Content-Type"];
     } else {
         requestBody = JSON.stringify({
-            model: body.model,
-            prompt: body.prompt,
-            ...(seconds != null ? { seconds } : {}),
-            ...(size ? { size } : {}),
-            ...pickDefined({
+			model: body.model,
+			prompt: body.prompt,
+			...(seconds != null ? { seconds } : {}),
+			...(size ? { size } : {}),
+			...pickDefined({
                 quality: body.quality,
                 input_reference: body.input_reference,
                 input_reference_mime_type: body.input_reference_mime_type,
@@ -124,7 +123,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 duration_seconds: body.duration_seconds,
                 ratio: body.ratio,
                 aspect_ratio: aspectRatio,
-                resolution: resolution,
+				resolution: size,
                 compression_quality: compressionQuality,
                 negative_prompt: negativePrompt,
                 sample_count: sampleCount,

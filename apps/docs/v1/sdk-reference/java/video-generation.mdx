@@ -1,0 +1,22 @@
+---
+title: "Video generation"
+description: "Call /video/generations (alias) with the Java SDK."
+---
+
+**Method**: `Operations.createVideoAlias(...)`
+
+```java
+import ai.stats.gen.Operations;
+
+String body = """
+{
+  "model": "openai/gpt-video-1",
+  "prompt": "A serene mountain lake at sunrise"
+}
+""";
+
+Object response = Operations.createVideoAlias(client, null, null, null, body);
+System.out.println(String.valueOf(response));
+```
+
+`Operations.createVideo(...)` is also available and calls `/videos`.

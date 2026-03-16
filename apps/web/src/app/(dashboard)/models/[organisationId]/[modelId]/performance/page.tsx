@@ -6,10 +6,12 @@ import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModel
 import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import {
-	getModelIdFromParams,
+	getModelPath,
+	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import { Suspense } from "react";
+import { permanentRedirect } from "next/navigation";
 
 async function fetchModelOverview(modelId: string, includeHidden: boolean) {
 	try {
@@ -27,10 +29,13 @@ export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const modelId = getModelIdFromParams(params);
 	const includeHidden = false;
+	const { canonicalModelId: modelId } = await resolveModelRouteIds(
+		params,
+		includeHidden,
+	);
 	const model = await fetchModelOverview(modelId, includeHidden);
-	const path = `/models/${modelId}/performance`;
+	const path = getModelPath(modelId, "performance");
 	const imagePath = `/og/models/${modelId}`;
 
 	if (!model) {
@@ -75,8 +80,15 @@ export default async function Page({
 	params: Promise<ModelRouteParams>;
 }) {
 	const routeParams = await params;
-	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const { requestedModelId, canonicalModelId } = await resolveModelRouteIds(
+		routeParams,
+		includeHidden,
+	);
+	if (canonicalModelId !== requestedModelId) {
+		permanentRedirect(getModelPath(canonicalModelId, "performance"));
+	}
+	const modelId = canonicalModelId;
 	const model = await fetchModelOverview(modelId, includeHidden);
 
 	if (!model) {

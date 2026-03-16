@@ -1,0 +1,25 @@
+---
+title: "Images (AI SDK)"
+description: "Generate images with Vercel AI SDK and the AI Stats provider."
+---
+
+Use `generateImage` with `aiStats.imageModel(...)`.
+
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { generateImage } from "ai";
+
+const result = await generateImage({
+  model: aiStats.imageModel("openai/gpt-image-1"),
+  prompt: "A minimalist poster of a lighthouse at dawn.",
+  size: "1024x1024",
+});
+
+console.log(result.images[0]);
+```
+
+## Notes
+
+- Available `size` values depend on the selected model.
+- For deterministic workflows, persist prompt + model + params together.
+- Prefer storing returned image metadata with asset references.

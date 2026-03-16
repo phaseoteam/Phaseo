@@ -15,6 +15,7 @@ import {
 	type StreamProtocol,
 } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
+import { supportsProviderStreamCancellation } from "./stream-cancellation";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -61,6 +62,7 @@ type PassthroughWithPricingOpts = {
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
     const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    const canCancelUpstream = supportsProviderStreamCancellation(provider);
 
     const reader = upstream.body?.getReader();
     const dec = new TextDecoder();
@@ -72,6 +74,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let firstFrameAt: number | null = null;
     let firstFrameAtMs: number | null = null;
     let downstreamClosed = false;
+    void writer.closed.catch(() => {
+        downstreamClosed = true;
+    });
 
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
     const writeJson = async (obj: unknown, eventName?: string | null) => {
@@ -132,6 +137,14 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
         try {
             while (true) {
+                if (downstreamClosed && canCancelUpstream) {
+                    try {
+                        await reader.cancel("downstream_closed");
+                    } catch {
+                        // ignore reader cancellation failures
+                    }
+                    break;
+                }
                 const { value, done } = await reader.read();
                 if (done) break;
 
@@ -274,7 +287,23 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
                         }
                         await writeJson(frameOut, outbound.eventName ?? null);
+                        if (downstreamClosed && canCancelUpstream) {
+                            try {
+                                await reader.cancel("downstream_closed");
+                            } catch {
+                                // ignore reader cancellation failures
+                            }
+                            break;
+                        }
                     }
+
+                    if (downstreamClosed && canCancelUpstream) {
+                        break;
+                    }
+                }
+
+                if (downstreamClosed && canCancelUpstream) {
+                    break;
                 }
             }
         } finally {

@@ -15,7 +15,7 @@ describe("non-text adapter bridge", () => {
 	it("routes ElevenLabs audio.speech and emits audio data + character usage", async () => {
 		const mock = installFetchMock([
 			{
-				match: (url) => url.includes("/v1/text-to-speech/voice_bridge_1"),
+				match: (url) => url.includes("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"),
 				response: new Response("AUDIO_BRIDGE", {
 					status: 200,
 					headers: {
@@ -30,7 +30,7 @@ describe("non-text adapter bridge", () => {
 			ir: {
 				model: "eleven-labs/eleven-v3",
 				input: "Bridge level ElevenLabs TTS check",
-				voice: "voice_bridge_1",
+				voice: "rachel",
 				responseFormat: "mp3",
 			},
 			requestId: "req_bridge_tts_1",
@@ -76,7 +76,7 @@ describe("non-text adapter bridge", () => {
 		expect(irResult?.usage?.input_characters).toBe(
 			"Bridge level ElevenLabs TTS check".length,
 		);
-		expect(result.mappedRequest).toContain("\"voice\":\"voice_bridge_1\"");
+		expect(result.mappedRequest).toContain("\"voice\":\"rachel\"");
 	});
 
 	it("passes OpenAI video core fields and Veo superset options through to compat providers", async () => {

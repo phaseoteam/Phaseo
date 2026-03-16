@@ -7,6 +7,9 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveVideoJobMeta } from "@core/video-jobs";
+import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { releaseWalletReservation } from "@core/wallet-reservations";
+import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
 import type { ProviderExecutor } from "../../types";
 
 const DEFAULT_BASE_URL = "https://dashscope-intl.aliyuncs.com";
@@ -36,7 +39,7 @@ function toDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
 
 function irToWanRequest(ir: IRVideoGenerationRequest, model: string): any {
 	const seconds = toDurationSeconds(ir);
-	const size = ir.size || ir.resolution;
+	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
 	const ratio = ir.aspectRatio || ir.ratio;
 	return {
 		model,
@@ -93,16 +96,144 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const requestObject = irToWanRequest(ir, model);
 	const requestBody = JSON.stringify(requestObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+	const requestedSeconds = toDurationSeconds(ir) ?? null;
+	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
+	const quality = ir.quality ?? null;
+	let reservationId: string | null = null;
+	let reservationStatus: string | null = null;
+	let reservedNanos: number | null = null;
+	let reservationGateError: { status: number; type: string; message: string } | null = null;
+	try {
+		const reserved = await reserveVideoGenerationCredits({
+			teamId: args.teamId,
+			videoId: `req_${args.requestId}`,
+			providerId: args.providerId,
+			model,
+			seconds: requestedSeconds,
+			pricingCard: args.pricingCard,
+			requestOptions: buildVideoPricingRequestOptions({
+				size,
+				resolution: ir.resolution,
+				quality,
+			}),
+			isByok: keyInfo.source === "byok",
+		});
+		reservationId = reserved.reservationId;
+		reservationStatus = reserved.status;
+		reservedNanos = reserved.amountNanos;
+		if (reserved.status === "skip_missing_seconds_or_pricing") {
+			reservationGateError = {
+				status: 400,
+				type: "missing_billing_dimensions",
+				message: "Video duration seconds and pricing must be resolvable before submission.",
+			};
+		}
+		if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+			reservationGateError = {
+				status: 503,
+				type: "reservation_not_held",
+				message: `Unable to secure wallet reservation before provider submission (status=${reserved.status}).`,
+			};
+		}
+	} catch (reserveErr) {
+		console.error("wan_video_reservation_failed_pre_submit", {
+			error: reserveErr,
+			teamId: args.teamId,
+			requestId: args.requestId,
+		});
+		reservationGateError = {
+			status: 503,
+			type: "reservation_unavailable",
+			message: "Unable to reserve credits for video generation.",
+		};
+	}
 
-	const res = await fetch(`${baseUrl}/api/v1/services/aigc/video-generation/video-synthesis`, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${keyInfo.key}`,
-			"Content-Type": "application/json",
-			"X-DashScope-Async": "enable",
-		},
-		body: requestBody,
-	});
+	const releaseReservationOnFailure = async () => {
+		if (!reservationId) return;
+		try {
+			await releaseWalletReservation({
+				teamId: args.teamId,
+				reservationId,
+				releaseRefId: args.requestId,
+			});
+		} catch (releaseErr) {
+			console.error("wan_video_reservation_release_failed", {
+				error: releaseErr,
+				teamId: args.teamId,
+				requestId: args.requestId,
+				reservationId,
+			});
+		}
+	};
+
+	if (reservationStatus === "insufficient_funds") {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "insufficient_funds",
+					message: "Insufficient available credits for video reservation hold.",
+				},
+			}),
+			{ status: 402, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+	if (reservationGateError) {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: reservationGateError.type,
+					message: reservationGateError.message,
+				},
+			}),
+			{ status: reservationGateError.status, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+
+	let res: Response;
+	try {
+		res = await fetch(`${baseUrl}/api/v1/services/aigc/video-generation/video-synthesis`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${keyInfo.key}`,
+				"Content-Type": "application/json",
+				"X-DashScope-Async": "enable",
+			},
+			body: requestBody,
+		});
+	} catch (fetchErr) {
+		await releaseReservationOnFailure();
+		throw fetchErr;
+	}
 
 	const bill = {
 		cost_cents: 0,
@@ -116,6 +247,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	};
 
 	if (!res.ok) {
+		await releaseReservationOnFailure();
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -134,17 +266,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			await saveVideoJobMeta(args.teamId, String(irResponse.nativeId), {
 				provider: args.providerId,
 				model,
-				seconds: toDurationSeconds(ir) ?? null,
-				size: ir.size ?? ir.resolution ?? ir.aspectRatio ?? ir.ratio ?? null,
-				quality: ir.quality ?? null,
+				seconds: requestedSeconds,
+				resolution: size ?? null,
+				quality,
+				reservationId,
+				reservedNanos,
+				reservationStatus,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			});
+			}, irResponse.status);
 		} catch (err) {
 			console.error("wan_video_job_meta_store_failed", {
 				error: err,
 				teamId: args.teamId,
 				videoId: String(irResponse.nativeId),
 				requestId: args.requestId,
+				reservationId,
+				reservationStatus,
+				note: "reservation_retained_for_manual_reconciliation",
 			});
 		}
 	}

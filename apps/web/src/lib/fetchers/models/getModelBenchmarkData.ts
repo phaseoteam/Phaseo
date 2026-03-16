@@ -609,6 +609,7 @@ export async function getModelBenchmarkHighlights(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
 
@@ -627,6 +628,7 @@ export async function getModelBenchmarkTableData(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:table:${modelId}`);
 
@@ -645,6 +647,7 @@ export async function getModelBenchmarkComparisonData(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);
 

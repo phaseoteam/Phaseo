@@ -205,6 +205,8 @@ export type GatewayUsage = {
     output_text_tokens?: number;
 
     cached_read_text_tokens?: number;
+    // Provider-specific billing semantic: cached_read_text_tokens are included inside input_tokens/input_text_tokens.
+    cached_read_tokens_are_subset_of_input?: boolean;
     reasoning_tokens?: number;
 
     cached_write_text_tokens?: number;

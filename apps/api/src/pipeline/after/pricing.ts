@@ -9,17 +9,10 @@ import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
 import { deriveCachePricingContext } from "../pricing/cache-context";
 import { getBaseModel } from "../execute/utils";
+import { stripUsagePricing } from "../usage";
 
-function derivePricingPlan(body: any, usage: any): string {
-    const explicit = typeof body?.pricing_plan === "string" ? body.pricing_plan.trim().toLowerCase() : "";
-    if (explicit) return explicit;
-
-    const speed = typeof body?.speed === "string" ? body.speed.trim().toLowerCase() : "";
-    if (speed === "fast") return "priority";
-
+function derivePricingPlan(_body: any, usage: any): string {
     const tierRaw =
-        (typeof body?.service_tier === "string" ? body.service_tier : undefined) ??
-        (typeof body?.serviceTier === "string" ? body.serviceTier : undefined) ??
         (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
         (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
     const tier = typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
@@ -29,6 +22,24 @@ function derivePricingPlan(body: any, usage: any): string {
     if (tier === "flex") return "flex";
 
     return "standard";
+}
+
+function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string): Record<string, unknown> {
+    const options: Record<string, unknown> = {
+        ...deriveCachePricingContext(body),
+        pricing_plan: pricingPlan,
+    };
+
+    const serviceTierRaw =
+        (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
+        (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
+    const serviceTier = typeof serviceTierRaw === "string" ? serviceTierRaw.trim().toLowerCase() : "";
+    if (serviceTier) {
+        options.service_tier = serviceTier;
+        options.serviceTier = serviceTier;
+    }
+
+    return options;
 }
 
 export async function loadProviderPricing(
@@ -61,7 +72,8 @@ export function calculatePricing(
     totalNanos: number;
     currency: string;
 } {
-    let pricedUsage = usage;
+    const usageMeters = stripUsagePricing(usage);
+    let pricedUsage = usageMeters;
     let totalCents = 0;
     let totalNanos = 0;
     let currency = card?.currency ?? "USD";
@@ -69,14 +81,10 @@ export function calculatePricing(
     if (card) {
         try {
             const pricingPlan = derivePricingPlan(body, usage);
-            const requestOptions = {
-                ...(body ?? {}),
-                ...deriveCachePricingContext(body),
-                pricing_plan: pricingPlan,
-            };
+            const requestOptions = buildTrustedPricingRequestOptions(body, usage, pricingPlan);
 
             // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(usage ?? {}, card, requestOptions, pricingPlan);
+            pricedUsage = computeBill(usageMeters ?? {}, card, requestOptions, pricingPlan);
 
             const pricingInfo = (pricedUsage as any)?.pricing ?? {};
             totalCents = pricingInfo.total_cents ?? 0;
@@ -84,7 +92,7 @@ export function calculatePricing(
             currency = pricingInfo.currency ?? currency;
         } catch (calcErr) {
             console.error("computeBill failed", calcErr);
-            pricedUsage = usage;
+            pricedUsage = usageMeters;
         }
     }
 

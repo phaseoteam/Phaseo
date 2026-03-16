@@ -1,102 +1,569 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { memo, useState, type CSSProperties, type MouseEvent } from "react";
 import {
-	Tooltip,
-	TooltipTrigger,
-	TooltipContent,
-} from "@/components/ui/tooltip";
-import { ArrowRight } from "lucide-react";
+	ArrowUpRight,
+	Check,
+	Copy,
+	Type,
+	ImageIcon,
+	AudioLines,
+	Video,
+	Binary,
+	Shield,
+	FileText,
+	CircleDot,
+	type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { Logo } from "@/components/Logo";
-import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
-export function ModelCard({ model }: { model: ModelCardType }) {
+const PRIMARY_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+	year: "numeric",
+	month: "short",
+	day: "numeric",
+});
+const MODALITY_DISPLAY_ORDER = [
+	"text",
+	"image",
+	"audio",
+	"video",
+	"embedding",
+	"moderation",
+] as const;
+
+function toTitleLabel(value: string): string {
+	return value
+		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+		.replace(/[._/-]+/g, " ")
+		.trim()
+		.split(/\s+/)
+		.map((part) =>
+			part.length > 0
+				? `${part[0].toUpperCase()}${part.slice(1).toLowerCase()}`
+				: part,
+		)
+		.join(" ");
+}
+
+function normalizeModalityOrderKey(value: string): string {
+	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("embed")) return "embedding";
+	if (normalized.includes("moderat")) return "moderation";
+	if (normalized.includes("image")) return "image";
+	if (normalized.includes("video")) return "video";
+	if (normalized.includes("audio")) return "audio";
+	if (normalized.includes("text")) return "text";
+	return normalized.trim();
+}
+
+function sortModalitiesForDisplay(values: string[]): string[] {
+	const orderIndex = new Map<string, number>(
+		MODALITY_DISPLAY_ORDER.map((value, index) => [value, index]),
+	);
+	return [...values].sort((a, b) => {
+		const keyA = normalizeModalityOrderKey(a);
+		const keyB = normalizeModalityOrderKey(b);
+		const indexA = orderIndex.get(keyA);
+		const indexB = orderIndex.get(keyB);
+		if (indexA !== undefined || indexB !== undefined) {
+			if (indexA === undefined) return 1;
+			if (indexB === undefined) return -1;
+			return indexA - indexB;
+		}
+		return a.localeCompare(b);
+	});
+}
+
+function formatTokenCount(value: number): string {
+	if (!Number.isFinite(value) || value < 0) return "-";
+	if (value >= 1_000_000_000_000_000_000) {
+		const scaled = value / 1_000_000_000_000_000_000;
+		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
+		return `${text}Qi`;
+	}
+	if (value >= 1_000_000_000_000_000) {
+		const scaled = value / 1_000_000_000_000_000;
+		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
+		return `${text}Q`;
+	}
+	if (value >= 1_000_000_000_000) {
+		const scaled = value / 1_000_000_000_000;
+		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
+		return `${text}T`;
+	}
+	if (value >= 1_000_000_000) {
+		const scaled = value / 1_000_000_000;
+		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
+		return `${text}B`;
+	}
+	if (value >= 1_000_000) {
+		const scaled = value / 1_000_000;
+		const text = scaled.toFixed(2).replace(/\.?0+$/, "");
+		return `${text}M`;
+	}
+	if (value >= 1_000) {
+		return `${Math.round(value / 1_000)}K`;
+	}
+	return value.toLocaleString();
+}
+
+function formatPrice(value: number | null | undefined): string | null {
+	if (!Number.isFinite(value) || value === null || value === undefined || value <= 0) {
+		return null;
+	}
+	if (value < 0.001) return `$${value.toFixed(4)}`;
+	if (value < 0.01) return `$${value.toFixed(3)}`;
+	if (value < 1) return `$${value.toFixed(2)}`;
+	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function getModalityIcon(value: string): LucideIcon {
+	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("embed")) return Binary;
+	if (normalized.includes("moderat")) return Shield;
+	if (normalized.includes("file")) return FileText;
+	if (normalized.includes("image")) return ImageIcon;
+	if (normalized.includes("video")) return Video;
+	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("text")) return Type;
+	return CircleDot;
+}
+
+function formatPrimaryDate(model: ModelCardType): string {
+	if (!model.primary_date) return "Date unknown";
+	const parsed = new Date(model.primary_date);
+	if (Number.isNaN(parsed.getTime())) return model.primary_date;
+	return PRIMARY_DATE_FORMATTER.format(parsed);
+}
+
+function ModelCardImpl({ model }: { model: ModelCardType }) {
 	const modelSlug = model.model_id;
+	const modelHref = `/models/${modelSlug}`;
+	const router = useRouter();
+	const apiModelId = model.gateway_api_model_ids?.[0] ?? null;
+	const displayModelId = apiModelId ?? "No API Model ID";
+	const [copied, setCopied] = useState(false);
+	const providerCount = model.gateway_provider_count ?? 0;
+	const activeProviders = model.gateway_active_provider_count ?? 0;
+	const providerDetails = (model.gateway_provider_details ?? [])
+		.map((provider) => ({
+			id: String(provider.id ?? "").trim(),
+			name: String(provider.name ?? "").trim(),
+			isActive: Boolean(provider.is_active),
+		}))
+		.filter((provider) => provider.name);
+	const providerNames = Array.from(
+		new Set(
+			(model.gateway_provider_names ?? [])
+				.map((value) => String(value ?? "").trim())
+				.filter(Boolean),
+		),
+	).sort((a, b) => a.localeCompare(b));
+	const activeProviderNameSet = new Set(
+		(model.gateway_active_provider_names ?? [])
+			.map((value) => String(value ?? "").trim())
+			.filter(Boolean),
+	);
+	const providerStatusItems =
+		providerDetails.length > 0
+			? providerDetails.sort((a, b) => {
+					if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+					return a.name.localeCompare(b.name);
+				})
+			: providerNames
+					.map((name) => ({
+						id: "",
+						name,
+						isActive: activeProviderNameSet.has(name),
+					}))
+					.sort((a, b) => {
+						if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+						return a.name.localeCompare(b.name);
+					});
+	const inputModalities = model.gateway_input_modalities ?? [];
+	const outputModalities = model.gateway_output_modalities ?? [];
+	const contextLengths = (model.context_lengths ?? []).filter(
+		(value) => Number.isFinite(value) && value > 0,
+	);
+	const maxContextLength =
+		contextLengths.length > 0 ? Math.max(...contextLengths) : null;
+	const inputPrice = formatPrice(model.lowest_input_price);
+	const outputPrice = formatPrice(model.lowest_output_price);
+	const priceSummary =
+		inputPrice && outputPrice
+			? `${inputPrice} in / ${outputPrice} out`
+			: inputPrice
+				? `${inputPrice} in`
+				: outputPrice
+					? `${outputPrice} out`
+					: null;
+	const formatModalities = (values: string[]) => {
+		const unique = sortModalitiesForDisplay(Array.from(
+			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
+		));
+		const visible = unique.slice(0, 4);
+		const hiddenCount = unique.length - visible.length;
+		return {
+			visible,
+			hiddenCount,
+		};
+	};
+	const inputModalityDisplay = formatModalities(inputModalities);
+	const outputModalityDisplay = formatModalities(outputModalities);
+	const weeklyTokens = Number.isFinite(Number(model.popularity_tokens_week))
+		? Math.max(0, Number(model.popularity_tokens_week))
+		: 0;
+
+	const copyModelId = async () => {
+		if (!apiModelId) return;
+		try {
+			await navigator.clipboard.writeText(apiModelId);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1400);
+		} catch {
+			setCopied(false);
+		}
+	};
+	const rowStyle: CSSProperties & Record<string, string | undefined> = {
+		"--provider-accent": model.organisation_colour ?? undefined,
+	};
+	const handleRowClick = (event: MouseEvent<HTMLDivElement>) => {
+		const target = event.target;
+		if (
+			target instanceof HTMLElement &&
+			target.closest("a,button,[role='button'],[data-no-row-nav='true']")
+		) {
+			return;
+		}
+		router.push(modelHref);
+	};
+
 	return (
-		<Card
-			style={{ borderColor: model.organisation_colour || undefined }}
+		<div
 			className={cn(
-				"h-full flex flex-col shadow-lg relative dark:shadow-zinc-900/25 dark:bg-zinc-950 transition-transform transform hover:scale-105 duration-200 ease-in-out",
-				model.organisation_colour && "border-2",
+				"group cursor-pointer py-4 transition-colors hover:bg-muted/20 md:py-5",
 			)}
+			style={rowStyle}
+			onClick={handleRowClick}
 		>
-			<CardContent className="flex flex-row items-center gap-3 pt-6">
-				<Link
-					href={`/organisations/${model.organisation_id}`}
-					prefetch={false}
-					className="group"
-					scroll
-				>
-					<div className="w-10 h-10 relative flex items-center justify-center rounded-xl border">
-						<div className="w-7 h-7 relative">
-							<Logo
-								id={model.organisation_id}
-								alt={model.organisation_name || "Provider Logo"}
-								className="object-contain"
-								fill
-							/>
-						</div>
-					</div>
-				</Link>
-				<div className="flex flex-col min-w-0 flex-1 text-left">
-					<div className="flex items-center gap-2 min-w-0">
-						<Tooltip delayDuration={500}>
-							<TooltipTrigger asChild>
-								<Link
-									href={`/models/${modelSlug}`}
-									prefetch={false}
-									className="font-semibold truncate leading-tight text-left underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
-								>
-									{model.name}
-								</Link>
-							</TooltipTrigger>
-							<TooltipContent align="center">
-								{modelSlug}
-							</TooltipContent>
-						</Tooltip>
-						{model.hidden ? (
-							<Badge variant="secondary" className="text-xs">
-								Hidden
-							</Badge>
-						) : null}
-					</div>
+			<div className="flex flex-col gap-4">
+				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
 					<Link
 						href={`/organisations/${model.organisation_id}`}
 						prefetch={false}
-						className="text-xs text-muted-foreground truncate flex items-center gap-1 text-left underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+						className="shrink-0"
+						scroll
 					>
-						{model.organisation_name}
+						<div className="w-10 h-10 relative flex items-center justify-center rounded-lg border bg-background ml-1 md:ml-0">
+							<div className="w-6 h-6 relative">
+								<Logo
+									id={model.organisation_id}
+									alt={model.organisation_name || "Provider Logo"}
+									className="object-contain"
+									fill
+								/>
+							</div>
+						</div>
 					</Link>
-				</div>
-				<div className="ml-auto flex items-center gap-1">
-					<Button
-						asChild
-						size="icon"
-						variant="ghost"
-						tabIndex={-1}
-						className="group"
-						style={
-							{
-								"--provider-color":
-									model.organisation_colour ?? "inherit",
-							} as React.CSSProperties
-						}
-					>
+
+					<div className="min-w-0 space-y-0.5 self-center">
+						<div className="flex items-center gap-1 min-w-0">
+							<Link
+								href={modelHref}
+								prefetch={false}
+								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
+							>
+								{model.name}
+							</Link>
+							{apiModelId ? (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											type="button"
+											size="icon"
+											variant="ghost"
+											onClick={copyModelId}
+											className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+											aria-label={`Copy API model ID for ${model.name}`}
+										>
+											<span className="relative h-3 w-3">
+												<Copy
+													className={cn(
+														"absolute inset-0 size-3 [stroke-width:1.75] transition-all duration-200 ease-out",
+														copied
+															? "translate-y-px scale-90 opacity-0"
+															: "translate-y-0 scale-100 opacity-100",
+													)}
+												/>
+												<Check
+													className={cn(
+														"absolute inset-0 size-3 [stroke-width:2.25] transition-all duration-200 ease-out",
+														copied
+															? "translate-y-0 scale-100 opacity-100"
+															: "-translate-y-px scale-90 opacity-0",
+													)}
+												/>
+											</span>
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side="top">
+										{copied ? "Copied" : "Copy Model ID"}
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</div>
+						<div className="text-xs leading-[1.15] text-muted-foreground font-mono truncate">
+							{displayModelId}
+						</div>
+					</div>
+
+					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
 						<Link
-							href={`/models/${modelSlug}`}
+							href={modelHref}
 							prefetch={false}
-							aria-label={`Go to ${model.name} details`}
-							tabIndex={-1}
+							aria-label={`Open ${model.name}`}
+							className="group/open"
 						>
-							<ArrowRight className="w-5 h-5 transition-colors group-hover:text-(--provider-color)" />
+							<ArrowUpRight
+								className={cn(
+									"h-4 w-4 text-muted-foreground transition-colors",
+									model.organisation_colour
+										? "group-hover:text-[var(--provider-accent)]"
+										: "group-hover:text-primary",
+								)}
+							/>
 						</Link>
 					</Button>
 				</div>
-			</CardContent>
-		</Card>
+
+				<div className="grid gap-2 text-xs md:grid-cols-3">
+					<div className="flex flex-wrap items-center gap-1.5 text-[11px] md:col-span-3">
+						{providerStatusItems.length > 0 ? (
+							<HoverCard openDelay={120} closeDelay={100}>
+								<HoverCardTrigger asChild>
+									<button
+										type="button"
+										data-no-row-nav="true"
+										className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
+									>
+										<span className="text-muted-foreground">Providers</span>
+										<span className="font-medium text-foreground tabular-nums">
+											{activeProviders.toLocaleString()}/{providerCount.toLocaleString()}
+										</span>
+									</button>
+								</HoverCardTrigger>
+								<HoverCardContent align="start" className="w-64 p-3">
+									<div className="space-y-2">
+										<div className="text-xs font-medium text-foreground">
+											Provider Support
+										</div>
+										<div className="max-h-56 overflow-y-auto space-y-1 pr-1">
+											{providerStatusItems.map((provider) => (
+												<div
+													key={`${provider.id || "provider"}-${provider.name}`}
+													className="flex items-center justify-between gap-3 rounded-sm px-1 py-1 text-xs"
+												>
+													{provider.id ? (
+														<Link
+															href={`/api-providers/${provider.id}`}
+															prefetch={false}
+															className="flex min-w-0 items-center gap-2 text-foreground hover:underline underline-offset-2"
+														>
+															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+																<Logo
+																	id={provider.id}
+																	alt={provider.name}
+																	className="object-contain p-[1px]"
+																	fill
+																/>
+															</span>
+															<span className="truncate">
+																{provider.name}
+															</span>
+														</Link>
+													) : (
+														<span className="flex min-w-0 items-center gap-2">
+															<span className="truncate text-foreground">
+																{provider.name}
+															</span>
+														</span>
+													)}
+													<span
+														className={cn(
+															"inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px]",
+															provider.isActive
+																? "bg-emerald-500/10 text-emerald-600"
+																: "bg-muted text-muted-foreground",
+														)}
+													>
+														<span
+															className={cn(
+																"h-1.5 w-1.5 rounded-full",
+																provider.isActive
+																	? "bg-emerald-500"
+																	: "bg-muted-foreground/60",
+															)}
+														/>
+														{provider.isActive ? "Active" : "Inactive"}
+													</span>
+												</div>
+											))}
+										</div>
+									</div>
+								</HoverCardContent>
+							</HoverCard>
+						) : (
+							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+								<span className="text-muted-foreground">Providers</span>
+								<span className="font-medium text-foreground tabular-nums">
+									{activeProviders.toLocaleString()}/{providerCount.toLocaleString()}
+								</span>
+							</div>
+						)}
+						{maxContextLength ? (
+							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+								<span className="text-muted-foreground">Context</span>
+								<span className="font-medium text-foreground tabular-nums">
+									{`${formatTokenCount(maxContextLength)} tokens`}
+								</span>
+							</div>
+						) : null}
+						{priceSummary ? (
+							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+								<span className="text-muted-foreground">Lowest Price</span>
+								<span className="font-medium text-foreground">{priceSummary}</span>
+							</div>
+						) : null}
+					</div>
+
+					<div className="space-y-1 md:col-span-3">
+						<div className="flex items-center gap-2 min-w-0">
+							<span className="w-11 shrink-0 text-[11px] text-muted-foreground">
+								Input
+							</span>
+							<div className="min-w-0 flex flex-wrap gap-1">
+								{inputModalityDisplay.visible.length > 0 ? (
+									<>
+										{inputModalityDisplay.visible.map((modality) => {
+											const Icon = getModalityIcon(modality);
+											return (
+												<span
+													key={`input-${modality}`}
+													className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-foreground"
+												>
+													<Icon className="h-3 w-3 text-muted-foreground" />
+													{toTitleLabel(modality)}
+												</span>
+											);
+										})}
+										{inputModalityDisplay.hiddenCount > 0 ? (
+											<span className="inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
+												+{inputModalityDisplay.hiddenCount} others
+											</span>
+										) : null}
+									</>
+								) : (
+									<span className="text-[11px] text-muted-foreground">-</span>
+								)}
+							</div>
+						</div>
+						<div className="flex items-center gap-2 min-w-0">
+							<span className="w-11 shrink-0 text-[11px] text-muted-foreground">
+								Output
+							</span>
+							<div className="min-w-0 flex flex-wrap gap-1">
+								{outputModalityDisplay.visible.length > 0 ? (
+									<>
+										{outputModalityDisplay.visible.map((modality) => {
+											const Icon = getModalityIcon(modality);
+											return (
+												<span
+													key={`output-${modality}`}
+													className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-foreground"
+												>
+													<Icon className="h-3 w-3 text-muted-foreground" />
+													{toTitleLabel(modality)}
+												</span>
+											);
+										})}
+										{outputModalityDisplay.hiddenCount > 0 ? (
+											<span className="inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
+												+{outputModalityDisplay.hiddenCount} others
+											</span>
+										) : null}
+									</>
+								) : (
+									<span className="text-[11px] text-muted-foreground">-</span>
+								)}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+					<span className="truncate">{formatPrimaryDate(model)}</span>
+					<div className="shrink-0">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									type="button"
+									size="sm"
+									variant="ghost"
+									className="hidden h-8 px-2 tabular-nums text-muted-foreground md:inline-flex"
+									aria-label="Weekly tokens"
+								>
+									{formatTokenCount(weeklyTokens)}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">Weekly tokens</TooltipContent>
+						</Tooltip>
+
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									type="button"
+									size="sm"
+									variant="ghost"
+									className="h-8 px-2 tabular-nums text-muted-foreground md:hidden"
+									aria-label="Weekly tokens"
+								>
+									{formatTokenCount(weeklyTokens)}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent
+								side="top"
+								align="end"
+								className="w-auto px-2.5 py-1.5 text-xs"
+							>
+								Weekly tokens
+							</PopoverContent>
+						</Popover>
+					</div>
+				</div>
+			</div>
+		</div>
 	);
 }
+
+export const ModelCard = memo(ModelCardImpl);
+ModelCard.displayName = "ModelCard";

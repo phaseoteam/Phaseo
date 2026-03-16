@@ -1,9 +1,18 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { IRVideoGenerationRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "./index";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+
+vi.mock("@core/video-reservations", () => ({
+	reserveVideoGenerationCredits: vi.fn(async () => ({
+		reservationId: "video_hold:req_google_video_test",
+		held: false,
+		amountNanos: 0,
+		status: "skip_zero_cost",
+	})),
+}));
 
 function buildArgs(ir: IRVideoGenerationRequest): ExecutorExecuteArgs {
 	return {
@@ -50,7 +59,7 @@ describe("google video executor", () => {
 			prompt: "A cinematic waterfall in Iceland",
 			durationSeconds: 8,
 			aspectRatio: "16:9",
-			resolution: "1080p",
+			size: "1080p",
 			compressionQuality: 80,
 			negativePrompt: "blurry, noisy",
 			numberOfVideos: 2,
@@ -114,6 +123,7 @@ describe("google video executor", () => {
 			model: "google/veo-3.1-fast-preview",
 			prompt: "A close-up of raindrops on leaves",
 			inputReference: "https://example.com/ref.png",
+			resolution: "720p",
 			sampleCount: 1,
 		}));
 
@@ -122,6 +132,7 @@ describe("google video executor", () => {
 		expect(result.upstream?.status).toBe(200);
 		expect(capturedUrl).toContain("/v1beta/models/veo-3.1-fast-generate-preview:predictLongRunning?key=");
 		expect(capturedBody?.instances?.[0]?.image?.uri).toBe("https://example.com/ref.png");
+		expect(capturedBody?.parameters?.resolution).toBe("720p");
 		expect(capturedBody?.parameters?.numberOfVideos).toBe(1);
 	});
 });

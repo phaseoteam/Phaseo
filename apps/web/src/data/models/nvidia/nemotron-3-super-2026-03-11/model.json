@@ -1,0 +1,17 @@
+{
+  "model_id": "nvidia/nemotron-3-super-2026-03-11",
+  "organisation_id": "nvidia",
+  "name": "Nemotron 3 Super",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-03-11T00:00:00",
+  "release_date": "2026-03-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Nvidia Open Model License",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

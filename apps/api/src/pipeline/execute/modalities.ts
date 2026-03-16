@@ -2,7 +2,14 @@
 // Why: Ensure providers only receive inputs they advertise support for.
 // How: Inspect IR content + requested output modalities to filter candidates.
 
-import type { IRChatRequest, IRContentPart, IRMessage } from "@core/ir";
+import type {
+	IRChatRequest,
+	IRContentPart,
+	IREmbeddingsRequest,
+	IREmbeddingsInput,
+	IREmbeddingsInputItem,
+	IRMessage,
+} from "@core/ir";
 import type { ProviderCandidate } from "../before/types";
 
 export type Modality = "text" | "image" | "audio" | "video";
@@ -10,6 +17,10 @@ export type Modality = "text" | "image" | "audio" | "video";
 type ModalityRequirements = {
 	input: Set<Modality>;
 	output: Set<Modality>;
+};
+
+type EmbeddingsModalityRequirements = {
+	input: Set<Modality>;
 };
 
 function isGoogleImagePreviewModel(candidate: ProviderCandidate, modelId: string): boolean {
@@ -26,6 +37,14 @@ function isGoogleImagePreviewModel(candidate: ProviderCandidate, modelId: string
 		haystack.includes("image-preview") ||
 		haystack.includes("flash-image")
 	);
+}
+
+function isGoogleEmbeddingsModel(candidate: ProviderCandidate, modelId: string): boolean {
+	if (candidate.providerId !== "google-ai-studio") {
+		return false;
+	}
+	const haystack = `${modelId} ${candidate.providerModelSlug ?? ""}`.toLowerCase();
+	return haystack.includes("gemini-embedding");
 }
 
 function normalizeModalities(values?: string[] | null): Set<Modality> {
@@ -81,6 +100,79 @@ export function detectModalityRequirements(ir: IRChatRequest): ModalityRequireme
 	};
 }
 
+function collectEmbeddingsInputModalities(input: IREmbeddingsInput): Set<Modality> {
+	const required = new Set<Modality>();
+
+	const collectFromParts = (parts: IREmbeddingsInputItem) => {
+		if (!Array.isArray(parts)) return;
+		for (const part of parts as any[]) {
+			switch (part?.type) {
+				case "text":
+					required.add("text");
+					break;
+				case "image":
+					required.add("image");
+					break;
+				case "audio":
+					required.add("audio");
+					break;
+				case "video":
+					required.add("video");
+					break;
+				default:
+					break;
+			}
+		}
+	};
+
+	const collectItem = (item: IREmbeddingsInputItem) => {
+		if (typeof item === "string") {
+			required.add("text");
+			return;
+		}
+		if (Array.isArray(item) && item.every((entry) => typeof entry === "number")) {
+			required.add("text");
+			return;
+		}
+		collectFromParts(item);
+	};
+
+	if (
+		Array.isArray(input) &&
+		(input.length === 0 || input.every((entry) => typeof entry === "number"))
+	) {
+		required.add("text");
+		return required;
+	}
+
+	if (Array.isArray(input)) {
+		const looksLikeSingleContentParts =
+			input.length > 0 &&
+			input.some((entry) => typeof entry === "object" && entry !== null && (entry as any).type != null) &&
+			input.every((entry) => typeof entry === "object" && entry !== null && (entry as any).type != null);
+		if (looksLikeSingleContentParts) {
+			collectFromParts(input as unknown as IREmbeddingsInputItem);
+			if (required.size === 0) required.add("text");
+			return required;
+		}
+		for (const item of input as IREmbeddingsInputItem[]) {
+			collectItem(item);
+		}
+		if (required.size === 0) required.add("text");
+		return required;
+	}
+
+	collectItem(input as IREmbeddingsInputItem);
+	if (required.size === 0) required.add("text");
+	return required;
+}
+
+export function detectEmbeddingsModalityRequirements(ir: IREmbeddingsRequest): EmbeddingsModalityRequirements {
+	return {
+		input: collectEmbeddingsInputModalities(ir.input),
+	};
+}
+
 function supportsRequiredModalities(
 	required: Set<Modality>,
 	available: Set<Modality>,
@@ -131,5 +223,24 @@ export function filterCandidatesByModalities(
 			!needsNonTextOutput,
 		);
 		return outputOk;
+	});
+}
+
+export function filterEmbeddingCandidatesByModalities(
+	candidates: ProviderCandidate[],
+	ir: IREmbeddingsRequest,
+): ProviderCandidate[] {
+	const requirements = detectEmbeddingsModalityRequirements(ir);
+	const needsNonTextInput = Array.from(requirements.input).some((m) => m !== "text");
+
+	return candidates.filter((candidate) => {
+		let input = normalizeModalities(candidate.inputModalities ?? undefined);
+
+		// Fallback for Gemini embedding families while provider modality metadata catches up.
+		if (isGoogleEmbeddingsModel(candidate, ir.model) && input.size === 0) {
+			input = new Set<Modality>(["text", "image", "audio", "video"]);
+		}
+
+		return supportsRequiredModalities(requirements.input, input, !needsNonTextInput);
 	});
 }

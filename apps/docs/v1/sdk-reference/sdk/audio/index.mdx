@@ -1,0 +1,36 @@
+---
+title: "Audio (AI SDK)"
+description: "Speech-to-text and text-to-speech with AI Stats provider models."
+---
+
+Use `transcribe` with `transcriptionModel`, and `speak` with `speechModel`.
+
+```ts
+import { readFileSync, writeFileSync } from "node:fs";
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { transcribe, speak } from "ai";
+
+const audioInput = readFileSync("./audio.mp3");
+
+const transcription = await transcribe({
+  model: aiStats.transcriptionModel("openai/whisper-1"),
+  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+});
+
+console.log(transcription.text);
+
+const speech = await speak({
+  model: aiStats.speechModel("openai/tts-1"),
+  text: "Hello from AI Stats audio.",
+  voice: "alloy",
+  outputFormat: "mp3",
+});
+
+writeFileSync("./speech.mp3", speech.audio);
+```
+
+## Notes
+
+- Audio input/output formats are model-specific.
+- Keep payload sizes and timeout settings appropriate for long files.
+- Run retry logic for transient 429/5xx responses.

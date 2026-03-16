@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useDeferredValue, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
@@ -10,28 +11,731 @@ import {
 	Grid as GridIcon,
 	Table as TableIcon,
 	Layers as LayersIcon,
+	SlidersHorizontal,
+	Activity,
+	ArrowDownCircle,
+	ArrowUpCircle,
+	ArrowUpDown,
+	AudioLines,
+	Binary,
+	CircleDot,
+	Database,
+	FileText,
+	Route,
+	Sparkles,
+	Text as TextIcon,
+	Type as TypeIcon,
+	ImageIcon,
+	Video,
+	CalendarDays,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipTrigger,
 	TooltipContent,
 } from "@/components/ui/tooltip";
-import { ModelCard } from "@/lib/fetchers/models/getAllModels";
-import { qParser } from "@/app/(dashboard)/models/search-params";
+import {
+	MODELS_SORT_OPTIONS,
+	qParser,
+	sortParser,
+	type ModelsSortOption,
+} from "@/app/(dashboard)/models/search-params";
+import { featureLabels } from "@/lib/config/featureLabels";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
+import type {
+	GatewayStatusFilter,
+	ModelsFilterFacets,
+	ModelsPageModel,
+	OptionCount,
+} from "./modelsDisplay.types";
 
 interface ModelsDisplayProps {
-	models: ModelCard[];
+	models: ModelsPageModel[];
+	facets: ModelsFilterFacets;
 }
 
-export default function ModelsDisplay({
-	models,
-}: ModelsDisplayProps) {
+type PreparedModel = {
+	model: ModelsPageModel;
+	status: GatewayStatusFilter;
+	endpointsSet: ReadonlySet<string>;
+	inputModalitiesSet: ReadonlySet<string>;
+	outputModalitiesSet: ReadonlySet<string>;
+	featuresSet: ReadonlySet<string>;
+	providerNamesSet: ReadonlySet<string>;
+	supportedParametersSet: ReadonlySet<string>;
+	maxContextLength: number | null;
+	creator: string;
+	modelYear: string;
+	searchIndex: string;
+	sortPrice: number | null;
+	sortContext: number | null;
+	popularityWeek: number | null;
+	throughputWeek: number | null;
+	latencyWeek: number | null;
+};
+
+const SORT_OPTION_LABELS: Record<ModelsSortOption, string> = {
+	newest: "Newest",
+	popular_week: "Most Popular (7d Tokens)",
+	price_low_to_high: "Price: Low to High",
+	price_high_to_low: "Price: High to Low",
+	context_high_to_low: "Context: High to Low",
+	throughput_high_to_low: "Throughput: High to Low",
+	latency_low_to_high: "Latency: Low to High",
+};
+
+const CONTEXT_LENGTH_STOPS = [
+	0,
+	4_000,
+	8_000,
+	16_000,
+	32_000,
+	64_000,
+	128_000,
+	256_000,
+	512_000,
+	1_000_000,
+] as const;
+
+function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
+	const normalized = String(value ?? "").trim();
+	if (
+		MODELS_SORT_OPTIONS.includes(
+			normalized as (typeof MODELS_SORT_OPTIONS)[number],
+		)
+	) {
+		return normalized as ModelsSortOption;
+	}
+	return "newest";
+}
+
+function parseCsvParam(value: string | null): string[] {
+	if (!value) return [];
+	return value
+		.split(",")
+		.map((part) => part.trim())
+		.filter(Boolean);
+}
+
+function normalizeModalityFilterValue(value: string): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[._/-]+/g, " ");
+	if (!normalized) return "";
+	if (normalized.includes("text")) return "text";
+	if (normalized.includes("image")) return "image";
+	if (normalized.includes("video")) return "video";
+	if (normalized.includes("audio")) return "audio";
+	if (normalized.includes("file")) return "file";
+	if (normalized.includes("moderat")) return "moderations";
+	if (normalized.includes("embed")) return "embeddings";
+	return normalized.replace(/\s+/g, "_");
+}
+
+function parseModalityParam(value: string | null): string[] {
+	return Array.from(
+		new Set(
+			parseCsvParam(value)
+				.map((part) => normalizeModalityFilterValue(part))
+				.filter(Boolean),
+		),
+	);
+}
+
+function parseContextMinParam(value: string | null): number {
+	if (value === null) return 0;
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+	return parsed;
+}
+
+function formatContextStop(value: number): string {
+	if (value <= 0) return "Any";
+	if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
+	return `${Math.round(value / 1_000)}K`;
+}
+
+function getClosestStopIndex(value: number): number {
+	if (!Number.isFinite(value) || value <= 0) return 0;
+	const index = CONTEXT_LENGTH_STOPS.findIndex((stop) => stop >= value);
+	return index === -1 ? CONTEXT_LENGTH_STOPS.length - 1 : index;
+}
+
+function toGatewayStatusFilter(value: string): GatewayStatusFilter | null {
+	const normalized = value.trim().toLowerCase();
+	if (normalized === "active") return "active";
+	if (
+		normalized === "not_active" ||
+		normalized === "inactive" ||
+		normalized === "not_listed"
+	) {
+		return "not_active";
+	}
+	return null;
+}
+
+function parseGatewayStatusParam(value: string | null): string[] {
+	if (!value) return [];
+	const normalized = value
+		.split(",")
+		.map((part) => toGatewayStatusFilter(part))
+		.filter((part): part is GatewayStatusFilter => Boolean(part));
+	return Array.from(new Set(normalized));
+}
+
+function getGatewayStatusBucket(
+	status: ModelsPageModel["gateway_status"] | null | undefined,
+): GatewayStatusFilter {
+	return status === "active" ? "active" : "not_active";
+}
+
+function serializeCsvParam(values: string[]): string {
+	return Array.from(
+		new Set(values.map((value) => value.trim()).filter(Boolean)),
+	).join(",");
+}
+
+function toggleInList(current: string[], value: string): string[] {
+	const next = new Set(current);
+	if (next.has(value)) {
+		next.delete(value);
+	} else {
+		next.add(value);
+	}
+	return Array.from(next);
+}
+
+function getModelYear(model: ModelsPageModel): string {
+	if (Number.isFinite(model.primary_timestamp)) {
+		const year = new Date(Number(model.primary_timestamp)).getUTCFullYear();
+		return Number.isFinite(year) ? String(year) : "";
+	}
+	if (model.primary_date) {
+		const parsed = new Date(model.primary_date).getTime();
+		if (Number.isFinite(parsed)) {
+			return String(new Date(parsed).getUTCFullYear());
+		}
+	}
+	return "";
+}
+
+function getSortPrice(model: ModelsPageModel): number | null {
+	const candidates = [model.lowest_input_price, model.lowest_output_price]
+		.map((value) => Number(value))
+		.filter((value) => Number.isFinite(value) && value > 0);
+	if (candidates.length === 0) return null;
+	return Math.min(...candidates);
+}
+
+function getSortContext(model: ModelsPageModel): number | null {
+	const contextValues = (model.context_lengths ?? [])
+		.map((value) => Number(value))
+		.filter((value) => Number.isFinite(value) && value > 0);
+	if (contextValues.length === 0) return null;
+	return Math.max(...contextValues);
+}
+
+function compareNullableNumber(
+	a: number | null | undefined,
+	b: number | null | undefined,
+	direction: "asc" | "desc",
+): number {
+	const hasA = Number.isFinite(Number(a));
+	const hasB = Number.isFinite(Number(b));
+
+	if (!hasA && !hasB) return 0;
+	if (!hasA) return 1;
+	if (!hasB) return -1;
+
+	const aValue = Number(a);
+	const bValue = Number(b);
+	return direction === "asc" ? aValue - bValue : bValue - aValue;
+}
+
+function normalizedSet(values: readonly string[] | undefined): ReadonlySet<string> {
+	const set = new Set<string>();
+	for (const raw of values ?? []) {
+		const value = String(raw ?? "").trim();
+		if (value) set.add(value);
+	}
+	return set;
+}
+
+function normalizedModalitySet(
+	values: readonly string[] | undefined,
+): ReadonlySet<string> {
+	const set = new Set<string>();
+	for (const raw of values ?? []) {
+		const value = normalizeModalityFilterValue(String(raw ?? ""));
+		if (value) set.add(value);
+	}
+	return set;
+}
+
+function toTitleCase(value: string): string {
+	return value
+		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+		.replace(/[._/-]+/g, " ")
+		.trim()
+		.split(/\s+/)
+		.map((word) =>
+			word.length > 0
+				? `${word[0].toUpperCase()}${word.slice(1).toLowerCase()}`
+				: word,
+		)
+		.join(" ");
+}
+
+function getModalityIcon(modality: string): LucideIcon {
+	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
+
+	if (normalized.includes("embed")) return Binary;
+	if (normalized.includes("image")) return ImageIcon;
+	if (normalized.includes("video")) return Video;
+	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("file")) return FileText;
+	if (normalized.includes("text")) return TextIcon;
+	return CircleDot;
+}
+
+function FilterCheckboxList({
+	options,
+	selected,
+	onToggle,
+	labelForValue,
+	iconForValue,
+	collapsedLimit,
+}: {
+	options: OptionCount[];
+	selected: string[];
+	onToggle: (value: string) => void;
+	labelForValue?: (value: string) => string;
+	iconForValue?: (value: string) => LucideIcon;
+	collapsedLimit?: number;
+}) {
+	const [expanded, setExpanded] = useState(false);
+	const canCollapse =
+		Number.isFinite(collapsedLimit) &&
+		Number(collapsedLimit) > 0 &&
+		options.length > Number(collapsedLimit);
+	const visibleOptions = canCollapse && !expanded
+		? options.slice(0, Number(collapsedLimit))
+		: options;
+	const hiddenCount = options.length - visibleOptions.length;
+
+	return (
+		<div className="space-y-1.5">
+			{options.length === 0 ? (
+				<div className="px-2 text-xs text-muted-foreground">No options</div>
+			) : (
+				visibleOptions.map((option) => {
+					const checked = selected.includes(option.value);
+					const label = labelForValue
+						? labelForValue(option.value)
+						: toTitleCase(option.value);
+					const Icon = iconForValue?.(option.value);
+
+					return (
+						<button
+							key={option.value}
+							type="button"
+							onClick={() => onToggle(option.value)}
+							className={cn(
+								"flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
+								checked
+									? "bg-primary/5 text-primary/90 hover:bg-primary/10"
+									: "hover:bg-muted/50",
+							)}
+							aria-pressed={checked}
+						>
+							<span className="flex items-center gap-2 min-w-0">
+								{Icon ? (
+									<Icon
+										className={cn(
+											"h-3.5 w-3.5 shrink-0",
+											checked ? "text-primary" : "text-muted-foreground",
+										)}
+									/>
+								) : null}
+								<span className="text-sm truncate">{label}</span>
+							</span>
+							<span
+								className={cn(
+									"inline-flex min-w-5 shrink-0 justify-center text-[11px] tabular-nums",
+									checked ? "text-primary" : "text-muted-foreground",
+								)}
+							>
+								{option.count}
+							</span>
+						</button>
+					);
+				})
+			)}
+			{canCollapse ? (
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					className="h-7 w-full justify-center text-xs"
+					onClick={() => setExpanded((current) => !current)}
+				>
+					{expanded ? "Show Less" : `Show More (${hiddenCount})`}
+				</Button>
+			) : null}
+		</div>
+	);
+}
+
+export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 	const [search, setSearch] = useQueryState("q", qParser);
+	const deferredSearch = useDeferredValue(search ?? "");
+	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+	const DEFAULT_OPEN_SECTIONS = [
+		"gatewayStatus",
+		"inputModalities",
+		"outputModalities",
+	];
+	const [openFilterSections, setOpenFilterSections] = useState<string[]>([
+		...DEFAULT_OPEN_SECTIONS,
+	]);
+	const [selectedStatuses, setSelectedStatuses] = useQueryState("statuses", {
+		defaultValue: [] as string[],
+		parse: parseGatewayStatusParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedInputModalities, setSelectedInputModalities] = useQueryState(
+		"inputModalities",
+		{
+			defaultValue: [] as string[],
+			parse: parseModalityParam,
+			serialize: serializeCsvParam,
+			shallow: true,
+			clearOnDefault: true,
+		},
+	);
+	const [selectedOutputModalities, setSelectedOutputModalities] =
+		useQueryState("outputModalities", {
+			defaultValue: [] as string[],
+			parse: parseModalityParam,
+			serialize: serializeCsvParam,
+			shallow: true,
+			clearOnDefault: true,
+		});
+	const [selectedFeatures, setSelectedFeatures] = useQueryState("features", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedContextMin, setSelectedContextMin] = useQueryState(
+		"contextMin",
+		{
+			defaultValue: 0,
+			parse: parseContextMinParam,
+			serialize: (value) => String(value),
+			shallow: true,
+			clearOnDefault: true,
+		},
+	);
+	const [selectedSupportedParameters, setSelectedSupportedParameters] =
+		useQueryState("supportedParameters", {
+			defaultValue: [] as string[],
+			parse: parseCsvParam,
+			serialize: serializeCsvParam,
+			shallow: true,
+			clearOnDefault: true,
+		});
+	const [selectedProviders, setSelectedProviders] = useQueryState("providers", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedCreators, setSelectedCreators] = useQueryState("creators", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedYears, setSelectedYears] = useQueryState("years", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [sort, setSort] = useQueryState("sort", sortParser);
+	const selectedSort = normalizeSortOption(sort);
+
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
 	const isCollections = pathname?.includes("/models/collections");
+	const {
+		statusCounts,
+		endpointOptions,
+		inputModalityOptions,
+		outputModalityOptions,
+		featureOptions,
+		supportedParameterOptions,
+		providerOptions,
+		creatorOptions,
+		yearOptions,
+	} = facets;
+
+	const activeFilterCount =
+		selectedStatuses.length +
+		selectedEndpoints.length +
+		selectedInputModalities.length +
+		selectedOutputModalities.length +
+		selectedFeatures.length +
+		(selectedContextMin > 0 ? 1 : 0) +
+		selectedSupportedParameters.length +
+		selectedProviders.length +
+		selectedCreators.length +
+		selectedYears.length;
+
+	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
+
+	const filteredModels = useMemo(() => {
+		const searchValue = deferredSearch.trim().toLowerCase();
+		const prepared = models.map((model) => {
+			const endpoints = Array.from(normalizedSet(model.gateway_endpoints));
+			const inputModalities = Array.from(
+				normalizedModalitySet(model.gateway_input_modalities),
+			);
+			const outputModalities = Array.from(
+				normalizedModalitySet(model.gateway_output_modalities),
+			);
+			const features = Array.from(normalizedSet(model.gateway_features));
+			const providerNames = Array.from(
+				normalizedSet(model.gateway_provider_names),
+			);
+			const apiModelIds = Array.from(
+				normalizedSet(model.gateway_api_model_ids),
+			);
+			const supportedParameters = Array.from(
+				normalizedSet(model.supported_parameters),
+			);
+			const maxContextLength = Math.max(
+				...((model.context_lengths ?? [])
+					.map((value) => Number(value))
+					.filter((value) => Number.isFinite(value) && value > 0)),
+			);
+
+			return {
+				model,
+				status: getGatewayStatusBucket(model.gateway_status),
+				endpointsSet: new Set(endpoints),
+				inputModalitiesSet: new Set(inputModalities),
+				outputModalitiesSet: new Set(outputModalities),
+				featuresSet: new Set(features),
+				providerNamesSet: new Set(providerNames),
+				supportedParametersSet: new Set(supportedParameters),
+				maxContextLength:
+					Number.isFinite(maxContextLength) && maxContextLength > 0
+						? maxContextLength
+						: null,
+				creator: String(model.organisation_name ?? "").trim(),
+				modelYear: getModelYear(model),
+				searchIndex: [
+					String(model.name ?? "").trim(),
+					String(model.model_id ?? "").trim(),
+					...apiModelIds,
+				]
+					.join(" ")
+					.toLowerCase(),
+				sortPrice: getSortPrice(model),
+				sortContext: getSortContext(model),
+				popularityWeek:
+					Number.isFinite(Number(model.popularity_tokens_week)) &&
+					Number(model.popularity_tokens_week) > 0
+						? Number(model.popularity_tokens_week)
+						: null,
+				throughputWeek:
+					Number.isFinite(Number(model.throughput_week)) &&
+					Number(model.throughput_week) > 0
+						? Number(model.throughput_week)
+						: null,
+				latencyWeek:
+					Number.isFinite(Number(model.latency_week)) &&
+					Number(model.latency_week) > 0
+						? Number(model.latency_week)
+						: null,
+			};
+		});
+		const compareByNewest = (a: PreparedModel, b: PreparedModel) => {
+			const tsA = a.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
+			const tsB = b.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
+			if (tsA !== tsB) return tsB - tsA;
+			return (a.model.name ?? "").localeCompare(b.model.name ?? "");
+		};
+
+		const filtered = prepared
+			.filter((prepared) => {
+				if (
+					selectedStatuses.length > 0 &&
+					!selectedStatuses.includes(prepared.status)
+				) {
+					return false;
+				}
+				if (
+					selectedEndpoints.length > 0 &&
+					!selectedEndpoints.every((value) => prepared.endpointsSet.has(value))
+				) {
+					return false;
+				}
+				if (
+					selectedInputModalities.length > 0 &&
+					!selectedInputModalities.every((value) =>
+						prepared.inputModalitiesSet.has(value),
+					)
+				) {
+					return false;
+				}
+				if (
+					selectedOutputModalities.length > 0 &&
+					!selectedOutputModalities.every((value) =>
+						prepared.outputModalitiesSet.has(value),
+					)
+				) {
+					return false;
+				}
+				if (
+					selectedFeatures.length > 0 &&
+					!selectedFeatures.every((value) => prepared.featuresSet.has(value))
+				) {
+					return false;
+				}
+				if (
+					selectedContextMin > 0 &&
+					(!prepared.maxContextLength ||
+						prepared.maxContextLength < selectedContextMin)
+				) {
+					return false;
+				}
+				if (
+					selectedSupportedParameters.length > 0 &&
+					!selectedSupportedParameters.every((value) =>
+						prepared.supportedParametersSet.has(value),
+					)
+				) {
+					return false;
+				}
+				if (
+					selectedProviders.length > 0 &&
+					!selectedProviders.every((value) =>
+						prepared.providerNamesSet.has(value),
+					)
+				) {
+					return false;
+				}
+				if (
+					selectedCreators.length > 0 &&
+					!selectedCreators.includes(prepared.creator)
+				) {
+					return false;
+				}
+				if (selectedYears.length > 0 && !selectedYears.includes(prepared.modelYear)) {
+					return false;
+				}
+
+				if (!searchValue) return true;
+				return prepared.searchIndex.includes(searchValue);
+			});
+
+		const compareBySelectedSort = (a: PreparedModel, b: PreparedModel) => {
+			switch (selectedSort) {
+				case "price_low_to_high":
+					return compareNullableNumber(a.sortPrice, b.sortPrice, "asc");
+				case "price_high_to_low":
+					return compareNullableNumber(a.sortPrice, b.sortPrice, "desc");
+				case "context_high_to_low":
+					return compareNullableNumber(a.sortContext, b.sortContext, "desc");
+				case "throughput_high_to_low":
+					return compareNullableNumber(a.throughputWeek, b.throughputWeek, "desc");
+				case "latency_low_to_high":
+					return compareNullableNumber(a.latencyWeek, b.latencyWeek, "asc");
+				case "popular_week":
+					return compareNullableNumber(a.popularityWeek, b.popularityWeek, "desc");
+				case "newest":
+				default:
+					return compareByNewest(a, b);
+			}
+		};
+
+		filtered.sort((a, b) => {
+			const bySelectedSort = compareBySelectedSort(a, b);
+			if (bySelectedSort !== 0) return bySelectedSort;
+			return compareByNewest(a, b);
+		});
+
+		return filtered.map((prepared) => prepared.model);
+	}, [
+		deferredSearch,
+		models,
+		selectedSort,
+		selectedContextMin,
+		selectedCreators,
+		selectedEndpoints,
+		selectedFeatures,
+		selectedInputModalities,
+		selectedOutputModalities,
+		selectedProviders,
+		selectedStatuses,
+		selectedSupportedParameters,
+		selectedYears,
+	]);
+
+	const resetFilters = () => {
+		setSelectedStatuses([]);
+		setSelectedEndpoints([]);
+		setSelectedInputModalities([]);
+		setSelectedOutputModalities([]);
+		setSelectedFeatures([]);
+		setSelectedContextMin(0);
+		setSelectedSupportedParameters([]);
+		setSelectedProviders([]);
+		setSelectedCreators([]);
+		setSelectedYears([]);
+	};
 
 	const buildHref = (path: string, options?: { toTable?: boolean }) => {
 		const params = new URLSearchParams(searchParams?.toString() ?? "");
@@ -42,172 +746,528 @@ export default function ModelsDisplay({
 			} else {
 				params.delete("search");
 			}
+			params.delete("q");
+			const statuses = parseGatewayStatusParam(params.get("statuses"));
+			if (statuses.length === 1) {
+				params.set("statuses", statuses[0] === "active" ? "active" : "inactive");
+			} else {
+				params.delete("statuses");
+			}
 		}
 		const qs = params.toString();
 		return qs ? `${path}?${qs}` : path;
 	};
 
+	const gatewayStatusOptions: OptionCount[] = [
+		{ value: "active", count: statusCounts.active },
+		{ value: "not_active", count: statusCounts.not_active },
+	];
+
+	const handleFilterSectionChange = (sections: string[]) => {
+		setOpenFilterSections(sections);
+	};
+
+	const shownCountLabel = `${filteredModels.length.toLocaleString()} shown`;
+	const shownCountWithSearchLabel = search
+		? `${shownCountLabel} for "${search}"`
+		: shownCountLabel;
+
+	const viewSwitcher = (
+		<div className="inline-flex rounded-md overflow-hidden border bg-background">
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						size="sm"
+						asChild
+						variant={!isTable ? "default" : "outline"}
+						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+					>
+						<Link
+							href={buildHref("/models")}
+							prefetch={false}
+							aria-label="Card view"
+						>
+							<GridIcon className="h-4 w-4" />
+						</Link>
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="top">Card view</TooltipContent>
+			</Tooltip>
+
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						size="sm"
+						variant={isTable ? "default" : "outline"}
+						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+						asChild
+					>
+						<Link
+							href={buildHref("/models/table", {
+								toTable: true,
+							})}
+							prefetch={false}
+							aria-label="Table view"
+						>
+							<TableIcon className="h-4 w-4" />
+						</Link>
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="top">Table view</TooltipContent>
+			</Tooltip>
+
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						size="sm"
+						variant={isCollections ? "default" : "outline"}
+						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+						asChild
+					>
+						<Link
+							href={buildHref("/models/collections")}
+							prefetch={false}
+							aria-label="Collections view"
+						>
+							<LayersIcon className="h-4 w-4" />
+						</Link>
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="top">Collections</TooltipContent>
+			</Tooltip>
+		</div>
+	);
+
+	const sortSelect = (triggerClassName: string) => (
+		<Select
+			value={selectedSort}
+			onValueChange={(value) => {
+				const nextSort = normalizeSortOption(value);
+				setSort(nextSort === "newest" ? null : nextSort);
+			}}
+		>
+			<SelectTrigger className={triggerClassName}>
+				<SelectValue placeholder="Sort by" />
+			</SelectTrigger>
+			<SelectContent align="end">
+				{MODELS_SORT_OPTIONS.map((option) => (
+					<SelectItem key={option} value={option}>
+						{SORT_OPTION_LABELS[option]}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
+	);
+
+	const filtersContent = (
+		<Accordion
+			type="multiple"
+			value={openFilterSections}
+			onValueChange={handleFilterSectionChange}
+			className="w-full"
+		>
+			<AccordionItem value="gatewayStatus" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Activity className="h-4 w-4 text-muted-foreground" />
+						Gateway Status
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={gatewayStatusOptions}
+						selected={selectedStatuses}
+						onToggle={(value) =>
+							setSelectedStatuses(toggleInList(selectedStatuses, value))
+						}
+						labelForValue={(value) => {
+							if (value === "active") return "Active On Gateway";
+							return "Not Active";
+						}}
+						iconForValue={(value) => {
+							if (value === "active") return Activity;
+							return Database;
+						}}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="inputModalities" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
+						Input Modalities
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={inputModalityOptions}
+						selected={selectedInputModalities}
+						onToggle={(value) =>
+							setSelectedInputModalities(
+								toggleInList(selectedInputModalities, value),
+							)
+						}
+						iconForValue={getModalityIcon}
+						labelForValue={toTitleCase}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="outputModalities" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+						Output Modalities
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={outputModalityOptions}
+						selected={selectedOutputModalities}
+						onToggle={(value) =>
+							setSelectedOutputModalities(
+								toggleInList(selectedOutputModalities, value),
+							)
+						}
+						iconForValue={getModalityIcon}
+						labelForValue={toTitleCase}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="contextLength" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Binary className="h-4 w-4 text-muted-foreground" />
+						Context Length
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<div className="space-y-2 px-2 pb-1.5 pt-1">
+						<Slider
+							value={[selectedContextStopIndex]}
+							min={0}
+							max={CONTEXT_LENGTH_STOPS.length - 1}
+							step={1}
+							onValueChange={(next) => {
+								const nextIndex = Number(next[0] ?? 0);
+								const clamped = Math.min(
+									Math.max(nextIndex, 0),
+									CONTEXT_LENGTH_STOPS.length - 1,
+								);
+								setSelectedContextMin(CONTEXT_LENGTH_STOPS[clamped] ?? 0);
+							}}
+							aria-label="Minimum context length"
+						/>
+						<div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
+							<span>{formatContextStop(CONTEXT_LENGTH_STOPS[0])}</span>
+							<span>
+								{selectedContextMin > 0
+									? `Min ${formatContextStop(selectedContextMin)} tokens`
+									: "No minimum"}
+							</span>
+							<span>
+								{formatContextStop(
+									CONTEXT_LENGTH_STOPS[CONTEXT_LENGTH_STOPS.length - 1],
+								)}
+							</span>
+						</div>
+						<div className="flex justify-center">
+							{selectedContextMin > 0 ? (
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-7 px-2 text-xs"
+									onClick={() => setSelectedContextMin(0)}
+								>
+									Reset
+								</Button>
+							) : null}
+						</div>
+					</div>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="supportedParameters" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+						Supported Parameters
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={supportedParameterOptions}
+						selected={selectedSupportedParameters}
+						onToggle={(value) =>
+							setSelectedSupportedParameters(
+								toggleInList(selectedSupportedParameters, value),
+							)
+						}
+						labelForValue={toTitleCase}
+						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="providers" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Route className="h-4 w-4 text-muted-foreground" />
+						Providers
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={providerOptions}
+						selected={selectedProviders}
+						onToggle={(value) =>
+							setSelectedProviders(toggleInList(selectedProviders, value))
+						}
+						labelForValue={(value) => value}
+						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="modelCreators" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<TypeIcon className="h-4 w-4 text-muted-foreground" />
+						Model Creators
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={creatorOptions}
+						selected={selectedCreators}
+						onToggle={(value) =>
+							setSelectedCreators(toggleInList(selectedCreators, value))
+						}
+						labelForValue={(value) => value}
+						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="features" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Sparkles className="h-4 w-4 text-muted-foreground" />
+						Features
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={featureOptions}
+						selected={selectedFeatures}
+						onToggle={(value) =>
+							setSelectedFeatures(toggleInList(selectedFeatures, value))
+						}
+						labelForValue={(value) => featureLabels[value] ?? value}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="endpoints" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Route className="h-4 w-4 text-muted-foreground" />
+						Endpoints
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={endpointOptions}
+						selected={selectedEndpoints}
+						onToggle={(value) =>
+							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
+						}
+						labelForValue={(value) => value}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="year" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<CalendarDays className="h-4 w-4 text-muted-foreground" />
+						Year
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={yearOptions}
+						selected={selectedYears}
+						onToggle={(value) =>
+							setSelectedYears(toggleInList(selectedYears, value))
+						}
+						labelForValue={(value) => value}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+		</Accordion>
+	);
+
 	return (
-		<>
-			<div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-				<div className="flex items-center w-full md:w-auto">
-					<h1 className="font-bold text-xl mb-2 md:mb-0">Models</h1>
+		<div className="flex w-full flex-1">
+			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
+				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
+						<div className="space-y-4 px-4 py-2 pb-6">{filtersContent}</div>
+					</ScrollArea>
+				</div>
+			</aside>
 
-					<div className="ml-2 md:hidden">
-						<div className="inline-flex rounded-md overflow-hidden border bg-background">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										asChild
-										variant={!isTable ? "default" : "outline"}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-									>
-										<Link
-											href={buildHref("/models")}
-											prefetch={false}
-											aria-label="Card view"
-										>
-											<GridIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Card view
-								</TooltipContent>
-							</Tooltip>
+			<section className="min-w-0 flex flex-1 flex-col">
+				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
+					<div className="sm:hidden space-y-2">
+						<div className="flex items-center justify-between gap-2">
+							<h1 className="font-bold text-xl leading-8">Models</h1>
+							<div className="flex items-center justify-end gap-2 min-w-0">
+								<span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+									{shownCountLabel}
+								</span>
+								{viewSwitcher}
+							</div>
+						</div>
 
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										variant={isTable ? "default" : "outline"}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-										asChild
-									>
-										<Link
-											href={buildHref("/models/table", {
-												toTable: true,
-											})}
-											prefetch={false}
-											aria-label="Table view"
-										>
-											<TableIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Table view
-								</TooltipContent>
-							</Tooltip>
+						<div className="relative w-full">
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+							<Input
+								placeholder="Search"
+								value={search}
+								onChange={(e) =>
+									setSearch(e.target.value || null, {
+										limitUrlUpdates: debounce(250),
+									})
+								}
+								className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+								style={{ minWidth: 0 }}
+							/>
+						</div>
 
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										variant={isCollections ? "default" : "outline"}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-										asChild
-									>
-										<Link
-											href={buildHref("/models/collections")}
-											prefetch={false}
-											aria-label="Collections view"
-										>
-											<LayersIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Collections
-								</TooltipContent>
-							</Tooltip>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-8 flex-1 justify-center gap-1.5"
+								onClick={() => setMobileFiltersOpen(true)}
+							>
+								<SlidersHorizontal className="h-3.5 w-3.5" />
+								Filters
+								{activeFilterCount > 0 ? (
+									<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
+										{activeFilterCount}
+									</span>
+								) : null}
+							</Button>
+							<div className="flex flex-1 items-center gap-1">
+								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+									<ArrowUpDown className="h-3.5 w-3.5" />
+								</span>
+								{sortSelect("h-8 w-full rounded-md bg-background text-sm")}
+							</div>
+						</div>
+					</div>
+
+					<div className="hidden sm:block">
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(260px,460px)_auto] sm:items-center sm:gap-3">
+							<div className="min-w-0 sm:flex sm:h-8 sm:items-center">
+								<h1 className="font-bold text-xl leading-8">Models</h1>
+							</div>
+
+							<div className="relative w-full sm:justify-self-center">
+								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+								<Input
+									placeholder="Search"
+									value={search}
+									onChange={(e) =>
+										setSearch(e.target.value || null, {
+											limitUrlUpdates: debounce(250),
+										})
+									}
+									className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+									style={{ minWidth: 0 }}
+								/>
+							</div>
+
+							<div className="flex items-center justify-end gap-2 sm:justify-self-end">
+								{viewSwitcher}
+							</div>
+						</div>
+
+						<div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+							<div className="flex items-center gap-2">
+								<div className="text-sm text-muted-foreground">
+									{shownCountWithSearchLabel}
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-8 gap-1.5 lg:hidden"
+									onClick={() => setMobileFiltersOpen(true)}
+								>
+									<SlidersHorizontal className="h-3.5 w-3.5" />
+									Filters
+									{activeFilterCount > 0 ? (
+										<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
+											{activeFilterCount}
+										</span>
+									) : null}
+								</Button>
+							</div>
+							<div className="flex items-center gap-2">
+								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+									<ArrowUpDown className="h-3.5 w-3.5" />
+									Sort
+								</span>
+								{sortSelect("h-8 w-[170px] rounded-md bg-background text-sm sm:w-[200px]")}
+							</div>
 						</div>
 					</div>
 				</div>
 
-				<div className="relative w-full md:w-1/5">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-					<Input
-						placeholder="Search models..."
-						value={search}
-						onChange={(e) =>
-							setSearch(e.target.value || null, {
-								limitUrlUpdates: debounce(250),
-							})
-						}
-						className="pl-9 pr-2 py-1.5 text-sm rounded-full bg-background border focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
-						style={{ minWidth: 0 }}
-					/>
+				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
+					<ModelsGrid filteredModels={filteredModels} />
 				</div>
-				<div className="hidden md:flex items-center">
-					<div className="inline-flex rounded-md overflow-hidden border bg-background">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="sm"
-									asChild
-									variant={!isTable ? "default" : "outline"}
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-								>
-									<Link
-										href={buildHref("/models")}
-										prefetch={false}
-										aria-label="Card view"
-									>
-										<GridIcon className="h-4 w-4" />
-									</Link>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">Card view</TooltipContent>
-						</Tooltip>
+			</section>
 
-						<Tooltip>
-							<TooltipTrigger asChild>
+			<Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+				<SheetContent
+					side="right"
+					className="w-[86vw] max-w-sm gap-0 p-0 lg:hidden"
+				>
+					<SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
+						<div className="flex items-start justify-between gap-3 pr-8">
+							<div>
+								<SheetTitle>Filters</SheetTitle>
+								<SheetDescription>
+									Refine the models list.
+								</SheetDescription>
+							</div>
+							{activeFilterCount > 0 ? (
 								<Button
+									type="button"
+									variant="ghost"
 									size="sm"
-									variant={isTable ? "default" : "outline"}
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-									asChild
+									className="h-8 px-2"
+									onClick={resetFilters}
 								>
-									<Link
-										href={buildHref("/models/table", {
-											toTable: true,
-										})}
-										prefetch={false}
-										aria-label="Table view"
-									>
-										<TableIcon className="h-4 w-4" />
-									</Link>
+									Reset
 								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">Table view</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									size="sm"
-									variant={isCollections ? "default" : "outline"}
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-									asChild
-								>
-									<Link
-										href={buildHref("/models/collections")}
-										prefetch={false}
-										aria-label="Collections view"
-									>
-										<LayersIcon className="h-4 w-4" />
-									</Link>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side="top">Collections</TooltipContent>
-						</Tooltip>
-					</div>
-				</div>
-			</div>
-
-			<ModelsGrid filteredModels={models} />
-		</>
+							) : null}
+						</div>
+					</SheetHeader>
+					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain px-4 py-2">
+						<div className="space-y-4 pb-6">{filtersContent}</div>
+					</ScrollArea>
+				</SheetContent>
+			</Sheet>
+		</div>
 	);
 }

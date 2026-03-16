@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ChatThread } from "@/lib/indexeddb/chats";
+import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
 import {
 	ArrowUpRight,
 	Database,
@@ -125,6 +126,8 @@ export function ChatSidebar({
 				<div className="mb-2 h-px w-full bg-border" />
 			</SidebarHeader>
 			<SidebarContent>
+				<ChatRoomSwitcher />
+				<SidebarSeparator className="my-0" />
 				<div className="px-2 pt-2 pb-0">
 					<Button
 						variant="ghost"

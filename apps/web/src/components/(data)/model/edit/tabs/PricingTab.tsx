@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { deletePricingRule } from "@/app/(dashboard)/models/actions"
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters"
 import { createClient } from "@/utils/supabase/client"
 
@@ -491,15 +490,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
       return [...prev, { ...existing, id: createId("new-rule") }]
     })
 
-  const removeRule = async (id: string) => {
-    if (!id.startsWith("new-")) {
-      try {
-        await deletePricingRule(id)
-      } catch (error) {
-        console.error("Error deleting pricing rule:", error)
-        return
-      }
-    }
+  const removeRule = (id: string) => {
     setPricingRules((prev) => prev.filter((row) => row.id !== id))
   }
 
@@ -550,6 +541,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
           <Label className="text-sm font-semibold">Pricing Rules</Label>
           <p className="text-xs text-muted-foreground">
             Build rule-based pricing by provider model, capability, and optional conditions.
+            Changes are staged locally and saved when you click Save Pricing.
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={addRule}>
@@ -593,7 +585,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => void removeRule(rule.id)}
+                    onClick={() => removeRule(rule.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

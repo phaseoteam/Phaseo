@@ -1,9 +1,18 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { IRVideoGenerationRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "./index";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+
+vi.mock("@core/video-reservations", () => ({
+	reserveVideoGenerationCredits: vi.fn(async () => ({
+		reservationId: "video_hold:req_openai_video_test",
+		held: false,
+		amountNanos: 0,
+		status: "skip_zero_cost",
+	})),
+}));
 
 function buildArgs(ir: IRVideoGenerationRequest): ExecutorExecuteArgs {
 	return {
@@ -90,7 +99,7 @@ describe("openai video executor", () => {
 			model: "openai/sora-2",
 			prompt: "Pan through a futuristic city",
 			seconds: 6,
-			size: "1280x720",
+			resolution: "1280x720",
 			inputImage: {
 				url: "https://example.com/reference.png",
 			},

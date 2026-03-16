@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { deleteBenchmarkResult } from "@/app/(dashboard)/models/actions"
 import { createClient } from "@/utils/supabase/client"
 
 interface BenchmarkResult {
@@ -97,22 +96,19 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
     setBenchmarks(benchmarks.map((b) => (b.id === id ? { ...b, [field]: value } : b)))
   }
 
-  const removeBenchmark = async (id: string) => {
-    if (!id.startsWith("new-")) {
-      try {
-        await deleteBenchmarkResult(id)
-      } catch (err) {
-        console.error("Error deleting benchmark:", err)
-        return
-      }
-    }
+  const removeBenchmark = (id: string) => {
     setBenchmarks(benchmarks.filter((b) => b.id !== id))
   }
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold">Benchmark Results</Label>
+        <div>
+          <Label className="text-sm font-semibold">Benchmark Results</Label>
+          <p className="text-xs text-muted-foreground">
+            Changes are staged locally and saved when you click Save Benchmarks.
+          </p>
+        </div>
         <Button
           variant="outline"
           size="sm"

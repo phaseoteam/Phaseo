@@ -1,0 +1,30 @@
+---
+title: "Structured Output (AI SDK)"
+description: "Generate schema-validated JSON objects with AI Stats and Vercel AI SDK."
+---
+
+Use `generateObject` for typed outputs.
+
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { generateObject } from "ai";
+import { z } from "zod";
+
+const { object } = await generateObject({
+  model: aiStats("openai/gpt-5-nano"),
+  schema: z.object({
+    title: z.string(),
+    priority: z.enum(["low", "medium", "high"]),
+    actions: z.array(z.string()),
+  }),
+  prompt: "Create a short incident follow-up plan.",
+});
+
+console.log(object);
+```
+
+## Notes
+
+- Prefer explicit enums and required fields in schemas.
+- Keep prompts aligned with the schema shape.
+- Handle parse/validation errors in caller code.

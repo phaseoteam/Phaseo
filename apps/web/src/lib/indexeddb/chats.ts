@@ -1,3 +1,5 @@
+import type { ChatRoomId } from "@/lib/chat/rooms";
+
 export type ChatMessageVariant = {
     id: string;
     content: string;
@@ -24,8 +26,11 @@ export type UnifiedChatEndpoint =
     | "responses"
     | "images.generations"
     | "video.generation"
-    | "music.generate"
-    | "audio.speech";
+    | "audio.speech"
+    | "audio.transcription"
+    | "audio.translation"
+    | "moderations"
+    | "embeddings";
 
 export type ChatModelSettings = {
     temperature: number | null;
@@ -69,8 +74,20 @@ export type ChatThread = {
 };
 
 const DB_NAME = "ai-stats-chat";
-const DB_VERSION = 1;
-const STORE_NAME = "chats";
+const DB_VERSION = 2;
+const LEGACY_TEXT_STORE_NAME = "chats";
+const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
+    text: LEGACY_TEXT_STORE_NAME,
+    image: "chats-image",
+    video: "chats-video",
+    audio: "chats-audio",
+    moderation: "chats-moderation",
+    embeddings: "chats-embeddings",
+};
+
+function getStoreName(roomId: ChatRoomId): string {
+    return ROOM_STORE_NAMES[roomId];
+}
 
 function openDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -83,8 +100,10 @@ function openDb(): Promise<IDBDatabase> {
         request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
         request.onupgradeneeded = () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME, { keyPath: "id" });
+            for (const storeName of Object.values(ROOM_STORE_NAMES)) {
+                if (!db.objectStoreNames.contains(storeName)) {
+                    db.createObjectStore(storeName, { keyPath: "id" });
+                }
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -93,34 +112,51 @@ function openDb(): Promise<IDBDatabase> {
 
 async function withStore<T>(
     mode: IDBTransactionMode,
-    fn: (store: IDBObjectStore) => IDBRequest<T>
+    fn: (store: IDBObjectStore) => IDBRequest<T>,
+    roomId: ChatRoomId = "text",
 ): Promise<T> {
     const db = await openDb();
+    const storeName = getStoreName(roomId);
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, mode);
-        const store = tx.objectStore(STORE_NAME);
+        const tx = db.transaction(storeName, mode);
+        const store = tx.objectStore(storeName);
         const request = fn(store);
         request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
         request.onsuccess = () => resolve(request.result);
     });
 }
 
-export async function getAllChats(): Promise<ChatThread[]> {
-    const result = await withStore<ChatThread[]>("readonly", (store) => store.getAll());
+export async function getAllChats(roomId: ChatRoomId = "text"): Promise<ChatThread[]> {
+    const result = await withStore<ChatThread[]>(
+        "readonly",
+        (store) => store.getAll(),
+        roomId,
+    );
     return Array.isArray(result) ? result : [];
 }
 
-export async function getChat(id: string): Promise<ChatThread | null> {
-    const result = await withStore<ChatThread | undefined>("readonly", (store) =>
-        store.get(id)
+export async function getChat(
+    id: string,
+    roomId: ChatRoomId = "text",
+): Promise<ChatThread | null> {
+    const result = await withStore<ChatThread | undefined>(
+        "readonly",
+        (store) => store.get(id),
+        roomId,
     );
     return result ?? null;
 }
 
-export async function upsertChat(chat: ChatThread): Promise<void> {
-    await withStore("readwrite", (store) => store.put(chat));
+export async function upsertChat(
+    chat: ChatThread,
+    roomId: ChatRoomId = "text",
+): Promise<void> {
+    await withStore("readwrite", (store) => store.put(chat), roomId);
 }
 
-export async function deleteChat(id: string): Promise<void> {
-    await withStore("readwrite", (store) => store.delete(id));
+export async function deleteChat(
+    id: string,
+    roomId: ChatRoomId = "text",
+): Promise<void> {
+    await withStore("readwrite", (store) => store.delete(id), roomId);
 }

@@ -36906,9 +36906,124 @@ components:
           type: string
           format: binary
       required: []
+    EmbeddingsMultimodalInput:
+      type: object
+      additionalProperties: true
+      description: Google multimodal embeddings extension item.
+      required:
+        - content
+      properties:
+        content:
+          type: array
+          minItems: 1
+          items:
+            anyOf:
+              - type: object
+                required:
+                  - type
+                  - text
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - input_text
+                  text:
+                    type: string
+              - type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - image_url
+                      - input_image
+                      - image
+                  image_url:
+                    anyOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                  url:
+                    anyOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                anyOf:
+                  - required:
+                      - image_url
+                  - required:
+                      - url
+              - type: object
+                required:
+                  - type
+                  - input_audio
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - input_audio
+                  input_audio:
+                    type: object
+                    properties:
+                      data:
+                        type: string
+                      url:
+                        type: string
+                      format:
+                        type: string
+                    anyOf:
+                      - required:
+                          - data
+                      - required:
+                          - url
+              - type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - input_video
+                      - video_url
+                  video_url:
+                    anyOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                  url:
+                    anyOf:
+                      - type: string
+                      - type: object
+                        required:
+                          - url
+                        properties:
+                          url:
+                            type: string
+                anyOf:
+                  - required:
+                      - video_url
+                  - required:
+                      - url
     CreateEmbeddingRequest:
       type: object
       additionalProperties: false
+      required:
+        - model
+        - input
       properties:
         input:
           description: >
@@ -36927,50 +37042,25 @@ components:
               default: ''
               example: This is a test.
             - type: array
-              title: Array of strings
-              description: The array of strings that will be turned into an embedding.
-              minItems: 1
-              maxItems: 2048
-              items:
-                type: string
-                default: ''
-                example: '[''This is a test.'']'
-            - type: array
               title: Array of tokens
               description: The array of integers that will be turned into an embedding.
               minItems: 1
               maxItems: 2048
               items:
                 type: integer
+            - $ref: '#/components/schemas/EmbeddingsMultimodalInput'
             - type: array
-              title: Array of token arrays
-              description: The array of arrays containing integers that will be turned into an embedding.
+              title: Array of embedding inputs
               minItems: 1
               maxItems: 2048
               items:
-                type: array
-                minItems: 1
-                items:
-                  type: integer
-        inputs:
-          description: >
-            Alias for `input`. Use this when sending batched inputs as a convenience field. One of
-            `input` or `inputs` is required.
-          anyOf:
-            - type: string
-              title: string
-              description: The string that will be turned into an embedding.
-              default: ''
-              example: This is a test.
-            - type: array
-              title: Array of strings
-              description: The array of strings that will be turned into an embedding.
-              minItems: 1
-              maxItems: 2048
-              items:
-                type: string
-                default: ''
-                example: '[''This is a test.'']'
+                anyOf:
+                  - type: string
+                  - type: array
+                    minItems: 1
+                    items:
+                      type: integer
+                  - $ref: '#/components/schemas/EmbeddingsMultimodalInput'
         model:
           description: >
             ID of the model to use. You can use the [List
@@ -37003,7 +37093,7 @@ components:
             `text-embedding-3` and later models.
           type: integer
           minimum: 1
-        embedding_options:
+        provider_options:
           type: object
           description: >
             Provider-specific embedding options. Use nested objects keyed by provider.
@@ -37013,11 +37103,6 @@ components:
               type: object
               additionalProperties: false
               properties:
-                output_dimensionality:
-                  description: >
-                    Output dimensionality hint for Gemini embeddings (`outputDimensionality`).
-                  type: integer
-                  minimum: 1
                 task_type:
                   description: >
                     Task type for Gemini embeddings, such as `RETRIEVAL_QUERY` or `RETRIEVAL_DOCUMENT`.
@@ -37036,13 +37121,6 @@ components:
               type: object
               additionalProperties: false
               properties:
-                output_dimension:
-                  description: >
-                    The number of dimensions the resulting output embeddings should have for providers that
-                    support explicit output sizing (e.g. Mistral). If set, overrides `dimensions`.
-                  type: integer
-                  minimum: 1
-                  nullable: true
                 output_dtype:
                   description: >
                     Output data type for embeddings when supported by the provider (e.g. Mistral).
@@ -37059,13 +37137,6 @@ components:
           description: >
             A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
             [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#end-user-ids).
-      anyOf:
-        - required:
-            - model
-            - input
-        - required:
-            - model
-            - inputs
     CreateEmbeddingResponse:
       type: object
       properties:
@@ -66264,11 +66335,6 @@ components:
         seconds:
           $ref: '#/components/schemas/VideoSeconds'
           description: 'Clip duration in seconds (allowed values: 4, 8, 12). Defaults to 4 seconds.'
-        size:
-          $ref: '#/components/schemas/VideoSize'
-          description: >-
-            Output resolution formatted as width x height (allowed values: 720x1280, 1280x720, 1024x1792,
-            1792x1024). Defaults to 720x1280.
         duration_seconds:
           type: integer
           description: Optional duration override in seconds for providers that accept durationSeconds.

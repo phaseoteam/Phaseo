@@ -4,25 +4,80 @@
 
 import type { IREmbeddingsRequest, IREmbeddingsResponse } from "@core/ir";
 
+function toOpenAIEmbeddingsPart(part: any): Record<string, any> {
+	switch (part?.type) {
+		case "text":
+			return { type: "input_text", text: part.text ?? "" };
+		case "image":
+			return {
+				type: "input_image",
+				image_url: {
+					url: part.source === "data"
+						? `data:${part.mimeType || "image/jpeg"};base64,${part.data}`
+						: part.data,
+				},
+			};
+		case "audio":
+			return {
+				type: "input_audio",
+				input_audio: part.source === "url"
+					? { url: part.data, ...(part.format ? { format: part.format } : {}) }
+					: { data: part.data, ...(part.format ? { format: part.format } : {}) },
+			};
+		case "video":
+			return {
+				type: "input_video",
+				video_url: { url: part.url },
+			};
+		default:
+			return { type: "input_text", text: String(part ?? "") };
+	}
+}
+
+function encodeEmbeddingsInput(input: IREmbeddingsRequest["input"]): any {
+	const encodeItem = (item: any): any => {
+		if (typeof item === "string") return item;
+		if (Array.isArray(item) && item.every((entry) => typeof entry === "number")) {
+			return item;
+		}
+		if (Array.isArray(item)) {
+			return item.map((part) => toOpenAIEmbeddingsPart(part));
+		}
+		return item;
+	};
+
+	if (Array.isArray(input) && input.every((entry) => typeof entry === "number")) {
+		return input;
+	}
+	if (Array.isArray(input) && input.every((entry) => typeof entry === "object")) {
+		const looksLikeSinglePartsArray = input.some((entry) => (entry as any)?.type != null);
+		if (looksLikeSinglePartsArray) {
+			return input.map((part) => toOpenAIEmbeddingsPart(part));
+		}
+	}
+	if (Array.isArray(input)) {
+		return input.map((item) => encodeItem(item));
+	}
+	return encodeItem(input);
+}
+
 export function encodeOpenAIEmbeddingsRequest(ir: IREmbeddingsRequest): any {
 	return {
 		model: ir.model,
-		input: ir.input,
+		input: encodeEmbeddingsInput(ir.input),
 		encoding_format: ir.encodingFormat,
 		dimensions: ir.dimensions,
-		embedding_options: ir.embeddingOptions
+		provider_options: ir.providerOptions
 			? {
-					google: ir.embeddingOptions.google
+					google: ir.providerOptions.google
 						? {
-								output_dimensionality: ir.embeddingOptions.google.outputDimensionality,
-								task_type: ir.embeddingOptions.google.taskType,
-								title: ir.embeddingOptions.google.title,
+								task_type: ir.providerOptions.google.taskType,
+								title: ir.providerOptions.google.title,
 							}
 						: undefined,
-					mistral: ir.embeddingOptions.mistral
+					mistral: ir.providerOptions.mistral
 						? {
-								output_dimension: ir.embeddingOptions.mistral.outputDimension,
-								output_dtype: ir.embeddingOptions.mistral.outputDtype,
+								output_dtype: ir.providerOptions.mistral.outputDtype,
 							}
 						: undefined,
 				}
@@ -32,11 +87,28 @@ export function encodeOpenAIEmbeddingsRequest(ir: IREmbeddingsRequest): any {
 }
 
 export function encodeOpenAIEmbeddingsResponse(ir: IREmbeddingsResponse): any {
+	const inputTokensDetails = ir.usage?._ext
+		? {
+				...(typeof ir.usage._ext.inputImageTokens === "number"
+					? { input_images: ir.usage._ext.inputImageTokens }
+					: {}),
+				...(typeof ir.usage._ext.inputAudioTokens === "number"
+					? { input_audio: ir.usage._ext.inputAudioTokens }
+					: {}),
+				...(typeof ir.usage._ext.inputVideoTokens === "number"
+					? { input_videos: ir.usage._ext.inputVideoTokens }
+					: {}),
+			}
+		: undefined;
+
 	const usage = ir.usage
 		? {
 				input_tokens: ir.usage.inputTokens ?? ir.usage.embeddingTokens ?? 0,
 				total_tokens: ir.usage.totalTokens ?? ir.usage.inputTokens ?? 0,
 				embedding_tokens: ir.usage.embeddingTokens ?? ir.usage.inputTokens ?? 0,
+				...(inputTokensDetails && Object.keys(inputTokensDetails).length > 0
+					? { input_tokens_details: inputTokensDetails }
+					: {}),
 			}
 		: undefined;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shapeUsageForClient } from "./usage";
+import { shapeUsageForClient, stripUsagePricing } from "./usage";
 
 describe("shapeUsageForClient", () => {
 	it("preserves multimodal token details and exposes top-level token meters", () => {
@@ -62,6 +62,16 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.requests).toBe(7);
 	});
 
+	it("defaults text endpoints to one request when usage has no token meters", () => {
+		const shaped = shapeUsageForClient(
+			{},
+			{ endpoint: "responses", body: {} },
+		);
+
+		expect(shaped.requests).toBe(1);
+		expect(shaped.total_tokens).toBe(0);
+	});
+
 	it("maps Anthropic cache usage fields to gateway cache meters", () => {
 		const shaped = shapeUsageForClient({
 			input_tokens: 100,
@@ -73,7 +83,121 @@ describe("shapeUsageForClient", () => {
 
 		expect(shaped.cached_read_text_tokens).toBe(45);
 		expect(shaped.cached_write_text_tokens).toBe(12);
+		expect(shaped.input_text_tokens).toBe(100);
 		expect(shaped.input_tokens_details.cached_tokens).toBe(45);
 		expect(shaped.output_tokens_details.cached_tokens).toBe(12);
+	});
+
+	it("does not assume cached reads are subset without provider or explicit hint", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			input_tokens_details: {
+				cached_tokens: 64,
+			},
+		});
+
+		expect(shaped.input_text_tokens).toBe(123);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+
+	it("derives uncached input_text_tokens for known subset providers", () => {
+		const shaped = shapeUsageForClient({
+			_provider_id: "x-ai",
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			input_tokens_details: {
+				cached_tokens: 64,
+			},
+		});
+
+		expect(shaped.input_text_tokens).toBe(59);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+
+	it("derives uncached input_text_tokens for google providers", () => {
+		const shaped = shapeUsageForClient({
+			_provider_id: "google-ai-studio",
+			input_tokens: 200,
+			output_tokens: 10,
+			total_tokens: 210,
+			cached_read_text_tokens: 150,
+		});
+
+		expect(shaped.input_text_tokens).toBe(50);
+		expect(shaped.cached_read_text_tokens).toBe(150);
+	});
+
+	it("does not assume cached reads are subset for google-vertex without explicit hint", () => {
+		const shaped = shapeUsageForClient({
+			_provider_id: "google-vertex",
+			input_tokens: 200,
+			output_tokens: 10,
+			total_tokens: 210,
+			cached_read_text_tokens: 150,
+		});
+
+		expect(shaped.input_text_tokens).toBe(200);
+		expect(shaped.cached_read_text_tokens).toBe(150);
+	});
+
+	it("allows providers to opt out of cached-read subtraction", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			cached_read_text_tokens: 64,
+			cached_read_tokens_are_subset_of_input: false,
+		});
+
+		expect(shaped.input_text_tokens).toBe(123);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+
+	it("honors explicit cached-read subset hint", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			cached_read_text_tokens: 64,
+			cached_read_tokens_are_subset_of_input: true,
+		});
+
+		expect(shaped.input_text_tokens).toBe(59);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+});
+
+describe("stripUsagePricing", () => {
+	it("removes pricing fields and keeps usage meters", () => {
+		const stripped = stripUsagePricing({
+			input_tokens: 120,
+			output_tokens: 20,
+			total_tokens: 140,
+			requests: 1,
+			pricing: { total_nanos: 1234 },
+			pricing_breakdown: { total_nanos: 5678 },
+			cost_usd: 0.0001,
+			cost_usd_str: "0.0001",
+			cost_cents: 1,
+			currency: "USD",
+		});
+
+		expect(stripped.input_tokens).toBe(120);
+		expect(stripped.output_tokens).toBe(20);
+		expect(stripped.total_tokens).toBe(140);
+		expect(stripped.requests).toBe(1);
+		expect(stripped.pricing).toBeUndefined();
+		expect(stripped.pricing_breakdown).toBeUndefined();
+		expect(stripped.cost_usd).toBeUndefined();
+		expect(stripped.cost_usd_str).toBeUndefined();
+		expect(stripped.cost_cents).toBeUndefined();
+		expect(stripped.currency).toBeUndefined();
 	});
 });

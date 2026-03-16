@@ -1,4 +1,8 @@
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import {
+	getRoomScopedStorageKey,
+	type ChatRoomId,
+} from "@/lib/chat/rooms";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type {
 	ChatMessage,
@@ -148,18 +152,22 @@ export const getChangedSettings = (
 	return changes;
 };
 
-export const STORAGE_KEYS = {
-	apiKey: "ai-stats-chat-api-key",
-	baseUrl: "ai-stats-chat-base-url",
-	activeChatId: "ai-stats-chat-active-id",
-	lastModelId: "ai-stats-chat-last-model-id",
-	personalizationName: "ai-stats-chat-personal-name",
-	personalizationRole: "ai-stats-chat-personal-role",
-	personalizationNotes: "ai-stats-chat-personal-notes",
-	personalizationAccent: "ai-stats-chat-personal-accent",
-	notifyOnComplete: "ai-stats-chat-notify-on-complete",
-	debugMode: "ai-stats-chat-debug",
-};
+export function getRoomStorageKeys(roomId: ChatRoomId) {
+	return {
+		apiKey: getRoomScopedStorageKey(roomId, "api-key"),
+		baseUrl: getRoomScopedStorageKey(roomId, "base-url"),
+		activeChatId: getRoomScopedStorageKey(roomId, "active-id"),
+		lastModelId: getRoomScopedStorageKey(roomId, "last-model-id"),
+		personalizationName: getRoomScopedStorageKey(roomId, "personal-name"),
+		personalizationRole: getRoomScopedStorageKey(roomId, "personal-role"),
+		personalizationNotes: getRoomScopedStorageKey(roomId, "personal-notes"),
+		personalizationAccent: getRoomScopedStorageKey(roomId, "personal-accent"),
+		notifyOnComplete: getRoomScopedStorageKey(roomId, "notify-on-complete"),
+		debugMode: getRoomScopedStorageKey(roomId, "debug"),
+	};
+}
+
+export const STORAGE_KEYS = getRoomStorageKeys("text");
 
 export const PERSONALIZATION_ACCENT_COLORS: Array<{
 	label: string;
@@ -477,8 +485,6 @@ export function getEndpointResultLabel(endpoint: UnifiedChatEndpoint) {
 			return "Open generated audio";
 		case "video.generation":
 			return "Open generated video";
-		case "music.generate":
-			return "Open generated music";
 		case "images.generations":
 			return "Open generated image";
 		default:

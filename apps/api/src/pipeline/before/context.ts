@@ -875,13 +875,17 @@ export async function fetchGatewayContext(args: {
 
     const dbLoader = (async (): Promise<GatewayContextData> => {
         async function fetchParsedContext(model: string): Promise<GatewayContextData> {
-            const { data, error } = await supabase.rpc("gateway_fetch_request_context", {
+            const rpcArgs = {
                 team_id: args.teamId,
                 model,
                 endpoint: args.endpoint,
                 api_key_id: args.apiKeyId,
-            });
+            };
 
+            const { data, error } = await supabase.rpc(
+                "gateway_fetch_request_context_with_reservations",
+                rpcArgs,
+            );
             if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
             const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
             if (!payload) throw new Error("gateway_context_rpc_empty");
@@ -890,7 +894,6 @@ export async function fetchGatewayContext(args: {
                 return contextSchema.parse(payload);
             } catch (e) {
                 console.error("[context.ts] Zod parsing error:", e);
-                console.error("[context.ts] Payload that failed:", payload);
                 throw e;
             }
         }

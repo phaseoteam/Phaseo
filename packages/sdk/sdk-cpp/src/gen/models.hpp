@@ -265,15 +265,18 @@ struct Embedding {
 	std::string object;
 };
 
+struct EmbeddingsMultimodalInput {
+	std::vector<std::any> content;
+};
+
 struct EmbeddingsRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<int> dimensions;
-	std::map<std::string, std::any> embedding_options;
-	std::string encoding_format;
+	std::any encoding_format;
 	std::any input;
-	std::any inputs;
 	std::string model;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::string user;
 };
 
@@ -803,7 +806,6 @@ struct VideoGenerationRequest {
 	std::optional<int> sample_count;
 	std::any seconds;
 	std::optional<int> seed;
-	std::string size;
 };
 
 struct VideoGenerationResponse {

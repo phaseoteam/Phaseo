@@ -4,7 +4,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Analytics } from "@vercel/analytics/next";
 import { Montserrat } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
@@ -12,6 +11,8 @@ import { Metadata } from "next";
 import { METADATA_BASE, absoluteUrl } from "@/lib/seo";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { CookieConsentManager } from "@/components/analytics/CookieConsentManager";
+import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
+import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -71,6 +72,7 @@ export default function RootLayout({
 				)}
 			>
 				<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
+				<ConsoleEasterEgg />
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="system"
@@ -83,8 +85,9 @@ export default function RootLayout({
 					</TooltipProvider>
 				</ThemeProvider>
 				<Toaster richColors />
-				<Analytics />
+				<DeferredVercelAnalytics />
 			</body>
 		</html>
 	);
 }
+

@@ -101,6 +101,7 @@ export function LatencyChart({
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={chartData}
+					margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
 					syncId={syncId}
 					syncMethod="value"
 					onMouseMove={(state: any) => {
@@ -119,6 +120,7 @@ export function LatencyChart({
 					/>
 					<XAxis
 						dataKey="timestamp"
+						padding={{ left: 0, right: 0 }}
 						hide
 					/>
 					<YAxis
@@ -225,6 +227,7 @@ export function ThroughputChart({
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={chartData}
+					margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
 					syncId={syncId}
 					syncMethod="value"
 					onMouseMove={(state: any) => {
@@ -243,6 +246,7 @@ export function ThroughputChart({
 					/>
 					<XAxis
 						dataKey="timestamp"
+						padding={{ left: 0, right: 0 }}
 						hide
 					/>
 					<YAxis
@@ -349,6 +353,7 @@ export function E2ELatencyChart({
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={chartData}
+					margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
 					syncId={syncId}
 					syncMethod="value"
 					onMouseMove={(state: any) => {
@@ -367,6 +372,7 @@ export function E2ELatencyChart({
 					/>
 					<XAxis
 						dataKey="timestamp"
+						padding={{ left: 0, right: 0 }}
 						hide
 					/>
 					<YAxis

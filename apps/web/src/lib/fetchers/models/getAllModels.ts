@@ -13,9 +13,38 @@ export interface ModelCard {
     hidden?: boolean;
     release_date?: string | null;
     announcement_date?: string | null;
+    input_types?: string[];
+    output_types?: string[];
+    // Backward-compatibility alias used in some legacy call sites
+    input_modalities?: string[];
+    output_modalities?: string[];
     primary_date: string | null;
     primary_timestamp: number | null;
     primary_group_key: string | null;
+    model_source?: "api_backed" | "internal_only";
+    gateway_status?: "active" | "inactive" | "not_listed";
+    gateway_provider_count?: number;
+    gateway_active_provider_count?: number;
+    gateway_endpoints?: string[];
+    gateway_input_modalities?: string[];
+    gateway_output_modalities?: string[];
+    gateway_features?: string[];
+    gateway_provider_ids?: string[];
+    gateway_provider_names?: string[];
+    gateway_active_provider_names?: string[];
+    gateway_provider_details?: Array<{
+        id: string;
+        name: string;
+        is_active: boolean;
+    }>;
+    gateway_api_model_ids?: string[];
+    context_lengths?: number[];
+    supported_parameters?: string[];
+    lowest_input_price?: number | null;
+    lowest_output_price?: number | null;
+    popularity_tokens_week?: number | null;
+    throughput_week?: number | null;
+    latency_week?: number | null;
 }
 
 type PrimaryDateInfo = {
@@ -56,10 +85,28 @@ function derivePrimaryDate(raw: any): PrimaryDateInfo {
     };
 }
 
+function toStringList(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => String(item ?? "").trim())
+            .filter(Boolean);
+    }
+    if (typeof value === "string") {
+        return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+    return [];
+}
+
 export function mapRawToModelCard(
     raw: any,
     overrides: Partial<ModelCard> = {}
 ): ModelCard {
+    const inputTypes = toStringList(raw.input_types ?? raw.input_modalities);
+    const outputTypes = toStringList(raw.output_types ?? raw.output_modalities);
+
     const baseCard: ModelCard = {
         model_id: raw.model_id ?? raw.id ?? raw.slug ?? '',
         name: raw.name ?? '',
@@ -71,6 +118,10 @@ export function mapRawToModelCard(
         hidden: Boolean(raw.hidden),
         release_date: raw.release_date ?? null,
         announcement_date: raw.announcement_date ?? null,
+        input_types: inputTypes,
+        output_types: outputTypes,
+        input_modalities: inputTypes,
+        output_modalities: outputTypes,
         primary_date: null,
         primary_timestamp: null,
         primary_group_key: null,
@@ -102,6 +153,8 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
             hidden,
             release_date,
             announcement_date,
+            input_types,
+            output_types,
             organisation: data_organisations (name, colour)
         `;
 

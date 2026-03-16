@@ -1,33 +1,47 @@
 ---
-title: "Stream Text (SDK)"
-api: "POST /chat/completions (stream)"
-description: "Stream chat completions via SDK."
-playground: 'none'
+title: "Stream Text (AI SDK)"
+description: "Streaming text generation with Vercel AI SDK and AI Stats."
 ---
 
-TypeScript and Python support streaming today; other SDKs are in preview.
+Use `streamText` when you want partial tokens as they arrive.
 
-<CodeGroup>
-```ts TypeScript
-import { AIStats } from "@ai-stats/ts-sdk";
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { streamText } from "ai";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
-for await (const chunk of client.streamText({
-  model: "gpt-4o-mini",
-  messages: [{ role: "user", content: "Stream hi!" }],
-})) {
-  console.log(chunk);
+const result = streamText({
+  model: aiStats("openai/gpt-5-nano"),
+  prompt: "Explain SSE streaming in plain language.",
+});
+
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
 }
 ```
 
-```python Python
-from ai_stats import AIStats
+## Streaming with messages
 
-client = AIStats(api_key="YOUR_KEY")
-for chunk in client.stream_text({
-    "model": "gpt-4o-mini",
-    "messages": [{"role": "user", "content": "Stream hi!"}],
-}):
-    print(chunk)
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { streamText } from "ai";
+
+const result = streamText({
+  model: aiStats("openai/gpt-5-nano"),
+  messages: [
+    { role: "user", content: "Write a five-step rollout plan for a gateway migration." },
+  ],
+});
+
+let text = "";
+for await (const chunk of result.textStream) {
+  text += chunk;
+}
+
+console.log(text);
 ```
-</CodeGroup>
+
+## Production tips
+
+- Prefer streaming for long responses and interactive UIs.
+- Handle cancellation/timeout in your runtime for abandoned streams.
+- Keep model IDs fresh via `/v1/gateway/models` to avoid stale aliases.

@@ -154,10 +154,29 @@ export default async function getModel(
 
     // Fetch pricing rules for this model_id and attach to the response
     try {
-        const { data: providerModels } = await supabase
-            .from("data_api_provider_models")
-            .select("provider_api_model_id, provider_id, api_model_id, internal_model_id")
-            .eq("internal_model_id", modelId);
+        let providerModels: Array<{
+            provider_api_model_id: string | null;
+            provider_id: string | null;
+            api_model_id: string | null;
+            model_id: string | null;
+            internal_model_id: string | null;
+        }> | null = null;
+
+        {
+            const { data } = await supabase
+                .from("data_api_provider_models")
+                .select("provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id")
+                .eq("model_id", modelId);
+            providerModels = data ?? null;
+        }
+
+        if (!providerModels?.length) {
+            const { data } = await supabase
+                .from("data_api_provider_models")
+                .select("provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id")
+                .eq("internal_model_id", modelId);
+            providerModels = data ?? null;
+        }
 
         const providerModelIds = (providerModels ?? [])
             .map((row) => row.provider_api_model_id)
@@ -336,6 +355,7 @@ export async function getModelCached(
 
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:data:${modelId}`);
 
     console.log("[getModelCached] Cache-aware fetch for model", modelId);
     return getModel(modelId, includeHidden);
@@ -362,6 +382,7 @@ export async function getModelOverviewCached(
 
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
+    cacheTag(`model:data:${modelId}`);
 
     console.log("[getModelOverviewCached] Cache-aware fetch for model overview", modelId);
     return getModelOverview(modelId, includeHidden);

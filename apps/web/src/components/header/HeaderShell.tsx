@@ -10,8 +10,12 @@ type HeaderShellProps = {
 
 export default function HeaderShell({ children }: HeaderShellProps) {
 	const pathname = usePathname() ?? "";
+	const isModelsListRoute =
+		pathname === "/models" ||
+		pathname.startsWith("/models/table") ||
+		pathname.startsWith("/models/collections");
 	const isWideRoute =
-		pathname.startsWith("/settings") || pathname.startsWith("/models/table");
+		pathname.startsWith("/settings") || isModelsListRoute;
 
 	return (
 		<div

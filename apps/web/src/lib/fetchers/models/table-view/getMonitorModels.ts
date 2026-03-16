@@ -5,8 +5,11 @@ import type { MonitorModelData, MonitorModelFilters, GatewayProvider, GatewayMod
 import {
 	parseModalities,
 	extractFeatureKeys,
+	extractSupportedParameters,
 	normalizeGatewayModel,
+	normalizeCapabilityStatus,
 	normalizeEndpoint,
+	resolveGatewayStatus,
 	toUsdPerMillion,
 } from "./helpers";
 
@@ -27,54 +30,116 @@ export async function getMonitorModels(
 
 	cacheLife("days");
 	cacheTag("monitor-models");
+	cacheTag("data:data_api_provider_models");
+	cacheTag("data:data_api_pricing_rules");
+	cacheTag("data:models");
+	cacheTag("data:api_providers");
 
 	const supabase = createAdminClient();
-
-	const { data: providerModels, error: providerModelsError } = await supabase
-		.from("data_api_provider_models")
-		.select(`
-			provider_api_model_id,
-			provider_id,
-			api_model_id,
-			internal_model_id,
-			provider_model_slug,
-			is_active_gateway,
-			input_modalities,
-			output_modalities,
-			effective_from,
-			effective_to,
-			capabilities: data_api_provider_model_capabilities!inner(
-				capability_id,
-				params,
-				status,
-				max_input_tokens,
-				max_output_tokens
-			),
-			provider: data_api_providers(
-				api_provider_id,
-				api_provider_name,
-				link
-			),
-			model: data_models!data_api_provider_models_internal_model_id_fkey(
-				model_id,
-				name,
-				release_date,
-				retirement_date,
-				status,
-				input_types,
-				output_types,
-				hidden,
-				organisation: data_organisations!data_models_organisation_id_fkey(
-					organisation_id,
-					name
-				),
-				details: data_model_details!data_model_details_model_id_fkey(
-					detail_name,
-					detail_value
-				)
+	const baseSelect = `
+		provider_api_model_id,
+		provider_id,
+		model_id,
+		api_model_id,
+		internal_model_id,
+		provider_model_slug,
+		is_active_gateway,
+		input_modalities,
+		output_modalities,
+		quantization_scheme,
+		context_length,
+		max_output_tokens,
+		effective_from,
+		effective_to,
+		capabilities: data_api_provider_model_capabilities!inner(
+			capability_id,
+			params,
+			status,
+			max_input_tokens,
+			max_output_tokens
+		),
+		provider: data_api_providers(
+			api_provider_id,
+			api_provider_name,
+			link
+		),
+		model: data_models!data_api_provider_models_internal_model_id_fkey(
+			model_id,
+			name,
+			release_date,
+			retirement_date,
+			status,
+			input_types,
+			output_types,
+			hidden,
+			organisation: data_organisations!data_models_organisation_id_fkey(
+				organisation_id,
+				name
 			)
-		`)
-		.neq("capabilities.status", "disabled");
+		)
+	`;
+	const legacySelect = `
+		provider_api_model_id,
+		provider_id,
+		api_model_id,
+		internal_model_id,
+		provider_model_slug,
+		is_active_gateway,
+		input_modalities,
+		output_modalities,
+		effective_from,
+		effective_to,
+		capabilities: data_api_provider_model_capabilities!inner(
+			capability_id,
+			params,
+			status,
+			max_input_tokens,
+			max_output_tokens
+		),
+		provider: data_api_providers(
+			api_provider_id,
+			api_provider_name,
+			link
+		),
+		model: data_models!data_api_provider_models_internal_model_id_fkey(
+			model_id,
+			name,
+			release_date,
+			retirement_date,
+			status,
+			input_types,
+			output_types,
+			hidden,
+			organisation: data_organisations!data_models_organisation_id_fkey(
+				organisation_id,
+				name
+			)
+		)
+	`;
+
+	let providerModels: any[] | null = null;
+	let providerModelsError: any = null;
+	{
+		const res = await supabase
+			.from("data_api_provider_models")
+			.select(baseSelect)
+			.not("api_model_id", "is", null);
+		providerModels = res.data ?? null;
+		providerModelsError = res.error;
+	}
+
+	const providerModelLegacySchemaMissing =
+		/(model_id|context_length|max_output_tokens|quantization_scheme)/i.test(
+			String(providerModelsError?.message ?? ""),
+		);
+	if (providerModelsError && providerModelLegacySchemaMissing) {
+		const res = await supabase
+			.from("data_api_provider_models")
+			.select(legacySelect)
+			.not("api_model_id", "is", null);
+		providerModels = res.data ?? null;
+		providerModelsError = res.error;
+	}
 
 	if (providerModelsError) {
 		throw providerModelsError;
@@ -92,27 +157,33 @@ export async function getMonitorModels(
 	for (const pm of providerModels ?? []) {
 		const modelRow = Array.isArray(pm.model) ? pm.model[0] : pm.model;
 		if (!includeHidden && modelRow?.hidden) continue;
-		const modelId =
-			modelRow?.model_id ?? pm.internal_model_id ?? pm.api_model_id ?? "";
+		const modelId = pm.api_model_id ?? pm.model_id ?? modelRow?.model_id ?? "";
+		const capabilities: any[] = Array.isArray(pm.capabilities)
+			? pm.capabilities
+			: [];
 
 		if (modelId && !ctxByModelId.has(modelId)) {
-			const details = Array.isArray(modelRow?.details)
-				? modelRow.details
-				: [];
-			let context = 0;
-			let maxOutput = 0;
-			let quantization: string | undefined;
-			for (const d of details) {
-				if (d.detail_name === "input_context_length") {
-					context = Number(d.detail_value) || 0;
-				}
-				if (d.detail_name === "output_context_length") {
-					maxOutput = Number(d.detail_value) || 0;
-				}
-				if (d.detail_name === "quantization") {
-					quantization = String(d.detail_value);
-				}
-			}
+			const providerContext = Number(pm.context_length);
+			const providerMaxOutput = Number(pm.max_output_tokens);
+			const capMaxInput = capabilities.reduce((max: number, capability: any) => {
+				const value = Number((capability as any)?.max_input_tokens);
+				return Number.isFinite(value) && value > max ? value : max;
+			}, 0);
+			const capMaxOutput = capabilities.reduce((max: number, capability: any) => {
+				const value = Number((capability as any)?.max_output_tokens);
+				return Number.isFinite(value) && value > max ? value : max;
+			}, 0);
+			const context = Number.isFinite(providerContext) && providerContext > 0
+				? providerContext
+				: capMaxInput;
+			const maxOutput = Number.isFinite(providerMaxOutput) && providerMaxOutput > 0
+				? providerMaxOutput
+				: capMaxOutput;
+			const quantizationRaw = pm.quantization_scheme;
+			const quantization =
+				typeof quantizationRaw === "string" && quantizationRaw.trim()
+					? quantizationRaw
+					: undefined;
 			ctxByModelId.set(modelId, { context, maxOutput, quantization });
 		}
 
@@ -131,7 +202,7 @@ export async function getMonitorModels(
 			providerModelByKey.set(providerModelKey, pm);
 		}
 
-		for (const cap of pm.capabilities ?? []) {
+		for (const cap of capabilities) {
 			if (!cap?.capability_id) continue;
 			const key = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
 			modelKeysSet.add(key);
@@ -144,6 +215,7 @@ export async function getMonitorModels(
 					key,
 					endpoint: cap.capability_id,
 					is_active_gateway: pm.is_active_gateway,
+					capability_status: cap.status ?? null,
 					input_modalities: pm.input_modalities,
 					output_modalities: pm.output_modalities,
 					params: cap.params ?? {},
@@ -240,10 +312,10 @@ export async function getMonitorModels(
 		);
 		const modelRow = Array.isArray(pm?.model) ? pm?.model[0] : pm?.model;
 		const modelId =
-			modelRow?.model_id ??
-			pm?.internal_model_id ??
-			gatewayModel.model_id ??
 			pm?.api_model_id ??
+			pm?.model_id ??
+			gatewayModel.model_id ??
+			modelRow?.model_id ??
 			"";
 
 		const { context, maxOutput, quantization } =
@@ -268,6 +340,7 @@ export async function getMonitorModels(
 			};
 
 		const extractedFeatures = extractFeatureKeys(gatewayModel?.params);
+		const supportedParameters = extractSupportedParameters(gatewayModel?.params);
 		const isFreeVariant =
 			(gatewayModel?.key ? freeByKey.get(gatewayModel.key) : false) ||
 			(Boolean(gatewayModel?.api_model_id) &&
@@ -299,6 +372,7 @@ export async function getMonitorModels(
 			id: `${modelId}-${gatewayModel.api_provider_id}-${gatewayModel.key}`,
 			model: modelRow?.name || modelId || "",
 			modelId,
+			apiModelId: pm?.api_model_id ?? gatewayModel.api_model_id ?? undefined,
 			organisationId: Array.isArray(modelRow?.organisation)
 				? (modelRow?.organisation[0] as any)?.organisation_id
 				: (modelRow?.organisation as any)?.organisation_id || undefined,
@@ -310,7 +384,10 @@ export async function getMonitorModels(
 				features: sortedFeatures,
 			},
 			endpoint: normalizeEndpoint(rawEndpoint),
-			gatewayStatus: gatewayModel?.is_active_gateway ? "active" : "inactive",
+			gatewayStatus: resolveGatewayStatus(
+				gatewayModel?.is_active_gateway,
+				gatewayModel?.capability_status,
+			),
 			inputModalities:
 				gatewayInputModalities.length > 0
 					? gatewayInputModalities
@@ -322,6 +399,8 @@ export async function getMonitorModels(
 			context,
 			maxOutput,
 			quantization,
+			supportedParameters,
+			effectiveFrom: pm?.effective_from ?? undefined,
 			tier: prices.tier || "standard",
 			added: modelRow?.release_date || undefined,
 			retired: modelRow?.retirement_date
@@ -369,7 +448,9 @@ export async function getMonitorModels(
 		outputModalities: filters.outputModalities ?? [],
 		features: filters.features ?? [],
 		endpoints: filters.endpoints ?? [],
-		statuses: filters.statuses ?? [],
+		statuses: (filters.statuses ?? []).map((status) =>
+			normalizeCapabilityStatus(status),
+		),
 		tiers: filters.tiers ?? [],
 		year: filters.year ?? 0,
 		sortField: filters.sortField || "added",

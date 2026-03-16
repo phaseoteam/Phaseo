@@ -11,12 +11,8 @@ import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatConfig } from "@providers/openai-compatible/config";
 import { getBindings } from "@/runtime/env";
-import { loadPriceCard } from "@pipeline/pricing/loader";
-import { computeBill } from "@pipeline/pricing/engine";
-import { recordUsageAndCharge } from "@pipeline/pricing/persist";
-import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
 import { loadByokKey } from "@providers/byok";
-import { getVideoJobMeta, isVideoJobBilled, markVideoJobBilled, type VideoJobMeta } from "@core/video-jobs";
+import { getVideoJobMeta, type VideoJobMeta } from "@core/video-jobs";
 import { withRuntime } from "../../utils";
 
 const videoHandler = makeEndpointHandler({ endpoint: "video.generation", schema: VideoGenerationSchema });
@@ -44,15 +40,10 @@ type VideoRouteAuth = {
 	internal?: boolean;
 };
 
-function toPositiveNumber(value: unknown): number | undefined {
-	if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-		return value;
-	}
-	if (typeof value === "string" && value.trim().length > 0) {
-		const parsed = Number(value.trim());
-		if (Number.isFinite(parsed) && parsed > 0) return parsed;
-	}
-	return undefined;
+function isTrustedGoogleApiHost(hostname: string): boolean {
+	const host = hostname.trim().toLowerCase();
+	if (!host) return false;
+	return host === "generativelanguage.googleapis.com" || host.endsWith(".googleapis.com");
 }
 
 function inferGoogleModelFromOperation(operationName: string): string | undefined {
@@ -84,87 +75,6 @@ function mapOpenAiVideoStatus(value: unknown): "queued" | "in_progress" | "compl
 	return "queued";
 }
 
-function mergeUsage(baseUsage: any, overlayUsage: any): any {
-	if (!overlayUsage || typeof overlayUsage !== "object") return baseUsage;
-	if (!baseUsage || typeof baseUsage !== "object") return overlayUsage;
-	return {
-		...baseUsage,
-		...overlayUsage,
-	};
-}
-
-function buildVideoUsage(seconds?: number, pricedUsage?: any) {
-	const out: any = {};
-	if (typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0) {
-		out.output_video_seconds = seconds;
-	}
-	const pricing = pricedUsage?.pricing;
-	if (pricing && typeof pricing === "object") {
-		out.pricing = pricing;
-	}
-	return Object.keys(out).length ? out : undefined;
-}
-
-function resolveVideoUsageSeconds(videoMeta: VideoJobMeta | null, ...candidates: unknown[]): number | undefined {
-	const preferred = toPositiveNumber(videoMeta?.seconds);
-	if (preferred != null) return preferred;
-	for (const candidate of candidates) {
-		const parsed = toPositiveNumber(candidate);
-		if (parsed != null) return parsed;
-	}
-	return undefined;
-}
-
-function normalizeVideoModelForPricing(providerId: string, model: string): string[] {
-	const trimmed = model.trim();
-	if (!trimmed) return [];
-	const out: string[] = [trimmed];
-	const provider = providerId.trim().toLowerCase();
-
-	if (provider === "openai") {
-		const withoutModelsPrefix = trimmed.replace(/^models\//i, "");
-		const bareModel = withoutModelsPrefix.replace(/^openai\//i, "");
-		if (bareModel.length > 0) out.push(`openai/${bareModel}`);
-		if (/^sora-2(?:-|$)/i.test(bareModel)) out.push("openai/sora-2");
-		if (/^sora-2-pro(?:-|$)/i.test(bareModel)) out.push("openai/sora-2-pro-2025-10-03");
-	}
-
-	if (provider === "google-ai-studio" || provider === "google-vertex") {
-		const withoutModelsPrefix = trimmed.replace(/^models\//i, "");
-		const withoutGooglePrefix = withoutModelsPrefix.replace(/^google\//i, "");
-		const googleAliasMap: Record<string, string> = {
-			"veo-3.1-fast-generate-preview": "google/veo-3.1-fast-preview",
-			"veo-3.1-generate-preview": "google/veo-3.1-preview",
-			"veo-3.0-fast-generate-001": "google/veo-3-fast-preview",
-			"veo-3.0-generate-001": "google/veo-3-preview",
-			"veo-2.0-generate-001": "google/veo-2",
-		};
-		out.push(`google/${withoutGooglePrefix}`);
-		const mapped = googleAliasMap[withoutGooglePrefix];
-		if (mapped) out.push(mapped);
-	}
-
-	return [...new Set(out.map((value) => value.trim()).filter(Boolean))];
-}
-
-function resolveBillingModel(
-	providerId: string,
-	videoMeta: VideoJobMeta | null,
-	...modelCandidates: Array<unknown>
-): string {
-	const orderedCandidates: string[] = [];
-	if (typeof videoMeta?.model === "string") orderedCandidates.push(videoMeta.model);
-	for (const candidate of modelCandidates) {
-		if (typeof candidate === "string") orderedCandidates.push(candidate);
-	}
-
-	for (const candidate of orderedCandidates) {
-		const normalized = normalizeVideoModelForPricing(providerId, candidate);
-		if (normalized.length > 0) return normalized[0]!;
-	}
-	return "";
-}
-
 async function requireOwnedVideoJob(auth: VideoRouteAuth, videoId: string): Promise<{ meta: VideoJobMeta } | Response> {
 	const meta = await getVideoJobMeta(auth.teamId, videoId);
 	if (meta) return { meta };
@@ -176,82 +86,31 @@ async function requireOwnedVideoJob(auth: VideoRouteAuth, videoId: string): Prom
 	});
 }
 
-async function maybeChargeVideoCompletion(args: {
-	auth: VideoRouteAuth;
-	providerId: string;
-	model: string;
-	videoId: string;
-	seconds?: number;
-	requestOptions?: Record<string, any>;
-	isByok?: boolean;
-}): Promise<{ charged: boolean; pricedUsage?: any }> {
-	const { auth, providerId, model, videoId, seconds, requestOptions, isByok = false } = args;
-	if (!videoId || !model) return { charged: false };
-	if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) {
-		return { charged: false };
+async function resolveVideoProviderKey(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	providerId: string,
+	envKey: string,
+): Promise<string | null> {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	let key = bindings[envKey] ?? null;
+	if (videoMeta?.keySource === "byok" && videoMeta.byokKeyId) {
+		const byok = await loadByokKey({
+			teamId: auth.teamId,
+			providerId,
+			metaList: [{
+				id: videoMeta.byokKeyId,
+				providerId,
+				fingerprintSha256: "",
+				keyVersion: null,
+				alwaysUse: true,
+			}],
+		});
+		if (byok?.key) {
+			key = byok.key;
+		}
 	}
-
-	try {
-		const alreadyBilled = await isVideoJobBilled(auth.teamId, videoId);
-
-		const modelCandidates = normalizeVideoModelForPricing(providerId, model);
-		const endpointCandidates = ["video.generate", "video.generation", "video.generations"];
-		let resolvedModel = "";
-		let card = null as Awaited<ReturnType<typeof loadPriceCard>>;
-		for (const modelCandidate of modelCandidates.length > 0 ? modelCandidates : [model]) {
-			for (const endpointCandidate of endpointCandidates) {
-				card = await loadPriceCard(providerId, modelCandidate, endpointCandidate);
-				if (card) {
-					resolvedModel = modelCandidate;
-					break;
-				}
-			}
-			if (card) break;
-		}
-		if (!card) {
-			return { charged: false };
-		}
-
-		const pricedBase = computeBill(
-			{ output_video_seconds: seconds },
-			card,
-			{ ...(requestOptions ?? {}), model: resolvedModel || model }
-		);
-		if (alreadyBilled) {
-			return { charged: false, pricedUsage: pricedBase };
-		}
-		const byokAdjusted = await applyByokServiceFee({
-			teamId: auth.teamId,
-			isByok,
-			baseCostNanos: Number(pricedBase?.pricing?.total_nanos ?? 0) || 0,
-			pricedUsage: pricedBase,
-			currencyHint: "USD",
-		});
-		const pricedUsage = byokAdjusted.pricedUsage;
-		const totalNanos = byokAdjusted.totalNanos;
-		if (totalNanos <= 0) {
-			await markVideoJobBilled(auth.teamId, videoId);
-			return { charged: false, pricedUsage };
-		}
-
-		await recordUsageAndCharge({
-			requestId: auth.requestId,
-			teamId: auth.teamId,
-			cost_nanos: totalNanos,
-		});
-		await markVideoJobBilled(auth.teamId, videoId);
-		return { charged: true, pricedUsage };
-	} catch (chargeErr) {
-		console.error("video_completion_charge_failed", {
-			error: chargeErr,
-			requestId: auth.requestId,
-			teamId: auth.teamId,
-			videoId,
-			provider: providerId,
-			model,
-		});
-		return { charged: false };
-	}
+	return key;
 }
 
 async function proxyOpenAIVideoRequest(
@@ -380,9 +239,17 @@ function decodeMiniMaxVideoId(videoId: string): string | null {
 	}
 }
 
-async function fetchGoogleOperation(operationName: string) {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.GOOGLE_AI_STUDIO_API_KEY;
+async function fetchGoogleOperation(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	operationName: string,
+) {
+	const key = await resolveVideoProviderKey(
+		auth,
+		videoMeta,
+		videoMeta?.provider ?? "google-ai-studio",
+		"GOOGLE_AI_STUDIO_API_KEY",
+	);
 	if (!key) {
 		return err("upstream_error", {
 			reason: "google_key_missing",
@@ -397,9 +264,17 @@ async function fetchGoogleOperation(operationName: string) {
 	return res;
 }
 
-async function fetchGoogleVideoContent(uri: string) {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.GOOGLE_AI_STUDIO_API_KEY;
+async function fetchGoogleVideoContent(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	uri: string,
+) {
+	const key = await resolveVideoProviderKey(
+		auth,
+		videoMeta,
+		videoMeta?.provider ?? "google-ai-studio",
+		"GOOGLE_AI_STUDIO_API_KEY",
+	);
 	if (!key) {
 		return err("upstream_error", {
 			reason: "google_key_missing",
@@ -407,9 +282,11 @@ async function fetchGoogleVideoContent(uri: string) {
 	}
 
 	let requestUrl = uri;
+	let shouldAttachGoogleKey = false;
 	try {
 		const parsed = new URL(uri);
-		if (parsed.hostname === "generativelanguage.googleapis.com" && !parsed.searchParams.has("key")) {
+		shouldAttachGoogleKey = isTrustedGoogleApiHost(parsed.hostname);
+		if (shouldAttachGoogleKey && parsed.hostname === "generativelanguage.googleapis.com" && !parsed.searchParams.has("key")) {
 			parsed.searchParams.set("key", key);
 		}
 		requestUrl = parsed.toString();
@@ -417,24 +294,32 @@ async function fetchGoogleVideoContent(uri: string) {
 		requestUrl = uri;
 	}
 
+	const headers: Record<string, string> = {
+		"Accept": "*/*",
+	};
+	if (shouldAttachGoogleKey) {
+		headers["x-goog-api-key"] = key;
+	}
+
 	const res = await fetch(requestUrl, {
 		method: "GET",
-		headers: {
-			"Accept": "*/*",
-			"x-goog-api-key": key,
-		},
+		headers,
 	});
 	return res;
 }
 
-async function fetchDashscopeTask(taskId: string) {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.ALIBABA_CLOUD_API_KEY;
+async function fetchDashscopeTask(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	taskId: string,
+) {
+	const key = await resolveVideoProviderKey(auth, videoMeta, "alibaba", "ALIBABA_CLOUD_API_KEY");
 	if (!key) {
 		return err("upstream_error", {
 			reason: "dashscope_key_missing",
 		});
 	}
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = (bindings.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com").replace(/\/+$/, "");
 	return fetch(`${baseUrl}/api/v1/tasks/${encodeURIComponent(taskId)}`, {
 		method: "GET",
@@ -445,15 +330,18 @@ async function fetchDashscopeTask(taskId: string) {
 	});
 }
 
-async function fetchXAiVideoStatus(videoId: string) {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.X_AI_API_KEY;
+async function fetchXAiVideoStatus(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	videoId: string,
+) {
+	const key = await resolveVideoProviderKey(auth, videoMeta, XAI_PROVIDER_ID, "X_AI_API_KEY");
 	if (!key) {
 		return err("upstream_error", {
 			reason: "xai_key_missing",
 		});
 	}
-	const res = await fetch(openAICompatUrl(XAI_PROVIDER_ID, `/videos/generations/${encodeURIComponent(videoId)}`), {
+	const res = await fetch(openAICompatUrl(XAI_PROVIDER_ID, `/videos/${encodeURIComponent(videoId)}`), {
 		method: "GET",
 		headers: {
 			...openAICompatHeaders(XAI_PROVIDER_ID, key),
@@ -463,15 +351,18 @@ async function fetchXAiVideoStatus(videoId: string) {
 	return res;
 }
 
-async function fetchXAiVideoContent(videoId: string) {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.X_AI_API_KEY;
+async function fetchXAiVideoContent(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	videoId: string,
+) {
+	const key = await resolveVideoProviderKey(auth, videoMeta, XAI_PROVIDER_ID, "X_AI_API_KEY");
 	if (!key) {
 		return err("upstream_error", {
 			reason: "xai_key_missing",
 		});
 	}
-	const res = await fetch(openAICompatUrl(XAI_PROVIDER_ID, `/videos/generations/${encodeURIComponent(videoId)}/content`), {
+	const res = await fetch(openAICompatUrl(XAI_PROVIDER_ID, `/videos/${encodeURIComponent(videoId)}/content`), {
 		method: "GET",
 		headers: {
 			...openAICompatHeaders(XAI_PROVIDER_ID, key),
@@ -481,16 +372,42 @@ async function fetchXAiVideoContent(videoId: string) {
 	return res;
 }
 
-async function fetchMiniMaxVideoTask(taskId: string) {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.MINIMAX_API_KEY;
+async function fetchMiniMaxVideoTask(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	taskId: string,
+) {
+	const key = await resolveVideoProviderKey(auth, videoMeta, MINIMAX_PROVIDER_ID, "MINIMAX_API_KEY");
 	if (!key) {
 		return err("upstream_error", {
 			reason: "minimax_key_missing",
 		});
 	}
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.MINIMAX_BASE_URL || "https://api.minimax.io").replace(/\/+$/, "");
 	return fetch(`${baseUrl}/v1/query/video_generation?task_id=${encodeURIComponent(taskId)}`, {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${key}`,
+			"Content-Type": "application/json",
+		},
+	});
+}
+
+async function fetchMiniMaxFile(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	fileId: string,
+) {
+	const key = await resolveVideoProviderKey(auth, videoMeta, MINIMAX_PROVIDER_ID, "MINIMAX_API_KEY");
+	if (!key) {
+		return err("upstream_error", {
+			reason: "minimax_key_missing",
+		});
+	}
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const baseUrl = String(bindings.MINIMAX_BASE_URL || "https://api.minimax.io").replace(/\/+$/, "");
+	return fetch(`${baseUrl}/v1/files/retrieve?file_id=${encodeURIComponent(fileId)}`, {
 		method: "GET",
 		headers: {
 			Authorization: `Bearer ${key}`,
@@ -504,18 +421,30 @@ function mapMiniMaxVideoStatus(value: unknown): "queued" | "in_progress" | "comp
 	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	if (status === "fail" || status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
+		return "failed";
+	}
 	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	return "queued";
 }
 
 function mapXAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
 	const status = String(value ?? "").toLowerCase();
-	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
+	if (status === "done" || status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
-	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
+	if (
+		status === "expired" ||
+		status === "failed" ||
+		status === "error" ||
+		status === "cancelled" ||
+		status === "canceled"
+	) {
+		return "failed";
+	}
+	if (status === "pending" || status === "running" || status === "processing" || status === "in_progress") {
+		return "in_progress";
+	}
 	return "queued";
 }
 
@@ -533,6 +462,8 @@ function extractVideoOutputFromPayload(payload: any): Array<{ index: number; uri
 		}));
 	}
 	const videoUrl =
+		payload?.video?.url ??
+		payload?.data?.video?.url ??
 		payload?.video_url ??
 		payload?.videoUrl ??
 		payload?.output?.video_url ??
@@ -562,7 +493,7 @@ videosRoutes.get("/:videoId", withRuntime(async (req) => {
 	const videoMeta = ownedVideo.meta;
 	const operationName = decodeGoogleOperationId(id);
 	if (operationName) {
-		const res = await fetchGoogleOperation(operationName);
+		const res = await fetchGoogleOperation(authValue, videoMeta, operationName);
 		if (res instanceof Response && res.headers?.get("content-type")?.includes("application/json")) {
 			const json = await res.clone().json().catch(() => null);
 			if (!res.ok) return res;
@@ -576,49 +507,25 @@ videosRoutes.get("/:videoId", withRuntime(async (req) => {
 					mime_type: sample?.video?.mimeType ?? null,
 				}))
 				: [];
-			const providerId = videoMeta.provider ?? "google-ai-studio";
-			const model = String(
-				json?.response?.model ??
-				json?.metadata?.model ??
-				inferGoogleModelFromOperation(operationName) ??
-				videoMeta.model ??
-				""
-			).trim();
-			const billingModel = resolveBillingModel(providerId, videoMeta, model);
-			const seconds = resolveVideoUsageSeconds(
-				videoMeta,
-				json?.response?.videoMetadata?.durationSeconds ??
-				json?.videoMetadata?.durationSeconds ??
-				json?.metadata?.durationSeconds
-			);
-			const requestOptions = {
-				size: String(json?.metadata?.aspectRatio ?? videoMeta.size ?? ""),
-				quality: String(json?.metadata?.quality ?? videoMeta.quality ?? ""),
-			};
-			const charge = done && !failed
-				? await maybeChargeVideoCompletion({
-					auth: authValue,
-					providerId,
-					model: billingModel,
-					videoId: id,
-					seconds,
-					requestOptions,
-					isByok: videoMeta?.keySource === "byok",
-				})
-				: { charged: false };
-			const usage = done && !failed ? buildVideoUsage(seconds, charge.pricedUsage) : undefined;
-			const body = {
-				id,
-				object: "video",
-				status: failed ? "failed" : done ? "completed" : "in_progress",
-				provider: providerId,
-				model: model || null,
-				nativeResponseId: operationName,
-				result: json,
-				output,
-				...(failed ? { error: operationError } : {}),
-				...(usage ? { usage } : {}),
-			};
+				const providerId = videoMeta.provider ?? "google-ai-studio";
+				const model = String(
+					json?.response?.model ??
+					json?.metadata?.model ??
+					inferGoogleModelFromOperation(operationName) ??
+					videoMeta.model ??
+					""
+				).trim();
+				const body = {
+					id,
+					object: "video",
+					status: failed ? "failed" : done ? "completed" : "in_progress",
+					provider: providerId,
+					model: model || null,
+					nativeResponseId: operationName,
+					result: json,
+					output,
+					...(failed ? { error: operationError } : {}),
+				};
 			return new Response(JSON.stringify(body), {
 				status: 200,
 				headers: { "Content-Type": "application/json" },
@@ -628,7 +535,7 @@ videosRoutes.get("/:videoId", withRuntime(async (req) => {
 	}
 	const dashscopeTaskId = decodeDashscopeTaskId(id);
 	if (dashscopeTaskId) {
-		const res = await fetchDashscopeTask(dashscopeTaskId);
+		const res = await fetchDashscopeTask(authValue, videoMeta, dashscopeTaskId);
 		if (!res.ok) return res;
 		const json = await res.clone().json().catch(() => null);
 		const taskStatus = String(json?.output?.task_status ?? json?.status ?? "").toUpperCase();
@@ -640,148 +547,75 @@ videosRoutes.get("/:videoId", withRuntime(async (req) => {
 			(Array.isArray(json?.output?.video_urls) ? json.output.video_urls[0] : undefined) ??
 			(Array.isArray(json?.output?.results) ? json.output.results[0]?.url : undefined);
 		const output = videoUrl ? [{ index: 0, uri: videoUrl, mime_type: "video/mp4" }] : [];
-		const providerId = videoMeta.provider ?? "alibaba";
-		const model = String(
-			json?.output?.model ??
-			json?.model ??
-			videoMeta.model ??
-			""
-		).trim();
-		const billingModel = resolveBillingModel(providerId, videoMeta, model);
-		const seconds = resolveVideoUsageSeconds(
-			videoMeta,
-			json?.output?.duration ??
-			json?.output?.video_duration ??
-			json?.usage?.output_video_seconds
-		);
-		const requestOptions = {
-			size: String(json?.output?.size ?? videoMeta.size ?? ""),
-			quality: String(json?.output?.quality ?? videoMeta.quality ?? ""),
-		};
-		const charge = completed
-			? await maybeChargeVideoCompletion({
-				auth: authValue,
-				providerId,
-				model: billingModel,
-				videoId: id,
-				seconds,
-				requestOptions,
-				isByok: videoMeta?.keySource === "byok",
-			})
-			: { charged: false };
-		const usage = completed ? buildVideoUsage(seconds, charge.pricedUsage) : undefined;
-		return new Response(JSON.stringify({
-			id,
-			object: "video",
-			status: completed ? "completed" : failed ? "failed" : "in_progress",
-			provider: providerId,
-			model: model || null,
-			nativeResponseId: dashscopeTaskId,
-			result: json,
-			output,
-			...(usage ? { usage } : {}),
-		}), {
-			status: 200,
-			headers: { "Content-Type": "application/json" },
-		});
+			const providerId = videoMeta.provider ?? "alibaba";
+			const model = String(
+				json?.output?.model ??
+				json?.model ??
+				videoMeta.model ??
+				""
+			).trim();
+			return new Response(JSON.stringify({
+				id,
+				object: "video",
+				status: completed ? "completed" : failed ? "failed" : "in_progress",
+				provider: providerId,
+				model: model || null,
+				nativeResponseId: dashscopeTaskId,
+				result: json,
+				output,
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
 	}
 	const xaiVideoId = decodeXAiVideoId(id);
 	if (xaiVideoId) {
-		const res = await fetchXAiVideoStatus(xaiVideoId);
+		const res = await fetchXAiVideoStatus(authValue, videoMeta, xaiVideoId);
 		if (!(res instanceof Response)) return res;
 		if (!res.ok) return res;
 		const json = await res.clone().json().catch(() => null);
-		const status = mapXAiVideoStatus(json?.status);
-		const output = extractVideoOutputFromPayload(json);
-		const providerId = videoMeta.provider ?? XAI_PROVIDER_ID;
-		const model = String(json?.model ?? json?.data?.model ?? videoMeta.model ?? "").trim();
-		const billingModel = resolveBillingModel(providerId, videoMeta, model);
-		const seconds = resolveVideoUsageSeconds(
-			videoMeta,
-			json?.seconds ??
-			json?.duration_seconds ??
-			json?.duration
-		);
-		const requestOptions = {
-			size: String(json?.size ?? videoMeta.size ?? ""),
-			quality: String(json?.quality ?? videoMeta.quality ?? ""),
-		};
-		const charge = status === "completed"
-			? await maybeChargeVideoCompletion({
-				auth: authValue,
-				providerId,
-				model: billingModel,
-				videoId: id,
-				seconds,
-				requestOptions,
-				isByok: videoMeta?.keySource === "byok",
-			})
-			: { charged: false };
-		const usage = status === "completed" ? buildVideoUsage(seconds, charge.pricedUsage) : undefined;
-		return new Response(JSON.stringify({
-			id,
-			object: "video",
-			status,
-			provider: providerId,
-			model: model || null,
-			nativeResponseId: xaiVideoId,
-			result: json,
-			output,
-			...(usage ? { usage } : {}),
-		}), {
-			status: 200,
-			headers: { "Content-Type": "application/json" },
-		});
+			const status = mapXAiVideoStatus(json?.status);
+			const output = extractVideoOutputFromPayload(json);
+			const providerId = videoMeta.provider ?? XAI_PROVIDER_ID;
+			const model = String(json?.model ?? json?.data?.model ?? videoMeta.model ?? "").trim();
+			return new Response(JSON.stringify({
+				id,
+				object: "video",
+				status,
+				provider: providerId,
+				model: model || null,
+				nativeResponseId: xaiVideoId,
+				result: json,
+				output,
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
 	}
 	const minimaxTaskId = decodeMiniMaxVideoId(id);
 	if (minimaxTaskId) {
-		const res = await fetchMiniMaxVideoTask(minimaxTaskId);
+		const res = await fetchMiniMaxVideoTask(authValue, videoMeta, minimaxTaskId);
 		if (!(res instanceof Response)) return res;
 		if (!res.ok) return res;
 		const json = await res.clone().json().catch(() => null);
-		const status = mapMiniMaxVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
-		const output = extractVideoOutputFromPayload(json);
-		const providerId = videoMeta.provider ?? MINIMAX_PROVIDER_ID;
-		const model = String(json?.model ?? json?.data?.model ?? videoMeta.model ?? "").trim();
-		const billingModel = resolveBillingModel(providerId, videoMeta, model);
-		const seconds = resolveVideoUsageSeconds(
-			videoMeta,
-			json?.seconds ??
-			json?.duration_seconds ??
-			json?.duration ??
-			json?.data?.duration
-		);
-		const requestOptions = {
-			size: String(json?.size ?? videoMeta.size ?? ""),
-			quality: String(json?.quality ?? videoMeta.quality ?? ""),
-		};
-		const charge = status === "completed"
-			? await maybeChargeVideoCompletion({
-				auth: authValue,
-				providerId,
-				model: billingModel,
-				videoId: id,
-				seconds,
-				requestOptions,
-				isByok: videoMeta?.keySource === "byok",
-			})
-			: { charged: false };
-		const usage = status === "completed" ? buildVideoUsage(seconds, charge.pricedUsage) : undefined;
-		return new Response(JSON.stringify({
-			id,
-			object: "video",
-			status,
-			provider: providerId,
-			model: model || null,
-			nativeResponseId: minimaxTaskId,
-			result: json,
-			output,
-			...(usage ? { usage } : {}),
-		}), {
-			status: 200,
-			headers: { "Content-Type": "application/json" },
-		});
-	}
+			const status = mapMiniMaxVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
+			const output = extractVideoOutputFromPayload(json);
+			const providerId = videoMeta.provider ?? MINIMAX_PROVIDER_ID;
+			const model = String(json?.model ?? json?.data?.model ?? videoMeta.model ?? "").trim();
+			return new Response(JSON.stringify({
+				id,
+				object: "video",
+				status,
+				provider: providerId,
+				model: model || null,
+				nativeResponseId: minimaxTaskId,
+				result: json,
+				output,
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
+		}
 
 	const openAiStatusRes = await fetchOpenAIVideoStatus(req, authValue, id, videoMeta);
 	const contentType = openAiStatusRes.headers.get("content-type") ?? "";
@@ -794,35 +628,6 @@ videosRoutes.get("/:videoId", withRuntime(async (req) => {
 	}
 	if (!openAiStatusRes.ok) {
 		return openAiStatusRes;
-	}
-
-	const status = mapOpenAiVideoStatus((statusJson as any).status);
-	if (status === "completed") {
-		const model = String((statusJson as any).model ?? videoMeta.model ?? "").trim();
-		const billingModel = resolveBillingModel(OPENAI_PROVIDER_ID, videoMeta, model);
-		const seconds = resolveVideoUsageSeconds(
-			videoMeta,
-			(statusJson as any).seconds ??
-			(statusJson as any).duration_seconds ??
-			(statusJson as any).result?.seconds
-		);
-		const requestOptions = {
-			size: String((statusJson as any).size ?? videoMeta.size ?? ""),
-			quality: String((statusJson as any).quality ?? videoMeta.quality ?? ""),
-		};
-		const charge = await maybeChargeVideoCompletion({
-			auth: authValue,
-			providerId: OPENAI_PROVIDER_ID,
-			model: billingModel,
-			videoId: id,
-			seconds,
-			requestOptions,
-			isByok: videoMeta?.keySource === "byok",
-		});
-		const usage = buildVideoUsage(seconds, charge.pricedUsage);
-		if (usage) {
-			(statusJson as any).usage = mergeUsage((statusJson as any).usage, usage);
-		}
 	}
 
 	return new Response(JSON.stringify(statusJson), {
@@ -850,7 +655,7 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 	const videoMeta = ownedVideo.meta;
 	const operationName = decodeGoogleOperationId(id);
 	if (operationName) {
-		const res = await fetchGoogleOperation(operationName);
+		const res = await fetchGoogleOperation(authValue, videoMeta, operationName);
 		if (!res.ok) return res;
 		const json = await res.clone().json().catch(() => null);
 		const done = Boolean(json?.done);
@@ -878,7 +683,7 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 				team_id: authValue.teamId,
 			});
 		}
-		const videoRes = await fetchGoogleVideoContent(uri);
+		const videoRes = await fetchGoogleVideoContent(authValue, videoMeta, uri);
 		if (!(videoRes instanceof Response)) return videoRes;
 		return new Response(videoRes.body, {
 			status: videoRes.status,
@@ -887,7 +692,7 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 	}
 	const dashscopeTaskId = decodeDashscopeTaskId(id);
 	if (dashscopeTaskId) {
-		const res = await fetchDashscopeTask(dashscopeTaskId);
+		const res = await fetchDashscopeTask(authValue, videoMeta, dashscopeTaskId);
 		if (!res.ok) return res;
 		const json = await res.clone().json().catch(() => null);
 		const taskStatus = String(json?.output?.task_status ?? json?.status ?? "").toUpperCase();
@@ -918,15 +723,7 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 	}
 	const xaiVideoId = decodeXAiVideoId(id);
 	if (xaiVideoId) {
-		const contentRes = await fetchXAiVideoContent(xaiVideoId);
-		if (!(contentRes instanceof Response)) return contentRes;
-		if (contentRes.ok) {
-			return new Response(contentRes.body, {
-				status: contentRes.status,
-				headers: contentRes.headers,
-			});
-		}
-		const statusRes = await fetchXAiVideoStatus(xaiVideoId);
+		const statusRes = await fetchXAiVideoStatus(authValue, videoMeta, xaiVideoId);
 		if (!(statusRes instanceof Response)) return statusRes;
 		if (!statusRes.ok) return statusRes;
 		const json = await statusRes.clone().json().catch(() => null);
@@ -954,7 +751,7 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 	}
 	const minimaxTaskId = decodeMiniMaxVideoId(id);
 	if (minimaxTaskId) {
-		const statusRes = await fetchMiniMaxVideoTask(minimaxTaskId);
+		const statusRes = await fetchMiniMaxVideoTask(authValue, videoMeta, minimaxTaskId);
 		if (!(statusRes instanceof Response)) return statusRes;
 		if (!statusRes.ok) return statusRes;
 		const json = await statusRes.clone().json().catch(() => null);
@@ -966,7 +763,25 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 				team_id: authValue.teamId,
 			});
 		}
-		const uri = extractVideoOutputFromPayload(json)?.[0]?.uri;
+		let uri = extractVideoOutputFromPayload(json)?.[0]?.uri;
+		if (!uri) {
+			const fileId =
+				typeof json?.file_id === "string"
+					? json.file_id
+					: typeof json?.data?.file_id === "string"
+						? json.data.file_id
+						: null;
+			if (fileId) {
+				const fileRes = await fetchMiniMaxFile(authValue, videoMeta, fileId);
+				if (!(fileRes instanceof Response)) return fileRes;
+				if (!fileRes.ok) return fileRes;
+				const fileJson = await fileRes.clone().json().catch(() => null);
+				uri =
+					fileJson?.file?.download_url ??
+					fileJson?.download_url ??
+					null;
+			}
+		}
 		if (!uri) {
 			return err("upstream_error", {
 				reason: "missing_video_uri",

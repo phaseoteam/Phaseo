@@ -8,6 +8,9 @@ import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { saveVideoJobMeta } from "@core/video-jobs";
+import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { releaseWalletReservation } from "@core/wallet-reservations";
+import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
 import type { ProviderExecutor } from "../../types";
 
 function normalizePositiveSeconds(value: unknown): string | undefined {
@@ -161,51 +164,186 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		() => bindings.OPENAI_API_KEY,
 	);
 	const seconds = parseDurationSeconds(ir);
+	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
+	const quality = ir.quality ?? ((ir.rawRequest as any)?.quality ?? null);
 	const inputReference = resolveInputReferenceValue(ir);
 	const mappedRequestEnabled = Boolean(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest);
 	const secondsForMeta = seconds != null ? Number(seconds) : null;
-
-	let headers = openAICompatHeaders("openai", keyInfo.key);
-	let requestBody: BodyInit;
+	let reservationId: string | null = null;
+	let reservationStatus: string | null = null;
+	let reservedNanos: number | null = null;
+	let reservationGateError: { status: number; type: string; message: string } | null = null;
 	let mappedRequest: string | undefined;
 
-	if (inputReference) {
-		const form = new FormData();
-		form.append("model", model);
-		form.append("prompt", ir.prompt);
-		if (seconds != null) form.append("seconds", String(seconds));
-		if (ir.size) form.append("size", ir.size);
-		const resolved = await resolveInputReferenceBlob(inputReference, ir.inputReferenceMimeType);
-		if (resolved) {
-			form.append("input_reference", resolved.blob, resolved.name);
+	try {
+		const reserved = await reserveVideoGenerationCredits({
+			teamId: args.teamId,
+			videoId: `req_${args.requestId}`,
+			providerId: args.providerId,
+			model,
+			seconds: secondsForMeta,
+			pricingCard: args.pricingCard,
+			requestOptions: buildVideoPricingRequestOptions({
+				size,
+				resolution: ir.resolution,
+				quality,
+			}),
+			isByok: keyInfo.source === "byok",
+		});
+		reservationId = reserved.reservationId;
+		reservationStatus = reserved.status;
+		reservedNanos = reserved.amountNanos;
+		if (reserved.status === "skip_missing_seconds_or_pricing") {
+			reservationGateError = {
+				status: 400,
+				type: "missing_billing_dimensions",
+				message: "Video duration seconds and pricing must be resolvable before submission.",
+			};
 		}
-		requestBody = form;
-		delete (headers as any)["Content-Type"];
-		if (mappedRequestEnabled) {
-			mappedRequest = JSON.stringify({
+		if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+			reservationGateError = {
+				status: 503,
+				type: "reservation_not_held",
+				message: `Unable to secure wallet reservation before provider submission (status=${reserved.status}).`,
+			};
+		}
+	} catch (reserveErr) {
+		console.error("openai_video_reservation_failed_pre_submit", {
+			error: reserveErr,
+			teamId: args.teamId,
+			requestId: args.requestId,
+		});
+		reservationGateError = {
+			status: 503,
+			type: "reservation_unavailable",
+			message: "Unable to reserve credits for video generation.",
+		};
+	}
+
+	const releaseReservationOnFailure = async () => {
+		if (!reservationId) return;
+		try {
+			await releaseWalletReservation({
+				teamId: args.teamId,
+				reservationId,
+				releaseRefId: args.requestId,
+			});
+		} catch (releaseErr) {
+			console.error("openai_video_reservation_release_failed", {
+				error: releaseErr,
+				teamId: args.teamId,
+				requestId: args.requestId,
+				reservationId,
+			});
+		}
+	};
+
+	if (reservationStatus === "insufficient_funds") {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "insufficient_funds",
+					message: "Insufficient available credits for video reservation hold.",
+				},
+			}),
+			{ status: 402, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+	if (reservationGateError) {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: reservationGateError.type,
+					message: reservationGateError.message,
+				},
+			}),
+			{ status: reservationGateError.status, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+
+	let headers = openAICompatHeaders("openai", keyInfo.key, {
+		"Idempotency-Key": args.requestId,
+	});
+	let requestBody: BodyInit;
+
+	try {
+		if (inputReference) {
+			const form = new FormData();
+			form.append("model", model);
+			form.append("prompt", ir.prompt);
+			if (seconds != null) form.append("seconds", String(seconds));
+			if (size) form.append("size", size);
+			const resolved = await resolveInputReferenceBlob(inputReference, ir.inputReferenceMimeType);
+			if (resolved) {
+				form.append("input_reference", resolved.blob, resolved.name);
+			}
+			requestBody = form;
+			delete (headers as any)["Content-Type"];
+			if (mappedRequestEnabled) {
+				mappedRequest = JSON.stringify({
+					model,
+					prompt: ir.prompt,
+					...(seconds != null ? { seconds } : {}),
+					...(size ? { size } : {}),
+					input_reference: "[multipart]",
+				});
+			}
+		} else {
+			const jsonBody = {
 				model,
 				prompt: ir.prompt,
 				...(seconds != null ? { seconds } : {}),
-				...(ir.size ? { size: ir.size } : {}),
-				input_reference: "[multipart]",
-			});
+				...(size ? { size } : {}),
+			};
+			requestBody = JSON.stringify(jsonBody);
+			if (mappedRequestEnabled) mappedRequest = JSON.stringify(jsonBody);
 		}
-	} else {
-		const jsonBody = {
-			model,
-			prompt: ir.prompt,
-			...(seconds != null ? { seconds } : {}),
-			...(ir.size ? { size: ir.size } : {}),
-		};
-		requestBody = JSON.stringify(jsonBody);
-		if (mappedRequestEnabled) mappedRequest = JSON.stringify(jsonBody);
+	} catch (requestBuildErr) {
+		await releaseReservationOnFailure();
+		throw requestBuildErr;
 	}
 
-	const res = await fetch(openAICompatUrl("openai", "/videos"), {
-		method: "POST",
-		headers,
-		body: requestBody,
-	});
+	let res: Response;
+	try {
+		res = await fetch(openAICompatUrl("openai", "/videos"), {
+			method: "POST",
+			headers,
+			body: requestBody,
+		});
+	} catch (fetchErr) {
+		await releaseReservationOnFailure();
+		throw fetchErr;
+	}
 
 	const bill = {
 		cost_cents: 0,
@@ -216,6 +354,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	};
 
 	if (!res.ok) {
+		await releaseReservationOnFailure();
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -236,18 +375,24 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				provider: args.providerId,
 				model,
 				seconds: Number.isFinite(secondsForMeta) ? secondsForMeta : null,
-				size: ir.size ?? null,
-				quality: ir.quality ?? (ir.rawRequest as any)?.quality ?? null,
+				resolution: size ?? null,
+				quality,
+				reservationId,
+				reservedNanos,
+				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			});
+			}, irResponse.status);
 		} catch (err) {
 			console.error("openai_video_job_meta_store_failed", {
 				error: err,
 				teamId: args.teamId,
 				videoId: String(nativeVideoId),
 				requestId: args.requestId,
+				reservationId,
+				reservationStatus,
+				note: "reservation_retained_for_manual_reconciliation",
 			});
 		}
 	}

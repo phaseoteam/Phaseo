@@ -10,12 +10,50 @@ function asString(value: unknown): string {
 	return String(value);
 }
 
-function normalizeImageUrl(url: unknown): { source: "data" | "url"; data: string; detail?: string } | null {
+function resolveImageMimeType(value: unknown): string | undefined {
+	if (!value || typeof value !== "object") return undefined;
+	const direct =
+		typeof (value as any)?.mime_type === "string"
+			? (value as any).mime_type
+			: typeof (value as any)?.mimeType === "string"
+				? (value as any).mimeType
+				: typeof (value as any)?.media_type === "string"
+					? (value as any).media_type
+					: undefined;
+	if (direct) return direct;
+	const nested = (value as any)?.image_url;
+	if (!nested || typeof nested !== "object") return undefined;
+	return typeof nested?.mime_type === "string"
+		? nested.mime_type
+		: typeof nested?.mimeType === "string"
+			? nested.mimeType
+			: typeof nested?.media_type === "string"
+				? nested.media_type
+				: undefined;
+}
+
+function parseDataUrl(value: string): { data: string; mimeType?: string } {
+	const commaIndex = value.indexOf(",");
+	if (commaIndex < 0) return { data: "" };
+	const metadata = value.slice("data:".length, commaIndex);
+	const mimeCandidate = metadata.split(";")[0]?.trim();
+	const mimeType = mimeCandidate && mimeCandidate.includes("/") ? mimeCandidate : undefined;
+	return {
+		data: value.slice(commaIndex + 1),
+		mimeType,
+	};
+}
+
+function normalizeImageUrl(
+	url: unknown,
+): { source: "data" | "url"; data: string; detail?: string; mimeType?: string } | null {
+	const explicitMimeType = resolveImageMimeType(url);
 	if (typeof (url as any)?.b64_json === "string") {
 		return {
 			source: "data",
 			data: (url as any).b64_json,
 			detail: typeof (url as any)?.detail === "string" ? (url as any).detail : undefined,
+			mimeType: explicitMimeType,
 		};
 	}
 
@@ -30,9 +68,16 @@ function normalizeImageUrl(url: unknown): { source: "data" | "url"; data: string
 					: null;
 	if (!resolved) return null;
 	const isDataUrl = resolved.startsWith("data:");
-	const data = isDataUrl ? resolved.split(",")[1] ?? "" : resolved;
+	const parsedDataUrl = isDataUrl ? parseDataUrl(resolved) : null;
+	const data = parsedDataUrl ? parsedDataUrl.data : resolved;
 	const detail = typeof (url as any)?.detail === "string" ? (url as any).detail : undefined;
-	return { source: isDataUrl ? "data" : "url", data, detail };
+	const mimeType = parsedDataUrl?.mimeType ?? explicitMimeType;
+	return {
+		source: isDataUrl ? "data" : "url",
+		data,
+		detail,
+		mimeType,
+	};
 }
 
 export function normalizeOpenAIContent(content: string | any[]): IRContentPart[] {
@@ -63,6 +108,7 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 				source: normalized.source,
 				data: normalized.data,
 				detail: normalized.detail,
+				mimeType: normalized.mimeType,
 			} as IRContentPart;
 		}
 

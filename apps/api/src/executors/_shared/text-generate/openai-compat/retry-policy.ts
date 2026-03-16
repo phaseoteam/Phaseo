@@ -2,7 +2,7 @@
 // Why: Providers vary in strictness and parameter support even on OpenAI-like APIs.
 // How: Parse upstream validation errors, drop/reshape offending params, retry safely.
 
-type OpenAICompatRoute = "responses" | "chat" | "legacy_completions";
+type OpenAICompatRoute = "responses" | "chat";
 
 type ErrorPayloadLike = Record<string, any> | null;
 
@@ -283,22 +283,26 @@ export function adaptRequestFromUpstreamError(args: AdaptRequestArgs): AdaptRequ
 	const dropped: string[] = [];
 	let changed = false;
 	const errorLower = args.errorText.toLowerCase();
+	const payloadSignals = collectErrorMessages(args.errorPayload)
+		.map((message) => message.toLowerCase())
+		.join("\n");
+	const validationSignalText = [errorLower, payloadSignals].filter(Boolean).join("\n");
 
 	// Apply known token/input alias rewrites before generic key dropping.
-	if (mapAliasForKnownError(next, errorLower, dropped)) {
+	if (mapAliasForKnownError(next, validationSignalText, dropped)) {
 		changed = true;
 	}
 
 	const shouldDropByValidationSignal =
-		errorLower.includes("unsupported") ||
-		errorLower.includes("unknown parameter") ||
-		errorLower.includes("unknown field") ||
-		errorLower.includes("not supported") ||
-		errorLower.includes("additional property") ||
-		errorLower.includes("extra input") ||
-		errorLower.includes("extra field") ||
-		errorLower.includes("extra key") ||
-		errorLower.includes("unrecognized");
+		validationSignalText.includes("unsupported") ||
+		validationSignalText.includes("unknown parameter") ||
+		validationSignalText.includes("unknown field") ||
+		validationSignalText.includes("not supported") ||
+		validationSignalText.includes("additional property") ||
+		validationSignalText.includes("extra input") ||
+		validationSignalText.includes("extra field") ||
+		validationSignalText.includes("extra key") ||
+		validationSignalText.includes("unrecognized");
 	if (!shouldDropByValidationSignal) {
 		return {
 			request: next,

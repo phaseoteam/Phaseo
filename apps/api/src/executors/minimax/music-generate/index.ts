@@ -8,7 +8,6 @@ import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveMusicJobMeta } from "@core/music-jobs";
-import { computeBill } from "@pipeline/pricing/engine";
 
 const MINIMAX_MUSIC_PREFIX = "mmxmus_";
 const DEFAULT_MINIMAX_BASE_URL = "https://api.minimax.io";
@@ -155,12 +154,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			? { output_audio_seconds: toPositiveNumber(passthroughRequest.duration)! }
 			: {}),
 	};
-	if (args.pricingCard) {
-		const priced = computeBill(usageMeters, args.pricingCard, { model });
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
-	}
+	bill.usage = usageMeters;
 
 	const irResponse: IRMusicGenerateResponse = {
 		id: args.requestId,

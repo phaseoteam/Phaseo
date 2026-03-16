@@ -43,6 +43,7 @@ function normalizeUsage(usage: any) {
         total_tokens: totalTokens ?? (inputTokens ?? 0) + (outputTokens ?? 0),
         input_text_tokens: inputTokens ?? 0,
         output_text_tokens: outputTokens ?? 0,
+        ...(cachedRead !== undefined ? { cached_read_tokens_are_subset_of_input: true } : {}),
         ...(cachedRead !== undefined ? { cached_read_text_tokens: cachedRead } : {}),
         ...(cachedWrite !== undefined ? { cached_write_text_tokens: cachedWrite } : {}),
         ...(reasoningTokens !== undefined ? { reasoning_tokens: reasoningTokens } : {}),

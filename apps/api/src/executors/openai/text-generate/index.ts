@@ -4,11 +4,9 @@
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
-import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
-import { irToOpenAICompletions, openAICompletionsToIR } from "@executors/_shared/text-generate/openai-compat/transform-legacy";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
 import {
@@ -200,12 +198,11 @@ async function createOpenAIResponsesWebSocketStream(args: {
 			finish_reason: finishReason ?? args.initialBill.finish_reason ?? null,
 		};
 
-		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage);
+		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage, {
+			cachedReadTokensAreSubsetOfInput: true,
+		});
 		if (usageMeters) {
-			const priced = computeBill(usageMeters, args.executorArgs.pricingCard);
-			bill.cost_cents = priced.pricing.total_cents;
-			bill.currency = priced.pricing.currency;
-			bill.usage = priced;
+			bill.usage = usageMeters;
 		}
 
 		resolveBillPromise(bill);
@@ -684,15 +681,14 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const route = args.providerId === "openai"
 		? "responses"
 		: resolveOpenAICompatRoute(args.providerId, modelForRouting);
-	const endpoint = route === "responses" ? "/responses" : (route === "legacy_completions" ? "/completions" : "/chat/completions");
+	const endpoint = route === "responses" ? "/responses" : "/chat/completions";
 
 	const requestPayload = route === "responses"
 		? irToOpenAIResponses(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams)
-		: (route === "legacy_completions"
-			? irToOpenAICompletions(irWithRequestMetadata, modelForRouting)
-			: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams));
+		: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams);
 
 	requestPayload.stream = true;
+	requestPayload.store = false;
 	if (route === "chat") {
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),
@@ -779,12 +775,11 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
+	const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage, {
+		cachedReadTokensAreSubsetOfInput: true,
+	});
 	if (usageMeters) {
-		const priced = computeBill(usageMeters, args.pricingCard);
-		bill.cost_cents = priced.pricing.total_cents;
-		bill.currency = priced.pricing.currency;
-		bill.usage = priced;
+		bill.usage = usageMeters;
 	}
 
 	return {
