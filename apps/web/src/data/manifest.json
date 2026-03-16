@@ -497,6 +497,7 @@
       "mistral/devstral-small-1-0-2025-05-21",
       "mistral/devstral-small-1-1-2025-07-10",
       "mistral/devstral-small-2-0-2025-12-09",
+      "mistral/leanstral-2026-03-16",
       "mistral/magistral-medium-1-0-2025-06-10",
       "mistral/magistral-medium-1-1-2025-07-24",
       "mistral/magistral-medium-1-2-2025-09-17",
@@ -530,6 +531,7 @@
       "mistral/mistral-small-3-0-2025-01-30",
       "mistral/mistral-small-3-1-2025-03-17",
       "mistral/mistral-small-3-2-2025-06-20",
+      "mistral/mistral-small-4-2026-03-16",
       "mistral/mistral-small-creative-2025-12-16",
       "mistral/mixtral-8x22b-2024-04-17",
       "mistral/mixtral-8x7b-2023-12-11",
@@ -961,6 +963,7 @@
       "z-ai/glm-4v-9b",
       "z-ai/glm-5-2026-02-11",
       "z-ai/glm-5-code",
+      "z-ai/glm-5-turbo-2026-03-15",
       "z-ai/glm-image-2026-01-14"
     ]
   },
@@ -1320,7 +1323,9 @@
     "minimax-lightning:text.generate:minimax-minimax-m2.1",
     "minimax-lightning:text.generate:minimax-minimax-m2.5-highspeed",
     "mistral:text.generate:mistral-devstral-small-2-free",
+    "mistral:text.generate:mistral-leanstral-free",
     "mistral:text.generate:mistral-ministral-3-3b",
+    "mistral:text.generate:mistral-mistral-small-4",
     "moonshotai:text.generate:moonshotai-kimi-k2",
     "moonshotai:text.generate:moonshotai-kimi-k2-0905",
     "moonshotai:text.generate:moonshotai-kimi-k2-thinking",
@@ -1513,6 +1518,7 @@
     "z-ai:text.generate:z-ai-glm-4.7",
     "z-ai:text.generate:z-ai-glm-4.7-flash",
     "z-ai:text.generate:z-ai-glm-5",
-    "z-ai:text.generate:z-ai-glm-5-code"
+    "z-ai:text.generate:z-ai-glm-5-code",
+    "z-ai:text.generate:z-ai-glm-5-turbo"
   ]
 }
