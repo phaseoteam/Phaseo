@@ -311,8 +311,8 @@ importers:
         specifier: ^8.18.0
         version: 8.18.0
       ajv-formats:
-        specifier: ^2.1.1
-        version: 2.1.1(ajv@8.18.0)
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.18.0)
       cheerio:
         specifier: ^1.1.2
         version: 1.2.0
