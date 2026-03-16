@@ -26,7 +26,7 @@ jobs:
 
             - name: Create GitHub App token (AI Stats Bot)
               id: app-token
-              uses: actions/create-github-app-token@v2
+              uses: actions/create-github-app-token@v3
               with:
                   app-id: ${{ secrets.AI_STATS_APP_ID }}
                   private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
