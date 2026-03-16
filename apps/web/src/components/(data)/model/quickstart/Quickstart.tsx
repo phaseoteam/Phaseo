@@ -157,8 +157,6 @@ function buildExamplePayload(
 	}
 }
 
-const escapeForSingleQuotedShell = (json: string) => json.replace(/'/g, "\\'");
-
 const jsonToPythonLiteral = (json: string) =>
         json
                 .replace(/true/g, "True")
@@ -415,7 +413,6 @@ export default function Quickstart({
                 : payloadJson;
         const shouldStream = supportsStreaming && streamingEnabled;
         const activePayloadJson = shouldStream ? payloadJsonStream : payloadJson;
-        const payloadJsonCurl = escapeForSingleQuotedShell(activePayloadJson);  
         const payloadJsonNode = activePayloadJson
                 .split("\n")
                 .map((line) => `        ${line}`)
@@ -472,7 +469,9 @@ export AI_STATS_API_KEY="sk-live-***"
 curl ${curlFlags} ${endpointUrl} \\
 -H "Authorization: Bearer $AI_STATS_API_KEY" \\
 -H "Content-Type: application/json" \\
--d '${payloadJsonCurl}'`;
+--data-raw @- <<'JSON'
+${activePayloadJson}
+JSON`;
 
 	const nodeQuickstart =
 		`// 1) Set your key
