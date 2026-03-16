@@ -802,7 +802,6 @@ pub struct VideoGenerationRequest {
 	pub sample_count: Option<i64>,
 	pub seconds: Option<String>,
 	pub seed: Option<i64>,
-	pub size: Option<String>,
 }
 
 pub struct VideoGenerationResponse {

@@ -806,7 +806,6 @@ struct VideoGenerationRequest {
 	std::optional<int> sample_count;
 	std::any seconds;
 	std::optional<int> seed;
-	std::string size;
 };
 
 struct VideoGenerationResponse {

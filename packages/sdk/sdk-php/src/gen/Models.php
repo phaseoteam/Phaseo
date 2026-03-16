@@ -891,7 +891,6 @@ class VideoGenerationRequest
 	public $sample_count;
 	public $seconds;
 	public $seed;
-	public $size;
 }
 
 class VideoGenerationResponse

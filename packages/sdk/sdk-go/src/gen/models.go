@@ -1831,7 +1831,6 @@ type VideoGenerationRequest struct {
 	SampleCount *int `json:"sample_count,omitempty"`
 	Seconds interface{} `json:"seconds,omitempty"`
 	Seed *int `json:"seed,omitempty"`
-	Size *string `json:"size,omitempty"`
 }
 
 type VideoGenerationResponse struct {

@@ -718,7 +718,6 @@ class VideoGenerationRequest(TypedDict):
 	sample_count: NotRequired[int]
 	seconds: NotRequired[Union[int, str]]
 	seed: NotRequired[int]
-	size: NotRequired[str]
 
 class VideoGenerationResponse(TypedDict):
 	created: NotRequired[int]

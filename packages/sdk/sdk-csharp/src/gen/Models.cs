@@ -1944,9 +1944,6 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("seed")]
 	public int? Seed { get; set; }
 
-	[JsonPropertyName("size")]
-	public string? Size { get; set; }
-
 }
 
 public sealed class VideoGenerationResponse

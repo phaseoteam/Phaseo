@@ -809,7 +809,6 @@ public final class Models {
 		public Integer sample_count;
 		public Object seconds;
 		public Integer seed;
-		public String size;
 	}
 
 	public static class VideoGenerationResponse {
