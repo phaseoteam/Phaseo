@@ -133,7 +133,7 @@ function parseAssistantContent(
     };
 }
 
-function resolveMistralReasoningEffort(body: ChatCompletionsRequest): "none" | "high" | undefined {
+function resolveMistralReasoningEffort(body: ChatCompletionsRequest): "none" | "high" {
     const bodyAny = body as ChatCompletionsRequest & { reasoning_effort?: unknown };
     const reasoning = body.reasoning;
     const candidate =
@@ -141,24 +141,37 @@ function resolveMistralReasoningEffort(body: ChatCompletionsRequest): "none" | "
             ? bodyAny.reasoning_effort
             : (typeof reasoning?.effort === "string" ? reasoning.effort : undefined);
 
-    if (candidate === undefined) {
-        if (reasoning?.enabled === false) return "none";
-        if (reasoning?.enabled === true) return "high";
-        return undefined;
+    // If caller explicitly passes reasoning effort, map "none" to disabled and
+    // coerce every other effort level to Mistral's supported "high" mode.
+    if (typeof candidate === "string") {
+        return candidate === "none" ? "none" : "high";
     }
 
-    if (candidate === "none" || candidate === "high") {
-        return candidate;
-    }
+    // Fallback control via reasoning.enabled.
+    if (reasoning?.enabled === true) return "high";
+    if (reasoning?.enabled === false) return "none";
 
-    throw new Error(
-        "mistral_invalid_reasoning_effort: only 'none' and 'high' are supported"
-    );
+    // Default is reasoning off when no signal is provided.
+    return "none";
 }
 
-function mapGatewayToOpenAIChat(body: ChatCompletionsRequest, providerId: string) {
+function isMistralSmall4Model(modelId: string | undefined): boolean {
+    if (!modelId) return false;
+    const normalized = modelId.toLowerCase();
+    return normalized.includes("mistral-small-4") || normalized.includes("mistral-small-2603");
+}
+
+function mapGatewayToOpenAIChat(
+    body: ChatCompletionsRequest,
+    providerId: string,
+    gatewayModelId?: string
+) {
+    const shouldMapMistralReasoning =
+        providerId === "mistral" &&
+        (isMistralSmall4Model(body.model) || isMistralSmall4Model(gatewayModelId));
+
     const mistralReasoningEffort =
-        providerId === "mistral" ? resolveMistralReasoningEffort(body) : undefined;
+        shouldMapMistralReasoning ? resolveMistralReasoningEffort(body) : undefined;
 
     return {
         model: body.model,
@@ -427,7 +440,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         model: args.providerModelSlug || args.model,
         stream: true,
     };
-    const req = mapGatewayToOpenAIChat(modifiedBody, args.providerId);
+    const req = mapGatewayToOpenAIChat(modifiedBody, args.providerId, args.model);
     const res = await fetch(openAICompatUrl(args.providerId, "/chat/completions"), {
         method: "POST",
         headers: openAICompatHeaders(args.providerId, keyInfo.key),

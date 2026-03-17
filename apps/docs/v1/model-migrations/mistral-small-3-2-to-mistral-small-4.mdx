@@ -16,20 +16,28 @@ Previous common route:
 ## What changed
 
 - Mistral Small 4 exposes a reasoning mode control via `reasoning_effort`.
-- For this model route, only two values are valid:
-  - `none`
-  - `high`
+- Gateway sends only two upstream values for this model route:
+  - `none` (reasoning off)
+  - `high` (reasoning on)
 - Gateway normalizes Mistral thinking blocks back into standard response fields:
   - `message.content` for assistant-visible text
   - `message.reasoning_content` and `message.reasoning_details` for reasoning text
 
 ## Required request changes
 
-When you set reasoning effort for Mistral Small 4 through AI Stats Gateway:
+Reasoning defaults to off for this route.
 
-- pass `reasoning.effort: "none"` for lightweight behavior
-- pass `reasoning.effort: "high"` for deep reasoning
-- do not send other effort values for this route
+Gateway mapping rules:
+
+- if you omit reasoning controls, Gateway sends `reasoning_effort: "none"`
+- if you pass `reasoning.enabled: true`, Gateway sends `reasoning_effort: "high"`
+- if you pass `reasoning.effort: "none"`, Gateway sends `reasoning_effort: "none"`
+- if you pass any other `reasoning.effort` value, Gateway sends `reasoning_effort: "high"`
+
+Recommended usage:
+
+- use `reasoning.effort: "none"` for lightweight behavior
+- use `reasoning.effort: "high"` for deep reasoning
 
 Example:
 
