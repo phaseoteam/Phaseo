@@ -143,6 +143,11 @@ function clampReasoningEffort(effort: ReasoningEffort, supported: ReasoningEffor
     return best;
 }
 
+function isOpenAIGpt54Model(model: string | null | undefined): boolean {
+    if (!model || typeof model !== "string") return false;
+    return model.toLowerCase().includes("gpt-5.4");
+}
+
 function normalizeTemperature(
     temperature: number,
     protocolMax: number,
@@ -273,6 +278,16 @@ export function normalizeIRForProvider(
 	}
 	if (nextReasoning) {
 		const reasoning = { ...nextReasoning };
+
+        if (
+            providerId === "openai" &&
+            isOpenAIGpt54Model(modelForReasoning ?? ir.model) &&
+            reasoning.enabled === true &&
+            !isReasoningEffort(reasoning.effort)
+        ) {
+            // Normalize "enabled only" requests on GPT-5.4* to a stable explicit effort.
+            reasoning.effort = "medium";
+        }
 
         if (providerId === "openai" && reasoning.summary == null) {
             // Keep OpenAI responses stable when callers omit summary.
