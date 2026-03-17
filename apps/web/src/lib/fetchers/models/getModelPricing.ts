@@ -81,6 +81,9 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
     const mentionsTargetColumn =
         text.includes("context_length") ||
         text.includes("max_output_tokens") ||
+        text.includes("prompt_training_policy") ||
+        text.includes("prompt_training_notes") ||
+        text.includes("prompt_training_source_url") ||
         text.includes("prompt_training_policy_override") ||
         text.includes("prompt_training_override_notes") ||
         text.includes("prompt_training_override_source_url");
