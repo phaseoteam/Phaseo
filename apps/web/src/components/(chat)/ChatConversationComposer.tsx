@@ -68,9 +68,6 @@ interface ChatConversationComposerProps {
 	isStartingRecording: boolean;
 	recordingSupported: boolean;
 	onToggleRecording: () => void;
-	speechToTextSupported: boolean;
-	isSpeechToTextActive: boolean;
-	onToggleSpeechToText: () => void;
 	onOpenModelPicker: () => void;
 	onSubmit: () => void;
 	onComposerChange: (value: string) => void;
@@ -107,9 +104,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		isStartingRecording,
 		recordingSupported,
 		onToggleRecording,
-		speechToTextSupported,
-		isSpeechToTextActive,
-		onToggleSpeechToText,
 		onOpenModelPicker,
 		onSubmit,
 		onComposerChange,
@@ -217,7 +211,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 												alt={selectedOrgId}
 												width={16}
 												height={16}
-												className="rounded-xl shrink-0"
+												className="shrink-0 rounded-none"
 											/>
 										)}
 									</Button>
@@ -362,41 +356,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							</Popover>
 						</div>
 						<div className="flex items-center gap-2">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className={cn(
-											"h-8 w-8",
-											isSpeechToTextActive
-												? "bg-primary/12 text-primary hover:bg-primary/20 hover:text-primary"
-												: "",
-										)}
-										disabled={!speechToTextSupported}
-										onClick={onToggleSpeechToText}
-										aria-label={
-											isSpeechToTextActive
-												? "Stop speech to text"
-												: "Start speech to text"
-										}
-									>
-										{isSpeechToTextActive ? (
-											<Square className="h-3.5 w-3.5 fill-current" />
-										) : (
-											<Mic className="h-4 w-4" />
-										)}
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									{speechToTextSupported
-										? isSpeechToTextActive
-											? "Stop voice dictation"
-											: "Dictate prompt from microphone"
-										: "Speech recognition is unavailable in this browser"}
-								</TooltipContent>
-							</Tooltip>
 							<Button
 								size="icon"
 								onClick={onSubmit}

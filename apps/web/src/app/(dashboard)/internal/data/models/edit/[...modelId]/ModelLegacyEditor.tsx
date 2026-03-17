@@ -308,6 +308,12 @@ export default function ModelLegacyEditor({
 							provider_id: row.provider_id,
 							api_model_id: row.api_model_id,
 							provider_model_slug: row.provider_model_slug ?? null,
+							prompt_training_policy_override:
+								row.prompt_training_policy_override ?? null,
+							prompt_training_override_notes:
+								row.prompt_training_override_notes ?? null,
+							prompt_training_override_source_url:
+								row.prompt_training_override_source_url ?? null,
 							is_active_gateway: Boolean(row.is_active_gateway),
 							input_modalities: row.input_modalities ?? null,
 							output_modalities: row.output_modalities ?? null,

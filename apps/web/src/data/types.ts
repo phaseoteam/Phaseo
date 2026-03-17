@@ -59,6 +59,15 @@ export interface APIProvider {
     api_provider_name: string;
     description: string | null;
     link: string | null;
+    prompt_training_policy?:
+        | "unknown"
+        | "may_train"
+        | "no_train"
+        | "opt_out_available"
+        | "enterprise_no_train"
+        | null;
+    prompt_training_notes?: string | null;
+    prompt_training_source_url?: string | null;
 }
 
 export interface Price {

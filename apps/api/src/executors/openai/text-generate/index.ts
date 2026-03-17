@@ -49,6 +49,8 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5.3": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.3-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4": new Set(["none", "low", "medium", "high", "xhigh"]),
+	"gpt-5.4-mini": new Set(["none", "low", "medium", "high", "xhigh"]),
+	"gpt-5.4-nano": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),

@@ -10,6 +10,25 @@ function toFixed10(n: number) {
     return Number(n).toFixed(10);
 }
 
+function normalizeTimestamp(value: unknown): string | null {
+    if (value === null || value === undefined || value === "") return null;
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const asNumber = Number(trimmed);
+        if (Number.isFinite(asNumber) && /^-?\d+(\.\d+)?$/.test(trimmed)) {
+            const excelEpochMs = Date.UTC(1899, 11, 30);
+            return new Date(excelEpochMs + asNumber * 86_400_000).toISOString();
+        }
+        return trimmed;
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+        const excelEpochMs = Date.UTC(1899, 11, 30);
+        return new Date(excelEpochMs + value * 86_400_000).toISOString();
+    }
+    return String(value);
+}
+
 function deepSortObjectKeys(x: any): any {
     if (Array.isArray(x)) {
         // preserve array order (priority often matters)
@@ -30,8 +49,8 @@ function digestRule(r: any) {
         price: toFixed10((r.price_per_unit ?? r.price_usd_per_unit ?? 0) as number),
         pricing_plan: r.pricing_plan ?? r.pricingPlan ?? null,
         note: r.note ?? null,
-        effective_from: r.effective_from ?? null,
-        effective_to: r.effective_to ?? null,
+        effective_from: normalizeTimestamp(r.effective_from),
+        effective_to: normalizeTimestamp(r.effective_to),
         conditions: deepSortObjectKeys(r.match ?? []),
     };
     return createHash("md5").update(JSON.stringify(payload)).digest("hex");
@@ -173,8 +192,8 @@ export async function loadPricing(
                         note: r.note ?? null,
                         match: r.match ?? [],
                         priority: prio,
-                        effective_from: r.effective_from ?? null,
-                        effective_to: r.effective_to ?? null,
+                        effective_from: normalizeTimestamp(r.effective_from),
+                        effective_to: normalizeTimestamp(r.effective_to),
                     });
                 }
 

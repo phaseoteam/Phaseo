@@ -8146,7 +8146,7 @@
       }
     },
     "src/data/api_providers/ai21/models.json": {
-      "hash": "dce565163be6bbad6eab91f0b6a6c16c",
+      "hash": "10678bc0ea421207aafbcdcf006853aa",
       "meta": {
         "api_provider_id": "ai21",
         "kind": "provider_models"
@@ -8243,7 +8243,7 @@
       }
     },
     "src/data/api_providers/baseten/models.json": {
-      "hash": "4eb62d8752d2373e169a095907b99cf4",
+      "hash": "5cbc23edf03289abd887f2b0ebac109e",
       "meta": {
         "api_provider_id": "baseten",
         "kind": "provider_models"
@@ -8497,7 +8497,7 @@
       }
     },
     "src/data/api_providers/mistral/models.json": {
-      "hash": "f4c73b060e83bfc646bcea1d2e3e53d4",
+      "hash": "f04ef9e98650f9d472953443d704aa73",
       "meta": {
         "api_provider_id": "mistral",
         "kind": "provider_models"
@@ -8586,7 +8586,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "331d210075eae8e380a000b5d39f2327",
+      "hash": "43df9f59e0fb5b42daa01a178baceb1b",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -8687,7 +8687,7 @@
       }
     },
     "src/data/api_providers/weights-and-biases/models.json": {
-      "hash": "7b66d3f4ae52933aa143eb484ca44f47",
+      "hash": "c165e7bdc596e897d34460aec93856d7",
       "meta": {
         "api_provider_id": "weights-and-biases",
         "kind": "provider_models"
@@ -8700,7 +8700,7 @@
       }
     },
     "src/data/api_providers/x-ai/models.json": {
-      "hash": "16aa967ff8a9cd16513710b99a4b6c0d",
+      "hash": "b77123539eca8cbedd69dbaa4b027f8c",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -8726,7 +8726,7 @@
       }
     },
     "src/data/api_providers/z-ai/models.json": {
-      "hash": "48999bdb156bf60dd08543f3cbe67254",
+      "hash": "3d41eaf7477db95403b917ee7550f51e",
       "meta": {
         "api_provider_id": "z-ai",
         "kind": "provider_models"
@@ -10947,21 +10947,21 @@
       }
     },
     "src/data/subscription_plans/chatgpt-free/plan.json": {
-      "hash": "357edd8478ec6421dd5654d5f4176f50",
+      "hash": "37fc16bab7f12f4085d60791810605c3",
       "meta": {
         "plan_id": "chatgpt-free",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/chatgpt-go/plan.json": {
-      "hash": "4442e258e63cf58d078d3e7ca817a49c",
+      "hash": "38af475a76791dee341a6e21216b92b8",
       "meta": {
         "plan_id": "chatgpt-go",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/chatgpt-plus/plan.json": {
-      "hash": "60efe11ec71c204a2cd2ad887b4f9296",
+      "hash": "584f207d3dbf5d3293064201d9366576",
       "meta": {
         "plan_id": "chatgpt-plus",
         "organisation_id": "openai"
@@ -11174,7 +11174,7 @@
       }
     },
     "src/data/models/x-ai/grok-4-20-2026-02-17/model.json": {
-      "hash": "ab91e01528a4570efa0e4e013e1c7a53",
+      "hash": "e8e0abe3683244e76c925c7b13755f21",
       "meta": {
         "model_id": "x-ai/grok-4-20-2026-02-17",
         "organisation_id": "x-ai",
@@ -11215,6 +11215,141 @@
         "capability_id": "text.generate",
         "model_id": "x-ai/grok-4.20-multi-agent-beta-0309",
         "model_key": "x-ai:x-ai/grok-4.20-multi-agent-beta-0309:text.generate"
+      }
+    },
+    "src/data/models/mistral/leanstral-2026-03-16/model.json": {
+      "hash": "b232c9ba397c7e634ea00068b23b654f",
+      "meta": {
+        "model_id": "mistral/leanstral-2026-03-16",
+        "organisation_id": "mistral",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/mistral/mistral-small-4-2026-03-16/model.json": {
+      "hash": "3ec8d87f2b044cde245bf1d9ae7b989b",
+      "meta": {
+        "model_id": "mistral/mistral-small-4-2026-03-16",
+        "organisation_id": "mistral",
+        "previous_model_id": "mistral/mistral-small-3-2-2025-06-20"
+      }
+    },
+    "src/data/models/nvidia/nemotron-3-super-2026-03-11/model.json": {
+      "hash": "7867fc5731e007607b7b60326112874b",
+      "meta": {
+        "model_id": "nvidia/nemotron-3-super-2026-03-11",
+        "organisation_id": "nvidia",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-5-4-mini-2026-03-17/model.json": {
+      "hash": "4427ba068502cf2a8fe03adef286bbd2",
+      "meta": {
+        "model_id": "openai/gpt-5-4-mini-2026-03-17",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-5-mini-2025-08-07"
+      }
+    },
+    "src/data/models/openai/gpt-5-4-nano-2026-03-17/model.json": {
+      "hash": "adcb270367a5bb14f80b5ae222fd5f07",
+      "meta": {
+        "model_id": "openai/gpt-5-4-nano-2026-03-17",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-5-nano-2025-08-07"
+      }
+    },
+    "src/data/models/x-ai/grok-4-20-multi-agent-beta-2026-02-17/model.json": {
+      "hash": "f35a2bcd0a88f3ba5d882f8d6ae37f53",
+      "meta": {
+        "model_id": "x-ai/grok-4-20-multi-agent-beta-2026-02-17",
+        "organisation_id": "x-ai",
+        "previous_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17"
+      }
+    },
+    "src/data/models/z-ai/glm-5-turbo-2026-03-15/model.json": {
+      "hash": "d0383936034276e7bd73b992bf90f591",
+      "meta": {
+        "model_id": "z-ai/glm-5-turbo-2026-03-15",
+        "organisation_id": "z-ai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/api_providers/nebius-token-factory/models.json": {
+      "hash": "e0e6c34244c34a6093820866a847c3d5",
+      "meta": {
+        "api_provider_id": "nebius-token-factory",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/pricing/baseten/nvidia-nemotron-3-super-120b-a12b/text.generate/pricing.json": {
+      "hash": "95920226843704fdce43e401d432cc09",
+      "meta": {
+        "api_provider_id": "baseten",
+        "capability_id": "text.generate",
+        "model_id": "nvidia/nemotron-3-super-120b-a12b",
+        "model_key": "baseten:nvidia/nemotron-3-super-120b-a12b:text.generate"
+      }
+    },
+    "src/data/pricing/mistral/mistral-leanstral-free/text.generate/pricing.json": {
+      "hash": "259f0841fe883be7ffa89f6068250cf0",
+      "meta": {
+        "api_provider_id": "mistral",
+        "capability_id": "text.generate",
+        "model_id": "mistral/leanstral:free",
+        "model_key": "mistral:mistral/leanstral:free:text.generate"
+      }
+    },
+    "src/data/pricing/mistral/mistral-mistral-small-4/text.generate/pricing.json": {
+      "hash": "ffe3e25302d26c5815479918a870ef37",
+      "meta": {
+        "api_provider_id": "mistral",
+        "capability_id": "text.generate",
+        "model_id": "mistral/mistral-small-4",
+        "model_key": "mistral:mistral/mistral-small-4:text.generate"
+      }
+    },
+    "src/data/pricing/nebius-token-factory/nvidia-nemotron-3-super-120b-a12b/text.generate/pricing.json": {
+      "hash": "06588ebf4aeb0638e791b9bc6ef3535c",
+      "meta": {
+        "api_provider_id": "nebius-token-factory",
+        "capability_id": "text.generate",
+        "model_id": "nvidia/nemotron-3-super-120b-a12b",
+        "model_key": "nebius-token-factory:nvidia/nemotron-3-super-120b-a12b:text.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-5.4-mini/text.generate/pricing.json": {
+      "hash": "aedee332dc44ad5aabbc53134e10109e",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-5.4-mini",
+        "model_key": "openai:openai/gpt-5.4-mini:text.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-5.4-nano/text.generate/pricing.json": {
+      "hash": "c88d065d3e646cc31471a399d5acd743",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-5.4-nano",
+        "model_key": "openai:openai/gpt-5.4-nano:text.generate"
+      }
+    },
+    "src/data/pricing/weights-and-biases/nvidia-nemotron-3-super-120b-a12b/text.generate/pricing.json": {
+      "hash": "8901a756a4e84ec41d034e837f170a84",
+      "meta": {
+        "api_provider_id": "weights-and-biases",
+        "capability_id": "text.generate",
+        "model_id": "nvidia/nemotron-3-super-120b-a12b",
+        "model_key": "weights-and-biases:nvidia/nemotron-3-super-120b-a12b:text.generate"
+      }
+    },
+    "src/data/pricing/z-ai/z-ai-glm-5-turbo/text.generate/pricing.json": {
+      "hash": "710c014fd50b9b4c0f741b819812cc9e",
+      "meta": {
+        "api_provider_id": "z-ai",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5-turbo",
+        "model_key": "z-ai:z-ai/glm-5-turbo:text.generate"
       }
     }
   }

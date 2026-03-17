@@ -33,6 +33,12 @@ type ProviderChange = {
 	removed: string[];
 };
 
+type DiscoveredModel = {
+	id: string;
+	modelDetails: Record<string, unknown>;
+	pricingDetails: unknown | null;
+};
+
 type PricingRuleRow = {
 	rule_id: string | null;
 	provider_id: string | null;
@@ -64,6 +70,17 @@ type PricingMonitorSummary = {
 	baselineInitialized: boolean;
 	cursorUpdatedAt: string | null;
 	ruleIdsAtTimestamp?: string[];
+	updatesDetected: number;
+	providersChanged: number;
+	providerChanges: PricingProviderChange[];
+	error?: string | null;
+};
+
+type ProviderApiPricingMonitorSummary = {
+	enabled: boolean;
+	executed: boolean;
+	baselineInitialized: boolean;
+	modelsWithPricing: number;
 	updatesDetected: number;
 	providersChanged: number;
 	providerChanges: PricingProviderChange[];
@@ -108,11 +125,13 @@ type DiscoveryRunSummary = {
 	results: ProviderResult[];
 	changes: ProviderChange[];
 	pricingMonitor: PricingMonitorSummary;
+	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
 };
 
 type SupabaseSeenModelRow = {
 	provider_id: string;
 	model_id: string;
+	pricing_details?: unknown;
 };
 
 type RunStatus = "completed" | "completed_with_errors" | "failed";
@@ -130,6 +149,9 @@ const MAX_PRICING_SAMPLE_LINES = 6;
 const MAX_PRICING_ROWS = 5_000;
 const PRICING_PAGE_SIZE = 500;
 const RUNS_RETENTION_DAYS = 5;
+const PRICING_KEY_PATTERN = /(price|pricing|cost|billing|currency|rate|meter|unit|token)/i;
+const PRICING_EXTRACTION_MAX_DEPTH = 4;
+const MAX_SAMPLE_TEXT_LENGTH = 180;
 
 const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "ai21", providerName: "AI21", modelsEndpoint: "https://api.ai21.com/studio/v1/models", apiKeyEnv: ["AI21_API_KEY"] },
@@ -262,6 +284,74 @@ function asArray(value: unknown): unknown[] {
 	return Array.isArray(value) ? value : [];
 }
 
+function normalizeJson(value: unknown): unknown {
+	if (Array.isArray(value)) {
+		return value.map((item) => normalizeJson(item));
+	}
+	if (value && typeof value === "object") {
+		const entries = Object.entries(value as Record<string, unknown>)
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([key, nested]) => [key, normalizeJson(nested)] as const);
+		return Object.fromEntries(entries);
+	}
+	return value;
+}
+
+function toPricingFingerprint(value: unknown): string | null {
+	if (value === null || value === undefined) return null;
+	if (typeof value === "object" && !Array.isArray(value)) {
+		if (Object.keys(value as Record<string, unknown>).length === 0) return null;
+	}
+	return JSON.stringify(normalizeJson(value));
+}
+
+function extractPricingDetailsFromValue(value: unknown, depth = 0, parentKey = ""): unknown | null {
+	if (depth > PRICING_EXTRACTION_MAX_DEPTH) return null;
+	const parentMatches = parentKey ? PRICING_KEY_PATTERN.test(parentKey) : false;
+
+	if (Array.isArray(value)) {
+		const nested = value
+			.map((item) => extractPricingDetailsFromValue(item, depth + 1, parentKey))
+			.filter((item): item is unknown => item !== null);
+		if (nested.length === 0) return null;
+		return normalizeJson(nested);
+	}
+
+	if (value && typeof value === "object") {
+		const input = value as Record<string, unknown>;
+		const out: Record<string, unknown> = {};
+		for (const [key, nestedValue] of Object.entries(input)) {
+			if (PRICING_KEY_PATTERN.test(key)) {
+				out[key] = normalizeJson(nestedValue);
+				continue;
+			}
+			const nested = extractPricingDetailsFromValue(nestedValue, depth + 1, key);
+			if (nested !== null) {
+				out[key] = nested;
+			}
+		}
+		if (Object.keys(out).length === 0) return parentMatches ? normalizeJson(value) : null;
+		return normalizeJson(out);
+	}
+
+	if (!parentMatches) return null;
+	if (
+		typeof value === "number" ||
+		typeof value === "string" ||
+		typeof value === "boolean"
+	) {
+		return value;
+	}
+	return null;
+}
+
+function samplePricingDetailsText(value: unknown): string {
+	if (value === null || value === undefined) return "no pricing details";
+	const text = JSON.stringify(normalizeJson(value));
+	if (!text) return "no pricing details";
+	return text.length <= MAX_SAMPLE_TEXT_LENGTH ? text : `${text.slice(0, MAX_SAMPLE_TEXT_LENGTH - 3)}...`;
+}
+
 function isPlaceholderValue(raw: string): boolean {
 	const value = raw.trim().toLowerCase();
 	if (!value) return true;
@@ -370,7 +460,7 @@ function shouldIncludeDiscoveredModel(providerId: string, row: Record<string, un
 	return true;
 }
 
-function extractModelIds(providerId: string, payload: unknown): string[] {
+function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const root = asRecord(payload);
 	if (!root) return [];
 
@@ -380,7 +470,7 @@ function extractModelIds(providerId: string, payload: unknown): string[] {
 		asRecord(root.result)?.models,
 	];
 
-	const output = new Set<string>();
+	const output = new Map<string, DiscoveredModel>();
 
 	for (const collection of candidateCollections) {
 		for (const item of asArray(collection)) {
@@ -391,16 +481,23 @@ function extractModelIds(providerId: string, payload: unknown): string[] {
 			for (const value of candidates) {
 				if (typeof value !== "string") continue;
 				const normalized = normalizeModelId(providerId, value);
-				if (normalized) output.add(normalized);
+				if (!normalized) continue;
+				const modelDetails = normalizeJson(row) as Record<string, unknown>;
+				const pricingDetails = extractPricingDetailsFromValue(modelDetails);
+				output.set(normalized, {
+					id: normalized,
+					modelDetails,
+					pricingDetails,
+				});
 				break;
 			}
 		}
 	}
 
-	return Array.from(output).sort((a, b) => a.localeCompare(b));
+	return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-async function fetchProviderModels(provider: ProviderConfig, apiKey: string): Promise<string[]> {
+async function fetchProviderModels(provider: ProviderConfig, apiKey: string): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
@@ -438,7 +535,7 @@ async function fetchProviderModels(provider: ProviderConfig, apiKey: string): Pr
 		}
 
 		const payload = await response.json();
-		return extractModelIds(provider.providerId, payload);
+		return extractDiscoveredModels(provider.providerId, payload);
 	} finally {
 		clearTimeout(timeout);
 	}
@@ -680,19 +777,56 @@ function buildPricingDiscordSection(pricing: PricingMonitorSummary): string {
 	return lines.join("\n").trim();
 }
 
-function buildDiscordMessage(args: { modelChanges: ProviderChange[]; pricing: PricingMonitorSummary }): string {
+function buildProviderApiPricingDiscordSection(pricing: ProviderApiPricingMonitorSummary): string {
+	if (pricing.updatesDetected === 0 || pricing.providerChanges.length === 0) return "";
+	const lines: string[] = [
+		`Provider API pricing hints changed for ${pricing.updatesDetected} model${pricing.updatesDetected === 1 ? "" : "s"} across ${pricing.providerChanges.length} provider${pricing.providerChanges.length === 1 ? "" : "s"}.`,
+		"",
+	];
+
+	for (const provider of pricing.providerChanges.slice(0, MAX_PRICING_PROVIDER_LINES)) {
+		lines.push(`${provider.providerId}`);
+		lines.push(`Updates (${provider.updates}):`);
+		appendBulletedList(lines, provider.samples);
+		lines.push("");
+	}
+
+	if (pricing.providerChanges.length > MAX_PRICING_PROVIDER_LINES) {
+		lines.push(`...and ${pricing.providerChanges.length - MAX_PRICING_PROVIDER_LINES} more provider(s).`);
+	}
+
+	return lines.join("\n").trim();
+}
+
+function buildDiscordMessage(args: {
+	modelChanges: ProviderChange[];
+	pricing: PricingMonitorSummary;
+	providerApiPricing: ProviderApiPricingMonitorSummary;
+}): string {
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
 	const pricingSection = buildPricingDiscordSection(args.pricing);
+	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
 	if (modelSection) sections.push(modelSection);
 	if (pricingSection) sections.push(pricingSection);
+	if (providerApiPricingSection) sections.push(providerApiPricingSection);
 	const text = sections.join("\n\n").trim();
 	if (text.length <= 1900) return text;
 	return `${text.slice(0, 1888)}\n...[truncated]`;
 }
 
-async function sendDiscordNotification(args: { modelChanges: ProviderChange[]; pricing: PricingMonitorSummary }): Promise<void> {
-	if (args.modelChanges.length === 0 && args.pricing.updatesDetected === 0) return;
+async function sendDiscordNotification(args: {
+	modelChanges: ProviderChange[];
+	pricing: PricingMonitorSummary;
+	providerApiPricing: ProviderApiPricingMonitorSummary;
+}): Promise<void> {
+	if (
+		args.modelChanges.length === 0 &&
+		args.pricing.updatesDetected === 0 &&
+		args.providerApiPricing.updatesDetected === 0
+	) {
+		return;
+	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
 	if (!webhookUrl) return;
 
@@ -780,6 +914,20 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 			})),
 			error: summary.pricingMonitor.error ?? undefined,
 		},
+		providerApiPricingMonitor: {
+			enabled: summary.providerApiPricingMonitor.enabled,
+			executed: summary.providerApiPricingMonitor.executed,
+			baselineInitialized: summary.providerApiPricingMonitor.baselineInitialized,
+			modelsWithPricing: summary.providerApiPricingMonitor.modelsWithPricing,
+			updatesDetected: summary.providerApiPricingMonitor.updatesDetected,
+			providersChanged: summary.providerApiPricingMonitor.providersChanged,
+			providerChanges: summary.providerApiPricingMonitor.providerChanges.map((provider) => ({
+				providerId: provider.providerId,
+				updates: provider.updates,
+				samples: provider.samples.slice(0, MAX_SUMMARY_MODEL_SAMPLES),
+			})),
+			error: summary.providerApiPricingMonitor.error ?? undefined,
+		},
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -809,6 +957,8 @@ type SeenModelUpsertRow = {
 	provider_id: string;
 	provider_name: string;
 	model_id: string;
+	model_details: Record<string, unknown>;
+	pricing_details: unknown;
 	last_seen_at: string;
 	last_run_id: string;
 };
@@ -818,33 +968,55 @@ type SeenModelDeleteRow = {
 	model_id: string;
 };
 
-async function fetchPreviousModelIdsByProviders(providerIds: string[]): Promise<Map<string, string[]>> {
-	const map = new Map<string, string[]>();
-	for (const providerId of providerIds) map.set(providerId, []);
-	if (providerIds.length === 0) return map;
+type PreviousProviderModels = {
+	modelIds: string[];
+	pricingByModelId: Map<string, string | null>;
+};
+
+type PreviousModelsState = {
+	byProvider: Map<string, PreviousProviderModels>;
+	pricingSnapshotReady: boolean;
+};
+
+async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<PreviousModelsState> {
+	const map = new Map<string, PreviousProviderModels>();
+	for (const providerId of providerIds) {
+		map.set(providerId, {
+			modelIds: [],
+			pricingByModelId: new Map<string, string | null>(),
+		});
+	}
+	if (providerIds.length === 0) {
+		return { byProvider: map, pricingSnapshotReady: false };
+	}
 
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("model_discovery_seen_models")
-		.select("provider_id,model_id")
+		.select("provider_id,model_id,pricing_details")
 		.in("provider_id", providerIds);
 
 	if (error) {
 		throw new Error(error.message || "Failed to load previous discovered models");
 	}
 
+	let pricingSnapshotReady = false;
+
 	for (const row of (data ?? []) as SupabaseSeenModelRow[]) {
 		if (typeof row.provider_id !== "string" || typeof row.model_id !== "string") continue;
-		const list = map.get(row.provider_id);
-		if (!list) continue;
-		list.push(row.model_id);
+		const state = map.get(row.provider_id);
+		if (!state) continue;
+		state.modelIds.push(row.model_id);
+		const fingerprint = toPricingFingerprint(row.pricing_details ?? null);
+		if (fingerprint) pricingSnapshotReady = true;
+		state.pricingByModelId.set(row.model_id, fingerprint);
 	}
 
-	for (const [, list] of map) {
-		list.sort((a, b) => a.localeCompare(b));
+	for (const [, state] of map) {
+		state.modelIds.sort((a, b) => a.localeCompare(b));
 	}
 
-	return map;
+	return { byProvider: map, pricingSnapshotReady };
 }
 
 async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
@@ -943,7 +1115,10 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const changes: ProviderChange[] = [];
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = [];
-		const previousByProvider = await fetchPreviousModelIdsByProviders(providers.map((provider) => provider.providerId));
+		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
+		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
+		let providerApiModelsWithPricing = 0;
+		const providerApiPricingBaselineInitialized = !previousState.pricingSnapshotReady;
 
 		for (const provider of providers) {
 			const apiKey = readBindingEnv(provider.apiKeyEnv);
@@ -959,16 +1134,23 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 
 			const providerStarted = Date.now();
 			try {
-				const currentModelIds = await fetchProviderModels(provider, apiKey);
-				const previousModelIds = previousByProvider.get(provider.providerId) ?? [];
+				const discoveredModels = await fetchProviderModels(provider, apiKey);
+				const currentModelIds = discoveredModels.map((model) => model.id);
+				const previousProviderState = previousState.byProvider.get(provider.providerId);
+				const previousModelIds = previousProviderState?.modelIds ?? [];
 				const { added, removed } = diffModelIds(previousModelIds, currentModelIds);
 
 				const nowIso = new Date().toISOString();
-				for (const modelId of currentModelIds) {
+				for (const model of discoveredModels) {
+					if (toPricingFingerprint(model.pricingDetails)) {
+						providerApiModelsWithPricing += 1;
+					}
 					upsertRows.push({
 						provider_id: provider.providerId,
 						provider_name: provider.providerName,
-						model_id: modelId,
+						model_id: model.id,
+						model_details: model.modelDetails,
+						pricing_details: model.pricingDetails,
 						last_seen_at: nowIso,
 						last_run_id: runId,
 					});
@@ -992,6 +1174,27 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 							removed,
 						};
 				if (change) changes.push(change);
+
+				if (!providerApiPricingBaselineInitialized) {
+					for (const model of discoveredModels) {
+						const previousFingerprint = previousProviderState?.pricingByModelId.get(model.id) ?? null;
+						const currentFingerprint = toPricingFingerprint(model.pricingDetails);
+						if (previousFingerprint === currentFingerprint) continue;
+
+						const existing = providerApiPricingChangesByProvider.get(provider.providerId) ?? {
+							providerId: provider.providerId,
+							updates: 0,
+							samples: [],
+						};
+						existing.updates += 1;
+						if (existing.samples.length < MAX_PRICING_SAMPLE_LINES) {
+							existing.samples.push(
+								`${model.id} | ${samplePricingDetailsText(model.pricingDetails)}`
+							);
+						}
+						providerApiPricingChangesByProvider.set(provider.providerId, existing);
+					}
+				}
 
 				results.push({
 					providerId: provider.providerId,
@@ -1031,6 +1234,15 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providersChanged: 0,
 			providerChanges: [],
 		};
+		let providerApiPricingMonitor: ProviderApiPricingMonitorSummary = {
+			enabled: true,
+			executed: true,
+			baselineInitialized: providerApiPricingBaselineInitialized,
+			modelsWithPricing: providerApiModelsWithPricing,
+			updatesDetected: 0,
+			providersChanged: 0,
+			providerChanges: [],
+		};
 
 		if (pricingExecuted) {
 			try {
@@ -1041,11 +1253,25 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				console.error("[model-discovery] Pricing monitor failed:", reason);
 			}
 		}
+		if (!providerApiPricingBaselineInitialized) {
+			const providerChanges = Array.from(providerApiPricingChangesByProvider.values())
+				.sort((a, b) => b.updates - a.updates || a.providerId.localeCompare(b.providerId));
+			providerApiPricingMonitor.providerChanges = providerChanges;
+			providerApiPricingMonitor.providersChanged = providerChanges.length;
+			providerApiPricingMonitor.updatesDetected = providerChanges.reduce(
+				(total, providerChange) => total + providerChange.updates,
+				0
+			);
+		}
 
 		let notificationError: string | null = null;
 		if (shouldNotify) {
 			try {
-				await sendDiscordNotification({ modelChanges: changes, pricing: pricingMonitor });
+				await sendDiscordNotification({
+					modelChanges: changes,
+					pricing: pricingMonitor,
+					providerApiPricing: providerApiPricingMonitor,
+				});
 			} catch (error) {
 				notificationError = error instanceof Error ? error.message : String(error);
 				console.error("[model-discovery] Discord notification failed:", notificationError);
@@ -1068,10 +1294,14 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			results,
 			changes,
 			pricingMonitor,
+			providerApiPricingMonitor,
 		};
 
 		const status: RunStatus =
-			summary.providersError > 0 || notificationError || Boolean(summary.pricingMonitor.error)
+			summary.providersError > 0 ||
+			notificationError ||
+			Boolean(summary.pricingMonitor.error) ||
+			Boolean(summary.providerApiPricingMonitor.error)
 				? "completed_with_errors"
 				: "completed";
 		await updateRunFinish(summary, status, { notificationError });
@@ -1098,6 +1328,15 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				executed: false,
 				baselineInitialized: false,
 				cursorUpdatedAt: null,
+				updatesDetected: 0,
+				providersChanged: 0,
+				providerChanges: [],
+			},
+			providerApiPricingMonitor: {
+				enabled: true,
+				executed: false,
+				baselineInitialized: false,
+				modelsWithPricing: 0,
 				updatesDetected: 0,
 				providersChanged: 0,
 				providerChanges: [],

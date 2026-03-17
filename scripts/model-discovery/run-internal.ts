@@ -401,16 +401,14 @@ function buildHfModelLine(modelId: string): string {
     return `- ${normalized} <${HUGGING_FACE_BASE_URL}/${normalized}>`;
 }
 
-function buildDiscordMessage(
+function buildInternalDiscordMessage(
     addedPaths: string[],
     removedPaths: string[],
-    hfAdditionsByOrg: HuggingFaceOrgAdditions[],
     currentFilesByPath: Record<string, ModelFileSnapshot>,
     previousFilesByPath: Record<string, ModelFileSnapshot>
 ): string {
-    const hfAdditionsTotal = countHfAdditions(hfAdditionsByOrg);
     const lines = [
-        `Detected ${addedPaths.length} new, ${removedPaths.length} removed internal model${addedPaths.length + removedPaths.length === 1 ? "" : "s"} and ${hfAdditionsTotal} new Hugging Face model${hfAdditionsTotal === 1 ? "" : "s"}.`,
+        `Detected ${addedPaths.length} new and ${removedPaths.length} removed internal model${addedPaths.length + removedPaths.length === 1 ? "" : "s"}.`,
         "",
     ];
 
@@ -437,22 +435,36 @@ function buildDiscordMessage(
         lines.push(buildInternalModelLine("Removed Model", snapshot));
     }
 
-    if (hfAdditionsByOrg.length > 0) {
-        if (addedPaths.length > 0 || removedPaths.length > 0) {
-            lines.push("");
-        }
-        for (const orgEntry of hfAdditionsByOrg) {
-            lines.push(`Hugging Face (${orgEntry.org}) Additions (${orgEntry.addedModelIds.length}):`);
-            appendBoundedLines(lines, orgEntry.addedModelIds.map(buildHfModelLine));
-            lines.push("");
-        }
+    const message = lines.join("\n").trim();
+    return message.length <= 1900 ? message : `${message.slice(0, 1890)}\n...[truncated]`;
+}
+
+function buildHfDiscordMessage(hfAdditionsByOrg: HuggingFaceOrgAdditions[]): string {
+    const total = countHfAdditions(hfAdditionsByOrg);
+    const lines: string[] = [
+        `:hugging: New Hugging Face model discovery detected (${total} model${total === 1 ? "" : "s"} across ${hfAdditionsByOrg.length} org${hfAdditionsByOrg.length === 1 ? "" : "s"}).`,
+        "",
+    ];
+
+    for (const orgEntry of hfAdditionsByOrg) {
+        lines.push(`New Hugging Face Models from ${orgEntry.org} (${orgEntry.addedModelIds.length}):`);
+        appendBoundedLines(lines, orgEntry.addedModelIds.map(buildHfModelLine));
+        lines.push("");
     }
 
     const message = lines.join("\n").trim();
     return message.length <= 1900 ? message : `${message.slice(0, 1890)}\n...[truncated]`;
 }
 
-async function sendDiscordWebhook(message: string, options: { webhookUrl: string; discordUserId: string | null; discordRoleId: string | null }): Promise<void> {
+async function sendDiscordWebhook(
+    message: string,
+    options: {
+        webhookUrl: string;
+        discordUserId: string | null;
+        discordRoleId: string | null;
+        includeMentions?: boolean;
+    }
+): Promise<void> {
     let parsed: URL;
     try {
         parsed = new URL(options.webhookUrl);
@@ -467,11 +479,13 @@ async function sendDiscordWebhook(message: string, options: { webhookUrl: string
     }
 
     const mentions: string[] = [];
-    if (options.discordRoleId) mentions.push(`<@&${options.discordRoleId}>`);
-    if (options.discordUserId) mentions.push(`<@${options.discordUserId}>`);
+    if (options.includeMentions !== false) {
+        if (options.discordRoleId) mentions.push(`<@&${options.discordRoleId}>`);
+        if (options.discordUserId) mentions.push(`<@${options.discordUserId}>`);
+    }
     const content = mentions.length > 0 ? `${mentions.join(" ")}\n${message}` : message;
     const payload: Record<string, unknown> = { content };
-    if (options.discordUserId || options.discordRoleId) {
+    if (options.includeMentions !== false && (options.discordUserId || options.discordRoleId)) {
         payload.allowed_mentions = {
             parse: [],
             users: options.discordUserId ? [options.discordUserId] : [],
@@ -560,22 +574,41 @@ async function main(): Promise<void> {
         return;
     }
 
-    const total = diff.added.length + diff.removed.length + hfAdditionsTotal;
-    const message = buildDiscordMessage(
-        diff.added,
-        diff.removed,
-        hfAdditionsByOrg,
-        currentFiles,
-        previousState.files
-    );
+    const internalChangeCount = diff.added.length + diff.removed.length;
+    const shouldSendInternal = internalChangeCount > 0;
+    const shouldSendHf = hfAdditionsTotal > 0;
+
     console.log(
-        `[internal-model-check] ${total} model change(s) detected (${diff.added.length} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification.`
+        `[internal-model-check] Changes detected (${diff.added.length} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`
     );
-    await sendDiscordWebhook(message, {
-        webhookUrl: options.webhookUrl,
-        discordUserId: options.discordUserId,
-        discordRoleId: options.discordRoleId,
-    });
+
+    let mentionsSent = false;
+
+    if (shouldSendInternal) {
+        const internalMessage = buildInternalDiscordMessage(
+            diff.added,
+            diff.removed,
+            currentFiles,
+            previousState.files
+        );
+        await sendDiscordWebhook(internalMessage, {
+            webhookUrl: options.webhookUrl,
+            discordUserId: options.discordUserId,
+            discordRoleId: options.discordRoleId,
+            includeMentions: true,
+        });
+        mentionsSent = true;
+    }
+
+    if (shouldSendHf) {
+        const hfMessage = buildHfDiscordMessage(hfAdditionsByOrg);
+        await sendDiscordWebhook(hfMessage, {
+            webhookUrl: options.webhookUrl,
+            discordUserId: options.discordUserId,
+            discordRoleId: options.discordRoleId,
+            includeMentions: !mentionsSent,
+        });
+    }
 }
 
 main().catch((error) => {

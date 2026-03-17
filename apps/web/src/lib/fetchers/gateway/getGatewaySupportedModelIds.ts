@@ -12,6 +12,7 @@ type ActiveGatewayModelRow = {
     provider?: {
         api_provider_id: string;
         api_provider_name?: string | null;
+        prompt_training_policy?: string | null;
     } | null;
     model?: {
         model_id: string;
@@ -42,6 +43,7 @@ export type GatewaySupportedModel = {
     effectiveFrom: string | null;
     effectiveTo: string | null;
     providerName: string | null;
+    providerPromptTrainingPolicy: string | null;
     modelName: string | null;
     modelStatus: string | null;
     organisationId: string | null;
@@ -104,7 +106,7 @@ async function fetchActiveGatewayModels(
 
     const { data: providers } = await client
         .from("data_api_providers")
-        .select("api_provider_id, api_provider_name")
+        .select("api_provider_id, api_provider_name, prompt_training_policy")
         .in("api_provider_id", providerIds);
     const { data: models } = await client
         .from("data_models")
@@ -193,6 +195,7 @@ export async function getGatewaySupportedModels(
             effectiveFrom: row.effective_from ?? null,
             effectiveTo: row.effective_to ?? null,
             providerName: row.provider?.api_provider_name ?? null,
+            providerPromptTrainingPolicy: row.provider?.prompt_training_policy ?? null,
             modelName: row.model?.name ?? null,
             modelStatus: status,
             organisationId: row.model?.organisation_id ?? null,

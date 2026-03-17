@@ -348,6 +348,38 @@ export default function ProviderCard({
 								providerId={sec.providerId}
 								providerModelSlugs={providerModelSlugs}
 								quantizationSchemes={quantizationSchemes}
+								promptTraining={
+									infoScope.length > 0
+										? infoScope.map((providerModel) => ({
+												policy:
+													providerModel.prompt_training_policy_override ??
+													provider.provider.prompt_training_policy ??
+													null,
+												notes:
+													providerModel.prompt_training_override_notes ??
+													provider.provider.prompt_training_notes ??
+													null,
+												sourceUrl:
+													providerModel.prompt_training_override_source_url ??
+													provider.provider.prompt_training_source_url ??
+													null,
+												isOverride: Boolean(
+													providerModel.prompt_training_policy_override,
+												),
+										  }))
+										: [
+												{
+													policy:
+														provider.provider.prompt_training_policy ?? null,
+													notes:
+														provider.provider.prompt_training_notes ?? null,
+													sourceUrl:
+														provider.provider
+															.prompt_training_source_url ?? null,
+													isOverride: false,
+												},
+										  ]
+								}
 							/>
 							<ProviderModelParameters models={infoScope} />
 						</div>

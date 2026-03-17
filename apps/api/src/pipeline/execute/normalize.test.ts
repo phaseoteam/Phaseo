@@ -86,4 +86,39 @@ describe("normalizeIRForProvider", () => {
 		expect(normalized.reasoning?.effort).toBe("high");
 		expect(normalized.reasoning?.summary).toBe("auto");
 	});
+
+	it("defaults OpenAI gpt-5.4 enabled reasoning to medium effort", () => {
+		const ir = baseIr({
+			model: "openai/gpt-5.4-mini",
+			reasoning: { enabled: true },
+		});
+
+		const normalized = normalizeIRForProvider(ir, "openai", "openai.responses");
+		expect(normalized.reasoning?.enabled).toBe(true);
+		expect(normalized.reasoning?.effort).toBe("medium");
+		expect(normalized.reasoning?.summary).toBe("auto");
+	});
+
+	it("does not override explicit effort for OpenAI gpt-5.4", () => {
+		const ir = baseIr({
+			model: "openai/gpt-5.4-nano",
+			reasoning: { enabled: true, effort: "high" },
+		});
+
+		const normalized = normalizeIRForProvider(ir, "openai", "openai.responses");
+		expect(normalized.reasoning?.enabled).toBe(true);
+		expect(normalized.reasoning?.effort).toBe("high");
+	});
+
+	it("does not force medium effort outside OpenAI gpt-5.4", () => {
+		const ir = baseIr({
+			model: "openai/gpt-5.3-chat-2026-03-03",
+			reasoning: { enabled: true },
+		});
+
+		const normalized = normalizeIRForProvider(ir, "openai", "openai.responses");
+		expect(normalized.reasoning?.enabled).toBe(true);
+		expect(normalized.reasoning?.effort).toBeUndefined();
+		expect(normalized.reasoning?.summary).toBe("auto");
+	});
 });

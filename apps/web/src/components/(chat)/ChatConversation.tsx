@@ -94,13 +94,10 @@ export function ChatConversation({
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
 	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
 	const [sendGateType, setSendGateType] = useState<SendGateType | null>(null);
-	const [speechToTextSupported, setSpeechToTextSupported] = useState(false);
-	const [isSpeechToTextActive, setIsSpeechToTextActive] = useState(false);
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const mediaStreamRef = useRef<MediaStream | null>(null);
 	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
-	const speechRecognitionRef = useRef<any>(null);
 
 	const placeholder = useMemo(() => {
 		return getRandomPlaceholder();
@@ -157,14 +154,6 @@ export function ChatConversation({
 			typeof MediaRecorder !== "undefined" &&
 			typeof navigator.mediaDevices?.getUserMedia === "function";
 		setRecordingSupported(supported);
-	}, []);
-
-	useEffect(() => {
-		if (typeof window === "undefined") return;
-		const supportsSpeechToText = Boolean(
-			(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition,
-		);
-		setSpeechToTextSupported(supportsSpeechToText);
 	}, []);
 
 	useEffect(() => {
@@ -256,19 +245,6 @@ export function ChatConversation({
 			if (mediaStreamRef.current) {
 				for (const track of mediaStreamRef.current.getTracks()) {
 					track.stop();
-				}
-			}
-		};
-	}, []);
-
-	useEffect(() => {
-		return () => {
-			const recognition = speechRecognitionRef.current;
-			if (recognition) {
-				try {
-					recognition.stop();
-				} catch {
-					// ignore stop errors
 				}
 			}
 		};
@@ -427,63 +403,6 @@ export function ChatConversation({
 		void startRecording();
 	}, [isRecording, isStartingRecording, startRecording, stopRecording]);
 
-	const toggleSpeechToText = useCallback(() => {
-		if (!speechToTextSupported) return;
-		const activeRecognition = speechRecognitionRef.current;
-		if (isSpeechToTextActive && activeRecognition) {
-			try {
-				activeRecognition.stop();
-			} catch {
-				// ignore stop errors
-			}
-			setIsSpeechToTextActive(false);
-			return;
-		}
-
-		const SpeechRecognitionCtor =
-			(window as any).SpeechRecognition ||
-			(window as any).webkitSpeechRecognition;
-		if (!SpeechRecognitionCtor) return;
-
-		const recognition = new SpeechRecognitionCtor();
-		recognition.lang =
-			typeof navigator !== "undefined" && navigator.language
-				? navigator.language
-				: "en-US";
-		recognition.interimResults = true;
-		recognition.continuous = false;
-		recognition.maxAlternatives = 1;
-		recognition.onresult = (event: any) => {
-			const chunks: string[] = [];
-			for (let i = event.resultIndex; i < event.results.length; i += 1) {
-				if (!event.results[i]?.isFinal) continue;
-				const value = event.results[i]?.[0]?.transcript;
-				if (typeof value === "string" && value.trim()) {
-					chunks.push(value.trim());
-				}
-			}
-			if (!chunks.length) return;
-			const transcript = chunks.join(" ").trim();
-			setComposer((prev) => {
-				if (!prev.trim()) return transcript;
-				return `${prev}${prev.endsWith(" ") ? "" : " "}${transcript}`;
-			});
-		};
-		recognition.onerror = () => {
-			setIsSpeechToTextActive(false);
-		};
-		recognition.onend = () => {
-			setIsSpeechToTextActive(false);
-		};
-		speechRecognitionRef.current = recognition;
-		try {
-			recognition.start();
-			setIsSpeechToTextActive(true);
-		} catch {
-			setIsSpeechToTextActive(false);
-		}
-	}, [isSpeechToTextActive, speechToTextSupported]);
-
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
 			<ScrollArea className="flex-1" ref={scrollAreaRef}>
@@ -560,9 +479,6 @@ export function ChatConversation({
 				isStartingRecording={isStartingRecording}
 				recordingSupported={recordingSupported}
 				onToggleRecording={toggleRecording}
-				speechToTextSupported={speechToTextSupported}
-				isSpeechToTextActive={isSpeechToTextActive}
-				onToggleSpeechToText={toggleSpeechToText}
 				onOpenModelPicker={onOpenModelPicker}
 				onSubmit={handleSubmit}
 				onComposerChange={setComposer}

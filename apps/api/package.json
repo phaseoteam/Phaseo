@@ -13,6 +13,7 @@
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
 		"test": "pnpm exec vitest run",
 		"test:live": "pnpm exec vitest run tests/integration/openai-gpt5-nano.live.spec.ts",
+		"test:live:gpt5-4-mini-nano": "pnpm exec vitest run tests/integration/openai-gpt5-4-mini-nano.live.spec.ts",
 		"test:live:media": "pnpm exec vitest run tests/integration/multimodal-media.live.spec.ts",
 		"test:live:active": "pnpm exec vitest run tests/integration/active-providers.live.spec.ts",
 		"test:live:provider": "tsx scripts/run-live-provider-tests.ts",

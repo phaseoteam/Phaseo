@@ -50,6 +50,78 @@ type RoomModelSelectorProps = {
 const MAX_PROVIDER_LOGOS = 8;
 const NEW_MODEL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
+function normalizeSearchText(value: string): string {
+	return value.trim().toLowerCase();
+}
+
+function tokenizeSearchText(value: string): string[] {
+	return normalizeSearchText(value).split(/\s+/).filter(Boolean);
+}
+
+function includesTerm(haystack: string, term: string): boolean {
+	return haystack.includes(term);
+}
+
+function computeOptionSearchScore(option: ModelOption, query: string): number {
+	const normalizedQuery = normalizeSearchText(query);
+	if (!normalizedQuery) return 0;
+
+	const modelId = option.modelId.toLowerCase();
+	const label = option.label.toLowerCase();
+	const orgName = option.orgName.toLowerCase();
+	const orgId = option.orgId.toLowerCase();
+	const providerIds = option.providerIds.map((providerId) => providerId.toLowerCase());
+	const providerNames = option.providerNames.map((providerName) =>
+		providerName.toLowerCase(),
+	);
+	const terms = tokenizeSearchText(normalizedQuery);
+
+	let score = 0;
+	if (modelId === normalizedQuery) score += 2200;
+	if (label === normalizedQuery) score += 2000;
+	if (modelId.startsWith(normalizedQuery)) score += 1400;
+	if (label.startsWith(normalizedQuery)) score += 1300;
+	if (orgName.startsWith(normalizedQuery) || orgId.startsWith(normalizedQuery)) {
+		score += 920;
+	}
+	if (providerNames.some((providerName) => providerName.startsWith(normalizedQuery))) {
+		score += 900;
+	}
+	if (providerIds.some((providerId) => providerId.startsWith(normalizedQuery))) {
+		score += 880;
+	}
+	if (includesTerm(modelId, normalizedQuery)) score += 760;
+	if (includesTerm(label, normalizedQuery)) score += 700;
+	if (includesTerm(orgName, normalizedQuery) || includesTerm(orgId, normalizedQuery)) {
+		score += 520;
+	}
+	if (
+		providerNames.some((providerName) =>
+			includesTerm(providerName, normalizedQuery),
+		) ||
+		providerIds.some((providerId) => includesTerm(providerId, normalizedQuery))
+	) {
+		score += 460;
+	}
+
+	for (const term of terms) {
+		if (modelId.startsWith(term)) score += 220;
+		if (label.startsWith(term)) score += 190;
+		if (modelId.includes(term)) score += 130;
+		if (label.includes(term)) score += 120;
+		if (orgName.includes(term) || orgId.includes(term)) score += 100;
+		if (
+			providerNames.some((providerName) => providerName.includes(term)) ||
+			providerIds.some((providerId) => providerId.includes(term))
+		) {
+			score += 90;
+		}
+	}
+
+	if (option.gatewayStatus === "active") score += 10;
+	return score;
+}
+
 const getModelBadgeProps = (suffix: string) => {
 	switch (suffix) {
 		case "free":
@@ -214,6 +286,7 @@ export function RoomModelSelector({
 }: RoomModelSelectorProps) {
 	const modelOptions = useMemo(() => buildModelOptions(models), [models]);
 	const [open, setOpen] = useState(false);
+	const [searchValue, setSearchValue] = useState("");
 	const [nowMs, setNowMs] = useState<number | null>(null);
 
 	useEffect(() => {
@@ -390,11 +463,46 @@ export function RoomModelSelector({
 		() => Array.from(modelOptions.comingSoon.entries()),
 		[modelOptions.comingSoon],
 	);
+	const allModelOptions = useMemo(
+		() => [
+			...modelOptions.featured,
+			...groupedEntries.flatMap(([, options]) => options),
+			...comingSoonEntries.flatMap(([, options]) => options),
+		],
+		[comingSoonEntries, groupedEntries, modelOptions.featured],
+	);
+	const normalizedSearchValue = useMemo(
+		() => normalizeSearchText(searchValue),
+		[searchValue],
+	);
+	const hasSearchValue = normalizedSearchValue.length > 0;
+	const rankedSearchResults = useMemo(() => {
+		if (!hasSearchValue) return [];
+		return allModelOptions
+			.map((option) => ({
+				option,
+				score: computeOptionSearchScore(option, normalizedSearchValue),
+			}))
+			.filter((entry) => entry.score > 0)
+			.sort((a, b) => {
+				if (b.score !== a.score) return b.score - a.score;
+				if (a.option.gatewayStatus !== b.option.gatewayStatus) {
+					return a.option.gatewayStatus === "active" ? -1 : 1;
+				}
+				return a.option.label.localeCompare(b.option.label);
+			});
+	}, [allModelOptions, hasSearchValue, normalizedSearchValue]);
 	const comingSoonCount = useMemo(
 		() =>
 			comingSoonEntries.reduce((total, [, list]) => total + list.length, 0),
 		[comingSoonEntries],
 	);
+	const handleOpenChange = (nextOpen: boolean) => {
+		setOpen(nextOpen);
+		if (!nextOpen) {
+			setSearchValue("");
+		}
+	};
 
 	return (
 		<div className="flex items-center gap-1">
@@ -421,7 +529,7 @@ export function RoomModelSelector({
 				</div>
 			) : null}
 
-			<ModelSelector open={open} onOpenChange={setOpen}>
+			<ModelSelector open={open} onOpenChange={handleOpenChange}>
 				<ModelSelectorTrigger asChild>
 					<Button variant="ghost" size="icon" className="h-8 w-8">
 						<Plus className="h-4 w-4" />
@@ -430,11 +538,49 @@ export function RoomModelSelector({
 				<ModelSelectorContent
 					title="Select a model"
 					className="w-[min(90vw,960px)] max-w-3xl"
+					commandProps={{ shouldFilter: false }}
 				>
-					<ModelSelectorInput placeholder="Search models..." />
+					<ModelSelectorInput
+						placeholder="Search models..."
+						value={searchValue}
+						onValueChange={setSearchValue}
+					/>
 					<ModelSelectorList className="max-h-[70vh] p-3">
 						<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-						{modelOptions.featured.length > 0 ? (
+						{hasSearchValue ? (
+							<ModelSelectorGroup
+								heading={`Results (${rankedSearchResults.length})`}
+								className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
+							>
+								{rankedSearchResults.map(({ option }) => (
+									<ModelSelectorItem
+										key={option.modelId}
+										value={option.modelId}
+										onSelect={() => {
+											onSelectModel(option.modelId);
+											setOpen(false);
+										}}
+										keywords={buildSearchKeywords(option)}
+										className={cn(
+											"flex items-center gap-3",
+											option.gatewayStatus === "inactive" && "opacity-60",
+											selectedModelIds.includes(option.modelId) &&
+												"bg-foreground/5",
+										)}
+									>
+										<Logo
+											id={option.orgId}
+											alt={option.orgName}
+											width={18}
+											height={18}
+											className="shrink-0"
+										/>
+										{renderModelRow(option, option.gatewayStatus === "inactive")}
+									</ModelSelectorItem>
+								))}
+							</ModelSelectorGroup>
+						) : null}
+						{!hasSearchValue && modelOptions.featured.length > 0 ? (
 							<>
 								<ModelSelectorGroup
 									heading="Featured"
@@ -470,7 +616,8 @@ export function RoomModelSelector({
 							</>
 						) : null}
 
-						{groupedEntries.map(([orgId, options]) => {
+						{!hasSearchValue &&
+							groupedEntries.map(([orgId, options]) => {
 							const orgLabel = options[0]?.orgName ?? formatOrgLabel(orgId);
 							return (
 								<ModelSelectorGroup key={orgId} heading={orgLabel} className="pb-2">
@@ -501,9 +648,9 @@ export function RoomModelSelector({
 									))}
 								</ModelSelectorGroup>
 							);
-						})}
+							})}
 
-						{comingSoonCount > 0 ? (
+						{!hasSearchValue && comingSoonCount > 0 ? (
 							<>
 								<ModelSelectorSeparator />
 								{comingSoonEntries.map(([orgId, options]) => {

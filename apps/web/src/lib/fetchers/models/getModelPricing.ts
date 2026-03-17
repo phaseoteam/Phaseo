@@ -30,6 +30,9 @@ export interface ProviderModel {
     output_modalities: string;  // CSV in your current schema
     quantization_scheme?: string | null;
     context_length?: number | null;
+    prompt_training_policy_override?: string | null;
+    prompt_training_override_notes?: string | null;
+    prompt_training_override_source_url?: string | null;
     effective_from?: string | null;
     effective_to?: string | null;
     created_at?: string;
@@ -44,6 +47,9 @@ export interface ProviderInfo {
     api_provider_name: string;
     link?: string | null;
     country_code?: string | null;
+    prompt_training_policy?: string | null;
+    prompt_training_notes?: string | null;
+    prompt_training_source_url?: string | null;
 }
 
 export interface ProviderPricing {
@@ -60,7 +66,7 @@ type ProviderModelCapability = {
     status?: string | null;
 };
 
-function isMissingProviderModelLimitColumnError(error: unknown): boolean {
+function isMissingProviderModelColumnError(error: unknown): boolean {
     const value = error as {
         message?: unknown;
         details?: unknown;
@@ -73,7 +79,14 @@ function isMissingProviderModelLimitColumnError(error: unknown): boolean {
     const code = String(value?.code ?? "").toUpperCase();
     const text = `${message} ${details} ${hint}`;
     const mentionsTargetColumn =
-        text.includes("context_length") || text.includes("max_output_tokens");
+        text.includes("context_length") ||
+        text.includes("max_output_tokens") ||
+        text.includes("prompt_training_policy") ||
+        text.includes("prompt_training_notes") ||
+        text.includes("prompt_training_source_url") ||
+        text.includes("prompt_training_policy_override") ||
+        text.includes("prompt_training_override_notes") ||
+        text.includes("prompt_training_override_source_url");
 
     if (!mentionsTargetColumn) return false;
     if (code === "PGRST204" || code === "42703") return true;
@@ -115,6 +128,9 @@ export default async function getModelPricing(
         quantization_scheme,
         context_length,
         max_output_tokens,
+        prompt_training_policy_override,
+        prompt_training_override_notes,
+        prompt_training_override_source_url,
         effective_from,
         effective_to,
         created_at,
@@ -129,7 +145,10 @@ export default async function getModelPricing(
         data_api_providers (
             api_provider_name,
             link,
-            country_code
+            country_code,
+            prompt_training_policy,
+            prompt_training_notes,
+            prompt_training_source_url
         )
     `;
 
@@ -158,7 +177,10 @@ export default async function getModelPricing(
         data_api_providers (
             api_provider_name,
             link,
-            country_code
+            country_code,
+            prompt_training_policy,
+            prompt_training_notes,
+            prompt_training_source_url
         )
     `;
 
@@ -176,7 +198,7 @@ export default async function getModelPricing(
         pmError = res.error;
     }
 
-    if (pmError && isMissingProviderModelLimitColumnError(pmError)) {
+    if (pmError && isMissingProviderModelColumnError(pmError)) {
         const res = await supabase
             .from("data_api_provider_models")
             .select(providerModelSelectLegacy)
@@ -194,11 +216,7 @@ export default async function getModelPricing(
         pmError = res.error;
     }
 
-    if (
-        pmError &&
-        isMissingProviderModelLimitColumnError(pmError) &&
-        (!pmRows || pmRows.length === 0)
-    ) {
+    if (pmError && isMissingProviderModelColumnError(pmError) && (!pmRows || pmRows.length === 0)) {
         const res = await supabase
             .from("data_api_provider_models")
             .select(providerModelSelectLegacy)
@@ -231,6 +249,12 @@ export default async function getModelPricing(
                     api_provider_name: row.data_api_providers?.api_provider_name || pid,
                     link: row.data_api_providers?.link || null,
                     country_code: row.data_api_providers?.country_code || null,
+                    prompt_training_policy:
+                        row.data_api_providers?.prompt_training_policy ?? null,
+                    prompt_training_notes:
+                        row.data_api_providers?.prompt_training_notes ?? null,
+                    prompt_training_source_url:
+                        row.data_api_providers?.prompt_training_source_url ?? null,
                 },
                 provider_models: [],
                 pricing_rules: [],
@@ -265,6 +289,12 @@ export default async function getModelPricing(
                 params: capability.params ?? null,
                 quantization_scheme: row.quantization_scheme ?? null,
                 context_length: row.context_length ?? null,
+                prompt_training_policy_override:
+                    row.prompt_training_policy_override ?? null,
+                prompt_training_override_notes:
+                    row.prompt_training_override_notes ?? null,
+                prompt_training_override_source_url:
+                    row.prompt_training_override_source_url ?? null,
                 max_input_tokens: capability.max_input_tokens ?? null,
                 max_output_tokens:
                     capability.max_output_tokens ?? row.max_output_tokens ?? null,
