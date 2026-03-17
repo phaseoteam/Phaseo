@@ -4,7 +4,22 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Layers3, Tag } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+	Building2,
+	CircleHelp,
+	Layers3,
+	Shield,
+	ShieldAlert,
+	ShieldCheck,
+	Tag,
+	Workflow,
+} from "lucide-react";
+import {
+	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
+	type ProviderPromptTrainingPolicy,
+	normalizeProviderPromptTrainingPolicy,
+} from "@/lib/providers/promptTrainingPolicy";
 
 const QUANTIZATION_DOCS_URL =
 	"https://docs.ai-stats.phaseo.app/v1/guides/model-quantization";
@@ -17,6 +32,67 @@ function uniqueDefined(values: Array<string | null | undefined>): string[] {
 				.filter(Boolean)
 		)
 	).sort((a, b) => a.localeCompare(b));
+}
+
+type PromptTrainingEntryInput = {
+	policy?: string | null;
+	notes?: string | null;
+	sourceUrl?: string | null;
+	isOverride?: boolean;
+};
+
+type PromptTrainingEntry = {
+	policy: ProviderPromptTrainingPolicy;
+	notes: string | null;
+	sourceUrl: string | null;
+	isOverride: boolean;
+};
+
+type PromptTrainingState = ProviderPromptTrainingPolicy | "mixed";
+
+function normalizePromptTrainingEntries(
+	values: PromptTrainingEntryInput[],
+): PromptTrainingEntry[] {
+	return values.map((value) => ({
+		policy: normalizeProviderPromptTrainingPolicy(value.policy),
+		notes:
+			typeof value.notes === "string" && value.notes.trim()
+				? value.notes.trim()
+				: null,
+		sourceUrl:
+			typeof value.sourceUrl === "string" && value.sourceUrl.trim()
+				? value.sourceUrl.trim()
+				: null,
+		isOverride: value.isOverride === true,
+	}));
+}
+
+function getPromptTrainingState(entries: PromptTrainingEntry[]): PromptTrainingState {
+	if (!entries.length) return "unknown";
+	const unique = Array.from(new Set(entries.map((entry) => entry.policy)));
+	return unique.length === 1 ? unique[0] : "mixed";
+}
+
+function getPromptTrainingIcon(state: PromptTrainingState) {
+	switch (state) {
+		case "no_train":
+			return <ShieldCheck className="h-3.5 w-3.5" />;
+		case "may_train":
+			return <ShieldAlert className="h-3.5 w-3.5" />;
+		case "opt_out_available":
+			return <Shield className="h-3.5 w-3.5" />;
+		case "enterprise_no_train":
+			return <Building2 className="h-3.5 w-3.5" />;
+		case "mixed":
+			return <Workflow className="h-3.5 w-3.5" />;
+		default:
+			return <CircleHelp className="h-3.5 w-3.5" />;
+	}
+}
+
+function getPromptTrainingSummary(state: PromptTrainingState): string {
+	if (state === "mixed") return "Training policy varies by endpoint/model mapping.";
+	return PROVIDER_PROMPT_TRAINING_POLICY_LABELS[state];
 }
 
 function IconHover({
@@ -50,22 +126,116 @@ export default function ProviderInfoHoverIcons({
 	providerId,
 	providerModelSlugs = [],
 	quantizationSchemes = [],
+	promptTraining = [],
 	className,
 }: {
 	providerId: string;
 	providerModelSlugs?: Array<string | null | undefined>;
 	quantizationSchemes?: Array<string | null | undefined>;
+	promptTraining?: PromptTrainingEntryInput[];
 	className?: string;
 }) {
 	const slugs = uniqueDefined(providerModelSlugs);
 	const quantizations = uniqueDefined(quantizationSchemes);
+	const promptTrainingEntries = normalizePromptTrainingEntries(promptTraining);
+	const promptTrainingState = getPromptTrainingState(promptTrainingEntries);
+	const promptTrainingSummary = getPromptTrainingSummary(promptTrainingState);
+	const promptTrainingHasOverrides = promptTrainingEntries.some(
+		(entry) => entry.isOverride,
+	);
+	const promptTrainingSourceUrls = uniqueDefined(
+		promptTrainingEntries.map((entry) => entry.sourceUrl),
+	);
+	const promptTrainingNotes = uniqueDefined(
+		promptTrainingEntries.map((entry) => entry.notes),
+	);
+	const promptTrainingPolicyBreakdown = Array.from(
+		promptTrainingEntries.reduce((acc, entry) => {
+			const current = acc.get(entry.policy) ?? 0;
+			acc.set(entry.policy, current + 1);
+			return acc;
+		}, new Map<ProviderPromptTrainingPolicy, number>()),
+	).sort((a, b) =>
+		PROVIDER_PROMPT_TRAINING_POLICY_LABELS[a[0]].localeCompare(
+			PROVIDER_PROMPT_TRAINING_POLICY_LABELS[b[0]],
+		),
+	);
 	const hasQuantization = quantizations.length > 0;
 	const hasSlug = slugs.length > 0;
+	const hasPromptTraining = promptTrainingEntries.length > 0;
+	const showNoQuantizationBadge = !hasQuantization;
 
-	if (!hasQuantization && !hasSlug) return null;
+	if (!hasSlug && !hasPromptTraining && !showNoQuantizationBadge) return null;
 
 	return (
 		<div className={cn("flex items-center gap-1.5", className)}>
+			{showNoQuantizationBadge ? (
+				<Badge
+					variant="secondary"
+					className="text-[0.6rem] uppercase tracking-wide"
+				>
+					No Quants
+				</Badge>
+			) : null}
+
+			{hasPromptTraining ? (
+				<IconHover
+					ariaLabel="Prompt training policy"
+					content={
+						<div className="space-y-2">
+							<p className="leading-relaxed text-muted-foreground">
+								{promptTrainingSummary}
+							</p>
+							{promptTrainingState === "mixed" ? (
+								<div className="space-y-1">
+									{promptTrainingPolicyBreakdown.map(([policy, count]) => (
+										<div key={policy} className="flex items-center justify-between gap-2">
+											<span className="text-foreground">
+												{PROVIDER_PROMPT_TRAINING_POLICY_LABELS[policy]}
+											</span>
+											<span className="text-muted-foreground">
+												{count} mapping{count === 1 ? "" : "s"}
+											</span>
+										</div>
+									))}
+								</div>
+							) : null}
+							{promptTrainingHasOverrides ? (
+								<p className="text-muted-foreground">
+									Includes model-specific override values.
+								</p>
+							) : null}
+							{promptTrainingNotes.length > 0 ? (
+								<div className="space-y-1">
+									{promptTrainingNotes.slice(0, 2).map((note) => (
+										<p key={note} className="text-muted-foreground">
+											{note}
+										</p>
+									))}
+								</div>
+							) : null}
+							{promptTrainingSourceUrls.length > 0 ? (
+								<div className="flex flex-col items-start gap-1">
+									{promptTrainingSourceUrls.slice(0, 2).map((url) => (
+										<Link
+											key={url}
+											href={url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-primary underline decoration-transparent hover:decoration-current"
+										>
+											View policy source
+										</Link>
+									))}
+								</div>
+							) : null}
+						</div>
+					}
+				>
+					{getPromptTrainingIcon(promptTrainingState)}
+				</IconHover>
+			) : null}
+
 			{hasQuantization ? (
 				<IconHover
 					ariaLabel="Quantization details"

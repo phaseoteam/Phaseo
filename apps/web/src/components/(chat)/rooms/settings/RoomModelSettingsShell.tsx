@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import {
 	Dialog,
@@ -55,6 +55,57 @@ type RoomModelSettingsShellProps = {
 	children: ReactNode;
 };
 
+function normalizeSearchText(value: string): string {
+	return value.trim().toLowerCase();
+}
+
+function tokenizeSearchText(value: string): string[] {
+	return normalizeSearchText(value).split(/\s+/).filter(Boolean);
+}
+
+function computeChoiceSearchScore(
+	choice: {
+		id: string;
+		label: string;
+		orgId: string;
+		orgName: string;
+	},
+	query: string,
+): number {
+	const normalizedQuery = normalizeSearchText(query);
+	if (!normalizedQuery) return 0;
+
+	const id = choice.id.toLowerCase();
+	const label = choice.label.toLowerCase();
+	const orgId = choice.orgId.toLowerCase();
+	const orgName = choice.orgName.toLowerCase();
+	const terms = tokenizeSearchText(normalizedQuery);
+
+	let score = 0;
+	if (id === normalizedQuery) score += 2200;
+	if (label === normalizedQuery) score += 2000;
+	if (id.startsWith(normalizedQuery)) score += 1400;
+	if (label.startsWith(normalizedQuery)) score += 1300;
+	if (orgName.startsWith(normalizedQuery) || orgId.startsWith(normalizedQuery)) {
+		score += 900;
+	}
+	if (id.includes(normalizedQuery)) score += 760;
+	if (label.includes(normalizedQuery)) score += 700;
+	if (orgName.includes(normalizedQuery) || orgId.includes(normalizedQuery)) {
+		score += 520;
+	}
+
+	for (const term of terms) {
+		if (id.startsWith(term)) score += 220;
+		if (label.startsWith(term)) score += 190;
+		if (id.includes(term)) score += 130;
+		if (label.includes(term)) score += 120;
+		if (orgName.includes(term) || orgId.includes(term)) score += 100;
+	}
+
+	return score;
+}
+
 export function RoomModelSettingsShell({
 	open,
 	onOpenChange,
@@ -71,6 +122,7 @@ export function RoomModelSettingsShell({
 	children,
 }: RoomModelSettingsShellProps) {
 	const [modelPickerOpen, setModelPickerOpen] = useState(false);
+	const [modelSearchValue, setModelSearchValue] = useState("");
 	const filteredProviderOptions = supportedProvidersForModel
 		? providerOptions.filter((provider) =>
 				supportedProvidersForModel.includes(provider.id),
@@ -91,6 +143,30 @@ export function RoomModelSettingsShell({
 	}, [modelChoices]);
 	const selectedChoice =
 		modelChoices.find((choice) => choice.id === selectedModelId) ?? null;
+	const normalizedModelSearchValue = useMemo(
+		() => normalizeSearchText(modelSearchValue),
+		[modelSearchValue],
+	);
+	const hasModelSearchValue = normalizedModelSearchValue.length > 0;
+	const rankedModelChoices = useMemo(() => {
+		if (!hasModelSearchValue) return [];
+		return modelChoices
+			.map((choice) => ({
+				choice,
+				score: computeChoiceSearchScore(choice, normalizedModelSearchValue),
+			}))
+			.filter((entry) => entry.score > 0)
+			.sort((a, b) => {
+				if (b.score !== a.score) return b.score - a.score;
+				return a.choice.label.localeCompare(b.choice.label);
+			});
+	}, [hasModelSearchValue, modelChoices, normalizedModelSearchValue]);
+
+	useEffect(() => {
+		if (!modelPickerOpen) {
+			setModelSearchValue("");
+		}
+	}, [modelPickerOpen]);
 
 	return (
 		<>
@@ -212,12 +288,16 @@ export function RoomModelSettingsShell({
 						<DialogTitle>Select model</DialogTitle>
 					</DialogHeader>
 					<Command className="max-h-[70vh]">
-						<CommandInput placeholder="Search models..." />
+						<CommandInput
+							placeholder="Search models..."
+							value={modelSearchValue}
+							onValueChange={setModelSearchValue}
+						/>
 						<CommandList>
 							<CommandEmpty>No models found.</CommandEmpty>
-							{groupedModelChoices.map(([orgName, choices]) => (
-								<CommandGroup key={orgName} heading={orgName}>
-									{choices.map((choice) => (
+							{hasModelSearchValue ? (
+								<CommandGroup heading={`Results (${rankedModelChoices.length})`}>
+									{rankedModelChoices.map(({ choice }) => (
 										<CommandItem
 											key={choice.id}
 											value={`${choice.orgName} ${choice.label} ${choice.id}`}
@@ -248,7 +328,42 @@ export function RoomModelSettingsShell({
 										</CommandItem>
 									))}
 								</CommandGroup>
-							))}
+							) : (
+								groupedModelChoices.map(([orgName, choices]) => (
+									<CommandGroup key={orgName} heading={orgName}>
+										{choices.map((choice) => (
+											<CommandItem
+												key={choice.id}
+												value={`${choice.orgName} ${choice.label} ${choice.id}`}
+												className="h-8"
+												onSelect={() => {
+													onModelChange(choice.id);
+													setModelPickerOpen(false);
+												}}
+											>
+												<div className="flex min-w-0 items-center gap-2">
+													<Logo
+														id={choice.orgId}
+														alt={choice.orgName}
+														width={14}
+														height={14}
+														className="shrink-0"
+													/>
+													<span className="truncate text-sm">{choice.label}</span>
+													{selectedModelId === choice.id ? (
+														<Badge
+															variant="secondary"
+															className="h-5 px-1.5 text-[10px]"
+														>
+															Selected
+														</Badge>
+													) : null}
+												</div>
+											</CommandItem>
+										))}
+									</CommandGroup>
+								))
+							)}
 						</CommandList>
 					</Command>
 				</DialogContent>

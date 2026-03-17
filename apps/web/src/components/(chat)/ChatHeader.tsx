@@ -240,6 +240,7 @@ export function ChatHeader({
 	>("general");
 	const [baseUrlOpen, setBaseUrlOpen] = useState(false);
 	const [baseUrlQuery, setBaseUrlQuery] = useState(baseUrl);
+	const [modelSearchValue, setModelSearchValue] = useState("");
 	const [importResult, setImportResult] = useState<{
 		message: string;
 		type: "success" | "error" | "info";
@@ -260,6 +261,61 @@ export function ChatHeader({
 			),
 		[comingSoonEntries]
 	);
+	const allModelOptions = useMemo(
+		() => [
+			...modelOptions.featured,
+			...groupedEntries.flatMap(([, options]) => options),
+			...comingSoonEntries.flatMap(([, options]) => options),
+		],
+		[comingSoonEntries, groupedEntries, modelOptions.featured],
+	);
+	const uniqueModelOptions = useMemo(() => {
+		const byId = new Map<string, ModelOption>();
+		for (const option of allModelOptions) {
+			const existing = byId.get(option.modelId);
+			if (!existing) {
+				byId.set(option.modelId, {
+					...option,
+					capabilityEndpoints: [...option.capabilityEndpoints],
+					providerIds: [...option.providerIds],
+					providerNames: [...option.providerNames],
+					providerAvailability: { ...option.providerAvailability },
+				});
+				continue;
+			}
+			for (const endpoint of option.capabilityEndpoints) {
+				if (!existing.capabilityEndpoints.includes(endpoint)) {
+					existing.capabilityEndpoints.push(endpoint);
+				}
+			}
+			for (const providerId of option.providerIds) {
+				if (!existing.providerIds.includes(providerId)) {
+					existing.providerIds.push(providerId);
+				}
+			}
+			for (const providerName of option.providerNames) {
+				if (!existing.providerNames.includes(providerName)) {
+					existing.providerNames.push(providerName);
+				}
+			}
+			for (const [providerId, isAvailable] of Object.entries(
+				option.providerAvailability,
+			)) {
+				existing.providerAvailability[providerId] =
+					Boolean(existing.providerAvailability[providerId]) || Boolean(isAvailable);
+			}
+			if (
+				existing.gatewayStatus !== "active" &&
+				option.gatewayStatus === "active"
+			) {
+				existing.gatewayStatus = "active";
+			}
+			if (!existing.releaseDate && option.releaseDate) {
+				existing.releaseDate = option.releaseDate;
+			}
+		}
+		return Array.from(byId.values());
+	}, [allModelOptions]);
 	const selectedModelIds = useMemo(() => {
 		const ids: string[] = [];
 		if (activeThread?.modelId) {
@@ -389,6 +445,12 @@ export function ChatHeader({
 		}
 		onCompareModelIdsChange(Array.from(nextSet));
 	};
+	const handleModelPickerDialogOpenChange = (open: boolean) => {
+		onModelPickerOpenChange(open);
+		if (!open) {
+			setModelSearchValue("");
+		}
+	};
 	const handleRemoveModel = (modelId: string) => {
 		onRemoveModel?.(modelId);
 	};
@@ -424,7 +486,7 @@ export function ChatHeader({
 						alt={label}
 						width={14}
 						height={14}
-						className="shrink-0 rounded"
+						className="shrink-0 rounded-none"
 					/>
 					<span className="truncate text-xs">{label}</span>
 				</Button>
@@ -494,6 +556,108 @@ export function ChatHeader({
 			)
 		);
 	};
+	const computeModelSearchScore = (option: ModelOption, query: string) => {
+		const normalizedQuery = normalizeSearch(query);
+		if (!normalizedQuery) return 0;
+
+		const modelId = normalizeSearch(option.modelId);
+		const label = normalizeSearch(option.label);
+		const orgName = normalizeSearch(option.orgName);
+		const orgId = normalizeSearch(option.orgId);
+		const providerIds = option.providerIds.map((providerId) =>
+			normalizeSearch(providerId),
+		);
+		const providerNames = option.providerNames.map((providerName) =>
+			normalizeSearch(providerName),
+		);
+		const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+		const haystack = [modelId, label, orgName, orgId, ...providerIds, ...providerNames]
+			.join(" ")
+			.trim();
+		if (terms.length > 1 && !terms.every((term) => haystack.includes(term))) {
+			return 0;
+		}
+		if (terms.length === 1 && !haystack.includes(terms[0])) {
+			return 0;
+		}
+
+		let score = 0;
+		if (modelId === normalizedQuery) score += 2200;
+		if (label === normalizedQuery) score += 2000;
+		if (modelId.startsWith(normalizedQuery)) score += 1400;
+		if (label.startsWith(normalizedQuery)) score += 1300;
+		if (orgName.startsWith(normalizedQuery) || orgId.startsWith(normalizedQuery)) {
+			score += 920;
+		}
+		if (
+			providerNames.some((providerName) =>
+				providerName.startsWith(normalizedQuery),
+			)
+		) {
+			score += 900;
+		}
+		if (
+			providerIds.some((providerId) => providerId.startsWith(normalizedQuery))
+		) {
+			score += 880;
+		}
+		if (modelId.includes(normalizedQuery)) score += 760;
+		if (label.includes(normalizedQuery)) score += 700;
+		if (orgName.includes(normalizedQuery) || orgId.includes(normalizedQuery)) {
+			score += 520;
+		}
+		if (
+			providerNames.some((providerName) =>
+				providerName.includes(normalizedQuery),
+			) ||
+			providerIds.some((providerId) => providerId.includes(normalizedQuery))
+		) {
+			score += 460;
+		}
+
+		for (const term of terms) {
+			if (modelId.startsWith(term)) score += 220;
+			if (label.startsWith(term)) score += 190;
+			if (modelId.includes(term)) score += 130;
+			if (label.includes(term)) score += 120;
+			if (orgName.includes(term) || orgId.includes(term)) score += 100;
+			if (
+				providerNames.some((providerName) => providerName.includes(term)) ||
+				providerIds.some((providerId) => providerId.includes(term))
+			) {
+				score += 90;
+			}
+		}
+
+		if (option.gatewayStatus === "active") score += 10;
+		return score;
+	};
+	const normalizedModelSearchValue = useMemo(
+		() => normalizeSearch(modelSearchValue),
+		[modelSearchValue],
+	);
+	const hasModelSearchValue = normalizedModelSearchValue.length > 0;
+	const searchRanking = useMemo(() => {
+		if (!hasModelSearchValue) {
+			return { total: 0, results: [] as Array<{ option: ModelOption; score: number }> };
+		}
+		const scored = uniqueModelOptions
+			.map((option) => ({
+				option,
+				score: computeModelSearchScore(option, normalizedModelSearchValue),
+			}))
+			.filter((entry) => entry.score > 0)
+			.sort((a, b) => {
+				if (b.score !== a.score) return b.score - a.score;
+				if (a.option.gatewayStatus !== b.option.gatewayStatus) {
+					return a.option.gatewayStatus === "active" ? -1 : 1;
+				}
+				return a.option.label.localeCompare(b.option.label);
+			});
+		return { total: scored.length, results: scored.slice(0, 25) };
+	}, [hasModelSearchValue, normalizedModelSearchValue, uniqueModelOptions]);
+	const searchResultTotalCount = searchRanking.total;
+	const rankedSearchResults = searchRanking.results;
 	const availableBaseUrls = useMemo(() => {
 		const options = new Set<string>();
 		BASE_URL_OPTIONS.forEach((value) => options.add(value));
@@ -538,7 +702,7 @@ export function ChatHeader({
 							width={18}
 							height={18}
 							className={cn(
-								"shrink-0",
+								"shrink-0 rounded-none",
 								option.providerAvailability?.[providerId]
 									? null
 									: "grayscale opacity-60"
@@ -550,6 +714,89 @@ export function ChatHeader({
 					<span className="pl-2">+{hiddenCount}</span>
 				)}
 			</div>
+		);
+	};
+	const isModelSelected = (modelId: string) =>
+		activeThread?.modelId === modelId || compareModelIdSet.has(modelId);
+	const isModelDisabledForPicker = (
+		option: ModelOption,
+		withComingSoonBadge = false,
+	) =>
+		withComingSoonBadge ||
+		option.gatewayStatus === "inactive" ||
+		!isModelCapabilityCompatible(option.modelId);
+	const renderModelOptionContent = (
+		option: ModelOption,
+		withComingSoonBadge = false,
+	) => (
+		<div className="flex min-w-0 flex-1 items-center gap-2">
+			<div className="flex min-w-0 flex-1 items-center gap-2">
+				<span className="truncate text-sm font-medium">
+					{option.label.split(":")[0]}
+				</span>
+				{option.modelId.includes(":") ? (
+					<Badge {...getModelBadgeProps(option.modelId.split(":")[1])}>
+						{option.modelId.split(":")[1].replace(/^free$/, "Free")}
+					</Badge>
+				) : null}
+				{isNewModel(option.releaseDate) ? (
+					<Badge {...getModelBadgeProps("new")}>New</Badge>
+				) : null}
+				{isModelSelected(option.modelId) ? (
+					<Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+						Selected
+					</Badge>
+				) : null}
+				{withComingSoonBadge ? (
+					<Badge
+						variant="outline"
+						className="h-4 rounded-full border-dashed px-1.5 text-[10px] font-medium"
+					>
+						Coming soon
+					</Badge>
+				) : null}
+				{!isModelCapabilityCompatible(option.modelId) ? (
+					<Badge variant="outline" className="text-[10px] px-1.5 py-0">
+						{getIncompatibleCapabilityLabel(option.modelId)} only
+					</Badge>
+				) : null}
+			</div>
+			{renderProviderLogos(option)}
+		</div>
+	);
+	const renderModelOptionItem = (
+		option: ModelOption,
+		options?: { withComingSoonBadge?: boolean },
+	) => {
+		const withComingSoonBadge = options?.withComingSoonBadge ?? false;
+		const isDisabled = isModelDisabledForPicker(option, withComingSoonBadge);
+		return (
+			<ModelSelectorItem
+				key={option.modelId}
+				value={option.modelId}
+				onSelect={() => {
+					handleModelSelect(option.modelId);
+				}}
+				keywords={buildSearchKeywords(option)}
+				className={cn(
+					"flex items-center gap-3",
+					isDisabled && "opacity-60",
+					isModelSelected(option.modelId) && "bg-foreground/5",
+				)}
+				disabled={isDisabled}
+			>
+				<Logo
+					id={option.orgId}
+					alt={option.orgId}
+					width={18}
+					height={18}
+					className={cn(
+						"shrink-0 rounded-none",
+						option.gatewayStatus === "inactive" && "grayscale",
+					)}
+				/>
+				{renderModelOptionContent(option, withComingSoonBadge)}
+			</ModelSelectorItem>
 		);
 	};
 
@@ -605,7 +852,7 @@ export function ChatHeader({
 				) : null}
 				<ModelSelector
 					open={modelPickerOpen}
-					onOpenChange={onModelPickerOpenChange}
+					onOpenChange={handleModelPickerDialogOpenChange}
 				>
 					<ModelSelectorTrigger asChild>
 						<Button variant="ghost" size="icon" className="h-8 w-8">
@@ -615,8 +862,13 @@ export function ChatHeader({
 					<ModelSelectorContent
 						title="Select a model"
 						className="w-[min(90vw,960px)] max-w-3xl"
+						commandProps={{ shouldFilter: false }}
 					>
-						<ModelSelectorInput placeholder="Search models..." />
+						<ModelSelectorInput
+							placeholder="Search models..."
+							value={modelSearchValue}
+							onValueChange={setModelSearchValue}
+						/>
 						<ModelSelectorList className="max-h-[70vh] p-3">
 							<ModelSelectorEmpty>
 								No models found.
@@ -627,337 +879,67 @@ export function ChatHeader({
 									models for this chat.
 								</p>
 							) : null}
-							{modelOptions.featured.length > 0 && (
+							{hasModelSearchValue ? (
+								<ModelSelectorGroup
+									heading={`Results (${Math.min(25, searchResultTotalCount)}${searchResultTotalCount > 25 ? ` of ${searchResultTotalCount}` : ""})`}
+									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
+								>
+									{rankedSearchResults.map(({ option }) =>
+										renderModelOptionItem(option, {
+											withComingSoonBadge: option.gatewayStatus === "inactive",
+										}),
+									)}
+								</ModelSelectorGroup>
+							) : null}
+							{!hasModelSearchValue && modelOptions.featured.length > 0 && (
 								<>
 									<ModelSelectorGroup
 										heading="Featured"
 										className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 									>
-									{modelOptions.featured.map((option) => (
-										<ModelSelectorItem
-											key={option.modelId}
-											value={option.modelId}
-											onSelect={() => {
-												handleModelSelect(option.modelId);
-											}}
-											keywords={buildSearchKeywords(
-												option
-											)}
-											className={cn(
-												"flex items-center gap-3",
-												!isModelCapabilityCompatible(
-													option.modelId,
-												) && "opacity-55",
-												(activeThread?.modelId ===
-													option.modelId ||
-													compareModelIdSet.has(
-														option.modelId,
-													)) &&
-													"bg-foreground/5"
-											)}
-											disabled={
-												!isModelCapabilityCompatible(
-													option.modelId,
-												)
-											}
+										{modelOptions.featured.map((option) =>
+											renderModelOptionItem(option),
+										)}
+									</ModelSelectorGroup>
+									<ModelSelectorSeparator />
+								</>
+							)}
+							{!hasModelSearchValue &&
+								groupedEntries.map(([orgId, options]) => {
+									const orgLabel =
+										options[0]?.orgName ?? formatOrgLabel(orgId);
+									return (
+										<ModelSelectorGroup
+											key={orgId}
+											heading={orgLabel}
+											className="pb-2"
 										>
-											<Logo
-												id={option.orgId}
-												alt={option.orgId}
-												width={18}
-												height={18}
-												className="shrink-0"
-											/>
-												<div className="flex min-w-0 flex-1 items-center gap-2">
-													<div className="flex items-center gap-2 min-w-0 flex-1">
-														<span className="truncate text-sm font-medium">
-															{
-																option.label.split(
-																	":"
-																)[0]
-															}
-														</span>
-												{option.modelId.includes(
-													":"
-												) && (
-													<Badge
-														{...getModelBadgeProps(
-															option.modelId.split(
-																":"
-															)[1]
-														)}
-													>
-														{option.modelId
-															.split(":")[1]
-															.replace(
-																	/^free$/,
-																	"Free"
-																)}
-													</Badge>
-												)}
-												{isNewModel(
-													option.releaseDate
-												) && (
-													<Badge
-														{...getModelBadgeProps(
-															"new"
-														)}
-													>
-														New
-													</Badge>
-												)}
-												{(activeThread?.modelId ===
-													option.modelId ||
-													compareModelIdSet.has(
-														option.modelId,
-													)) && (
-														<Badge
-															variant="secondary"
-															className="text-[10px] px-1.5 py-0"
-														>
-															Selected
-														</Badge>
-													)}
-												{!isModelCapabilityCompatible(
-													option.modelId,
-												) && (
-													<Badge
-														variant="outline"
-														className="text-[10px] px-1.5 py-0"
-													>
-														{getIncompatibleCapabilityLabel(
-															option.modelId,
-														)}{" "}
-														only
-													</Badge>
-												)}
-											</div>
-											{renderProviderLogos(option)}
-										</div>
-									</ModelSelectorItem>
-								))}
-							</ModelSelectorGroup>
-							<ModelSelectorSeparator />
-						</>
-					)}
-											{groupedEntries.map(([orgId, options]) => {
-													const orgLabel =
-														options[0]?.orgName ??
-														formatOrgLabel(orgId);
-													return (
-														<ModelSelectorGroup
-															key={orgId}
-															heading={orgLabel}
-															className="pb-2"
-														>
-															{options.map((option) => (
-																<ModelSelectorItem
-																	key={option.modelId}
-																	value={option.modelId}
-																	onSelect={() => {
-																		handleModelSelect(option.modelId);
-																	}}
-																	keywords={buildSearchKeywords(option)}
-																	className={cn(
-																		"flex items-center gap-3",
-																		!isModelCapabilityCompatible(
-																			option.modelId,
-																		) &&
-																			"opacity-55",
-																		(activeThread?.modelId ===
-																			option.modelId ||
-																			compareModelIdSet.has(
-																				option.modelId,
-																			)) &&
-																			"bg-foreground/5"
-																	)}
-																	disabled={
-																		!isModelCapabilityCompatible(
-																			option.modelId,
-																		)
-																	}
-																>
-																	<Logo
-																		id={option.orgId}
-																		alt={option.orgId}
-																		width={18}
-																		height={18}
-																		className="shrink-0"
-																	/>
-												<div className="flex min-w-0 flex-1 items-center gap-2">
-													<div className="flex items-center gap-2 min-w-0 flex-1">
-														<span className="truncate text-sm font-medium">
-															{
-																option.label.split(
-																	":"
-																)[0]
-															}
-														</span>
-												{option.modelId.includes(
-													":"
-												) && (
-													<Badge
-														{...getModelBadgeProps(
-															option.modelId.split(
-																":"
-															)[1]
-														)}
-													>
-														{option.modelId
-															.split(":")[1]
-															.replace(
-																	/^free$/,
-																	"Free"
-																)}
-													</Badge>
-												)}
-												{isNewModel(
-													option.releaseDate
-												) && (
-													<Badge
-														{...getModelBadgeProps(
-															"new"
-														)}
-													>
-														New
-													</Badge>
-												)}
-												{(activeThread?.modelId ===
-													option.modelId ||
-													compareModelIdSet.has(
-														option.modelId,
-													)) && (
-														<Badge
-															variant="secondary"
-															className="text-[10px] px-1.5 py-0"
-														>
-															Selected
-														</Badge>
-													)}
-												{!isModelCapabilityCompatible(
-													option.modelId,
-												) && (
-													<Badge
-														variant="outline"
-														className="text-[10px] px-1.5 py-0"
-													>
-														{getIncompatibleCapabilityLabel(
-															option.modelId,
-														)}{" "}
-														only
-													</Badge>
-												)}
-											</div>
-											{renderProviderLogos(
-												option
+											{options.map((option) =>
+												renderModelOptionItem(option),
 											)}
-										</div>
-									</ModelSelectorItem>
-								))}
-							</ModelSelectorGroup>
-						);
-					})}
-					{comingSoonCount > 0 && (
+										</ModelSelectorGroup>
+									);
+								})}
+							{!hasModelSearchValue && comingSoonCount > 0 && (
 								<>
 									<ModelSelectorSeparator />
-									{comingSoonEntries.map(
-										([orgId, options]) => {
-											const orgLabel =
-												options[0]?.orgName ??
-												formatOrgLabel(orgId);
-											return (
-												<ModelSelectorGroup
-													key={`coming-soon-${orgId}`}
-													heading={`${orgLabel} - Coming Soon`}
-													className="pb-2"
-												>
-													{options.map((option) => (
-														<ModelSelectorItem
-															key={
-																option.modelId
-															}
-															value={
-																option.modelId
-															}
-															onSelect={() => {
-																onUpdateModel(
-																	option.modelId
-																);
-																onModelPickerOpenChange(
-																	false
-																);
-															}}
-															keywords={buildSearchKeywords(
-																option
-															)}
-															className={cn(
-																"flex items-center gap-3 opacity-60",
-																activeThread?.modelId ===
-																	option.modelId &&
-																	"bg-foreground/5"
-															)}
-															disabled
-														>
-												<Logo
-													id={
-														option.orgId
-													}
-													alt={
-														option.orgId
-													}
-													width={18}
-													height={18}
-													className="shrink-0 grayscale"
-												/>
-															<div className="flex min-w-0 flex-1 items-center gap-2">
-																<div className="flex items-center gap-2 min-w-0 flex-1">
-																	<span className="truncate text-sm font-medium">
-																		{
-																			option.label.split(
-																				":"
-																			)[0]
-																		}
-																	</span>
-														{option.modelId.includes(
-															":"
-														) && (
-															<Badge
-																{...getModelBadgeProps(
-																	option.modelId.split(
-																		":"
-																	)[1]
-																)}
-															>
-																{option.modelId
-																	.split(":")[1]
-																	.replace(
-																		/^free$/,
-																		"Free"
-																		)}
-															</Badge>
-														)}
-														{isNewModel(
-															option.releaseDate
-														) && (
-															<Badge
-																{...getModelBadgeProps(
-																	"new"
-																)}
-															>
-																New
-															</Badge>
-														)}
-													</div>
-													{renderProviderLogos(
-																	option
-																)}
-															</div>
-														</ModelSelectorItem>
-													))}
-												</ModelSelectorGroup>
-											);
-										}
-									)}
+									{comingSoonEntries.map(([orgId, options]) => {
+										const orgLabel =
+											options[0]?.orgName ?? formatOrgLabel(orgId);
+										return (
+											<ModelSelectorGroup
+												key={`coming-soon-${orgId}`}
+												heading={`${orgLabel} - Coming Soon`}
+												className="pb-2"
+											>
+												{options.map((option) =>
+													renderModelOptionItem(option, {
+														withComingSoonBadge: true,
+													}),
+												)}
+											</ModelSelectorGroup>
+										);
+									})}
 								</>
 							)}
 						</ModelSelectorList>

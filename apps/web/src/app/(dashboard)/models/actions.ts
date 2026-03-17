@@ -147,6 +147,9 @@ export interface ModelUpdatePayload {
     provider_id: string
     api_model_id: string
     provider_model_slug?: string | null
+    prompt_training_policy_override?: string | null
+    prompt_training_override_notes?: string | null
+    prompt_training_override_source_url?: string | null
     is_active_gateway?: boolean
     input_modalities?: string | null
     output_modalities?: string | null
@@ -539,6 +542,10 @@ export async function updateModel(payload: ModelUpdatePayload) {
         provider_id: pm.provider_id,
         api_model_id: pm.api_model_id,
         provider_model_slug: pm.provider_model_slug ?? null,
+        prompt_training_policy_override: pm.prompt_training_policy_override ?? null,
+        prompt_training_override_notes: pm.prompt_training_override_notes ?? null,
+        prompt_training_override_source_url:
+          pm.prompt_training_override_source_url ?? null,
         internal_model_id: modelId,
         is_active_gateway: pm.is_active_gateway ?? false,
         input_modalities: pm.input_modalities ?? null,

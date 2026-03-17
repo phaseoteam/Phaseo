@@ -18,12 +18,20 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import type { ModelData } from "../ModelEditDialog"
+import {
+  PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
+  PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
+  type ProviderPromptTrainingPolicy,
+} from "@/lib/providers/promptTrainingPolicy"
 
 export interface ProviderModelRow {
   id: string
   provider_id: string
   api_model_id: string
   provider_model_slug: string | null
+  prompt_training_policy_override: ProviderPromptTrainingPolicy | null
+  prompt_training_override_notes: string | null
+  prompt_training_override_source_url: string | null
   is_active_gateway: boolean
   input_modalities: string | null
   output_modalities: string | null
@@ -251,6 +259,9 @@ export default function ProvidersTab({
         provider_id: providerModel.provider_id,
         api_model_id: providerModel.api_model_id,
         provider_model_slug: providerModel.provider_model_slug,
+        prompt_training_policy_override: providerModel.prompt_training_policy_override ?? null,
+        prompt_training_override_notes: providerModel.prompt_training_override_notes ?? null,
+        prompt_training_override_source_url: providerModel.prompt_training_override_source_url ?? null,
         is_active_gateway: providerModel.is_active_gateway ?? false,
         input_modalities: Array.isArray(providerModel.input_modalities)
           ? providerModel.input_modalities.join(",")
@@ -340,6 +351,9 @@ export default function ProvidersTab({
         provider_id: providerId,
         api_model_id: model.model_id,
         provider_model_slug: null,
+        prompt_training_policy_override: null,
+        prompt_training_override_notes: null,
+        prompt_training_override_source_url: null,
         is_active_gateway: false,
         input_modalities: "text",
         output_modalities: "text",
@@ -556,6 +570,62 @@ export default function ProvidersTab({
                     )
                   }
                   placeholder="FP16, INT8, etc."
+                />
+              </FieldRow>
+
+              <FieldRow
+                label="Prompt training override"
+                description="Leave as Provider default unless this model/provider mapping differs."
+              >
+                <Select
+                  value={providerModel.prompt_training_policy_override ?? "__provider_default"}
+                  onValueChange={(value) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "prompt_training_policy_override",
+                      value === "__provider_default" ? null : value
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Provider default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__provider_default">Provider default</SelectItem>
+                    {PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldRow>
+
+              <FieldRow label="Override source URL">
+                <Input
+                  value={providerModel.prompt_training_override_source_url ?? ""}
+                  onChange={(event) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "prompt_training_override_source_url",
+                      event.target.value || null
+                    )
+                  }
+                  placeholder="https://..."
+                />
+              </FieldRow>
+
+              <FieldRow label="Override notes">
+                <Input
+                  value={providerModel.prompt_training_override_notes ?? ""}
+                  onChange={(event) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "prompt_training_override_notes",
+                      event.target.value || null
+                    )
+                  }
+                  placeholder="Optional context for this model-specific override"
                 />
               </FieldRow>
 

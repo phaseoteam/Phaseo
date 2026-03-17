@@ -293,7 +293,7 @@ export function ChatConversationMessages({
 								alt={orgName}
 								width={18}
 								height={18}
-								className="rounded-xl shrink-0"
+								className="shrink-0 rounded-none"
 							/>
 							<span className="truncate">{modelLabel}</span>
 						</Link>

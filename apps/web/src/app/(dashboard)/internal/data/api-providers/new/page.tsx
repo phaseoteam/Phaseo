@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { createAPIProviderAction } from "../../actions";
+import {
+	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
+	PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
+} from "@/lib/providers/promptTrainingPolicy";
 
 export default function NewAPIProviderPage() {
 	return (
@@ -28,6 +32,36 @@ export default function NewAPIProviderPage() {
 					<label className="text-sm">
 						<div className="mb-1 text-muted-foreground">Country code</div>
 						<input name="country_code" className="w-full rounded-md border px-3 py-2 text-sm" />
+					</label>
+					<label className="text-sm">
+						<div className="mb-1 text-muted-foreground">Prompt training policy</div>
+						<select
+							name="prompt_training_policy"
+							defaultValue="unknown"
+							className="w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
+								<option key={value} value={value}>
+									{PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
+								</option>
+							))}
+						</select>
+					</label>
+					<label className="text-sm">
+						<div className="mb-1 text-muted-foreground">Policy source URL</div>
+						<input
+							name="prompt_training_source_url"
+							type="url"
+							placeholder="https://..."
+							className="w-full rounded-md border px-3 py-2 text-sm"
+						/>
+					</label>
+					<label className="text-sm lg:col-span-2">
+						<div className="mb-1 text-muted-foreground">Policy notes</div>
+						<textarea
+							name="prompt_training_notes"
+							className="w-full rounded-md border px-3 py-2 text-sm min-h-20"
+						/>
 					</label>
 				</div>
 				<div className="flex gap-2">

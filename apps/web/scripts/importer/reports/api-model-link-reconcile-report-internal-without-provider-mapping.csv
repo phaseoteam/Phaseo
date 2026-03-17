@@ -1,0 +1,530 @@
+internal_model_id,organisation_id,model_name,api_model_id_same_as_internal_exists,suggested_api_model_id
+ai21/jamba-2-mini-2026-01-08,ai21,Jamba 2 Mini,no,ai21/jamba-2-mini-2026-01-08
+ai21/jamba-large-1-5-2024-08-22,ai21,Jamba Large 1.5,no,ai21/jamba-large-1-5-2024-08-22
+ai21/jamba-large-1-6-2025-03-06,ai21,Jamba Large 1.6,no,ai21/jamba-large-1-6-2025-03-06
+ai21/jamba-mini-1-5-2024-08-22,ai21,Jamba Mini 1.5,no,ai21/jamba-mini-1-5-2024-08-22
+ai21/jamba-mini-1-6-2025-03-06,ai21,Jamba Mini 1.6,no,ai21/jamba-mini-1-6-2025-03-06
+ai21/jamba-reasoning-3b-2025-10-08,ai21,Jamba Reasoning 3B,no,ai21/jamba-reasoning-3b-2025-10-08
+allenai/bolmo-1b-2025-12-15,allenai,Bolmo 1B,no,allenai/bolmo-1b-2025-12-15
+allenai/bolmo-7b-2025-12-15,allenai,Bolmo 7B,no,allenai/bolmo-7b-2025-12-15
+allenai/molmo-2-4b-2025-12-16,allenai,Molmo 2 4B,no,allenai/molmo-2-4b-2025-12-16
+allenai/molmo-2-8b-2025-12-16,allenai,Molmo 2 8B,no,allenai/molmo-2-8b-2025-12-16
+allenai/olmo-3-1-32b-instruct-2025-12-12,allenai,Olmo 3.1 32B Instruct,no,allenai/olmo-3-1-32b-instruct-2025-12-12
+allenai/olmo-3-1-32b-think-2025-12-12,allenai,Olmo 3.1 32B Think,no,allenai/olmo-3-1-32b-think-2025-12-12
+allenai/olmo-3-32b-think-2025-11-20,allenai,Olmo 3 32B Think,no,allenai/olmo-3-32b-think-2025-11-20
+allenai/olmo-3-7b-instruct-2025-11-20,allenai,Olmo 3 7B Instruct,no,allenai/olmo-3-7b-instruct-2025-11-20
+allenai/olmo-3-7b-think-2025-11-20,allenai,Olmo 3 7B Think,no,allenai/olmo-3-7b-think-2025-11-20
+amazon/nova-2-omni-2025-12-02,amazon,Nova 2 Omni,no,amazon/nova-2-omni-2025-12-02
+amazon/nova-2-pro-2025-12-02,amazon,Nova 2 Pro,no,amazon/nova-2-pro-2025-12-02
+amazon/nova-2-sonic-2025-12-02,amazon,Nova 2 Sonic,no,amazon/nova-2-sonic-2025-12-02
+amazon/nova-canvas-2024-12-03,amazon,Nova Canvas,no,amazon/nova-canvas-2024-12-03
+amazon/nova-multimodal-embeddings-2025-12-02,amazon,Nova Multimodal Embeddings,no,amazon/nova-multimodal-embeddings-2025-12-02
+amazon/nova-reel-2024-12-03,amazon,Nova Reel,no,amazon/nova-reel-2024-12-03
+amazon/nova-sonic-2025-04-08,amazon,Nova Sonic,no,amazon/nova-sonic-2025-04-08
+anthropic/claude-1-0-2023-03-14,anthropic,Claude 1.0,no,anthropic/claude-1-0-2023-03-14
+anthropic/claude-1-1,anthropic,Claude 1.1,no,anthropic/claude-1-1
+anthropic/claude-1-2,anthropic,Claude 1.2,no,anthropic/claude-1-2
+anthropic/claude-1-3,anthropic,Claude 1.3,no,anthropic/claude-1-3
+anthropic/claude-2-0-2023-07-12,anthropic,Claude 2.0,no,anthropic/claude-2-0-2023-07-12
+anthropic/claude-2-1-2023-11-22,anthropic,Claude 2.1,no,anthropic/claude-2-1-2023-11-22
+anthropic/claude-3-5-sonnet-2024-06-21,anthropic,Claude 3.5 Sonnet (2024-06-20),no,anthropic/claude-3-5-sonnet-2024-06-21
+anthropic/claude-3-5-sonnet-2024-10-22,anthropic,Claude 3.5 Sonnet (2024-10-22),no,anthropic/claude-3-5-sonnet-2024-10-22
+anthropic/claude-3-sonnet-2024-03-04,anthropic,Claude 3 Sonnet,no,anthropic/claude-3-sonnet-2024-03-04
+anthropic/claude-instant-1-0-2023-03-14,anthropic,Claude Instant 1.0,no,anthropic/claude-instant-1-0-2023-03-14
+anthropic/claude-instant-1-1,anthropic,Claude Instant 1.1,no,anthropic/claude-instant-1-1
+anthropic/claude-instant-1-2-2023-08-09,anthropic,Claude Instant 1.2,no,anthropic/claude-instant-1-2-2023-08-09
+baidu/ernie-4-5-turbo,baidu,Ernie 4.5 Turbo,no,baidu/ernie-4-5-turbo
+baidu/ernie-5-0-0110,baidu,Ernie 5.0 0110,no,baidu/ernie-5-0-0110
+baidu/ernie-5-0-2026-01-22,baidu,Ernie 5.0,no,baidu/ernie-5-0-2026-01-22
+baidu/ernie-5-0-preview-1203,baidu,Ernie 5.0 Preview 1203,no,baidu/ernie-5-0-preview-1203
+baidu/ernie-5-0-preview-1220,baidu,Ernie 5.0 Preview 1220,no,baidu/ernie-5-0-preview-1220
+baidu/ernie-x1-1,baidu,Ernie X1.1,no,baidu/ernie-x1-1
+baidu/qianfan-vl-3b,baidu,Qianfan VL 3B,no,baidu/qianfan-vl-3b
+baidu/qianfan-vl-70b,baidu,Qianfan VL 70B,no,baidu/qianfan-vl-70b
+baidu/qianfan-vl-8b,baidu,Qianfan VL 8B,no,baidu/qianfan-vl-8b
+black-forest-labs/flux-2-dev-2025-11-25,black-forest-labs,Flux 2 Dev,no,black-forest-labs/flux-2-dev-2025-11-25
+bytedance/seed-1-6-2025-06-25,bytedance,Seed 1.6,no,bytedance/seed-1-6-2025-06-25
+bytedance/seed-1-6-flash-2025-06-25,bytedance,Seed 1.6 Flash,no,bytedance/seed-1-6-flash-2025-06-25
+bytedance/seed-1-8-2025-12-18,bytedance,Seed 1.8,no,bytedance/seed-1-8-2025-12-18
+bytedance/seed-2-0-lite-2026-02-14,bytedance,Seed 2.0 Lite,no,bytedance/seed-2-0-lite-2026-02-14
+bytedance/seed-2-0-mini-2026-02-14,bytedance,Seed 2.0 Mini,no,bytedance/seed-2-0-mini-2026-02-14
+bytedance/seed-2-0-pro-2026-02-14,bytedance,Seed 2.0 Pro,no,bytedance/seed-2-0-pro-2026-02-14
+bytedance/seed-coder-8b-instruct,bytedance,Seed Coder 8B Instruct,no,bytedance/seed-coder-8b-instruct
+bytedance/seed-coder-8b-reasoning,bytedance,Seed Coder 8B Reasoning,no,bytedance/seed-coder-8b-reasoning
+bytedance/seed-oss-36b-instruct,bytedance,Seed OSS 36B Instruct,no,bytedance/seed-oss-36b-instruct
+bytedance/seedream-4-5-2025-12-03,bytedance,Seedream 4.5,no,bytedance/seedream-4-5-2025-12-03
+cohere/c4ai-aya-expanse-32b,cohere,C4AI Aya Expanse 32B,no,cohere/c4ai-aya-expanse-32b
+cohere/c4ai-aya-expanse-8b,cohere,C4AI Aya Expanse 8B,no,cohere/c4ai-aya-expanse-8b
+cohere/c4ai-aya-vision-32b-2025-03-04,cohere,C4AI Aya Vision 32B,no,cohere/c4ai-aya-vision-32b-2025-03-04
+cohere/c4ai-aya-vision-8b-2025-03-04,cohere,C4AI Aya Vision 8B,no,cohere/c4ai-aya-vision-8b-2025-03-04
+cohere/command,cohere,Command,no,cohere/command
+cohere/command-light,cohere,Command Light,no,cohere/command-light
+cohere/command-r-2024-03-11,cohere,Command R,no,cohere/command-r-2024-03-11
+cohere/command-r+-2024-04-04,cohere,Command R+,no,cohere/command-r+-2024-04-04
+cohere/embed-english-light-v2-0,cohere,Embed English Light V2.0,no,cohere/embed-english-light-v2-0
+cohere/embed-english-light-v3,cohere,Embed English Light V3,no,cohere/embed-english-light-v3
+cohere/embed-english-v2-0,cohere,Embed English V2.0,no,cohere/embed-english-v2-0
+cohere/embed-english-v3,cohere,Embed English V3,no,cohere/embed-english-v3
+cohere/embed-multilingual-light-v3,cohere,Embed Multilingual Light V3,no,cohere/embed-multilingual-light-v3
+cohere/embed-multilingual-v2-0,cohere,Embed Multilingual V2.0,no,cohere/embed-multilingual-v2-0
+cohere/embed-multilingual-v3,cohere,Embed Multilingual V3,no,cohere/embed-multilingual-v3
+cohere/embed-v4-2025-04-15,cohere,Embed V4,no,cohere/embed-v4-2025-04-15
+cohere/rerank-multilingual-v3,cohere,Rerank Multilingual V3,no,cohere/rerank-multilingual-v3
+cohere/rerank-v3-5-2024-10-02,cohere,Rerank V3.5,no,cohere/rerank-v3-5-2024-10-02
+cohere/rerank-v4-0-fast-2025-12-11,cohere,Rerank V4.0 Fast,no,cohere/rerank-v4-0-fast-2025-12-11
+cohere/rerank-v4-0-pro-2025-12-11,cohere,Rerank V4.0 Pro,no,cohere/rerank-v4-0-pro-2025-12-11
+cohere/rerenk-english-v3,cohere,Rerenk English V3,no,cohere/rerenk-english-v3
+cursor/composer-1-2025-10-29,cursor,Composer 1,no,cursor/composer-1-2025-10-29
+cursor/composer-1-5-2026-02-09,cursor,Composer 1.5,no,cursor/composer-1-5-2026-02-09
+deepseek/deepseek-coder-v2-2024-06-14,deepseek,DeepSeek Coder V2 (2024-06-14),no,deepseek/deepseek-coder-v2-2024-06-14
+deepseek/deepseek-coder-v2-2024-07-24,deepseek,DeepSeek Coder V2 (2024-07-24),no,deepseek/deepseek-coder-v2-2024-07-24
+deepseek/deepseek-ocr-2025-10-20,deepseek,DeepSeek OCR,no,deepseek/deepseek-ocr-2025-10-20
+deepseek/deepseek-r1-2025-01-20,deepseek,Deepseek R1 (2025-01-20),no,deepseek/deepseek-r1-2025-01-20
+deepseek/deepseek-r1-lite-preview-2024-11-20,deepseek,DeepSeek R1 Lite Preview,no,deepseek/deepseek-r1-lite-preview-2024-11-20
+deepseek/deepseek-v2-2024-05-17,deepseek,DeepSeek V2 (2024-05-17),no,deepseek/deepseek-v2-2024-05-17
+deepseek/deepseek-v2-2024-06-28,deepseek,DeepSeek V2 (2024-06-28),no,deepseek/deepseek-v2-2024-06-28
+deepseek/deepseek-v2-5-2024-09-05,deepseek,DeepSeek V2.5 (2024-09-05),no,deepseek/deepseek-v2-5-2024-09-05
+deepseek/deepseek-v2-5-2024-12-10,deepseek,DeepSeek V2.5 (2024-12-10),no,deepseek/deepseek-v2-5-2024-12-10
+deepseek/deepseek-v3-2-speciale-2025-12-01,deepseek,DeepSeek V3.2 Speciale,no,deepseek/deepseek-v3-2-speciale-2025-12-01
+deepseek/deepseek-v3-2024-12-26,deepseek,DeepSeek V3 (2024-12-26),no,deepseek/deepseek-v3-2024-12-26
+deepseek/deepseek-v4,deepseek,DeepSeek V4,no,deepseek/deepseek-v4
+deepseek/deepseek-vl2-2024-12-13,deepseek,DeepSeek VL2,no,deepseek/deepseek-vl2-2024-12-13
+deepseek/deepseek-vl2-small-2024-12-13,deepseek,DeepSeek VL2 Small,no,deepseek/deepseek-vl2-small-2024-12-13
+deepseek/deepseek-vl2-tiny-2024-12-13,deepseek,DeepSeek VL2 Tiny,no,deepseek/deepseek-vl2-tiny-2024-12-13
+eleven-labs/eleven-english-sts-v2,eleven-labs,Eleven English STS V2,no,eleven-labs/eleven-english-sts-v2
+eleven-labs/eleven-flash-v2,eleven-labs,Eleven Flash V2,no,eleven-labs/eleven-flash-v2
+eleven-labs/eleven-flash-v2-5,eleven-labs,Eleven Flash V2.5,no,eleven-labs/eleven-flash-v2-5
+eleven-labs/eleven-monolingual-v1,eleven-labs,Eleven Monolingual V1,no,eleven-labs/eleven-monolingual-v1
+eleven-labs/eleven-multilingual-sts-v2,eleven-labs,Eleven Multilingual STS V2,no,eleven-labs/eleven-multilingual-sts-v2
+eleven-labs/eleven-multilingual-ttv-v2,eleven-labs,Eleven Multilingual TTV V2,no,eleven-labs/eleven-multilingual-ttv-v2
+eleven-labs/eleven-multilingual-v1,eleven-labs,Eleven Multilingual V1,no,eleven-labs/eleven-multilingual-v1
+eleven-labs/eleven-multilingual-v2,eleven-labs,Eleven Multilingual V2,no,eleven-labs/eleven-multilingual-v2
+eleven-labs/eleven-ttv-v3,eleven-labs,Eleven TTV V3,no,eleven-labs/eleven-ttv-v3
+eleven-labs/eleven-turbo-v2,eleven-labs,Eleven Turbo V2,no,eleven-labs/eleven-turbo-v2
+eleven-labs/eleven-turbo-v2-5,eleven-labs,Eleven Turbo V2.5,no,eleven-labs/eleven-turbo-v2-5
+eleven-labs/eleven-v3,eleven-labs,Eleven V3,no,eleven-labs/eleven-v3
+eleven-labs/scribe-v1,eleven-labs,Scribe V1,no,eleven-labs/scribe-v1
+eleven-labs/scribe-v2-2026-01-09,eleven-labs,Scribe V2,no,eleven-labs/scribe-v2-2026-01-09
+eleven-labs/scribe-v2-realtime-2025-11-11,eleven-labs,Scribe V2 Realtime,no,eleven-labs/scribe-v2-realtime-2025-11-11
+google/chat-bison-2023-05-01,google,Chat Bison,no,google/chat-bison-2023-05-01
+google/code-gecko-2023-05-01,google,Code Gecko,no,google/code-gecko-2023-05-01
+google/embedding-001-2023-12-13,google,Embedding 001,no,google/embedding-001-2023-12-13
+google/gemini-1-0-nano-2023-12-06,google,Gemini 1.0 Nano,no,google/gemini-1-0-nano-2023-12-06
+google/gemini-1-0-pro-2023-12-06,google,Gemini 1.0 Pro,no,google/gemini-1-0-pro-2023-12-06
+google/gemini-1-0-pro-vision-001-2024-02-15,google,Gemini 1.0 Pro Vision 001,no,google/gemini-1-0-pro-vision-001-2024-02-15
+google/gemini-1-0-ultra-2023-12-06,google,Gemini 1.0 Ultra,no,google/gemini-1-0-ultra-2023-12-06
+google/gemini-1-5-flash-001-2024-05-23,google,Gemini 1.5 Flash 001,no,google/gemini-1-5-flash-001-2024-05-23
+google/gemini-1-5-flash-002-2024-09-24,google,Gemini 1.5 Flash 002,no,google/gemini-1-5-flash-002-2024-09-24
+google/gemini-1-5-flash-8b-2024-03-15,google,Gemini 1.5 Flash 8B,no,google/gemini-1-5-flash-8b-2024-03-15
+google/gemini-1-5-flash-8b-exp-2024-08-27,google,Gemini 1.5 Flash 8B Exp (2024-08-27),no,google/gemini-1-5-flash-8b-exp-2024-08-27
+google/gemini-1-5-flash-8b-exp-2024-09-24,google,Gemini 1.5 Flash 8B Exp (2024-09-24),no,google/gemini-1-5-flash-8b-exp-2024-09-24
+google/gemini-1-5-flash-preview-2024-05-14,google,Gemini 1.5 Flash Preview (2024-05-14),no,google/gemini-1-5-flash-preview-2024-05-14
+google/gemini-1-5-pro-001-2024-05-23,google,Gemini 1.5 Pro 001,no,google/gemini-1-5-pro-001-2024-05-23
+google/gemini-1-5-pro-002-2024-09-24,google,Gemini 1.5 Pro 002,no,google/gemini-1-5-pro-002-2024-09-24
+google/gemini-1-5-pro-exp-2024-08-01,google,Gemini 1.5 Pro Exp (2024-08-01),no,google/gemini-1-5-pro-exp-2024-08-01
+google/gemini-1-5-pro-exp-2024-08-27,google,Gemini 1.5 Pro Exp (2024-08-27),no,google/gemini-1-5-pro-exp-2024-08-27
+google/gemini-2-0-flash-exp,google,Gemini 2.0 Flash Exp,no,google/gemini-2-0-flash-exp
+google/gemini-2-0-flash-exp-image-generation,google,Gemini 2.0 Flash Exp Image Generation,no,google/gemini-2-0-flash-exp-image-generation
+google/gemini-2-0-flash-thinking-exp-2024-12-19,google,Gemini 2.0 Flash Thinking Exp (2024-12-19),no,google/gemini-2-0-flash-thinking-exp-2024-12-19
+google/gemini-2-0-flash-thinking-exp-2025-01-21,google,Gemini 2.0 Flash Thinking Exp (2025-01-21),no,google/gemini-2-0-flash-thinking-exp-2025-01-21
+google/gemini-2-0-pro-exp-2025-02-05,google,Gemini 2.0 Pro Exp (2025-02-05),no,google/gemini-2-0-pro-exp-2025-02-05
+google/gemini-2-5-computer-use-preview-2025-10-07,google,Gemini 2.5 Computer Use Preview,no,google/gemini-2-5-computer-use-preview-2025-10-07
+google/gemini-2-5-flash-image-preview-2025-08-25,google,Gemini 2.5 Flash Image Preview (Nano Banana),no,google/gemini-2-5-flash-image-preview-2025-08-25
+google/gemini-2-5-flash-preview-2025-04-17,google,Gemini 2.5 Flash Preview (2025-04-17),no,google/gemini-2-5-flash-preview-2025-04-17
+google/gemini-2-5-flash-preview-native-audio-dialog,google,Gemini 2.5 Flash Preview Native Audio Dialog,no,google/gemini-2-5-flash-preview-native-audio-dialog
+google/gemini-2-5-flash-preview-tts-2025-12-10,google,Gemini 2.5 Flash Preview TTS (10-12-2025),no,google/gemini-2-5-flash-preview-tts-2025-12-10
+google/gemini-2-5-pro-experimental-2025-03-25,google,Gemini 2.5 Pro Experimental (2025-03-25),no,google/gemini-2-5-pro-experimental-2025-03-25
+google/gemini-2-5-pro-preview-2025-05-06,google,Gemini 2.5 Pro Preview (2025-05-06),no,google/gemini-2-5-pro-preview-2025-05-06
+google/gemini-2-5-pro-preview-tts-2025-12-10,google,Gemini 2.5 Pro Preview TTS (10-12-2025),no,google/gemini-2-5-pro-preview-tts-2025-12-10
+google/gemini-diffusion,google,Gemini Diffusion,no,google/gemini-diffusion
+google/gemini-embedding-exp-0307-2025-03-07,google,Gemini Embedding Exp 0307,no,google/gemini-embedding-exp-0307-2025-03-07
+google/gemini-exp-1114-2024-11-14,google,Gemini Exp 1114,no,google/gemini-exp-1114-2024-11-14
+google/gemini-exp-1121-2024-11-21,google,Gemini Exp 1121,no,google/gemini-exp-1121-2024-11-21
+google/gemini-exp-1206-2024-12-06,google,Gemini Exp 1206,no,google/gemini-exp-1206-2024-12-06
+google/gemini-live-2-5-flash-preview-2025-04-09,google,Gemini Live 2.5 Flash Preview,no,google/gemini-live-2-5-flash-preview-2025-04-09
+google/gemini-robotics-er-1-5-preview-2025-09-25,google,Gemini Robotics ER 1.5 Preview,no,google/gemini-robotics-er-1-5-preview-2025-09-25
+google/gemma-1-7b-2024-02-21,google,Gemma 1 7B,no,google/gemma-1-7b-2024-02-21
+google/gemma-2-27b-2024-06-27,google,Gemma 2 27B,no,google/gemma-2-27b-2024-06-27
+google/gemma-2-2b-2024-07-31,google,Gemma 2 2B,no,google/gemma-2-2b-2024-07-31
+google/image-generation-002-2023-08-17,google,Image Generation 002,no,google/image-generation-002-2023-08-17
+google/image-generation-005-2023-11-22,google,Image Generation 005,no,google/image-generation-005-2023-11-22
+google/image-generation-006-2024-03-27,google,Image Generation 006,no,google/image-generation-006-2024-03-27
+google/image-text-2023-06-07,google,Image Text,no,google/image-text-2023-06-07
+google/imagen-3-0-generate-001-2024-07-31,google,Imagen 3.0 Generate 001,no,google/imagen-3-0-generate-001-2024-07-31
+google/imagen-4-0-fast-generate-preview-2025-06-11,google,Imagen 4.0 Fast Generate Preview (2025-06-11),no,google/imagen-4-0-fast-generate-preview-2025-06-11
+google/imagen-4-0-generate-preview-2025-06-11,google,Imagen 4.0 Generate Preview (2025-06-11),no,google/imagen-4-0-generate-preview-2025-06-11
+google/imagen-4-0-preview-2025-05-20,google,Imagen 4.0 Preview,no,google/imagen-4-0-preview-2025-05-20
+google/imagen-4-0-ultra-generate-preview-2025-06-11,google,Imagen 4.0 Ultra Generate Preview (2025-06-11),no,google/imagen-4-0-ultra-generate-preview-2025-06-11
+google/imagen-4-0-ultra-preview-2025-05-20,google,Imagen 4.0 Ultra Preview,no,google/imagen-4-0-ultra-preview-2025-05-20
+google/learnlm-1-5-pro-experimental-2024-11-19,google,LearnLM 1.5 Pro Experimental,no,google/learnlm-1-5-pro-experimental-2024-11-19
+google/lyria-1,google,Lyria 1,no,google/lyria-1
+google/lyria-2,google,Lyria 2,no,google/lyria-2
+google/lyria-3-2026-02-18,google,Lyria 3,no,google/lyria-3-2026-02-18
+google/medgemma-1-5-4b-2026-01-13,google,MedGemma 1.5 4B,no,google/medgemma-1-5-4b-2026-01-13
+google/multimodal-embedding-001-2024-02-12,google,Multimodal Embedding 001,no,google/multimodal-embedding-001-2024-02-12
+google/text-bison-2023-05-01,google,Text Bison,no,google/text-bison-2023-05-01
+google/text-embedding-004-2024-05-14,google,Text Embedding 004,no,google/text-embedding-004-2024-05-14
+google/text-embedding-005-2024-11-18,google,Text Embedding 005,no,google/text-embedding-005-2024-11-18
+google/text-embedding-gecko-001-2023-06-07,google,Text Embedding Gecko 001,no,google/text-embedding-gecko-001-2023-06-07
+google/text-embedding-gecko-002-2023-11-02,google,Text Embedding Gecko 002,no,google/text-embedding-gecko-002-2023-11-02
+google/text-embedding-gecko-003-2023-12-12,google,Text Embedding Gecko 003,no,google/text-embedding-gecko-003-2023-12-12
+google/text-embedding-gecko-multilingual-001-2023-11-02,google,Text Embedding Gecko Multilingual 001,no,google/text-embedding-gecko-multilingual-001-2023-11-02
+google/text-multilingual-embedding-002-2024-05-14,google,Text Multilingual Embedding 002,no,google/text-multilingual-embedding-002-2024-05-14
+google/translategemma-12b-2026-01-15,google,TranslateGemma 12B,no,google/translategemma-12b-2026-01-15
+google/translategemma-27b-2026-01-15,google,TranslateGemma 27B,no,google/translategemma-27b-2026-01-15
+google/translategemma-4b-2026-01-15,google,TranslateGemma 4B,no,google/translategemma-4b-2026-01-15
+google/veo-3-0-fast-generate-preview-2025-07-17,google,Veo 3.0 Fast Generate Preview,no,google/veo-3-0-fast-generate-preview-2025-07-17
+google/veo-3-0-generate-preview-2025-07-17,google,Veo 3.0 Generate Preview,no,google/veo-3-0-generate-preview-2025-07-17
+google/veo-3-2,google,Veo 3.2,no,google/veo-3-2
+google/veo-3-2025-09-09,google,Veo 3,no,google/veo-3-2025-09-09
+google/veo-3-fast-2025-09-09,google,Veo 3 Fast,no,google/veo-3-fast-2025-09-09
+google/veo-4,google,Veo 4,no,google/veo-4
+ibm/granite-20b-code-instruct-8k,ibm,Granite 20B Code Instruct 8K,no,ibm/granite-20b-code-instruct-8k
+ibm/granite-3-0-1b-a400m-instruct,ibm,Granite 3.0 1B A400M Instruct,no,ibm/granite-3-0-1b-a400m-instruct
+ibm/granite-3-0-2b-instruct,ibm,Granite 3.0 2B Instruct,no,ibm/granite-3-0-2b-instruct
+ibm/granite-3-0-3b-a800m-instruct,ibm,Granite 3.0 3B A800M Instruct,no,ibm/granite-3-0-3b-a800m-instruct
+ibm/granite-3-0-8b-instruct,ibm,Granite 3.0 8B Instruct,no,ibm/granite-3-0-8b-instruct
+ibm/granite-3-1-1b-a400m-instruct,ibm,Granite 3.1 1B A400M Instruct,no,ibm/granite-3-1-1b-a400m-instruct
+ibm/granite-3-1-2b-instruct,ibm,Granite 3.1 2B Instruct,no,ibm/granite-3-1-2b-instruct
+ibm/granite-3-1-3b-a800m-instruct,ibm,Granite 3.1 3B A800M Instruct,no,ibm/granite-3-1-3b-a800m-instruct
+ibm/granite-3-1-8b-instruct,ibm,Granite 3.1 8B Instruct,no,ibm/granite-3-1-8b-instruct
+ibm/granite-3-2-2b-instruct,ibm,Granite 3.2 2B Instruct,no,ibm/granite-3-2-2b-instruct
+ibm/granite-3-2-8b-instruct,ibm,Granite 3.2 8B Instruct,no,ibm/granite-3-2-8b-instruct
+ibm/granite-3-2-8b-instruct-preview,ibm,Granite 3.2 8B Instruct Preview,no,ibm/granite-3-2-8b-instruct-preview
+ibm/granite-3-3-2b-instruct-2025-04-16,ibm,Granite 3.3 2B Instruct,no,ibm/granite-3-3-2b-instruct-2025-04-16
+ibm/granite-3-3-8b-instruct-2025-04-16,ibm,Granite 3.3 8B Instruct,no,ibm/granite-3-3-8b-instruct-2025-04-16
+ibm/granite-34b-code-instruct-8b,ibm,Granite 34B Code Instruct 8B,no,ibm/granite-34b-code-instruct-8b
+ibm/granite-3b-code-instruct-128k,ibm,Granite 3B Code Instruct 128K,no,ibm/granite-3b-code-instruct-128k
+ibm/granite-3b-code-instruct-2k,ibm,Granite 3B Code Instruct 2K,no,ibm/granite-3b-code-instruct-2k
+ibm/granite-4-0-micro-2025-10-02,ibm,Granite 4.0 Micro,no,ibm/granite-4-0-micro-2025-10-02
+ibm/granite-4-0-small-2025-10-02,ibm,Granite 4.0 Small,no,ibm/granite-4-0-small-2025-10-02
+ibm/granite-4-0-tiny-2025-10-02,ibm,Granite 4.0 Tiny,no,ibm/granite-4-0-tiny-2025-10-02
+ibm/granite-4-0-tiny-preview-2025-05-02,ibm,Granite 4.0 Tiny Preview,no,ibm/granite-4-0-tiny-preview-2025-05-02
+ibm/granite-8b-code-instruct-128k,ibm,Granite 8B Code Instruct 128K,no,ibm/granite-8b-code-instruct-128k
+ibm/granite-8b-code-instruct-4k,ibm,Granite 8B Code Instruct 4K,no,ibm/granite-8b-code-instruct-4k
+ibm/granite-embedding-107m-multilingual,ibm,Granite Embedding 107M Multilingual,no,ibm/granite-embedding-107m-multilingual
+ibm/granite-embedding-125m-english,ibm,Granite Embedding 125M English,no,ibm/granite-embedding-125m-english
+ibm/granite-embedding-278m-multilingual,ibm,Granite Embedding 278M Multilingual,no,ibm/granite-embedding-278m-multilingual
+ibm/granite-embedding-30m-english,ibm,Granite Embedding 30M English,no,ibm/granite-embedding-30m-english
+ibm/granite-embedding-english-r2,ibm,Granite Embedding English R2,no,ibm/granite-embedding-english-r2
+ibm/granite-embedding-reranker-english-r2,ibm,Granite Embedding Reranker English R2,no,ibm/granite-embedding-reranker-english-r2
+ibm/granite-embedding-small-english-r2,ibm,Granite Embedding Small English R2,no,ibm/granite-embedding-small-english-r2
+ibm/granite-guardian-3-0-2b,ibm,Granite Guardian 3.0 2B,no,ibm/granite-guardian-3-0-2b
+ibm/granite-guardian-3-0-8b,ibm,Granite Guardian 3.0 8B,no,ibm/granite-guardian-3-0-8b
+ibm/granite-guardian-3-1-2b,ibm,Granite Guardian 3.1 2B,no,ibm/granite-guardian-3-1-2b
+ibm/granite-guardian-3-1-8b,ibm,Granite Guardian 3.1 8B,no,ibm/granite-guardian-3-1-8b
+ibm/granite-guardian-3-2-5b,ibm,Granite Guardian 3.2 5B,no,ibm/granite-guardian-3-2-5b
+ibm/granite-guardian-3-3-8b,ibm,Granite Guardian 3.3 8B,no,ibm/granite-guardian-3-3-8b
+ibm/granite-speech-3-2-8b,ibm,Granite Speech 3.2 8B,no,ibm/granite-speech-3-2-8b
+ibm/granite-speech-3-3-2b,ibm,Granite Speech 3.3 2B,no,ibm/granite-speech-3-3-2b
+ibm/granite-speech-3-3-8b,ibm,Granite Speech 3.3 8B,no,ibm/granite-speech-3-3-8b
+ibm/granite-vision-3-1-2b-preview,ibm,Granite Vision 3.1 2B Preview,no,ibm/granite-vision-3-1-2b-preview
+ibm/granite-vision-3-2-2b,ibm,Granite Vision 3.2 2B,no,ibm/granite-vision-3-2-2b
+ibm/granite-vision-3-3-2b,ibm,Granite Vision 3.3 2B,no,ibm/granite-vision-3-3-2b
+ibm/granite-vision-3-3-2b-embedding,ibm,Granite Vision 3.3 2B Embedding,no,ibm/granite-vision-3-3-2b-embedding
+inclusionai/ring-1t-2-5-2026-02-12,inclusionai,Ring 1T 2.5,no,inclusionai/ring-1t-2-5-2026-02-12
+lg/exaone-3-0-2024-08-07,lg,EXAONE 3.0,no,lg/exaone-3-0-2024-08-07
+lg/exaone-3-5-2-4b-2024-12-09,lg,EXAONE 3.5 2.4B,no,lg/exaone-3-5-2-4b-2024-12-09
+lg/exaone-3-5-32b-2024-12-09,lg,EXAONE 3.5 32B,no,lg/exaone-3-5-32b-2024-12-09
+lg/exaone-3-5-7-8b-2024-12-09,lg,EXAONE 3.5 7.8B,no,lg/exaone-3-5-7-8b-2024-12-09
+lg/exaone-4-0-1-2b-2025-07-15,lg,EXAONE 4.0 1.2B,no,lg/exaone-4-0-1-2b-2025-07-15
+lg/exaone-4-0-32b-2025-07-15,lg,EXAONE 4.0 32B,no,lg/exaone-4-0-32b-2025-07-15
+lg/exaone-deep-2-4b-2025-03-18,lg,EXAONE Deep 2.4B,no,lg/exaone-deep-2-4b-2025-03-18
+lg/exaone-deep-32b-2025-03-18,lg,EXAONE Deep 32B,no,lg/exaone-deep-32b-2025-03-18
+lg/exaone-deep-7-8b-2025-03-18,lg,EXAONE Deep 7.8B,no,lg/exaone-deep-7-8b-2025-03-18
+lg/k-exaone-2025-12-31,lg,K EXAONE,no,lg/k-exaone-2025-12-31
+liquid-ai/lfm-2-1-2b-2025-07-10,liquid-ai,LFM 2 1.2B,no,liquid-ai/lfm-2-1-2b-2025-07-10
+liquid-ai/lfm-2-2-6b-2025-09-23,liquid-ai,LFM 2 2.6B,no,liquid-ai/lfm-2-2-6b-2025-09-23
+liquid-ai/lfm-2-24b-a2b-2026-02-24,liquid-ai,LFM 2 24B A2B,no,liquid-ai/lfm-2-24b-a2b-2026-02-24
+liquid-ai/lfm-2-350m-2025-07-10,liquid-ai,LFM 2 350M,no,liquid-ai/lfm-2-350m-2025-07-10
+liquid-ai/lfm-2-5-1-2b-2026-01-06,liquid-ai,LFM 2.5 1.2B,no,liquid-ai/lfm-2-5-1-2b-2026-01-06
+liquid-ai/lfm-2-5-1-2b-jp-2026-01-06,liquid-ai,LFM 2.5 1.2B JP,no,liquid-ai/lfm-2-5-1-2b-jp-2026-01-06
+liquid-ai/lfm-2-5-1-2b-thinking-2026-01-20,liquid-ai,LFM 2.5 1.2B Thinking,no,liquid-ai/lfm-2-5-1-2b-thinking-2026-01-20
+liquid-ai/lfm-2-5-audio-1-5b,liquid-ai,LFM 2.5 Audio 1.5B,no,liquid-ai/lfm-2-5-audio-1-5b
+liquid-ai/lfm-2-5-vl-1-6b,liquid-ai,LFM 2.5 VL 1.6B,no,liquid-ai/lfm-2-5-vl-1-6b
+liquid-ai/lfm-2-700m-2025-07-10,liquid-ai,LFM 2 700M,no,liquid-ai/lfm-2-700m-2025-07-10
+liquid-ai/lfm-2-8b-a1b-2025-10-07,liquid-ai,LFM 2 8B A1B,no,liquid-ai/lfm-2-8b-a1b-2025-10-07
+meta/llama-2-13b-chat-2023-06-20,meta,Llama 2 13B Chat,no,meta/llama-2-13b-chat-2023-06-20
+meta/llama-2-70b-chat-2023-06-20,meta,Llama 2 70B Chat,no,meta/llama-2-70b-chat-2023-06-20
+meta/llama-2-7b-chat,meta,Llama 2 7B Chat,no,meta/llama-2-7b-chat
+meta/llama-3-2-11b-vision-instruct,meta,Llama 3.2 11B Vision Instruct,no,meta/llama-3-2-11b-vision-instruct
+meta/llama-3-2-90b-vision-instruct,meta,Llama 3.2 90B Vision Instruct,no,meta/llama-3-2-90b-vision-instruct
+microsoft/phi-1,microsoft,Phi 1,no,microsoft/phi-1
+microsoft/phi-1-5,microsoft,Phi 1.5,no,microsoft/phi-1-5
+microsoft/phi-2,microsoft,Phi 2,no,microsoft/phi-2
+microsoft/phi-3-5-mini-instruct-2024-08-23,microsoft,Phi 3.5 mini instruct,no,microsoft/phi-3-5-mini-instruct-2024-08-23
+microsoft/phi-3-5-moe-instruct-2024-08-23,microsoft,Phi 3.5 MoE instruct,no,microsoft/phi-3-5-moe-instruct-2024-08-23
+microsoft/phi-3-5-vision-instruct-2024-08-23,microsoft,Phi 3.5 vision instruct,no,microsoft/phi-3-5-vision-instruct-2024-08-23
+microsoft/phi-3-medium-128k-instruct,microsoft,Phi 3 Medium 128K Instruct,no,microsoft/phi-3-medium-128k-instruct
+microsoft/phi-3-medium-4k-instruct,microsoft,Phi 3 Medium 4K Instruct,no,microsoft/phi-3-medium-4k-instruct
+microsoft/phi-3-mini-128k-instruct,microsoft,Phi 3 Mini 128K Instruct,no,microsoft/phi-3-mini-128k-instruct
+microsoft/phi-3-small-128k-instruct,microsoft,Phi 3 Small 128K Instruct,no,microsoft/phi-3-small-128k-instruct
+microsoft/phi-3-small-8k-instruct,microsoft,Phi 3 Small 8K Instruct,no,microsoft/phi-3-small-8k-instruct
+microsoft/phi-3-vision-128k-instruct,microsoft,Phi 3 Vision 128K Instruct,no,microsoft/phi-3-vision-128k-instruct
+microsoft/phi-4-2024-12-12,microsoft,Phi 4,no,microsoft/phi-4-2024-12-12
+microsoft/phi-4-mini-flash-reasoning,microsoft,Phi 4 Mini Flash Reasoning,no,microsoft/phi-4-mini-flash-reasoning
+microsoft/phi-4-mini-reasoning-2025-04-30,microsoft,Phi 4 Mini Reasoning,no,microsoft/phi-4-mini-reasoning-2025-04-30
+microsoft/phi-4-multimodal-instruct-2025-02-01,microsoft,Phi 4 multimodal instruct,no,microsoft/phi-4-multimodal-instruct-2025-02-01
+microsoft/phi-4-reasoning-2025-04-30,microsoft,Phi 4 Reasoning,no,microsoft/phi-4-reasoning-2025-04-30
+microsoft/phi-4-reasoning-plus-2025-04-30,microsoft,Phi 4 Reasoning Plus,no,microsoft/phi-4-reasoning-plus-2025-04-30
+minimax/hailuo-2-3-2025-10-28,minimax,Hailuo 2.3,no,minimax/hailuo-2-3-2025-10-28
+minimax/hailuo-2-3-fast-2025-10-28,minimax,Hailuo 2.3 Fast,no,minimax/hailuo-2-3-fast-2025-10-28
+minimax/minimax-m1-40k-2025-06-16,minimax,Minimax M1 40K,no,minimax/minimax-m1-40k-2025-06-16
+minimax/minimax-vl-01-2025-01-15,minimax,Minimax VL 01,no,minimax/minimax-vl-01-2025-01-15
+minimax/music-2-0-2025-10-29,minimax,Music 2.0,no,minimax/music-2-0-2025-10-29
+minimax/music-2-5-2026-01-16,minimax,Music 2.5,no,minimax/music-2-5-2026-01-16
+minimax/speech-2-6-2025-10-29,minimax,Speech 2.6,no,minimax/speech-2-6-2025-10-29
+mistral/codestral-2024-05-29,mistral,Codestral (2024-05-29),no,mistral/codestral-2024-05-29
+mistral/codestral-2025-01-13,mistral,Codestral (2025-01-13),no,mistral/codestral-2025-01-13
+mistral/codestral-mamba-7b-2024-07-16,mistral,Codestral Mamba 7B,no,mistral/codestral-mamba-7b-2024-07-16
+mistral/devstral-small-1-0-2025-05-21,mistral,Devstral Small 1.0,no,mistral/devstral-small-1-0-2025-05-21
+mistral/magistral-medium-1-0-2025-06-10,mistral,Magistral Medium 1.0,no,mistral/magistral-medium-1-0-2025-06-10
+mistral/magistral-medium-1-1-2025-07-24,mistral,Magistral Medium 1.1,no,mistral/magistral-medium-1-1-2025-07-24
+mistral/magistral-small-1-1-2025-07-24,mistral,Magistral Small 1.1,no,mistral/magistral-small-1-1-2025-07-24
+mistral/mathstral-7b-2024-07-16,mistral,Mathstral 7B,no,mistral/mathstral-7b-2024-07-16
+mistral/ministral-3b-2024-10-09,mistral,Ministral 3B,no,mistral/ministral-3b-2024-10-09
+mistral/ministral-8b-2024-10-09,mistral,Ministral 8B,no,mistral/ministral-8b-2024-10-09
+mistral/mistral-7b-2023-09-27,mistral,Mistral 7B (2023-09-27),no,mistral/mistral-7b-2023-09-27
+mistral/mistral-7b-2023-12-11,mistral,Mistral 7B (2023-12-11),no,mistral/mistral-7b-2023-12-11
+mistral/mistral-7b-2024-05-22,mistral,Mistral 7B (2024-05-22),no,mistral/mistral-7b-2024-05-22
+mistral/mistral-large-1-0-2024-02-26,mistral,Mistral Large 1.0,no,mistral/mistral-large-1-0-2024-02-26
+mistral/mistral-large-2-0-2024-07-24,mistral,Mistral Large 2.0,no,mistral/mistral-large-2-0-2024-07-24
+mistral/mistral-medium-1-0-2023-12-11,mistral,Mistral Medium 1.0,no,mistral/mistral-medium-1-0-2023-12-11
+mistral/mistral-ocr-2025-03-06,mistral,Mistral OCR,no,mistral/mistral-ocr-2025-03-06
+mistral/mistral-saba-2025-02-17,mistral,Mistral Saba,no,mistral/mistral-saba-2025-02-17
+mistral/mistral-small-1-0-2024-02-26,mistral,Mistral Small 1.0,no,mistral/mistral-small-1-0-2024-02-26
+mistral/mistral-small-2-0-2024-09-17,mistral,Mistral Small 2.0,no,mistral/mistral-small-2-0-2024-09-17
+mistral/pixtral-12b-2024-09-17,mistral,Pixtral 12B,no,mistral/pixtral-12b-2024-09-17
+mistral/voxtral-mini-transcribe-2-2026-02-04,mistral,Voxtral Mini Transcribe 2,no,mistral/voxtral-mini-transcribe-2-2026-02-04
+mistral/voxtral-mini-transcribe-2025-07-15,mistral,Voxtral Mini Transcribe,no,mistral/voxtral-mini-transcribe-2025-07-15
+moonshot-ai/kimi-k1-5-2025-01-20,moonshot-ai,Kimi K1.5,no,moonshot-ai/kimi-k1-5-2025-01-20
+moonshot-ai/kimi-linear-48b-2025-10-30,moonshot-ai,Kimi Linear 48B,no,moonshot-ai/kimi-linear-48b-2025-10-30
+moonshot-ai/kimi-vl-a3b-2025-04-09,moonshot-ai,Kimi VL A3B,no,moonshot-ai/kimi-vl-a3b-2025-04-09
+moonshot-ai/kimi-vl-a3b-thinking-2025-04-09,moonshot-ai,Kimi VL A3B Thinking (2025-04-09),no,moonshot-ai/kimi-vl-a3b-thinking-2025-04-09
+moonshot-ai/kimi-vl-a3b-thinking-2025-06-21,moonshot-ai,Kimi VL A3B Thinking (2025-06-21),no,moonshot-ai/kimi-vl-a3b-thinking-2025-06-21
+naver-hyperclova/hyperclova-x-seed-omni-8b-2025-12-29,naver-hyperclova,HyperClova X Seed Omni 8B,no,naver-hyperclova/hyperclova-x-seed-omni-8b-2025-12-29
+naver-hyperclova/hyperclova-x-seed-think-14b-2025-07-22,naver-hyperclova,HyperClova X Seed Think 14B,no,naver-hyperclova/hyperclova-x-seed-think-14b-2025-07-22
+naver-hyperclova/hyperclova-x-seed-think-32b-2025-12-29,naver-hyperclova,HyperClova X Seed Think 32B,no,naver-hyperclova/hyperclova-x-seed-think-32b-2025-12-29
+nous/hermes-2-llama-2-70b-2024-02-12,nous,Hermes 2 Llama 2 70B,no,nous/hermes-2-llama-2-70b-2024-02-12
+nous/hermes-2-pro-llama-3-70b-2024-06-27,nous,Hermes 2 Pro Llama 3 70B,no,nous/hermes-2-pro-llama-3-70b-2024-06-27
+nous/hermes-2-pro-llama-3-8b-2024-05-01,nous,Hermes 2 Pro Llama 3 8B,no,nous/hermes-2-pro-llama-3-8b-2024-05-01
+nous/hermes-2-pro-mistral-7b-2024-03-13,nous,Hermes 2 Pro Mistral 7B,no,nous/hermes-2-pro-mistral-7b-2024-03-13
+nous/hermes-2-theta-llama-3-70b-2024-06-20,nous,Hermes 2 Theta Llama 3 70B,no,nous/hermes-2-theta-llama-3-70b-2024-06-20
+nous/hermes-2-theta-llama-3-8b-2024-05-15,nous,Hermes 2 Theta Llama 3 8B,no,nous/hermes-2-theta-llama-3-8b-2024-05-15
+nous/hermes-3-llama-3-1-70b-2024-08-15,nous,Hermes 3 Llama 3.1 70B,no,nous/hermes-3-llama-3-1-70b-2024-08-15
+nous/hermes-3-llama-3-1-8b-2024-08-15,nous,Hermes 3 Llama 3.1 8B,no,nous/hermes-3-llama-3-1-8b-2024-08-15
+nous/hermes-3-llama-3-2-3b-2024-12-11,nous,Hermes 3 Llama 3.2 3B,no,nous/hermes-3-llama-3-2-3b-2024-12-11
+nous/hermes-4-14b-2025-07-26,nous,Hermes 4 14B,no,nous/hermes-4-14b-2025-07-26
+nous/hermes-4-3-36b-2025-12-03,nous,Hermes 4.3 36B,no,nous/hermes-4-3-36b-2025-12-03
+nous/hermes-4-405b-2025-07-26,nous,Hermes 4 405B,no,nous/hermes-4-405b-2025-07-26
+nous/hermes-4-70b-2025-07-26,nous,Hermes 4 70B,no,nous/hermes-4-70b-2025-07-26
+nous/nomos-1-2025-12-09,nous,Nomos 1,no,nous/nomos-1-2025-12-09
+nous/nouscoder-14b-2026-01-06,nous,NousCoder 14B,no,nous/nouscoder-14b-2026-01-06
+nvidia/llama-3-1-nemotron-70b-instruct-2024-10-01,nvidia,Llama 3.1 Nemotron 70B Instruct,no,nvidia/llama-3-1-nemotron-70b-instruct-2024-10-01
+nvidia/llama-3-1-nemotron-nano-4b-v1-1,nvidia,Llama 3.1 Nemotron Nano 4B V1.1,no,nvidia/llama-3-1-nemotron-nano-4b-v1-1
+nvidia/llama-3-1-nemotron-nano-8b-v1-2025-03-18,nvidia,Llama 3.1 Nemotron Nano 8B V1,no,nvidia/llama-3-1-nemotron-nano-8b-v1-2025-03-18
+nvidia/llama-3-1-nemotron-ultra-253b-v1-2025-04-07,nvidia,Llama 3.1 Nemotron Ultra 253B v1,no,nvidia/llama-3-1-nemotron-ultra-253b-v1-2025-04-07
+nvidia/llama-3-3-nemotron-super-49b-v1-2025-03-18,nvidia,Llama 3.3 Nemotron Super 49B v1,no,nvidia/llama-3-3-nemotron-super-49b-v1-2025-03-18
+nvidia/llama-3-3-nemotron-super-49b-v1-5,nvidia,Llama 3.3 Nemotron Super 49B V1.5,no,nvidia/llama-3-3-nemotron-super-49b-v1-5
+nvidia/nvidia-nemotron-nano-12b-v2,nvidia,Nvidia Nemotron Nano 12B V2,no,nvidia/nvidia-nemotron-nano-12b-v2
+nvidia/nvidia-nemotron-nano-9b-v2,nvidia,Nvidia Nemotron Nano 9B V2,no,nvidia/nvidia-nemotron-nano-9b-v2
+nvidia/openreasoning-nemotron-1-5b,nvidia,Openreasoning Nemotron 1.5B,no,nvidia/openreasoning-nemotron-1-5b
+nvidia/openreasoning-nemotron-14b,nvidia,Openreasoning Nemotron 14B,no,nvidia/openreasoning-nemotron-14b
+nvidia/openreasoning-nemotron-32b,nvidia,Openreasoning Nemotron 32B,no,nvidia/openreasoning-nemotron-32b
+nvidia/openreasoning-nemotron-7b,nvidia,Openreasoning Nemotron 7B,no,nvidia/openreasoning-nemotron-7b
+openai/code-cushman-001,openai,Code Cushman 001,no,openai/code-cushman-001
+openai/code-cushman-002,openai,Code Cushman 002,no,openai/code-cushman-002
+openai/code-davinci-001,openai,Code Davinci 001,no,openai/code-davinci-001
+openai/code-davinci-002,openai,Code Davinci 002,no,openai/code-davinci-002
+openai/code-davinci-edit-001,openai,Code Davinci Edit 001,no,openai/code-davinci-edit-001
+openai/code-search-ada-code-001,openai,Code Search Ada Code 001,no,openai/code-search-ada-code-001
+openai/code-search-ada-text-001,openai,Code Search Ada Text 001,no,openai/code-search-ada-text-001
+openai/code-search-babbage-code-001,openai,Code Search Babbage Code 001,no,openai/code-search-babbage-code-001
+openai/code-search-babbage-text-001,openai,Code Search Babbage Text 001,no,openai/code-search-babbage-text-001
+openai/dall-e-2021-01-05,openai,Dall-E,no,openai/dall-e-2021-01-05
+openai/gpt-1-2018-06-11,openai,GPT 1,no,openai/gpt-1-2018-06-11
+openai/gpt-2-2019-11-05,openai,GPT 2,no,openai/gpt-2-2019-11-05
+openai/gpt-3-2020-06-11,openai,GPT 3,no,openai/gpt-3-2020-06-11
+openai/gpt-3-5-turbo-0613,openai,GPT 3.5 Turbo 0613,no,openai/gpt-3-5-turbo-0613
+openai/gpt-4-32k,openai,GPT 4 32K,no,openai/gpt-4-32k
+openai/gpt-4-32k-0314,openai,GPT 4 32K 0314,no,openai/gpt-4-32k-0314
+openai/gpt-4-32k-0613,openai,GPT 4 32K 0613,no,openai/gpt-4-32k-0613
+openai/gpt-4-5-2025-02-27,openai,GPT 4.5,no,openai/gpt-4-5-2025-02-27
+openai/gpt-4o-mini-transcribe-2025-03-20,openai,GPT 4o Mini Transcribe (2025-03-20),no,openai/gpt-4o-mini-transcribe-2025-03-20
+openai/gpt-4o-mini-tts-2025-03-20,openai,GPT 4o Mini TTS (2025-03-20),no,openai/gpt-4o-mini-tts-2025-03-20
+openai/gpt-4o-realtime-preview-2024-10-01,openai,GPT 4o Realtime Preview,no,openai/gpt-4o-realtime-preview-2024-10-01
+openai/gpt-4o-realtime-preview-2024-12-17,openai,GPT 4o Realtime Preview (2024-12-17),no,openai/gpt-4o-realtime-preview-2024-12-17
+openai/gpt-4o-realtime-preview-2025-06-03,openai,GPT 4o Realtime Preview (2025-06-03),no,openai/gpt-4o-realtime-preview-2025-06-03
+openai/gpt-4o-transcribe-diarize-2025-10-15,openai,GPT 4o Transcribe Diarize,no,openai/gpt-4o-transcribe-diarize-2025-10-15
+openai/gpt-5-1-pro,openai,GPT 5.1 Pro,no,openai/gpt-5-1-pro
+openai/gpt-5-2-mini,openai,GPT 5.2 Mini,no,openai/gpt-5-2-mini
+openai/gpt-5-3-codex-spark-2026-02-12,openai,GPT 5.3 Codex Spark,no,openai/gpt-5-3-codex-spark-2026-02-12
+openai/gpt-5-codex-mini-2025-11-07,openai,GPT 5 Codex Mini,no,openai/gpt-5-codex-mini-2025-11-07
+openai/gpt-5-search-api-2025-10-14,openai,GPT 5 Search API,no,openai/gpt-5-search-api-2025-10-14
+openai/gpt-audio-mini-2025-12-15,openai,GPT Audio Mini (2025-12-15),no,openai/gpt-audio-mini-2025-12-15
+openai/gpt-oss-safeguard-120b-2025-10-29,openai,GPT OSS Safeguard 120b,no,openai/gpt-oss-safeguard-120b-2025-10-29
+openai/gpt-oss-safeguard-20b-2025-10-29,openai,GPT OSS Safeguard 20b,no,openai/gpt-oss-safeguard-20b-2025-10-29
+openai/gpt-realtime-mini-2025-12-15,openai,GPT Realtime Mini (2025-12-15),no,openai/gpt-realtime-mini-2025-12-15
+openai/o1-preview-2024-09-12,openai,o1 preview,no,openai/o1-preview-2024-09-12
+openai/o3-preview,openai,o3 Preview,no,openai/o3-preview
+openai/sora-1-2024-12-09,openai,Sora 1,no,openai/sora-1-2024-12-09
+openai/text-ada-001,openai,Text Ada 001,no,openai/text-ada-001
+openai/text-babbage-001,openai,Text Babbage 001,no,openai/text-babbage-001
+openai/text-curie-001,openai,Text Curie 001,no,openai/text-curie-001
+openai/text-davinci-001,openai,Text Davinci 001,no,openai/text-davinci-001
+openai/text-davinci-002,openai,Text Davinci 002,no,openai/text-davinci-002
+openai/text-davinci-003,openai,Text Davinci 003,no,openai/text-davinci-003
+openai/text-davinci-edit-001,openai,Text Davinci Edit 001,no,openai/text-davinci-edit-001
+openai/text-moderation-007,openai,Text Moderation 007,no,openai/text-moderation-007
+openai/text-search-ada-doc-001,openai,Text Search Ada Doc 001,no,openai/text-search-ada-doc-001
+openai/text-search-ada-query-001,openai,Text Search Ada Query 001,no,openai/text-search-ada-query-001
+openai/text-search-babbage-doc-001,openai,Text Search Babbage Doc 001,no,openai/text-search-babbage-doc-001
+openai/text-search-babbage-query-001,openai,Text Search Babbage Query 001,no,openai/text-search-babbage-query-001
+openai/text-search-curie-doc-001,openai,Text Search Curie Doc 001,no,openai/text-search-curie-doc-001
+openai/text-search-curie-query-001,openai,Text Search Curie Query 001,no,openai/text-search-curie-query-001
+openai/text-search-davinci-doc-001,openai,Text Search Davinci Doc 001,no,openai/text-search-davinci-doc-001
+openai/text-search-davinci-query-001,openai,Text Search Davinci Query 001,no,openai/text-search-davinci-query-001
+openai/text-similarity-ada-001,openai,Text Similarity Ada 001,no,openai/text-similarity-ada-001
+openai/text-similarity-babbage-001,openai,Text Similarity Babbage 001,no,openai/text-similarity-babbage-001
+openai/text-similarity-curie-001,openai,Text Similarity Curie 001,no,openai/text-similarity-curie-001
+openai/text-similarity-davinci-001,openai,Text Similarity Davinci 001,no,openai/text-similarity-davinci-001
+prime-intellect/intellect-3-1-2026-02-18,prime-intellect,Intellect 3.1,no,prime-intellect/intellect-3-1-2026-02-18
+prime-intellect/intellect-3-2025-11-26,prime-intellect,Intellect 3,no,prime-intellect/intellect-3-2025-11-26
+qwen/code-qwen-1-5-7b,qwen,Code Qwen 1.5 7B,no,qwen/code-qwen-1-5-7b
+qwen/qvq-72b-preview,qwen,QvQ 72B Preview,no,qwen/qvq-72b-preview
+qwen/qwen-1-5-0-5b,qwen,Qwen 1.5 0.5B,no,qwen/qwen-1-5-0-5b
+qwen/qwen-1-5-1-8b,qwen,Qwen 1.5 1.8B,no,qwen/qwen-1-5-1-8b
+qwen/qwen-1-5-110b,qwen,Qwen 1.5 110B,no,qwen/qwen-1-5-110b
+qwen/qwen-1-5-14b,qwen,Qwen 1.5 14B,no,qwen/qwen-1-5-14b
+qwen/qwen-1-5-32b,qwen,Qwen 1.5 32B,no,qwen/qwen-1-5-32b
+qwen/qwen-1-5-4b,qwen,Qwen 1.5 4B,no,qwen/qwen-1-5-4b
+qwen/qwen-1-5-72b,qwen,Qwen 1.5 72B,no,qwen/qwen-1-5-72b
+qwen/qwen-1-5-7b,qwen,Qwen 1.5 7B,no,qwen/qwen-1-5-7b
+qwen/qwen-1-5-moe-a2-7b,qwen,Qwen 1.5 MoE A2.7B,no,qwen/qwen-1-5-moe-a2-7b
+qwen/qwen-1-8b,qwen,Qwen 1.8B,no,qwen/qwen-1-8b
+qwen/qwen-14b,qwen,Qwen 14B,no,qwen/qwen-14b
+qwen/qwen-2-0-5b,qwen,Qwen 2 0.5B,no,qwen/qwen-2-0-5b
+qwen/qwen-2-1-5b,qwen,Qwen 2 1.5B,no,qwen/qwen-2-1-5b
+qwen/qwen-2-5-0-5b,qwen,Qwen 2.5 0.5B,no,qwen/qwen-2-5-0-5b
+qwen/qwen-2-5-coder-0-5b,qwen,Qwen 2.5 Coder 0.5B,no,qwen/qwen-2-5-coder-0-5b
+qwen/qwen-2-5-coder-1-5b,qwen,Qwen 2.5 Coder 1.5B,no,qwen/qwen-2-5-coder-1-5b
+qwen/qwen-2-5-coder-14b,qwen,Qwen 2.5 Coder 14B,no,qwen/qwen-2-5-coder-14b
+qwen/qwen-2-5-coder-32b-instruct,qwen,Qwen 2.5 Coder 32B Instruct,no,qwen/qwen-2-5-coder-32b-instruct
+qwen/qwen-2-5-coder-3b,qwen,Qwen 2.5 Coder 3B,no,qwen/qwen-2-5-coder-3b
+qwen/qwen-2-5-coder-7b,qwen,Qwen 2.5 Coder 7B,no,qwen/qwen-2-5-coder-7b
+qwen/qwen-2-5-math-1-5b,qwen,Qwen 2.5 Math 1.5B,no,qwen/qwen-2-5-math-1-5b
+qwen/qwen-2-5-math-72b,qwen,Qwen 2.5 Math 72B,no,qwen/qwen-2-5-math-72b
+qwen/qwen-2-5-math-7b,qwen,Qwen 2.5 Math 7B,no,qwen/qwen-2-5-math-7b
+qwen/qwen-2-5-math-7b-prm800k,qwen,Qwen 2.5 Math 7B PRM800K,no,qwen/qwen-2-5-math-7b-prm800k
+qwen/qwen-2-5-math-prm-72b,qwen,Qwen 2.5 Math PRM 72B,no,qwen/qwen-2-5-math-prm-72b
+qwen/qwen-2-5-math-prm-7b,qwen,Qwen 2.5 Math PRM 7B,no,qwen/qwen-2-5-math-prm-7b
+qwen/qwen-2-5-math-rm-72b,qwen,Qwen 2.5 Math RM 72B,no,qwen/qwen-2-5-math-rm-72b
+qwen/qwen-2-5-omni-3b,qwen,Qwen 2.5 Omni 3B,no,qwen/qwen-2-5-omni-3b
+qwen/qwen-2-5-omni-7b,qwen,Qwen 2.5 Omni 7B,no,qwen/qwen-2-5-omni-7b
+qwen/qwen-2-5-vl-32b-instruct,qwen,Qwen 2.5 VL 32B Instruct,no,qwen/qwen-2-5-vl-32b-instruct
+qwen/qwen-2-5-vl-3b-instruct,qwen,Qwen 2.5 VL 3B Instruct,no,qwen/qwen-2-5-vl-3b-instruct
+qwen/qwen-2-5-vl-7b-instruct,qwen,Qwen 2.5 VL 7B Instruct,no,qwen/qwen-2-5-vl-7b-instruct
+qwen/qwen-2-72b-instruct,qwen,Qwen 2 72B Instruct,no,qwen/qwen-2-72b-instruct
+qwen/qwen-2-7b-instruct,qwen,Qwen 2 7B Instruct,no,qwen/qwen-2-7b-instruct
+qwen/qwen-2-audio-7b,qwen,Qwen 2 Audio 7B,no,qwen/qwen-2-audio-7b
+qwen/qwen-2-math-1-5b,qwen,Qwen 2 Math 1.5B,no,qwen/qwen-2-math-1-5b
+qwen/qwen-2-math-72b,qwen,Qwen 2 Math 72B,no,qwen/qwen-2-math-72b
+qwen/qwen-2-math-7b,qwen,Qwen 2 Math 7B,no,qwen/qwen-2-math-7b
+qwen/qwen-2-math-rm-72b,qwen,Qwen 2 Math RM 72B,no,qwen/qwen-2-math-rm-72b
+qwen/qwen-2-vl-2b,qwen,Qwen 2 VL 2B,no,qwen/qwen-2-vl-2b
+qwen/qwen-2-vl-72b,qwen,Qwen 2 VL 72B,no,qwen/qwen-2-vl-72b
+qwen/qwen-2-vl-7b,qwen,Qwen 2 VL 7B,no,qwen/qwen-2-vl-7b
+qwen/qwen-3-1-7b,qwen,Qwen 3 1.7B,no,qwen/qwen-3-1-7b
+qwen/qwen-3-30b-a3b-thinking-2507,qwen,Qwen 3 30B A3B Thinking 2507,no,qwen/qwen-3-30b-a3b-thinking-2507
+qwen/qwen-3-4b-instruct-2507,qwen,Qwen 3 4B Instruct 2507,no,qwen/qwen-3-4b-instruct-2507
+qwen/qwen-3-4b-saferl,qwen,Qwen 3 4B SafeRL,no,qwen/qwen-3-4b-saferl
+qwen/qwen-3-4b-thinking-2507,qwen,Qwen 3 4B Thinking 2507,no,qwen/qwen-3-4b-thinking-2507
+qwen/qwen-3-5-0-8b-2026-03-02,qwen,Qwen 3.5 0.8B,no,qwen/qwen-3-5-0-8b-2026-03-02
+qwen/qwen-3-5-2b-2026-03-02,qwen,Qwen 3.5 2B,no,qwen/qwen-3-5-2b-2026-03-02
+qwen/qwen-3-5-4b-2026-03-02,qwen,Qwen 3.5 4B,no,qwen/qwen-3-5-4b-2026-03-02
+qwen/qwen-3-5-9b-2026-03-02,qwen,Qwen 3.5 9B,no,qwen/qwen-3-5-9b-2026-03-02
+qwen/qwen-3-8b,qwen,Qwen 3 8B,no,qwen/qwen-3-8b
+qwen/qwen-3-a235-a22b-instruct-2507,qwen,Qwen 3 A235 A22B Instruct 2507,no,qwen/qwen-3-a235-a22b-instruct-2507
+qwen/qwen-3-asr-0-6b,qwen,Qwen 3 ASR 0.6B,no,qwen/qwen-3-asr-0-6b
+qwen/qwen-3-asr-1-7b,qwen,Qwen 3 ASR 1.7B,no,qwen/qwen-3-asr-1-7b
+qwen/qwen-3-embedding-0-6b,qwen,Qwen 3 Embedding 0.6B,no,qwen/qwen-3-embedding-0-6b
+qwen/qwen-3-embedding-4b,qwen,Qwen 3 Embedding 4B,no,qwen/qwen-3-embedding-4b
+qwen/qwen-3-embedding-8b,qwen,Qwen 3 Embedding 8B,no,qwen/qwen-3-embedding-8b
+qwen/qwen-3-forcedaligner-0-6b,qwen,Qwen 3 ForcedAligner 0.6B,no,qwen/qwen-3-forcedaligner-0-6b
+qwen/qwen-3-guard-gen-0-6b,qwen,Qwen 3 Guard Gen 0.6B,no,qwen/qwen-3-guard-gen-0-6b
+qwen/qwen-3-guard-gen-4b,qwen,Qwen 3 Guard Gen 4B,no,qwen/qwen-3-guard-gen-4b
+qwen/qwen-3-guard-gen-8b,qwen,Qwen 3 Guard Gen 8B,no,qwen/qwen-3-guard-gen-8b
+qwen/qwen-3-guard-stream-0-6b,qwen,Qwen 3 Guard Stream 0.6B,no,qwen/qwen-3-guard-stream-0-6b
+qwen/qwen-3-guard-stream-4b,qwen,Qwen 3 Guard Stream 4B,no,qwen/qwen-3-guard-stream-4b
+qwen/qwen-3-guard-stream-8b,qwen,Qwen 3 Guard Stream 8B,no,qwen/qwen-3-guard-stream-8b
+qwen/qwen-3-omni-30b-a3b-captioner,qwen,Qwen 3 Omni 30B A3B Captioner,no,qwen/qwen-3-omni-30b-a3b-captioner
+qwen/qwen-3-omni-flash,qwen,Qwen 3 Omni Flash (2025-09-15),no,qwen/qwen-3-omni-flash
+qwen/qwen-3-reranker-0-6b,qwen,Qwen 3 Reranker 0.6B,no,qwen/qwen-3-reranker-0-6b
+qwen/qwen-3-reranker-4b,qwen,Qwen 3 Reranker 4B,no,qwen/qwen-3-reranker-4b
+qwen/qwen-3-reranker-8b,qwen,Qwen 3 Reranker 8B,no,qwen/qwen-3-reranker-8b
+qwen/qwen-3-tts,qwen,Qwen 3 TTS (2025-11-27),no,qwen/qwen-3-tts
+qwen/qwen-3-tts-12hz-0-6b-base,qwen,Qwen 3 TTS 12Hz 0.6B Base,no,qwen/qwen-3-tts-12hz-0-6b-base
+qwen/qwen-3-tts-12hz-0-6b-customvoice,qwen,Qwen 3 TTS 12Hz 0.6B CustomVoice,no,qwen/qwen-3-tts-12hz-0-6b-customvoice
+qwen/qwen-3-tts-12hz-1-7b-base,qwen,Qwen 3 TTS 12Hz 1.7B Base,no,qwen/qwen-3-tts-12hz-1-7b-base
+qwen/qwen-3-tts-12hz-1-7b-voicedesign,qwen,Qwen 3 TTS 12Hz 1.7B VoiceDesign,no,qwen/qwen-3-tts-12hz-1-7b-voicedesign
+qwen/qwen-3-tts-tokenizer-12hz,qwen,Qwen 3 TTS Tokenizer 12Hz,no,qwen/qwen-3-tts-tokenizer-12hz
+qwen/qwen-3-vl-2b-instruct,qwen,Qwen 3 VL 2B Instruct,no,qwen/qwen-3-vl-2b-instruct
+qwen/qwen-3-vl-2b-thinking,qwen,Qwen 3 VL 2B Thinking,no,qwen/qwen-3-vl-2b-thinking
+qwen/qwen-3-vl-32b-thinking,qwen,Qwen 3 VL 32B Thinking,no,qwen/qwen-3-vl-32b-thinking
+qwen/qwen-3-vl-4b-instruct,qwen,Qwen 3 VL 4B Instruct,no,qwen/qwen-3-vl-4b-instruct
+qwen/qwen-3-vl-4b-thinking,qwen,Qwen 3 VL 4B Thinking,no,qwen/qwen-3-vl-4b-thinking
+qwen/qwen-3-vl-8b-thinking,qwen,Qwen 3 VL 8B Thinking,no,qwen/qwen-3-vl-8b-thinking
+qwen/qwen-3-vl-embedding-2b,qwen,Qwen 3 VL Embedding 2B,no,qwen/qwen-3-vl-embedding-2b
+qwen/qwen-3-vl-embedding-8b,qwen,Qwen 3 VL Embedding 8B,no,qwen/qwen-3-vl-embedding-8b
+qwen/qwen-3-vl-reranker-2b,qwen,Qwen 3 VL Reranker 2B,no,qwen/qwen-3-vl-reranker-2b
+qwen/qwen-3-vl-reranker-8b,qwen,Qwen 3 VL Reranker 8B,no,qwen/qwen-3-vl-reranker-8b
+qwen/qwen-72b,qwen,Qwen 72B,no,qwen/qwen-72b
+qwen/qwen-7b,qwen,Qwen 7B,no,qwen/qwen-7b
+qwen/qwen-audio,qwen,Qwen Audio,no,qwen/qwen-audio
+qwen/qwen-audio-chat,qwen,Qwen Audio Chat,no,qwen/qwen-audio-chat
+qwen/qwen-image,qwen,Qwen Image,yes,qwen/qwen-image
+qwen/qwen-image-2512,qwen,Qwen Image 2512,no,qwen/qwen-image-2512
+qwen/qwen-image-edit,qwen,Qwen Image Edit,yes,qwen/qwen-image-edit
+qwen/qwen-image-edit-2509,qwen,Qwen Image Edit 2509,no,qwen/qwen-image-edit-2509
+qwen/qwen-image-edit-2511,qwen,Qwen Image Edit 2511,no,qwen/qwen-image-edit-2511
+qwen/qwen-image-layered,qwen,Qwen Image Layered,no,qwen/qwen-image-layered
+qwen/qwen-vl,qwen,Qwen VL,no,qwen/qwen-vl
+qwen/qwq-32b,qwen,QwQ 32B,no,qwen/qwq-32b
+qwen/qwq-32b-preview,qwen,QwQ 32B Preview,no,qwen/qwq-32b-preview
+qwen/worldpm-72b,qwen,WorldPM 72B,no,qwen/worldpm-72b
+qwen/worldpm-72b-helpsteer2,qwen,WorldPM 72B HelpSteer2,no,qwen/worldpm-72b-helpsteer2
+qwen/worldpm-72b-rlhflow,qwen,WorldPM 72B RLHFLow,no,qwen/worldpm-72b-rlhflow
+qwen/worldpm-72b-ultrafeedback,qwen,WorldPM 72B UltraFeedback,no,qwen/worldpm-72b-ultrafeedback
+relace/relace-search,relace,Relace Search,no,relace/relace-search
+sourceful/riverflow-v2-fast-preview,sourceful,Riverflow V2 Fast Preview,no,sourceful/riverflow-v2-fast-preview
+sourceful/riverflow-v2-max-preview,sourceful,Riverflow V2 Max Preview,no,sourceful/riverflow-v2-max-preview
+sourceful/riverflow-v2-standard-preview,sourceful,Riverflow V2 Standard Preview,no,sourceful/riverflow-v2-standard-preview
+suno/suno-v3-5-2024-05-25,suno,Suno V3.5,no,suno/suno-v3-5-2024-05-25
+upstage/solar-pro,upstage,Solar Pro (2025-04-22),no,upstage/solar-pro
+upstage/solar-pro-2-2025-07-10,upstage,Solar Pro 2 (2025-07-10),no,upstage/solar-pro-2-2025-07-10
+upstage/solar-pro-2-2025-09-09,upstage,Solar Pro 2 (2025-09-09),no,upstage/solar-pro-2-2025-09-09
+upstage/solar-pro-2-2025-12-15,upstage,Solar Pro 2 (2025-12-15),no,upstage/solar-pro-2-2025-12-15
+upstage/solar-pro-2-preview-2025-05-20,upstage,Solar Pro 2 Preview,no,upstage/solar-pro-2-preview-2025-05-20
+upstage/solar-pro-3-2026-01-26,upstage,Solar Pro 3 (2026-01-26),no,upstage/solar-pro-3-2026-01-26
+vercel/v0-1-0-md,vercel,v0 1.0 md,no,vercel/v0-1-0-md
+vercel/v0-1-5-lg,vercel,v0 1.5 lg,no,vercel/v0-1-5-lg
+vercel/v0-1-5-md,vercel,v0 1.5 md,no,vercel/v0-1-5-md
+vercel/v0-1-5-sm,vercel,v0 1.5 sm,no,vercel/v0-1-5-sm
+x-ai/grok-0,x-ai,Grok 0,no,x-ai/grok-0
+x-ai/grok-1,x-ai,Grok 1,no,x-ai/grok-1
+x-ai/grok-1-5-2024-03-28,x-ai,Grok 1.5,no,x-ai/grok-1-5-2024-03-28
+x-ai/grok-1-5v-2024-04-12,x-ai,Grok 1.5V,no,x-ai/grok-1-5v-2024-04-12
+x-ai/grok-2-2024-08-13,x-ai,Grok 2,no,x-ai/grok-2-2024-08-13
+x-ai/grok-2-mini-2024-08-13,x-ai,Grok 2 Mini,no,x-ai/grok-2-mini-2024-08-13
+x-ai/grok-3-beta-2025-02-19,x-ai,Grok 3 Beta,no,x-ai/grok-3-beta-2025-02-19
+x-ai/grok-3-mini-beta-2025-02-19,x-ai,Grok 3 Mini Beta,no,x-ai/grok-3-mini-beta-2025-02-19
+x-ai/grok-4-fast-reasoning-2025-09-20,x-ai,Grok 4 Fast Reasoning,no,x-ai/grok-4-fast-reasoning-2025-09-20
+x-ai/grok-4-heavy-2025-07-10,x-ai,Grok 4 Heavy,no,x-ai/grok-4-heavy-2025-07-10
+z-ai/glm-4-1v-9b-2025-07-02,z-ai,GLM 4.1V 9B,no,z-ai/glm-4-1v-9b-2025-07-02
+z-ai/glm-4-1v-thinking-9b-2025-07-02,z-ai,GLM 4.1V Thinking 9B,no,z-ai/glm-4-1v-thinking-9b-2025-07-02
+z-ai/glm-4-9b-2024-06-04,z-ai,GLM 4 9B,no,z-ai/glm-4-9b-2024-06-04
+z-ai/glm-4-9b-2025-04-14,z-ai,GLM 4 9B,no,z-ai/glm-4-9b-2025-04-14
+z-ai/glm-4-9b-chat-1m-2024-10-24,z-ai,GLM 4 9B Chat 1M,no,z-ai/glm-4-9b-chat-1m-2024-10-24
+z-ai/glm-4-9b-chat-2024-06-04,z-ai,GLM 4 9B Chat,no,z-ai/glm-4-9b-chat-2024-06-04
+z-ai/glm-4v-9b,z-ai,GLM 4V 9B,no,z-ai/glm-4v-9b
+z-ai/glm-image-2026-01-14,z-ai,GLM Image,no,z-ai/glm-image-2026-01-14

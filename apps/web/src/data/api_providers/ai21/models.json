@@ -33,7 +33,7 @@
     "api_model_id": "ai21/jamba-mini-2",
     "provider_api_model_id": "ai21:ai21/jamba-mini-2",
     "provider_model_slug": "jamba-mini-2-2026-01",
-    "internal_model_id": "ai21/jamba-2-3b-2026-01-08",
+    "internal_model_id": "ai21/jamba-2-mini-2026-01-08",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

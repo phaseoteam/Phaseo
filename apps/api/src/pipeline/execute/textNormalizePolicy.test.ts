@@ -39,6 +39,20 @@ describe("textNormalizePolicy", () => {
 			"high",
 			"xhigh",
 		]);
+		expect(fallbackReasoningEfforts("openai", "gpt-5.4-mini")).toEqual([
+			"none",
+			"low",
+			"medium",
+			"high",
+			"xhigh",
+		]);
+		expect(fallbackReasoningEfforts("openai", "gpt-5.4-nano")).toEqual([
+			"none",
+			"low",
+			"medium",
+			"high",
+			"xhigh",
+		]);
 		expect(fallbackReasoningEfforts("openai", "gpt-5.4-pro")).toEqual([
 			"medium",
 			"high",

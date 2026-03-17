@@ -8,6 +8,7 @@ import {
 	revalidateModelDataTags,
 } from "@/lib/cache/revalidateDataTags";
 import { updateModel } from "@/app/(dashboard)/models/actions";
+import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
 
 async function requireAdmin() {
 	const supabase = await createClient();
@@ -367,6 +368,9 @@ export async function createAPIProviderAction(formData: FormData) {
 	const supabase = await requireAdmin();
 	const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
 	const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
+	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
+		formData.get("prompt_training_policy"),
+	);
 
 	const { error } = await supabase.from("data_api_providers").insert({
 		api_provider_id: apiProviderId,
@@ -374,6 +378,9 @@ export async function createAPIProviderAction(formData: FormData) {
 		description: optionalString(formData.get("description")),
 		link: optionalString(formData.get("link")),
 		country_code: optionalString(formData.get("country_code")),
+		prompt_training_policy: promptTrainingPolicy,
+		prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
+		prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
 		status: "Active",
 	});
 	if (error) throw new Error(error.message);
@@ -384,6 +391,9 @@ export async function createAPIProviderAction(formData: FormData) {
 
 export async function updateAPIProviderAction(apiProviderId: string, formData: FormData) {
 	const supabase = await requireAdmin();
+	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
+		formData.get("prompt_training_policy"),
+	);
 	const { error } = await supabase
 		.from("data_api_providers")
 		.update({
@@ -391,6 +401,9 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 			description: optionalString(formData.get("description")),
 			link: optionalString(formData.get("link")),
 			country_code: optionalString(formData.get("country_code")),
+			prompt_training_policy: promptTrainingPolicy,
+			prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
+			prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
 			updated_at: new Date().toISOString(),
 		})
 		.eq("api_provider_id", apiProviderId);
@@ -484,6 +497,9 @@ export async function createModelAction(formData: FormData) {
 			provider_id?: string;
 			api_model_id?: string;
 			provider_model_slug?: string | null;
+			prompt_training_policy_override?: string | null;
+			prompt_training_override_notes?: string | null;
+			prompt_training_override_source_url?: string | null;
 			is_active_gateway?: boolean;
 			input_modalities?: string[] | string | null;
 			output_modalities?: string[] | string | null;
@@ -624,21 +640,34 @@ export async function createModelAction(formData: FormData) {
 
 	const providerModelRows = providerModels
 		.filter((row) => row.provider_id && row.api_model_id)
-		.map((row) => ({
-			provider_id: row.provider_id!.trim(),
-			api_model_id: row.api_model_id!.trim(),
-			provider_model_slug: row.provider_model_slug?.trim() || null,
-			is_active_gateway: Boolean(row.is_active_gateway),
-			input_modalities: Array.isArray(row.input_modalities)
-				? row.input_modalities.join(",")
-				: (typeof row.input_modalities === "string" ? row.input_modalities : null),
-			output_modalities: Array.isArray(row.output_modalities)
-				? row.output_modalities.join(",")
-				: (typeof row.output_modalities === "string" ? row.output_modalities : null),
-			quantization_scheme: row.quantization_scheme?.trim() || null,
-			effective_from: row.effective_from || null,
-			effective_to: row.effective_to || null,
-		}));
+		.map((row) => {
+			const overrideRaw =
+				typeof row.prompt_training_policy_override === "string"
+					? row.prompt_training_policy_override.trim()
+					: "";
+			return {
+				provider_id: row.provider_id!.trim(),
+				api_model_id: row.api_model_id!.trim(),
+				provider_model_slug: row.provider_model_slug?.trim() || null,
+				prompt_training_policy_override: overrideRaw
+					? normalizeProviderPromptTrainingPolicy(overrideRaw)
+					: null,
+				prompt_training_override_notes:
+					row.prompt_training_override_notes?.trim() || null,
+				prompt_training_override_source_url:
+					row.prompt_training_override_source_url?.trim() || null,
+				is_active_gateway: Boolean(row.is_active_gateway),
+				input_modalities: Array.isArray(row.input_modalities)
+					? row.input_modalities.join(",")
+					: (typeof row.input_modalities === "string" ? row.input_modalities : null),
+				output_modalities: Array.isArray(row.output_modalities)
+					? row.output_modalities.join(",")
+					: (typeof row.output_modalities === "string" ? row.output_modalities : null),
+				quantization_scheme: row.quantization_scheme?.trim() || null,
+				effective_from: row.effective_from || null,
+				effective_to: row.effective_to || null,
+			};
+		});
 
 	const providerCapabilityRows = providerCapabilities
 		.filter((row) => row.provider_id && row.api_model_id && row.capability_id)
