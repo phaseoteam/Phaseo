@@ -157,7 +157,12 @@ export async function getMonitorModels(
 	for (const pm of providerModels ?? []) {
 		const modelRow = Array.isArray(pm.model) ? pm.model[0] : pm.model;
 		if (!includeHidden && modelRow?.hidden) continue;
-		const modelId = pm.api_model_id ?? pm.model_id ?? modelRow?.model_id ?? "";
+		const modelId =
+			pm.model_id ??
+			pm.internal_model_id ??
+			pm.api_model_id ??
+			modelRow?.model_id ??
+			"";
 		const capabilities: any[] = Array.isArray(pm.capabilities)
 			? pm.capabilities
 			: [];
@@ -312,8 +317,9 @@ export async function getMonitorModels(
 		);
 		const modelRow = Array.isArray(pm?.model) ? pm?.model[0] : pm?.model;
 		const modelId =
-			pm?.api_model_id ??
 			pm?.model_id ??
+			pm?.internal_model_id ??
+			pm?.api_model_id ??
 			gatewayModel.model_id ??
 			modelRow?.model_id ??
 			"";

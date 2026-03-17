@@ -31,6 +31,7 @@
 		"data:probe-model-endpoints": "node internal/fetch-provider-model-endpoints.mjs",
 		"data:check-new-models:test": "tsx scripts/model-discovery/validate-providers.ts",
 		"data:check-new-models:test:watch": "tsx watch scripts/model-discovery/validate-providers.ts",
+		"data:test-sampling-params": "node scripts/test-sampling-params.js",
 		"docs:links": "cd apps/docs && pnpm run check:links",
 		"docs:build": "cd apps/docs && pnpm run build",
 		"validate:docs": "pnpm run docs:links && pnpm run docs:build",

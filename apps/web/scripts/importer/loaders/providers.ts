@@ -181,6 +181,7 @@ export async function loadProviders(
         provider_api_model_id: string;
         provider_id: string;
         api_model_id: string;
+        model_id: string | null;
         provider_model_slug: string | null;
         internal_model_id: string | null;
         is_active_gateway: boolean;
@@ -253,7 +254,9 @@ export async function loadProviders(
             if (modelsChange.status !== "unchanged") touched = true;
 
             for (const model of models ?? []) {
-                if (!model?.provider_api_model_id || !model?.api_model_id) continue;
+                const apiModelId =
+                    typeof model?.api_model_id === "string" ? model.api_model_id.trim() : "";
+                if (!model?.provider_api_model_id || !apiModelId) continue;
                 const requestedInternalModelId =
                     typeof model.internal_model_id === "string" && model.internal_model_id.trim()
                         ? model.internal_model_id.trim()
@@ -270,12 +273,16 @@ export async function loadProviders(
                     });
                     internalModelId = null;
                 }
+                const preferredModelId =
+                    internalModelId ??
+                    (knownModelIds.has(apiModelId) ? apiModelId : null);
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
                 providerModelsToUpsert.push({
                     provider_api_model_id,
                     provider_id: j.api_provider_id,
-                    api_model_id: model.api_model_id,
+                    api_model_id: apiModelId,
+                    model_id: preferredModelId,
                     provider_model_slug: model.provider_model_slug ?? null,
                     internal_model_id: internalModelId,
                     is_active_gateway: !!model.is_active_gateway,
