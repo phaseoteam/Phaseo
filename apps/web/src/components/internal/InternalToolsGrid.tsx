@@ -16,6 +16,7 @@ import {
 	FileCheck,
 	Users,
 	GitCompare,
+	RefreshCcw,
 } from "lucide-react";
 
 const internalTools = [
@@ -53,6 +54,15 @@ const internalTools = [
 			"Validate gateway responses against official OpenAI and Anthropic response schemas.",
 		icon: FileCheck,
 		href: "/internal/compatibility",
+		comingSoon: false,
+	},
+	{
+		id: "cache-ops",
+		title: "Cache Ops",
+		description:
+			"Revalidate cached model, provider, search, ranking, and landing data from one admin surface.",
+		icon: RefreshCcw,
+		href: "/internal/cache",
 		comingSoon: false,
 	},
 	{
