@@ -30,7 +30,7 @@
   "benchmarks": [
     {
       "benchmark_id": "swe-bench-pro",
-      "score": 56.2,
+      "score": 0.562,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
@@ -38,7 +38,7 @@
     },
     {
       "benchmark_id": "gdpval-aa",
-      "score": 50,
+      "score": 0.5,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",

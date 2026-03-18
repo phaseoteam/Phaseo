@@ -1958,6 +1958,12 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-17T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.moderate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]
