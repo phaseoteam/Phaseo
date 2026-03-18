@@ -11,13 +11,17 @@ import {
 	Lock,
 	LogOut,
 	Menu,
+	Monitor,
+	Moon,
 	Settings,
+	Sun,
 	Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import TeamSwitcher from "./TeamSwitcher";
 import { createClient } from "@/utils/supabase/client";
+import { useTheme } from "next-themes";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -45,6 +49,16 @@ export default function HeaderClient({
 }: HeaderProps) {
 	const router = useRouter();
 	const pathname = usePathname();
+	const { theme, setTheme } = useTheme();
+	const currentTheme =
+		theme === "light" || theme === "dark" || theme === "system"
+			? theme
+			: "system";
+	const themeMeta = {
+		light: { label: "Light", icon: Sun },
+		dark: { label: "Dark", icon: Moon },
+		system: { label: "System", icon: Monitor },
+	} as const;
 
 	async function handleSignOut() {
 		try {
@@ -108,6 +122,41 @@ export default function HeaderClient({
 								</>
 							)}
 
+							<div className="px-1 py-1">
+								<div
+									role="radiogroup"
+									aria-label="Theme mode"
+									className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
+								>
+									{(["light", "dark", "system"] as const).map((mode) => {
+										const Icon = themeMeta[mode].icon;
+										const selected = currentTheme === mode;
+										return (
+											<button
+												key={mode}
+												type="button"
+												role="radio"
+												aria-checked={selected}
+												aria-label={`Set theme: ${themeMeta[mode].label}`}
+												onClick={() => setTheme(mode)}
+												className={cn(
+													"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
+													"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
+													selected
+														? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+														: "bg-transparent dark:text-zinc-300",
+												)}
+												title={themeMeta[mode].label}
+											>
+												<Icon className="h-4 w-4" />
+											</button>
+										);
+									})}
+								</div>
+							</div>
+
+							<DropdownMenuSeparator />
+
 							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 								<Link href="/settings/account" prefetch={false}>
 									<Settings className="h-4 w-4" />
@@ -167,11 +216,46 @@ export default function HeaderClient({
 							</DropdownMenuItem>
 						</>
 					) : (
-						<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-							<Link href="/sign-in" prefetch={false}>
-								Sign in
-							</Link>
-						</DropdownMenuItem>
+						<>
+							<div className="px-1 py-1">
+								<div
+									role="radiogroup"
+									aria-label="Theme mode"
+									className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
+								>
+									{(["light", "dark", "system"] as const).map((mode) => {
+										const Icon = themeMeta[mode].icon;
+										const selected = currentTheme === mode;
+										return (
+											<button
+												key={mode}
+												type="button"
+												role="radio"
+												aria-checked={selected}
+												aria-label={`Set theme: ${themeMeta[mode].label}`}
+												onClick={() => setTheme(mode)}
+												className={cn(
+													"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
+													"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
+													selected
+														? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+														: "bg-transparent dark:text-zinc-300",
+												)}
+												title={themeMeta[mode].label}
+											>
+												<Icon className="h-4 w-4" />
+											</button>
+										);
+									})}
+								</div>
+							</div>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/sign-in" prefetch={false}>
+									Sign in
+								</Link>
+							</DropdownMenuItem>
+						</>
 					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
