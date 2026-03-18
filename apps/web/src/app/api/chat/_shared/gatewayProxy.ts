@@ -20,9 +20,6 @@ export type ChatProxyEnvelope = {
 };
 
 export const GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
-const LOG_CHAT_ROUTE_ERRORS = /^(1|true)$/i.test(
-	String(process.env.CHAT_ROUTE_LOG_ERRORS ?? ""),
-);
 const ALLOWED_APP_HEADERS = new Set([
 	"x-title",
 	"http-referer",
@@ -99,52 +96,6 @@ function passthroughHeaders(
 		: { "Content-Type": "application/octet-stream" };
 }
 
-function shouldLogChatRouteError(debug?: boolean): boolean {
-	return LOG_CHAT_ROUTE_ERRORS || Boolean(debug);
-}
-
-async function logChatRouteFailure(args: {
-	path: string;
-	debug?: boolean;
-	requestBody?: Record<string, unknown>;
-	upstream: Response;
-}): Promise<void> {
-	if (!shouldLogChatRouteError(args.debug)) return;
-
-	const contentType = args.upstream.headers.get("content-type") ?? "";
-	const requestId =
-		args.upstream.headers.get("x-request-id") ??
-		args.upstream.headers.get("cf-ray") ??
-		null;
-
-	let upstreamBodyPreview: string | null = null;
-	if (isTextLikeContentType(contentType)) {
-		try {
-			upstreamBodyPreview = (await args.upstream.clone().text())
-				.replace(/\s+/g, " ")
-				.slice(0, 2000);
-		} catch {
-			upstreamBodyPreview = null;
-		}
-	}
-
-	const model =
-		typeof args.requestBody?.model === "string" ? args.requestBody.model : null;
-	const streamRequested =
-		(args.requestBody as { stream?: unknown } | undefined)?.stream === true;
-
-	console.error("[chat-route] upstream request failed", {
-		path: args.path,
-		status: args.upstream.status,
-		statusText: args.upstream.statusText,
-		contentType,
-		requestId,
-		model,
-		streamRequested,
-		upstreamBodyPreview,
-	});
-}
-
 export async function parseProxyEnvelope(
 	request: NextRequest,
 ): Promise<ChatProxyEnvelope> {
@@ -161,13 +112,6 @@ async function resolveGatewayApiKey(): Promise<string | Response> {
 		return auth.apiKey;
 	} catch (error) {
 		if (error instanceof ChatGatewayAuthError) {
-			if (shouldLogChatRouteError()) {
-				console.error("[chat-route] auth failed", {
-					status: error.status,
-					code: error.code,
-					message: error.message,
-				});
-			}
 			return new Response(
 				JSON.stringify({ error: error.code, message: error.message }),
 				{
@@ -312,14 +256,6 @@ export async function proxyGatewayPost(args: {
 	} catch (error) {
 		return buildGatewayUnreachableResponse(error);
 	}
-	if (upstream.status >= 400) {
-		await logChatRouteFailure({
-			path: args.path,
-			debug: args.debug,
-			requestBody: args.requestBody,
-			upstream,
-		});
-	}
 
 	return forwardUpstreamResponse({
 		upstream,
@@ -350,13 +286,6 @@ export async function proxyGatewayGet(args: {
 		});
 	} catch (error) {
 		return buildGatewayUnreachableResponse(error);
-	}
-	if (upstream.status >= 400) {
-		await logChatRouteFailure({
-			path: args.path,
-			debug: args.debug,
-			upstream,
-		});
 	}
 
 	return forwardUpstreamResponse({
