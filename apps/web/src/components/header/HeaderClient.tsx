@@ -3,18 +3,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu } from "lucide-react";
+import {
+	BarChart2,
+	CreditCard,
+	Key as KeyIcon,
+	LifeBuoy,
+	Lock,
+	LogOut,
+	Menu,
+	Settings,
+	Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import TeamSwitcher from "./TeamSwitcher";
 import { createClient } from "@/utils/supabase/client";
 import {
-	Drawer,
-	DrawerTrigger,
-	DrawerContent,
-	DrawerClose,
-	DrawerTitle,
-} from "@/components/ui/drawer";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -47,69 +58,118 @@ export default function HeaderClient({
 		}
 	}
 
-	const navLink = (href: string, label: string) => (
-		<DrawerClose asChild key={href}>
-			<Button asChild variant="ghost" className="justify-start rounded-lg text-md">
-				<Link
-					href={href}
-					prefetch={false}
-					className={cn(
-						"text-sm font-medium transition-colors hover:text-primary",
-						pathname === href || pathname.startsWith(href + "/")
-							? "text-blue-500"
-							: "text-foreground"
-					)}
-				>
-					{label}
-				</Link>
-			</Button>
-		</DrawerClose>
-	);
-
 	const navLinks = [
-		navLink("/models", "Models"),
-		navLink("/api-providers", "Providers"),
-		navLink("/rankings", "Rankings"),
-		navLink("/chat", "Chat"),
+		{ href: "/models", label: "Models" },
+		{ href: "/api-providers", label: "Providers" },
+		{ href: "/rankings", label: "Rankings" },
+		{ href: "/chat", label: "Chat" },
 	];
 
 	if (variant === "mobile") {
 		return (
-			<Drawer>
-				<DrawerTrigger asChild>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
 					<Button variant="ghost" size="icon" aria-label="Open menu">
 						<Menu className="h-6 w-6" />
 					</Button>
-				</DrawerTrigger>
-				<DrawerContent>
-					<DrawerTitle className="sr-only">Navigation menu</DrawerTitle>
-					<div className="pt-4">
-						<nav className="flex flex-col gap-2 px-6 pb-4">{navLinks}</nav>
-						<div className="mt-auto border-t px-6 py-4">
-							{isLoggedIn ? (
-								<div className="flex justify-end">
-									<TeamSwitcher
-										user={user}
-										teams={teams}
-										userRole={userRole}
-										onSignOut={handleSignOut}
-										initialActiveTeamId={currentTeamId}
-									/>
-								</div>
-							) : (
-								<Link href="/sign-in" prefetch={false} className="block w-full">
-									<Button
-										className="w-full rounded-lg px-4 py-2 text-xs font-semibold"
-										variant="outline"
-									>
-										Sign In
-									</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-64 rounded-xl p-1">
+					<DropdownMenuLabel>Menu</DropdownMenuLabel>
+					{navLinks.map(({ href, label }) => {
+						const isActive =
+							pathname === href || pathname.startsWith(href + "/");
+						return (
+							<DropdownMenuItem
+								key={href}
+								asChild
+								className={cn(
+									"rounded-md py-1.5 text-sm",
+									isActive && "font-semibold text-blue-500"
+								)}
+							>
+								<Link href={href} prefetch={false}>
+									{label}
 								</Link>
+							</DropdownMenuItem>
+						);
+					})}
+
+					<DropdownMenuSeparator />
+
+					{isLoggedIn ? (
+						<>
+							{(userRole === "editor" || userRole === "admin") && (
+								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+									<Link href="/internal" prefetch={false}>
+										<Lock className="h-4 w-4" />
+										<span>Internal</span>
+									</Link>
+								</DropdownMenuItem>
 							)}
-						</div>
-					</div>
-				</DrawerContent>
-			</Drawer>
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/settings/account" prefetch={false}>
+									<Settings className="h-4 w-4" />
+									<span>Settings</span>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link
+									href={`/settings/usage?team_id=${encodeURIComponent(
+										currentTeamId ?? ""
+									)}`}
+									prefetch={false}
+								>
+									<BarChart2 className="h-4 w-4" />
+									<span>Usage</span>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/settings/credits" prefetch={false}>
+									<CreditCard className="h-4 w-4" />
+									<span>Credits</span>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/settings/keys" prefetch={false}>
+									<KeyIcon className="h-4 w-4" />
+									<span>Keys</span>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/settings/teams" prefetch={false}>
+									<Users className="h-4 w-4" />
+									<span>Teams</span>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/contact" prefetch={false}>
+									<LifeBuoy className="h-4 w-4" />
+									<span>Support</span>
+								</Link>
+							</DropdownMenuItem>
+
+							<DropdownMenuSeparator />
+
+							<DropdownMenuItem
+								className="rounded-md py-1.5 text-sm"
+								onSelect={(event) => {
+									event.preventDefault();
+									void handleSignOut();
+								}}
+							>
+								<LogOut className="h-4 w-4" />
+								<span>Sign out</span>
+							</DropdownMenuItem>
+						</>
+					) : (
+						<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<Link href="/sign-in" prefetch={false}>
+								Sign in
+							</Link>
+						</DropdownMenuItem>
+					)}
+				</DropdownMenuContent>
+			</DropdownMenu>
 		);
 	}
 
