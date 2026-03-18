@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { registerShowFooter } from "@/components/layout/footerVisibility";
 
 export default function ShowGlobalFooter() {
 	useEffect(() => {
-		document.body.removeAttribute("data-hide-footer");
-		return () => {
-			document.body.setAttribute("data-hide-footer", "true");
-		};
+		return registerShowFooter();
 	}, []);
 
 	return null;
