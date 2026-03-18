@@ -31,7 +31,6 @@ const LANDING_TAGS = [
 	"data:benchmarks",
 	"data:api_providers",
 	"gateway:marketing-metrics",
-	"data:gateway_requests",
 	"data:model-updates",
 ] as const;
 
