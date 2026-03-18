@@ -40,6 +40,9 @@ type ChatConversationProps = {
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	orgNameById: Record<string, string>;
+	modelDisplayNameById: Record<string, string>;
+	modelOrgIdById: Record<string, string>;
+	modelLinkById: Record<string, string>;
 	accentColor: string;
 	selectedOrgId: string;
 	selectedModelId: string;
@@ -70,6 +73,9 @@ export function ChatConversation({
 	onBranchAssistant,
 	onSelectVariant,
 	orgNameById,
+	modelDisplayNameById,
+	modelOrgIdById,
+	modelLinkById,
 	accentColor,
 	selectedOrgId,
 	selectedModelId,
@@ -442,6 +448,9 @@ export function ChatConversation({
 						onEditingIdChange={setEditingId}
 						onEditingValueChange={setEditingValue}
 						orgNameById={orgNameById}
+						modelDisplayNameById={modelDisplayNameById}
+						modelOrgIdById={modelOrgIdById}
+						modelLinkById={modelLinkById}
 						accentColor={accentColor}
 						onEditMessage={onEditMessage}
 						onRetryAssistant={onRetryAssistant}

@@ -92,6 +92,9 @@ type ChatConversationMessagesProps = {
 	onEditingIdChange: (id: string | null) => void;
 	onEditingValueChange: (value: string) => void;
 	orgNameById: Record<string, string>;
+	modelDisplayNameById: Record<string, string>;
+	modelOrgIdById: Record<string, string>;
+	modelLinkById: Record<string, string>;
 	accentColor: string;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
@@ -111,6 +114,9 @@ export function ChatConversationMessages({
 	onEditingIdChange,
 	onEditingValueChange,
 	orgNameById,
+	modelDisplayNameById,
+	modelOrgIdById,
+	modelLinkById,
 	accentColor,
 	onEditMessage,
 	onRetryAssistant,
@@ -238,18 +244,31 @@ export function ChatConversationMessages({
 					(message.meta as any)?.reasoning_text ??
 					(message.meta as any)?.reasoning ??
 					null;
-			const displayModelId = message.modelId ?? activeThread.modelId;
-			const linkModelId = displayModelId
-				? isInternalModelId(displayModelId)
-					? displayModelId
-					: activeThread.modelId
-				: activeThread.modelId;
-			const orgId = linkModelId ? getOrgId(linkModelId) : "ai-stats";
-			const modelLabel = displayModelId
-				? formatModelLabel(displayModelId)
-				: "Model";
+			const displayModelId = (message.modelId ?? activeThread.modelId ?? "").trim();
+			const overrideModelLabel = displayModelId
+				? activeThread.settings.modelOverridesById?.[
+						displayModelId
+					]?.displayName?.trim()
+				: "";
+			const mappedModelLabel = displayModelId
+				? modelDisplayNameById[displayModelId]?.trim()
+				: "";
+			const modelLabel =
+				overrideModelLabel ||
+				mappedModelLabel ||
+				(displayModelId ? formatModelLabel(displayModelId) : "Model");
+			const orgId =
+				(displayModelId ? modelOrgIdById[displayModelId] : undefined) ??
+				(displayModelId
+					? isInternalModelId(displayModelId)
+						? getOrgId(displayModelId)
+						: "ai-stats"
+					: "ai-stats");
 			const orgName = orgNameById[orgId] ?? orgId;
-			const modelLink = buildModelLink(linkModelId);
+			const modelLink =
+				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
+				buildModelLink(displayModelId);
+			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -283,20 +302,33 @@ export function ChatConversationMessages({
 						isUser ? "items-end" : "items-start",
 					)}
 				>
-					{!isUser && linkModelId && (
-						<Link
-							href={modelLink}
-							className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
-						>
-							<Logo
-								id={orgId}
-								alt={orgName}
-								width={18}
-								height={18}
-								className="shrink-0 rounded-none"
-							/>
-							<span className="truncate">{modelLabel}</span>
-						</Link>
+					{!isUser && displayModelId && (
+						hasModelLink ? (
+							<Link
+								href={modelLink}
+								className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+							>
+								<Logo
+									id={orgId}
+									alt={orgName}
+									width={18}
+									height={18}
+									className="shrink-0 rounded-none"
+								/>
+								<span className="truncate">{modelLabel}</span>
+							</Link>
+						) : (
+							<span className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+								<Logo
+									id={orgId}
+									alt={orgName}
+									width={18}
+									height={18}
+									className="shrink-0 rounded-none"
+								/>
+								<span className="truncate">{modelLabel}</span>
+							</span>
+						)
 					)}
 					<div
 						className={cn(
@@ -786,6 +818,9 @@ export function ChatConversationMessages({
 		editingValue,
 		metadataOpenId,
 		orgNameById,
+		modelDisplayNameById,
+		modelOrgIdById,
+		modelLinkById,
 		accentColor,
 		onCopy,
 		onEditingValueChange,
