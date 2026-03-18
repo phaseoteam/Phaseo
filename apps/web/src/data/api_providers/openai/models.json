@@ -4458,7 +4458,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": null,
+        "status": "active",
         "params": [
           {
             "param_id": "seed",
@@ -4522,7 +4522,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": null,
+        "status": "active",
         "params": [
           {
             "param_id": "seed",

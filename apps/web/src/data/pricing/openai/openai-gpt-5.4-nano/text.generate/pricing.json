@@ -94,7 +94,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": 46098
+      "effective_from": "2026-03-17T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -107,7 +107,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": 46098
+      "effective_from": "2026-03-17T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -120,7 +120,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": 46098
+      "effective_from": "2026-03-17T00:00:00"
     }
   ]
 }

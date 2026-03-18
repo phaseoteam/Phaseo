@@ -470,6 +470,7 @@
       "minimax/minimax-m2-1-2025-12-23",
       "minimax/minimax-m2-2025-10-27",
       "minimax/minimax-m2-5-2026-02-12",
+      "minimax/minimax-m2-7-2026-03-18",
       "minimax/minimax-m2-her-2026-01-24",
       "minimax/minimax-text-01-2025-01-15",
       "minimax/minimax-vl-01-2025-01-15",
@@ -521,6 +522,7 @@
       "mistral/mistral-medium-1-0-2023-12-11",
       "mistral/mistral-medium-3-0-2025-05-07",
       "mistral/mistral-medium-3-1-2025-08-12",
+      "mistral/mistral-moderation-2-2026-03-17",
       "mistral/mistral-moderation-2024-11-06",
       "mistral/mistral-nemo-12b-2024-07-18",
       "mistral/mistral-ocr-2-2025-05-22",
@@ -943,7 +945,9 @@
       "x-ai/grok-imagine-video-2026-01-29"
     ],
     "xiaomi": [
-      "xiaomi/mimo-v2-flash-2025-12-16"
+      "xiaomi/mimo-v2-flash-2025-12-16",
+      "xiaomi/mimo-v2-omni",
+      "xiaomi/mimo-v2-pro"
     ],
     "z-ai": [
       "z-ai/glm-4-1v-9b-2025-07-02",
@@ -1196,8 +1200,11 @@
     "google-gemini-flash-latest",
     "google-gemini-flash-lite-latest",
     "google-gemini-pro-latest",
+    "minimax-m2.x-latest",
     "openai-gpt-chat-latest",
     "openai-gpt-latest",
+    "openai-gpt-mini-latest",
+    "openai-gpt-nano-latest",
     "openai-gpt-pro-latest"
   ],
   "families": [
@@ -1303,6 +1310,7 @@
     "google-ai-studio:text.generate:google-gemini-3.1-flash-image-preview",
     "google-ai-studio:text.generate:google-gemini-3.1-flash-lite-preview",
     "google-ai-studio:text.generate:google-gemini-3.1-pro-preview",
+    "google-ai-studio:text.generate:google-gemini-3.1-pro-preview-customtools",
     "google-ai-studio:text.embed:google-gemini-embedding-001",
     "google-ai-studio:text.embed:google-gemini-embedding-2-preview",
     "google-ai-studio:text.generate:google-gemma-3-12b-free",
@@ -1323,11 +1331,14 @@
     "minimax:text.generate:minimax-minimax-m2",
     "minimax:text.generate:minimax-minimax-m2.1",
     "minimax:text.generate:minimax-minimax-m2.5",
+    "minimax:text.generate:minimax-minimax-m2.7",
     "minimax-lightning:text.generate:minimax-minimax-m2.1",
     "minimax-lightning:text.generate:minimax-minimax-m2.5-highspeed",
+    "minimax-lightning:text.generate:minimax-minimax-m2.7",
     "mistral:text.generate:mistral-devstral-small-2-free",
     "mistral:text.generate:mistral-leanstral-free",
     "mistral:text.generate:mistral-ministral-3-3b",
+    "mistral:text.moderate:mistral-mistral-moderation-2",
     "mistral:text.generate:mistral-mistral-small-4",
     "moonshotai:text.generate:moonshotai-kimi-k2",
     "moonshotai:text.generate:moonshotai-kimi-k2-0905",
@@ -1362,6 +1373,7 @@
     "novita:text.generate:minimax-minimax-m2",
     "novita:text.generate:minimax-minimax-m2.1",
     "novita:text.generate:minimax-minimax-m2.5",
+    "novita:text.generate:minimax-minimax-m2.7",
     "novita:text.generate:mistralai-mistral-nemo",
     "novita:text.generate:moonshotai-kimi-k2",
     "novita:text.generate:moonshotai-kimi-k2-0905",

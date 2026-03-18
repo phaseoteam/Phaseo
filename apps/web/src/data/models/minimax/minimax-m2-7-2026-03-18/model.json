@@ -1,0 +1,48 @@
+{
+  "model_id": "minimax/minimax-m2-7-2026-03-18",
+  "organisation_id": "minimax",
+  "name": "MiniMax M2.7",
+  "status": "Available",
+  "previous_model_id": "minimax/minimax-m2-5-2026-02-12",
+  "announced_date": "2026-03-18T00:00:00",
+  "release_date": "2026-03-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.minimax.io/news/minimax-m27-en"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 204800
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 0.562,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 0.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
+      "rank": 2
+    }
+  ]
+}

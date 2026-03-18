@@ -210,7 +210,7 @@
       "is_self_reported": true,
       "other_info": "Avg@5",
       "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -218,7 +218,7 @@
       "is_self_reported": true,
       "other_info": "Avg@5, 64k Thinking",
       "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "swe-bench-multilingual",

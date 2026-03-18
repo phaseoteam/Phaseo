@@ -11,7 +11,12 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/"
+    }
+  ],
   "details": [
     {
       "name": "input_context_length",

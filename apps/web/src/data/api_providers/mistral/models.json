@@ -955,7 +955,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": "embedding",
+    "output_modalities": "embeddings",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1075,7 +1075,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": "moderation",
+    "output_modalities": "moderations",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1762,7 +1762,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": "embedding",
+    "output_modalities": "embeddings",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1942,6 +1942,27 @@
             "notes": null
           }
         ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-moderation-2",
+    "provider_api_model_id": "mistral:mistral/mistral-moderation-2",
+    "provider_model_slug": "mistral-moderation-2603",
+    "internal_model_id": "mistral/mistral-moderation-2-2026-03-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "moderations",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.moderate",
+        "status": "active",
+        "params": []
       }
     ]
   }

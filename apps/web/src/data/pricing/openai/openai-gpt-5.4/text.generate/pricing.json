@@ -20,7 +20,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -41,7 +41,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -62,7 +62,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -83,7 +83,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -104,7 +104,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -125,7 +125,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -146,7 +146,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -167,7 +167,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -188,7 +188,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -209,7 +209,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -230,7 +230,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -251,7 +251,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -272,7 +272,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -293,7 +293,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -314,7 +314,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -335,7 +335,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -356,7 +356,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
@@ -377,7 +377,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000
+          "value": 272000.0
         }
       ],
       "priority": 100,
