@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": "text,image",
-  "output_types": "moderation",
+  "output_types": "moderations",
   "links": [],
   "details": [],
   "benchmarks": []

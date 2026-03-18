@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/mistral-moderation-2-2026-03-17",
+  "organisation_id": "mistral",
+  "name": "Mistral Moderation 2",
+  "status": "Available",
+  "previous_model_id": "mistral/mistral-moderation-2024-11-06",
+  "announced_date": "2026-03-17T00:00:00",
+  "release_date": "2026-03-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "moderations",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

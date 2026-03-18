@@ -20,7 +20,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000
+          "value": 200000.0
         }
       ],
       "priority": 100,
@@ -41,7 +41,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000
+          "value": 200000.0
         }
       ],
       "priority": 100,
@@ -62,7 +62,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000
+          "value": 200000.0
         }
       ],
       "priority": 100,
@@ -83,7 +83,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000
+          "value": 200000.0
         }
       ],
       "priority": 100,
@@ -104,7 +104,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000
+          "value": 200000.0
         }
       ],
       "priority": 100,
@@ -125,7 +125,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000
+          "value": 200000.0
         }
       ],
       "priority": 100,

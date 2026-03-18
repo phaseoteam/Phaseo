@@ -9,82 +9,6 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 5e-06,
-      "currency": "USD",
-      "tiering_mode": "flat",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 2.5e-05,
-      "currency": "USD",
-      "tiering_mode": "flat",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 5e-07,
-      "currency": "USD",
-      "tiering_mode": "flat",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100
-    },
-    {
-      "meter": "cached_write_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 6.25e-06,
-      "currency": "USD",
-      "tiering_mode": "flat",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
-          "value": "5m"
-        }
-      ],
-      "priority": 100
-    },
-    {
-      "meter": "cached_write_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 1e-05,
-      "currency": "USD",
-      "tiering_mode": "flat",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
-          "value": "1h"
-        }
-      ],
-      "priority": 100
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
       "price_per_unit": 5.0,
       "currency": "USD",
       "tiering_mode": "flat",
@@ -129,7 +53,15 @@
       "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "5m"
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-02-07T00:00:00"
     },
@@ -142,7 +74,15 @@
       "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1h"
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-02-07T00:00:00"
     },

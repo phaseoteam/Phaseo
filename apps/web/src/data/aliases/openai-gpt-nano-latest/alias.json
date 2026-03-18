@@ -1,0 +1,7 @@
+{
+  "alias_slug": "openai/gpt-nano-latest",
+  "resolved_api_model_id": "openai/gpt-5.4-nano",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

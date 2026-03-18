@@ -1,0 +1,7 @@
+{
+  "alias_slug": "minimax/m2.x-latest",
+  "resolved_api_model_id": "minimax/minimax-m2.7",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

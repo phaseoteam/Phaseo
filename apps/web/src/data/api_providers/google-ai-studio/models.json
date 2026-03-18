@@ -2096,7 +2096,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio,video",
-    "output_modalities": "embedding",
+    "output_modalities": "embeddings",
     "context_length": 8192,
     "max_output_tokens": null,
     "effective_from": "2026-03-10T00:00:00",
