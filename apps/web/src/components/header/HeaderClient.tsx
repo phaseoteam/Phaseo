@@ -22,7 +22,6 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -73,8 +72,7 @@ export default function HeaderClient({
 						<Menu className="h-6 w-6" />
 					</Button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end" className="w-64 rounded-xl p-1">
-					<DropdownMenuLabel>Menu</DropdownMenuLabel>
+				<DropdownMenuContent align="end" className="w-36 rounded-xl p-1">
 					{navLinks.map(({ href, label }) => {
 						const isActive =
 							pathname === href || pathname.startsWith(href + "/");
@@ -84,7 +82,7 @@ export default function HeaderClient({
 								asChild
 								className={cn(
 									"rounded-md py-1.5 text-sm",
-									isActive && "font-semibold text-blue-500"
+									isActive && "font-semibold text-blue-500",
 								)}
 							>
 								<Link href={href} prefetch={false}>
@@ -99,23 +97,30 @@ export default function HeaderClient({
 					{isLoggedIn ? (
 						<>
 							{(userRole === "editor" || userRole === "admin") && (
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href="/internal" prefetch={false}>
-										<Lock className="h-4 w-4" />
-										<span>Internal</span>
-									</Link>
-								</DropdownMenuItem>
+								<>
+									<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+										<Link href="/internal" prefetch={false}>
+											<Lock className="h-4 w-4" />
+											<span>Internal</span>
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+								</>
 							)}
+
 							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 								<Link href="/settings/account" prefetch={false}>
 									<Settings className="h-4 w-4" />
 									<span>Settings</span>
 								</Link>
 							</DropdownMenuItem>
+
+							<DropdownMenuSeparator />
+
 							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 								<Link
 									href={`/settings/usage?team_id=${encodeURIComponent(
-										currentTeamId ?? ""
+										currentTeamId ?? "",
 									)}`}
 									prefetch={false}
 								>
@@ -196,6 +201,3 @@ export default function HeaderClient({
 		</div>
 	);
 }
-
-
-
