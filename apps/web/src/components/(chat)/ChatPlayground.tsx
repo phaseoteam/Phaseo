@@ -10,6 +10,7 @@ import {
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { createClient } from "@/utils/supabase/client";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
 import type {
 	ChatMessage,
 	ChatModelSettings,
@@ -122,6 +123,9 @@ const isFeaturedModelId = (modelId: string) => {
 	});
 };
 
+const resolveGatewayModelOrgId = (model: GatewaySupportedModel) =>
+	model.organisationId?.trim() || getOrgId(model.modelId);
+
 function ChatPlaygroundContent({
 	models,
 	modelParam,
@@ -197,7 +201,7 @@ function ChatPlaygroundContent({
 
 		for (const model of selectableModels) {
 			const existing = map.get(model.modelId);
-			const orgId = getOrgId(model.modelId);
+			const orgId = resolveGatewayModelOrgId(model);
 			const orgName =
 				model.organisationName ??
 				model.providerName ??
@@ -423,9 +427,9 @@ function ChatPlaygroundContent({
 
 	const orgNameById = useMemo(() => {
 		const map: Record<string, string> = {};
-	for (const model of selectableModels) {
-		const orgId = getOrgId(model.modelId);
-		if (!map[orgId]) {
+		for (const model of selectableModels) {
+			const orgId = resolveGatewayModelOrgId(model);
+			if (!map[orgId]) {
 				map[orgId] =
 					model.organisationName ??
 					model.providerName ??
@@ -434,6 +438,40 @@ function ChatPlaygroundContent({
 		}
 		return map;
 	}, [selectableModels]);
+
+	const modelDisplayNameById = useMemo(() => {
+		const map: Record<string, string> = {};
+		for (const model of models) {
+			const modelId = model.modelId.trim();
+			if (!modelId || map[modelId]) continue;
+			const fallbackLabel = formatModelLabel(modelId);
+			map[modelId] = model.modelName?.trim() || fallbackLabel;
+		}
+		return map;
+	}, [models]);
+
+	const modelOrgIdById = useMemo(() => {
+		const map: Record<string, string> = {};
+		for (const model of models) {
+			const modelId = model.modelId.trim();
+			if (!modelId || map[modelId]) continue;
+			map[modelId] = resolveGatewayModelOrgId(model);
+		}
+		return map;
+	}, [models]);
+
+	const modelLinkById = useMemo(() => {
+		const map: Record<string, string> = {};
+		for (const model of models) {
+			const modelId = model.modelId.trim();
+			if (!modelId || map[modelId]) continue;
+			const orgId = resolveGatewayModelOrgId(model);
+			const href = getModelDetailsHref(orgId, modelId);
+			if (!href) continue;
+			map[modelId] = href;
+		}
+		return map;
+	}, [models]);
 
 	const activeThread = useMemo(() => {
 		if (temporaryMode && temporaryThread) return temporaryThread;
@@ -2664,7 +2702,7 @@ function ChatPlaygroundContent({
 					continue;
 				}
 				if (byId.has(model.modelId)) continue;
-				const orgId = getOrgId(model.modelId);
+				const orgId = resolveGatewayModelOrgId(model);
 				const orgName =
 					model.organisationName ??
 					model.providerName ??
@@ -3003,6 +3041,9 @@ function ChatPlaygroundContent({
 					onBranchAssistant={handleBranchAssistant}
 					onSelectVariant={handleSelectVariant}
 					orgNameById={orgNameById}
+					modelDisplayNameById={modelDisplayNameById}
+					modelOrgIdById={modelOrgIdById}
+					modelLinkById={modelLinkById}
 					isAuthenticated={isAuthenticated}
 					accentColor={personalization.accentColor}
 					selectedOrgId={selectedOrgId}

@@ -122,8 +122,11 @@ export function isInternalModelId(modelId: string) {
 
 export function buildModelLink(modelId: string) {
 	if (!modelId) return "#";
-	const org = getOrgId(modelId);
-	return getModelDetailsHref(org, modelId) ?? "#";
+	const normalizedModelId = modelId.trim();
+	if (!normalizedModelId) return "#";
+
+	const org = getOrgId(normalizedModelId);
+	return getModelDetailsHref(org, normalizedModelId) ?? "#";
 }
 
 export function extractGeneratedVideoUrl(content: string): string | null {
