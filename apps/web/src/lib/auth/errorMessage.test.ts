@@ -22,6 +22,11 @@ describe('auth error helpers', () => {
         )
     })
 
+    it('maps access_denied to a provider-agnostic message', () => {
+        const url = new URL('https://example.com/auth/callback?error=access_denied')
+        expect(resolveCallbackErrorMessage(url)).toBe('Sign-in was cancelled or denied. Please try again.')
+    })
+
     it('builds an error redirect URL with a sanitized message', () => {
         const redirectUrl = buildAuthErrorRedirectUrl('https://example.com/auth/callback', '  Detailed failure  ')
 

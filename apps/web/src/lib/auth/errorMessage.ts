@@ -23,7 +23,7 @@ function mapKnownAuthError(params: URLSearchParams): string | null {
 
     const error = params.get('error')
     if (error === 'access_denied') {
-        return 'Google sign-in was cancelled or denied. Please try again.'
+        return 'Sign-in was cancelled or denied. Please try again.'
     }
 
     return null
