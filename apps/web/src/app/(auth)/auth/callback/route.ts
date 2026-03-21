@@ -1,6 +1,11 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { NextResponse } from 'next/server'
+import {
+    DEFAULT_AUTH_ERROR_MESSAGE,
+    buildAuthErrorRedirectUrl,
+    resolveCallbackErrorMessage,
+} from '@/lib/auth/errorMessage'
 
 function makeSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
@@ -132,6 +137,16 @@ export async function GET(request: Request) {
     const code = url.searchParams.get('code')
     const type = url.searchParams.get('type')
     const returnUrl = "/";
+    const callbackErrorMessage = resolveCallbackErrorMessage(url)
+
+    if (callbackErrorMessage) {
+        console.error('Auth callback provider error', {
+            error: url.searchParams.get('error'),
+            errorCode: url.searchParams.get('error_code'),
+            errorDescription: url.searchParams.get('error_description'),
+        })
+        return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, callbackErrorMessage))
+    }
 
     const supabaseUser = await createClient();
 
@@ -139,14 +154,31 @@ export async function GET(request: Request) {
     // so we can read the current user directly. For OAuth providers we must exchange
     // the code for a session first.
     if (type !== 'email') {
-        if (!code) return NextResponse.redirect(new URL('/error', url))
+        if (!code) {
+            console.error('Auth callback missing code', {
+                search: url.search,
+            })
+            return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, DEFAULT_AUTH_ERROR_MESSAGE))
+        }
 
         const { error: exchangeErr } = await supabaseUser.auth.exchangeCodeForSession(code);
-        if (exchangeErr) return NextResponse.redirect(new URL('/error', url));
+        if (exchangeErr) {
+            console.error('Auth code exchange failed', {
+                message: exchangeErr.message,
+                status: (exchangeErr as { status?: number }).status,
+                code: (exchangeErr as { code?: string }).code,
+            })
+            return NextResponse.redirect(
+                buildAuthErrorRedirectUrl(request.url, exchangeErr.message || DEFAULT_AUTH_ERROR_MESSAGE)
+            )
+        }
     }
 
     const { data: { user } } = await supabaseUser.auth.getUser();
-    if (!user?.id) return NextResponse.redirect(new URL('/error', url));
+    if (!user?.id) {
+        console.error('Auth callback missing authenticated user after session exchange')
+        return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, DEFAULT_AUTH_ERROR_MESSAGE))
+    }
 
     // Check if user has MFA enabled
     const { data: mfaData } = await supabaseUser.auth.mfa.listFactors();
@@ -172,15 +204,27 @@ export async function GET(request: Request) {
     let teamId: string;
     try {
         teamId = await getOrCreatePersonalTeamId({ supabaseAdmin, userId: user.id, displayName });
-    } catch {
-        return NextResponse.redirect(new URL('/error', url));
+    } catch (error) {
+        console.error('Failed to provision personal team during auth callback', {
+            userId: user.id,
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return NextResponse.redirect(
+            buildAuthErrorRedirectUrl(
+                request.url,
+                'Your account was created, but we could not finish setting up your workspace. Please contact support.'
+            )
+        )
     }
 
     // 2) Ensure wallet exists. Stripe customer is created lazily when needed.
     try {
         await ensureWalletRow(supabaseAdmin, teamId);
-    } catch {
-        // Handle error
+    } catch (error) {
+        console.error('Failed to ensure wallet row during auth callback', {
+            teamId,
+            error: error instanceof Error ? error.message : String(error),
+        })
     }
 
     // 3) If this team is enterprise + invoice mode but the invoice profile is not
@@ -206,11 +250,13 @@ export async function GET(request: Request) {
                 return NextResponse.redirect(new URL("/settings/credits/onboarding", url));
             }
         }
-    } catch {
+    } catch (error) {
+        console.error('Failed invoice onboarding check during auth callback', {
+            teamId,
+            error: error instanceof Error ? error.message : String(error),
+        })
         // Ignore onboarding redirect issues and continue to default destination.
     }
 
     return NextResponse.redirect(new URL(returnUrl, url));
-
-
 }

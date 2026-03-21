@@ -71,7 +71,15 @@ export async function handleOAuthRedirect(formData: FormData) {
         options: { redirectTo },
     })
 
-    if (error || !data?.url) redirect('/error?message=Authentication failed')
+    if (error || !data?.url) {
+        console.error('OAuth redirect initialization failed', {
+            provider,
+            message: error?.message ?? null,
+            status: (error as { status?: number } | null)?.status ?? null,
+            code: (error as { code?: string } | null)?.code ?? null,
+        })
+        redirect('/error?message=Authentication failed')
+    }
     redirect(data.url as any)
 }
 
@@ -90,6 +98,12 @@ export async function handleEmailSignup(formData: FormData) {
         options: { emailRedirectTo: callbackUrl },
     })
     if (error) {
+        console.error('Email signup failed', {
+            message: error.message,
+            status: (error as { status?: number }).status,
+            code: (error as { code?: string }).code,
+            emailDomain: email.includes('@') ? email.split('@')[1] : null,
+        })
         const message = (error.message ?? '').toLowerCase()
         if (message.includes('already registered') || message.includes('already exists')) {
             redirect('/sign-in?signup=exists')

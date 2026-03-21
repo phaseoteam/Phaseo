@@ -1,0 +1,31 @@
+import {
+    buildAuthErrorRedirectUrl,
+    normalizeAuthErrorMessage,
+    resolveCallbackErrorMessage,
+    resolveHashAuthErrorMessage,
+} from './errorMessage'
+
+describe('auth error helpers', () => {
+    it('normalizes empty messages to the default copy', () => {
+        expect(normalizeAuthErrorMessage('   ')).toBe('We could not complete the sign-in flow. Please try again.')
+    })
+
+    it('prefers callback error descriptions from query params', () => {
+        const url = new URL('https://example.com/auth/callback?error=server_error&error_description=Database+error+saving+new+user')
+
+        expect(resolveCallbackErrorMessage(url)).toBe('Database error saving new user')
+    })
+
+    it('reads auth errors from URL fragments', () => {
+        expect(resolveHashAuthErrorMessage('#error=server_error&error_description=Database+error+saving+new+user')).toBe(
+            'Database error saving new user'
+        )
+    })
+
+    it('builds an error redirect URL with a sanitized message', () => {
+        const redirectUrl = buildAuthErrorRedirectUrl('https://example.com/auth/callback', '  Detailed failure  ')
+
+        expect(redirectUrl.pathname).toBe('/error')
+        expect(redirectUrl.searchParams.get('message')).toBe('Detailed failure')
+    })
+})
