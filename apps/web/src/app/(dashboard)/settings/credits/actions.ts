@@ -8,6 +8,11 @@ import {
     requireAuthenticatedUser,
     requireTeamMembership,
 } from "@/utils/serverActionAuth";
+import {
+	isPromoCodeFormatValid,
+	normalizePromoCodeInput,
+	resolveRedeemMessage,
+} from "@/lib/credits/promoCodes";
 import "server-only";
 
 export async function RefreshCredits() {
@@ -307,4 +312,92 @@ export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingA
     revalidatePath("/settings/credits");
     revalidatePath("/settings/credits/onboarding");
     return { ok: true as const, billingMode: "invoice" as const };
+}
+
+type RedeemCreditCodeArgs = {
+	code: string;
+	teamId: string;
+};
+
+type RedeemCreditCodeRow = {
+	status?: string | null;
+	message?: string | null;
+	grant_id?: string | null;
+	amount_nanos?: number | null;
+	before_balance_nanos?: number | null;
+	after_balance_nanos?: number | null;
+	team_id?: string | null;
+};
+
+export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
+	const { code, teamId } = args;
+	const { supabase, user } = await requireAuthenticatedUser();
+
+	if (!teamId || typeof teamId !== "string") {
+		return {
+			ok: false as const,
+			status: "team_forbidden",
+			message: "You do not have access to that team.",
+		};
+	}
+
+	await requireTeamMembership(supabase, user.id, teamId);
+
+	const normalizedCode = normalizePromoCodeInput(code);
+	if (!isPromoCodeFormatValid(normalizedCode)) {
+		return {
+			ok: false as const,
+			status: "invalid_code_format",
+			message: "Credit code format is invalid.",
+		};
+	}
+
+	const { data, error } = await supabase.rpc("redeem_credit_code", {
+		p_code: normalizedCode,
+		p_team_id: teamId,
+	});
+
+	if (error) {
+		console.warn("[credits.redeem] redeem_credit_code rpc failed", {
+			code: error.code ?? null,
+			message: error.message ?? null,
+			teamId,
+			userId: user.id,
+		});
+		return {
+			ok: false as const,
+			status: "error",
+			message: "We could not redeem that credit code right now.",
+		};
+	}
+
+	const row = (Array.isArray(data) ? data[0] : data) as RedeemCreditCodeRow | null;
+	const status = String(row?.status ?? "error").toLowerCase();
+	const message = resolveRedeemMessage(status, row?.message);
+
+	const amountNanos = Number(row?.amount_nanos ?? NaN);
+	const beforeBalanceNanos = Number(row?.before_balance_nanos ?? NaN);
+	const afterBalanceNanos = Number(row?.after_balance_nanos ?? NaN);
+	const resolvedTeamId = String(row?.team_id ?? teamId);
+
+	const ok = status === "succeeded";
+	if (ok) {
+		revalidatePath("/settings/credits");
+		revalidatePath("/settings/credits/transactions");
+	}
+
+	return {
+		ok,
+		status,
+		message,
+		amountNanos: Number.isFinite(amountNanos) ? amountNanos : null,
+		beforeBalanceNanos: Number.isFinite(beforeBalanceNanos)
+			? beforeBalanceNanos
+			: null,
+		afterBalanceNanos: Number.isFinite(afterBalanceNanos)
+			? afterBalanceNanos
+			: null,
+		teamId: resolvedTeamId,
+		grantId: row?.grant_id ?? null,
+	};
 }

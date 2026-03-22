@@ -135,8 +135,14 @@ async function TransactionsContent() {
 				ref_id: r.ref_id ?? null,
 				source_ref_type: r.source_ref_type ?? null,
 				source_ref_id: r.source_ref_id ?? null,
-				before_balance_nanos: r.before_balance ?? null,
-				after_balance_nanos: r.after_balance ?? null,
+				before_balance_nanos:
+					r.before_balance_nanos != null
+						? Number(r.before_balance_nanos)
+						: null,
+				after_balance_nanos:
+					r.after_balance_nanos != null
+						? Number(r.after_balance_nanos)
+						: null,
 			}));
 		}
 	} catch {
