@@ -23,26 +23,13 @@ function formatUsdFromNanos(nanos: number | null | undefined): string {
 	}).format(value / 1_000_000_000);
 }
 
-function parseNanos(value: unknown): bigint {
-	if (typeof value === "bigint") return value;
-	if (typeof value === "number" && Number.isFinite(value)) {
-		return BigInt(Math.trunc(value));
+function parseNanos(value: unknown): number {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string") {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed)) return parsed;
 	}
-	if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
-		return BigInt(value.trim());
-	}
-	return 0n;
-}
-
-function formatUsdFromNanosBigInt(nanos: bigint): string {
-	const isNegative = nanos < 0n;
-	const absolute = isNegative ? -nanos : nanos;
-	const dollars = absolute / 1_000_000_000n;
-	const cents = (absolute % 1_000_000_000n) / 10_000_000n;
-	const sign = isNegative ? "-" : "";
-	return `${sign}$${dollars.toLocaleString("en-US")}.${cents
-		.toString()
-		.padStart(2, "0")}`;
+	return 0;
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -54,24 +41,33 @@ function formatDate(value: string | null | undefined): string {
 
 export default async function InternalCreditsPage() {
 	const supabase = await createClient();
-	const { data: grants, error } = await supabase
-		.from("credit_grants")
-		.select(
-			"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
-		)
-		.order("created_at", { ascending: false })
-		.limit(250);
+	const [grantsResult, outstandingResult] = await Promise.all([
+		supabase
+			.from("credit_grants")
+			.select(
+				"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
+			)
+			.order("created_at", { ascending: false })
+			.limit(250),
+		supabase
+			.from("credit_grants")
+			.select("amount_nanos, max_redemptions, redemptions_count, expires_at")
+			.eq("is_active", true),
+	]);
+
+	const { data: grants, error } = grantsResult;
+	const { data: outstandingGrants, error: outstandingError } = outstandingResult;
 
 	if (error) {
 		throw new Error(error.message);
 	}
+	if (outstandingError) {
+		throw new Error(outstandingError.message);
+	}
 
 	const now = Date.now();
-	let outstandingNanos = 0n;
-	for (const grant of grants ?? []) {
-		const isActive = Boolean(grant?.is_active);
-		if (!isActive) continue;
-
+	let outstandingNanos = 0;
+	for (const grant of outstandingGrants ?? []) {
 		const expiresAtRaw = grant?.expires_at ? String(grant.expires_at) : null;
 		if (expiresAtRaw) {
 			const expiresAtMs = new Date(expiresAtRaw).getTime();
@@ -87,8 +83,8 @@ export default async function InternalCreditsPage() {
 		if (remainingRedemptions <= 0) continue;
 
 		const amountNanos = parseNanos(grant?.amount_nanos);
-		if (amountNanos <= 0n) continue;
-		outstandingNanos += amountNanos * BigInt(remainingRedemptions);
+		if (amountNanos <= 0) continue;
+		outstandingNanos += amountNanos * remainingRedemptions;
 	}
 
 	return (
@@ -165,7 +161,7 @@ export default async function InternalCreditsPage() {
 						<div className="rounded-md border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
 							<p className="uppercase tracking-wide">Outstanding (active + unexpired)</p>
 							<p className="text-sm font-semibold text-foreground">
-								{formatUsdFromNanosBigInt(outstandingNanos)}
+								{formatUsdFromNanos(outstandingNanos)}
 							</p>
 						</div>
 					</div>
