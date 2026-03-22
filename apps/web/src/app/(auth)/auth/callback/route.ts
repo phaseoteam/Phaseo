@@ -225,15 +225,16 @@ export async function GET(request: Request) {
                 status: (exchangeErr as { status?: number }).status,
                 code: (exchangeErr as { code?: string }).code,
             })
-            return NextResponse.redirect(
-                buildAuthErrorRedirectUrl(request.url, exchangeErr.message || DEFAULT_AUTH_ERROR_MESSAGE)
-            )
+            return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, DEFAULT_AUTH_ERROR_MESSAGE))
         }
     }
 
     const { data: { user } } = await supabaseUser.auth.getUser();
     if (!user?.id) {
         console.error('Auth callback missing authenticated user after session exchange')
+        if (type === 'email') {
+            return buildHashPreservingAuthErrorResponse(request.url)
+        }
         return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, DEFAULT_AUTH_ERROR_MESSAGE))
     }
 
