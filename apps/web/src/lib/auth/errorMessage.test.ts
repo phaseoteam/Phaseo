@@ -10,15 +10,15 @@ describe('auth error helpers', () => {
         expect(normalizeAuthErrorMessage('   ')).toBe('We could not complete the sign-in flow. Please try again.')
     })
 
-    it('prefers callback error descriptions from query params', () => {
+    it('does not expose raw provider descriptions from query params', () => {
         const url = new URL('https://example.com/auth/callback?error=server_error&error_description=Database+error+saving+new+user')
 
-        expect(resolveCallbackErrorMessage(url)).toBe('Database error saving new user')
+        expect(resolveCallbackErrorMessage(url)).toBe('We could not complete the sign-in flow. Please try again.')
     })
 
     it('reads auth errors from URL fragments', () => {
         expect(resolveHashAuthErrorMessage('#error=server_error&error_description=Database+error+saving+new+user')).toBe(
-            'Database error saving new user'
+            'We could not complete the sign-in flow. Please try again.'
         )
     })
 

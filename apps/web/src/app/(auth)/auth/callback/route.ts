@@ -191,11 +191,17 @@ export async function GET(request: Request) {
     const callbackErrorMessage = resolveCallbackErrorMessage(url)
 
     if (callbackErrorMessage) {
-        console.error('Auth callback provider error', {
-            error: url.searchParams.get('error'),
+        const error = url.searchParams.get('error')
+        const payload = {
+            error,
             errorCode: url.searchParams.get('error_code'),
             errorDescription: url.searchParams.get('error_description'),
-        })
+        }
+        if (error === 'access_denied') {
+            console.info('Auth callback provider cancellation', payload)
+        } else {
+            console.error('Auth callback provider error', payload)
+        }
         return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, callbackErrorMessage))
     }
 

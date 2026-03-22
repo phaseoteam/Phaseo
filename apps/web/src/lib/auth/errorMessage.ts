@@ -13,9 +13,6 @@ export function buildAuthErrorRedirectUrl(requestUrl: string, message?: string |
 }
 
 function mapKnownAuthError(params: URLSearchParams): string | null {
-    const errorDescription = params.get('error_description')
-    if (errorDescription) return normalizeAuthErrorMessage(errorDescription)
-
     const errorCode = params.get('error_code')
     if (errorCode === 'otp_expired') {
         return 'Your sign-in link has expired. Please try signing in again.'
@@ -24,6 +21,11 @@ function mapKnownAuthError(params: URLSearchParams): string | null {
     const error = params.get('error')
     if (error === 'access_denied') {
         return 'Sign-in was cancelled or denied. Please try again.'
+    }
+
+    const errorDescription = params.get('error_description')
+    if (errorDescription || error || errorCode) {
+        return DEFAULT_AUTH_ERROR_MESSAGE
     }
 
     return null
