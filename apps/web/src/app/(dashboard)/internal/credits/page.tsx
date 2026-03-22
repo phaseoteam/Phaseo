@@ -23,6 +23,28 @@ function formatUsdFromNanos(nanos: number | null | undefined): string {
 	}).format(value / 1_000_000_000);
 }
 
+function parseNanos(value: unknown): bigint {
+	if (typeof value === "bigint") return value;
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return BigInt(Math.trunc(value));
+	}
+	if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
+		return BigInt(value.trim());
+	}
+	return 0n;
+}
+
+function formatUsdFromNanosBigInt(nanos: bigint): string {
+	const isNegative = nanos < 0n;
+	const absolute = isNegative ? -nanos : nanos;
+	const dollars = absolute / 1_000_000_000n;
+	const cents = (absolute % 1_000_000_000n) / 10_000_000n;
+	const sign = isNegative ? "-" : "";
+	return `${sign}$${dollars.toLocaleString("en-US")}.${cents
+		.toString()
+		.padStart(2, "0")}`;
+}
+
 function formatDate(value: string | null | undefined): string {
 	if (!value) return "-";
 	const date = new Date(value);
@@ -42,6 +64,31 @@ export default async function InternalCreditsPage() {
 
 	if (error) {
 		throw new Error(error.message);
+	}
+
+	const now = Date.now();
+	let outstandingNanos = 0n;
+	for (const grant of grants ?? []) {
+		const isActive = Boolean(grant?.is_active);
+		if (!isActive) continue;
+
+		const expiresAtRaw = grant?.expires_at ? String(grant.expires_at) : null;
+		if (expiresAtRaw) {
+			const expiresAtMs = new Date(expiresAtRaw).getTime();
+			if (Number.isFinite(expiresAtMs) && expiresAtMs <= now) continue;
+		}
+
+		const maxRedemptions = Number(grant?.max_redemptions ?? 0);
+		const redemptionsCount = Number(grant?.redemptions_count ?? 0);
+		const remainingRedemptions = Math.max(
+			0,
+			Math.trunc(maxRedemptions) - Math.trunc(redemptionsCount)
+		);
+		if (remainingRedemptions <= 0) continue;
+
+		const amountNanos = parseNanos(grant?.amount_nanos);
+		if (amountNanos <= 0n) continue;
+		outstandingNanos += amountNanos * BigInt(remainingRedemptions);
 	}
 
 	return (
@@ -113,7 +160,15 @@ export default async function InternalCreditsPage() {
 
 			<Card>
 				<CardHeader className="pb-2">
-					<CardTitle>Existing Promo Codes</CardTitle>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<CardTitle>Existing Promo Codes</CardTitle>
+						<div className="rounded-md border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+							<p className="uppercase tracking-wide">Outstanding (active + unexpired)</p>
+							<p className="text-sm font-semibold text-foreground">
+								{formatUsdFromNanosBigInt(outstandingNanos)}
+							</p>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent className="overflow-x-auto">
 					<table className="w-full text-sm">
