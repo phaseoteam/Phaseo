@@ -23,6 +23,15 @@ function formatUsdFromNanos(nanos: number | null | undefined): string {
 	}).format(value / 1_000_000_000);
 }
 
+function parseNanos(value: unknown): number {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string") {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return 0;
+}
+
 function formatDate(value: string | null | undefined): string {
 	if (!value) return "-";
 	const date = new Date(value);
@@ -32,16 +41,50 @@ function formatDate(value: string | null | undefined): string {
 
 export default async function InternalCreditsPage() {
 	const supabase = await createClient();
-	const { data: grants, error } = await supabase
-		.from("credit_grants")
-		.select(
-			"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
-		)
-		.order("created_at", { ascending: false })
-		.limit(250);
+	const [grantsResult, outstandingResult] = await Promise.all([
+		supabase
+			.from("credit_grants")
+			.select(
+				"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
+			)
+			.order("created_at", { ascending: false })
+			.limit(250),
+		supabase
+			.from("credit_grants")
+			.select("amount_nanos, max_redemptions, redemptions_count, expires_at")
+			.eq("is_active", true),
+	]);
+
+	const { data: grants, error } = grantsResult;
+	const { data: outstandingGrants, error: outstandingError } = outstandingResult;
 
 	if (error) {
 		throw new Error(error.message);
+	}
+	if (outstandingError) {
+		throw new Error(outstandingError.message);
+	}
+
+	const now = Date.now();
+	let outstandingNanos = 0;
+	for (const grant of outstandingGrants ?? []) {
+		const expiresAtRaw = grant?.expires_at ? String(grant.expires_at) : null;
+		if (expiresAtRaw) {
+			const expiresAtMs = new Date(expiresAtRaw).getTime();
+			if (Number.isFinite(expiresAtMs) && expiresAtMs <= now) continue;
+		}
+
+		const maxRedemptions = Number(grant?.max_redemptions ?? 0);
+		const redemptionsCount = Number(grant?.redemptions_count ?? 0);
+		const remainingRedemptions = Math.max(
+			0,
+			Math.trunc(maxRedemptions) - Math.trunc(redemptionsCount)
+		);
+		if (remainingRedemptions <= 0) continue;
+
+		const amountNanos = parseNanos(grant?.amount_nanos);
+		if (amountNanos <= 0) continue;
+		outstandingNanos += amountNanos * remainingRedemptions;
 	}
 
 	return (
@@ -113,7 +156,15 @@ export default async function InternalCreditsPage() {
 
 			<Card>
 				<CardHeader className="pb-2">
-					<CardTitle>Existing Promo Codes</CardTitle>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<CardTitle>Existing Promo Codes</CardTitle>
+						<div className="rounded-md border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+							<p className="uppercase tracking-wide">Outstanding (active + unexpired)</p>
+							<p className="text-sm font-semibold text-foreground">
+								{formatUsdFromNanos(outstandingNanos)}
+							</p>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent className="overflow-x-auto">
 					<table className="w-full text-sm">
