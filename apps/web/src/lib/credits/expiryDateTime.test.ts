@@ -1,6 +1,8 @@
 import {
 	buildExpiryLocalInput,
+	buildExpirySelectionPreview,
 	buildExpiryUtcIso,
+	formatUtcOffset,
 	parseOptionalExpiryInput,
 } from "./expiryDateTime";
 
@@ -34,6 +36,25 @@ describe("expiry date/time helpers", () => {
 		expect(buildExpiryUtcIso("2026-03-22", "")).toBe(
 			new Date(2026, 2, 22, 23, 59, 0, 0).toISOString()
 		);
+	});
+
+	it("formats UTC offsets consistently", () => {
+		expect(formatUtcOffset(0)).toBe("+00:00");
+		expect(formatUtcOffset(60)).toBe("+01:00");
+		expect(formatUtcOffset(-300)).toBe("-05:00");
+		expect(formatUtcOffset(330)).toBe("+05:30");
+	});
+
+	it("builds preview data for selected datetime", () => {
+		const preview = buildExpirySelectionPreview("2026-03-22", "09:15");
+		expect(preview).not.toBeNull();
+		expect(preview?.timezone.length).toBeGreaterThan(0);
+		expect(preview?.timezoneDisplay).toContain("UTC");
+		expect(preview?.utcIso).toBe(buildExpiryUtcIso("2026-03-22", "09:15"));
+	});
+
+	it("returns null preview when no date is selected", () => {
+		expect(buildExpirySelectionPreview("", "09:15")).toBeNull();
 	});
 
 	it("returns null for empty expiry input", () => {

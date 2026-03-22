@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { buildExpiryUtcIso } from "@/lib/credits/expiryDateTime";
+import {
+	buildExpirySelectionPreview,
+	buildExpiryUtcIso,
+	getBrowserTimeZone,
+} from "@/lib/credits/expiryDateTime";
 import {
 	Dialog,
 	DialogContent,
@@ -68,6 +72,12 @@ export default function CreditGrantEditDialog(props: Props) {
 		const [datePart, timePart] = expiryLocalValue.split("T");
 		return buildExpiryUtcIso(datePart ?? "", timePart ?? "", "23:59");
 	}, [expiryLocalValue]);
+	const expiryPreview = useMemo(() => {
+		if (!expiryLocalValue) return null;
+		const [datePart, timePart] = expiryLocalValue.split("T");
+		return buildExpirySelectionPreview(datePart ?? "", timePart ?? "", "23:59");
+	}, [expiryLocalValue]);
+	const browserTimeZone = useMemo(() => getBrowserTimeZone(), []);
 
 	async function handleSave() {
 		if (!formRef.current || isBusy) return;
@@ -161,6 +171,28 @@ export default function CreditGrantEditDialog(props: Props) {
 							value={expiryLocalValue}
 							onChange={(event) => setExpiryLocalValue(event.target.value)}
 						/>
+						{expiryPreview ? (
+							<div className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+								<p>
+									Timezone:{" "}
+									<span className="font-medium text-foreground">
+										{expiryPreview.timezoneDisplay}
+									</span>
+								</p>
+								<p>Local expiry: {expiryPreview.localDisplay}</p>
+								<p>
+									Stored as UTC:{" "}
+									<span className="font-mono text-foreground">
+										{expiryPreview.utcDisplay}
+									</span>
+								</p>
+							</div>
+						) : (
+							<p className="text-xs text-muted-foreground">
+								Uses your browser timezone ({browserTimeZone}). Pick a date/time
+								to preview the UTC value that will be stored.
+							</p>
+						)}
 						<input type="hidden" name="expires_at" value={hiddenExpiresAt} />
 					</div>
 					<div className="space-y-1">
