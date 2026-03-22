@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { buildExpiryUtcIso } from "@/lib/credits/expiryDateTime";
 import {
 	Dialog,
 	DialogContent,
@@ -58,7 +59,15 @@ export default function CreditGrantEditDialog(props: Props) {
 	const [open, setOpen] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDisabling, setIsDisabling] = useState(false);
+	const [expiryLocalValue, setExpiryLocalValue] = useState(() =>
+		toDateTimeLocalInput(expiresAt)
+	);
 	const isBusy = isSaving || isDisabling;
+	const hiddenExpiresAt = useMemo(() => {
+		if (!expiryLocalValue) return "";
+		const [datePart, timePart] = expiryLocalValue.split("T");
+		return buildExpiryUtcIso(datePart ?? "", timePart ?? "", "23:59");
+	}, [expiryLocalValue]);
 
 	async function handleSave() {
 		if (!formRef.current || isBusy) return;
@@ -147,10 +156,12 @@ export default function CreditGrantEditDialog(props: Props) {
 						<Label htmlFor={`expires-at-${grantId}`}>Expires At</Label>
 						<Input
 							id={`expires-at-${grantId}`}
-							name="expires_at"
+							name="expires_at_local"
 							type="datetime-local"
-							defaultValue={toDateTimeLocalInput(expiresAt)}
+							value={expiryLocalValue}
+							onChange={(event) => setExpiryLocalValue(event.target.value)}
 						/>
+						<input type="hidden" name="expires_at" value={hiddenExpiresAt} />
 					</div>
 					<div className="space-y-1">
 						<Label htmlFor={`note-${grantId}`}>Note</Label>

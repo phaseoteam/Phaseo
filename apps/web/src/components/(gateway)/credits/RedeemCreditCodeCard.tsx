@@ -30,6 +30,7 @@ type ResultTone = "success" | "error";
 
 type Props = {
 	teams: TeamOption[];
+	invoiceTeamIds?: string[];
 	defaultTeamId?: string | null;
 	disabled?: boolean;
 	disabledReason?: string | null;
@@ -45,6 +46,7 @@ type Props = {
 export default function RedeemCreditCodeCard(props: Props) {
 	const {
 		teams,
+		invoiceTeamIds = [],
 		defaultTeamId = null,
 		disabled = false,
 		disabledReason = null,
@@ -73,6 +75,19 @@ export default function RedeemCreditCodeCard(props: Props) {
 		}
 		return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
 	}, [teams]);
+	const invoiceTeamIdSet = useMemo(() => {
+		const set = new Set<string>();
+		for (const teamId of invoiceTeamIds) {
+			const safeTeamId = String(teamId ?? "").trim();
+			if (safeTeamId) set.add(safeTeamId);
+		}
+		return set;
+	}, [invoiceTeamIds]);
+	const selectedTeamIsInvoice =
+		selectedTeamId.length > 0 && invoiceTeamIdSet.has(selectedTeamId);
+	const effectiveDisabledReason = selectedTeamIsInvoice
+		? "Credit codes are disabled for invoice billing teams."
+		: disabledReason;
 
 	useEffect(() => {
 		if (defaultTeamId && teamOptions.some((team) => team.id === defaultTeamId)) {
@@ -94,6 +109,14 @@ export default function RedeemCreditCodeCard(props: Props) {
 		}
 		if (!selectedTeamId) {
 			toast.error("Select a team.");
+			return;
+		}
+		if (selectedTeamIsInvoice) {
+			const message = "Credit codes are disabled for invoice billing teams.";
+			setButtonState("error");
+			setResultMessage(message);
+			setResultTone("error");
+			toast.error(message);
 			return;
 		}
 
@@ -165,8 +188,8 @@ export default function RedeemCreditCodeCard(props: Props) {
 				<CardTitle>{title}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{disabledReason ? (
-					<p className="text-sm text-muted-foreground">{disabledReason}</p>
+				{effectiveDisabledReason ? (
+					<p className="text-sm text-muted-foreground">{effectiveDisabledReason}</p>
 				) : (
 					<p className="text-sm text-muted-foreground">{description}</p>
 				)}
@@ -218,7 +241,12 @@ export default function RedeemCreditCodeCard(props: Props) {
 					<Button
 						type="button"
 						onClick={onRedeem}
-						disabled={disabled || isSubmitting || !selectedTeamId}
+						disabled={
+							disabled ||
+							isSubmitting ||
+							!selectedTeamId ||
+							selectedTeamIsInvoice
+						}
 						className={cn(
 							"h-11 w-full text-base font-semibold transition-all duration-200",
 							buttonState === "idle" &&

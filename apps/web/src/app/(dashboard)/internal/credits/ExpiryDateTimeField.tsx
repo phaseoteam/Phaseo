@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { buildExpiryLocalInput } from "@/lib/credits/expiryDateTime";
+import { buildExpiryUtcIso } from "@/lib/credits/expiryDateTime";
 
 type Props = {
 	defaultTime?: string;
@@ -17,7 +17,7 @@ export default function ExpiryDateTimeField({
 	const [timeValue, setTimeValue] = useState(defaultTime);
 
 	const hiddenExpiresAt = useMemo(() => {
-		return buildExpiryLocalInput(dateValue, timeValue, defaultTime);
+		return buildExpiryUtcIso(dateValue, timeValue, defaultTime);
 	}, [dateValue, timeValue, defaultTime]);
 
 	return (

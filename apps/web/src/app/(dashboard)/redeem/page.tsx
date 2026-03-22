@@ -25,8 +25,8 @@ export default async function RedeemPage() {
 	}
 
 	const activeTeamId = await getTeamIdFromCookie();
-	let isInvoiceMode = false;
 	const teamOptions: TeamOption[] = [];
+	const invoiceTeamIds = new Set<string>();
 
 	try {
 		const { data: rows, error: teamErr } = await supabase
@@ -47,12 +47,8 @@ export default async function RedeemPage() {
 				if (!teamOptions.some((entry) => entry.id === id)) {
 					teamOptions.push({ id, name });
 				}
-				if (
-					activeTeamId &&
-					id === activeTeamId &&
-					String(team?.billing_mode ?? "wallet").toLowerCase() === "invoice"
-				) {
-					isInvoiceMode = true;
+				if (String(team?.billing_mode ?? "wallet").toLowerCase() === "invoice") {
+					invoiceTeamIds.add(id);
 				}
 			}
 		}
@@ -69,18 +65,13 @@ export default async function RedeemPage() {
 			<div className="mx-auto w-full max-w-2xl">
 				<RedeemCreditCodeCard
 					teams={teamOptions}
+					invoiceTeamIds={Array.from(invoiceTeamIds)}
 					defaultTeamId={activeTeamId ?? null}
 					title="Redeem Promo Code"
 					description="Enter your promo code below to receive credits."
 					submitLabel="Redeem Code"
 					showTeamSelector={teamOptions.length > 1}
 					showDisclaimer
-					disabled={isInvoiceMode}
-					disabledReason={
-						isInvoiceMode
-							? "Credit codes are disabled for invoice billing teams."
-							: null
-					}
 				/>
 			</div>
 		</div>
