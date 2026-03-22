@@ -7,7 +7,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import CreditsPurchaseDialog from "@/components/(gateway)/credits/CreditPurchases/TopUp/CreditsPurchaseDialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Ticket } from "lucide-react";
 
 interface Props {
 	wallet?: any;
@@ -37,14 +37,19 @@ export default function BuyCreditsClient({
 				<Button className="w-full" onClick={() => setOpen(true)}>
 					Add Credits
 				</Button>
-				<div className="flex items-center justify-start">
-					<Link
-						href="/gateway/usage"
-						className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-					>
-						View usage
-						<ArrowUpRight className="h-3 w-3" />
-					</Link>
+				<div className="grid grid-cols-2 gap-2">
+					<Button asChild variant="outline" className="w-full">
+						<Link href="/gateway/usage" className="inline-flex items-center justify-center gap-2">
+							View usage
+							<ArrowUpRight className="h-4 w-4" />
+						</Link>
+					</Button>
+					<Button asChild variant="outline" className="w-full">
+						<Link href="/redeem" className="inline-flex items-center justify-center gap-2">
+							Got a code?
+							<Ticket className="h-4 w-4" />
+						</Link>
+					</Button>
 				</div>
 				<div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
 					{isEnterpriseTier ? (
@@ -102,6 +107,12 @@ export default function BuyCreditsClient({
 			<CardContent>
 				<Button className="w-full" onClick={() => setOpen(true)}>
 					Add Credits
+				</Button>
+				<Button asChild variant="outline" className="mt-3 w-full">
+					<Link href="/redeem" className="inline-flex items-center justify-center gap-2">
+						Got a code?
+						<Ticket className="h-4 w-4" />
+					</Link>
 				</Button>
 				<CreditsPurchaseDialog
 					open={open}

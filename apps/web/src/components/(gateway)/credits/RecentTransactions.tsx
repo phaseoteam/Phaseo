@@ -14,7 +14,6 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	ExternalLink,
-	ArrowDownCircle,
 	ArrowUpCircle,
 	Info,
 	CheckCircle,
@@ -26,14 +25,26 @@ import {
 	CreditCard,
 	Zap,
 } from "lucide-react";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
 	Select,
 	SelectContent,
@@ -50,6 +61,8 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getCreditTransactionKindLabel } from "@/lib/credits/promoCodes";
+import { formatRelativeToNow } from "@/lib/formatRelative";
 import { toast } from "sonner";
 
 type Transaction = {
@@ -90,7 +103,7 @@ const REFUND_REASON_OPTIONS = [
 type RefundReasonValue = (typeof REFUND_REASON_OPTIONS)[number]["value"];
 
 function formatNanos(nanos?: number | null, currency = "USD") {
-        const val = (nanos ?? 0) / 1_000_000_000;
+	const val = (nanos ?? 0) / 1_000_000_000;
 	try {
 		return new Intl.NumberFormat("en-US", {
 			style: "currency",
@@ -105,25 +118,18 @@ function formatNanos(nanos?: number | null, currency = "USD") {
 	}
 }
 
-function shortDateTime(iso?: string | null) {
-	if (!iso) return "-";
-	const d = new Date(iso);
-	if (isNaN(d.getTime())) return "-";
-	return d.toLocaleString(undefined, {
+function formatDateTime(date: Date, timeZone: string): string {
+	return new Intl.DateTimeFormat("en-US", {
 		year: "numeric",
 		month: "short",
 		day: "2-digit",
 		hour: "2-digit",
 		minute: "2-digit",
 		second: "2-digit",
-	});
-}
-
-function fullDateTime(iso?: string | null) {
-	if (!iso) return "-";
-	const d = new Date(iso);
-	if (isNaN(d.getTime())) return "-";
-	return d.toISOString(); // universally precise for tooltip
+		fractionalSecondDigits: 3,
+		hour12: false,
+		timeZone,
+	}).format(date);
 }
 
 function statusChip(status?: string | null, kind?: string | null) {
@@ -138,33 +144,33 @@ function statusChip(status?: string | null, kind?: string | null) {
 		if (raw === "succeeded")
 			return {
 				label: "succeeded",
-				className: "capitalize bg-emerald-100 text-emerald-800",
-				icon: <CheckCircle className="mr-1 h-4 w-4" aria-hidden />,
+				className: "capitalize border-emerald-200 bg-emerald-50/50 text-emerald-700",
+				icon: <CheckCircle className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "failed")
 			return {
 				label: "failed",
-				className: "capitalize bg-red-100 text-red-800",
-				icon: <XCircle className="mr-1 h-4 w-4" aria-hidden />,
+				className: "capitalize border-rose-200 bg-rose-50/50 text-rose-700",
+				icon: <XCircle className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "pending")
 			return {
 				label: "pending",
-				className: "capitalize bg-amber-100 text-amber-800",
-				icon: <Clock className="mr-1 h-4 w-4" aria-hidden />,
+				className: "capitalize border-amber-200 bg-amber-50/40 text-amber-700",
+				icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "cancelled" || raw === "canceled")
 			return {
 				label: "cancelled",
-				className: "capitalize bg-zinc-100 text-zinc-700",
-				icon: <Ban className="mr-1 h-4 w-4" aria-hidden />,
+				className: "capitalize border-zinc-200 bg-zinc-50/50 text-zinc-700",
+				icon: <Ban className="h-3.5 w-3.5" aria-hidden />,
 			};
 
 		// Unknown -> default to 'processing'
 		return {
 			label: "processing",
-			className: "capitalize bg-blue-100 text-blue-800",
-			icon: <Clock className="mr-1 h-4 w-4" aria-hidden />,
+			className: "capitalize border-blue-200 bg-blue-50/40 text-blue-700",
+			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
 	}
 
@@ -172,77 +178,108 @@ function statusChip(status?: string | null, kind?: string | null) {
 	if (raw === "cancelled" || raw === "canceled")
 		return {
 			label: "cancelled",
-			className: "capitalize bg-zinc-100 text-zinc-700",
-			icon: <Ban className="mr-1 h-4 w-4" aria-hidden />,
+			className: "capitalize border-zinc-200 bg-zinc-50/50 text-zinc-700",
+			icon: <Ban className="h-3.5 w-3.5" aria-hidden />,
 		};
 	if (raw === "processing")
 		return {
 			label: "processing",
-			className: "capitalize bg-blue-100 text-blue-800",
-			icon: <Clock className="mr-1 h-4 w-4" aria-hidden />,
+			className: "capitalize border-blue-200 bg-blue-50/40 text-blue-700",
+			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
 	if (raw === "paid")
 		return {
 			label: "paid",
-			className: "capitalize bg-emerald-100 text-emerald-800",
-			icon: <CheckCircle className="mr-1 h-4 w-4" aria-hidden />,
+			className: "capitalize border-emerald-200 bg-emerald-50/50 text-emerald-700",
+			icon: <CheckCircle className="h-3.5 w-3.5" aria-hidden />,
 		};
 
 	// Unknown -> default to 'processing'
 	return {
 		label: "processing",
-		className: "capitalize bg-gray-100 text-gray-800",
-		icon: <Clock className="mr-1 h-4 w-4" aria-hidden />,
+		className: "capitalize border-zinc-200 bg-zinc-50/50 text-zinc-700",
+		icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 	};
 }
 
 function kindBadge(kind?: string | null) {
+	const label = getCreditTransactionKindLabel(kind);
+
+	if (kind === "promo_code")
+		return (
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-amber-200 bg-amber-50/40 px-1.5 py-0 text-[10px] font-medium text-amber-700"
+			>
+				<Zap className="h-3 w-3" aria-hidden />
+				{label ?? "Promo"}
+			</Badge>
+		);
+
 	// map normalized forms to badges
 	if (kind === "top_up_one_off")
 		return (
-			<Badge className="bg-emerald-600 hover:bg-emerald-600 flex items-center gap-1">
-				<DollarSign className="h-4 w-4" aria-hidden />
-				One-Off Top Up
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-emerald-200 bg-emerald-50/40 px-1.5 py-0 text-[10px] font-medium text-emerald-700"
+			>
+				<DollarSign className="h-3 w-3" aria-hidden />
+				{label ?? "One-Off"}
 			</Badge>
 		);
 
 	if (kind === "top_up")
 		return (
-			<Badge className="bg-emerald-600 hover:bg-emerald-600 flex items-center gap-1">
-				<DollarSign className="h-4 w-4" aria-hidden />
-				Top Up
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-emerald-200 bg-emerald-50/40 px-1.5 py-0 text-[10px] font-medium text-emerald-700"
+			>
+				<DollarSign className="h-3 w-3" aria-hidden />
+				{label ?? "Top Up"}
 			</Badge>
 		);
 
 	if (kind === "auto_top_up")
 		return (
-			<Badge className="bg-teal-600 hover:bg-teal-600 flex items-center gap-1">
-				<Repeat className="h-4 w-4" aria-hidden />
-				Auto Top Up
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-teal-200 bg-teal-50/40 px-1.5 py-0 text-[10px] font-medium text-teal-700"
+			>
+				<Repeat className="h-3 w-3" aria-hidden />
+				{label ?? "Auto Top Up"}
 			</Badge>
 		);
 
 	if (kind === "refund" || kind === "refunded")
 		return (
-			<Badge className="bg-rose-600 hover:bg-rose-600 flex items-center gap-1">
-				<ArrowUpCircle className="h-4 w-4" aria-hidden />
-				Refund
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-rose-200 bg-rose-50/40 px-1.5 py-0 text-[10px] font-medium text-rose-700"
+			>
+				<ArrowUpCircle className="h-3 w-3" aria-hidden />
+				{label ?? "Refund"}
 			</Badge>
 		);
 
 	if (kind === "adjustment")
 		return (
-			<Badge className="bg-zinc-700 hover:bg-zinc-700 flex items-center gap-1">
-				<Zap className="h-4 w-4" aria-hidden />
-				Adjustment
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-zinc-200 bg-zinc-50/40 px-1.5 py-0 text-[10px] font-medium text-zinc-700"
+			>
+				<Zap className="h-3 w-3" aria-hidden />
+				{label ?? "Adjustment"}
 			</Badge>
 		);
 
 	if (kind === "charge" || kind === "usage")
 		return (
-			<Badge className="bg-indigo-600 hover:bg-indigo-600 flex items-center gap-1">
-				<CreditCard className="h-4 w-4" aria-hidden />
-				Usage
+			<Badge
+				variant="outline"
+				className="inline-flex h-5 items-center gap-1 rounded-sm border-indigo-200 bg-indigo-50/40 px-1.5 py-0 text-[10px] font-medium text-indigo-700"
+			>
+				<CreditCard className="h-3 w-3" aria-hidden />
+				{label ?? "Usage"}
 			</Badge>
 		);
 
@@ -252,20 +289,10 @@ function kindBadge(kind?: string | null) {
 /** Credit is amount > 0, Debit is amount < 0 */
 function amountPill(nanos?: number | null, currency = "USD") {
 	const n = nanos ?? 0;
-	const positive = n > 0;
-	const negative = n < 0;
-	const Icon = positive ? ArrowDownCircle : ArrowUpCircle;
+	const prefix = n > 0 ? "+" : n < 0 ? "-" : "";
 	return (
-		<span
-			className={cn(
-				"inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium",
-				positive && "text-emerald-700 bg-emerald-50",
-				negative && "text-rose-700 bg-rose-50",
-				!positive && !negative && "text-zinc-700 bg-zinc-50"
-			)}
-		>
-			{(positive || negative) && <Icon className="h-4 w-4" aria-hidden />}
-			{positive ? "+" : negative ? "-" : ""}
+		<span className="inline-flex items-center font-medium tabular-nums text-foreground">
+			{prefix}
 			{formatNanos(Math.abs(n), currency)}
 		</span>
 	);
@@ -308,20 +335,32 @@ function isRefundEligible(tx: Transaction): { ok: boolean; reason?: string } {
 
 export default function RecentTransactions({
 	transactions,
-	pageSize = 10,
+	pageSize = 25,
 	stripeCustomerId,
 	currency = "USD",
 }: Props) {
+	const userTimeZone =
+		typeof Intl !== "undefined"
+			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+			: "UTC";
 	const router = useRouter();
 	const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
 	const [refundDialogTx, setRefundDialogTx] = useState<Transaction | null>(null);
 	const [refundReason, setRefundReason] =
 		useState<RefundReasonValue>("no_comment");
+	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
 	const [pageStr, setPageStr] = useQueryState("tx_page", {
 		defaultValue: "0",
 	});
 	const page = Math.max(0, parseInt(pageStr ?? "0", 10) || 0);
 	const totalPages = Math.max(1, Math.ceil(transactions.length / pageSize));
+
+	useEffect(() => {
+		const updateNow = () => setRelativeNowMs(Date.now());
+		updateNow();
+		const interval = setInterval(updateNow, 60_000);
+		return () => clearInterval(interval);
+	}, []);
 
 	// clamp page if transactions change
 	useEffect(() => {
@@ -445,339 +484,291 @@ export default function RecentTransactions({
 	}
 
 	return (
-		<section>
-			<Card>
-				<CardHeader>
-					<div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-						<div>
-							<CardTitle className="m-0">
-								Recent Transactions
-							</CardTitle>
-							<p className="mt-1 text-xs text-muted-foreground">
-								Self-serve refunds are available for eligible top-ups within
-								24 hours if that purchased credit lot has not been used.
-							</p>
-						</div>
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={async (e) => {
-								e.preventDefault();
-								try {
-									const resp = await fetch(
-										"/api/stripe/billing-portal",
-										{
-											method: "POST",
-											headers: {
-												"Content-Type":
-													"application/json",
-											},
-											body: JSON.stringify({
-												customerId: stripeCustomerId,
-												returnUrl: window.location.href,
-											}),
-										}
-									);
-									const data = await resp.json();
-									window.location.href =
-										data?.url ??
-										"/settings/credits";
-								} catch {
-									window.location.href =
-										"/settings/credits";
-								}
-							}}
-						>
-							Manage Payment Methods
-							<ExternalLink className="h-4 w-4 ml-1" />
-						</Button>
-					</div>
-				</CardHeader>
+		<section className="space-y-3">
+			<div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h3 className="text-xl font-semibold">Recent Transactions</h3>
+					<p className="mt-1 text-xs text-muted-foreground">
+						Self-serve refunds are available for eligible top-ups within
+						24 hours if that purchased credit lot has not been used.
+					</p>
+				</div>
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={async (e) => {
+						e.preventDefault();
+						try {
+							const resp = await fetch("/api/stripe/billing-portal", {
+								method: "POST",
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify({
+									customerId: stripeCustomerId,
+									returnUrl: window.location.href,
+								}),
+							});
+							const data = await resp.json();
+							window.location.href = data?.url ?? "/settings/credits";
+						} catch {
+							window.location.href = "/settings/credits";
+						}
+					}}
+				>
+					Manage Payment Methods
+					<ExternalLink className="h-4 w-4 ml-1" />
+				</Button>
+			</div>
 
-				<CardContent>
-					{transactions.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No credits purchased
-						</div>
-					) : (
-						<div className="w-full overflow-x-auto">
-							<table className="w-full text-sm table-fixed border-collapse">
-								<thead>
-									<tr className="text-left text-xs text-muted-foreground">
-										<th className="py-2 pr-4 w-56">Date</th>
-										<th className="py-2 pr-4 w-40">
-											Event
-										</th>
-										<th className="py-2 pr-4 w-32">
-											Status
-										</th>
-										<th className="py-2 pr-4 w-36 text-right">
-											Amount
-										</th>
-										<th className="py-2 pl-4 w-40 text-right">
-											Balance
-										</th>
-										<th className="py-2 pl-4 w-48 text-right">
-											Actions
-										</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y">
-									{pageItems.map((t) => {
-										const { label, className, icon } =
-											statusChip(t.status, t.kind);
-										const dateShort = shortDateTime(
-											t.created_at
-										);
-										const dateFull = fullDateTime(
-											t.created_at
-										);
-										const before =
-											t.before_balance_nanos ?? null;
-										const after =
-											t.after_balance_nanos ?? null;
-										const paymentIntentId =
-											parsePaymentIntentId(t);
-										const baseEligibility =
-											isRefundEligible(t);
-										const refundEligibility =
-											baseEligibility.ok &&
-											paymentIntentId &&
-											activeRefundSourceIds.has(paymentIntentId)
-												? {
-														ok: false,
-														reason: "A refund for this purchase is already in progress or completed.",
-													}
-												: baseEligibility;
-										const busy = Boolean(actionBusy[t.id]);
+			<div className="rounded-md border">
+				<div className="w-full overflow-x-auto">
+					<Table className="text-xs">
+						<TableHeader>
+							<TableRow className="h-9">
+								<TableHead className="w-[220px]">Timestamp</TableHead>
+								<TableHead className="w-[130px]">Amount</TableHead>
+								<TableHead className="w-[170px]">Reason</TableHead>
+								<TableHead className="w-[140px]">Status</TableHead>
+								<TableHead className="w-[150px]">Balance</TableHead>
+								<TableHead className="w-[120px]">Actions</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{transactions.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={6}
+										className="py-8 text-center text-sm text-muted-foreground"
+									>
+										No credits purchased
+									</TableCell>
+								</TableRow>
+							) : (
+								pageItems.map((t) => {
+									const { label, className, icon } = statusChip(t.status, t.kind);
+									const createdAtDate = t.created_at ? new Date(t.created_at) : null;
+									const amountNanos =
+										typeof t.amount_nanos === "number" ? t.amount_nanos : null;
+									const rawBefore =
+										typeof t.before_balance_nanos === "number"
+											? t.before_balance_nanos
+											: null;
+									const rawAfter =
+										typeof t.after_balance_nanos === "number"
+											? t.after_balance_nanos
+											: null;
+									const after =
+										rawAfter ??
+										(rawBefore !== null && amountNanos !== null
+											? rawBefore + amountNanos
+											: null);
+									const before =
+										rawBefore ??
+										(after !== null && amountNanos !== null
+											? after - amountNanos
+											: null);
+									const paymentIntentId = parsePaymentIntentId(t);
+									const baseEligibility = isRefundEligible(t);
+									const refundEligibility =
+										baseEligibility.ok &&
+										paymentIntentId &&
+										activeRefundSourceIds.has(paymentIntentId)
+											? {
+													ok: false,
+													reason: "A refund for this purchase is already in progress or completed.",
+												}
+											: baseEligibility;
+									const busy = Boolean(actionBusy[t.id]);
 
-										return (
-											<tr
-												key={t.id}
-												className="align-top"
-											>
-												{/* Date */}
-												<td className="py-3 pr-4 text-muted-foreground">
+									return (
+										<TableRow key={t.id} className="align-top">
+											<TableCell className="py-2 font-mono text-xs text-muted-foreground">
+												{createdAtDate && Number.isFinite(createdAtDate.getTime()) ? (
+													<HoverCard>
+														<HoverCardTrigger asChild>
+															<span className="cursor-help underline decoration-dotted underline-offset-2">
+																{createdAtDate.toLocaleString()}
+															</span>
+														</HoverCardTrigger>
+														<HoverCardContent align="start" className="w-auto">
+															<div className="grid gap-2 text-xs">
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">{userTimeZone}</div>
+																	<div className="font-mono">
+																		{formatDateTime(createdAtDate, userTimeZone)}
+																	</div>
+																</div>
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">UTC</div>
+																	<div className="font-mono">
+																		{formatDateTime(createdAtDate, "UTC")}
+																	</div>
+																</div>
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">Relative</div>
+																	<div className="font-mono">
+																		{relativeNowMs
+																			? formatRelativeToNow(createdAtDate, relativeNowMs)
+																			: "-"}
+																	</div>
+																</div>
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">Timestamp</div>
+																	<div className="font-mono">
+																		{Math.floor(createdAtDate.getTime() / 1000)}
+																	</div>
+																</div>
+															</div>
+														</HoverCardContent>
+													</HoverCard>
+												) : (
+													<span>-</span>
+												)}
+											</TableCell>
+											<TableCell className="py-2 font-medium tabular-nums">
+												{amountPill(t.amount_nanos ?? 0, currency)}
+											</TableCell>
+											<TableCell className="py-2">{kindBadge(t.kind)}</TableCell>
+											<TableCell className="py-2">
+												<Badge
+													variant="outline"
+													className={cn(
+														"inline-flex h-5 items-center gap-1 rounded-sm px-1.5 py-0 text-[10px] font-medium",
+														className
+													)}
+												>
+													{icon}
+													{label}
+												</Badge>
+											</TableCell>
+											<TableCell className="py-2">
+												{after !== null ? (
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<span className="cursor-default">
-																{dateShort}
+															<span className="cursor-default font-medium tabular-nums">
+																{formatNanos(after, currency)}
 															</span>
 														</TooltipTrigger>
-														<TooltipContent>
-															{dateFull}
+														<TooltipContent className="flex items-center gap-2">
+															<Info className="h-4 w-4" />
+															<span className="tabular-nums">
+																{before !== null
+																	? `${formatNanos(before, currency)} -> ${formatNanos(after, currency)}`
+																	: `Balance: ${formatNanos(after, currency)}`}
+															</span>
 														</TooltipContent>
 													</Tooltip>
-												</td>
-
-												{/* Event (kind badge) */}
-												<td className="py-3 pr-4">
-													<div className="flex items-center gap-2">
-														{kindBadge(t.kind)}
+												) : (
+													<span className="text-muted-foreground">-</span>
+												)}
+											</TableCell>
+											<TableCell className="py-2">
+												{paymentIntentId ? (
+													<div className="flex items-center justify-start gap-3">
+														<Button
+															size="sm"
+															variant="link"
+															className="h-auto p-0 text-xs"
+															disabled={busy}
+															onClick={() => openDocument(t)}
+														>
+															Invoice
+														</Button>
+														<Button
+															size="sm"
+															variant="link"
+															className="h-auto p-0 text-xs"
+															disabled={busy || !refundEligibility.ok}
+															title={
+																refundEligibility.ok
+																	? "Refund this purchase"
+																	: refundEligibility.reason
+															}
+															onClick={() => {
+																setRefundDialogTx(t);
+																setRefundReason("no_comment");
+															}}
+														>
+															Refund
+														</Button>
 													</div>
-												</td>
+												) : (
+													<span className="text-xs text-muted-foreground">-</span>
+												)}
+											</TableCell>
+										</TableRow>
+									);
+								})
+							)}
+						</TableBody>
+					</Table>
+				</div>
+			</div>
 
-												{/* Status */}
-												<td className="py-3 pr-4">
-													<span
-														className={cn(
-															"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-															className
-														)}
-													>
-														{icon}
-														{label}
-													</span>
-												</td>
+			<div className="mt-3 flex items-center justify-center">
+				<Pagination>
+					<PaginationContent>
+						<PaginationItem>
+							<PaginationPrevious href={buildHref(Math.max(0, page - 1))} />
+						</PaginationItem>
 
-												{/* Amount */}
-												<td className="py-3 pr-4 text-right font-medium">
-													{amountPill(
-														t.amount_nanos ?? 0,
-														currency
-													)}
-												</td>
-
-												{/* Balance after + before->after tooltip */}
-												<td className="py-3 pl-4 text-right">
-													{after !== null ? (
-														<Tooltip>
-															<TooltipTrigger
-																asChild
-															>
-																<span className="cursor-default font-medium">
-																	{formatNanos(
-																		after,
-																		currency
-																	)}
-																</span>
-															</TooltipTrigger>
-															<TooltipContent className="flex items-center gap-2">
-																<Info className="h-4 w-4" />
-																<span className="tabular-nums">
-																	{before !==
-																	null
-																		? `${formatNanos(
-																				before,
-																				currency
-																		  )} -> ${formatNanos(
-																				after,
-																				currency
-																		  )}`
-																		: `Balance: ${formatNanos(
-																				after,
-																				currency
-																		  )}`}
-																</span>
-															</TooltipContent>
-														</Tooltip>
-													) : (
-														<span className="text-muted-foreground">
-															-
-														</span>
-													)}
-												</td>
-												<td className="py-3 pl-4">
-													{paymentIntentId ? (
-														<div className="flex items-center justify-end gap-2">
-															<Button
-																size="sm"
-																variant="outline"
-																disabled={busy}
-																onClick={() =>
-																	openDocument(
-																		t,
-																	)
-																}
-															>
-																Invoice
-															</Button>
-															<Button
-																size="sm"
-																variant="outline"
-																disabled={
-																	busy ||
-																	!refundEligibility.ok
-																}
-																title={
-																	refundEligibility.ok
-																		? "Refund this purchase"
-																		: refundEligibility.reason
-																}
-																onClick={() => {
-																	setRefundDialogTx(t);
-																	setRefundReason("no_comment");
-																}}
-															>
-																Refund
-															</Button>
-														</div>
-													) : (
-														<span className="text-xs text-muted-foreground float-right">
-															-
-														</span>
-													)}
-												</td>
-											</tr>
-										);
-									})}
-								</tbody>
-							</table>
-						</div>
-					)}
-
-					<div className="mt-6 flex items-center justify-center">
-						<Pagination>
-							<PaginationContent>
+						{totalPages <= 7 ? (
+							Array.from({ length: totalPages }).map((_, i) => (
+								<PaginationItem key={i}>
+									<PaginationLink href={buildHref(i)} isActive={page === i}>
+										{i + 1}
+									</PaginationLink>
+								</PaginationItem>
+							))
+						) : (
+							<>
 								<PaginationItem>
-									<PaginationPrevious
-										href={buildHref(Math.max(0, page - 1))}
-									/>
+									<PaginationLink href={buildHref(0)} isActive={page === 0}>
+										1
+									</PaginationLink>
 								</PaginationItem>
 
-								{totalPages <= 7 ? (
-									Array.from({ length: totalPages }).map(
-										(_, i) => (
-											<PaginationItem key={i}>
-												<PaginationLink
-													href={buildHref(i)}
-													isActive={page === i}
-												>
-													{i + 1}
-												</PaginationLink>
-											</PaginationItem>
-										)
+								{page > 2 && (
+									<PaginationItem>
+										<PaginationEllipsis />
+									</PaginationItem>
+								)}
+
+								{[Math.max(1, page - 1), page, Math.min(totalPages - 2, page + 1)]
+									.filter(
+										(v, idx, arr) =>
+											v >= 1 && v <= totalPages - 2 && arr.indexOf(v) === idx
 									)
-								) : (
-									<>
-										<PaginationItem>
-											<PaginationLink
-												href={buildHref(0)}
-												isActive={page === 0}
-											>
-												1
+									.map((p) => (
+										<PaginationItem key={p}>
+											<PaginationLink href={buildHref(p)} isActive={page === p}>
+												{p + 1}
 											</PaginationLink>
 										</PaginationItem>
+									))}
 
-										{page > 2 && (
-											<PaginationItem>
-												<PaginationEllipsis />
-											</PaginationItem>
-										)}
-
-										{[
-											Math.max(1, page - 1),
-											page,
-											Math.min(totalPages - 2, page + 1),
-										]
-											.filter(
-												(v, idx, arr) =>
-													v >= 1 &&
-													v <= totalPages - 2 &&
-													arr.indexOf(v) === idx
-											)
-											.map((p) => (
-												<PaginationItem key={p}>
-													<PaginationLink
-														href={buildHref(p)}
-														isActive={page === p}
-													>
-														{p + 1}
-													</PaginationLink>
-												</PaginationItem>
-											))}
-
-										{page < totalPages - 3 && (
-											<PaginationItem>
-												<PaginationEllipsis />
-											</PaginationItem>
-										)}
-
-										<PaginationItem>
-											<PaginationLink
-												href={buildHref(totalPages - 1)}
-												isActive={
-													page === totalPages - 1
-												}
-											>
-												{totalPages}
-											</PaginationLink>
-										</PaginationItem>
-									</>
+								{page < totalPages - 3 && (
+									<PaginationItem>
+										<PaginationEllipsis />
+									</PaginationItem>
 								)}
 
 								<PaginationItem>
-									<PaginationNext
-										href={buildHref(
-											Math.min(totalPages - 1, page + 1)
-										)}
-									/>
+									<PaginationLink
+										href={buildHref(totalPages - 1)}
+										isActive={page === totalPages - 1}
+									>
+										{totalPages}
+									</PaginationLink>
 								</PaginationItem>
-							</PaginationContent>
-						</Pagination>
-					</div>
-				</CardContent>
-			</Card>
+							</>
+						)}
+
+						<PaginationItem>
+							<PaginationNext href={buildHref(Math.min(totalPages - 1, page + 1))} />
+						</PaginationItem>
+					</PaginationContent>
+				</Pagination>
+			</div>
 
 			<Dialog
 				open={Boolean(refundDialogTx)}
