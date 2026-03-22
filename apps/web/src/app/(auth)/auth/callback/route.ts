@@ -22,6 +22,9 @@ function buildHashPreservingAuthErrorResponse(requestUrl: string) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redirecting...</title>
+    <noscript>
+      <meta http-equiv="refresh" content="0;url=${fallbackPath}" />
+    </noscript>
   </head>
   <body>
     <script>
@@ -44,6 +47,10 @@ function buildHashPreservingAuthErrorResponse(requestUrl: string) {
         }
       })();
     </script>
+    <noscript>
+      <p>Redirecting to the sign-in error page...</p>
+      <p><a href="${fallbackPath}">Continue</a></p>
+    </noscript>
   </body>
 </html>`
 
