@@ -10,9 +10,20 @@ type Check = {
 };
 
 type Spec = {
+  sdkKey: "ts" | "py" | "go" | "csharp" | "java" | "php" | "ruby";
   sdkLabel: string;
   packageJsonPath: string;
   checks: Check[];
+};
+
+const SDK_VERSION_OVERRIDE_ENV: Record<Spec["sdkKey"], string> = {
+  ts: "AI_STATS_SDK_VERSION_OVERRIDE_TS",
+  py: "AI_STATS_SDK_VERSION_OVERRIDE_PY",
+  go: "AI_STATS_SDK_VERSION_OVERRIDE_GO",
+  csharp: "AI_STATS_SDK_VERSION_OVERRIDE_CSHARP",
+  java: "AI_STATS_SDK_VERSION_OVERRIDE_JAVA",
+  php: "AI_STATS_SDK_VERSION_OVERRIDE_PHP",
+  ruby: "AI_STATS_SDK_VERSION_OVERRIDE_RUBY",
 };
 
 async function readJson<T>(filePath: string): Promise<T> {
@@ -39,9 +50,18 @@ function file(...segments: string[]): string {
   return path.join(ROOT, ...segments);
 }
 
+function resolveExpectedVersion(spec: Spec, packageVersion: string): string {
+  const overrideEnvVar = SDK_VERSION_OVERRIDE_ENV[spec.sdkKey];
+  const overrideVersion = process.env[overrideEnvVar]?.trim();
+  if (!overrideVersion) return packageVersion;
+  console.log(`[sdk-version-check] Using ${spec.sdkLabel} override from ${overrideEnvVar}: ${overrideVersion}`);
+  return overrideVersion;
+}
+
 async function main(): Promise<void> {
   const specs: Spec[] = [
     {
+      sdkKey: "ts",
       sdkLabel: "TypeScript",
       packageJsonPath: file("packages", "sdk", "sdk-ts", "package.json"),
       checks: [
@@ -58,6 +78,7 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "py",
       sdkLabel: "Python",
       packageJsonPath: file("packages", "sdk", "sdk-py", "package.json"),
       checks: [
@@ -69,6 +90,7 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "go",
       sdkLabel: "Go",
       packageJsonPath: file("packages", "sdk", "sdk-go", "package.json"),
       checks: [
@@ -80,6 +102,7 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "csharp",
       sdkLabel: "C#",
       packageJsonPath: file("packages", "sdk", "sdk-csharp", "package.json"),
       checks: [
@@ -91,6 +114,7 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "java",
       sdkLabel: "Java",
       packageJsonPath: file("packages", "sdk", "sdk-java", "package.json"),
       checks: [
@@ -102,6 +126,7 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "php",
       sdkLabel: "PHP",
       packageJsonPath: file("packages", "sdk", "sdk-php", "package.json"),
       checks: [
@@ -113,6 +138,7 @@ async function main(): Promise<void> {
       ],
     },
     {
+      sdkKey: "ruby",
       sdkLabel: "Ruby",
       packageJsonPath: file("packages", "sdk", "sdk-ruby", "package.json"),
       checks: [
@@ -132,7 +158,8 @@ async function main(): Promise<void> {
 
   const failures: string[] = [];
   for (const spec of specs) {
-    const expected = await readVersion(spec.packageJsonPath);
+    const packageVersion = await readVersion(spec.packageJsonPath);
+    const expected = resolveExpectedVersion(spec, packageVersion);
     for (const check of spec.checks) {
       const found = await readMatch(check.filePath, check.pattern);
       if (!found) {

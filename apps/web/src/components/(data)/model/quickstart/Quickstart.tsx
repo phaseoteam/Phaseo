@@ -46,6 +46,14 @@ const normalizeEndpointValue = (value: string | null | undefined) =>
 const endpointValueFromPath = (path: string) =>
         normalizeEndpointValue(path);
 
+function resolveSpeechVoiceForModel(model: string): string {
+        const provider = model.split("/")[0]?.toLowerCase();
+        if (provider === "xiaomi") return "mimo_default";
+        if (provider === "google" || provider === "google-ai-studio") return "Kore";
+        if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
+        return "alloy";
+}
+
 function buildExamplePayload(
         endpoint: string | null | undefined,
         model: string
@@ -113,9 +121,9 @@ function buildExamplePayload(
                 case "audio.speech":
                         return {
                                 model,
-                                voice: "alloy",
+                                voice: resolveSpeechVoiceForModel(model),
                                 input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are in your control.",
-                                format: "mp3",
+                                response_format: "mp3",
                         };
                 case "audio.realtime":
                         return {
@@ -462,16 +470,14 @@ export default function Quickstart({
                 ? "Send a streaming request"
                 : "Send a request";
         const curlFlags = shouldStream ? "-N -s" : "-s";
-        const curlQuickstart = `# 1) Set your key
-export AI_STATS_API_KEY="sk-live-***"
+const curlQuickstart = `# 1) Set your key
+export AI_STATS_API_KEY="aistats_***"
 
 # 2) ${curlCommandLabel}
 curl ${curlFlags} ${endpointUrl} \\
 -H "Authorization: Bearer $AI_STATS_API_KEY" \\
 -H "Content-Type: application/json" \\
---data-raw @- <<'JSON'
-${activePayloadJson}
-JSON`;
+-d '${activePayloadJson}'`;
 
 	const nodeQuickstart =
 		`// 1) Set your key
