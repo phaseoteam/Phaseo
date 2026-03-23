@@ -1,5 +1,16 @@
 # @ai-stats/devtools-viewer
 
+## 0.2.0
+
+### Minor Changes
+
+- [#201](https://github.com/AI-Stats/AI-Stats/pull/201) [`31a2268`](https://github.com/AI-Stats/AI-Stats/commit/31a226829939099401558cb206890d9fede74495) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Minor Devtools Viewer release with UX and debugging improvements:
+  - Persist selected generation in URL query state.
+  - Prefer gateway request IDs in viewer display and lookup handling.
+  - Improve response detail rendering with structured, readable output sections.
+  - Refine sidebar/header/status styling and refresh behavior.
+  - Add robust token/cost fallbacks from response usage/pricing breakdown when metadata is partial.
+
 ## 0.1.1
 
 ### Patch Changes
