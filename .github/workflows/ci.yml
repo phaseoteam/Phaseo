@@ -611,6 +611,10 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
+            - name: Ensure TS SDK publish
+              if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
+              run: node scripts/changesets/ensure-ts-sdk-published.mjs
+
             - name: Set up Python (for PyPI publish)
               if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
               uses: actions/setup-python@v6
