@@ -12,6 +12,10 @@ export const metadata = {
 	description: "Admin controls for promo credit grants.",
 };
 
+const BIGINT_ZERO = BigInt(0);
+const NANOS_PER_USD = BigInt(1_000_000_000);
+const NANOS_PER_CENT = BigInt(10_000_000);
+
 function formatUsdFromNanos(nanos: number | null | undefined): string {
 	const value = Number(nanos ?? 0);
 	if (!Number.isFinite(value)) return "$0.00";
@@ -31,14 +35,14 @@ function parseNanos(value: unknown): bigint {
 	if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
 		return BigInt(value.trim());
 	}
-	return 0n;
+	return BIGINT_ZERO;
 }
 
 function formatUsdFromNanosBigInt(nanos: bigint): string {
-	const isNegative = nanos < 0n;
+	const isNegative = nanos < BIGINT_ZERO;
 	const absolute = isNegative ? -nanos : nanos;
-	const dollars = absolute / 1_000_000_000n;
-	const cents = (absolute % 1_000_000_000n) / 10_000_000n;
+	const dollars = absolute / NANOS_PER_USD;
+	const cents = (absolute % NANOS_PER_USD) / NANOS_PER_CENT;
 	const sign = isNegative ? "-" : "";
 	return `${sign}$${dollars.toLocaleString("en-US")}.${cents
 		.toString()
@@ -67,7 +71,7 @@ export default async function InternalCreditsPage() {
 	}
 
 	const now = Date.now();
-	let outstandingNanos = 0n;
+	let outstandingNanos = BIGINT_ZERO;
 	for (const grant of grants ?? []) {
 		const isActive = Boolean(grant?.is_active);
 		if (!isActive) continue;
@@ -87,7 +91,7 @@ export default async function InternalCreditsPage() {
 		if (remainingRedemptions <= 0) continue;
 
 		const amountNanos = parseNanos(grant?.amount_nanos);
-		if (amountNanos <= 0n) continue;
+		if (amountNanos <= BIGINT_ZERO) continue;
 		outstandingNanos += amountNanos * BigInt(remainingRedemptions);
 	}
 

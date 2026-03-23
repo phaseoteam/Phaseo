@@ -30,6 +30,25 @@ function parseEventsRequest(req: Request): boolean {
 	return url.pathname.endsWith("/events");
 }
 
+function parseEventsCursor(req: Request): number {
+	const url = new URL(req.url);
+	const sinceParam = Number(url.searchParams.get("since"));
+	if (Number.isFinite(sinceParam) && sinceParam > 0) {
+		return Math.floor(sinceParam);
+	}
+
+	const lastEventId = Number(req.headers.get("last-event-id"));
+	if (Number.isFinite(lastEventId) && lastEventId > 0) {
+		return Math.floor(lastEventId);
+	}
+
+	return 0;
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function requireAuth(req: Request) {
 	const auth = await authenticate(req);
 	if (!auth.ok) {
@@ -187,16 +206,61 @@ async function handleCouncilRunEvents(req: Request) {
 		);
 	}
 
+	const workspaceId = authResult.auth.teamId;
+	const pollIntervalMs = 1_000;
+	const maxStreamDurationMs = 25_000;
+	const heartbeatIntervalMs = 10_000;
+	let cursor = parseEventsCursor(req);
+
 	const encoder = new TextEncoder();
 	const stream = new ReadableStream<Uint8Array>({
-		start(controller) {
-			for (const event of run.events) {
+		async start(controller) {
+			let lastHeartbeatAt = 0;
+			const startedAt = Date.now();
+			const terminalStatuses = new Set(["completed", "partial", "failed"]);
+
+			const emitEvent = (event: (typeof run.events)[number], index: number) => {
 				controller.enqueue(
 					encoder.encode(
-						`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`,
+						`id: ${index + 1}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`,
 					),
 				);
+			};
+
+			while (true) {
+				const latest = await getCouncilRun(runId);
+				if (!latest || latest.workspace_id !== workspaceId) {
+					controller.enqueue(
+						encoder.encode(
+							`event: run.failed\ndata: ${JSON.stringify({
+								type: "run.failed",
+								at: new Date().toISOString(),
+								data: { reason: "run_not_found" },
+							})}\n\n`,
+						),
+					);
+					break;
+				}
+
+				for (let index = cursor; index < latest.events.length; index += 1) {
+					emitEvent(latest.events[index], index);
+				}
+				cursor = Math.max(cursor, latest.events.length);
+
+				if (terminalStatuses.has(latest.status)) {
+					break;
+				}
+				if (Date.now() - startedAt >= maxStreamDurationMs) {
+					break;
+				}
+
+				if (Date.now() - lastHeartbeatAt >= heartbeatIntervalMs) {
+					controller.enqueue(encoder.encode(`: keep-alive\n\n`));
+					lastHeartbeatAt = Date.now();
+				}
+				await sleep(pollIntervalMs);
 			}
+
 			controller.close();
 		},
 	});

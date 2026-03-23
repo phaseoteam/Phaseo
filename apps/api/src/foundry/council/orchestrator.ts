@@ -38,6 +38,7 @@ type InvokeResult = {
 	latencyMs: number;
 	inputTokens: number | null;
 	outputTokens: number | null;
+	costUsd: number | null;
 	error: string | null;
 };
 
@@ -49,6 +50,7 @@ type AnalysisRunResult =
 			latencyMs: number;
 			inputTokens: number | null;
 			outputTokens: number | null;
+			costUsd: number | null;
 	  }
 	| {
 			ok: false;
@@ -57,6 +59,7 @@ type AnalysisRunResult =
 			latencyMs: number;
 			inputTokens: number | null;
 			outputTokens: number | null;
+			costUsd: number | null;
 	  };
 
 type AnalysisFailureResult = Extract<AnalysisRunResult, { ok: false }>;
@@ -126,6 +129,79 @@ function extractUsage(payload: any): {
 	};
 }
 
+function parseUsdValue(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return value;
+	}
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+	return null;
+}
+
+function parseNanosToUsd(value: unknown): number | null {
+	const nanos = parseUsdValue(value);
+	if (nanos === null) return null;
+	return nanos / 1_000_000_000;
+}
+
+function extractCostUsd(payload: any): number | null {
+	if (!payload || typeof payload !== "object") return null;
+	const usage = payload?.usage ?? payload?.response?.usage;
+	const directCandidates = [
+		usage?.cost_usd,
+		usage?.pricing?.total_usd,
+		usage?.pricing?.total_usd_str,
+		usage?.pricing_breakdown?.total_usd,
+		usage?.pricing_breakdown?.total_usd_str,
+		payload?.cost_usd,
+		payload?.pricing?.total_usd,
+		payload?.pricing?.total_usd_str,
+		payload?.pricing_breakdown?.total_usd,
+		payload?.pricing_breakdown?.total_usd_str,
+		payload?.meta?.pricing?.total_usd,
+		payload?.meta?.pricing?.total_usd_str,
+	];
+	for (const candidate of directCandidates) {
+		const parsed = parseUsdValue(candidate);
+		if (parsed !== null) return parsed;
+	}
+
+	const nanosCandidates = [
+		usage?.pricing?.total_nanos,
+		usage?.pricing_breakdown?.total_nanos,
+		payload?.pricing?.total_nanos,
+		payload?.pricing_breakdown?.total_nanos,
+		payload?.meta?.pricing?.total_nanos,
+	];
+	for (const candidate of nanosCandidates) {
+		const parsed = parseNanosToUsd(candidate);
+		if (parsed !== null) return parsed;
+	}
+	return null;
+}
+
+function sumCosts(values: Array<number | null>): number | null {
+	let total = 0;
+	for (const value of values) {
+		if (value === null) return null;
+		total += value;
+	}
+	return Number.isFinite(total) ? total : null;
+}
+
+function isBudgetExceeded(run: CouncilRunRecord): boolean {
+	const budget = run.config.max_budget_usd;
+	if (typeof budget !== "number" || !Number.isFinite(budget) || budget <= 0) {
+		return false;
+	}
+	if (typeof run.total_cost_usd !== "number" || !Number.isFinite(run.total_cost_usd)) {
+		return false;
+	}
+	return run.total_cost_usd > budget;
+}
+
 function createStep(args: {
 	stepType: CouncilRunStep["step_type"];
 	stepOrder: number;
@@ -134,6 +210,7 @@ function createStep(args: {
 	latencyMs: number | null;
 	inputTokens: number | null;
 	outputTokens: number | null;
+	costUsd: number | null;
 	error: string | null;
 	outputPreview: string | null;
 }): CouncilRunStep {
@@ -147,7 +224,7 @@ function createStep(args: {
 		latency_ms: args.latencyMs,
 		input_tokens: args.inputTokens,
 		output_tokens: args.outputTokens,
-		cost_usd: null,
+		cost_usd: args.costUsd,
 		error: args.error,
 		output_preview: args.outputPreview,
 		created_at: nowIso,
@@ -222,6 +299,7 @@ async function invokeResponses(args: {
 		const latencyMs = Date.now() - startedAt;
 		const usage = extractUsage(payload);
 		const text = extractText(payload);
+		const costUsd = extractCostUsd(payload);
 
 		if (!response.ok) {
 			const errorMessage =
@@ -237,6 +315,7 @@ async function invokeResponses(args: {
 				latencyMs,
 				inputTokens: usage.inputTokens,
 				outputTokens: usage.outputTokens,
+				costUsd,
 				error: errorMessage,
 			};
 		}
@@ -248,6 +327,7 @@ async function invokeResponses(args: {
 			latencyMs,
 			inputTokens: usage.inputTokens,
 			outputTokens: usage.outputTokens,
+			costUsd,
 			error: null,
 		};
 	} catch (error: any) {
@@ -258,6 +338,7 @@ async function invokeResponses(args: {
 			latencyMs: Date.now() - startedAt,
 			inputTokens: null,
 			outputTokens: null,
+			costUsd: null,
 			error: String(error?.message ?? error ?? "responses_execution_failed"),
 		};
 	}
@@ -318,6 +399,7 @@ async function runAnalysis(args: {
 				latencyMs: firstAttempt.latencyMs,
 				inputTokens: firstAttempt.inputTokens,
 				outputTokens: firstAttempt.outputTokens,
+				costUsd: firstAttempt.costUsd,
 			};
 		}
 	}
@@ -360,6 +442,7 @@ ${firstAttempt.text}`;
 					(firstAttempt.inputTokens ?? 0) + (repairAttempt.inputTokens ?? 0),
 				outputTokens:
 					(firstAttempt.outputTokens ?? 0) + (repairAttempt.outputTokens ?? 0),
+				costUsd: sumCosts([firstAttempt.costUsd, repairAttempt.costUsd]),
 			};
 		}
 	}
@@ -376,21 +459,30 @@ ${firstAttempt.text}`;
 			(firstAttempt.inputTokens ?? 0) + (repairAttempt.inputTokens ?? 0),
 		outputTokens:
 			(firstAttempt.outputTokens ?? 0) + (repairAttempt.outputTokens ?? 0),
+		costUsd: sumCosts([firstAttempt.costUsd, repairAttempt.costUsd]),
 	};
 }
 
 function recomputeTotals(run: CouncilRunRecord): CouncilRunRecord {
 	let totalInput = 0;
 	let totalOutput = 0;
+	let totalCost = 0;
+	let hasUnknownCost = false;
 	for (const step of run.steps) {
 		totalInput += step.input_tokens ?? 0;
 		totalOutput += step.output_tokens ?? 0;
+		if (typeof step.cost_usd === "number" && Number.isFinite(step.cost_usd)) {
+			totalCost += step.cost_usd;
+		} else {
+			hasUnknownCost = true;
+		}
 	}
 	return {
 		...run,
 		total_input_tokens: totalInput,
 		total_output_tokens: totalOutput,
-		total_cost_usd: null,
+		total_cost_usd:
+			!hasUnknownCost && Number.isFinite(totalCost) ? totalCost : null,
 	};
 }
 
@@ -451,6 +543,7 @@ export async function runCouncilOrchestration(args: {
 					latency_ms: result.latencyMs,
 					input_tokens: result.inputTokens,
 					output_tokens: result.outputTokens,
+					cost_usd: result.costUsd,
 					error: result.error,
 				};
 
@@ -468,6 +561,7 @@ export async function runCouncilOrchestration(args: {
 				latencyMs: source.latency_ms,
 				inputTokens: source.input_tokens,
 				outputTokens: source.output_tokens,
+				costUsd: source.cost_usd,
 				error: source.error,
 				outputPreview: previewText(source.output_text),
 			}),
@@ -480,6 +574,22 @@ export async function runCouncilOrchestration(args: {
 			updated_at: new Date().toISOString(),
 		});
 		await putCouncilRun(run);
+
+		if (isBudgetExceeded(run)) {
+			run = await setRunStatus(run, "failed");
+			run = await appendRunEvent(run, "run.failed", {
+				reason: "budget_exceeded_after_sources",
+				total_cost_usd: run.total_cost_usd,
+				max_budget_usd: run.config.max_budget_usd,
+			});
+			run = {
+				...run,
+				error: "budget_exceeded",
+				updated_at: new Date().toISOString(),
+			};
+			await putCouncilRun(run);
+			return;
+		}
 
 		for (const source of sourceRuns) {
 			run = await appendRunEvent(
@@ -532,6 +642,7 @@ export async function runCouncilOrchestration(args: {
 			latencyMs: analysisResult.latencyMs,
 			inputTokens: analysisResult.inputTokens,
 			outputTokens: analysisResult.outputTokens,
+			costUsd: analysisResult.costUsd,
 			error: analysisErrorForStep,
 			outputPreview: previewText(analysisResult.rawText),
 		});
@@ -544,6 +655,22 @@ export async function runCouncilOrchestration(args: {
 			updated_at: new Date().toISOString(),
 		});
 		await putCouncilRun(run);
+
+		if (isBudgetExceeded(run)) {
+			run = await setRunStatus(run, "partial");
+			run = await appendRunEvent(run, "run.partial", {
+				reason: "budget_exceeded_before_fusion",
+				total_cost_usd: run.total_cost_usd,
+				max_budget_usd: run.config.max_budget_usd,
+			});
+			run = {
+				...run,
+				error: "budget_exceeded",
+				updated_at: new Date().toISOString(),
+			};
+			await putCouncilRun(run);
+			return;
+		}
 
 		if (isAnalysisFailure(analysisResult)) {
 			const analysisError = analysisResult.error;
@@ -606,6 +733,7 @@ export async function runCouncilOrchestration(args: {
 			latencyMs: fusionResult.latencyMs,
 			inputTokens: fusionResult.inputTokens,
 			outputTokens: fusionResult.outputTokens,
+			costUsd: fusionResult.costUsd,
 			error: fusionResult.error,
 			outputPreview: previewText(fusionResult.text),
 		});

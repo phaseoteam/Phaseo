@@ -159,6 +159,22 @@ function normalizeImageMimeType(value: string | undefined | null): string {
 	return normalized;
 }
 
+function hostIsDomainOrSubdomain(hostname: string, domain: string): boolean {
+	const host = hostname.toLowerCase();
+	const normalizedDomain = domain.toLowerCase();
+	return host === normalizedDomain || host.endsWith(`.${normalizedDomain}`);
+}
+
+function isGoogleSearchDomain(hostname: string): boolean {
+	const host = hostname.toLowerCase();
+	if (hostIsDomainOrSubdomain(host, "google.com")) return true;
+	return /^google\.[a-z.]+$/.test(host) || /^www\.google\.[a-z.]+$/.test(host);
+}
+
+function isYandexDomain(hostname: string): boolean {
+	return /(^|\.)yandex\./.test(hostname.toLowerCase());
+}
+
 function isLikelyImageSearchPage(value: string): boolean {
 	const trimmed = value.trim();
 	if (!trimmed) return false;
@@ -168,17 +184,23 @@ function isLikelyImageSearchPage(value: string): boolean {
 		const parsed = new URL(trimmed);
 		const host = parsed.hostname.toLowerCase();
 		const pathname = parsed.pathname.toLowerCase();
-		if (host.includes("bing.com") && pathname.startsWith("/images/search")) {
+		if (
+			hostIsDomainOrSubdomain(host, "bing.com") &&
+			pathname.startsWith("/images/search")
+		) {
 			return true;
 		}
-		if (host.includes("google.") && (pathname.startsWith("/imgres") || pathname.startsWith("/search"))) {
+		if (
+			isGoogleSearchDomain(host) &&
+			(pathname.startsWith("/imgres") || pathname.startsWith("/search"))
+		) {
 			return true;
 		}
-		if (host.includes("duckduckgo.com") && pathname.startsWith("/")) {
+		if (hostIsDomainOrSubdomain(host, "duckduckgo.com") && pathname.startsWith("/")) {
 			const ia = parsed.searchParams.get("ia")?.toLowerCase();
 			if (ia === "images") return true;
 		}
-		if (host.includes("yandex.") && pathname.includes("/images/")) {
+		if (isYandexDomain(host) && pathname.includes("/images/")) {
 			return true;
 		}
 		return false;

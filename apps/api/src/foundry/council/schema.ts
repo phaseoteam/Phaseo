@@ -11,7 +11,7 @@ export const CouncilReasoningEffortSchema = z.enum([
 ]);
 
 export const CouncilRunConfigSchema = z.object({
-	source_models: z.array(z.string().min(1)).min(1).max(4),
+	source_models: z.array(z.string().min(1)).min(2).max(4),
 	analyser_model: z.string().min(1),
 	fuser_model: z.string().min(1),
 	grounding: z.boolean().optional().default(false),

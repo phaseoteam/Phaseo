@@ -103,7 +103,6 @@ class Client
 			$candidates[] = $sslCertFile;
 		}
 
-		// Package-level fallback for environments without a configured trust store.
 		$candidates[] = dirname(__DIR__, 2) . "/certs/cacert.pem";
 
 		foreach ($candidates as $candidate) {
