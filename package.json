@@ -90,9 +90,10 @@
 		"changeset:publish": "node scripts/changesets/publish-with-retry.mjs",
 		"sdk-py:sync-version": "tsx scripts/update-pyproject-version.ts",
 		"sdk:sync-language-manifests": "tsx scripts/update-sdk-language-manifest-versions.ts",
+		"sdk:check-version-literals": "tsx scripts/check-sdk-version-literals.ts",
 		"release-from-changelogs": "tsx scripts/changesets/create-github-releases-from-changelogs.ts",
 		"release:weekly-rollup": "tsx scripts/changesets/create-weekly-rollup-release.ts",
-		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && (cd apps/web && pnpm run test) && pnpm run test"
+		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && pnpm run sdk:check-version-literals && (cd apps/web && pnpm run test) && pnpm run test"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",

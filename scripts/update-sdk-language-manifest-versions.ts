@@ -69,19 +69,159 @@ async function syncRubyVersion(version: string): Promise<void> {
   }
 }
 
+async function syncTypeScriptTelemetryVersion(version: string): Promise<void> {
+  const sdkRoot = path.join(ROOT, "packages", "sdk", "sdk-ts", "src");
+  const indexPath = path.join(sdkRoot, "index.ts");
+  const telemetryPath = path.join(sdkRoot, "devtools", "telemetry.ts");
+
+  const indexUpdated = await replaceInFile(
+    indexPath,
+    /new TelemetryCapture\(opts\.devtools,\s*"([^"]+)"\)/m,
+    () => `new TelemetryCapture(opts.devtools, "${version}")`,
+  );
+  const telemetryUpdated = await replaceInFile(
+    telemetryPath,
+    /constructor\(config\?: Partial<DevToolsConfig>, sdkVersion: string = "([^"]+)"\)/m,
+    () => `constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "${version}")`,
+  );
+
+  if (indexUpdated || telemetryUpdated) {
+    console.log(`[sdk-sync] Updated TypeScript telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] TypeScript telemetry version already up to date");
+  }
+}
+
+async function syncPythonTelemetryVersion(version: string): Promise<void> {
+  const recorderPath = path.join(ROOT, "packages", "sdk", "sdk-py", "src", "ai_stats_devtools", "recorder.py");
+  const updated = await replaceInFile(
+    recorderPath,
+    /^SDK_VERSION\s*=\s*"[^"]+"/m,
+    () => `SDK_VERSION = "${version}"`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated Python telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] Python telemetry version already up to date");
+  }
+}
+
+async function syncGoTelemetryVersion(version: string): Promise<void> {
+  const devtoolsPath = path.join(ROOT, "packages", "sdk", "sdk-go", "devtools.go");
+  const updated = await replaceInFile(
+    devtoolsPath,
+    /const goSDKVersion = "([^"]+)"/m,
+    () => `const goSDKVersion = "${version}"`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated Go telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] Go telemetry version already up to date");
+  }
+}
+
+async function syncCsharpTelemetryVersion(version: string): Promise<void> {
+  const clientPath = path.join(ROOT, "packages", "sdk", "sdk-csharp", "Client.cs");
+  const updated = await replaceInFile(
+    clientPath,
+    /new TelemetryRecorder\(devtools,\s*"([^"]+)"\)/m,
+    () => `new TelemetryRecorder(devtools, "${version}")`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated C# telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] C# telemetry version already up to date");
+  }
+}
+
+async function syncJavaTelemetryVersion(version: string): Promise<void> {
+  const aiStatsPath = path.join(ROOT, "packages", "sdk", "sdk-java", "src", "ai", "stats", "sdk", "AIStats.java");
+  const updated = await replaceInFile(
+    aiStatsPath,
+    /new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/m,
+    () => `new TelemetryRecorder(devtoolsConfig, "${version}")`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated Java telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] Java telemetry version already up to date");
+  }
+}
+
+async function syncPhpTelemetryVersion(version: string): Promise<void> {
+  const indexPath = path.join(ROOT, "packages", "sdk", "sdk-php", "src", "index.php");
+  const updated = await replaceInFile(
+    indexPath,
+    /new TelemetryRecorder\(\$devtools,\s*"([^"]+)"\)/m,
+    () => `new TelemetryRecorder($devtools, "${version}")`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated PHP telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] PHP telemetry version already up to date");
+  }
+}
+
+async function syncRubyTelemetryVersion(version: string): Promise<void> {
+  const indexPath = path.join(ROOT, "packages", "sdk", "sdk-ruby", "lib", "index.rb");
+  const constructorUpdated = await replaceInFile(
+    indexPath,
+    /TelemetryRecorder\.new\(devtools,\s*"([^"]+)"\)/m,
+    () => `TelemetryRecorder.new(devtools, "${version}")`,
+  );
+  const initializerUpdated = await replaceInFile(
+    indexPath,
+    /def initialize\(config = nil, sdk_version = "([^"]+)"\)/m,
+    () => `def initialize(config = nil, sdk_version = "${version}")`,
+  );
+  if (constructorUpdated || initializerUpdated) {
+    console.log(`[sdk-sync] Updated Ruby telemetry version to ${version}`);
+  } else {
+    console.log("[sdk-sync] Ruby telemetry version already up to date");
+  }
+}
+
 async function syncAll(): Promise<void> {
   const syncConfigs: NpmPackageVersionConfig[] = [
     {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-ts", "package.json"),
+      apply: syncTypeScriptTelemetryVersion,
+    },
+    {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-py", "package.json"),
+      apply: syncPythonTelemetryVersion,
+    },
+    {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-go", "package.json"),
+      apply: syncGoTelemetryVersion,
+    },
+    {
       packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-csharp", "package.json"),
       apply: syncCsharpVersion,
+    },
+    {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-csharp", "package.json"),
+      apply: syncCsharpTelemetryVersion,
     },
     {
       packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-java", "package.json"),
       apply: syncJavaVersion,
     },
     {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-java", "package.json"),
+      apply: syncJavaTelemetryVersion,
+    },
+    {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-php", "package.json"),
+      apply: syncPhpTelemetryVersion,
+    },
+    {
       packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-ruby", "package.json"),
       apply: syncRubyVersion,
+    },
+    {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-ruby", "package.json"),
+      apply: syncRubyTelemetryVersion,
     },
   ];
 
