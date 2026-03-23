@@ -72,6 +72,15 @@ function hasManualChangeset(changesetDir) {
     );
 }
 
+function headCommitSubject(head) {
+  return git(`log -1 --pretty=%s ${head}`);
+}
+
+function isReleaseVersionCommit(head) {
+  const subject = headCommitSubject(head);
+  return /^Version Packages(?:\s+\(#\d+\))?$/.test(subject);
+}
+
 function createAutoChangeset(changesetDir, head) {
   const shortSha = git(`rev-parse --short ${head}`);
   const filename = `auto-sdk-release-${shortSha}.md`;
@@ -101,6 +110,11 @@ function main() {
   const changesetDir = path.resolve(".changeset");
   const { base, head } = findRange();
   console.log(`[changesets] inspecting diff range ${base}..${head}`);
+
+  if (isReleaseVersionCommit(head)) {
+    console.log("[changesets] release-version commit detected; skipping auto changeset");
+    return;
+  }
 
   if (!hasRelevantChanges(base, head)) {
     console.log("[changesets] no SDK/OpenAPI changes detected; skipping auto changeset");
