@@ -72,13 +72,23 @@ function hasManualChangeset(changesetDir) {
     );
 }
 
-function headCommitSubject(head) {
-  return git(`log -1 --pretty=%s ${head}`);
-}
-
 function isReleaseVersionCommit(head) {
-  const subject = headCommitSubject(head);
-  return /^Version Packages(?:\s+\(#\d+\))?$/.test(subject);
+  const message = git(`log -1 --pretty=%B ${head}`);
+  const lines = message
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return false;
+
+  const versionTitleRe = /^Version Packages(?:\s+\(#\d+\))?$/;
+  if (versionTitleRe.test(lines[0])) return true;
+
+  if (/^Merge pull request #\d+ /.test(lines[0]) && lines[1] && versionTitleRe.test(lines[1])) {
+    return true;
+  }
+
+  return false;
 }
 
 function createAutoChangeset(changesetDir, head) {
