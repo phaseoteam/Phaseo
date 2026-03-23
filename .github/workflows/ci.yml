@@ -612,13 +612,13 @@ jobs:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
             - name: Set up Python (for PyPI publish)
-              if: github.ref == 'refs/heads/main'
+              if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
               uses: actions/setup-python@v6
               with:
                   python-version: 3.12
 
             - name: Build Python SDK
-              if: github.ref == 'refs/heads/main'
+              if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
               working-directory: packages/sdk/sdk-py
               run: |
                   python -m pip install --upgrade pip
@@ -626,7 +626,7 @@ jobs:
                   python -m build
 
             - name: Publish Python SDK to PyPI (Trusted Publishing)
-              if: github.ref == 'refs/heads/main'
+              if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
               uses: pypa/gh-action-pypi-publish@release/v1
               with:
                   packages-dir: packages/sdk/sdk-py/dist

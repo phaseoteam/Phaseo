@@ -1,5 +1,13 @@
 # @ai-stats/py-sdk
 
+## 1.1.1
+
+### Patch Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes.
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
 ## 1.1.0
 
 ### Minor Changes
