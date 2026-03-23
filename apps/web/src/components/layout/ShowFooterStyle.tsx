@@ -1,9 +1,12 @@
+"use client";
+
+import { useEffect } from "react";
+import { registerShowFooter } from "@/components/layout/footerVisibility";
+
 export default function ShowFooterStyle() {
-	return (
-		<style>{`
-			#dashboard-shell > footer {
-				display: block !important;
-			}
-		`}</style>
-	);
+	useEffect(() => {
+		return registerShowFooter();
+	}, []);
+
+	return null;
 }

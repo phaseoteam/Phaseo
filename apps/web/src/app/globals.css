@@ -265,7 +265,7 @@
 		@apply bg-background text-foreground;
 	}
 
-	body[data-hide-footer="true"] footer {
+	body[data-hide-footer="true"] #dashboard-shell > footer {
 		display: none !important;
 	}
 }

@@ -1,9 +1,12 @@
+"use client";
+
+import { useEffect } from "react";
+import { registerHideFooter } from "@/components/layout/footerVisibility";
+
 export default function NoFooterStyle() {
-	return (
-		<style>{`
-			#dashboard-shell > footer {
-				display: none !important;
-			}
-		`}</style>
-	);
+	useEffect(() => {
+		return registerHideFooter();
+	}, []);
+
+	return null;
 }
