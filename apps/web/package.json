@@ -81,7 +81,7 @@
 		"echarts": "^6.0.0",
 		"echarts-for-react": "^3.0.2",
 		"embla-carousel-react": "^8.6.0",
-		"fast-xml-parser": "^5.5.6",
+		"fast-xml-parser": "^5.5.8",
 		"fuse.js": "^7.1.0",
 		"glicko2": "^1.2.1",
 		"google-play-scraper": "^10.0.1",
