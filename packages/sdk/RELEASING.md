@@ -69,7 +69,8 @@ General policy:
 
 - C#: `.github/workflows/publish-sdk-csharp.yml`
   - Publishes `.nupkg` and `.snupkg` to NuGet
-  - Required secret: `NUGET_API_KEY`
+  - Uses NuGet trusted publishing (OIDC), no API key secret required
+  - Optional repo variable: `NUGET_TRUSTED_PUBLISHING_USER` (defaults to repo owner)
 
 - Java: `.github/workflows/publish-sdk-java.yml`
   - Builds/signs and deploys to Maven Central
@@ -80,11 +81,18 @@ General policy:
     - `MAVEN_GPG_PASSPHRASE`
 
 - PHP: `.github/workflows/publish-sdk-php.yml`
-  - Publishes by creating/pushing tag `sdk-php/vX.Y.Z`
-  - Triggers Packagist update
+  - Publishes by creating/pushing monorepo tag `sdk-php/vX.Y.Z`
+  - Syncs `packages/sdk/sdk-php` to split repo main and pushes split tag `vX.Y.Z`
+  - Triggers Packagist update against the split repo URL
   - Required secrets:
     - `PACKAGIST_USERNAME`
-    - `PACKAGIST_TOKEN`
+    - `PACKAGIST_MAIN_TOKEN`
+    - `PHP_SDK_SPLIT_REPO_TOKEN`
+  - Optional repo variable:
+    - `PHP_SDK_SPLIT_REPO` (defaults to `AI-Stats/ai-stats-php-sdk`)
+
+- PHP split sync automation: `.github/workflows/sync-sdk-php-split.yml`
+  - Keeps split repo main in sync from monorepo path `packages/sdk/sdk-php/**` on pushes to main
 
 - Ruby: `.github/workflows/publish-sdk-ruby.yml`
   - Builds gem, creates/pushes tag `sdk-ruby/vX.Y.Z`, pushes to RubyGems

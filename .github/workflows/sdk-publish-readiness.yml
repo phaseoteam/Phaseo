@@ -40,14 +40,14 @@ jobs:
           dotnet test packages/sdk/sdk-csharp/tests/AIStats.Sdk.Tests/AIStats.Sdk.Tests.csproj -c Release
           dotnet build packages/sdk/sdk-csharp/AIStats.Sdk.csproj -c Release
           dotnet pack packages/sdk/sdk-csharp/AIStats.Sdk.csproj -c Release -o artifacts/csharp
-      - name: Check NuGet secret
+      - name: Check NuGet trusted publishing user (optional override)
         if: inputs.checkSecrets
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         shell: bash
         run: |
           set -euo pipefail
-          [ -n "${NUGET_API_KEY:-}" ] || { echo "::error::Missing NUGET_API_KEY"; exit 1; }
+          if [ -z "${{ vars.NUGET_TRUSTED_PUBLISHING_USER }}" ]; then
+            echo "NUGET_TRUSTED_PUBLISHING_USER is not set; publish workflow will fall back to github.repository_owner."
+          fi
 
   java:
     name: Java readiness
@@ -102,12 +102,14 @@ jobs:
         if: inputs.checkSecrets
         env:
           PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
-          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_MAIN_TOKEN: ${{ secrets.PACKAGIST_MAIN_TOKEN }}
+          PHP_SDK_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SDK_SPLIT_REPO_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           [ -n "${PACKAGIST_USERNAME:-}" ] || { echo "::error::Missing PACKAGIST_USERNAME"; exit 1; }
-          [ -n "${PACKAGIST_TOKEN:-}" ] || { echo "::error::Missing PACKAGIST_TOKEN"; exit 1; }
+          [ -n "${PACKAGIST_MAIN_TOKEN:-}" ] || { echo "::error::Missing PACKAGIST_MAIN_TOKEN"; exit 1; }
+          [ -n "${PHP_SDK_SPLIT_REPO_TOKEN:-}" ] || { echo "::error::Missing PHP_SDK_SPLIT_REPO_TOKEN"; exit 1; }
 
   ruby:
     name: Ruby readiness

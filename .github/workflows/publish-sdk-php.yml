@@ -61,21 +61,59 @@ jobs:
           fi
           if git ls-remote --tags origin "$tag" | grep -q "$tag"; then
             echo "Tag already exists on origin: $tag"
-            exit 0
+          else
+            git push origin "$tag"
           fi
-          git push origin "$tag"
+
+      - name: Sync PHP split repo and publish split tag
+        id: split_repo
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          PHP_SDK_SPLIT_REPO: ${{ vars.PHP_SDK_SPLIT_REPO }}
+          PHP_SDK_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SDK_SPLIT_REPO_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${PHP_SDK_SPLIT_REPO_TOKEN:-}" ]; then
+            echo "::error::Missing PHP_SDK_SPLIT_REPO_TOKEN secret."
+            exit 1
+          fi
+
+          split_repo="${PHP_SDK_SPLIT_REPO:-AI-Stats/ai-stats-php-sdk}"
+          split_repo_url="https://github.com/${split_repo}"
+          split_remote_url="https://x-access-token:${PHP_SDK_SPLIT_REPO_TOKEN}@github.com/${split_repo}.git"
+
+          git remote add split "$split_remote_url"
+
+          split_commit="$(git subtree split --prefix=packages/sdk/sdk-php HEAD)"
+          git push --force split "${split_commit}:main"
+
+          split_tag="v${VERSION}"
+          if git ls-remote --tags split "refs/tags/${split_tag}" | grep -q "refs/tags/${split_tag}$"; then
+            echo "Split repo tag already exists: ${split_tag}"
+          else
+            git push split "${split_commit}:refs/tags/${split_tag}"
+            echo "Published split repo tag: ${split_tag}"
+          fi
+
+          echo "repo_url=${split_repo_url}" >> "$GITHUB_OUTPUT"
 
       - name: Notify Packagist
         env:
           PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
-          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_MAIN_TOKEN: ${{ secrets.PACKAGIST_MAIN_TOKEN }}
+          PACKAGIST_REPOSITORY_URL: ${{ steps.split_repo.outputs.repo_url }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${PACKAGIST_USERNAME:-}" ] || [ -z "${PACKAGIST_TOKEN:-}" ]; then
-            echo "::error::Missing PACKAGIST_USERNAME or PACKAGIST_TOKEN."
+          if [ -z "${PACKAGIST_USERNAME:-}" ] || [ -z "${PACKAGIST_MAIN_TOKEN:-}" ]; then
+            echo "::error::Missing PACKAGIST_USERNAME or PACKAGIST_MAIN_TOKEN."
             exit 1
           fi
-          curl -fsS -X POST "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+          if [ -z "${PACKAGIST_REPOSITORY_URL:-}" ]; then
+            echo "::error::Missing split repository URL output."
+            exit 1
+          fi
+          curl -fsS -X POST "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_MAIN_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '{"repository":{"url":"https://github.com/AI-Stats/AI-Stats"}}'
+            -d "{\"repository\":{\"url\":\"${PACKAGIST_REPOSITORY_URL}\"}}"
