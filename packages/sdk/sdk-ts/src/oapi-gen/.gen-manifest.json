@@ -62,6 +62,7 @@
     "models/MessageContentPart.ts",
     "models/Model.ts",
     "models/ModelId.ts",
+    "models/ModelLifecycle.ts",
     "models/ModelsPrivacyScopeNotImplementedResponse.ts",
     "models/ModerationCategories.ts",
     "models/ModerationCategoryScores.ts",

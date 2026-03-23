@@ -10,7 +10,7 @@ import {
 	SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Suspense } from "react";
-import HideGlobalFooter from "@/components/layout/HideGlobalFooter";
+import NoFooterStyle from "@/components/layout/NoFooterStyle";
 
 export const metadata = {
 	title: "Settings",
@@ -55,7 +55,7 @@ export default async function SettingsLayout({
 
 	return (
 		<>
-			<HideGlobalFooter />
+			<NoFooterStyle />
 
 			<SidebarProvider defaultOpen className="flex flex-1 min-h-0">
 				<Sidebar

@@ -12,17 +12,17 @@ abort("Set #{api_key_env}") unless api_key
 
 base_url = (ENV[base_url_env] || manifest["defaultBaseUrl"]).sub(%r{/+$}, "")
 
-client = AIStatsSdk::Client.new(api_key: api_key, base_path: base_url)
+client = AIStatsSdk::AIStats.new(api_key: api_key, base_path: base_url)
 
 health = client.health
-raise "health status missing" unless health.respond_to?(:status) && health.status
+raise "health status missing" unless health.is_a?(Hash) && health["status"]
 
 models = client.list_models
-raise "models list empty" unless models.respond_to?(:models) && models.models&.any?
+raise "models list empty" unless models.is_a?(Hash) && models["models"].is_a?(Array) && !models["models"].empty?
 
 chat_payload = manifest.dig("operations", "chat", "body")
 chat = client.generate_text(chat_payload)
-raise "chat choices empty" unless chat.respond_to?(:choices) && chat.choices&.any?
+raise "chat choices empty" unless chat.is_a?(Hash) && chat["choices"].is_a?(Array) && !chat["choices"].empty?
 
 unauth = manifest.dig("operations", "unauthorized")
 unauth_uri = URI("#{base_url}#{unauth["path"]}")

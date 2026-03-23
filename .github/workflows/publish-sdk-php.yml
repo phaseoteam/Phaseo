@@ -1,0 +1,81 @@
+name: Publish PHP SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to publish (defaults to packages/sdk/sdk-php/package.json version)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish-php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="$(node -p "require('./packages/sdk/sdk-php/package.json').version")"
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate composer package
+        run: |
+          php -v
+          php -r "json_decode(file_get_contents('packages/sdk/sdk-php/composer.json')); if (json_last_error()) { fwrite(STDERR, 'Invalid composer.json'.PHP_EOL); exit(1);} "
+          php packages/sdk/sdk-php/tests/lifecycle_test.php
+
+      - name: Create and push SDK tag
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="sdk-php/v${VERSION}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag already exists locally: $tag"
+          else
+            git tag -a "$tag" -m "PHP SDK v${VERSION}"
+          fi
+          if git ls-remote --tags origin "$tag" | grep -q "$tag"; then
+            echo "Tag already exists on origin: $tag"
+            exit 0
+          fi
+          git push origin "$tag"
+
+      - name: Notify Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${PACKAGIST_USERNAME:-}" ] || [ -z "${PACKAGIST_TOKEN:-}" ]; then
+            echo "::error::Missing PACKAGIST_USERNAME or PACKAGIST_TOKEN."
+            exit 1
+          fi
+          curl -fsS -X POST "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"repository":{"url":"https://github.com/AI-Stats/AI-Stats"}}'

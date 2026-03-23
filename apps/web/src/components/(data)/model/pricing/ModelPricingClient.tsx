@@ -198,6 +198,7 @@ export default function ModelPricingClient({
         }
         return Array.from(values).sort((a, b) => a.localeCompare(b));
     }, [providers, plan]);
+    const hasQuantizationOptions = quantizationOptions.length > 0;
 
     const sortedProviders = useMemo(() => {
         const list = [...providers];
@@ -520,20 +521,20 @@ export default function ModelPricingClient({
 
             {pricingView === "api" ? (
                 <section className="space-y-4">
-                    <div className="rounded-xl border border-zinc-200/80 bg-background p-3 dark:border-zinc-800">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex flex-wrap items-center gap-2.5">
-                                {availablePlans.length === 1 ? (
-                                    <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium dark:border-zinc-800">
-                                        {formatPlanLabel(availablePlans[0])} Tier
-                                    </span>
-                                ) : (
-                                    <PricingPlanSelect
-                                        value={plan}
-                                        onChange={setPlan}
-                                        plans={availablePlans}
-                                    />
-                                )}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {availablePlans.length === 1 ? (
+                                <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium dark:border-zinc-800">
+                                    {formatPlanLabel(availablePlans[0])} Tier
+                                </span>
+                            ) : (
+                                <PricingPlanSelect
+                                    value={plan}
+                                    onChange={setPlan}
+                                    plans={availablePlans}
+                                />
+                            )}
+                            {hasQuantizationOptions ? (
                                 <Select
                                     value={quantizationFilter}
                                     onValueChange={onQuantizationFilterChange}
@@ -554,50 +555,50 @@ export default function ModelPricingClient({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                {sort !== "default" ? (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    onClick={onToggleSortDirection}
-                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-background text-muted-foreground transition-colors hover:text-foreground dark:border-zinc-800"
-                                                    aria-label={
-                                                        sortDirection === "asc"
-                                                            ? "Sorted ascending, click to sort descending"
-                                                            : "Sorted descending, click to sort ascending"
-                                                    }
-                                                >
-                                                    {sortDirection === "asc" ? (
-                                                        <ArrowUp className="h-3.5 w-3.5" />
-                                                    ) : (
-                                                        <ArrowDown className="h-3.5 w-3.5" />
-                                                    )}
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                {sortDirection === "asc"
-                                                    ? "Ascending"
-                                                    : "Descending"}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                ) : null}
-                                <Select value={sort} onValueChange={onSortChange}>
-                                    <SelectTrigger className="h-9 w-[170px] bg-background">
-                                        <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="default">Default</SelectItem>
-                                        <SelectItem value="pricing">Price</SelectItem>
-                                        <SelectItem value="throughput">Throughput</SelectItem>
-                                        <SelectItem value="latency">Latency</SelectItem>
-                                        <SelectItem value="uptime">Uptime</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            ) : null}
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                            {sort !== "default" ? (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={onToggleSortDirection}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-background text-muted-foreground transition-colors hover:text-foreground dark:border-zinc-800"
+                                                aria-label={
+                                                    sortDirection === "asc"
+                                                        ? "Sorted ascending, click to sort descending"
+                                                        : "Sorted descending, click to sort ascending"
+                                                }
+                                            >
+                                                {sortDirection === "asc" ? (
+                                                    <ArrowUp className="h-3.5 w-3.5" />
+                                                ) : (
+                                                    <ArrowDown className="h-3.5 w-3.5" />
+                                                )}
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {sortDirection === "asc"
+                                                ? "Ascending"
+                                                : "Descending"}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            ) : null}
+                            <Select value={sort} onValueChange={onSortChange}>
+                                <SelectTrigger className="h-9 w-[170px] bg-background">
+                                    <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="default">Default</SelectItem>
+                                    <SelectItem value="pricing">Price</SelectItem>
+                                    <SelectItem value="throughput">Throughput</SelectItem>
+                                    <SelectItem value="latency">Latency</SelectItem>
+                                    <SelectItem value="uptime">Uptime</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     {filteredProviders.length > 0 ? (

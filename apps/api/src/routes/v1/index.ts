@@ -8,6 +8,7 @@ import type { Env } from "@/runtime/types";
 
 import { inferenceRouter } from "./data";
 import { platformRouter } from "./control";
+import { experimentsRoutes } from "./experiments";
 
 export const v1Router = new Hono<Env>();
 
@@ -38,6 +39,7 @@ v1Router.use(
 
 v1Router.route("/", inferenceRouter);
 v1Router.route("/", platformRouter);
+v1Router.route("/", experimentsRoutes);
 
 
 

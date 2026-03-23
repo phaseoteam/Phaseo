@@ -29,7 +29,32 @@ if (!operation) {
 	throw new Error(`Unknown smoke operation: ${operationKey}`);
 }
 
-const payload = operation.body;
+const payload = JSON.parse(JSON.stringify(operation.body));
+const smokeModel = process.env.AI_STATS_SMOKE_MODEL;
+const smokeInput = process.env.AI_STATS_SMOKE_INPUT;
+const smokeMaxOutputTokens = process.env.AI_STATS_SMOKE_MAX_OUTPUT_TOKENS;
+if (smokeModel) {
+	payload.model = smokeModel;
+}
+if (smokeInput) {
+	if ("input" in payload) {
+		payload.input = smokeInput;
+	}
+	if (Array.isArray(payload.messages)) {
+		payload.messages = payload.messages.map((message: any) => {
+			if (message?.role === "user" && typeof message?.content === "string") {
+				return { ...message, content: smokeInput };
+			}
+			return message;
+		});
+	}
+}
+if (smokeMaxOutputTokens) {
+	const parsed = Number.parseInt(smokeMaxOutputTokens, 10);
+	if (Number.isFinite(parsed) && parsed > 0) {
+		payload.max_output_tokens = parsed;
+	}
+}
 const response =
 	operationKey === "responses"
 		? await client.responses.create(payload)

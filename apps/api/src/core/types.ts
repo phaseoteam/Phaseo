@@ -40,6 +40,7 @@ export type RequestMeta = {
     appId?: string | null;
     appName?: string | null;
     requestMethod?: string | null;
+    accept?: string | null;
     requestUrl?: string | null;
     requestPath?: string | null;
     userAgent?: string | null;

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactElement } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -10,6 +12,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
 	SidebarContent,
 	SidebarFooter,
@@ -27,6 +30,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
+import { cn } from "@/lib/utils";
 import {
 	ArrowUpRight,
 	Database,
@@ -88,7 +92,28 @@ export function ChatSidebar({
 	authLoading,
 	onSignOut,
 }: ChatSidebarProps) {
-	const { toggleSidebar } = useSidebar();
+	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
+	const { resolvedTheme } = useTheme();
+	const collapsed = sidebarState === "collapsed" && !isMobile;
+	const isDarkTheme = resolvedTheme === "dark";
+	const brandSrc = collapsed
+		? isDarkTheme
+			? "/logo_dark.svg"
+			: "/logo_light.svg"
+		: isDarkTheme
+			? "/wordmark_dark.svg"
+			: "/wordmark_light.svg";
+	const withCollapsedTooltip = (label: string, button: ReactElement) =>
+		collapsed ? (
+			<Tooltip>
+				<TooltipTrigger asChild>{button}</TooltipTrigger>
+				<TooltipContent side="right" align="center" sideOffset={10}>
+					{label}
+				</TooltipContent>
+			</Tooltip>
+		) : (
+			button
+		);
 	const nameParts = authUser?.name?.trim().split(" ").filter(Boolean) ?? [];
 	const firstName = nameParts[0] ?? "Account";
 	const initials = nameParts
@@ -100,17 +125,20 @@ export function ChatSidebar({
 	return (
 		<>
 			<SidebarHeader className="gap-0 px-0 pt-3.5 pb-0">
-				<div className="flex w-full items-center gap-2 mb-3.5 ml-2 px-2">
+				<div
+					className={cn(
+						"mb-3.5 flex w-full items-center gap-2 px-2",
+						collapsed ? "justify-center pb-1" : "ml-2",
+					)}
+				>
 					<Link href="/">
 						<img
-							src="/wordmark_light.svg"
+							src={brandSrc}
 							alt="AI Stats"
-							className="h-8 select-none dark:hidden"
-						/>
-						<img
-							src="/wordmark_dark.svg"
-							alt="AI Stats"
-							className="hidden h-8 select-none dark:block"
+							className={cn(
+								"select-none",
+								collapsed ? "h-7" : "h-8",
+							)}
 						/>
 					</Link>
 					<Button
@@ -128,42 +156,74 @@ export function ChatSidebar({
 			<SidebarContent>
 				<ChatRoomSwitcher />
 				<SidebarSeparator className="my-0" />
-				<div className="px-2 pt-2 pb-0">
-					<Button
-						variant="ghost"
-						className="min-w-0 flex-1 w-full justify-start pr-2 truncate"
-						onClick={onCreateThread}
-					>
-						<SquarePen className="mr-2 h-4 w-4" />
-						New Chat
-					</Button>
-					<Button
-						variant="ghost"
-						className="min-w-0 flex-1 w-full justify-start pr-2 truncate"
-						asChild
-					>
-						<Link
-							href="/"
-							className="group/db flex w-full items-center min-w-0"
+				<div className="px-2 py-1.5">
+					{withCollapsedTooltip(
+						"New Chat",
+						<Button
+							variant="ghost"
+							className={cn(
+								"h-8 min-w-0 w-full truncate",
+								collapsed ? "justify-center px-0" : "flex-1 justify-start pr-2",
+							)}
+							onClick={onCreateThread}
+							aria-label="New Chat"
 						>
-							<Database className="mr-2 h-4 w-4 shrink-0" />
-							<span className="flex-1 min-w-0 truncate text-left">
-								Database
-							</span>
-							<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
-						</Link>
-					</Button>
-					<Button
-						variant="ghost"
-						className="min-w-0 flex-1 w-full justify-start pr-2 truncate"
-						onClick={onSearch}
-					>
-						<Search className="mr-2 h-4 w-4" />
-						Search Chats
-					</Button>
+							<SquarePen
+								className={cn("h-4 w-4", collapsed ? "mr-0" : "mr-2")}
+							/>
+							{collapsed ? null : "New Chat"}
+						</Button>,
+					)}
+					{withCollapsedTooltip(
+						"Database",
+						<Button
+							variant="ghost"
+							className={cn(
+								"h-8 min-w-0 w-full truncate",
+								collapsed ? "justify-center px-0" : "flex-1 justify-start pr-2",
+							)}
+							asChild
+							aria-label="Database"
+						>
+							<Link
+								href="/"
+								className="group/db flex w-full items-center min-w-0"
+							>
+								<Database
+									className={cn(
+										"h-4 w-4 shrink-0",
+										collapsed ? "mr-0" : "mr-2",
+									)}
+								/>
+								{collapsed ? null : (
+									<>
+										<span className="flex-1 min-w-0 truncate text-left">
+											Database
+										</span>
+										<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
+									</>
+								)}
+							</Link>
+						</Button>,
+					)}
+					{withCollapsedTooltip(
+						"Search Chats",
+						<Button
+							variant="ghost"
+							className={cn(
+								"h-8 min-w-0 w-full truncate",
+								collapsed ? "justify-center px-0" : "flex-1 justify-start pr-2",
+							)}
+							onClick={onSearch}
+							aria-label="Search Chats"
+						>
+							<Search className={cn("h-4 w-4", collapsed ? "mr-0" : "mr-2")} />
+							{collapsed ? null : "Search Chats"}
+						</Button>,
+					)}
 				</div>
 				<SidebarSeparator className="my-0" />
-				<ScrollArea className="h-full">
+				<ScrollArea className="h-full group-data-[collapsible=icon]:hidden">
 					<SidebarGroup className="pt-0 px-2 pb-2">
 						<SidebarGroupLabel>Chats</SidebarGroupLabel>
 						<SidebarGroupContent className="overflow-hidden">
@@ -616,27 +676,41 @@ export function ChatSidebar({
 							<DropdownMenuTrigger asChild>
 								<Button
 									variant="ghost"
-									className="w-full justify-start gap-3"
+									className={cn(
+										"w-full gap-3",
+										collapsed ? "justify-center px-0" : "justify-start",
+									)}
 								>
-									<Avatar className="h-8 w-8">
+									<Avatar className="h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
 										{authUser.avatarUrl && (
 											<AvatarImage
 												src={authUser.avatarUrl}
 												alt={authUser.name}
+												className="object-cover"
 											/>
 										)}
-										<AvatarFallback>
+										<AvatarFallback className="rounded-lg text-[11px] font-semibold">
 											{initials || "U"}
 										</AvatarFallback>
 									</Avatar>
-									<div className="flex min-w-0 flex-col items-start">
+									<div
+										className={cn(
+											"flex min-w-0 flex-col items-start",
+											collapsed && "hidden",
+										)}
+									>
 										<span className="truncate text-sm font-medium">
 											{firstName}
 										</span>
 									</div>
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align="start" className="w-56">
+							<DropdownMenuContent
+								side={collapsed ? "right" : "top"}
+								align="start"
+								sideOffset={8}
+								className="w-56 z-[90]"
+							>
 								<DropdownMenuItem asChild>
 									<Link href="/settings/account">
 										<UserRound className="mr-2 h-4 w-4" />
@@ -656,12 +730,12 @@ export function ChatSidebar({
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
-						{!temporaryMode && (
+						{!temporaryMode && !collapsed && (
 							<p className="text-[11px] text-muted-foreground">
-								Chats are saved locally in this browser.
+								All data is stored locally in your browser.
 							</p>
 						)}
-						{temporaryMode && (
+						{temporaryMode && !collapsed && (
 							<p className="text-[11px] text-muted-foreground">
 								Temporary chat is active. Messages will not be
 								saved.

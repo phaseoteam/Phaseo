@@ -7,6 +7,7 @@ import {
 describe("chat room capability mapping", () => {
 	it("maps moderation and embeddings capabilities explicitly", () => {
 		expect(capabilityIdToRoomId("moderations.create")).toBe("moderation");
+		expect(capabilityIdToRoomId("text.moderate")).toBe("moderation");
 		expect(capabilityIdToRoomId("text.embed")).toBe("embeddings");
 	});
 

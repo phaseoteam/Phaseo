@@ -165,6 +165,7 @@ function javaType(schema: IRSchema): string {
 		case "array":
 			return `java.util.List<${javaType(schema.items)}>`;
 		case "object":
+			if (isModelLifecycleObject(schema)) return "Models.ModelLifecycle";
 		case "union":
 		case "intersection":
 			return "Object";
@@ -178,6 +179,14 @@ function javaType(schema: IRSchema): string {
 		default:
 			return "Object";
 	}
+}
+
+function isModelLifecycleObject(schema: IRSchema): boolean {
+	if (schema.kind !== "object" || schema.additionalProperties) return false;
+	const keys = Object.keys(schema.properties).sort((a, b) => a.localeCompare(b));
+	const expected = ["deprecation_date", "message", "replacement_model_id", "retirement_date", "status"];
+	if (keys.length !== expected.length) return false;
+	return expected.every((value, index) => keys[index] === value);
 }
 
 function sanitizeIdentifier(name: string): string {

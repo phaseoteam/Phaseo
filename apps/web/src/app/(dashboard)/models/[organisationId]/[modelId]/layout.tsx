@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import ShowGlobalFooter from "@/components/layout/ShowGlobalFooter";
+import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 
 export default function ModelDetailLayout({ children }: { children: ReactNode }) {
 	return (
 		<>
-			<ShowGlobalFooter />
+			<ShowFooterStyle />
 			{children}
 		</>
 	);

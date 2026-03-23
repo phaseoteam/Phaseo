@@ -1,27 +1,25 @@
-# AI Stats Go SDK (preview)
+# AI Stats Go SDK
 
-This package is generated from the AI Stats Gateway OpenAPI spec. Only the `models` endpoint is surfaced via the thin wrapper in `index.go` today.
+Generated from the AI Stats Gateway OpenAPI spec with a thin wrapper in `index.go`.
 
-Status:
-
--   **Preview**: Not published yet. Will be released to `pkg.go.dev` once the API surface is hardened.
--   Generated via `pnpm openapi:gen:go`.
-
-Usage (after generation):
-
-```go
-client := aistats.New("<API_KEY>", "https://api.phaseo.app/v1")
-resp, _, err := client.GetModels(context.Background(), nil)
-```
-
-Devtools:
-
-- Telemetry capture is bundled in the SDK family.
-- On package install, you will be prompted to optionally install the viewer.
-- You can always run the viewer directly with:
+## Install
 
 ```bash
-npx @ai-stats/devtools-viewer
+go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest
 ```
 
-Python and TypeScript SDKs are fully supported today; other languages will follow soon.
+## Usage
+
+```go
+// Uses AI_STATS_API_KEY and default base URL.
+client, err := aistats.NewAIStatsFromEnv()
+if err != nil {
+    panic(err)
+}
+resp, err := client.GetModels(context.Background(), nil)
+```
+
+## Release model
+
+- Module path: `github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go`
+- Publish by pushing tags in the format: `packages/sdk/sdk-go/vX.Y.Z`

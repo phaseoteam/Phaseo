@@ -31,6 +31,20 @@ function decodeBase64ToBytes(value: string): Uint8Array {
 	return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
+function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
+	if (ctx.endpoint !== "audio.speech") return false;
+	const streamFormat = String((ctx.body as any)?.stream_format ?? "")
+		.trim()
+		.toLowerCase();
+	if (streamFormat === "sse" || streamFormat === "json") return false;
+	if (streamFormat === "audio") return true;
+	const accept = String(ctx.meta?.accept ?? "")
+		.trim()
+		.toLowerCase();
+	if (!accept) return false;
+	return accept.includes("audio/") || accept.includes("application/octet-stream");
+}
+
 function normalizeWavChunkSizesIfNeeded(bytes: Uint8Array): Uint8Array {
 	if (bytes.length < 44) return bytes;
 	const isRiff =
@@ -383,7 +397,7 @@ async function handleNonStreamResponse(
         includeMeta,
     });
 
-    if (ctx.endpoint === "audio.speech") {
+    if (ctx.endpoint === "audio.speech" && shouldReturnBinaryAudio(ctx)) {
         const audioBase64 = typeof payload?.audio_base64 === "string"
             ? payload.audio_base64
             : (typeof payload?.audio?.data === "string" ? payload.audio.data : null);

@@ -1994,6 +1994,24 @@ paths:
               - type: array
                 items:
                   $ref: '#/components/schemas/OrganisationId'
+        - name: model_id
+          in: query
+          description: Filter by model id
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: id
+          in: query
+          description: Alias for model_id filter
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: limit
           in: query
           description: Limit the number of results
@@ -2412,6 +2430,8 @@ components:
         status:
           type: string
           nullable: true
+        lifecycle:
+          $ref: '#/components/schemas/ModelLifecycle'
         organisation_id:
           type: string
           nullable: true
@@ -2527,6 +2547,28 @@ components:
           type: object
           nullable: true
           additionalProperties: true
+    ModelLifecycle:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - active
+            - deprecated
+            - retired
+          nullable: true
+        deprecation_date:
+          type: string
+          nullable: true
+        retirement_date:
+          type: string
+          nullable: true
+        replacement_model_id:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
     DataModelOrganisation:
       type: object
       nullable: true
@@ -2564,6 +2606,8 @@ components:
         status:
           type: string
           nullable: true
+        lifecycle:
+          $ref: '#/components/schemas/ModelLifecycle'
         hidden:
           type: boolean
         input_types:
@@ -4556,6 +4600,7 @@ components:
         - minimax/minimax-m2-1-2025-12-23
         - minimax/minimax-m2-2025-10-27
         - minimax/minimax-m2-5-2026-02-12
+        - minimax/minimax-m2-7-2026-03-18
         - minimax/minimax-m2-her-2026-01-24
         - minimax/minimax-text-01-2025-01-15
         - minimax/minimax-vl-01-2025-01-15
@@ -4605,6 +4650,7 @@ components:
         - mistral/mistral-medium-1-0-2023-12-11
         - mistral/mistral-medium-3-0-2025-05-07
         - mistral/mistral-medium-3-1-2025-08-12
+        - mistral/mistral-moderation-2-2026-03-17
         - mistral/mistral-moderation-2024-11-06
         - mistral/mistral-nemo-12b-2024-07-18
         - mistral/mistral-ocr-2-2025-05-22
@@ -5000,6 +5046,9 @@ components:
         - x-ai/grok-imagine-image-pro-2026-01-29
         - x-ai/grok-imagine-video-2026-01-29
         - xiaomi/mimo-v2-flash-2025-12-16
+        - xiaomi/mimo-v2-omni-2026-03-18
+        - xiaomi/mimo-v2-pro-2026-03-18
+        - xiaomi/mimo-v2-tts-2026-03-18
         - z-ai/glm-4-1v-9b-2025-07-02
         - z-ai/glm-4-1v-thinking-9b-2025-07-02
         - z-ai/glm-4-32b-2025-04-15

@@ -13,9 +13,9 @@ namespace Examples
                 throw new Exception("Set AI_STATS_API_KEY");
             }
 
-            var client = new Client(apiKey);
-            var models = client.GetModels(limit: 5);
-            Console.WriteLine($"models count: {models.Models?.Count}");
+            var client = new AIStats(apiKey);
+            var models = client.ListModels().GetAwaiter().GetResult();
+            Console.WriteLine($"response present: {models != null}");
         }
     }
 }

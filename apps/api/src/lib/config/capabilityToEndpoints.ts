@@ -20,6 +20,7 @@ export const capabilityToEndpoints: Record<string, string[]> = {
     "audio.realtime": ["/audio/realtime", "/realtime"],
     "moderation": ["/moderations"],
     "moderations.create": ["/moderations"],
+    "text.moderate": ["/moderations"],
     "batch": ["/batch", "/batches"],
     "batch.create": ["/batches"],
     "ocr": ["/ocr"],

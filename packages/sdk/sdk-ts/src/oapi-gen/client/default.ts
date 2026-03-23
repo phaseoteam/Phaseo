@@ -2811,8 +2811,10 @@ export type ListDataModelsParams = {
   query?: {
     feed?: "json" | "rss" | "atom";
     format?: "json" | "rss" | "atom";
+    id?: string | string[];
     include_hidden?: boolean;
     limit?: number;
+    model_id?: string | string[];
     offset?: number;
     organisation?:
       | "ai21"
@@ -2918,6 +2920,13 @@ export async function listDataModels(
     deprecation_date?: string | null;
     hidden?: boolean;
     input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
     model_id?: string | null;
     name?: string | null;
     organisation?: {
@@ -2944,6 +2953,13 @@ export async function listDataModels(
       deprecation_date?: string | null;
       hidden?: boolean;
       input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
       model_id?: string | null;
       name?: string | null;
       organisation?: {
@@ -4904,6 +4920,13 @@ export async function listModels(
     endpoints?: string[];
     id?: string;
     input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
     model_id?: string;
     name?: string | null;
     organisation_colour?: string | null;
@@ -4970,6 +4993,13 @@ export async function listModels(
       endpoints?: string[];
       id?: string;
       input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
       model_id?: string;
       name?: string | null;
       organisation_colour?: string | null;

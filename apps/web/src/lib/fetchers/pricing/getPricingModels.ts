@@ -14,6 +14,7 @@ export interface PricingMeter {
 export interface PricingModel {
     provider: string;
     model: string;
+    api_model_id?: string;
     endpoint: string;
     display_name?: string;
     pricing_plan?: string | null;
@@ -132,7 +133,10 @@ export default async function getPricingModels(
         }
     }
 
-    const comboMap = new Map<string, { internal_model_id: string | null }>();
+    const comboMap = new Map<
+        string,
+        { internal_model_id: string | null; api_model_id: string | null }
+    >();
     for (const cap of capabilities ?? []) {
         if (!cap.provider_api_model_id || !cap.capability_id) continue;
         const pm = providerById.get(cap.provider_api_model_id);
@@ -140,6 +144,7 @@ export default async function getPricingModels(
         const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
         comboMap.set(comboKey, {
             internal_model_id: pm.internal_model_id ?? null,
+            api_model_id: pm.api_model_id ?? null,
         });
     }
 
@@ -159,6 +164,7 @@ export default async function getPricingModels(
             modelMap.set(key, {
                 provider: parsed.provider_id,
                 model: modelId,
+                api_model_id: combo.api_model_id ?? parsed.api_model_id,
                 endpoint: rule.capability_id,
                 display_name: combo.internal_model_id
                     ? modelNameMap.get(combo.internal_model_id)

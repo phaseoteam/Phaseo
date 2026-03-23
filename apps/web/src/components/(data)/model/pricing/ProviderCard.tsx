@@ -204,7 +204,32 @@ export default function ProviderCard({
 		  )
 		: provider.provider_models;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
-	const quantizationSchemes = infoScope.map((pm) => pm.quantization_scheme);
+	const quantizationScheme =
+		infoScope
+			.find(
+				(pm) =>
+					pm.is_active_gateway &&
+					pm.capability_status !== "disabled" &&
+					typeof pm.quantization_scheme === "string" &&
+					pm.quantization_scheme.trim()
+			)
+			?.quantization_scheme?.trim() ??
+		infoScope
+			.find(
+				(pm) =>
+					pm.endpoint === "text.generate" &&
+					typeof pm.quantization_scheme === "string" &&
+					pm.quantization_scheme.trim()
+			)
+			?.quantization_scheme?.trim() ??
+		infoScope
+			.find(
+				(pm) =>
+					typeof pm.quantization_scheme === "string" &&
+					pm.quantization_scheme.trim()
+			)
+			?.quantization_scheme?.trim() ??
+		null;
 	const allEmpty =
 		!sec.textTokens &&
 		!sec.imageTokens &&
@@ -347,7 +372,7 @@ export default function ProviderCard({
 							<ProviderInfoHoverIcons
 								providerId={sec.providerId}
 								providerModelSlugs={providerModelSlugs}
-								quantizationSchemes={quantizationSchemes}
+								quantizationScheme={quantizationScheme}
 								promptTraining={
 									infoScope.length > 0
 										? infoScope.map((providerModel) => ({

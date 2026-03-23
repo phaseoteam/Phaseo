@@ -96,6 +96,7 @@ function extractUpstreamErrorSummary(payload: unknown): {
 	upstream_error_type: string | null;
 	upstream_error_message: string | null;
 	upstream_error_description: string | null;
+	upstream_error_param: string | null;
 } {
 	if (!payload || typeof payload !== "object") {
 		return {
@@ -103,6 +104,7 @@ function extractUpstreamErrorSummary(payload: unknown): {
 			upstream_error_type: null,
 			upstream_error_message: null,
 			upstream_error_description: null,
+			upstream_error_param: null,
 		};
 	}
 
@@ -129,6 +131,19 @@ function extractUpstreamErrorSummary(payload: unknown): {
 	const fallbackDescription = truncateAttemptText(
 		typeof obj.description === "string" ? obj.description : null,
 	);
+	const rawParam = truncateAttemptText(
+		typeof innerError?.param === "string"
+			? innerError.param
+			: (typeof obj.param === "string" ? obj.param : null),
+	);
+	const message =
+		truncateAttemptText(
+			typeof innerError?.message === "string" ? innerError.message : null,
+		) ?? fallbackMessage;
+	const normalizedMessage =
+		rawParam && message && /^param\s+incorrect$/i.test(message)
+			? `${message}: ${rawParam}`
+			: message;
 
 	return {
 		upstream_error_code:
@@ -139,14 +154,12 @@ function extractUpstreamErrorSummary(payload: unknown): {
 					: fallbackCode,
 		upstream_error_type:
 			typeof innerError?.type === "string" ? innerError.type : fallbackType,
-		upstream_error_message:
-			truncateAttemptText(
-				typeof innerError?.message === "string" ? innerError.message : null,
-			) ?? fallbackMessage,
+		upstream_error_message: normalizedMessage,
 		upstream_error_description:
 			truncateAttemptText(
 				typeof innerError?.description === "string" ? innerError.description : null,
-			) ?? fallbackDescription,
+			) ?? rawParam ?? fallbackDescription,
+		upstream_error_param: rawParam,
 	};
 }
 

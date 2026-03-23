@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractUpstreamUnsupportedParamSignal } from "./error-handler";
+import { extractUpstreamUnsupportedParamSignal, handleError } from "./error-handler";
 
 describe("extractUpstreamUnsupportedParamSignal", () => {
 	it("returns null for before-stage errors", () => {
@@ -64,6 +64,132 @@ describe("extractUpstreamUnsupportedParamSignal", () => {
 
 		expect(signal?.internalCode).toBe("UPSTREAM_UNSUPPORTED_PARAM");
 		expect(signal?.param).toBe("instructions");
+	});
+
+	it("extracts unsupported param signal from failure_sample diagnostics", () => {
+		const signal = extractUpstreamUnsupportedParamSignal({
+			stage: "execute",
+			body: {
+				error: "upstream_error",
+				failure_sample: [{
+					upstream_error_message: "Param Incorrect",
+					upstream_error_param:
+						"Unknown voice: mimo_Default. Available voices: [mimo_default, default_zh, default_en]",
+				}],
+			},
+		});
+
+		expect(signal?.internalCode).toBe("UPSTREAM_UNSUPPORTED_PARAM");
+		expect(signal?.param).toContain("Unknown voice");
+	});
+});
+
+describe("handleError", () => {
+	it("preserves execute upstream diagnostics for client debugging", async () => {
+		const upstream = new Response(
+			JSON.stringify({
+				error: "upstream_error",
+				reason: "all_candidates_failed",
+				description: "Provider failed.",
+				attempt_count: 1,
+				failed_providers: ["xiaomi"],
+				failed_statuses: [400],
+				failure_sample: [{
+					provider: "xiaomi",
+					type: "upstream_non_2xx",
+					status: 400,
+					upstream_error_code: "400",
+					upstream_error_message: "Param Incorrect",
+					upstream_error_param: "voice",
+					upstream_payload_preview: "{\"error\":{\"message\":\"Param Incorrect\"}}",
+					retryable: false,
+				}],
+			}),
+			{ status: 502, headers: { "content-type": "application/json" } },
+		);
+
+		const res = await handleError({
+			stage: "execute",
+			res: upstream,
+			endpoint: "audio.speech",
+			ctx: {
+				requestId: "G-TEST-1",
+				model: "xiaomi/mimo-v2-tts:free",
+			} as any,
+			auditFailure: async () => { },
+		});
+		const payload = await res.json();
+		expect(payload.error).toBe("upstream_error");
+		expect(payload.reason).toBe("all_candidates_failed");
+		expect(payload.attempt_count).toBe(1);
+		expect(payload.failed_providers).toEqual(["xiaomi"]);
+		expect(payload.failed_statuses).toEqual([400]);
+		expect(payload.upstream_error).toEqual({
+			code: "400",
+			message: "Param Incorrect",
+			description: null,
+			param: "voice",
+		});
+		expect(payload.failure_sample).toEqual([{
+			provider: "xiaomi",
+			type: "upstream_non_2xx",
+			status: 400,
+			upstream_error_code: "400",
+			upstream_error_message: "Param Incorrect",
+			upstream_error_description: null,
+			upstream_error_param: "voice",
+			upstream_payload_preview: "{\"error\":{\"message\":\"Param Incorrect\"}}",
+			retryable: false,
+		}]);
+	});
+
+	it("surfaces unsupported model diagnostics from before-stage guards", async () => {
+		const upstream = new Response(
+			JSON.stringify({
+				error: "unsupported_model_or_endpoint",
+				reason: "pricing_not_configured",
+				description: "Unsupported model or endpoint.",
+				provider_candidate_diagnostics: {
+					totalProviders: 1,
+					supportsEndpointCount: 1,
+					candidateCount: 1,
+				},
+				provider_enablement: {
+					capability: "moderations",
+					providersBefore: ["openai"],
+					providersAfter: [],
+					dropped: [{ providerId: "openai", reason: "pricing_missing" }],
+				},
+				missing_pricing_providers: ["openai"],
+			}),
+			{ status: 400, headers: { "content-type": "application/json" } },
+		);
+
+		const res = await handleError({
+			stage: "before",
+			res: upstream,
+			endpoint: "moderations",
+			ctx: {
+				requestId: "G-TEST-2",
+				model: "openai/omni-moderation",
+			} as any,
+			auditFailure: async () => { },
+		});
+		const payload = await res.json();
+		expect(payload.error).toBe("unsupported_model_or_endpoint");
+		expect(payload.reason).toBe("pricing_not_configured");
+		expect(payload.provider_candidate_diagnostics).toEqual({
+			totalProviders: 1,
+			supportsEndpointCount: 1,
+			candidateCount: 1,
+		});
+		expect(payload.provider_enablement).toEqual({
+			capability: "moderations",
+			providersBefore: ["openai"],
+			providersAfter: [],
+			dropped: [{ providerId: "openai", reason: "pricing_missing" }],
+		});
+		expect(payload.missing_pricing_providers).toEqual(["openai"]);
 	});
 });
 

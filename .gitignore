@@ -26,3 +26,12 @@ guides/private/
 /scripts/model-discovery/state/
 .tmp/
 /tmp
+.codex/tmp/
+packages/sdk/sdk-csharp/bin/
+packages/sdk/sdk-csharp/obj/
+packages/sdk/sdk-csharp/**/bin/
+packages/sdk/sdk-csharp/**/obj/
+packages/sdk/sdk-java/target/
+packages/sdk/sdk-rust/target/
+packages/sdk/sdk-php/vendor/
+packages/sdk/sdk-ruby/*.gem

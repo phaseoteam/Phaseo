@@ -240,6 +240,7 @@ struct DataModel {
 	std::optional<std::string> deprecation_date;
 	std::optional<bool> hidden;
 	std::vector<std::string> input_types;
+	std::optional<ModelLifecycle> lifecycle;
 	std::optional<std::string> model_id;
 	std::optional<std::string> name;
 	std::optional<std::map<std::string, std::any>> organisation;
@@ -481,6 +482,7 @@ struct Model {
 	std::vector<std::string> endpoints;
 	std::string id;
 	std::vector<std::string> input_types;
+	std::optional<ModelLifecycle> lifecycle;
 	std::string model_id;
 	std::optional<std::string> name;
 	std::optional<std::string> organisation_colour;
@@ -501,6 +503,14 @@ struct Model {
 };
 
 using ModelId = std::any;
+
+struct ModelLifecycle {
+	std::optional<std::string> deprecation_date;
+	std::optional<std::string> message;
+	std::optional<std::string> replacement_model_id;
+	std::optional<std::string> retirement_date;
+	std::optional<std::any> status;
+};
 
 struct ModelsPrivacyScopeNotImplementedResponse {
 	std::any code;

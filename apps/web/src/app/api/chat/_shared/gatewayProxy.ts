@@ -19,7 +19,26 @@ export type ChatProxyEnvelope = {
 	debug?: boolean;
 };
 
-export const GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+function normalizeGatewayBaseUrl(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+	if (!trimmed) return undefined;
+	const withoutTrailingSlash = trimmed.replace(/\/+$/, "");
+	return withoutTrailingSlash.endsWith("/v1")
+		? withoutTrailingSlash
+		: `${withoutTrailingSlash}/v1`;
+}
+
+const configuredGatewayBaseUrl = normalizeGatewayBaseUrl(
+	process.env.AI_STATS_GATEWAY_URL,
+);
+if (!configuredGatewayBaseUrl) {
+	throw new Error(
+		"Missing AI_STATS_GATEWAY_URL for chat gateway proxy.",
+	);
+}
+
+export const GATEWAY_BASE_URL = configuredGatewayBaseUrl;
 const ALLOWED_APP_HEADERS = new Set([
 	"x-title",
 	"http-referer",

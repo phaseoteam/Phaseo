@@ -377,6 +377,7 @@ type DataModel struct {
 	DeprecationDate *string `json:"deprecation_date,omitempty"`
 	Hidden *bool `json:"hidden,omitempty"`
 	InputTypes *[]string `json:"input_types,omitempty"`
+	Lifecycle *ModelLifecycle `json:"lifecycle,omitempty"`
 	ModelId *string `json:"model_id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	Organisation *map[string]interface{} `json:"organisation,omitempty"`
@@ -618,6 +619,7 @@ type Model struct {
 	Endpoints *[]string `json:"endpoints,omitempty"`
 	Id *string `json:"id,omitempty"`
 	InputTypes *[]string `json:"input_types,omitempty"`
+	Lifecycle *ModelLifecycle `json:"lifecycle,omitempty"`
 	ModelId *string `json:"model_id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	OrganisationColour *string `json:"organisation_colour,omitempty"`
@@ -1489,6 +1491,14 @@ const (
 	ModelIdZAiGlmImage20260114 ModelId = "z-ai/glm-image-2026-01-14"
 )
 
+
+type ModelLifecycle struct {
+	DeprecationDate *string `json:"deprecation_date,omitempty"`
+	Message *string `json:"message,omitempty"`
+	ReplacementModelId *string `json:"replacement_model_id,omitempty"`
+	RetirementDate *string `json:"retirement_date,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
 
 type ModelsPrivacyScopeNotImplementedResponse struct {
 	Code string `json:"code"`

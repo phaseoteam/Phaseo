@@ -238,6 +238,7 @@ public final class Models {
 		public String deprecation_date;
 		public Boolean hidden;
 		public java.util.List<String> input_types;
+		public Models.ModelLifecycle lifecycle;
 		public String model_id;
 		public String name;
 		public Object organisation;
@@ -481,6 +482,7 @@ public final class Models {
 		public java.util.List<String> endpoints;
 		public String id;
 		public java.util.List<String> input_types;
+		public Models.ModelLifecycle lifecycle;
 		public String model_id;
 		public String name;
 		public String organisation_colour;
@@ -501,6 +503,14 @@ public final class Models {
 	}
 
 	public static class ModelId {
+	}
+
+	public static class ModelLifecycle {
+		public String deprecation_date;
+		public String message;
+		public String replacement_model_id;
+		public String retirement_date;
+		public Object status;
 	}
 
 	public static class ModelsPrivacyScopeNotImplementedResponse {

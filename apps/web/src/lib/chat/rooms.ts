@@ -40,7 +40,7 @@ const AUDIO_CAPABILITY_HINTS = [
 	"audio.translation",
 	"audio",
 ];
-const MODERATION_CAPABILITY_HINTS = ["moderation", "moderations.create"];
+const MODERATION_CAPABILITY_HINTS = ["moderation", "moderations.create", "text.moderate"];
 const EMBEDDINGS_CAPABILITY_HINTS = ["text.embed", "embeddings", "embedding"];
 
 export const CHAT_ROOMS: ChatRoomConfig[] = [
@@ -131,7 +131,8 @@ export function capabilityIdToRoomId(
 	const normalized = normalizeCapability(capabilityId);
 	if (
 		TEXT_CAPABILITY_HINTS.some((hint) => normalized.includes(hint)) &&
-		!normalized.includes("embed")
+		!normalized.includes("embed") &&
+		!normalized.includes("moderate")
 	) {
 		return "text";
 	}

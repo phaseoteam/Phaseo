@@ -40,6 +40,13 @@ export type EmbeddingContentPart =
 	| { type: "input_audio"; input_audio: { data?: string; url?: string; format?: string } }
 	| { type: "input_video"; url: string | { url: string } };
 
+export function splitEmbeddingTextInput(text: string): string[] {
+	return text
+		.split(/\r?\n/g)
+		.map((line) => line.trim())
+		.filter(Boolean);
+}
+
 export function buildEmbeddingsMultimodalInput(parts: EmbeddingContentPart[]) {
 	return {
 		content: parts,
@@ -77,6 +84,7 @@ export type NormalizedModerationResult = {
 	flagged: boolean;
 	categories: Record<string, boolean>;
 	categoryScores: Record<string, number>;
+	categoryAppliedInputTypes: Record<string, Array<"text" | "image">>;
 	raw: unknown;
 };
 
@@ -94,10 +102,28 @@ export function normalizeModerationResult(
 		result.category_scores && typeof result.category_scores === "object"
 			? (result.category_scores as Record<string, number>)
 			: {};
+	const categoryAppliedInputTypes =
+		result.category_applied_input_types &&
+		typeof result.category_applied_input_types === "object"
+			? Object.fromEntries(
+					Object.entries(
+						result.category_applied_input_types as Record<string, unknown>,
+					).map(([category, value]) => [
+						category,
+						Array.isArray(value)
+							? value.filter(
+									(type): type is "text" | "image" =>
+										type === "text" || type === "image",
+								)
+							: [],
+					]),
+				)
+			: {};
 	return {
 		flagged: Boolean(result.flagged),
 		categories,
 		categoryScores,
+		categoryAppliedInputTypes,
 		raw: result,
 	};
 }

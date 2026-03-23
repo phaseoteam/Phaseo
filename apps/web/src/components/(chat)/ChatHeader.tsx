@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -20,20 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-	Command,
-	CommandEmpty,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import {
 	HoverCard,
 	HoverCardContent,
@@ -57,12 +45,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type { ChatThread, UnifiedChatEndpoint } from "@/lib/indexeddb/chats";
 import {
 	ChevronLeft,
 	ChevronRight,
-	ChevronsUpDown,
 	Cpu,
 	Database,
 	MessageCircleDashed,
@@ -116,7 +102,6 @@ const ACCENT_COLORS = [
 ];
 
 const MAX_PROVIDER_LOGOS = 8;
-const BASE_URL_OPTIONS = [BASE_URL];
 const CAPABILITY_LABELS: Record<UnifiedChatEndpoint, string> = {
 	responses: "Text",
 	"images.generations": "Image",
@@ -212,8 +197,6 @@ export function ChatHeader({
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
-	baseUrl,
-	onBaseUrlChange,
 	onSaveSettings,
 	personalization,
 	onPersonalizationChange,
@@ -236,11 +219,13 @@ export function ChatHeader({
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<
-		"general" | "personalization" | "data-controls" | "admin"
-	>("general");
-	const [baseUrlOpen, setBaseUrlOpen] = useState(false);
-	const [baseUrlQuery, setBaseUrlQuery] = useState(baseUrl);
+		"personalization" | "data-controls" | "admin"
+	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
+	const [quickFilters, setQuickFilters] = useState({
+		free: false,
+		new: false,
+	});
 	const [importResult, setImportResult] = useState<{
 		message: string;
 		type: "success" | "error" | "info";
@@ -253,21 +238,60 @@ export function ChatHeader({
 		() => Array.from(modelOptions.comingSoon.entries()),
 		[modelOptions.comingSoon]
 	);
+	const toggleQuickFilter = (key: "free" | "new") => {
+		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+	};
+	const optionMatchesQuickFilters = useCallback(
+		(option: ModelOption) => {
+			if (quickFilters.free && !option.modelId.endsWith(":free")) {
+				return false;
+			}
+			if (quickFilters.new && !isNewModel(option.releaseDate)) {
+				return false;
+			}
+			return true;
+		},
+		[quickFilters.free, quickFilters.new]
+	);
+	const filteredFeatured = useMemo(
+		() => modelOptions.featured.filter(optionMatchesQuickFilters),
+		[modelOptions.featured, optionMatchesQuickFilters]
+	);
+	const filteredGroupedEntries = useMemo(
+		() =>
+			groupedEntries
+				.map(([orgId, options]) => [
+					orgId,
+					options.filter(optionMatchesQuickFilters),
+				] as const)
+				.filter(([, options]) => options.length > 0),
+		[groupedEntries, optionMatchesQuickFilters]
+	);
+	const filteredComingSoonEntries = useMemo(
+		() =>
+			comingSoonEntries
+				.map(([orgId, options]) => [
+					orgId,
+					options.filter(optionMatchesQuickFilters),
+				] as const)
+				.filter(([, options]) => options.length > 0),
+		[comingSoonEntries, optionMatchesQuickFilters]
+	);
 	const comingSoonCount = useMemo(
 		() =>
-			comingSoonEntries.reduce(
+			filteredComingSoonEntries.reduce(
 				(total, [, list]) => total + list.length,
 				0
 			),
-		[comingSoonEntries]
+		[filteredComingSoonEntries]
 	);
 	const allModelOptions = useMemo(
 		() => [
-			...modelOptions.featured,
-			...groupedEntries.flatMap(([, options]) => options),
-			...comingSoonEntries.flatMap(([, options]) => options),
+			...filteredFeatured,
+			...filteredGroupedEntries.flatMap(([, options]) => options),
+			...filteredComingSoonEntries.flatMap(([, options]) => options),
 		],
-		[comingSoonEntries, groupedEntries, modelOptions.featured],
+		[filteredComingSoonEntries, filteredFeatured, filteredGroupedEntries]
 	);
 	const uniqueModelOptions = useMemo(() => {
 		const byId = new Map<string, ModelOption>();
@@ -377,20 +401,6 @@ export function ChatHeader({
 		}
 		return orgIdById;
 	}, [modelOptions.featured, modelOptions.grouped, modelOptions.comingSoon]);
-	const requiredCapabilityLabel = requiredCapability
-		? CAPABILITY_LABELS[requiredCapability] ?? "Text"
-		: null;
-	const requiredFilterLabel = useMemo(() => {
-		const labels: string[] = [];
-		if (requiredCapabilityLabel) {
-			labels.push(requiredCapabilityLabel.toLowerCase());
-		}
-		if (requireAudioInput) {
-			labels.push("audio input");
-		}
-		if (!labels.length) return null;
-		return labels.join(" + ");
-	}, [requiredCapabilityLabel, requireAudioInput]);
 	const getModelCapabilities = (modelId: string): UnifiedChatEndpoint[] =>
 		modelCapabilitiesById?.[modelId] ?? ["responses"];
 	const supportsModelAudioInput = (modelId: string) =>
@@ -658,12 +668,6 @@ export function ChatHeader({
 	}, [hasModelSearchValue, normalizedModelSearchValue, uniqueModelOptions]);
 	const searchResultTotalCount = searchRanking.total;
 	const rankedSearchResults = searchRanking.results;
-	const availableBaseUrls = useMemo(() => {
-		const options = new Set<string>();
-		BASE_URL_OPTIONS.forEach((value) => options.add(value));
-		if (baseUrl) options.add(baseUrl);
-		return Array.from(options).filter(Boolean);
-	}, [baseUrl]);
 	const formatReleaseDate = (value: string | null) => {
 		if (!value) return null;
 		const date = new Date(value);
@@ -820,7 +824,13 @@ export function ChatHeader({
 							/>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Toggle sidebar</TooltipContent>
+					<TooltipContent
+						side={sidebarState === "collapsed" ? "right" : "bottom"}
+						align="center"
+						sideOffset={8}
+					>
+						Toggle sidebar
+					</TooltipContent>
 				</Tooltip>
 				{selectedModelIds.length > 0 ? (
 					<div className="flex max-w-[min(60vw,520px)] items-center gap-1 overflow-x-auto lg:max-w-[760px] xl:max-w-[880px]">
@@ -869,16 +879,38 @@ export function ChatHeader({
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
 						/>
+						<div className="flex items-center gap-1 border-b border-border px-3 py-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => toggleQuickFilter("free")}
+								className={cn(
+									"h-7 rounded-md px-2.5 text-xs",
+									quickFilters.free &&
+										"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+								)}
+							>
+								Free
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => toggleQuickFilter("new")}
+								className={cn(
+									"h-7 rounded-md px-2.5 text-xs",
+									quickFilters.new &&
+										"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+								)}
+							>
+								New
+							</Button>
+						</div>
 						<ModelSelectorList className="max-h-[70vh] p-3">
 							<ModelSelectorEmpty>
 								No models found.
 							</ModelSelectorEmpty>
-							{requiredFilterLabel ? (
-								<p className="px-2 pb-2 text-xs text-muted-foreground">
-									Showing {requiredFilterLabel}-compatible
-									models for this chat.
-								</p>
-							) : null}
 							{hasModelSearchValue ? (
 								<ModelSelectorGroup
 									heading={`Results (${Math.min(25, searchResultTotalCount)}${searchResultTotalCount > 25 ? ` of ${searchResultTotalCount}` : ""})`}
@@ -891,13 +923,13 @@ export function ChatHeader({
 									)}
 								</ModelSelectorGroup>
 							) : null}
-							{!hasModelSearchValue && modelOptions.featured.length > 0 && (
+							{!hasModelSearchValue && filteredFeatured.length > 0 && (
 								<>
 									<ModelSelectorGroup
 										heading="Featured"
 										className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 									>
-										{modelOptions.featured.map((option) =>
+										{filteredFeatured.map((option) =>
 											renderModelOptionItem(option),
 										)}
 									</ModelSelectorGroup>
@@ -905,7 +937,7 @@ export function ChatHeader({
 								</>
 							)}
 							{!hasModelSearchValue &&
-								groupedEntries.map(([orgId, options]) => {
+								filteredGroupedEntries.map(([orgId, options]) => {
 									const orgLabel =
 										options[0]?.orgName ?? formatOrgLabel(orgId);
 									return (
@@ -923,7 +955,7 @@ export function ChatHeader({
 							{!hasModelSearchValue && comingSoonCount > 0 && (
 								<>
 									<ModelSelectorSeparator />
-									{comingSoonEntries.map(([orgId, options]) => {
+									{filteredComingSoonEntries.map(([orgId, options]) => {
 										const orgLabel =
 											options[0]?.orgName ?? formatOrgLabel(orgId);
 										return (
@@ -981,18 +1013,6 @@ export function ChatHeader({
 							<div className="hidden w-52 shrink-0 flex-col border-r border-border p-2 md:flex">
 								<Button
 									variant={
-										settingsTab === "general"
-											? "secondary"
-											: "ghost"
-									}
-									className="w-full justify-start gap-2"
-									onClick={() => setSettingsTab("general")}
-								>
-									<Settings className="h-4 w-4" />
-									General
-								</Button>
-								<Button
-									variant={
 										settingsTab === "personalization"
 											? "secondary"
 											: "ghost"
@@ -1040,19 +1060,6 @@ export function ChatHeader({
 									<Button
 										size="sm"
 										variant={
-											settingsTab === "general"
-												? "secondary"
-												: "ghost"
-										}
-										onClick={() =>
-											setSettingsTab("general")
-										}
-									>
-										General
-									</Button>
-									<Button
-										size="sm"
-										variant={
 											settingsTab === "personalization"
 												? "secondary"
 												: "ghost"
@@ -1094,142 +1101,6 @@ export function ChatHeader({
 									)}
 								</div>
 								<div className="flex-1 overflow-y-auto p-4">
-									{settingsTab === "general" && (
-										<div className="grid gap-4">
-											<div className="grid gap-1">
-												<p className="text-sm font-semibold text-foreground">
-													General
-												</p>
-												<p className="text-xs text-muted-foreground">
-													Connection details for
-													sending chat requests.
-												</p>
-											</div>
-											<div className="grid gap-2">
-												<Label htmlFor="base-url">
-													Base URL
-												</Label>
-												<Popover
-													open={baseUrlOpen}
-													onOpenChange={(open) => {
-														setBaseUrlOpen(open);
-														if (open) {
-															setBaseUrlQuery(
-																baseUrl ||
-																	BASE_URL
-															);
-														}
-													}}
-												>
-													<PopoverTrigger asChild>
-														<Button
-															id="base-url"
-															variant="outline"
-															role="combobox"
-															aria-expanded={
-																baseUrlOpen
-															}
-															className="w-full justify-between"
-														>
-															<span className="truncate text-left">
-																{baseUrl ||
-																	BASE_URL}
-															</span>
-															<ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
-														</Button>
-													</PopoverTrigger>
-													<PopoverContent className="w-[360px] p-0">
-														<Command>
-															<CommandInput
-																placeholder="Type or select a base URL..."
-																value={
-																	baseUrlQuery
-																}
-																onValueChange={
-																	setBaseUrlQuery
-																}
-																onKeyDown={(
-																	event
-																) => {
-																	if (
-																		event.key !==
-																		"Enter"
-																	)
-																		return;
-																	const next =
-																		baseUrlQuery.trim();
-																	if (!next)
-																		return;
-																	onBaseUrlChange(
-																		next
-																	);
-																	setBaseUrlOpen(
-																		false
-																	);
-																}}
-															/>
-															<CommandList>
-																<CommandEmpty>
-																	No base URLs
-																	found.
-																</CommandEmpty>
-																{availableBaseUrls.map(
-																	(url) => (
-																		<CommandItem
-																			key={
-																				url
-																			}
-																			value={
-																				url
-																			}
-																			onSelect={() => {
-																				onBaseUrlChange(
-																					url
-																				);
-																				setBaseUrlQuery(
-																					url
-																				);
-																				setBaseUrlOpen(
-																					false
-																				);
-																			}}
-																		>
-																			{
-																				url
-																			}
-																		</CommandItem>
-																	)
-																)}
-																{baseUrlQuery.trim() &&
-																!availableBaseUrls.includes(
-																	baseUrlQuery.trim()
-																) ? (
-																	<CommandItem
-																		value={baseUrlQuery.trim()}
-																		onSelect={() => {
-																			const next =
-																				baseUrlQuery.trim();
-																			onBaseUrlChange(
-																				next
-																			);
-																			setBaseUrlOpen(
-																				false
-																			);
-																		}}
-																	>
-																		Use "
-																		{baseUrlQuery.trim()}
-																		"
-																	</CommandItem>
-																) : null}
-															</CommandList>
-														</Command>
-													</PopoverContent>
-												</Popover>
-											</div>
-
-										</div>
-									)}
 									{settingsTab === "personalization" && (
 										<div className="grid gap-3">
 											<div className="grid gap-1">

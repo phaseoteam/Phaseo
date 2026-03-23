@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
@@ -12,7 +13,6 @@ import {
 } from "@/lib/indexeddb/chatRoomHistory";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
@@ -34,7 +34,12 @@ import {
 } from "@/lib/chat/roomModelSettings";
 import { ImageModelSettingsDialog } from "@/components/(chat)/rooms/settings/ImageModelSettingsDialog";
 import { VideoModelSettingsDialog } from "@/components/(chat)/rooms/settings/VideoModelSettingsDialog";
-import { ChevronRight } from "lucide-react";
+import {
+	ChevronRight,
+	Cpu,
+	MessageCircleDashed,
+	Settings as SettingsIcon,
+} from "lucide-react";
 
 type MediaStudioRoomProps = {
 	roomId: "image" | "video";
@@ -55,6 +60,7 @@ type GenerationEntry = {
 	prompt: string;
 	url: string;
 	status: "pending" | "completed" | "failed";
+	isTemporary?: boolean;
 };
 
 const MAX_VIDEO_POLL_ATTEMPTS = 80;
@@ -124,6 +130,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		[models, roomId],
 	);
 	const [modelId, setModelId] = useState(filteredModels[0]?.modelId ?? "");
+	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [prompt, setPrompt] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -143,6 +150,35 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		modelSettingsCompat.selectedProfile ?? modelSettingsCompat.activeModelSettings ?? null;
 	const selectedModelEnabled = selectedProfile?.enabled !== false;
 	const selectedProviderId = selectedProfile?.providerId;
+	const composerSelectedModel = useMemo(
+		() =>
+			filteredModels.find(
+				(model) =>
+					model.modelId === modelId &&
+					(!selectedProviderId || model.providerId === selectedProviderId),
+			) ??
+			filteredModels.find((model) => model.modelId === modelId) ??
+			null,
+		[filteredModels, modelId, selectedProviderId],
+	);
+	const composerModelLogoId =
+		composerSelectedModel?.organisationId?.trim() ||
+		composerSelectedModel?.providerId ||
+		(modelId.split("/")[0] || "ai-stats");
+	const composerModelLabel =
+		(modelId &&
+			(modelSettings.modelDisplayNameById[modelId] ||
+				composerSelectedModel?.modelName ||
+				modelId)) ||
+		"Select model";
+	const openComposerModelPicker = () => {
+		const targetModelId = modelId || filteredModels[0]?.modelId;
+		if (!targetModelId) return;
+		if (targetModelId !== modelId) {
+			setModelId(targetModelId);
+		}
+		modelSettings.openModelSettingsForModel(targetModelId);
+	};
 	const dialogModelId: string | null = modelSettingsCompat.modelSettingsModelId ?? null;
 	const dialogProfile =
 		dialogModelId && typeof modelSettingsCompat.getProfileForModel === "function"
@@ -194,8 +230,10 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 	const addEntries = async (nextEntries: GenerationEntry[]) => {
 		setEntries((prev) => [...nextEntries, ...prev]);
+		const persistentEntries = nextEntries.filter((entry) => !entry.isTemporary);
+		if (!persistentEntries.length) return;
 		await Promise.all(
-			nextEntries.map((entry) =>
+			persistentEntries.map((entry) =>
 				upsertRoomHistory<MediaHistoryPayload>({
 					id: entry.id,
 					roomId,
@@ -210,6 +248,19 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				}),
 			),
 		);
+	};
+
+	const toggleTemporaryMode = () => {
+		if (!temporaryMode) {
+			setTemporaryMode(true);
+			setPrompt("");
+			setError(null);
+			return;
+		}
+		setTemporaryMode(false);
+		setEntries((current) => current.filter((entry) => !entry.isTemporary));
+		setPrompt("");
+		setError(null);
 	};
 
 	const submit = async () => {
@@ -277,6 +328,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						prompt: trimmedPrompt,
 						url: objectUrl,
 						status: "completed",
+						isTemporary: temporaryMode,
 					},
 				]);
 				setPrompt("");
@@ -332,6 +384,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							prompt: trimmedPrompt,
 							url,
 							status: nextStatus,
+							isTemporary: temporaryMode,
 						}))
 					: [
 							{
@@ -341,6 +394,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								prompt: trimmedPrompt,
 								url: "",
 								status: nextStatus,
+								isTemporary: temporaryMode,
 							},
 						];
 
@@ -355,7 +409,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<header className="mt-1 flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
+			<header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
 				<div className="flex items-center gap-1">
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -374,7 +428,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								/>
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent>Toggle sidebar</TooltipContent>
+						<TooltipContent side={sidebarState === "collapsed" ? "right" : "bottom"} align="center" sideOffset={8}>Toggle sidebar</TooltipContent>
 					</Tooltip>
 						<RoomModelSelector
 							models={filteredModels}
@@ -385,10 +439,39 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							onOpenModelSettingsForModel={modelSettings.openModelSettingsForModel}
 						/>
 					</div>
-					<Badge variant="secondary">{entries.length} generations</Badge>
+					<div className="flex items-center gap-2">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant={temporaryMode ? "secondary" : "ghost"}
+									size="icon"
+									onClick={toggleTemporaryMode}
+								>
+									<MessageCircleDashed className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Temporary chat</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={() => {
+										if (!modelId) return;
+										modelSettings.openModelSettingsForModel(modelId);
+									}}
+									disabled={!modelId}
+								>
+									<SettingsIcon className="h-5 w-5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Settings</TooltipContent>
+						</Tooltip>
+					</div>
 				</header>
 
-			<main className="min-h-0 flex-1 overflow-auto px-4 py-5 md:px-6">
+				<main className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-5 md:px-6">
 				<div className="columns-1 gap-3 sm:columns-2 xl:columns-3">
 					{entries.map((entry) => (
 						<div
@@ -446,7 +529,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 			</main>
 
 			<footer className="border-t border-border px-4 py-3 md:px-6">
-				<div className="mx-auto w-full max-w-4xl">
+				<div className="mx-auto w-full max-w-3xl">
 					<div className="rounded-2xl border border-border bg-background px-3 py-2">
 						<Textarea
 							value={prompt}
@@ -466,9 +549,35 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							className="min-h-[64px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 						/>
 						<div className="flex items-center justify-between pt-2">
-							{error ? (
-								<span className="text-xs text-destructive">{error}</span>
-							) : null}
+							<div className="flex items-center gap-1.5">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											type="button"
+											variant="ghost"
+											className="h-8 gap-1.5 px-2"
+											onClick={openComposerModelPicker}
+											disabled={!modelId && filteredModels.length === 0}
+										>
+											{modelId ? (
+												<Logo
+													id={composerModelLogoId}
+													alt={composerModelLabel}
+													width={16}
+													height={16}
+													className="shrink-0 rounded-none"
+												/>
+											) : (
+												<Cpu className="h-4 w-4 text-muted-foreground" />
+											)}
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side="top">{composerModelLabel}</TooltipContent>
+								</Tooltip>
+								{error ? (
+									<span className="pl-1 text-xs text-destructive">{error}</span>
+								) : null}
+							</div>
 							<Button
 								className="ml-auto"
 								onClick={submit}

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
 )
 
 func TestSmokeChat(t *testing.T) {

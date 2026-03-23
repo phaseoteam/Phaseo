@@ -16,6 +16,13 @@ export interface GatewayModelsResponse {
     endpoints?: string[];
     id?: string;
     input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
     model_id?: string;
     name?: string | null;
     organisation_colour?: string | null;
