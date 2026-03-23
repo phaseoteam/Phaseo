@@ -361,9 +361,9 @@ pnpm test -- --coverage
 
 **Test files:**
 
--   `tests/language-model.test.ts` - Text generation, streaming, tools, structured output (mocked)
--   `tests/embedding-model.test.ts` - Embeddings generation and similarity (mocked)
--   `tests/gateway-integration.test.ts` - Real gateway tests (requires API key)
+-   `tests/convert-to-gateway-chat.test.ts` - request conversion, tool mapping, provider options, multimodal image handling
+-   `tests/gateway-integration.test.ts` - real gateway tests (requires API key)
+-   `tests/manual-v6-check.ts` - manual end-to-end v6 sanity check
 
 ## Advanced Usage
 
