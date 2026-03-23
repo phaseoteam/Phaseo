@@ -69,28 +69,30 @@ export function convertToGatewayChatRequest(
   };
 
   // Add generation parameters from options
-  if (options.temperature !== undefined) {
-    body.temperature = options.temperature;
-  }
-  const maxTokens =
+  const maxTokensFromOptions =
     (options as any).maxTokens ?? (options as any).maxOutputTokens;
+  const maxTokens = maxTokensFromOptions ?? settings.maxTokens;
+
+  if (options.temperature !== undefined || settings.temperature !== undefined) {
+    body.temperature = options.temperature ?? settings.temperature;
+  }
   if (maxTokens !== undefined) {
     body.max_tokens = maxTokens;
   }
-  if (options.topP !== undefined) {
-    body.top_p = options.topP;
+  if (options.topP !== undefined || settings.topP !== undefined) {
+    body.top_p = options.topP ?? settings.topP;
   }
-  if (options.topK !== undefined) {
-    body.top_k = options.topK;
+  if (options.topK !== undefined || settings.topK !== undefined) {
+    body.top_k = options.topK ?? settings.topK;
   }
-  if (options.frequencyPenalty !== undefined) {
-    body.frequency_penalty = options.frequencyPenalty;
+  if (options.frequencyPenalty !== undefined || settings.frequencyPenalty !== undefined) {
+    body.frequency_penalty = options.frequencyPenalty ?? settings.frequencyPenalty;
   }
-  if (options.presencePenalty !== undefined) {
-    body.presence_penalty = options.presencePenalty;
+  if (options.presencePenalty !== undefined || settings.presencePenalty !== undefined) {
+    body.presence_penalty = options.presencePenalty ?? settings.presencePenalty;
   }
-  if (options.seed !== undefined) {
-    body.seed = options.seed;
+  if (options.seed !== undefined || settings.seed !== undefined) {
+    body.seed = options.seed ?? settings.seed;
   }
 
   // Add settings parameters
@@ -125,6 +127,15 @@ export function convertToGatewayChatRequest(
     body.response_format = { type: 'json_object' };
   }
 
+  const providerOptions = (options as any).providerOptions;
+  if (providerOptions) {
+    for (const providerConfig of Object.values(providerOptions)) {
+      if (providerConfig && typeof providerConfig === 'object') {
+        Object.assign(body, providerConfig);
+      }
+    }
+  }
+
   return body;
 }
 
@@ -154,6 +165,20 @@ function convertContent(content: any): string | any[] {
             type: 'text',
             text: part.text,
           };
+        case 'image': {
+          const mediaType =
+            typeof part.mediaType === 'string' && part.mediaType.length > 0
+              ? part.mediaType
+              : 'image/jpeg';
+          const imageData = part.image ?? part.data;
+
+          return {
+            type: 'image_url',
+            image_url: {
+              url: toImageUrl(imageData, mediaType),
+            },
+          };
+        }
         case 'file':
           if (typeof part.mediaType === 'string' && part.mediaType.startsWith('image/')) {
             return {

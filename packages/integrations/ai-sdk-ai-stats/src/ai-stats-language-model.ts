@@ -39,7 +39,9 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
    * Generate a non-streaming response
    */
   async doGenerate(options: LanguageModelV3CallOptions) {
-    const { prompt, abortSignal } = options;
+    const { prompt, abortSignal, headers } = options as LanguageModelV3CallOptions & {
+      headers?: Record<string, string>;
+    };
 
     // Convert AI SDK prompt to gateway format
     const gatewayRequest = convertToGatewayChatRequest(
@@ -59,6 +61,7 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.apiKey}`,
         ...this.config.headers,
+        ...headers,
       },
       body: JSON.stringify({
         ...gatewayRequest,
@@ -75,7 +78,12 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
 
     // Parse and map response
     const data = await response.json();
-    const mapped = mapGatewayResponse(data, options, gatewayRequest);
+    const mapped = mapGatewayResponse(
+      data,
+      options,
+      gatewayRequest,
+      Object.fromEntries(Array.from(response.headers as any) as [string, string][])
+    );
 
     return mapped;
   }
@@ -84,7 +92,9 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
    * Generate a streaming response
    */
   async doStream(options: LanguageModelV3CallOptions) {
-    const { prompt, abortSignal } = options;
+    const { prompt, abortSignal, headers } = options as LanguageModelV3CallOptions & {
+      headers?: Record<string, string>;
+    };
 
     // Convert AI SDK prompt to gateway format
     const gatewayRequest = convertToGatewayChatRequest(
@@ -104,6 +114,7 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.apiKey}`,
         ...this.config.headers,
+        ...headers,
       },
       body: JSON.stringify({
         ...gatewayRequest,
