@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, Mapping, MutableMapping, Optional
 
-SDK_VERSION = "1.0.0"
+SDK_VERSION = "1.0.2"
 SDK_NAME = "python"
 
 
