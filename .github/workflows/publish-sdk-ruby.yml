@@ -41,6 +41,41 @@ jobs:
           fi
           echo "value=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Validate telemetry literals match publish version
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const version = process.env.VERSION;
+          const filePath = "packages/sdk/sdk-ruby/lib/index.rb";
+          const source = fs.readFileSync(filePath, "utf8");
+          const checks = [
+            {
+              label: "TelemetryRecorder constructor version",
+              pattern: /TelemetryRecorder\.new\(devtools,\s*"([^"]+)"\)/,
+            },
+            {
+              label: "TelemetryRecorder default version",
+              pattern: /def initialize\(config = nil, sdk_version = "([^"]+)"\)/,
+            },
+          ];
+          for (const check of checks) {
+            const match = source.match(check.pattern);
+            if (!match) {
+              console.error(`::error::Unable to find ${check.label} in ${filePath}.`);
+              process.exit(1);
+            }
+            const actual = match[1];
+            if (actual !== version) {
+              console.error(`::error::${check.label} mismatch in ${filePath}: expected ${version}, found ${actual}. Run pnpm run sdk:sync-language-manifests and commit the update before publishing.`);
+              process.exit(1);
+            }
+          }
+          NODE
+
       - name: Set gem version
         env:
           VERSION: ${{ steps.version.outputs.value }}
