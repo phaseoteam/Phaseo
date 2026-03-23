@@ -84,6 +84,15 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("anthropic", "embeddings")).toBeNull();
 	});
 
+	it("resolves moderations for openai-compatible providers", () => {
+		expect(resolveProviderExecutor("openai", "moderations")).toBeTruthy();
+		expect(resolveProviderExecutor("openai", "text.moderate")).toBeTruthy();
+		expect(resolveProviderExecutor("google-ai-studio", "moderations")).toBeTruthy();
+		expect(resolveProviderExecutor("together", "moderations")).toBeTruthy();
+		expect(resolveProviderExecutor("mistral", "moderations")).toBeTruthy();
+		expect(resolveProviderExecutor("anthropic", "moderations")).toBeNull();
+	});
+
 	it("normalizes canonical provider ids used in routing hints", () => {
 		const variants = [
 			"OPENAI",

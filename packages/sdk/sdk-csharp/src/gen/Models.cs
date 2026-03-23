@@ -586,6 +586,9 @@ public sealed class DataModel
 	[JsonPropertyName("input_types")]
 	public List<string>? InputTypes { get; set; }
 
+	[JsonPropertyName("lifecycle")]
+	public ModelLifecycle? Lifecycle { get; set; }
+
 	[JsonPropertyName("model_id")]
 	public string? ModelId { get; set; }
 
@@ -1151,6 +1154,9 @@ public sealed class Model
 	[JsonPropertyName("input_types")]
 	public List<string>? InputTypes { get; set; }
 
+	[JsonPropertyName("lifecycle")]
+	public ModelLifecycle? Lifecycle { get; set; }
+
 	[JsonPropertyName("model_id")]
 	public string? ModelId { get; set; }
 
@@ -1205,6 +1211,25 @@ public sealed class Model
 }
 
 public sealed class ModelId { }
+
+public sealed class ModelLifecycle
+{
+	[JsonPropertyName("deprecation_date")]
+	public string? DeprecationDate { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("replacement_model_id")]
+	public string? ReplacementModelId { get; set; }
+
+	[JsonPropertyName("retirement_date")]
+	public string? RetirementDate { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
 
 public sealed class ModelsPrivacyScopeNotImplementedResponse
 {

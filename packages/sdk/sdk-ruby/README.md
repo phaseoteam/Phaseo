@@ -1,25 +1,14 @@
-# AI Stats Ruby SDK (preview)
+# AI Stats Ruby SDK
 
-Generated from the AI Stats Gateway OpenAPI spec. The current wrapper (`lib/index.rb`) only surfaces the `models` endpoint as groundwork.
+Generated from the AI Stats Gateway OpenAPI spec.
 
-Status:
-- **Preview**: Not published yet. Will be released to RubyGems once the client stabilises.
-- Generate with `pnpm openapi:gen:ruby`.
+RubyGems package name: `ai_stats_sdk`
 
-Usage (after generation):
+Generate with `pnpm openapi:gen:ruby`.
+
+Usage:
 ```ruby
-client = AIStatsSdk::Client.new(api_key: '<API_KEY>')
-resp = client.get_models(limit: 5)
+# Uses AI_STATS_API_KEY from environment by default.
+client = AIStatsSdk::AIStats.new
+resp = client.list_models(limit: 5)
 ```
-
-Devtools:
-
-- Telemetry capture is bundled in the SDK family.
-- On package install, you will be prompted to optionally install the viewer.
-- You can always run the viewer directly with:
-
-```bash
-npx @ai-stats/devtools-viewer
-```
-
-Python and TypeScript SDKs are fully supported today; other languages will follow soon.

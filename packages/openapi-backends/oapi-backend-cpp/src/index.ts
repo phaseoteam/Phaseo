@@ -157,6 +157,7 @@ function cppType(schema: IRSchema): string {
 		case "array":
 			return `std::vector<${cppType(schema.items)}>`;
 		case "object":
+			if (isModelLifecycleObject(schema)) return "ModelLifecycle";
 			return "std::map<std::string, std::any>";
 		case "union":
 		case "intersection":
@@ -171,6 +172,14 @@ function cppType(schema: IRSchema): string {
 		default:
 			return "std::any";
 	}
+}
+
+function isModelLifecycleObject(schema: IRSchema): boolean {
+	if (schema.kind !== "object" || schema.additionalProperties) return false;
+	const keys = Object.keys(schema.properties).sort((a, b) => a.localeCompare(b));
+	const expected = ["deprecation_date", "message", "replacement_model_id", "retirement_date", "status"];
+	if (keys.length !== expected.length) return false;
+	return expected.every((value, index) => keys[index] === value);
 }
 
 function exportName(value: string): string {

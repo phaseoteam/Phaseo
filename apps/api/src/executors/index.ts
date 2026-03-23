@@ -87,6 +87,7 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"text.embed": "embeddings",
 	moderation: "moderations",
 	"moderations.create": "moderations",
+	"text.moderate": "moderations",
 	"image.generations": "image.generate",
 	"images.generate": "image.generate",
 	"images.generations": "image.generate",
@@ -103,6 +104,7 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 const OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST = new Set<string>([
 ]);
 const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([]);
+const OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST = new Set<string>([]);
 
 export function normalizeCapability(capability: string): Capability {
 	return CAPABILITY_ALIASES[capability] ?? (capability as Capability);
@@ -179,6 +181,13 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 	) {
 		return openaiEmbeddings;
 	}
+	if (
+		normalizedCapability === "moderations" &&
+		isOpenAICompatProvider(providerId) &&
+		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
+	) {
+		return openaiModerations;
+	}
 	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
 	if (
 		adapterEndpoint &&
@@ -204,6 +213,13 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 		normalizedCapability === "embeddings" &&
 		isOpenAICompatProvider(providerId) &&
 		!OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)
+	) {
+		return true;
+	}
+	if (
+		normalizedCapability === "moderations" &&
+		isOpenAICompatProvider(providerId) &&
+		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
 	) {
 		return true;
 	}

@@ -7,6 +7,8 @@ type CliOptions = {
     discordRoleId: string | null;
     hfOrgs: string[];
     hfToken: string | null;
+    skipInternal: boolean;
+    skipHf: boolean;
 };
 
 type ModelFileSnapshot = {
@@ -49,12 +51,25 @@ function parseArgs(argv: string[]): CliOptions {
     let discordUserId: string | null = null;
     let discordRoleId: string | null = null;
     let hfToken: string | null = null;
+    let skipInternal = false;
+    let skipHf = false;
     const hfOrgs: string[] = [];
 
     for (let index = 0; index < argv.length; index += 1) {
         const key = argv[index];
         const value = argv[index + 1];
         if (!key?.startsWith("--")) continue;
+
+        if (key === "--skip-internal") {
+            skipInternal = true;
+            continue;
+        }
+
+        if (key === "--skip-hf") {
+            skipHf = true;
+            continue;
+        }
+
         if (value === undefined || value.startsWith("--")) continue;
 
         if (key === "--webhook-url") {
@@ -91,7 +106,7 @@ function parseArgs(argv: string[]): CliOptions {
         }
     }
 
-    return { webhookUrl, discordUserId, discordRoleId, hfOrgs, hfToken };
+    return { webhookUrl, discordUserId, discordRoleId, hfOrgs, hfToken, skipInternal, skipHf };
 }
 
 function collectModelJsonFiles(rootDir: string): string[] {
@@ -442,7 +457,7 @@ function buildInternalDiscordMessage(
 function buildHfDiscordMessage(hfAdditionsByOrg: HuggingFaceOrgAdditions[]): string {
     const total = countHfAdditions(hfAdditionsByOrg);
     const lines: string[] = [
-        `:hugging: New Hugging Face model discovery detected (${total} model${total === 1 ? "" : "s"} across ${hfAdditionsByOrg.length} org${hfAdditionsByOrg.length === 1 ? "" : "s"}).`,
+        `External model discovery detected via Hugging Face (${total} model${total === 1 ? "" : "s"} across ${hfAdditionsByOrg.length} org${hfAdditionsByOrg.length === 1 ? "" : "s"}).`,
         "",
     ];
 
@@ -507,6 +522,8 @@ async function sendDiscordWebhook(
 
 async function main(): Promise<void> {
     const options = parseArgs(process.argv.slice(2));
+    const shouldCheckInternal = !options.skipInternal;
+    const shouldCheckHf = !options.skipHf && options.hfOrgs.length > 0;
     const repoRoot = process.cwd();
     const stateDir = path.join(repoRoot, "scripts", "model-discovery", "state");
     const statePath = path.join(stateDir, "internal-model-files-state.json");
@@ -514,8 +531,10 @@ async function main(): Promise<void> {
 
     const previous = readState(statePath);
     const previousState = previous.state;
-    const currentFiles = buildCurrentFileMap(repoRoot);
-    const currentHf = await buildCurrentHfOrgMap(options.hfOrgs, options.hfToken, previousState.hfOrgs);
+    const currentFiles = shouldCheckInternal ? buildCurrentFileMap(repoRoot) : previousState.files;
+    const currentHf = shouldCheckHf
+        ? await buildCurrentHfOrgMap(options.hfOrgs, options.hfToken, previousState.hfOrgs)
+        : { snapshots: previousState.hfOrgs, fetchedOrgs: new Set<string>() };
 
     const nextState: InternalModelsFileState = {
         version: 2,
@@ -526,8 +545,8 @@ async function main(): Promise<void> {
     writeJson(statePath, nextState);
 
     const diff = diffStates(previousState, currentFiles);
-    const hfFirstBaseline = options.hfOrgs.length > 0 && !previous.hasHfState;
-    const hfAdditionsByOrg = hfFirstBaseline
+    const hfFirstBaseline = shouldCheckHf && !previous.hasHfState;
+    const hfAdditionsByOrg = !shouldCheckHf || hfFirstBaseline
         ? []
         : diffHfOrgAdditions(previousState.hfOrgs, currentHf.snapshots, currentHf.fetchedOrgs, options.hfOrgs);
     const hfAdditionsTotal = countHfAdditions(hfAdditionsByOrg);
@@ -545,16 +564,22 @@ async function main(): Promise<void> {
         },
     });
 
-    console.log(
-        `[internal-model-check] Internal model files: ${diff.previousCount} -> ${diff.currentCount} (added=${diff.added.length}, removed=${diff.removed.length}, changed=${diff.changed.length}).`
-    );
-    if (options.hfOrgs.length > 0) {
+    if (shouldCheckInternal) {
+        console.log(
+            `[internal-model-check] Internal model files: ${diff.previousCount} -> ${diff.currentCount} (added=${diff.added.length}, removed=${diff.removed.length}, changed=${diff.changed.length}).`
+        );
+    } else {
+        console.log("[internal-model-check] Internal model diff disabled (--skip-internal).");
+    }
+    if (options.hfOrgs.length > 0 && shouldCheckHf) {
         console.log(
             `[internal-model-check] HF orgs configured=${options.hfOrgs.length}, fetched=${currentHf.fetchedOrgs.size}, added=${hfAdditionsTotal}.`
         );
+    } else if (options.hfOrgs.length > 0 && !shouldCheckHf) {
+        console.log("[internal-model-check] HF org checks disabled (--skip-hf).");
     }
 
-    if (diff.previousCount === 0) {
+    if (shouldCheckInternal && diff.previousCount === 0) {
         console.log("[internal-model-check] Baseline initialized. Skipping first-run notifications.");
         return;
     }
@@ -563,20 +588,22 @@ async function main(): Promise<void> {
         console.log("[internal-model-check] HF baseline initialized from existing state; skipping HF notifications this run.");
     }
 
-    if (diff.added.length === 0 && diff.removed.length === 0 && hfAdditionsTotal === 0) {
+    const internalChangeCount = shouldCheckInternal ? diff.added.length + diff.removed.length : 0;
+    if (internalChangeCount === 0 && hfAdditionsTotal === 0) {
         console.log("[internal-model-check] No internal or HF model additions/removals detected.");
         return;
     }
 
     if (!options.webhookUrl) {
-        const total = diff.added.length + diff.removed.length + hfAdditionsTotal;
-        console.log(`[internal-model-check] ${total} model change(s) detected (internal + HF), but no webhook URL was provided.`);
+        const total = internalChangeCount + hfAdditionsTotal;
+        console.log(
+            `[internal-model-check] ${total} model change(s) detected (${internalChangeCount} internal, ${hfAdditionsTotal} HF), but no webhook URL was provided.`
+        );
         return;
     }
 
-    const internalChangeCount = diff.added.length + diff.removed.length;
-    const shouldSendInternal = internalChangeCount > 0;
-    const shouldSendHf = hfAdditionsTotal > 0;
+    const shouldSendInternal = shouldCheckInternal && internalChangeCount > 0;
+    const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0;
 
     console.log(
         `[internal-model-check] Changes detected (${diff.added.length} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`

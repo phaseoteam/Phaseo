@@ -686,7 +686,7 @@
       }
     },
     "src/data/benchmarks/swe-bench-pro/benchmark.json": {
-      "hash": "1e924bbdb407582491b8fcb21d0dbe51",
+      "hash": "4ad2fbc0de794b230aad48dc04d50a96",
       "meta": {
         "benchmark_id": "swe-bench-pro"
       }
@@ -1166,7 +1166,7 @@
       }
     },
     "src/data/benchmarks/gdpval-aa/benchmark.json": {
-      "hash": "1702dd9728d7cd64455a0c643256e40b",
+      "hash": "6c78bb77eafe3da846a05c6ff6e4145f",
       "meta": {
         "benchmark_id": "gdpval-aa"
       }
@@ -1530,7 +1530,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-haiku-2024-03-13/model.json": {
-      "hash": "25bac8a40b22320f0744057f89a8b839",
+      "hash": "55feaee86161fdd7f54e22922fb14077",
       "meta": {
         "model_id": "anthropic/claude-3-haiku-2024-03-13",
         "organisation_id": "anthropic",
@@ -1602,7 +1602,7 @@
       }
     },
     "src/data/models/anthropic/claude-opus-4-5-2025-11-24/model.json": {
-      "hash": "817cb5df0e194025955e0a7db5ee553d",
+      "hash": "93a575b548db3fa527bb3c20d152628a",
       "meta": {
         "model_id": "anthropic/claude-opus-4-5-2025-11-24",
         "organisation_id": "anthropic",
@@ -2818,7 +2818,7 @@
       }
     },
     "src/data/models/google/gemini-3-1-pro-preview-2026-02-19/model.json": {
-      "hash": "1f5dfc8e136f5bbe9b87a487d5a218db",
+      "hash": "33e2bad9f3cc9db9be82a0a6bdb09c57",
       "meta": {
         "model_id": "google/gemini-3-1-pro-preview-2026-02-19",
         "organisation_id": "google",
@@ -5634,7 +5634,7 @@
       }
     },
     "src/data/models/openai/gpt-5-2-2025-12-11/model.json": {
-      "hash": "fb4e652f93d6cf6ef13316785bc508ef",
+      "hash": "41f74c7254e4043ba96f4a5363550294",
       "meta": {
         "model_id": "openai/gpt-5-2-2025-12-11",
         "organisation_id": "openai",
@@ -5962,7 +5962,7 @@
       }
     },
     "src/data/models/openai/omni-moderation-2024-09-26/model.json": {
-      "hash": "c5baaddf9e2f10e00d19935047abe58f",
+      "hash": "0cb1e9c33d58a970f2e7ce7698accc40",
       "meta": {
         "model_id": "openai/omni-moderation-2024-09-26",
         "organisation_id": "openai",
@@ -8389,7 +8389,7 @@
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "e982e4bfa75366f7b6859a867e84b807",
+      "hash": "55694778ddc0c603cfe853856100e5d5",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -8402,7 +8402,7 @@
       }
     },
     "src/data/api_providers/google-vertex/models.json": {
-      "hash": "4072d43c19a0a81b314bbeb845932828",
+      "hash": "73e04321c799c1738a6d1a3ddee09e61",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -8471,7 +8471,7 @@
       }
     },
     "src/data/api_providers/minimax/models.json": {
-      "hash": "81beab3c33f219a0e5a7b4f63728b050",
+      "hash": "c41153d58cb7cab767b58f2e7f9516b0",
       "meta": {
         "api_provider_id": "minimax",
         "kind": "provider_models"
@@ -8484,7 +8484,7 @@
       }
     },
     "src/data/api_providers/minimax-lightning/models.json": {
-      "hash": "bfaae07a924d65e5e9ab3083f8abb985",
+      "hash": "f57337a40c87c0d49e29c86e1f2b3bc4",
       "meta": {
         "api_provider_id": "minimax-lightning",
         "kind": "provider_models"
@@ -8497,7 +8497,7 @@
       }
     },
     "src/data/api_providers/mistral/models.json": {
-      "hash": "f04ef9e98650f9d472953443d704aa73",
+      "hash": "7f1d01605e191f07ac7919a4c9bc02a3",
       "meta": {
         "api_provider_id": "mistral",
         "kind": "provider_models"
@@ -8567,7 +8567,7 @@
       }
     },
     "src/data/api_providers/novita/models.json": {
-      "hash": "afe028a92ad8a4971ac0d1abe6165b9d",
+      "hash": "2f42344186eb8a009bc7055703676f0a",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -8586,7 +8586,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "43df9f59e0fb5b42daa01a178baceb1b",
+      "hash": "e0b7ad0888145871732e5fd139056a13",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -8674,7 +8674,7 @@
       }
     },
     "src/data/api_providers/venice/models.json": {
-      "hash": "6c37c979d0750fbdcdcf0ba44aeeffca",
+      "hash": "e4cc75ebb1ef101b298792b10d1fc00d",
       "meta": {
         "api_provider_id": "venice",
         "kind": "provider_models"
@@ -8713,7 +8713,7 @@
       }
     },
     "src/data/api_providers/xiaomi/models.json": {
-      "hash": "e12c3878cc74429d79296d1d581b3e0b",
+      "hash": "f3543115272cdf5c557d763461ee3b35",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -8841,7 +8841,7 @@
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4.6/text.generate/pricing.json": {
-      "hash": "f2ac4bf268d9b000d5f1437faf9b5633",
+      "hash": "435bf73add9073608ef600deef72db4e",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
@@ -8868,7 +8868,7 @@
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-sonnet-4.6/text.generate/pricing.json": {
-      "hash": "1f7bc8fce499c13d66689144747500f1",
+      "hash": "5fc792291e051f484f85725287362ca7",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
@@ -11112,7 +11112,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.4/batch/pricing.json": {
-      "hash": "13c215d8e6eee8cf358b6f9a4d57762d",
+      "hash": "b65a81a1ec3714f297798eb6018b5ea5",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "batch",
@@ -11121,7 +11121,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.4/text.generate/pricing.json": {
-      "hash": "62e8511b751eae73aecb5b954a90edcd",
+      "hash": "c903d0e118c29b225be0d2a41e425ad8",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -11130,7 +11130,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.4-pro/batch/pricing.json": {
-      "hash": "67942fcd4379f33d22a90c3349ddc4f3",
+      "hash": "c6220fe1b3cb6bcc29c9ad42e381d8c5",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "batch",
@@ -11139,7 +11139,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.4-pro/text.generate/pricing.json": {
-      "hash": "90c8ec76ef7c6ab1dd0dc108e8433953",
+      "hash": "f3f827ea07973fe96daf2472993aeae6",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -11200,7 +11200,7 @@
       }
     },
     "src/data/pricing/x-ai/x-ai-grok-4.20-beta-0309/text.generate/pricing.json": {
-      "hash": "c6927a1c99b5c14c145558e9b58b517d",
+      "hash": "b9a4df86fffbda6101e6aff3942f3ace",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -11209,7 +11209,7 @@
       }
     },
     "src/data/pricing/x-ai/x-ai-grok-4.20-multi-agent-beta-0309/text.generate/pricing.json": {
-      "hash": "d856d9778d0ad9b8a152a048403e89ea",
+      "hash": "2b6bd120a19cb9aff4d26a0ef139ad0c",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -11242,7 +11242,7 @@
       }
     },
     "src/data/models/openai/gpt-5-4-mini-2026-03-17/model.json": {
-      "hash": "4427ba068502cf2a8fe03adef286bbd2",
+      "hash": "8a2d640fc162f5ab062afa30e2f9b169",
       "meta": {
         "model_id": "openai/gpt-5-4-mini-2026-03-17",
         "organisation_id": "openai",
@@ -11250,7 +11250,7 @@
       }
     },
     "src/data/models/openai/gpt-5-4-nano-2026-03-17/model.json": {
-      "hash": "adcb270367a5bb14f80b5ae222fd5f07",
+      "hash": "73870ef6085980956310569ed13bb7c1",
       "meta": {
         "model_id": "openai/gpt-5-4-nano-2026-03-17",
         "organisation_id": "openai",
@@ -11317,7 +11317,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.4-mini/text.generate/pricing.json": {
-      "hash": "aedee332dc44ad5aabbc53134e10109e",
+      "hash": "8d9a4a43e951a4ecbd7f0d9f123cbd05",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -11326,7 +11326,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.4-nano/text.generate/pricing.json": {
-      "hash": "c88d065d3e646cc31471a399d5acd743",
+      "hash": "8fbb8ec7ac4a2b20bebb39f58a612c13",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -11350,6 +11350,145 @@
         "capability_id": "text.generate",
         "model_id": "z-ai/glm-5-turbo",
         "model_key": "z-ai:z-ai/glm-5-turbo:text.generate"
+      }
+    },
+    "src/data/models/minimax/minimax-m2-7-2026-03-18/model.json": {
+      "hash": "6c19b0f827dc126e4c5a7f09431c5ae4",
+      "meta": {
+        "model_id": "minimax/minimax-m2-7-2026-03-18",
+        "organisation_id": "minimax",
+        "previous_model_id": "minimax/minimax-m2-5-2026-02-12"
+      }
+    },
+    "src/data/models/mistral/mistral-moderation-2-2026-03-17/model.json": {
+      "hash": "1fac6e78702ee294b3440a74cf8abc95",
+      "meta": {
+        "model_id": "mistral/mistral-moderation-2-2026-03-17",
+        "organisation_id": "mistral",
+        "previous_model_id": "mistral/mistral-moderation-2024-11-06"
+      }
+    },
+    "src/data/models/xiaomi/mimo-v2-omni-2026-03-18/model.json": {
+      "hash": "8437ef5ae0eba9a14805a05296620a47",
+      "meta": {
+        "model_id": "xiaomi/mimo-v2-omni-2026-03-18",
+        "organisation_id": "xiaomi",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/xiaomi/mimo-v2-pro-2026-03-18/model.json": {
+      "hash": "f6d0a0e399b813ce272fea843cc9a3bc",
+      "meta": {
+        "model_id": "xiaomi/mimo-v2-pro-2026-03-18",
+        "organisation_id": "xiaomi",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/xiaomi/mimo-v2-tts-2026-03-18/model.json": {
+      "hash": "5c22c5b317e08026ec914012637c0884",
+      "meta": {
+        "model_id": "xiaomi/mimo-v2-tts-2026-03-18",
+        "organisation_id": "xiaomi",
+        "previous_model_id": null
+      }
+    },
+    "src/data/aliases/minimax-m2.x-latest/alias.json": {
+      "hash": "4ac793c22b83e92e244a74427fef995b",
+      "meta": {
+        "alias_slug": "minimax/m2.x-latest"
+      }
+    },
+    "src/data/aliases/openai-gpt-mini-latest/alias.json": {
+      "hash": "c20161379db775067733807dbda78543",
+      "meta": {
+        "alias_slug": "openai/gpt-mini-latest"
+      }
+    },
+    "src/data/aliases/openai-gpt-nano-latest/alias.json": {
+      "hash": "6adae686a51782c629e007a1ac482d38",
+      "meta": {
+        "alias_slug": "openai/gpt-nano-latest"
+      }
+    },
+    "src/data/pricing/google-ai-studio/google-gemini-3.1-pro-preview-customtools/text.generate/pricing.json": {
+      "hash": "b79fb635d4174c3c497c090740a30f63",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "text.generate",
+        "model_id": "google/gemini-3.1-pro-preview-customtools",
+        "model_key": "google-ai-studio:google/gemini-3.1-pro-preview-customtools:text.generate"
+      }
+    },
+    "src/data/pricing/minimax/minimax-minimax-m2.7/text.generate/pricing.json": {
+      "hash": "7fc32b5ef0b509da9a24393880493931",
+      "meta": {
+        "api_provider_id": "minimax",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.7",
+        "model_key": "minimax:minimax/minimax-m2.7:text.generate"
+      }
+    },
+    "src/data/pricing/minimax-lightning/minimax-minimax-m2.7/text.generate/pricing.json": {
+      "hash": "d68873cafb2a9f12cbf24f062bd8a834",
+      "meta": {
+        "api_provider_id": "minimax-lightning",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.7",
+        "model_key": "minimax-lightning:minimax/minimax-m2.7:text.generate"
+      }
+    },
+    "src/data/pricing/mistral/mistral-mistral-moderation-2/text.moderate/pricing.json": {
+      "hash": "3ed0d4024de9dd3e57cac294a69acb63",
+      "meta": {
+        "api_provider_id": "mistral",
+        "capability_id": "text.moderate",
+        "model_id": "mistral/mistral-moderation-2",
+        "model_key": "mistral:mistral/mistral-moderation-2:text.moderate"
+      }
+    },
+    "src/data/pricing/novita/minimax-minimax-m2.7/text.generate/pricing.json": {
+      "hash": "31b98376bcab4d2d01af677ece23d196",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.7",
+        "model_key": "novita:minimax/minimax-m2.7:text.generate"
+      }
+    },
+    "src/data/pricing/xiaomi/xiaomi-mimo-v2-omni/text.generate/pricing.json": {
+      "hash": "d28bd97218f33bdcc5686ccd092cd6da",
+      "meta": {
+        "api_provider_id": "xiaomi",
+        "capability_id": "text.generate",
+        "model_id": "xiaomi/mimo-v2-omni",
+        "model_key": "xiaomi:xiaomi/mimo-v2-omni:text.generate"
+      }
+    },
+    "src/data/pricing/xiaomi/xiaomi-mimo-v2-pro/text.generate/pricing.json": {
+      "hash": "53af6e7c043823c3341e370e6f834d9d",
+      "meta": {
+        "api_provider_id": "xiaomi",
+        "capability_id": "text.generate",
+        "model_id": "xiaomi/mimo-v2-pro",
+        "model_key": "xiaomi:xiaomi/mimo-v2-pro:text.generate"
+      }
+    },
+    "src/data/pricing/xiaomi/xiaomi-mimo-v2-tts-free/audio.speech/pricing.json": {
+      "hash": "179ffddf7585851670a136f8ef84a2ef",
+      "meta": {
+        "api_provider_id": "xiaomi",
+        "capability_id": "audio.speech",
+        "model_id": "xiaomi/mimo-v2-tts:free",
+        "model_key": "xiaomi:xiaomi/mimo-v2-tts:free:audio.speech"
+      }
+    },
+    "src/data/pricing/venice/minimax-minimax-m2.7/text.generate/pricing.json": {
+      "hash": "2c0e9c48c60fcfa1941f7626e41084d1",
+      "meta": {
+        "api_provider_id": "venice",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.7",
+        "model_key": "venice:minimax/minimax-m2.7:text.generate"
       }
     }
   }

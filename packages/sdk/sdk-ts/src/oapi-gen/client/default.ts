@@ -2811,8 +2811,10 @@ export type ListDataModelsParams = {
   query?: {
     feed?: "json" | "rss" | "atom";
     format?: "json" | "rss" | "atom";
+    id?: string | string[];
     include_hidden?: boolean;
     limit?: number;
+    model_id?: string | string[];
     offset?: number;
     organisation?:
       | "ai21"
@@ -2918,6 +2920,13 @@ export async function listDataModels(
     deprecation_date?: string | null;
     hidden?: boolean;
     input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
     model_id?: string | null;
     name?: string | null;
     organisation?: {
@@ -2944,6 +2953,13 @@ export async function listDataModels(
       deprecation_date?: string | null;
       hidden?: boolean;
       input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
       model_id?: string | null;
       name?: string | null;
       organisation?: {
@@ -3367,6 +3383,7 @@ export async function listEndpoints(
     | "minimax/minimax-m2-1-2025-12-23"
     | "minimax/minimax-m2-2025-10-27"
     | "minimax/minimax-m2-5-2026-02-12"
+    | "minimax/minimax-m2-7-2026-03-18"
     | "minimax/minimax-m2-her-2026-01-24"
     | "minimax/minimax-text-01-2025-01-15"
     | "minimax/minimax-vl-01-2025-01-15"
@@ -3416,6 +3433,7 @@ export async function listEndpoints(
     | "mistral/mistral-medium-1-0-2023-12-11"
     | "mistral/mistral-medium-3-0-2025-05-07"
     | "mistral/mistral-medium-3-1-2025-08-12"
+    | "mistral/mistral-moderation-2-2026-03-17"
     | "mistral/mistral-moderation-2024-11-06"
     | "mistral/mistral-nemo-12b-2024-07-18"
     | "mistral/mistral-ocr-2-2025-05-22"
@@ -3811,6 +3829,9 @@ export async function listEndpoints(
     | "x-ai/grok-imagine-image-pro-2026-01-29"
     | "x-ai/grok-imagine-video-2026-01-29"
     | "xiaomi/mimo-v2-flash-2025-12-16"
+    | "xiaomi/mimo-v2-omni-2026-03-18"
+    | "xiaomi/mimo-v2-pro-2026-03-18"
+    | "xiaomi/mimo-v2-tts-2026-03-18"
     | "z-ai/glm-4-1v-9b-2025-07-02"
     | "z-ai/glm-4-1v-thinking-9b-2025-07-02"
     | "z-ai/glm-4-32b-2025-04-15"
@@ -4221,6 +4242,7 @@ export async function listEndpoints(
       | "minimax/minimax-m2-1-2025-12-23"
       | "minimax/minimax-m2-2025-10-27"
       | "minimax/minimax-m2-5-2026-02-12"
+      | "minimax/minimax-m2-7-2026-03-18"
       | "minimax/minimax-m2-her-2026-01-24"
       | "minimax/minimax-text-01-2025-01-15"
       | "minimax/minimax-vl-01-2025-01-15"
@@ -4270,6 +4292,7 @@ export async function listEndpoints(
       | "mistral/mistral-medium-1-0-2023-12-11"
       | "mistral/mistral-medium-3-0-2025-05-07"
       | "mistral/mistral-medium-3-1-2025-08-12"
+      | "mistral/mistral-moderation-2-2026-03-17"
       | "mistral/mistral-moderation-2024-11-06"
       | "mistral/mistral-nemo-12b-2024-07-18"
       | "mistral/mistral-ocr-2-2025-05-22"
@@ -4665,6 +4688,9 @@ export async function listEndpoints(
       | "x-ai/grok-imagine-image-pro-2026-01-29"
       | "x-ai/grok-imagine-video-2026-01-29"
       | "xiaomi/mimo-v2-flash-2025-12-16"
+      | "xiaomi/mimo-v2-omni-2026-03-18"
+      | "xiaomi/mimo-v2-pro-2026-03-18"
+      | "xiaomi/mimo-v2-tts-2026-03-18"
       | "z-ai/glm-4-1v-9b-2025-07-02"
       | "z-ai/glm-4-1v-thinking-9b-2025-07-02"
       | "z-ai/glm-4-32b-2025-04-15"
@@ -4904,6 +4930,13 @@ export async function listModels(
     endpoints?: string[];
     id?: string;
     input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
     model_id?: string;
     name?: string | null;
     organisation_colour?: string | null;
@@ -4970,6 +5003,13 @@ export async function listModels(
       endpoints?: string[];
       id?: string;
       input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
       model_id?: string;
       name?: string | null;
       organisation_colour?: string | null;

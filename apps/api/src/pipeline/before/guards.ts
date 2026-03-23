@@ -287,6 +287,7 @@ export function makeMeta(input: {
     const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
     const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
+    const accept = input.req.headers.get("accept");
     const cfRay = input.req.headers.get("cf-ray");
     const edge = getEdgeMeta(input.req);
     const forwardedFor = input.req.headers.get("x-forwarded-for");
@@ -335,6 +336,7 @@ export function makeMeta(input: {
         appId,
         appName,
         requestMethod: input.req.method ?? null,
+        accept,
         requestUrl,
         requestPath,
         userAgent,

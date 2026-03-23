@@ -6,7 +6,10 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/php-sdk",
+    "validate": "php -r \"json_decode(file_get_contents('composer.json')); if (json_last_error()) { fwrite(STDERR, 'Invalid composer.json'.PHP_EOL); exit(1);} \"",
+    "test": "php tests/lifecycle_test.php && php tests/devtools_test.php && php tests/tls_config_test.php",
     "smoke:chat": "dotenv -e .env.local -- php tests/smoke_chat.php",
-    "smoke:responses": "dotenv -e .env.local -- php tests/smoke_responses.php"
+    "smoke:responses": "dotenv -e .env.local -- php tests/smoke_responses.php",
+    "smoke:responses:sdk": "dotenv -e .env.local -- php tests/smoke_responses_sdk.php"
   }
 }

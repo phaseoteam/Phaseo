@@ -1,4 +1,11 @@
-type AudioMode = "speech" | "transcription" | "translation";
+export type AudioMode = "speech" | "transcription" | "translation";
+export const CHAT_AUDIO_SPEECH_FORMAT = "mp3";
+
+export type AudioModeSupport = {
+	speech: boolean;
+	transcription: boolean;
+	translation: boolean;
+};
 
 export type ImageRoomParams = {
 	size: string;
@@ -54,6 +61,12 @@ type AudioModelSchema = {
 	formatOptions: string[];
 	supportsSpeechSpeed: boolean;
 	supportsLanguageHint: boolean;
+};
+
+const AUDIO_MODE_SUPPORT_FALLBACK: AudioModeSupport = {
+	speech: true,
+	transcription: true,
+	translation: true,
 };
 
 type EmbeddingsModelSchema = {
@@ -123,6 +136,14 @@ export function getVideoModelSchema(modelId: string): VideoModelSchema {
 }
 
 export function getAudioModelSchema(modelId: string): AudioModelSchema {
+	if (modelIdIncludes(modelId, ["mimo-v2-tts"])) {
+		return {
+			voiceOptions: ["mimo_Default"],
+			formatOptions: ["mp3", "wav", "pcm"],
+			supportsSpeechSpeed: false,
+			supportsLanguageHint: false,
+		};
+	}
 	if (modelIdIncludes(modelId, ["gpt-4o-mini-tts", "gpt-4o-audio"])) {
 		return {
 			voiceOptions: ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer"],
@@ -145,6 +166,76 @@ export function getAudioModelSchema(modelId: string): AudioModelSchema {
 		supportsSpeechSpeed: true,
 		supportsLanguageHint: true,
 	};
+}
+
+function normalizeCapabilityId(value: string): string {
+	return value.trim().toLowerCase();
+}
+
+function hasCapabilityMatch(
+	capabilities: string[],
+	hints: string[],
+): boolean {
+	return capabilities.some((capabilityId) =>
+		hints.some((hint) => capabilityId.includes(hint)),
+	);
+}
+
+function hasAnyAudioCapability(capabilities: string[]): boolean {
+	return capabilities.some(
+		(capabilityId) =>
+			capabilityId === "audio" ||
+			capabilityId.startsWith("audio."),
+	);
+}
+
+export function getAudioModeSupportForCapabilities(
+	capabilityIds: string[] | null | undefined,
+): AudioModeSupport {
+	const normalized = Array.from(
+		new Set((capabilityIds ?? []).map(normalizeCapabilityId).filter(Boolean)),
+	);
+	if (normalized.length === 0) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	if (!hasAnyAudioCapability(normalized)) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	const hasGenericAudio = normalized.includes("audio");
+	if (hasGenericAudio) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	return {
+		speech: hasCapabilityMatch(normalized, ["audio.speech", "audio.generate"]),
+		transcription: hasCapabilityMatch(normalized, [
+			"audio.transcription",
+			"audio.transcribe",
+		]),
+		translation: hasCapabilityMatch(normalized, [
+			"audio.translation",
+			"audio.translate",
+		]),
+	};
+}
+
+export function mergeAudioModeSupport(
+	support: AudioModeSupport[],
+): AudioModeSupport {
+	if (support.length === 0) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	const merged = support.reduce<AudioModeSupport>(
+		(acc, current) => ({
+			speech: acc.speech || current.speech,
+			transcription: acc.transcription || current.transcription,
+			translation: acc.translation || current.translation,
+		}),
+		{ speech: false, transcription: false, translation: false },
+	);
+	if (!merged.speech && !merged.transcription && !merged.translation) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	return merged;
 }
 
 export function getEmbeddingsModelSchema(modelId: string): EmbeddingsModelSchema {
@@ -194,9 +285,12 @@ export function getDefaultVideoRoomParams(modelId: string): VideoRoomParams {
 
 export function getDefaultAudioRoomParams(modelId: string): AudioRoomParams {
 	const schema = getAudioModelSchema(modelId);
+	const defaultSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
+		? CHAT_AUDIO_SPEECH_FORMAT
+		: (schema.formatOptions[0] ?? CHAT_AUDIO_SPEECH_FORMAT);
 	return {
 		speechVoice: schema.voiceOptions[0] ?? "alloy",
-		speechFormat: schema.formatOptions[0] ?? "mp3",
+		speechFormat: defaultSpeechFormat,
 		speechSpeed: 1,
 		transcriptionLanguage: "",
 		transcriptionPrompt: "",
@@ -272,9 +366,10 @@ export function buildAudioRequestOptions(
 		if (schema.voiceOptions.includes(params.speechVoice)) {
 			next.voice = params.speechVoice;
 		}
-		if (schema.formatOptions.includes(params.speechFormat)) {
-			next.format = params.speechFormat;
-		}
+		const normalizedSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
+			? CHAT_AUDIO_SPEECH_FORMAT
+			: (schema.formatOptions[0] ?? CHAT_AUDIO_SPEECH_FORMAT);
+		next.response_format = normalizedSpeechFormat;
 		if (schema.supportsSpeechSpeed) {
 			next.speed = Math.max(0.25, Math.min(4, Number(params.speechSpeed) || 1));
 		}

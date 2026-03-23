@@ -1,6 +1,6 @@
 export default function ChatPlaygroundShell() {
     return (
-        <div className="flex h-dvh w-full">
+        <div className="flex h-full min-h-0 w-full">
             <aside className="hidden h-full w-64 flex-col border-r border-border bg-background md:flex">
                 <div className="flex flex-1 flex-col gap-4 px-4 py-5">
                     <div className="h-8 w-28 rounded-md bg-muted/50" />

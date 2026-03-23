@@ -213,12 +213,13 @@ All language implementations should:
 
 | Language | Status | Package | Viewer Support |
 |----------|--------|---------|----------------|
-| TypeScript | ✅ Complete | `@ai-stats/sdk`, `@ai-stats/devtools` | ✅ Native |
-| Python | 🚧 Coming Soon | `ai-stats` | ✅ Compatible |
-| Go | 🚧 Coming Soon | `github.com/ai-stats/ai-stats-go` | ✅ Compatible |
-| C# | 🚧 Coming Soon | `AIStats` | ✅ Compatible |
-| Ruby | 🚧 Coming Soon | `ai_stats` | ✅ Compatible |
-| PHP | 🚧 Coming Soon | `ai-stats/ai-stats-php` | ✅ Compatible |
-| Rust | 🚧 Coming Soon | `ai-stats` | ✅ Compatible |
+| TypeScript | Complete | `@ai-stats/sdk`, `@ai-stats/devtools` | Native |
+| Python | Complete | `ai-stats` | Compatible |
+| Go | Complete | `github.com/ai-stats/ai-stats-go` | Compatible |
+| C# | Complete | `AIStats` | Compatible |
+| Java | Complete | `ai-stats-sdk` | Compatible |
+| Ruby | Complete | `ai_stats` | Compatible |
+| PHP | Complete | `ai-stats/ai-stats-php` | Compatible |
+| Rust | Coming Soon | `ai-stats` | Compatible |
 
 The devtools viewer (`@ai-stats/devtools-viewer`) already supports viewing data from any language implementation.

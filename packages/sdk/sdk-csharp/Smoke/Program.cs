@@ -1,11 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using AiStatsSdk;
-using AiStatsSdk.Model;
-
-record Operation(string Method, string Path, int ExpectStatus, JsonElement Body);
-
-record Manifest(string? ApiKeyEnv, string? BaseUrlEnv, string DefaultBaseUrl, Dictionary<string, Operation> Operations);
 
 static Manifest LoadManifest()
 {
@@ -46,24 +41,24 @@ if (!healthJson.RootElement.TryGetProperty("status", out _))
     throw new InvalidOperationException("health status missing");
 }
 
-var client = new Client(apiKey, baseUrl);
+var client = new AIStats(apiKey, baseUrl);
 
 // Models
-var models = client.GetModels();
-if (models.Models == null || models.Models.Count == 0)
+var models = await client.ListModels();
+if (models is null || !models.ContainsKey("models"))
 {
-    throw new InvalidOperationException("models list empty");
+    throw new InvalidOperationException("models response missing models key");
 }
 
 // Chat completion
 var chatOp = manifest.Operations["chat"];
 var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-var chatReq = JsonSerializer.Deserialize<ChatCompletionsRequest>(chatOp.Body.GetRawText(), jsonOpts)
+var chatReq = JsonSerializer.Deserialize<Dictionary<string, object>>(chatOp.Body.GetRawText(), jsonOpts)
              ?? throw new InvalidOperationException("chat payload parse failed");
-var chat = client.GenerateText(chatReq);
-if (chat.Choices == null || chat.Choices.Count == 0)
+var chat = await client.GenerateText(chatReq);
+if (chat is null || !chat.ContainsKey("choices"))
 {
-    throw new InvalidOperationException("chat choices empty");
+    throw new InvalidOperationException("chat response missing choices key");
 }
 
 // Unauthorized
@@ -86,3 +81,7 @@ if ((int)nfRes.StatusCode != nfOp.ExpectStatus)
 
 Console.WriteLine("csharp smoke ok");
 return 0;
+
+record Operation(string Method, string Path, int ExpectStatus, JsonElement Body);
+
+record Manifest(string? ApiKeyEnv, string? BaseUrlEnv, string DefaultBaseUrl, Dictionary<string, Operation> Operations);

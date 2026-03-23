@@ -15,6 +15,7 @@ import {
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
 type PrivacyScope = "shared" | "team";
+type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 
 type OpenRouterPricing = {
     prompt: string | null;
@@ -101,6 +102,59 @@ function parsePrivacyScope(url: URL): PrivacyScope | null {
     return null;
 }
 
+function normalizeLifecycleStatus(
+    status: string | null | undefined,
+    deprecationDate: string | null | undefined,
+    retirementDate: string | null | undefined
+): LifecycleStatus {
+    const now = Date.now();
+    const retirement = toUnixSeconds(retirementDate);
+    if (retirement !== null && retirement * 1000 <= now) return "retired";
+
+    const normalized = (status ?? "").trim().toLowerCase();
+    if (normalized === "retired") return "retired";
+
+    const deprecation = toUnixSeconds(deprecationDate);
+    if (deprecation !== null && deprecation * 1000 <= now) return "deprecated";
+    if (normalized === "deprecated") return "deprecated";
+
+    if (!normalized) return null;
+    return "active";
+}
+
+function buildLifecycleMessage(
+    lifecycleStatus: LifecycleStatus,
+    deprecationDate: string | null,
+    retirementDate: string | null,
+    replacementModelId: string | null
+): string | null {
+    const replacement = replacementModelId ? ` Use "${replacementModelId}" instead.` : "";
+    if (lifecycleStatus === "retired") {
+        return retirementDate
+            ? `Model retired on ${retirementDate}.${replacement}`
+            : `Model is retired.${replacement}`;
+    }
+    if (lifecycleStatus === "deprecated") {
+        return retirementDate
+            ? `Model is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`
+            : deprecationDate
+                ? `Model is deprecated since ${deprecationDate}.${replacement}`
+                : `Model is deprecated.${replacement}`;
+    }
+    return null;
+}
+
+function buildReplacementByPreviousModel(catalogue: CatalogueModel[]): Map<string, string> {
+    const map = new Map<string, string>();
+    for (const model of catalogue) {
+        const previousModelId = String(model.previous_model_id ?? "").trim();
+        const replacementModelId = String(model.model_id ?? "").trim();
+        if (!previousModelId || !replacementModelId || map.has(previousModelId)) continue;
+        map.set(previousModelId, replacementModelId);
+    }
+    return map;
+}
+
 function toUnixSeconds(value: string | null): number | null {
     if (!value) return null;
     const parsed = Date.parse(value);
@@ -181,11 +235,13 @@ function buildDescription(model: CatalogueModel): string {
     return `${displayName} via AI Stats Gateway. Supports ${model.endpoints.join(", ")}.`;
 }
 
-function toRichModel(model: CatalogueModel) {
+function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
+    const { previous_model_id: _previousModelId, ...publicModel } = model;
     const legacyTopProvider = model.top_provider;
     const legacyPricing = model.pricing;
+    const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
     return {
-        ...model,
+        ...publicModel,
         id: model.model_id,
         canonical_slug: model.model_id,
         created: toUnixSeconds(model.release_date),
@@ -193,6 +249,18 @@ function toRichModel(model: CatalogueModel) {
         architecture: toOpenRouterArchitecture(model),
         top_provider_id: legacyTopProvider,
         top_provider: toOpenRouterTopProvider(model),
+        lifecycle: {
+            status: lifecycleStatus,
+            deprecation_date: model.deprecation_date,
+            retirement_date: model.retirement_date,
+            replacement_model_id: replacementModelId,
+            message: buildLifecycleMessage(
+                lifecycleStatus,
+                model.deprecation_date,
+                model.retirement_date,
+                replacementModelId
+            ),
+        },
         supported_parameters: [...model.supported_params],
         pricing_detail: legacyPricing,
         pricing: toOpenRouterPricing(legacyPricing),
@@ -285,7 +353,10 @@ async function handleModels(req: Request) {
             outputTypes,
             params,
         });
-        const models = catalogue.map(toRichModel);
+        const replacementByPreviousModel = buildReplacementByPreviousModel(catalogue);
+        const models = catalogue.map((model) =>
+            toRichModel(model, replacementByPreviousModel.get(model.model_id) ?? null)
+        );
         const paged = models.slice(offset, offset + limit);
         const headers = cacheHeaders(cacheOptions);
         if (requestedFormat.format !== "json") {

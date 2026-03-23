@@ -6,7 +6,9 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/go-sdk",
+    "test": "go test ./...",
     "smoke:chat": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v",
-    "smoke:responses": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v"
+    "smoke:responses": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v",
+    "smoke:responses:sdk": "dotenv -e .env.local -- go test ./tests -run TestSmokeResponsesSDK -count=1 -v"
   }
 }

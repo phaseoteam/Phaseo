@@ -777,27 +777,6 @@ function buildPricingDiscordSection(pricing: PricingMonitorSummary): string {
 	return lines.join("\n").trim();
 }
 
-function buildProviderApiPricingDiscordSection(pricing: ProviderApiPricingMonitorSummary): string {
-	if (pricing.updatesDetected === 0 || pricing.providerChanges.length === 0) return "";
-	const lines: string[] = [
-		`Provider API pricing hints changed for ${pricing.updatesDetected} model${pricing.updatesDetected === 1 ? "" : "s"} across ${pricing.providerChanges.length} provider${pricing.providerChanges.length === 1 ? "" : "s"}.`,
-		"",
-	];
-
-	for (const provider of pricing.providerChanges.slice(0, MAX_PRICING_PROVIDER_LINES)) {
-		lines.push(`${provider.providerId}`);
-		lines.push(`Updates (${provider.updates}):`);
-		appendBulletedList(lines, provider.samples);
-		lines.push("");
-	}
-
-	if (pricing.providerChanges.length > MAX_PRICING_PROVIDER_LINES) {
-		lines.push(`...and ${pricing.providerChanges.length - MAX_PRICING_PROVIDER_LINES} more provider(s).`);
-	}
-
-	return lines.join("\n").trim();
-}
-
 function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
 	pricing: PricingMonitorSummary;
@@ -806,10 +785,8 @@ function buildDiscordMessage(args: {
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
 	const pricingSection = buildPricingDiscordSection(args.pricing);
-	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
 	if (modelSection) sections.push(modelSection);
 	if (pricingSection) sections.push(pricingSection);
-	if (providerApiPricingSection) sections.push(providerApiPricingSection);
 	const text = sections.join("\n\n").trim();
 	if (text.length <= 1900) return text;
 	return `${text.slice(0, 1888)}\n...[truncated]`;
@@ -822,8 +799,7 @@ async function sendDiscordNotification(args: {
 }): Promise<void> {
 	if (
 		args.modelChanges.length === 0 &&
-		args.pricing.updatesDetected === 0 &&
-		args.providerApiPricing.updatesDetected === 0
+		args.pricing.updatesDetected === 0
 	) {
 		return;
 	}

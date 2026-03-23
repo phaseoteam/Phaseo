@@ -1,8 +1,4 @@
-import ai.stats.gen.Client;
-import ai.stats.gen.Operations;
-
-import java.net.http.HttpClient;
-import java.util.HashMap;
+import ai.stats.sdk.AIStats;
 import java.util.Map;
 
 public class ModerationsExample {
@@ -11,18 +7,11 @@ public class ModerationsExample {
         if (apiKey == null || apiKey.isEmpty()) {
             throw new IllegalStateException("AI_STATS_API_KEY is required");
         }
-        String baseUrl = System.getenv("AI_STATS_BASE_URL");
-        if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "https://api.phaseo.app/v1";
-        }
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Authorization", "Bearer " + apiKey);
-
-        Client client = new Client(baseUrl, HttpClient.newHttpClient(), headers);
-        String payload =
-            "{\"model\":\"openai/omni-moderation\",\"input\":\"Please rate this message for safety.\"}";
-        Object response = Operations.createModeration(client, null, null, null, payload);
+        AIStats client = new AIStats(apiKey);
+        Object response = client.createModeration(Map.of(
+            "model", "openai/omni-moderation",
+            "input", "Please rate this message for safety."
+        ));
         System.out.println(String.valueOf(response));
     }
 }

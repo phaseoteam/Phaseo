@@ -151,7 +151,9 @@ export async function runEnterpriseInvoicingJob(args?: {
 		return summary;
 	}
 
-	const stripe = new Stripe(stripeKey, { apiVersion: "2025-06-30" as any });
+	const stripe = new Stripe(stripeKey, {
+		apiVersion: "2026-02-25.clover" as any,
+	});
 	const supabase = getSupabaseAdmin();
 	const runAtIso = args?.scheduledAtIso ?? new Date().toISOString();
 

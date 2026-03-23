@@ -30,6 +30,8 @@ const LANDING_TAGS = [
 	"data:organisations",
 	"data:benchmarks",
 	"data:api_providers",
+	"gateway:marketing-metrics",
+	"data:model-updates",
 ] as const;
 
 const SIGN_IN_TAGS = [
@@ -103,28 +105,29 @@ async function runAdminAction(
 export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult> {
 	return runAdminAction("Models (global data)", async () => {
 		revalidateModelDataOnlyTags();
+		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/models");
-		revalidatePath("/models/**");
+		revalidatePath("/models/collections");
 	});
 }
 
 export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {
 	return runAdminAction("Providers (global API info)", async () => {
 		revalidateModelApiInfoTags();
+		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/api-providers");
-		revalidatePath("/api-providers/**");
 		revalidatePath("/models");
-		revalidatePath("/models/**");
+		revalidatePath("/models/collections");
 	});
 }
 
 export async function revalidateGlobalModelAndProviderAction(): Promise<CacheOpResult> {
 	return runAdminAction("Models + Providers (global)", async () => {
 		revalidateModelDataTags();
+		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/models");
-		revalidatePath("/models/**");
+		revalidatePath("/models/collections");
 		revalidatePath("/api-providers");
-		revalidatePath("/api-providers/**");
 	});
 }
 
@@ -161,7 +164,6 @@ export async function revalidateRankingsAction(): Promise<CacheOpResult> {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
 		revalidatePath("/rankings");
-		revalidatePath("/rankings/**");
 	});
 }
 
@@ -169,6 +171,12 @@ export async function revalidateAppsDataAction(
 	appId?: string
 ): Promise<CacheOpResult> {
 	const trimmedAppId = appId?.trim();
+	if (appId !== undefined && !trimmedAppId) {
+		return {
+			ok: false,
+			message: "App ID is required for single-app revalidation.",
+		};
+	}
 
 	return runAdminAction(
 		trimmedAppId ? `Apps (${trimmedAppId})` : "Apps (global)",
@@ -176,7 +184,6 @@ export async function revalidateAppsDataAction(
 			revalidateAppDataTags(trimmedAppId ? [trimmedAppId] : []);
 			revalidatePath("/settings/apps");
 			revalidatePath("/rankings");
-			revalidatePath("/rankings/**");
 			if (trimmedAppId) {
 				revalidatePath(`/apps/${trimmedAppId}`);
 			}

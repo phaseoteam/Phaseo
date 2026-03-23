@@ -1,25 +1,35 @@
-# AI Stats PHP SDK (preview)
+# AI Stats PHP SDK
 
-Generated from the AI Stats Gateway OpenAPI spec. The current wrapper (`src/index.php`) exposes only the `models` endpoint to lay groundwork.
+Generated from the AI Stats Gateway OpenAPI spec.
 
-Status:
-- **Preview**: Not published yet. Will be released to Packagist once the client surface stabilises.
-- Generate with `pnpm openapi:gen:php`.
+Packagist package name: `ai-stats/php-sdk`
 
-Usage (after generation):
+Generate with `pnpm openapi:gen:php`.
+
+Usage:
 ```php
-$client = new \AIStats\Sdk\Client('<API_KEY>');
-$resp = $client->getModels(['limit' => 5]);
+// Uses AI_STATS_API_KEY from environment by default.
+$client = new \AIStats\Sdk\AIStats();
+$resp = $client->listModels(['limit' => 5]);
 ```
 
-Devtools:
+## TLS / SSL Reliability
 
-- Telemetry capture is bundled in the SDK family.
-- On package install, you will be prompted to optionally install the viewer.
-- You can always run the viewer directly with:
+The SDK verifies TLS by default. To keep this reliable across environments:
 
-```bash
-npx @ai-stats/devtools-viewer
+- It first uses an explicit constructor `caBundlePath` (if provided).
+- Then it checks `AI_STATS_CA_BUNDLE`.
+- Then PHP INI values (`curl.cainfo`, `openssl.cafile`).
+- Then `SSL_CERT_FILE`.
+- Finally it falls back to the bundled `certs/cacert.pem` shipped with this SDK.
+
+You can override CA path explicitly:
+
+```php
+$client = new \AIStats\Sdk\AIStats(
+    apiKey: getenv("AI_STATS_API_KEY"),
+    caBundlePath: "/path/to/cacert.pem"
+);
 ```
 
-Python and TypeScript SDKs are fully supported today; other languages will follow soon.
+Disabling TLS verification (`verifyTls: false`) is supported for local debugging only and should not be used in production.

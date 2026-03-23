@@ -6,7 +6,10 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/ruby-sdk",
+    "build": "gem build ai_stats_sdk.gemspec",
+    "test": "ruby tests/lifecycle_test.rb && ruby tests/devtools_test.rb",
     "smoke:chat": "dotenv -e .env.local -- ruby tests/smoke_chat.rb",
-    "smoke:responses": "dotenv -e .env.local -- ruby tests/smoke_responses.rb"
+    "smoke:responses": "dotenv -e .env.local -- ruby tests/smoke_responses.rb",
+    "smoke:responses:sdk": "dotenv -e .env.local -- ruby tests/smoke_responses_sdk.rb"
   }
 }

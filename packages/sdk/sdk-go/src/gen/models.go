@@ -377,6 +377,7 @@ type DataModel struct {
 	DeprecationDate *string `json:"deprecation_date,omitempty"`
 	Hidden *bool `json:"hidden,omitempty"`
 	InputTypes *[]string `json:"input_types,omitempty"`
+	Lifecycle *ModelLifecycle `json:"lifecycle,omitempty"`
 	ModelId *string `json:"model_id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	Organisation *map[string]interface{} `json:"organisation,omitempty"`
@@ -618,6 +619,7 @@ type Model struct {
 	Endpoints *[]string `json:"endpoints,omitempty"`
 	Id *string `json:"id,omitempty"`
 	InputTypes *[]string `json:"input_types,omitempty"`
+	Lifecycle *ModelLifecycle `json:"lifecycle,omitempty"`
 	ModelId *string `json:"model_id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	OrganisationColour *string `json:"organisation_colour,omitempty"`
@@ -1021,6 +1023,7 @@ const (
 	ModelIdMinimaxMinimaxM2120251223 ModelId = "minimax/minimax-m2-1-2025-12-23"
 	ModelIdMinimaxMinimaxM220251027 ModelId = "minimax/minimax-m2-2025-10-27"
 	ModelIdMinimaxMinimaxM2520260212 ModelId = "minimax/minimax-m2-5-2026-02-12"
+	ModelIdMinimaxMinimaxM2720260318 ModelId = "minimax/minimax-m2-7-2026-03-18"
 	ModelIdMinimaxMinimaxM2Her20260124 ModelId = "minimax/minimax-m2-her-2026-01-24"
 	ModelIdMinimaxMinimaxText0120250115 ModelId = "minimax/minimax-text-01-2025-01-15"
 	ModelIdMinimaxMinimaxVl0120250115 ModelId = "minimax/minimax-vl-01-2025-01-15"
@@ -1070,6 +1073,7 @@ const (
 	ModelIdMistralMistralMedium1020231211 ModelId = "mistral/mistral-medium-1-0-2023-12-11"
 	ModelIdMistralMistralMedium3020250507 ModelId = "mistral/mistral-medium-3-0-2025-05-07"
 	ModelIdMistralMistralMedium3120250812 ModelId = "mistral/mistral-medium-3-1-2025-08-12"
+	ModelIdMistralMistralModeration220260317 ModelId = "mistral/mistral-moderation-2-2026-03-17"
 	ModelIdMistralMistralModeration20241106 ModelId = "mistral/mistral-moderation-2024-11-06"
 	ModelIdMistralMistralNemo12b20240718 ModelId = "mistral/mistral-nemo-12b-2024-07-18"
 	ModelIdMistralMistralOcr220250522 ModelId = "mistral/mistral-ocr-2-2025-05-22"
@@ -1465,6 +1469,9 @@ const (
 	ModelIdXAiGrokImagineImagePro20260129 ModelId = "x-ai/grok-imagine-image-pro-2026-01-29"
 	ModelIdXAiGrokImagineVideo20260129 ModelId = "x-ai/grok-imagine-video-2026-01-29"
 	ModelIdXiaomiMimoV2Flash20251216 ModelId = "xiaomi/mimo-v2-flash-2025-12-16"
+	ModelIdXiaomiMimoV2Omni20260318 ModelId = "xiaomi/mimo-v2-omni-2026-03-18"
+	ModelIdXiaomiMimoV2Pro20260318 ModelId = "xiaomi/mimo-v2-pro-2026-03-18"
+	ModelIdXiaomiMimoV2Tts20260318 ModelId = "xiaomi/mimo-v2-tts-2026-03-18"
 	ModelIdZAiGlm41v9b20250702 ModelId = "z-ai/glm-4-1v-9b-2025-07-02"
 	ModelIdZAiGlm41vThinking9b20250702 ModelId = "z-ai/glm-4-1v-thinking-9b-2025-07-02"
 	ModelIdZAiGlm432b20250415 ModelId = "z-ai/glm-4-32b-2025-04-15"
@@ -1489,6 +1496,14 @@ const (
 	ModelIdZAiGlmImage20260114 ModelId = "z-ai/glm-image-2026-01-14"
 )
 
+
+type ModelLifecycle struct {
+	DeprecationDate *string `json:"deprecation_date,omitempty"`
+	Message *string `json:"message,omitempty"`
+	ReplacementModelId *string `json:"replacement_model_id,omitempty"`
+	RetirementDate *string `json:"retirement_date,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
 
 type ModelsPrivacyScopeNotImplementedResponse struct {
 	Code string `json:"code"`

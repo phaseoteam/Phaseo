@@ -946,8 +946,9 @@
     ],
     "xiaomi": [
       "xiaomi/mimo-v2-flash-2025-12-16",
-      "xiaomi/mimo-v2-omni",
-      "xiaomi/mimo-v2-pro"
+      "xiaomi/mimo-v2-omni-2026-03-18",
+      "xiaomi/mimo-v2-pro-2026-03-18",
+      "xiaomi/mimo-v2-tts-2026-03-18"
     ],
     "z-ai": [
       "z-ai/glm-4-1v-9b-2025-07-02",
@@ -1504,6 +1505,7 @@
     "suno:music.generate:suno-suno-v4.5-",
     "suno:music.generate:suno-suno-v4.5-all",
     "suno:music.generate:suno-suno-v5",
+    "venice:text.generate:minimax-minimax-m2.7",
     "weights-and-biases:text.generate:nvidia-nemotron-3-super-120b-a12b",
     "x-ai:text.generate:x-ai-grok-2-vision",
     "x-ai:text.generate:x-ai-grok-3",
@@ -1522,6 +1524,9 @@
     "x-ai:video.generate:x-ai-grok-imagine-video",
     "xiaomi:text.generate:xiaomi-mimo-v2-flash",
     "xiaomi:text.generate:xiaomi-mimo-v2-flash-free",
+    "xiaomi:text.generate:xiaomi-mimo-v2-omni",
+    "xiaomi:text.generate:xiaomi-mimo-v2-pro",
+    "xiaomi:audio.speech:xiaomi-mimo-v2-tts-free",
     "z-ai:text.generate:z-ai-glm-4-32b",
     "z-ai:text.generate:z-ai-glm-4-7-flash-free",
     "z-ai:text.generate:z-ai-glm-4.5",

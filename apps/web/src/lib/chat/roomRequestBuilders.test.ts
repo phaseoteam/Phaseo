@@ -5,6 +5,7 @@ import {
 	extractGenerationUrls,
 	normalizeModerationResult,
 	projectVectorsPca2d,
+	splitEmbeddingTextInput,
 } from "@/lib/chat/roomRequestBuilders";
 
 describe("chat room request builders", () => {
@@ -38,6 +39,14 @@ describe("chat room request builders", () => {
 		});
 	});
 
+	it("splits embedding text input into newline-delimited entries", () => {
+		expect(splitEmbeddingTextInput("first\n\n second \r\nthird")).toEqual([
+			"first",
+			"second",
+			"third",
+		]);
+	});
+
 	it("extracts generation urls from mixed response shapes", () => {
 		const urls = extractGenerationUrls({
 			url: "https://example.com/direct.png",
@@ -64,6 +73,7 @@ describe("chat room request builders", () => {
 			flagged: true,
 			categories: { violence: true },
 			categoryScores: { violence: 0.91 },
+			categoryAppliedInputTypes: {},
 			raw: {
 				flagged: true,
 				categories: { violence: true },

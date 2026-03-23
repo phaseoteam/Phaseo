@@ -4,11 +4,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Badge } from "@/components/ui/badge";
 import {
 	Building2,
 	CircleHelp,
-	Layers3,
 	Shield,
 	ShieldAlert,
 	ShieldCheck,
@@ -99,10 +97,12 @@ function IconHover({
 	ariaLabel,
 	children,
 	content,
+	triggerClassName,
 }: {
 	ariaLabel: string;
 	children: ReactNode;
 	content: ReactNode;
+	triggerClassName?: string;
 }) {
 	return (
 		<HoverCard openDelay={150} closeDelay={120}>
@@ -110,7 +110,10 @@ function IconHover({
 				<button
 					type="button"
 					aria-label={ariaLabel}
-					className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:text-foreground hover:border-slate-300 dark:hover:border-slate-700"
+					className={cn(
+						"inline-flex h-7 w-7 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:text-foreground hover:border-slate-300 dark:hover:border-slate-700",
+						triggerClassName,
+					)}
 				>
 					{children}
 				</button>
@@ -122,21 +125,35 @@ function IconHover({
 	);
 }
 
+function getFirstDefined(values: Array<string | null | undefined>): string | null {
+	for (const value of values) {
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (trimmed) return trimmed;
+	}
+	return null;
+}
+
 export default function ProviderInfoHoverIcons({
 	providerId,
 	providerModelSlugs = [],
+	quantizationScheme,
 	quantizationSchemes = [],
 	promptTraining = [],
 	className,
 }: {
 	providerId: string;
 	providerModelSlugs?: Array<string | null | undefined>;
+	quantizationScheme?: string | null;
 	quantizationSchemes?: Array<string | null | undefined>;
 	promptTraining?: PromptTrainingEntryInput[];
 	className?: string;
 }) {
 	const slugs = uniqueDefined(providerModelSlugs);
-	const quantizations = uniqueDefined(quantizationSchemes);
+	const quantization = getFirstDefined([
+		quantizationScheme,
+		...quantizationSchemes,
+	]);
 	const promptTrainingEntries = normalizePromptTrainingEntries(promptTraining);
 	const promptTrainingState = getPromptTrainingState(promptTrainingEntries);
 	const promptTrainingSummary = getPromptTrainingSummary(promptTrainingState);
@@ -160,24 +177,14 @@ export default function ProviderInfoHoverIcons({
 			PROVIDER_PROMPT_TRAINING_POLICY_LABELS[b[0]],
 		),
 	);
-	const hasQuantization = quantizations.length > 0;
+	const hasQuantization = Boolean(quantization);
 	const hasSlug = slugs.length > 0;
 	const hasPromptTraining = promptTrainingEntries.length > 0;
-	const showNoQuantizationBadge = !hasQuantization;
 
-	if (!hasSlug && !hasPromptTraining && !showNoQuantizationBadge) return null;
+	if (!hasQuantization && !hasSlug && !hasPromptTraining) return null;
 
 	return (
 		<div className={cn("flex items-center gap-1.5", className)}>
-			{showNoQuantizationBadge ? (
-				<Badge
-					variant="secondary"
-					className="text-[0.6rem] uppercase tracking-wide"
-				>
-					No Quants
-				</Badge>
-			) : null}
-
 			{hasPromptTraining ? (
 				<IconHover
 					ariaLabel="Prompt training policy"
@@ -239,12 +246,13 @@ export default function ProviderInfoHoverIcons({
 			{hasQuantization ? (
 				<IconHover
 					ariaLabel="Quantization details"
+					triggerClassName="w-auto min-w-7 max-w-[108px] px-2"
 					content={
 						<div className="space-y-2">
 							<p className="leading-relaxed text-muted-foreground">
 								This provider serves this model using{" "}
 								<code className="rounded bg-muted px-1 py-0.5 text-foreground">
-									{quantizations.join(", ")}
+									{quantization}
 								</code>{" "}
 								quantization.
 							</p>
@@ -259,7 +267,9 @@ export default function ProviderInfoHoverIcons({
 						</div>
 					}
 				>
-					<Layers3 className="h-3.5 w-3.5" />
+					<span className="max-w-[90px] truncate text-[10px] font-semibold leading-none tracking-[0.02em] text-foreground">
+						{quantization}
+					</span>
 				</IconHover>
 			) : null}
 

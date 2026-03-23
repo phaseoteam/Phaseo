@@ -11,7 +11,7 @@ type GroupedProvider = {
 	providerName: string;
 	endpoints: Set<string>;
 	modelSlugs: Set<string>;
-	quantizationSchemes: Set<string>;
+	quantizationScheme: string | null;
 	isActive: boolean;
 };
 
@@ -29,18 +29,17 @@ function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[] {
 		if (current) {
 			if (item.endpoint) current.endpoints.add(item.endpoint);
 			if (item.provider_model_slug) current.modelSlugs.add(item.provider_model_slug);
-			if (item.quantization_scheme)
-				current.quantizationSchemes.add(item.quantization_scheme);
+			if (!current.quantizationScheme && item.quantization_scheme) {
+				current.quantizationScheme = item.quantization_scheme;
+			}
 			current.isActive = current.isActive || isActive;
 			continue;
 		}
 
 		const endpoints = new Set<string>();
 		const modelSlugs = new Set<string>();
-		const quantizationSchemes = new Set<string>();
 		if (item.endpoint) endpoints.add(item.endpoint);
 		if (item.provider_model_slug) modelSlugs.add(item.provider_model_slug);
-		if (item.quantization_scheme) quantizationSchemes.add(item.quantization_scheme);
 
 		grouped.set(providerId, {
 			providerId,
@@ -49,7 +48,7 @@ function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[] {
 				item.api_provider_id,
 			endpoints,
 			modelSlugs,
-			quantizationSchemes,
+			quantizationScheme: item.quantization_scheme ?? null,
 			isActive,
 		});
 	}
@@ -130,7 +129,7 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 									<ProviderInfoHoverIcons
 										providerId={provider.providerId}
 										providerModelSlugs={Array.from(provider.modelSlugs)}
-										quantizationSchemes={Array.from(provider.quantizationSchemes)}
+										quantizationScheme={provider.quantizationScheme}
 									/>
 								</div>
 							</div>

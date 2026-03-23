@@ -236,6 +236,7 @@ pub struct DataModel {
 	pub deprecation_date: Option<Option<String>>,
 	pub hidden: Option<bool>,
 	pub input_types: Option<Vec<String>>,
+	pub lifecycle: Option<ModelLifecycle>,
 	pub model_id: Option<Option<String>>,
 	pub name: Option<Option<String>>,
 	pub organisation: Option<Option<HashMap<String, String>>>,
@@ -477,6 +478,7 @@ pub struct Model {
 	pub endpoints: Option<Vec<String>>,
 	pub id: Option<String>,
 	pub input_types: Option<Vec<String>>,
+	pub lifecycle: Option<ModelLifecycle>,
 	pub model_id: Option<String>,
 	pub name: Option<Option<String>>,
 	pub organisation_colour: Option<Option<String>>,
@@ -497,6 +499,14 @@ pub struct Model {
 }
 
 pub type ModelId = JsonValue;
+
+pub struct ModelLifecycle {
+	pub deprecation_date: Option<Option<String>>,
+	pub message: Option<Option<String>>,
+	pub replacement_model_id: Option<Option<String>>,
+	pub retirement_date: Option<Option<String>>,
+	pub status: Option<Option<String>>,
+}
 
 pub struct ModelsPrivacyScopeNotImplementedResponse {
 	pub code: String,

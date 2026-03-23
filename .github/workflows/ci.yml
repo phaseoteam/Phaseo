@@ -77,8 +77,20 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Sync OpenAPI enums from manifest
+              run: pnpm run openapi:sync-enums
+
             - name: Lint OpenAPI spec
               run: pnpm run openapi:lint
+
+            - name: Ensure OpenAPI enum sync is committed
+              run: |
+                  if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml; then
+                    echo "::error::OpenAPI enums are out of sync with manifest data."
+                    echo "::error::Run 'pnpm run openapi:sync-enums' and commit apps/docs/openapi/v1/openapi.yaml."
+                    git diff apps/docs/openapi/v1/openapi.yaml
+                    exit 1
+                  fi
 
     apps:
         name: Apps ${{ matrix.app }}
@@ -124,6 +136,34 @@ jobs:
                   cd apps/web
                   pnpm run lint
                   pnpm run typecheck
+
+    devtools:
+        name: Devtools build
+        runs-on: ubuntu-latest
+        needs: openapi-lint
+        if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.15.1
+                  run_install: false
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: pnpm
+                  cache-dependency-path: pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build devtools packages
+              run: |
+                  pnpm --filter @ai-stats/devtools-core run build
+                  pnpm --filter @ai-stats/devtools-viewer run build
 
     importer:
         name: Run importer on main
@@ -217,25 +257,6 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            # --- DEBUG: show generator versions ---
-            - name: Debug generator versions
-              run: |
-                  echo "Node: $(node -v)"
-                  echo "pnpm: $(pnpm -v)"
-                  node -p "console.log('oapi-cli script =', JSON.parse(require('fs').readFileSync('package.json','utf8')).scripts['oapi'])" || true
-
-            - name: Show openapi:gen scripts
-              run: |
-                  node -p "console.log('openapi:gen:ts =', JSON.parse(require('fs').readFileSync('package.json','utf8')).scripts['openapi:gen:ts'])" || true
-                  node -p "console.log('openapi:gen:csharp =', JSON.parse(require('fs').readFileSync('package.json','utf8')).scripts['openapi:gen:csharp'])" || true
-
-            # --- DEBUG: show key parts of the files *before* generation ---
-            - name: Show TS ModerationRequestInput BEFORE
-              if: matrix.sdk == 'ts'
-              run: |
-                  echo "==== TS ModerationRequestInput BEFORE ===="
-                  sed -n '20,90p' packages/sdk/sdk-ts/src/oapi-gen/models/ModerationsRequestInput.ts || echo "File missing"
-
             # --- ACTUAL GENERATION ---
             - name: Generate ${{ matrix.sdk }} SDK
               run: |
@@ -247,13 +268,6 @@ jobs:
                     php) pnpm run openapi:gen:php ;;
                     ruby) pnpm run openapi:gen:ruby ;;
                   esac
-
-            # --- DEBUG: show key parts of the files *after* generation ---
-            - name: Show TS ModerationRequestInput AFTER
-              if: matrix.sdk == 'ts'
-              run: |
-                  echo "==== TS ModerationRequestInput AFTER ===="
-                  sed -n '20,90p' packages/sdk/sdk-ts/src/oapi-gen/models/ModerationsRequestInput.ts || echo "File missing"
 
             # --- EXISTING CONSISTENCY CHECK ---
             - name: Ensure OpenAPI outputs up to date
@@ -313,6 +327,69 @@ jobs:
 
             - name: Build SDKs
               run: pnpm run validate:packages
+
+    sdk-lifecycle-tests:
+        name: SDK lifecycle tests (${{ matrix.sdk }})
+        runs-on: ubuntu-latest
+        needs: sdk-gen
+        if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
+        strategy:
+            fail-fast: false
+            matrix:
+                sdk: [go, csharp, java, php, ruby]
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.15.1
+                  run_install: false
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: pnpm
+                  cache-dependency-path: pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Setup Go
+              if: matrix.sdk == 'go'
+              uses: actions/setup-go@v6
+              with:
+                  go-version: "1.23"
+
+            - name: Setup .NET
+              if: matrix.sdk == 'csharp'
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: "8.0.x"
+
+            - name: Setup Java
+              if: matrix.sdk == 'java'
+              uses: actions/setup-java@v4
+              with:
+                  distribution: "temurin"
+                  java-version: "17"
+                  cache: "maven"
+
+            - name: Setup PHP
+              if: matrix.sdk == 'php'
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.2"
+
+            - name: Setup Ruby
+              if: matrix.sdk == 'ruby'
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: "3.2"
+
+            - name: Run lifecycle tests
+              run: pnpm run test:sdk-${{ matrix.sdk }}
 
     deploy-preview-web:
         name: Deploy Web (Preview)
@@ -459,6 +536,7 @@ jobs:
         needs:
             - sdk-gen
             - packages
+            - sdk-lifecycle-tests
             - apps
         if: github.ref == 'refs/heads/main'
         env:
@@ -507,6 +585,18 @@ jobs:
                   pnpm --filter @ai-stats/ai-sdk-provider run build
                   pnpm --filter @ai-stats/devtools-viewer run build
 
+            - name: Ensure SDK auto-release changeset
+              env:
+                  GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+                  GITHUB_SHA: ${{ github.sha }}
+              run: pnpm run changeset:ensure-sdk-autorelease
+
+            - name: Validate SDK semver policy
+              env:
+                  GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+                  GITHUB_SHA: ${{ github.sha }}
+              run: pnpm run changeset:validate-sdk-semver
+
             - name: Create release PR / publish
               id: changesets
               uses: changesets/action@v1
@@ -543,6 +633,7 @@ jobs:
               if: steps.changesets.outputs.published == 'true'
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+                  AI_STATS_GH_RELEASE_MODE: notable_only
               run: |
                   pnpm run release-from-changelogs
 

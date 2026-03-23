@@ -15,6 +15,7 @@ import {
 	Menu,
 	Monitor,
 	Moon,
+	FlaskConical,
 	ChevronDown,
 	Settings,
 	Sun,
@@ -237,6 +238,13 @@ export default function HeaderClient({
 									<DropdownMenuSeparator />
 								</>
 							)}
+
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/experiments" prefetch={false}>
+									<FlaskConical className="h-4 w-4" />
+									<span>Experiments</span>
+								</Link>
+							</DropdownMenuItem>
 
 								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 									<Link href="/settings/account" prefetch={false}>

@@ -11,6 +11,8 @@ interface PackageConfig {
     changelogPath: string;
 }
 
+type ReleaseMode = "off" | "notable_only" | "all";
+
 const PACKAGES: PackageConfig[] = [
     // Gateway API
     {
@@ -195,6 +197,25 @@ function appendCredits(body: string): string {
     return `${body.trim()}\n\n---\n\n${credits}`;
 }
 
+function parseSemverParts(version: string): [number, number, number] | null {
+    const match = version.match(/^(\d+)\.(\d+)\.(\d+)/);
+    if (!match) return null;
+    return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function isMajorBump(previous: string | null, current: string): boolean {
+    if (!previous) return true;
+    const prev = parseSemverParts(previous);
+    const curr = parseSemverParts(current);
+    if (!prev || !curr) return false;
+    return curr[0] > prev[0];
+}
+
+function isMarkedNotable(changelogBody: string | null): boolean {
+    if (!changelogBody) return false;
+    return /#notable|\[notable\]|notable:\s*true/i.test(changelogBody);
+}
+
 function releaseExists(tag: string): boolean {
     try {
         execSync(`gh release view "${tag}"`, { stdio: "ignore" });
@@ -208,6 +229,15 @@ function main() {
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
         throw new Error("GITHUB_TOKEN is required");
+    }
+
+    const mode = (process.env.AI_STATS_GH_RELEASE_MODE ?? "notable_only").trim().toLowerCase() as ReleaseMode;
+    if (mode === "off") {
+        console.log("[releases] AI_STATS_GH_RELEASE_MODE=off; skipping GitHub release creation");
+        return;
+    }
+    if (mode !== "notable_only" && mode !== "all") {
+        throw new Error(`Unsupported AI_STATS_GH_RELEASE_MODE: ${mode}`);
     }
 
     for (const pkg of PACKAGES) {
@@ -236,6 +266,18 @@ function main() {
         const changelogSection =
             extractChangelogSection(pkg.changelogPath, current) ??
             `See CHANGELOG for ${pkg.name} v${current}.`;
+
+        if (mode === "notable_only") {
+            const major = isMajorBump(previous, current);
+            const notable = isMarkedNotable(changelogSection);
+            if (!major && !notable) {
+                console.log(
+                    `[${pkg.name}] Skipping GitHub release for non-major/non-notable update (${previous ?? "none"} -> ${current})`,
+                );
+                continue;
+            }
+        }
+
         const body = appendCredits(changelogSection);
 
         const tmpPath = path.join(

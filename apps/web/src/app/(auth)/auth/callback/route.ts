@@ -191,17 +191,11 @@ export async function GET(request: Request) {
     const callbackErrorMessage = resolveCallbackErrorMessage(url)
 
     if (callbackErrorMessage) {
-        const error = url.searchParams.get('error')
-        const payload = {
-            error,
+        console.error('Auth callback provider error', {
+            error: url.searchParams.get('error'),
             errorCode: url.searchParams.get('error_code'),
             errorDescription: url.searchParams.get('error_description'),
-        }
-        if (error === 'access_denied') {
-            console.info('Auth callback provider cancellation', payload)
-        } else {
-            console.error('Auth callback provider error', payload)
-        }
+        })
         return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, callbackErrorMessage))
     }
 
@@ -225,7 +219,9 @@ export async function GET(request: Request) {
                 status: (exchangeErr as { status?: number }).status,
                 code: (exchangeErr as { code?: string }).code,
             })
-            return NextResponse.redirect(buildAuthErrorRedirectUrl(request.url, DEFAULT_AUTH_ERROR_MESSAGE))
+            return NextResponse.redirect(
+                buildAuthErrorRedirectUrl(request.url, exchangeErr.message || DEFAULT_AUTH_ERROR_MESSAGE)
+            )
         }
     }
 

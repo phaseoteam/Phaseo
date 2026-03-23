@@ -237,6 +237,7 @@ function goType(schema: IRSchema): string {
 		case "array":
 			return `[]${goType(schema.items)}`;
 		case "object":
+			if (isModelLifecycleObject(schema)) return "ModelLifecycle";
 			return "map[string]interface{}";
 		case "union":
 		case "intersection":
@@ -249,6 +250,14 @@ function goType(schema: IRSchema): string {
 		default:
 			return "interface{}";
 	}
+}
+
+function isModelLifecycleObject(schema: IRSchema): boolean {
+	if (schema.kind !== "object" || schema.additionalProperties) return false;
+	const keys = Object.keys(schema.properties).sort((a, b) => a.localeCompare(b));
+	const expected = ["deprecation_date", "message", "replacement_model_id", "retirement_date", "status"];
+	if (keys.length !== expected.length) return false;
+	return expected.every((value, index) => keys[index] === value);
 }
 
 function exportName(value: string): string {

@@ -14,6 +14,7 @@ import {
 	LifeBuoy,
 	Users,
 	Lock,
+	FlaskConical,
 	ChevronDown,
 	Sun,
 	Moon,
@@ -327,6 +328,23 @@ export default function TeamSwitcher({
 					</div>
 
 					<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
+
+					<DropdownMenuItem
+						asChild
+						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+					>
+						<Link
+							href="/experiments"
+							onClick={(e) => {
+								e.preventDefault();
+								setIsProfileMenuOpen(false);
+								navigateWithViewTransition("/experiments");
+							}}
+						>
+							<FlaskConical className="h-4 w-4" />
+							<span className="text-sm font-medium">Experiments</span>
+						</Link>
+					</DropdownMenuItem>
 
 					<DropdownMenuItem
 						asChild

@@ -892,6 +892,7 @@
 								"group": "Latest updates",
 								"pages": [
 									"v1/changelog",
+									"v1/sdk-changelog",
 									"v1/data-changelog"
 								]
 							}
@@ -924,11 +925,11 @@
 		"links": [
 			{
 				"label": "Quickstart",
-				"href": "/v1/quickstart"
+				"href": "https://ai-stats.phaseo.app/v1/quickstart"
 			},
 			{
 				"label": "API Reference",
-				"href": "/v1/api-reference/introduction"
+				"href": "https://ai-stats.phaseo.app/v1/api-reference/introduction"
 			},
 			{
 				"label": "Support",

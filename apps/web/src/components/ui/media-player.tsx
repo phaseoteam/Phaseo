@@ -32,6 +32,7 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 type MediaKind = "video" | "audio";
+type MediaPlayerTheme = "dark" | "surface";
 
 type MediaPlayerRootProps = React.HTMLAttributes<HTMLDivElement> & {
 	src?: string;
@@ -39,10 +40,12 @@ type MediaPlayerRootProps = React.HTMLAttributes<HTMLDivElement> & {
 	autoPlay?: boolean;
 	muted?: boolean;
 	loop?: boolean;
+	theme?: MediaPlayerTheme;
 };
 
 type MediaPlayerContextValue = {
 	rootRef: React.RefObject<HTMLDivElement | null>;
+	theme: MediaPlayerTheme;
 	mediaElement: HTMLMediaElement | null;
 	setMediaElement: (element: HTMLMediaElement | null) => void;
 	setMediaKind: (kind: MediaKind) => void;
@@ -116,8 +119,11 @@ function formatTime(totalSeconds: number) {
 	return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
-const controlButtonClass =
-	"h-8 w-8 text-white hover:bg-white/10 hover:text-white focus-visible:ring-white/40";
+function getControlButtonClass(theme: MediaPlayerTheme) {
+	return theme === "surface"
+		? "h-8 w-8 text-foreground hover:bg-background/80 hover:text-foreground focus-visible:ring-border"
+		: "h-8 w-8 text-white hover:bg-white/10 hover:text-white focus-visible:ring-white/40";
+}
 
 const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 	function MediaPlayerRoot(
@@ -129,6 +135,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 			autoPlay = false,
 			muted: mutedProp = false,
 			loop: loopProp = false,
+			theme = "dark",
 			...props
 		},
 		ref,
@@ -374,6 +381,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 		const contextValue = React.useMemo<MediaPlayerContextValue>(
 			() => ({
 				rootRef,
+				theme,
 				mediaElement,
 				setMediaElement,
 				setMediaKind,
@@ -404,6 +412,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				toggleCaptions,
 			}),
 			[
+				theme,
 				mediaElement,
 				mediaKind,
 				playing,
@@ -440,7 +449,11 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				<div
 					ref={mergeRefs(ref, rootRef)}
 					className={cn(
-						"group relative overflow-hidden rounded-xl border border-border bg-black text-white",
+						"group relative overflow-hidden rounded-xl border border-border",
+						theme === "surface"
+							? "bg-muted text-foreground"
+							: "bg-black text-white",
+						mediaKind === "audio" ? "min-h-[88px]" : undefined,
 						className,
 					)}
 					{...props}
@@ -499,11 +512,13 @@ const MediaPlayerAudio = React.forwardRef<
 	const { setMediaElement, setMediaKind } = useMediaPlayer();
 	return (
 		<audio
-			ref={mergeRefs(ref, (node) => setMediaElement(node))}
+			ref={mergeRefs(ref, (node) => {
+				setMediaKind("audio");
+				setMediaElement(node);
+			})}
 			preload="metadata"
 			className={cn("w-full", className)}
 			onLoadedMetadata={(event) => {
-				setMediaKind("audio");
 				props.onLoadedMetadata?.(event);
 			}}
 			{...props}
@@ -512,27 +527,36 @@ const MediaPlayerAudio = React.forwardRef<
 });
 
 function MediaPlayerLoading({ className }: React.HTMLAttributes<HTMLDivElement>) {
-	const { loading } = useMediaPlayer();
+	const { loading, theme } = useMediaPlayer();
 	if (!loading) return null;
 	return (
 		<div
 			className={cn(
-				"pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35",
+				"pointer-events-none absolute inset-0 flex items-center justify-center",
+				theme === "surface" ? "bg-background/50" : "bg-black/35",
 				className,
 			)}
 		>
-			<Loader2 className="h-6 w-6 animate-spin text-white" />
+			<Loader2
+				className={cn(
+					"h-6 w-6 animate-spin",
+					theme === "surface" ? "text-foreground" : "text-white",
+				)}
+			/>
 		</div>
 	);
 }
 
 function MediaPlayerError({ className }: React.HTMLAttributes<HTMLDivElement>) {
-	const { error } = useMediaPlayer();
+	const { error, theme } = useMediaPlayer();
 	if (!error) return null;
 	return (
 		<div
 			className={cn(
-				"absolute inset-0 flex items-center justify-center bg-black/70 px-4 text-center text-sm text-white",
+				"absolute inset-0 flex items-center justify-center px-4 text-center text-sm",
+				theme === "surface"
+					? "bg-background/85 text-foreground"
+					: "bg-black/70 text-white",
 				className,
 			)}
 		>
@@ -544,13 +568,16 @@ function MediaPlayerError({ className }: React.HTMLAttributes<HTMLDivElement>) {
 function MediaPlayerVolumeIndicator({
 	className,
 }: React.HTMLAttributes<HTMLDivElement>) {
-	const { muted, volume, volumeIndicatorVisible } = useMediaPlayer();
+	const { muted, volume, volumeIndicatorVisible, theme } = useMediaPlayer();
 	if (!volumeIndicatorVisible) return null;
 	const percent = muted ? 0 : Math.round(volume * 100);
 	return (
 		<div
 			className={cn(
-				"pointer-events-none absolute right-3 top-3 rounded-md bg-black/65 px-2 py-1 text-xs text-white",
+				"pointer-events-none absolute right-3 top-3 rounded-md px-2 py-1 text-xs",
+				theme === "surface"
+					? "border border-border bg-background/90 text-foreground"
+					: "bg-black/65 text-white",
 				className,
 			)}
 		>
@@ -560,10 +587,12 @@ function MediaPlayerVolumeIndicator({
 }
 
 function MediaPlayerControls({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+	const { theme } = useMediaPlayer();
 	return (
 		<div
 			className={cn(
-				"absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-3 text-white",
+				"absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-3",
+				theme === "surface" ? "text-foreground" : "text-white",
 				className,
 			)}
 			{...props}
@@ -575,10 +604,14 @@ function MediaPlayerControlsOverlay({
 	className,
 	...props
 }: React.HTMLAttributes<HTMLDivElement>) {
+	const { theme } = useMediaPlayer();
 	return (
 		<div
 			className={cn(
-				"pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent",
+				"pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t",
+				theme === "surface"
+					? "from-background/70 via-background/30 to-transparent"
+					: "from-black/80 via-black/40 to-transparent",
 				className,
 			)}
 			{...props}
@@ -591,14 +624,14 @@ function MediaPlayerPlay({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { playing, togglePlay } = useMediaPlayer();
+	const { playing, togglePlay, theme } = useMediaPlayer();
 	return (
 		<Button
 			{...props}
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, className)}
+			className={cn(getControlButtonClass(theme), className)}
 			onClick={(event) => {
 				onClick?.(event);
 				if (event.defaultPrevented) return;
@@ -615,14 +648,14 @@ function MediaPlayerSeekBackward({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { seekBy } = useMediaPlayer();
+	const { seekBy, theme } = useMediaPlayer();
 	return (
 		<Button
 			{...props}
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, className)}
+			className={cn(getControlButtonClass(theme), className)}
 			onClick={(event) => {
 				onClick?.(event);
 				if (event.defaultPrevented) return;
@@ -639,14 +672,14 @@ function MediaPlayerSeekForward({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { seekBy } = useMediaPlayer();
+	const { seekBy, theme } = useMediaPlayer();
 	return (
 		<Button
 			{...props}
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, className)}
+			className={cn(getControlButtonClass(theme), className)}
 			onClick={(event) => {
 				onClick?.(event);
 				if (event.defaultPrevented) return;
@@ -659,7 +692,7 @@ function MediaPlayerSeekForward({
 }
 
 function MediaPlayerVolume({ className }: { className?: string }) {
-	const { muted, volume, setVolume, toggleMute } = useMediaPlayer();
+	const { muted, volume, setVolume, toggleMute, theme } = useMediaPlayer();
 	const displayVolume = muted ? 0 : volume;
 	return (
 		<div className={cn("flex items-center gap-2", className)}>
@@ -667,7 +700,7 @@ function MediaPlayerVolume({ className }: { className?: string }) {
 				type="button"
 				size="icon"
 				variant="ghost"
-				className={controlButtonClass}
+				className={getControlButtonClass(theme)}
 				onClick={toggleMute}
 			>
 				{displayVolume === 0 ? (
@@ -685,14 +718,19 @@ function MediaPlayerVolume({ className }: { className?: string }) {
 					const next = Array.isArray(value) ? value[0] ?? 0 : 0;
 					setVolume(next / 100);
 				}}
-				className="w-20 [&_[data-slot='slider-track']]:bg-white/20 [&_[data-slot='slider-range']]:bg-white [&_[data-slot='slider-thumb']]:border-white/80 [&_[data-slot='slider-thumb']]:bg-white"
+				className={cn(
+					"w-20",
+					theme === "surface"
+						? "[&_[data-slot='slider-track']]:bg-border/70 [&_[data-slot='slider-range']]:bg-foreground/80 [&_[data-slot='slider-thumb']]:border-foreground/70 [&_[data-slot='slider-thumb']]:bg-background"
+						: "[&_[data-slot='slider-track']]:bg-white/20 [&_[data-slot='slider-range']]:bg-white [&_[data-slot='slider-thumb']]:border-white/80 [&_[data-slot='slider-thumb']]:bg-white",
+				)}
 			/>
 		</div>
 	);
 }
 
 function MediaPlayerSeek({ className }: { className?: string }) {
-	const { currentTime, duration, seekTo } = useMediaPlayer();
+	const { currentTime, duration, seekTo, theme } = useMediaPlayer();
 	const safeDuration = Number.isFinite(duration) ? duration : 0;
 	return (
 		<Slider
@@ -706,7 +744,10 @@ function MediaPlayerSeek({ className }: { className?: string }) {
 				seekTo(next);
 			}}
 			className={cn(
-				"w-full [&_[data-slot='slider-track']]:bg-white/20 [&_[data-slot='slider-range']]:bg-white [&_[data-slot='slider-thumb']]:border-white/90 [&_[data-slot='slider-thumb']]:bg-white",
+				"w-full",
+				theme === "surface"
+					? "[&_[data-slot='slider-track']]:bg-border/70 [&_[data-slot='slider-range']]:bg-foreground/80 [&_[data-slot='slider-thumb']]:border-foreground/70 [&_[data-slot='slider-thumb']]:bg-background"
+					: "[&_[data-slot='slider-track']]:bg-white/20 [&_[data-slot='slider-range']]:bg-white [&_[data-slot='slider-thumb']]:border-white/90 [&_[data-slot='slider-thumb']]:bg-white",
 				className,
 			)}
 		/>
@@ -714,23 +755,40 @@ function MediaPlayerSeek({ className }: { className?: string }) {
 }
 
 function MediaPlayerTime({ className }: { className?: string }) {
-	const { currentTime, duration } = useMediaPlayer();
+	const { currentTime, duration, theme } = useMediaPlayer();
 	return (
-		<span className={cn("text-xs tabular-nums text-white/90", className)}>
+		<span
+			className={cn(
+				"text-xs tabular-nums",
+				theme === "surface" ? "text-foreground/80" : "text-white/90",
+				className,
+			)}
+		>
 			{formatTime(currentTime)} / {formatTime(duration)}
 		</span>
 	);
 }
 
 function MediaPlayerPlaybackSpeed({ className }: { className?: string }) {
-	const { playbackRate, setPlaybackRate } = useMediaPlayer();
+	const { playbackRate, setPlaybackRate, theme } = useMediaPlayer();
 	return (
-		<label className={cn("flex items-center gap-2 text-xs text-white/90", className)}>
+		<label
+			className={cn(
+				"flex items-center gap-2 text-xs",
+				theme === "surface" ? "text-foreground/80" : "text-white/90",
+				className,
+			)}
+		>
 			<span className="sr-only">Playback speed</span>
 			<select
 				value={String(playbackRate)}
 				onChange={(event) => setPlaybackRate(Number(event.target.value))}
-				className="h-8 rounded-md border border-white/25 bg-black/55 px-2 text-xs text-white outline-none"
+				className={cn(
+					"h-8 rounded-md px-2 text-xs outline-none",
+					theme === "surface"
+						? "border border-border bg-background text-foreground"
+						: "border border-white/25 bg-black/55 text-white",
+				)}
 			>
 				{[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
 					<option key={speed} value={speed}>
@@ -747,14 +805,18 @@ function MediaPlayerLoop({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { loop, toggleLoop } = useMediaPlayer();
+	const { loop, toggleLoop, theme } = useMediaPlayer();
 	return (
 		<Button
 			{...props}
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, loop && "bg-white/15", className)}
+			className={cn(
+				getControlButtonClass(theme),
+				loop && (theme === "surface" ? "bg-background/80" : "bg-white/15"),
+				className,
+			)}
 			onClick={(event) => {
 				onClick?.(event);
 				if (event.defaultPrevented) return;
@@ -771,7 +833,7 @@ function MediaPlayerCaptions({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { mediaKind, captionsEnabled, toggleCaptions } = useMediaPlayer();
+	const { mediaKind, captionsEnabled, toggleCaptions, theme } = useMediaPlayer();
 	if (mediaKind !== "video") return null;
 	return (
 		<Button
@@ -780,8 +842,9 @@ function MediaPlayerCaptions({
 			size="icon"
 			variant="ghost"
 			className={cn(
-				controlButtonClass,
-				captionsEnabled && "bg-white/15",
+				getControlButtonClass(theme),
+				captionsEnabled &&
+					(theme === "surface" ? "bg-background/80" : "bg-white/15"),
 				className,
 			)}
 			onClick={(event) => {
@@ -800,14 +863,14 @@ function MediaPlayerFullscreen({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { isFullscreen, toggleFullscreen } = useMediaPlayer();
+	const { isFullscreen, toggleFullscreen, theme } = useMediaPlayer();
 	return (
 		<Button
 			{...props}
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, className)}
+			className={cn(getControlButtonClass(theme), className)}
 			onClick={(event) => {
 				onClick?.(event);
 				if (event.defaultPrevented) return;
@@ -828,7 +891,7 @@ function MediaPlayerPiP({
 	onClick,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { mediaKind, isPiP, togglePiP } = useMediaPlayer();
+	const { mediaKind, isPiP, togglePiP, theme } = useMediaPlayer();
 	if (mediaKind !== "video") return null;
 	return (
 		<Button
@@ -836,7 +899,11 @@ function MediaPlayerPiP({
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, isPiP && "bg-white/15", className)}
+			className={cn(
+				getControlButtonClass(theme),
+				isPiP && (theme === "surface" ? "bg-background/80" : "bg-white/15"),
+				className,
+			)}
 			onClick={(event) => {
 				onClick?.(event);
 				if (event.defaultPrevented) return;
@@ -852,7 +919,7 @@ function MediaPlayerDownload({
 	className,
 	...props
 }: React.ComponentProps<typeof Button>) {
-	const { mediaElement } = useMediaPlayer();
+	const { mediaElement, theme } = useMediaPlayer();
 	const href = mediaElement?.currentSrc ?? "";
 	return (
 		<Button
@@ -860,7 +927,7 @@ function MediaPlayerDownload({
 			type="button"
 			size="icon"
 			variant="ghost"
-			className={cn(controlButtonClass, className)}
+			className={cn(getControlButtonClass(theme), className)}
 			asChild
 		>
 			<a href={href || undefined} download target="_blank" rel="noreferrer">
@@ -879,8 +946,15 @@ function MediaPlayerSettings({
 	speeds = [0.5, 0.75, 1, 1.25, 1.5, 2],
 	className,
 }: MediaPlayerSettingsProps) {
-	const { playbackRate, setPlaybackRate, loop, toggleLoop, mediaKind, togglePiP } =
-		useMediaPlayer();
+	const {
+		playbackRate,
+		setPlaybackRate,
+		loop,
+		toggleLoop,
+		mediaKind,
+		togglePiP,
+		theme,
+	} = useMediaPlayer();
 
 	return (
 		<DropdownMenu>
@@ -889,16 +963,26 @@ function MediaPlayerSettings({
 					type="button"
 					size="icon"
 					variant="ghost"
-					className={cn(controlButtonClass, className)}
+					className={cn(getControlButtonClass(theme), className)}
 				>
 					<Settings2 className="h-4 w-4" />
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
-				className="w-44 border-white/20 bg-black/90 text-white"
+				className={cn(
+					"w-44",
+					theme === "surface"
+						? "border-border bg-popover text-popover-foreground"
+						: "border-white/20 bg-black/90 text-white",
+				)}
 			>
-				<div className="px-2 py-1.5 text-xs font-medium text-white/70">
+				<div
+					className={cn(
+						"px-2 py-1.5 text-xs font-medium",
+						theme === "surface" ? "text-muted-foreground" : "text-white/70",
+					)}
+				>
 					Playback speed
 				</div>
 				<DropdownMenuRadioGroup
@@ -911,7 +995,9 @@ function MediaPlayerSettings({
 						</DropdownMenuRadioItem>
 					))}
 				</DropdownMenuRadioGroup>
-				<DropdownMenuSeparator className="bg-white/20" />
+				<DropdownMenuSeparator
+					className={theme === "surface" ? undefined : "bg-white/20"}
+				/>
 				<DropdownMenuItem onSelect={toggleLoop}>
 					<Repeat className="h-4 w-4" />
 					{loop ? "Disable loop" : "Enable loop"}

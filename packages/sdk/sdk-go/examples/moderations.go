@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+	aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 		baseURL = "https://api.phaseo.app/v1"
 	}
 
-	client := aistats.New(apiKey, baseURL)
+	client := aistats.NewAIStats(apiKey, baseURL)
 	body := map[string]any{
 		"model": "openai/omni-moderation",
 		"input": "Please rate this message for safety.",

@@ -6,6 +6,7 @@
 import { getSupabaseAdmin, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import { contextSchema } from "./schemas";
+import { loadPriceCard } from "@pipeline/pricing";
 import type {
     ByokKeyMeta,
     CapabilityRoutingStatus,
@@ -34,6 +35,47 @@ const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
 const MIN_TTL_SECONDS = 60;  // Cloudflare KV minimum
 const MAX_TTL_SECONDS = 900; // 15 minutes
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
+
+const MODERATION_CONTEXT_CAPABILITY_ALIASES = [
+    "moderations",
+    "moderations.create",
+    "text.moderate",
+    "moderation",
+] as const;
+const EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES = [
+    "embeddings",
+    "text.embed",
+] as const;
+
+function normalizeContextCapability(value: string): string {
+    return String(value ?? "").trim().toLowerCase();
+}
+
+export function getContextCapabilityCandidates(capability: string): string[] {
+    const normalized = normalizeContextCapability(capability);
+    if (!normalized) return [];
+    if (
+        MODERATION_CONTEXT_CAPABILITY_ALIASES.includes(
+            normalized as (typeof MODERATION_CONTEXT_CAPABILITY_ALIASES)[number]
+        )
+    ) {
+        return Array.from(new Set<string>([
+            normalized,
+            ...MODERATION_CONTEXT_CAPABILITY_ALIASES,
+        ]));
+    }
+    if (
+        EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES.includes(
+            normalized as (typeof EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES)[number]
+        )
+    ) {
+        return Array.from(new Set<string>([
+            normalized,
+            ...EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES,
+        ]));
+    }
+    return [normalized];
+}
 
 /**
  * Clamp TTL to valid range for Cloudflare Workers KV
@@ -578,10 +620,11 @@ async function resolveProviderScopedModelToApiModel(args: {
     );
     if (!providerApiModelIds.length) return null;
 
+    const capabilityCandidates = getContextCapabilityCandidates(args.endpoint);
     const { data: capabilityRows, error: capabilityError } = await supabase
         .from("data_api_provider_model_capabilities")
         .select("provider_api_model_id")
-        .eq("capability_id", args.endpoint)
+        .in("capability_id", capabilityCandidates)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
         .in("provider_api_model_id", providerApiModelIds);
     if (capabilityError || !capabilityRows?.length) return null;
@@ -874,11 +917,11 @@ export async function fetchGatewayContext(args: {
     }
 
     const dbLoader = (async (): Promise<GatewayContextData> => {
-        async function fetchParsedContext(model: string): Promise<GatewayContextData> {
+        async function fetchParsedContext(model: string, endpointCapability: string): Promise<GatewayContextData> {
             const rpcArgs = {
                 team_id: args.teamId,
                 model,
-                endpoint: args.endpoint,
+                endpoint: endpointCapability,
                 api_key_id: args.apiKeyId,
             };
 
@@ -899,14 +942,27 @@ export async function fetchGatewayContext(args: {
         }
 
         let rpcTotalMs = 0;
-        const fetchParsedContextMeasured = async (model: string) => {
+        const fetchParsedContextMeasured = async (model: string, endpointCapability: string) => {
             const rpcStartedAt = performance.now();
-            const value = await fetchParsedContext(model);
+            const value = await fetchParsedContext(model, endpointCapability);
             rpcTotalMs += performance.now() - rpcStartedAt;
             return value;
         };
 
-        let parsed = await fetchParsedContextMeasured(args.model);
+        const contextCapabilityCandidates = getContextCapabilityCandidates(args.endpoint);
+        let contextCapability = contextCapabilityCandidates[0] ?? args.endpoint;
+        let parsed = await fetchParsedContextMeasured(args.model, contextCapability);
+
+        if ((parsed.providers ?? []).length === 0 && contextCapabilityCandidates.length > 1) {
+            for (const candidateCapability of contextCapabilityCandidates.slice(1)) {
+                const fallbackParsed = await fetchParsedContextMeasured(args.model, candidateCapability);
+                if ((fallbackParsed.providers ?? []).length > 0) {
+                    parsed = fallbackParsed;
+                    contextCapability = candidateCapability;
+                    break;
+                }
+            }
+        }
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
@@ -915,11 +971,45 @@ export async function fetchGatewayContext(args: {
         if (noProviders && unresolved) {
             const remappedModel = await resolveProviderScopedModelToApiModel({
                 model: args.model,
-                endpoint: args.endpoint,
+                endpoint: contextCapability,
             });
             if (remappedModel && remappedModel !== args.model) {
                 telemetry.fallbackRemap = true;
-                parsed = await fetchParsedContextMeasured(remappedModel);
+                parsed = await fetchParsedContextMeasured(remappedModel, contextCapability);
+            }
+        }
+
+        const resolvedModelForPricing = parsed.resolvedModel ?? args.model;
+        if ((parsed.providers ?? []).length > 0) {
+            const pricingByProvider: Record<string, any> = {
+                ...(parsed.pricing ?? {}),
+            };
+            const pricingCapabilityCandidates = getContextCapabilityCandidates(contextCapability);
+            const missingProviders = Array.from(
+                new Set(
+                    (parsed.providers ?? [])
+                        .map((provider) => provider.providerId)
+                        .filter((providerId) => Boolean(providerId) && !pricingByProvider[providerId])
+                )
+            );
+
+            if (missingProviders.length > 0) {
+                await Promise.all(
+                    missingProviders.map(async (providerId) => {
+                        for (const capabilityCandidate of pricingCapabilityCandidates) {
+                            const card = await loadPriceCard(
+                                providerId,
+                                resolvedModelForPricing,
+                                capabilityCandidate,
+                            );
+                            if (card) {
+                                pricingByProvider[providerId] = card;
+                                break;
+                            }
+                        }
+                    })
+                );
+                parsed.pricing = pricingByProvider;
             }
         }
 

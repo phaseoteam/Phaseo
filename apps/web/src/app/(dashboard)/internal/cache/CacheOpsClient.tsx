@@ -215,7 +215,7 @@ export default function CacheOpsClient() {
 						</Button>
 						<Button
 							type="button"
-							disabled={isPending}
+							disabled={isPending || !appId.trim()}
 							onClick={() => runAction(() => revalidateAppsDataAction(appId))}
 						>
 							Revalidate This App

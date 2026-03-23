@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Streamdown } from "streamdown";
 import { Logo } from "@/components/Logo";
@@ -47,6 +47,7 @@ import type { ChatThread } from "@/lib/indexeddb/chats";
 import {
 	ChevronLeft,
 	ChevronRight,
+	Check,
 	Copy,
 	GitBranch,
 	Info,
@@ -100,7 +101,7 @@ type ChatConversationMessagesProps = {
 	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
-	onCopy: (text: string) => void;
+	onCopy: (text: string) => boolean | Promise<boolean>;
 };
 
 export function ChatConversationMessages({
@@ -124,6 +125,38 @@ export function ChatConversationMessages({
 	onSelectVariant,
 	onCopy,
 }: ChatConversationMessagesProps) {
+	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
+	const copiedResetTimeoutRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (copiedResetTimeoutRef.current !== null) {
+				window.clearTimeout(copiedResetTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	const markCopied = useCallback((key: string) => {
+		setCopiedMessageKey(key);
+		if (copiedResetTimeoutRef.current !== null) {
+			window.clearTimeout(copiedResetTimeoutRef.current);
+		}
+		copiedResetTimeoutRef.current = window.setTimeout(() => {
+			setCopiedMessageKey((current) => (current === key ? null : current));
+			copiedResetTimeoutRef.current = null;
+		}, 1500);
+	}, []);
+
+	const handleCopyForMessage = useCallback(
+		async (key: string, text: string) => {
+			const copied = await onCopy(text);
+			if (copied) {
+				markCopied(key);
+			}
+		},
+		[markCopied, onCopy],
+	);
+
 	const metadataMessage = useMemo(() => {
 		if (!metadataOpenId || !activeThread) return null;
 		return (
@@ -209,6 +242,10 @@ export function ChatConversationMessages({
 
 		return activeThread.messages.map((message) => {
 			const isUser = message.role === "user";
+			const userCopyKey = `user:${message.id}`;
+			const assistantCopyKey = `assistant:${message.id}`;
+			const userCopied = copiedMessageKey === userCopyKey;
+			const assistantCopied = copiedMessageKey === assistantCopyKey;
 			const isPendingAssistant =
 				!isUser && isSending && lastMessageId === message.id;
 			const variants = ensureVariants(message);
@@ -600,12 +637,23 @@ export function ChatConversationMessages({
 										size="icon"
 										variant="ghost"
 										className="h-7 w-7"
-										onClick={() => onCopy(message.content)}
+										onClick={() => {
+											void handleCopyForMessage(
+												userCopyKey,
+												message.content,
+											);
+										}}
 									>
-										<Copy className="h-3.5 w-3.5" />
+										{userCopied ? (
+											<Check className="h-3.5 w-3.5" />
+										) : (
+											<Copy className="h-3.5 w-3.5" />
+										)}
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">Copy</TooltipContent>
+								<TooltipContent side="top">
+									{userCopied ? "Copied" : "Copy"}
+								</TooltipContent>
 							</Tooltip>
 							<Tooltip>
 								<TooltipTrigger asChild>
@@ -634,13 +682,24 @@ export function ChatConversationMessages({
 												size="icon"
 												variant="ghost"
 												className="h-7 w-7"
-												onClick={() => onCopy(content)}
+												onClick={() => {
+													void handleCopyForMessage(
+														assistantCopyKey,
+														content,
+													);
+												}}
 											>
-												<Copy className="h-3.5 w-3.5" />
+												{assistantCopied ? (
+													<Check className="h-3.5 w-3.5" />
+												) : (
+													<Copy className="h-3.5 w-3.5" />
+												)}
 											</Button>
 										</TooltipTrigger>
 										<TooltipContent side="top">
-											Copy
+											{assistantCopied
+												? "Copied"
+												: "Copy"}
 										</TooltipContent>
 									</Tooltip>
 									<Tooltip>
@@ -823,6 +882,8 @@ export function ChatConversationMessages({
 		modelLinkById,
 		accentColor,
 		onCopy,
+		handleCopyForMessage,
+		copiedMessageKey,
 		onEditingValueChange,
 		onEditingIdChange,
 		onEditMessage,

@@ -5,10 +5,13 @@ import { GenerationsList } from "./components/GenerationsList";
 import { GenerationDetail } from "./components/GenerationDetail";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
+const AUTO_REFRESH_SECONDS = 60;
+const MIN_REFRESH_SPINNER_MS = 1000;
+const URL_SELECTION_PARAM = "generation";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchInterval: 2000, // Poll every 2 seconds
       staleTime: 1000
     }
   }
@@ -24,8 +27,14 @@ export function App() {
 
 function AppShell() {
   const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => readSelectedIdFromUrl());
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [refreshCountdown, setRefreshCountdown] = useState(AUTO_REFRESH_SECONDS);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshToast, setRefreshToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [darkMode, setDarkMode] = useState(() => {
     // Check localStorage or system preference
     if (typeof window !== 'undefined') {
@@ -99,9 +108,89 @@ function AppShell() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showShortcuts, selectedId, darkMode]);
-  const handleRefresh = () => {
-    queryClient.refetchQueries({ queryKey: ["generations"] });
+
+  useEffect(() => {
+    const onPopState = () => {
+      setSelectedId(readSelectedIdFromUrl());
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const current = url.searchParams.get(URL_SELECTION_PARAM);
+
+    if (selectedId) {
+      if (current === selectedId) return;
+      url.searchParams.set(URL_SELECTION_PARAM, selectedId);
+    } else {
+      if (!current) return;
+      url.searchParams.delete(URL_SELECTION_PARAM);
+    }
+
+    const nextSearch = url.searchParams.toString();
+    const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}${url.hash}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  }, [selectedId]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setRefreshCountdown((previous) => (previous > 0 ? previous - 1 : 0));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (refreshCountdown !== 0 || isRefreshing) {
+      return;
+    }
+    void runRefresh("auto");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshCountdown, isRefreshing]);
+
+  useEffect(() => {
+    if (!refreshToast) return;
+    const timeoutId = window.setTimeout(() => setRefreshToast(null), 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [refreshToast]);
+
+  const runRefresh = async (source: "manual" | "auto") => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    const startedAt = Date.now();
+
+    try {
+      await queryClient.refetchQueries();
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_REFRESH_SPINNER_MS) {
+        await wait(MIN_REFRESH_SPINNER_MS - elapsed);
+      }
+      if (source === "manual") {
+        setRefreshToast({
+          type: "success",
+          message: "Refresh complete"
+        });
+      }
+    } catch (error) {
+      if (source === "manual") {
+        setRefreshToast({
+          type: "error",
+          message: error instanceof Error ? `Refresh failed: ${error.message}` : "Refresh failed"
+        });
+      }
+    } finally {
+      setIsRefreshing(false);
+      setRefreshCountdown(AUTO_REFRESH_SECONDS);
+    }
   };
+
+  const handleRefresh = () => {
+    void runRefresh("manual");
+  };
+
   return (
     <div className="h-screen bg-background text-foreground overflow-hidden">
       <div className="flex h-full">
@@ -134,13 +223,13 @@ function AppShell() {
         </aside>
 
         <div className="flex-1 h-full flex flex-col">
-          <header className="border-b border-border/60 bg-background/85 backdrop-blur">
+          <header className="-mt-px border-b border-border/60 bg-background/85 backdrop-blur">
             <div className="px-6 py-4 min-h-[72px] flex items-center">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-4">
                   <div>
                     <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/70 px-3 py-1 text-xs text-muted-foreground">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                       Connected
                     </span>
                   </div>
@@ -148,12 +237,13 @@ function AppShell() {
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     onClick={handleRefresh}
+                    disabled={isRefreshing}
                     className="rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition"
                     title="Refresh data"
                   >
                     <span className="inline-flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4" />
-                      Refresh
+                      <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                      {`Refresh (${refreshCountdown})`}
                     </span>
                   </button>
                   <button
@@ -237,8 +327,32 @@ function AppShell() {
           </div>
         </div>
       )}
+
+      {refreshToast && (
+        <div className="fixed right-6 top-20 z-50 animate-slide-in">
+          <div
+            className={`rounded-xl border px-4 py-3 shadow-lg backdrop-blur ${
+              refreshToast.type === "success"
+                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-destructive/25 bg-destructive/10 text-destructive"
+            }`}
+          >
+            <div className="text-sm font-medium">{refreshToast.message}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function readSelectedIdFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get(URL_SELECTION_PARAM);
+  return value && value.trim().length > 0 ? value : null;
 }
 
 interface ShortcutRowProps {

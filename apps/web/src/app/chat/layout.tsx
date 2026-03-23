@@ -15,6 +15,8 @@ export default function ChatLayout({
     children: React.ReactNode;
 }) {
     return (
-        <main className="h-dvh overflow-hidden bg-background">{children}</main>
+        <main className="box-border flex h-[100svh] min-h-0 flex-col overflow-hidden overscroll-none bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:h-dvh">
+            {children}
+        </main>
     );
 }

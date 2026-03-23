@@ -3320,9 +3320,17 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "text.generate",
+        "capability_id": "text.moderate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "input",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },

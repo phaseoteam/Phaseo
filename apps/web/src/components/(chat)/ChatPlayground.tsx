@@ -2955,8 +2955,8 @@ function ChatPlaygroundContent({
 	]);
 
 	return (
-		<div className="flex min-h-screen w-full bg-background text-foreground overflow-x-hidden">
-			<Sidebar className="border-r border-border bg-background">
+		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
+			<Sidebar collapsible="icon" className="border-r border-border bg-background">
 				<ChatSidebar
 					groupedThreads={groupedThreads}
 					threads={threads}
@@ -2974,7 +2974,7 @@ function ChatPlaygroundContent({
 				/>
 				<SidebarRail />
 			</Sidebar>
-			<SidebarInset className="flex h-dvh min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
+			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
 				<ChatHeader
 					activeThread={activeThread}
 					modelOptions={modelOptions}
@@ -3138,7 +3138,7 @@ function ChatPlaygroundContent({
 
 export default function ChatPlayground(props: ChatPlaygroundProps) {
 	return (
-		<SidebarProvider defaultOpen className="h-dvh overflow-hidden">
+		<SidebarProvider defaultOpen contained className="h-full overflow-hidden">
 			<ChatPlaygroundContent {...props} />
 		</SidebarProvider>
 	);
