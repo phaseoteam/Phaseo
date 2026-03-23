@@ -1,7 +1,5 @@
 import { spawnSync } from "node:child_process";
 
-const DUPLICATE_VERSION_RE = /You cannot publish over the previously published versions/i;
-
 function runChangesetPublish() {
   const result = spawnSync("pnpm", ["exec", "changeset", "publish"], {
     encoding: "utf8",
@@ -19,16 +17,5 @@ function runChangesetPublish() {
 }
 
 const attempt = runChangesetPublish();
-
-if (attempt.status === 0) {
-  process.exit(0);
-}
-
-if (DUPLICATE_VERSION_RE.test(attempt.output)) {
-  console.warn(
-    "[changeset:publish] Detected already-published version conflict; treating as success.",
-  );
-  process.exit(0);
-}
 
 process.exit(attempt.status);
