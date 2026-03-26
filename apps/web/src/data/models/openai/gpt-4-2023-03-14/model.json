@@ -2,7 +2,7 @@
   "model_id": "openai/gpt-4-2023-03-14",
   "organisation_id": "openai",
   "name": "GPT 4 (2023-03-14)",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "openai/gpt-3-5-turbo-2023-11-06",
   "announced_date": null,
   "release_date": "2023-03-14T00:00:00",
