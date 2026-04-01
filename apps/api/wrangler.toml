@@ -39,8 +39,3 @@ invocation_logs = true
 binding = "GATEWAY_CACHE"
 id = "f5e23068fcd94125ad9860c817c543d9"
 preview_id = "f5e23068fcd94125ad9860c817c543d9"
-
-[[r2_buckets]]
-binding = "VIDEO_ASSETS_BUCKET"
-bucket_name = "ai-stats-video-assets"
-preview_bucket_name = "ai-stats-video-assets-preview"

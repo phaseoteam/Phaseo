@@ -52,7 +52,7 @@ async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
 }
 
 function resolveAssetBucket(): R2Bucket | null {
-	const bindings = getBindings();
+	const bindings = getBindings() as unknown as { VIDEO_ASSETS_BUCKET?: R2Bucket };
 	return bindings.VIDEO_ASSETS_BUCKET ?? null;
 }
 

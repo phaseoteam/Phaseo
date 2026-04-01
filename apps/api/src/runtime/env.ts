@@ -10,7 +10,6 @@ export type GatewayBindings = {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
     GATEWAY_CACHE: KVNamespace;
-    VIDEO_ASSETS_BUCKET?: R2Bucket;
     KV?: KVNamespace;
     DB?: D1Database;
     GATEWAY_CONTROL_SECRET?: string;
@@ -218,7 +217,6 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
     "GATEWAY_CACHE",
-    "VIDEO_ASSETS_BUCKET",
     "GATEWAY_CONTROL_SECRET",
     "NEXT_PUBLIC_GATEWAY_VERSION",
     "AXIOM_API_KEY",
