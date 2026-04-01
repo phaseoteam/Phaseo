@@ -17,8 +17,8 @@ func CalculatePricing(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
-func CreateAnthropicMessage(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/messages"
+func CancelBatch(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -32,8 +32,23 @@ func CreateAnthropicMessage(client *Client, path map[string]string, query map[st
 	return out, nil
 }
 
-func CreateAudioRealtimeCallPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/audio/realtime/calls"
+func CancelBatchAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch/" + url.PathEscape(path["id"]) + "/cancel"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CancelVideo(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/videos/" + url.PathEscape(path["video_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero interface{}
@@ -47,8 +62,8 @@ func CreateAudioRealtimeCallPlaceholder(client *Client, path map[string]string, 
 	return out, nil
 }
 
-func CreateAudioRealtimeClientSecretsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/audio/realtime/client_secrets"
+func CancelVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero interface{}
@@ -62,31 +77,16 @@ func CreateAudioRealtimeClientSecretsPlaceholder(client *Client, path map[string
 	return out, nil
 }
 
-func CreateAudioRealtimeSessionPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/audio/realtime"
+func CreateAnthropicMessage(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/messages"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func CreateAudioRealtimeSessionsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/audio/realtime/sessions"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -237,66 +237,6 @@ func CreateOcr(client *Client, path map[string]string, query map[string]string, 
 	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
 		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func CreateRealtimeCallPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/realtime/calls"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func CreateRealtimeClientSecretsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/realtime/client_secrets"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func CreateRealtimeSessionPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/realtime"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func CreateRealtimeSessionsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/realtime/sessions"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
 		return zero, err
 	}
 	return out, nil
@@ -497,9 +437,9 @@ func GetActivity(client *Client, path map[string]string, query map[string]string
 	return out, nil
 }
 
-func GetAnalytics(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+func GetActivityAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/analytics"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
 		return zero, err
@@ -507,21 +447,6 @@ func GetAnalytics(client *Client, path map[string]string, query map[string]strin
 	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
 		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func GetAudioRealtimeCallPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/audio/realtime/calls/" + url.PathEscape(path["call_id"])
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
 		return zero, err
 	}
 	return out, nil
@@ -627,21 +552,6 @@ func GetProviderDerankStatus(client *Client, path map[string]string, query map[s
 	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
 		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func GetRealtimeCallPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/realtime/calls/" + url.PathEscape(path["call_id"])
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
 		return zero, err
 	}
 	return out, nil
@@ -872,6 +782,81 @@ func ListProviders(client *Client, path map[string]string, query map[string]stri
 	return out, nil
 }
 
+func ListTeamModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/gateway/models/me"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListVideoModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/videos/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListVideoModelsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/video/generations/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListVideos(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/videos"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListVideosAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/video/generations"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func OpenResponsesWebSocket(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
 	resolvedPath := "/responses/ws"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -934,6 +919,21 @@ func RetrieveBatchAlias(client *Client, path map[string]string, query map[string
 
 func RetrieveFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
 	resolvedPath := "/files/" + url.PathEscape(path["file_id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func RetrieveFileContent(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/files/" + url.PathEscape(path["file_id"]) + "/content"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero interface{}

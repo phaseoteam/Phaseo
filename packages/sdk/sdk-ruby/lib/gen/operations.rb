@@ -9,33 +9,33 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.cancelBatch(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batches/#{path["batch_id"]}/cancel"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.cancelBatchAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batch/#{path["id"]}/cancel"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.cancelVideo(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/videos/#{path["video_id"]}/cancel"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.cancelVideoAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/video/generations/#{path["video_id"]}/cancel"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createAnthropicMessage(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/messages"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createAudioRealtimeCallPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/audio/realtime/calls"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createAudioRealtimeClientSecretsPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/audio/realtime/client_secrets"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createAudioRealtimeSessionPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/audio/realtime"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createAudioRealtimeSessionsPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/audio/realtime/sessions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -96,30 +96,6 @@ module AiStats
       def self.createOcr(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/ocr"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createRealtimeCallPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/realtime/calls"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createRealtimeClientSecretsPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/realtime/client_secrets"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createRealtimeSessionPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/realtime"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createRealtimeSessionsPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/realtime/sessions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -201,15 +177,9 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.getAnalytics(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.getActivityAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/analytics"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.getAudioRealtimeCallPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/audio/realtime/calls/#{path["call_id"]}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -252,12 +222,6 @@ module AiStats
       def self.getProviderDerankStatus(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/health/providers/#{path["provider_id"]}/derank"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.getRealtimeCallPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/realtime/calls/#{path["call_id"]}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -351,6 +315,36 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listTeamModels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/gateway/models/me"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listVideoModels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/videos/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listVideoModelsAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/video/generations/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listVideos(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/videos"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listVideosAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/video/generations"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.openResponsesWebSocket(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/responses/ws"
@@ -378,6 +372,12 @@ module AiStats
       def self.retrieveFile(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/files/#{path["file_id"]}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.retrieveFileContent(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/files/#{path["file_id"]}/content"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

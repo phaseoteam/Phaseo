@@ -94,11 +94,19 @@ export interface AnthropicMessagesRequest {
       }[];
   temperature?: number;
   tool_choice?: {} | string;
-  tools?: {
-    description?: string;
-    input_schema?: {};
-    name: string;
-  }[];
+  tools?:
+    | {
+        description?: string;
+        input_schema?: {};
+        name: string;
+      }
+    | {
+        parameters?: {
+          timezone?: string;
+        };
+        timezone?: string;
+        type: "gateway:datetime";
+      }[];
   top_k?: number;
   top_p?: number;
   usage?: boolean;
