@@ -8,25 +8,13 @@ import type { Env } from "@/runtime/types";
 import { withRuntime, json } from "../../utils";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
-import {
-    resolveCanonicalTokenUsage,
-    pickFirstFiniteNumber,
-} from "@/core/usage-normalization";
 
 const COMPLETED_DAYS_WINDOW = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const PAGE_SIZE = 1000;
-const MAX_ACTIVITY_ROWS = 100_000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function startOfUtcDay(date: Date): Date {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
-
-function formatUtcDate(isoLike: string): string | null {
-    const parsed = new Date(isoLike);
-    if (Number.isNaN(parsed.getTime())) return null;
-    return parsed.toISOString().slice(0, 10);
 }
 
 function toFiniteNumber(value: unknown): number | null {
@@ -127,34 +115,29 @@ function resolveScopedTeamId(args: {
     return { ok: true, teamId: requested };
 }
 
-type AnalyticsRow = {
-    id: string | null;
-    created_at: string | null;
-    endpoint: string | null;
+type AnalyticsRollupRow = {
+    day_bucket: string | null;
     model_id: string | null;
+    endpoint: string | null;
     provider: string | null;
-    usage: Record<string, unknown> | null;
-    byok: boolean | null;
-    cost_nanos: number | null;
-};
-
-type ActivityBucket = {
-    date: string;
-    model_permaslug: string;
-    endpoint_id: string;
-    provider_name: string;
-    usage: number;
-    byok_usage_inference: number;
-    requests: number;
-    prompt_tokens: number;
-    completion_tokens: number;
-    reasoning_tokens: number;
+    usage_nanos: number | string | null;
+    byok_usage_nanos: number | string | null;
+    requests: number | string | null;
+    prompt_tokens: number | string | null;
+    completion_tokens: number | string | null;
+    reasoning_tokens: number | string | null;
 };
 
 function toModelDisplay(permaslug: string): string {
     const match = permaslug.match(/^(.*)-\d{4}-\d{2}-\d{2}$/);
     if (match && match[1]) return match[1];
     return permaslug;
+}
+
+function toDayBucket(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return DATE_RE.test(trimmed) ? trimmed : null;
 }
 
 function toProviderName(providerId: string): string {
@@ -183,38 +166,44 @@ function toRoundedUsage(value: number): number {
     return Number(value.toFixed(9));
 }
 
-async function loadAnalyticsRows(args: {
+async function refreshAnalyticsRollup(args: {
     teamId: string;
     startIso: string;
     endIso: string;
-}): Promise<AnalyticsRow[]> {
+}): Promise<void> {
     const supabase = getSupabaseAdmin();
-    const rows: AnalyticsRow[] = [];
-    let offset = 0;
+    const { error } = await supabase.rpc("refresh_gateway_activity_rollup_daily", {
+        p_team_id: args.teamId,
+        p_start: args.startIso,
+        p_end: args.endIso,
+    });
+    if (error) {
+        throw new Error(error.message || "Failed to refresh analytics rollup");
+    }
+}
 
-    while (rows.length < MAX_ACTIVITY_ROWS) {
-        const { data, error } = await supabase
-            .from("gateway_requests")
-            .select("id,created_at,endpoint,model_id,provider,usage,byok,cost_nanos")
-            .eq("team_id", args.teamId)
-            .eq("success", true)
-            .gte("created_at", args.startIso)
-            .lt("created_at", args.endIso)
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .range(offset, offset + PAGE_SIZE - 1);
+async function loadAnalyticsRollupRows(args: {
+    teamId: string;
+    startIso: string;
+    endIso: string;
+}): Promise<AnalyticsRollupRow[]> {
+    const supabase = getSupabaseAdmin();
+    const startDay = args.startIso.slice(0, 10);
+    const endDay = args.endIso.slice(0, 10);
+    const { data, error } = await supabase
+        .from("gateway_activity_rollup_daily")
+        .select(
+            "day_bucket,model_id,endpoint,provider,usage_nanos,byok_usage_nanos,requests,prompt_tokens,completion_tokens,reasoning_tokens"
+        )
+        .eq("team_id", args.teamId)
+        .gte("day_bucket", startDay)
+        .lt("day_bucket", endDay);
 
-        if (error) {
-            throw new Error(error.message || "Failed to load analytics rows");
-        }
-        const page = (data ?? []) as AnalyticsRow[];
-        if (page.length === 0) break;
-        rows.push(...page);
-        if (page.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
+    if (error) {
+        throw new Error(error.message || "Failed to load analytics rollup rows");
     }
 
-    return rows;
+    return (data ?? []) as AnalyticsRollupRow[];
 }
 
 async function handleAnalytics(req: Request) {
@@ -238,80 +227,47 @@ async function handleAnalytics(req: Request) {
     const endIso = range.end.toISOString();
 
     try {
-        const rows = await loadAnalyticsRows({
+        await refreshAnalyticsRollup({
             teamId,
             startIso,
             endIso,
         });
-        const grouped = new Map<string, ActivityBucket>();
+        const rows = await loadAnalyticsRollupRows({
+            teamId,
+            startIso,
+            endIso,
+        });
 
-        for (const row of rows) {
-            if (!row.created_at) continue;
-            const date = formatUtcDate(row.created_at);
-            if (!date) continue;
-
-            const modelPermaslug = toNonEmptyString(row.model_id, "unknown/unknown");
-            const endpointId = toNonEmptyString(row.endpoint, "unknown");
-            const providerName = toProviderName(toNonEmptyString(row.provider, "unknown"));
-            const key = [date, modelPermaslug, endpointId, providerName].join("::");
-
-            const current = grouped.get(key) ?? {
-                date,
-                model_permaslug: modelPermaslug,
-                endpoint_id: endpointId,
-                provider_name: providerName,
-                usage: 0,
-                byok_usage_inference: 0,
-                requests: 0,
-                prompt_tokens: 0,
-                completion_tokens: 0,
-                reasoning_tokens: 0,
-            };
-
-            const usage = row.usage && typeof row.usage === "object" ? row.usage : {};
-            const tokens = resolveCanonicalTokenUsage(usage);
-            const reasoningTokens =
-                pickFirstFiniteNumber(usage, [
-                    "reasoning_tokens",
-                    "output_tokens_details.reasoning_tokens",
-                    "completion_tokens_details.reasoning_tokens",
-                    "output_details.reasoning_tokens",
-                ]) ?? 0;
-
-            const requestUsage = toUsdFromNanos(toFiniteNumber(row.cost_nanos));
-
-            current.usage += requestUsage;
-            if (row.byok === true) {
-                current.byok_usage_inference += requestUsage;
-            }
-            current.requests += 1;
-            current.prompt_tokens += tokens.inputTokens;
-            current.completion_tokens += tokens.outputTokens;
-            current.reasoning_tokens += Math.max(0, Math.round(reasoningTokens));
-
-            grouped.set(key, current);
-        }
-
-        const data = Array.from(grouped.values())
+        const data = rows
+            .map((row) => {
+                const date = toDayBucket(row.day_bucket);
+                if (!date) return null;
+                const modelPermaslug = toNonEmptyString(row.model_id, "unknown/unknown");
+                const endpointId = toNonEmptyString(row.endpoint, "unknown");
+                const providerId = toNonEmptyString(row.provider, "unknown");
+                return {
+                    date,
+                    model: toModelDisplay(modelPermaslug),
+                    model_permaslug: modelPermaslug,
+                    endpoint_id: endpointId,
+                    provider_name: toProviderName(providerId),
+                    usage: toRoundedUsage(toUsdFromNanos(toFiniteNumber(row.usage_nanos))),
+                    byok_usage_inference: toRoundedUsage(
+                        toUsdFromNanos(toFiniteNumber(row.byok_usage_nanos))
+                    ),
+                    requests: Math.max(0, Math.round(toFiniteNumber(row.requests) ?? 0)),
+                    prompt_tokens: Math.max(0, Math.round(toFiniteNumber(row.prompt_tokens) ?? 0)),
+                    completion_tokens: Math.max(0, Math.round(toFiniteNumber(row.completion_tokens) ?? 0)),
+                    reasoning_tokens: Math.max(0, Math.round(toFiniteNumber(row.reasoning_tokens) ?? 0)),
+                };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null)
             .sort((a, b) => {
                 if (a.date !== b.date) return b.date.localeCompare(a.date);
                 if (a.usage !== b.usage) return b.usage - a.usage;
                 if (a.requests !== b.requests) return b.requests - a.requests;
                 return a.model_permaslug.localeCompare(b.model_permaslug);
-            })
-            .map((item) => ({
-                date: item.date,
-                model: toModelDisplay(item.model_permaslug),
-                model_permaslug: item.model_permaslug,
-                endpoint_id: item.endpoint_id,
-                provider_name: item.provider_name,
-                usage: toRoundedUsage(item.usage),
-                byok_usage_inference: toRoundedUsage(item.byok_usage_inference),
-                requests: item.requests,
-                prompt_tokens: item.prompt_tokens,
-                completion_tokens: item.completion_tokens,
-                reasoning_tokens: item.reasoning_tokens,
-            }));
+            });
 
         return json(
             { data },

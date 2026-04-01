@@ -86,7 +86,7 @@ const updateOAuthClientSchema = z.object({
 	logo_url: z.string().url().optional(),
 	privacy_policy_url: z.string().url().optional(),
 	terms_of_service_url: z.string().url().optional(),
-	redirect_uris: z.array(z.string().url()).optional(),
+	redirect_uris: z.array(z.string().url()).min(1).optional(),
 });
 
 /**
