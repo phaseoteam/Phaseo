@@ -330,7 +330,7 @@ func (c *AIStats) ListProviders(_ context.Context, query map[string]string) (map
 // GetAnalytics calls /analytics.
 func (c *AIStats) GetAnalytics(_ context.Context, query map[string]string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "analytics", query, false, func() (map[string]interface{}, error) {
-		return gen.GetAnalytics(c.raw, nil, query, nil, nil)
+		return gen.GetActivity(c.raw, nil, query, nil, nil)
 	})
 }
 

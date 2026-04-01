@@ -348,7 +348,7 @@ namespace AiStatsSdk
 
         public Task<Dictionary<string, object>?> GetAnalytics(Dictionary<string, string>? query = null)
         {
-            return WithLifecycleAndTelemetry("analytics", query, false, () => Operations.GetAnalyticsAsync(_client, query: query));
+            return WithLifecycleAndTelemetry("analytics", query, false, () => Operations.GetActivityAsync(_client, query: query));
         }
 
         public Task<Dictionary<string, object>?> GetCredits(Dictionary<string, string>? query = null)

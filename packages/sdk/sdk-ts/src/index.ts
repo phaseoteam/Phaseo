@@ -631,7 +631,7 @@ export class AIStats {
   getAnalytics(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "analytics",
-      () => ops.getAnalytics(this.client, { query: params as any }),
+      () => ops.getActivity(this.client, { query: params as any }),
       () => params
     );
   }

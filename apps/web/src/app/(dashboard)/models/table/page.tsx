@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import ModelsTableDisplay from "@/components/(data)/models/Models/ModelsTableDisplay";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import {
@@ -54,6 +55,8 @@ function buildWeeklyTokensMaps(
 }
 
 export default async function ModelsTablePage() {
+	// Ensure request-scoped rendering before time-dependent calculations.
+	await headers();
 	const includeHidden = await resolveIncludeHidden();
 	const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 	const [monitorResult, weeklyUsageResult] = await Promise.all([
