@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type OrganisationOption = {
 	organisation_id: string;
@@ -249,7 +251,9 @@ export default function NewModelForm({
 	previousModels: PreviousModelOption[];
 	createAction: (formData: FormData) => void | Promise<void>;
 }) {
+	const router = useRouter();
 	const [modelId, setModelId] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedFamilyId, setSelectedFamilyId] = useState("");
 	const [newFamilyId, setNewFamilyId] = useState("");
 	const [newFamilyName, setNewFamilyName] = useState("");
@@ -306,8 +310,20 @@ export default function NewModelForm({
 		[providers]
 	);
 
-	const defaultPricingProviderId = providerRows[0]?.provider_id ?? sortedProviders[0]?.api_provider_id ?? "";
-	const defaultPricingApiModelId = providerRows[0]?.api_model_id || modelId;
+	const pricingProviderOptions = useMemo(() => {
+		const selected = new Set(
+			providerRows
+				.map((row) => row.provider_id?.trim())
+				.filter((value): value is string => Boolean(value))
+		);
+		return sortedProviders.filter((provider) =>
+			selected.has(provider.api_provider_id)
+		);
+	}, [providerRows, sortedProviders]);
+
+	const defaultPricingProviderId =
+		pricingProviderOptions[0]?.api_provider_id ?? "";
+	const defaultPricingApiModelId = modelId;
 	const defaultPricingCapability = providerRows[0]?.capabilities[0]?.capability_id ?? "text.generate";
 
 	const createPricingRow = (meter?: string): PricingRuleDraft => {
@@ -316,7 +332,7 @@ export default function NewModelForm({
 		return {
 			id: `price-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
 			provider_id: defaultPricingProviderId,
-			api_model_id: defaultPricingApiModelId,
+			api_model_id: defaultPricingApiModelId.trim(),
 			capability_id: defaultPricingCapability,
 			pricing_plan: "standard",
 			meter: chosenMeter,
@@ -328,6 +344,10 @@ export default function NewModelForm({
 	};
 
 	const addPricingRows = (meters: string[]) => {
+		if (!pricingProviderOptions.length) {
+			toast.error("Select at least one provider before adding pricing rules.")
+			return;
+		}
 		setPricingRows((prev) => [...prev, ...meters.map((meter) => createPricingRow(meter))]);
 	};
 
@@ -352,7 +372,7 @@ export default function NewModelForm({
 			JSON.stringify(
 				providerRows.map((row) => ({
 					provider_id: row.provider_id,
-					api_model_id: row.api_model_id.trim() || modelId.trim(),
+					api_model_id: modelId.trim(),
 					provider_model_slug: row.provider_model_slug.trim() || null,
 					is_active_gateway: row.is_active_gateway,
 					input_modalities: row.input_modalities,
@@ -371,7 +391,7 @@ export default function NewModelForm({
 				providerRows.flatMap((provider) =>
 					provider.capabilities.map((capability) => ({
 						provider_id: provider.provider_id,
-						api_model_id: provider.api_model_id.trim() || modelId.trim(),
+						api_model_id: modelId.trim(),
 						capability_id: capability.capability_id.trim(),
 						status: capability.status,
 						max_input_tokens: capability.max_input_tokens ? Number(capability.max_input_tokens) : null,
@@ -420,7 +440,7 @@ export default function NewModelForm({
 			JSON.stringify(
 				pricingRows.map((row) => ({
 					provider_id: row.provider_id,
-					api_model_id: row.api_model_id.trim() || modelId.trim(),
+					api_model_id: modelId.trim(),
 					capability_id: row.capability_id,
 					pricing_plan: row.pricing_plan,
 					meter: row.meter,
@@ -512,8 +532,38 @@ export default function NewModelForm({
 		});
 	};
 
+	useEffect(() => {
+		const canonicalModelId = modelId.trim();
+		setProviderRows((prev) =>
+			prev.map((row) => ({ ...row, api_model_id: canonicalModelId }))
+		);
+		setPricingRows((prev) =>
+			prev.map((row) => ({ ...row, api_model_id: canonicalModelId }))
+		);
+	}, [modelId]);
+
+	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		const promise = Promise.resolve(createAction(formData));
+
+		setIsSubmitting(true);
+		toast.promise(promise, {
+			loading: "Creating model...",
+			success: "Model created",
+			error: (error) =>
+				error instanceof Error ? error.message : "Failed to create model",
+		});
+
+		void promise
+			.then(() => {
+				router.push("/internal/data/models");
+			})
+			.finally(() => setIsSubmitting(false));
+	};
+
 	return (
-		<form action={createAction} className="space-y-6 rounded-lg border p-4">
+		<form onSubmit={handleSubmit} className="space-y-6 rounded-lg border p-4">
 			<input type="hidden" name="family_payload" value={familyPayload} />
 			<input type="hidden" name="provider_models_payload" value={providerModelPayload} />
 			<input type="hidden" name="provider_capabilities_payload" value={providerCapabilityPayload} />
@@ -857,14 +907,9 @@ export default function NewModelForm({
 								<label className="text-xs">
 									<div className="mb-1 text-muted-foreground">API model ID</div>
 									<Input
-										value={providerRow.api_model_id}
-										onChange={(event) =>
-											setProviderRows((prev) =>
-												prev.map((row) =>
-													row.id === providerRow.id ? { ...row, api_model_id: event.target.value } : row
-												)
-											)
-										}
+										value={modelId}
+										readOnly
+										disabled
 										className="h-8 text-xs"
 									/>
 								</label>
@@ -1444,15 +1489,16 @@ export default function NewModelForm({
 							className="rounded-md border px-2 py-1.5 text-xs"
 						>
 							<option value="">Provider</option>
-							{sortedProviders.map((provider) => (
+							{pricingProviderOptions.map((provider) => (
 								<option key={provider.api_provider_id} value={provider.api_provider_id}>
 									{provider.api_provider_name ?? provider.api_provider_id}
 								</option>
 							))}
 						</select>
 						<Input
-							value={row.api_model_id}
-							onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
+							value={modelId}
+							readOnly
+							disabled
 							placeholder="api_model_id"
 							className="h-8 text-xs"
 						/>
@@ -1517,8 +1563,8 @@ export default function NewModelForm({
 			</section>
 
 			<div className="flex flex-wrap gap-2">
-				<Button type="submit" className="w-full sm:w-auto">
-					Create model
+				<Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+					{isSubmitting ? "Creating..." : "Create model"}
 				</Button>
 				<Link href="/internal/data/models" className="w-full rounded-md border px-3 py-2 text-center text-sm sm:w-auto">
 					Cancel

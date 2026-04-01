@@ -115,6 +115,11 @@ export function AuditDataTable({
 		parse: (value) => value || "",
 		serialize: (value) => value,
 	});
+	const [filterPricingGap] = useQueryState("pricingGap", {
+		defaultValue: "",
+		parse: (value) => value || "",
+		serialize: (value) => value,
+	});
 	const [filterProvider] = useQueryState("provider", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -179,12 +184,26 @@ export function AuditDataTable({
 				if (!matchesSearch) return false;
 			}
 
+			const providerRecord = filterProvider
+				? item.providers.find(
+					(provider) => provider.providerId === filterProvider
+				)
+				: null;
+			const isGatewayActiveForFilter = filterProvider
+				? Boolean(providerRecord?.isActiveGateway)
+				: item.isActiveOnGateway;
+			const hasActivePricingGapForFilter = filterProvider
+				? Boolean(providerRecord?.isActiveGateway) && !Boolean(providerRecord?.hasPricing)
+				: item.providers.some(
+					(provider) => provider.isActiveGateway && !provider.hasPricing
+				);
+
 			// Gateway status filter
 			if (filterGatewayStatus) {
-				if (filterGatewayStatus === "active" && !item.isActiveOnGateway) {
+				if (filterGatewayStatus === "active" && !isGatewayActiveForFilter) {
 					return false;
 				}
-				if (filterGatewayStatus === "inactive" && item.isActiveOnGateway) {
+				if (filterGatewayStatus === "inactive" && isGatewayActiveForFilter) {
 					return false;
 				}
 			}
@@ -211,11 +230,6 @@ export function AuditDataTable({
 
 			// Has pricing filter
 			if (filterHasPricing) {
-				const providerRecord = filterProvider
-					? item.providers.find(
-						(provider) => provider.providerId === filterProvider
-					)
-					: null;
 				const hasPricingForFilter = filterProvider
 					? Boolean(providerRecord?.hasPricing)
 					: item.pricingRulesCount > 0;
@@ -226,6 +240,9 @@ export function AuditDataTable({
 				if (filterHasPricing === "false" && hasPricingForFilter) {
 					return false;
 				}
+			}
+			if (filterPricingGap === "activeMissing" && !hasActivePricingGapForFilter) {
+				return false;
 			}
 
 			if (filterProvider) {
@@ -395,6 +412,7 @@ export function AuditDataTable({
 		filterHasBenchmarks,
 		filterHidden,
 		filterHasPricing,
+		filterPricingGap,
 		filterProvider,
 		filterReleaseDateOp,
 		filterReleaseDateValue,
@@ -786,17 +804,15 @@ export function AuditDataTable({
 																		}
 																	</span>
 																	{" - "}
-																	<span className="text-muted-foreground">
-																		{provider
-																			.capabilities
-																			.length}{" "}
-																		capabilities
-																		{provider.isActiveGateway &&
-																			" (Active)"}
-																	</span>
-																</div>
-															)
-														)}
+																		<span className="text-muted-foreground">
+																			{provider
+																				.capabilities
+																				.length}{" "}
+																			enabled capabilities
+																		</span>
+																	</div>
+																)
+															)}
 													</div>
 												</TooltipContent>
 											</Tooltip>
@@ -885,31 +901,39 @@ export function AuditDataTable({
 															</span>
 														</div>
 													</TooltipTrigger>
-													<TooltipContent className="max-w-xs">
-														<div className="space-y-1">
-															{item.providers.map((provider) => (
-																<div
-																	key={`pricing-detail-${provider.providerId}`}
-																	className="flex items-center justify-between gap-2 text-xs"
-																>
-																	<span className="font-medium">
-																		{provider.providerName}
-																	</span>
-																	<span
-																		className={
-																			provider.hasPricing
-																				? "text-green-700"
-																				: "text-red-700"
-																		}
+														<TooltipContent className="max-w-xs">
+															<div className="space-y-1">
+																{item.providers.map((provider) => (
+																	<div
+																		key={`pricing-detail-${provider.providerId}`}
+																		className="flex items-start justify-between gap-3 text-xs"
 																	>
-																		{provider.hasPricing
-																			? `Pricing (${provider.pricingRulesCount})`
-																			: "No pricing"}
-																	</span>
-																</div>
-															))}
-														</div>
-													</TooltipContent>
+																		<span className="font-medium">
+																			{provider.providerName}
+																		</span>
+																		<div className="max-w-[220px] text-right">
+																			<span
+																				className={
+																					provider.hasPricing
+																						? "text-green-700"
+																						: "text-red-700"
+																				}
+																			>
+																				{provider.hasPricing
+																					? `Pricing (${provider.pricingRulesCount})`
+																					: "No pricing"}
+																			</span>
+																			<div className="text-[11px] text-muted-foreground">
+																				Capabilities:{" "}
+																				{provider.capabilities.length > 0
+																					? provider.capabilities.join(", ")
+																					: "None"}
+																			</div>
+																		</div>
+																	</div>
+																))}
+															</div>
+														</TooltipContent>
 												</Tooltip>
 											)}
 										</TableCell>

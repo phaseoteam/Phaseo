@@ -18,6 +18,7 @@ import {
 	type ProviderPromptTrainingPolicy,
 	normalizeProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy";
+import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 const QUANTIZATION_DOCS_URL =
 	"https://docs.ai-stats.phaseo.app/v1/guides/model-quantization";
@@ -151,8 +152,8 @@ export default function ProviderInfoHoverIcons({
 }) {
 	const slugs = uniqueDefined(providerModelSlugs);
 	const quantization = getFirstDefined([
-		quantizationScheme,
-		...quantizationSchemes,
+		normalizeQuantizationScheme(quantizationScheme),
+		...quantizationSchemes.map((value) => normalizeQuantizationScheme(value)),
 	]);
 	const promptTrainingEntries = normalizePromptTrainingEntries(promptTraining);
 	const promptTrainingState = getPromptTrainingState(promptTrainingEntries);

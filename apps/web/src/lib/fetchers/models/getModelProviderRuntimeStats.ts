@@ -1,16 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { classifyGatewayRequestForUptime } from "@/lib/fetchers/gateway/uptimeClassification";
-
-type RawGatewayRequest = {
-	created_at: string;
-	provider: string | null;
-	success: boolean | number | string | null;
-	latency_ms?: number | null;
-	throughput?: number | null;
-	error_code?: string | null;
-	status_code?: number | null;
-};
 
 export type ProviderRuntimeStats = {
 	providerId: string;
@@ -30,20 +19,112 @@ export type ProviderRuntimeStats = {
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
 
-const LOOKBACK_HOURS = 72;
-const THROUGHPUT_WINDOW_MINUTES = 30;
-const PAGE_SIZE = 1000;
-const MAX_PAGES = 20;
+type RuntimeRollupRow = {
+	bucket_15m: string;
+	provider: string;
+	requests: number | null;
+	success_requests: number | null;
+	latency_sum_ms: number | null;
+	latency_samples: number | null;
+	throughput_sum: number | null;
+	throughput_samples: number | null;
+};
 
-function percentile(values: number[], p: number): number | null {
-	if (!values.length) return null;
-	const sorted = values.slice().sort((a, b) => a - b);
-	const rank = (sorted.length - 1) * p;
-	const lower = Math.floor(rank);
-	const upper = Math.ceil(rank);
-	if (lower === upper) return sorted[lower];
-	const weight = rank - lower;
-	return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+type Aggregate = {
+	requests30m: number;
+	requests3d: number;
+	successful3d: number;
+	latencySum30m: number;
+	latencySamples30m: number;
+	throughputSum30m: number;
+	throughputSamples30m: number;
+	latencySum3d: number;
+	latencySamples3d: number;
+	throughputSum3d: number;
+	throughputSamples3d: number;
+	dayRequests: [number, number, number];
+	daySuccessful: [number, number, number];
+};
+
+const PAGE_SIZE = 5000;
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function toNumber(value: unknown): number {
+	const num = Number(value);
+	return Number.isFinite(num) ? num : 0;
+}
+
+function toInt(value: unknown): number {
+	const num = Number(value);
+	return Number.isFinite(num) ? Math.max(0, Math.trunc(num)) : 0;
+}
+
+function average(sum: number, samples: number): number | null {
+	if (!Number.isFinite(sum) || !Number.isFinite(samples) || samples <= 0) return null;
+	return sum / samples;
+}
+
+function emptyAggregate(): Aggregate {
+	return {
+		requests30m: 0,
+		requests3d: 0,
+		successful3d: 0,
+		latencySum30m: 0,
+		latencySamples30m: 0,
+		throughputSum30m: 0,
+		throughputSamples30m: 0,
+		latencySum3d: 0,
+		latencySamples3d: 0,
+		throughputSum3d: 0,
+		throughputSamples3d: 0,
+		dayRequests: [0, 0, 0],
+		daySuccessful: [0, 0, 0],
+	};
+}
+
+function dayOffsetFromUtcMidnight(nowUtcMidnightMs: number, bucketDate: Date): 0 | 1 | 2 | null {
+	const bucketUtcMidnightMs = Date.UTC(
+		bucketDate.getUTCFullYear(),
+		bucketDate.getUTCMonth(),
+		bucketDate.getUTCDate(),
+	);
+	const offset = Math.floor((nowUtcMidnightMs - bucketUtcMidnightMs) / DAY_MS);
+	if (offset < 0 || offset > 2) return null;
+	return offset as 0 | 1 | 2;
+}
+
+async function fetchRuntimeRollupRows(
+	client: ReturnType<typeof createAdminClient>,
+	modelIds: string[],
+	providerIds: string[],
+	fromIso: string,
+	toIso: string,
+): Promise<RuntimeRollupRow[]> {
+	const rows: RuntimeRollupRow[] = [];
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const to = offset + PAGE_SIZE - 1;
+		const { data, error } = await client
+			.from("gateway_usage_rollup_15m_model_provider")
+			.select(
+				"bucket_15m, provider, requests, success_requests, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
+			)
+			.in("canonical_model_id", modelIds)
+			.in("provider", providerIds)
+			.gte("bucket_15m", fromIso)
+			.lte("bucket_15m", toIso)
+			.order("bucket_15m", { ascending: true })
+			.range(offset, to);
+
+		if (error) {
+			throw new Error(error.message ?? "Failed to fetch model provider runtime rollups");
+		}
+		if (!Array.isArray(data) || data.length === 0) break;
+		rows.push(...(data as RuntimeRollupRow[]));
+		if (data.length < PAGE_SIZE) break;
+	}
+	return rows;
 }
 
 export async function getModelProviderRuntimeStats(args: {
@@ -52,45 +133,29 @@ export async function getModelProviderRuntimeStats(args: {
 	modelAliases: string[];
 }): Promise<ProviderRuntimeStatsMap> {
 	const providerIds = Array.from(new Set(args.providerIds.filter(Boolean))).sort((a, b) =>
-		a.localeCompare(b)
+		a.localeCompare(b),
 	);
-	const modelAliases = Array.from(
-		new Set([args.modelId, ...args.modelAliases].filter(Boolean))
+	const modelIds = Array.from(
+		new Set([args.modelId, ...args.modelAliases].filter(Boolean)),
 	).sort((a, b) => a.localeCompare(b));
 
-	if (!providerIds.length || !modelAliases.length) return {};
+	if (!providerIds.length || !modelIds.length) return {};
+
+	const now = new Date();
+	const nowMs = now.getTime();
+	const windowStart3d = new Date(nowMs - THREE_DAYS_MS);
+	const fromIso = windowStart3d.toISOString();
+	const toIso = now.toISOString();
+	const nowUtcMidnightMs = Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate(),
+	);
 
 	const client = createAdminClient();
-	const fromIso = new Date(
-		Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000
-	).toISOString();
-
-	const rows: RawGatewayRequest[] = [];
+	let rows: RuntimeRollupRow[];
 	try {
-		for (let page = 0; page < MAX_PAGES; page++) {
-			const from = page * PAGE_SIZE;
-			const to = from + PAGE_SIZE - 1;
-			const { data, error } = await client
-				.from("gateway_requests")
-				.select(
-					"created_at, provider, success, latency_ms, throughput, error_code, status_code"
-				)
-				.in("provider", providerIds)
-				.in("model_id", modelAliases)
-				.gte("created_at", fromIso)
-				.order("created_at", { ascending: false })
-				.range(from, to);
-
-			if (error) {
-				throw new Error(
-					error.message ?? "Failed to load model provider runtime stats"
-				);
-			}
-
-			if (!data?.length) break;
-			rows.push(...(data as RawGatewayRequest[]));
-			if (data.length < PAGE_SIZE) break;
-		}
+		rows = await fetchRuntimeRollupRows(client, modelIds, providerIds, fromIso, toIso);
 	} catch (error) {
 		console.warn("Failed to fetch model provider runtime stats", {
 			modelId: args.modelId,
@@ -99,131 +164,98 @@ export async function getModelProviderRuntimeStats(args: {
 		return {};
 	}
 
-	const nowMs = Date.now();
-	const min30mMs = nowMs - THROUGHPUT_WINDOW_MINUTES * 60 * 1000;
-	const min3dMs = nowMs - LOOKBACK_HOURS * 60 * 60 * 1000;
-	const now = new Date(nowMs);
-	const todayUtcStartMs = Date.UTC(
-		now.getUTCFullYear(),
-		now.getUTCMonth(),
-		now.getUTCDate()
-	);
-	const msInDay = 24 * 60 * 60 * 1000;
-
-	const aggregates = new Map<
-		string,
-		{
-			latencies30m: number[];
-			throughputs30m: number[];
-			latencies3d: number[];
-			throughputs3d: number[];
-			requests30m: number;
-			requests3d: number;
-			successful3d: number;
-			daily3d: Array<{
-				requests: number;
-				successful: number;
-			}>;
-		}
-	>();
-
-	for (const providerId of providerIds) {
-		aggregates.set(providerId, {
-			latencies30m: [],
-			throughputs30m: [],
-			latencies3d: [],
-			throughputs3d: [],
-			requests30m: 0,
-			requests3d: 0,
-			successful3d: 0,
-			daily3d: [
-				{ requests: 0, successful: 0 },
-				{ requests: 0, successful: 0 },
-				{ requests: 0, successful: 0 },
-			],
-		});
-	}
+	const aggregateByProvider = new Map<string, Aggregate>();
 
 	for (const row of rows) {
-		const providerId = row.provider;
+		const providerId = String(row?.provider ?? "").trim();
 		if (!providerId) continue;
-		const entry = aggregates.get(providerId);
-		if (!entry) continue;
 
-		const createdAtDate = new Date(row.created_at);
-		const createdAtMs = createdAtDate.getTime();
-		if (!Number.isFinite(createdAtMs) || createdAtMs < min3dMs) continue;
+		const bucketDate = new Date(String(row?.bucket_15m ?? ""));
+		if (!Number.isFinite(bucketDate.getTime())) continue;
 
-		const uptimeOutcome = classifyGatewayRequestForUptime(row);
-		if (uptimeOutcome !== "exclude") {
-			entry.requests3d += 1;
-			if (uptimeOutcome === "count_success") entry.successful3d += 1;
-		}
-		const createdAtUtcStartMs = Date.UTC(
-			createdAtDate.getUTCFullYear(),
-			createdAtDate.getUTCMonth(),
-			createdAtDate.getUTCDate()
-		);
-		const dayOffset = Math.floor(
-			(todayUtcStartMs - createdAtUtcStartMs) / msInDay
-		);
-		if (uptimeOutcome !== "exclude" && dayOffset >= 0 && dayOffset < 3) {
-			entry.daily3d[dayOffset].requests += 1;
-			if (uptimeOutcome === "count_success") {
-				entry.daily3d[dayOffset].successful += 1;
-			}
-		}
-		if (row.latency_ms != null && Number.isFinite(Number(row.latency_ms))) {
-			entry.latencies3d.push(Number(row.latency_ms));
-		}
-		if (row.throughput != null && Number.isFinite(Number(row.throughput))) {
-			entry.throughputs3d.push(Number(row.throughput));
+		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
+		const requests = toInt(row.requests);
+		const successful = toInt(row.success_requests);
+		const latencySum = toNumber(row.latency_sum_ms);
+		const latencySamples = toInt(row.latency_samples);
+		const throughputSum = toNumber(row.throughput_sum);
+		const throughputSamples = toInt(row.throughput_samples);
+
+		aggregate.requests3d += requests;
+		aggregate.successful3d += successful;
+		aggregate.latencySum3d += latencySum;
+		aggregate.latencySamples3d += latencySamples;
+		aggregate.throughputSum3d += throughputSum;
+		aggregate.throughputSamples3d += throughputSamples;
+
+		const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, bucketDate);
+		if (dayOffset != null) {
+			aggregate.dayRequests[dayOffset] += requests;
+			aggregate.daySuccessful[dayOffset] += successful;
 		}
 
-		if (createdAtMs >= min30mMs) {
-			entry.requests30m += 1;
-			if (row.latency_ms != null && Number.isFinite(Number(row.latency_ms))) {
-				entry.latencies30m.push(Number(row.latency_ms));
-			}
-			if (row.throughput != null && Number.isFinite(Number(row.throughput))) {
-				entry.throughputs30m.push(Number(row.throughput));
-			}
+		if (bucketDate.getTime() >= nowMs - THIRTY_MINUTES_MS) {
+			aggregate.requests30m += requests;
+			aggregate.latencySum30m += latencySum;
+			aggregate.latencySamples30m += latencySamples;
+			aggregate.throughputSum30m += throughputSum;
+			aggregate.throughputSamples30m += throughputSamples;
 		}
+
+		aggregateByProvider.set(providerId, aggregate);
 	}
 
 	const out: ProviderRuntimeStatsMap = {};
+
 	for (const providerId of providerIds) {
-		const entry = aggregates.get(providerId);
-		if (!entry) continue;
+		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
+		const latencyMs30m =
+			average(aggregate.latencySum30m, aggregate.latencySamples30m) ??
+			average(aggregate.latencySum3d, aggregate.latencySamples3d);
+		const throughput30m =
+			average(aggregate.throughputSum30m, aggregate.throughputSamples30m) ??
+			average(aggregate.throughputSum3d, aggregate.throughputSamples3d);
+
 		out[providerId] = {
 			providerId,
-			latencyMs30m:
-				percentile(entry.latencies30m, 0.5) ??
-				percentile(entry.latencies3d, 0.5),
-			throughput30m:
-				percentile(entry.throughputs30m, 0.5) ??
-				percentile(entry.throughputs3d, 0.5),
+			latencyMs30m,
+			throughput30m,
 			uptimePct3d:
-				entry.requests3d > 0
-					? (entry.successful3d / entry.requests3d) * 100
+				aggregate.requests3d > 0
+					? (aggregate.successful3d / aggregate.requests3d) * 100
 					: null,
-			uptimeDaily3d: ([
-				0, 1, 2,
-			] as const).map((dayOffset) => {
-				const bucket = entry.daily3d[dayOffset];
-				return {
-					dayOffset,
-					requests: bucket.requests,
-					successful: bucket.successful,
+			uptimeDaily3d: [
+				{
+					dayOffset: 0,
+					requests: aggregate.dayRequests[0],
+					successful: aggregate.daySuccessful[0],
 					uptimePct:
-						bucket.requests > 0
-							? (bucket.successful / bucket.requests) * 100
+						aggregate.dayRequests[0] > 0
+							? (aggregate.daySuccessful[0] / aggregate.dayRequests[0]) * 100
 							: null,
-				};
-			}),
-			requests30m: entry.requests30m,
-			requests3d: entry.requests3d,
-			successful3d: entry.successful3d,
+				},
+				{
+					dayOffset: 1,
+					requests: aggregate.dayRequests[1],
+					successful: aggregate.daySuccessful[1],
+					uptimePct:
+						aggregate.dayRequests[1] > 0
+							? (aggregate.daySuccessful[1] / aggregate.dayRequests[1]) * 100
+							: null,
+				},
+				{
+					dayOffset: 2,
+					requests: aggregate.dayRequests[2],
+					successful: aggregate.daySuccessful[2],
+					uptimePct:
+						aggregate.dayRequests[2] > 0
+							? (aggregate.daySuccessful[2] / aggregate.dayRequests[2]) * 100
+							: null,
+				},
+			],
+			requests30m: aggregate.requests30m,
+			requests3d: aggregate.requests3d,
+			successful3d: aggregate.successful3d,
 		};
 	}
 
@@ -238,8 +270,8 @@ export async function getModelProviderRuntimeStatsCached(args: {
 	"use cache";
 
 	cacheLife("minutes");
-	cacheTag("data:gateway_requests");
-	cacheTag(`data:gateway_requests:model:${args.modelId}`);
+	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`data:gateway_usage_rollups:model:${args.modelId}`);
 
 	return getModelProviderRuntimeStats(args);
 }

@@ -1,0 +1,36 @@
+{
+  "model_id": "google/gemma-2-2b",
+  "organisation_id": "google",
+  "name": "Gemma 2 2B",
+  "status": "Available",
+  "previous_model_id": "google/gemma-1-2b-2024-02-21",
+  "announced_date": "2024-07-31T00:00:00",
+  "release_date": "2024-07-31T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Gemma",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "google/gemma-2-2b",
+  "family_id": "google/gemma-2",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 8192
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-06-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8192
+    },
+    {
+      "name": "parameter_count",
+      "value": 2000000000
+    }
+  ],
+  "benchmarks": []
+}

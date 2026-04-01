@@ -67,13 +67,50 @@ export function extractGenerationUrls(payload: any): string[] {
 	addUrl(payload?.audio_url);
 	addUrl(payload?.content_url);
 	addUrl(payload?.result_url);
+	addUrl(payload?.video?.url);
+	addUrl(payload?.result?.url);
 
 	if (Array.isArray(payload?.data)) {
 		for (const entry of payload.data) {
 			addUrl(entry?.url);
+			addUrl(entry?.uri);
+			addUrl(entry?.video_url);
+			addUrl(entry?.content_url);
+			addUrl(entry?.result_url);
+			addUrl(entry?.video?.url);
 			if (typeof entry?.b64_json === "string" && entry.b64_json.trim()) {
 				addUrl(`data:image/png;base64,${entry.b64_json}`);
 			}
+		}
+	}
+	if (Array.isArray(payload?.output)) {
+		for (const entry of payload.output) {
+			addUrl(entry?.url);
+			addUrl(entry?.uri);
+			addUrl(entry?.video_url);
+			addUrl(entry?.content_url);
+			addUrl(entry?.result_url);
+			addUrl(entry?.video?.url);
+		}
+	}
+	if (Array.isArray(payload?.result?.output)) {
+		for (const entry of payload.result.output) {
+			addUrl(entry?.url);
+			addUrl(entry?.uri);
+			addUrl(entry?.video_url);
+			addUrl(entry?.content_url);
+			addUrl(entry?.result_url);
+			addUrl(entry?.video?.url);
+		}
+	}
+	if (
+		Array.isArray(
+			payload?.response?.generateVideoResponse?.generatedSamples,
+		)
+	) {
+		for (const entry of payload.response.generateVideoResponse.generatedSamples) {
+			addUrl(entry?.video?.uri);
+			addUrl(entry?.video?.url);
 		}
 	}
 

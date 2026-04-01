@@ -33,6 +33,7 @@ const manifestEntries = Object.entries(logoManifest) as Array<
 >;
 
 const normalisedKeyMap = new Map<string, KnownLogoId>();
+const normalisedAliasMap = new Map<string, KnownLogoId>();
 
 const pathToKeyMap = new Map<string, KnownLogoId>();
 
@@ -53,6 +54,11 @@ for (const [key, assets] of manifestEntries) {
 	}
 }
 
+// Provider/catalog IDs are not always identical to logo IDs.
+// Keep common aliases here so callers can pass provider IDs directly.
+normalisedAliasMap.set(normalise("novitaai"), "novita");
+normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
+
 function normalise(value: string): string {
 	return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -64,7 +70,7 @@ function lookupKnownId(input: string): KnownLogoId | undefined {
 	}
 	const normalised = normalise(input);
 	if (!normalised) return undefined;
-	return normalisedKeyMap.get(normalised);
+	return normalisedKeyMap.get(normalised) ?? normalisedAliasMap.get(normalised);
 }
 
 function labelFromId(id?: KnownLogoId | string): string {

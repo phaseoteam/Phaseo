@@ -1,0 +1,53 @@
+{
+  "model_id": "openai/gpt-oss-20b",
+  "organisation_id": "openai",
+  "name": "GPT OSS 20b",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-08-05T00:00:00",
+  "release_date": "2025-08-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-oss-20b",
+  "family_id": "openai/gpt-oss",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-oss-20b"
+    },
+    {
+      "platform": "playground",
+      "url": "https://gpt-oss.com/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-oss/"
+    },
+    {
+      "platform": "weights",
+      "url": "http://huggingface.co/openai/gpt-oss-20b"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-06-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    }
+  ],
+  "benchmarks": []
+}

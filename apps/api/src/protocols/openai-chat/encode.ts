@@ -45,7 +45,7 @@ function encodeChoice(
 	choice: IRChoice,
 	requestId: string,
 ): GatewayCompletionsResponse["choices"][0] {
-	const { text, reasoningParts, imageParts } = splitContentParts(choice.message.content as IRContentPart[]);
+	const { text, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
 	const reasoningContent = reasoningParts.join("");
 	const reasoningDetails: GatewayReasoningDetail[] = reasoningParts.map((textPart, index) => ({
 		id: `${requestId}-reasoning-${choice.index}-${index + 1}`,
@@ -63,6 +63,29 @@ function encodeChoice(
 		},
 		...(part.mimeType ? { mime_type: part.mimeType } : {}),
 	}));
+	const audios = audioParts.map((part) => {
+		const mimeType = (() => {
+			if (part.format === "wav") return "audio/wav";
+			if (part.format === "mp3") return "audio/mpeg";
+			if (part.format === "flac") return "audio/flac";
+			if (part.format === "m4a") return "audio/m4a";
+			if (part.format === "ogg") return "audio/ogg";
+			if (part.format === "pcm16") return "audio/l16";
+			if (part.format === "pcm24") return "audio/l24";
+			return "audio/wav";
+		})();
+		return {
+			type: "audio_url" as const,
+			audio_url: {
+				url:
+					part.source === "data"
+						? `data:${mimeType};base64,${part.data}`
+						: part.data,
+			},
+			mime_type: mimeType,
+			...(part.format ? { format: part.format } : {}),
+		};
+	});
 
 	return {
 		index: choice.index,
@@ -70,6 +93,7 @@ function encodeChoice(
 			role: "assistant",
 			content: text,
 			...(images.length > 0 ? { images } : {}),
+			...(audios.length > 0 ? { audios } : {}),
 			...(choice.message.refusal ? { refusal: choice.message.refusal } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
 				id: tc.id,
@@ -92,8 +116,9 @@ function splitContentParts(parts: IRContentPart[]): {
 	text: string;
 	reasoningParts: string[];
 	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
+	audioParts: Array<Extract<IRContentPart, { type: "audio" }>>;
 } {
-	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [] };
+	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [], audioParts: [] };
 	const text = parts
 		.filter((part) => part.type === "text")
 		.map((part) => part.text)
@@ -104,7 +129,10 @@ function splitContentParts(parts: IRContentPart[]): {
 	const imageParts = parts.filter((part) => part.type === "image") as Array<
 		Extract<IRContentPart, { type: "image" }>
 	>;
-	return { text, reasoningParts, imageParts };
+	const audioParts = parts.filter((part) => part.type === "audio") as Array<
+		Extract<IRContentPart, { type: "audio" }>
+	>;
+	return { text, reasoningParts, imageParts, audioParts };
 }
 
 /**
@@ -148,6 +176,13 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 			cached_tokens: usage._ext?.cachedWriteTokens,
 			output_images: usage._ext?.outputImageTokens,
 			output_audio: usage._ext?.outputAudioTokens,
+		};
+	}
+
+	const datetimeRequests = usage._ext?.serverToolUse?.datetime_requests;
+	if (typeof datetimeRequests === "number") {
+		(result as any).server_tool_use = {
+			datetime_requests: datetimeRequests,
 		};
 	}
 

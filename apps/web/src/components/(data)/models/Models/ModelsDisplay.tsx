@@ -150,6 +150,7 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
+	if (normalized.includes("music")) return "music";
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("moderat")) return "moderations";
@@ -317,6 +318,7 @@ function getModalityIcon(modality: string): LucideIcon {
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
+	if (normalized.includes("music")) return AudioLines;
 	if (normalized.includes("audio")) return AudioLines;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;

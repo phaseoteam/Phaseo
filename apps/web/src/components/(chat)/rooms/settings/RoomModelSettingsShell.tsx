@@ -30,6 +30,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { ChevronsUpDown } from "lucide-react";
 import type {
 	RoomBaseModelSettings,
 } from "@/components/(chat)/rooms/useRoomModelSettings";
@@ -180,30 +186,131 @@ export function RoomModelSettingsShell({
 						<div className="grid gap-3">
 							<div className="grid gap-1.5">
 								<Label>Model</Label>
-								<Button
-									type="button"
-									variant="outline"
-									className="justify-start gap-2"
-									disabled={modelChoices.length === 0}
-									onClick={() => setModelPickerOpen(true)}
+								<Popover
+									open={modelPickerOpen}
+									onOpenChange={setModelPickerOpen}
 								>
-									{selectedChoice ? (
-										<>
-											<Logo
-												id={selectedChoice.orgId}
-												alt={selectedChoice.orgName}
-												width={16}
-												height={16}
-												className="shrink-0"
+									<PopoverTrigger asChild>
+										<Button
+											type="button"
+											variant="outline"
+											role="combobox"
+											aria-expanded={modelPickerOpen}
+											className="justify-between gap-2"
+											disabled={modelChoices.length === 0}
+										>
+											{selectedChoice ? (
+												<span className="flex min-w-0 items-center gap-2">
+													<Logo
+														id={selectedChoice.orgId}
+														alt={selectedChoice.orgName}
+														width={16}
+														height={16}
+														className="shrink-0"
+													/>
+													<span className="truncate">
+														{selectedChoice.label}
+													</span>
+												</span>
+											) : (
+												<span className="truncate text-muted-foreground">
+													Select model
+												</span>
+											)}
+											<ChevronsUpDown className="h-4 w-4 shrink-0 opacity-60" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent
+										align="start"
+										className="z-[210] w-[var(--radix-popover-trigger-width)] p-0"
+									>
+										<Command className="max-h-[55vh]" shouldFilter={false}>
+											<CommandInput
+												placeholder="Search models..."
+												value={modelSearchValue}
+												onValueChange={setModelSearchValue}
 											/>
-											<span className="truncate">{selectedChoice.label}</span>
-										</>
-									) : (
-										<span className="truncate text-muted-foreground">
-											Select model
-										</span>
-									)}
-								</Button>
+											<CommandList>
+												<CommandEmpty>No models found.</CommandEmpty>
+												{hasModelSearchValue ? (
+													<CommandGroup
+														heading={`Results (${rankedModelChoices.length})`}
+													>
+														{rankedModelChoices.map(({ choice }) => (
+															<CommandItem
+																key={choice.id}
+																value={`${choice.orgName} ${choice.label} ${choice.id}`}
+																className="h-8"
+																onSelect={() => {
+																	onModelChange(choice.id);
+																	setModelPickerOpen(false);
+																}}
+															>
+																<div className="flex min-w-0 items-center gap-2">
+																	<Logo
+																		id={choice.orgId}
+																		alt={choice.orgName}
+																		width={14}
+																		height={14}
+																		className="shrink-0"
+																	/>
+																	<span className="truncate text-sm">
+																		{choice.label}
+																	</span>
+																	{selectedModelId === choice.id ? (
+																		<Badge
+																			variant="secondary"
+																			className="h-5 px-1.5 text-[10px]"
+																		>
+																			Selected
+																		</Badge>
+																	) : null}
+																</div>
+															</CommandItem>
+														))}
+													</CommandGroup>
+												) : (
+													groupedModelChoices.map(([orgName, choices]) => (
+														<CommandGroup key={orgName} heading={orgName}>
+															{choices.map((choice) => (
+																<CommandItem
+																	key={choice.id}
+																	value={`${choice.orgName} ${choice.label} ${choice.id}`}
+																	className="h-8"
+																	onSelect={() => {
+																		onModelChange(choice.id);
+																		setModelPickerOpen(false);
+																	}}
+																>
+																	<div className="flex min-w-0 items-center gap-2">
+																		<Logo
+																			id={choice.orgId}
+																			alt={choice.orgName}
+																			width={14}
+																			height={14}
+																			className="shrink-0"
+																		/>
+																		<span className="truncate text-sm">
+																			{choice.label}
+																		</span>
+																		{selectedModelId === choice.id ? (
+																			<Badge
+																				variant="secondary"
+																				className="h-5 px-1.5 text-[10px]"
+																			>
+																				Selected
+																			</Badge>
+																		) : null}
+																	</div>
+																</CommandItem>
+															))}
+														</CommandGroup>
+													))
+												)}
+											</CommandList>
+										</Command>
+									</PopoverContent>
+								</Popover>
 							</div>
 							<div className="grid gap-1.5">
 								<Label htmlFor="room-display-name">Display name</Label>
@@ -280,92 +387,6 @@ export function RoomModelSettingsShell({
 							</Button>
 						</div>
 					</div>
-				</DialogContent>
-			</Dialog>
-			<Dialog open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
-				<DialogContent className="overflow-hidden p-0 sm:max-w-lg">
-					<DialogHeader className="sr-only">
-						<DialogTitle>Select model</DialogTitle>
-					</DialogHeader>
-					<Command className="max-h-[70vh]">
-						<CommandInput
-							placeholder="Search models..."
-							value={modelSearchValue}
-							onValueChange={setModelSearchValue}
-						/>
-						<CommandList>
-							<CommandEmpty>No models found.</CommandEmpty>
-							{hasModelSearchValue ? (
-								<CommandGroup heading={`Results (${rankedModelChoices.length})`}>
-									{rankedModelChoices.map(({ choice }) => (
-										<CommandItem
-											key={choice.id}
-											value={`${choice.orgName} ${choice.label} ${choice.id}`}
-											className="h-8"
-											onSelect={() => {
-												onModelChange(choice.id);
-												setModelPickerOpen(false);
-											}}
-										>
-											<div className="flex min-w-0 items-center gap-2">
-												<Logo
-													id={choice.orgId}
-													alt={choice.orgName}
-													width={14}
-													height={14}
-													className="shrink-0"
-												/>
-												<span className="truncate text-sm">{choice.label}</span>
-												{selectedModelId === choice.id ? (
-													<Badge
-														variant="secondary"
-														className="h-5 px-1.5 text-[10px]"
-													>
-														Selected
-													</Badge>
-												) : null}
-											</div>
-										</CommandItem>
-									))}
-								</CommandGroup>
-							) : (
-								groupedModelChoices.map(([orgName, choices]) => (
-									<CommandGroup key={orgName} heading={orgName}>
-										{choices.map((choice) => (
-											<CommandItem
-												key={choice.id}
-												value={`${choice.orgName} ${choice.label} ${choice.id}`}
-												className="h-8"
-												onSelect={() => {
-													onModelChange(choice.id);
-													setModelPickerOpen(false);
-												}}
-											>
-												<div className="flex min-w-0 items-center gap-2">
-													<Logo
-														id={choice.orgId}
-														alt={choice.orgName}
-														width={14}
-														height={14}
-														className="shrink-0"
-													/>
-													<span className="truncate text-sm">{choice.label}</span>
-													{selectedModelId === choice.id ? (
-														<Badge
-															variant="secondary"
-															className="h-5 px-1.5 text-[10px]"
-														>
-															Selected
-														</Badge>
-													) : null}
-												</div>
-											</CommandItem>
-										))}
-									</CommandGroup>
-								))
-							)}
-						</CommandList>
-					</Command>
 				</DialogContent>
 			</Dialog>
 		</>

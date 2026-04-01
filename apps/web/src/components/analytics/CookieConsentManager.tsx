@@ -122,7 +122,7 @@ export function CookieConsentManager({
       ) : null}
 
       {consent === null ? (
-        <div className="fixed bottom-3 left-1/2 z-[100] w-[min(14rem,calc(100vw-1rem))] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg sm:bottom-4 sm:left-auto sm:right-4 sm:w-[320px] sm:max-w-[calc(100vw-2rem)] sm:translate-x-0 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="fixed bottom-3 left-2 right-2 z-[100] w-auto rounded-lg border border-zinc-200 bg-white p-3 shadow-lg sm:bottom-4 sm:left-auto sm:right-4 sm:w-[320px] sm:max-w-[calc(100vw-2rem)] dark:border-zinc-800 dark:bg-zinc-950">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
             Cookie Preferences
           </p>

@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemini-2.5-flash-preview-tts-2025-12-10",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Flash Preview TTS (2025-12-10)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-10T00:00:00",
+  "release_date": "2025-12-10T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemini-2.5-flash-preview-tts-2025-12-10",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

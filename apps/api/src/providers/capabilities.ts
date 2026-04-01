@@ -16,8 +16,7 @@ export type ProviderCapabilityProfile = {
 
 const FULL_MULTIMODAL_VIDEO_PROVIDERS = new Set<string>([
 	"openai",
-	"google-ai-studio",
-	"google-vertex",
+	
 	"amazon-bedrock",
 	"x-ai",
 	"xai",
@@ -29,6 +28,9 @@ const FULL_MULTIMODAL_VIDEO_PROVIDERS = new Set<string>([
 	"moonshot-ai",
 	"moonshot-ai-turbo",
 	"novitaai",
+	"novita",
+	"atlas-cloud",
+	"atlascloud",
 	"alibaba",
 	"qwen",
 	"xiaomi",
@@ -76,3 +78,4 @@ export function supportsAdapterBackedCapability(providerId: string, capability: 
 	if (typeof explicit === "boolean") return explicit;
 	return defaultAdapterBackedSupport(providerId, capability);
 }
+

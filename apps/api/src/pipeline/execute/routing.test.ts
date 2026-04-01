@@ -168,6 +168,54 @@ describe("routeProviders testing mode", () => {
 		expect(statusStage?.afterCount).toBe(2);
 	});
 
+	it("keeps alpha providers gated unless alpha channel is enabled", async () => {
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai", providerStatus: "active" }),
+				candidate({ providerId: "atlascloud", providerStatus: "alpha" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				teamId: "team_123",
+				betaChannelEnabled: true,
+				alphaChannelEnabled: false,
+				providerCapabilitiesBeta: false,
+				testingMode: false,
+				body: { provider: { include_alpha: true } },
+			}
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["openai"]);
+		expect(result.diagnostics.includeAlpha).toBe(false);
+		expect(result.diagnostics.includeAlphaHint).toBe(true);
+		const statusStage = result.diagnostics.filterStages.find((stage) => stage.stage === "status_gate");
+		expect(statusStage?.afterCount).toBe(1);
+	});
+
+	it("allows alpha providers when beta and alpha channels are enabled", async () => {
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai", providerStatus: "active" }),
+				candidate({ providerId: "atlascloud", providerStatus: "alpha" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				teamId: "team_123",
+				betaChannelEnabled: true,
+				alphaChannelEnabled: true,
+				providerCapabilitiesBeta: false,
+				testingMode: false,
+			}
+		);
+
+		expect(result.ranked).toHaveLength(2);
+		expect(result.diagnostics.includeAlpha).toBe(true);
+		const statusStage = result.diagnostics.filterStages.find((stage) => stage.stage === "status_gate");
+		expect(statusStage?.afterCount).toBe(2);
+	});
+
 	it("filters disabled provider/model routing statuses", async () => {
 		const result = await routeProviders(
 			[

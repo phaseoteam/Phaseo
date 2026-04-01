@@ -67,7 +67,7 @@ export default async function getPricingModels(
     const { data: providerModels, error: pmError } = await supabase
         .from("data_api_provider_models")
         .select(
-            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to"
+            "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, effective_from, effective_to"
         )
         .eq("is_active_gateway", true)
         .lte("effective_from", nowIso)
@@ -105,21 +105,21 @@ export default async function getPricingModels(
     }
 
     const modelNameMap = new Map<string, string>();
-    const visibleInternalIds = new Set<string>();
-    const internalIds = Array.from(
-        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
+    const visibleModelIds = new Set<string>();
+    const modelIds = Array.from(
+        new Set((providerModels ?? []).map((row) => row.model_id).filter(Boolean))
     );
-    if (internalIds.length) {
+    if (modelIds.length) {
         const { data: models } = await applyHiddenFilter(
             supabase
                 .from("data_models")
                 .select("model_id, name, hidden")
-                .in("model_id", internalIds),
+                .in("model_id", modelIds),
             includeHidden
         );
         for (const model of models ?? []) {
             if (model.model_id) {
-                visibleInternalIds.add(model.model_id);
+                visibleModelIds.add(model.model_id);
                 if (model.name) modelNameMap.set(model.model_id, model.name);
             }
         }
@@ -135,7 +135,7 @@ export default async function getPricingModels(
 
     const comboMap = new Map<
         string,
-        { internal_model_id: string | null; api_model_id: string | null }
+        { model_id: string | null; api_model_id: string | null }
     >();
     for (const cap of capabilities ?? []) {
         if (!cap.provider_api_model_id || !cap.capability_id) continue;
@@ -143,7 +143,7 @@ export default async function getPricingModels(
         if (!pm) continue;
         const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
         comboMap.set(comboKey, {
-            internal_model_id: pm.internal_model_id ?? null,
+            model_id: pm.model_id ?? null,
             api_model_id: pm.api_model_id ?? null,
         });
     }
@@ -154,10 +154,10 @@ export default async function getPricingModels(
         const comboKey = `${parsed.provider_id}:${parsed.api_model_id}:${rule.capability_id}`;
         const combo = comboMap.get(comboKey);
         if (!combo) continue;
-        if (!includeHidden && combo.internal_model_id && !visibleInternalIds.has(combo.internal_model_id)) {
+        if (!includeHidden && combo.model_id && !visibleModelIds.has(combo.model_id)) {
             continue;
         }
-        const modelId = combo.internal_model_id ?? parsed.api_model_id;
+        const modelId = combo.model_id ?? parsed.api_model_id;
         const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
 
         if (!modelMap.has(key)) {
@@ -166,8 +166,8 @@ export default async function getPricingModels(
                 model: modelId,
                 api_model_id: combo.api_model_id ?? parsed.api_model_id,
                 endpoint: rule.capability_id,
-                display_name: combo.internal_model_id
-                    ? modelNameMap.get(combo.internal_model_id)
+                display_name: combo.model_id
+                    ? modelNameMap.get(combo.model_id)
                     : undefined,
                 pricing_plan: rule.pricing_plan || "standard",
                 meters: [],

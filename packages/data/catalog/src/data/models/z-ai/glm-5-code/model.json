@@ -1,0 +1,18 @@
+{
+  "model_id": "z-ai/glm-5-code",
+  "organisation_id": "z-ai",
+  "name": "GLM 5 Code",
+  "status": "Rumoured",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "z-ai/glm-5-code",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

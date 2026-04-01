@@ -225,8 +225,8 @@ export type IRChatRequest = {
 
 	// Response format
 	responseFormat?: IRResponseFormat;
-	// Output modalities (text, image)
-	modalities?: Array<"text" | "image">;
+	// Output modalities (text, image, audio)
+	modalities?: Array<"text" | "image" | "audio">;
 	// Optional image configuration for multimodal text generation
 	imageConfig?: IRImageConfig;
 
@@ -492,6 +492,23 @@ export type IRAudioTranslationResponse = {
 export type IRVideoGenerationRequest = {
 	model: string;
 	prompt: string;
+	inputReferences?: Array<{
+		type: "image" | "video" | "mask";
+		role?: "first_frame" | "last_frame" | "reference" | "source" | "mask";
+		referenceType?: string;
+		url?: string;
+		data?: string;
+		mimeType?: string;
+		assetId?: string;
+		raw?: Record<string, any>;
+	}>;
+	providerParams?: Record<string, any>;
+	outputAccess?: "bytes" | "signed_url" | "both";
+	webhook?: {
+		url: string;
+		secret?: string;
+		events?: string[];
+	};
 	seconds?: number | string;
 	// Canonical size key used across video pricing and executors.
 	// Example values: "768p", "1080p", "1280x720".
@@ -499,7 +516,7 @@ export type IRVideoGenerationRequest = {
 	// Legacy alias retained while callers migrate to size.
 	resolution?: string;
 	quality?: string;
-	inputReference?: string;
+	inputReference?: string | Record<string, any>;
 	inputReferenceMimeType?: string;
 	input?: {
 		image?: string | Record<string, any>;
@@ -520,9 +537,14 @@ export type IRVideoGenerationRequest = {
 	sampleCount?: number;
 	numberOfVideos?: number;
 	seed?: number;
+	frameRate?: number;
+	fps?: number;
+	cameraFixed?: boolean;
 	personGeneration?: string;
 	generateAudio?: boolean;
 	enhancePrompt?: boolean;
+	resizeMode?: string;
+	callbackUrl?: string;
 	outputStorageUri?: string;
 	rawRequest?: any;
 };
@@ -532,7 +554,8 @@ export type IRVideoGenerationResponse = {
 	nativeId?: string;
 	model: string;
 	provider: string;
-	status?: "queued" | "in_progress" | "completed" | "failed";
+	status?: "queued" | "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+	outputAccess?: "bytes" | "signed_url" | "both";
 	output?: any[];
 	result?: any;
 	usage?: IRUsage;
@@ -635,6 +658,7 @@ export type IRUsage = {
 
 	// Optional detailed counts
 	cachedInputTokens?: number; // Prompt caching
+	cachedReadTokensAreSubsetOfInput?: boolean; // Cached reads are already included in inputTokens
 	reasoningTokens?: number; // Reasoning/thinking tokens (o1, MiniMax)
 
 	// Modality-specific counts (extended meters)
@@ -647,6 +671,9 @@ export type IRUsage = {
 		outputAudioTokens?: number;
 		outputVideoTokens?: number;
 		cachedWriteTokens?: number;
+		serverToolUse?: {
+			datetime_requests?: number;
+		};
 	};
 };
 

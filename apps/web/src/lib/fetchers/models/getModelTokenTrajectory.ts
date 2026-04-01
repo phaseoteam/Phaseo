@@ -117,7 +117,8 @@ export async function getModelTokenTrajectoryCached(
 	"use cache";
 
 	cacheLife("days");
-	cacheTag("data:gateway_requests");
+	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
 
 	return getModelTokenTrajectory(modelId, includeHidden);
 }

@@ -17,6 +17,7 @@ const musicGenerateHandler = makeEndpointHandler({ endpoint: "music.generate", s
 const SUNO_PROVIDER_ID = "suno";
 const ELEVENLABS_PROVIDER_ID = "elevenlabs";
 const MINIMAX_PROVIDER_ID = "minimax";
+const GOOGLE_AI_STUDIO_PROVIDER_ID = "google-ai-studio";
 const MINIMAX_MUSIC_PREFIX = "mmxmus_";
 
 export const musicGenerateRoutes = new Hono<Env>();
@@ -78,6 +79,7 @@ type SunoOutputItem = {
 	index: number;
 	id: string | null;
 	audio_url: string | null;
+	audio_base64?: string | null;
 	stream_audio_url: string | null;
 	image_url: string | null;
 	title: string | null;
@@ -191,6 +193,7 @@ function parseMetaOutput(meta: MusicJobMeta | null): {
 			index: typeof item?.index === "number" ? item.index : index,
 			id: item?.id != null ? String(item.id) : null,
 			audio_url: typeof item?.audio_url === "string" ? item.audio_url : null,
+			audio_base64: typeof item?.audio_base64 === "string" ? item.audio_base64 : null,
 			stream_audio_url: typeof item?.stream_audio_url === "string" ? item.stream_audio_url : null,
 			image_url: typeof item?.image_url === "string" ? item.image_url : null,
 			title: typeof item?.title === "string" ? item.title : null,
@@ -206,7 +209,22 @@ export const __musicGenerateTestUtils = {
 	mapMiniMaxTaskStatus,
 	parseSunoOutput,
 	parseMiniMaxOutput,
+	normalizeMusicStatus,
+	isGoogleMusicProvider,
 };
+
+function normalizeMusicStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+	const status = String(value ?? "").trim().toLowerCase();
+	if (status === "queued") return "queued";
+	if (status === "in_progress" || status === "running" || status === "processing") return "in_progress";
+	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	return "completed";
+}
+
+function isGoogleMusicProvider(provider: string | null | undefined): boolean {
+	const normalized = String(provider ?? "").trim().toLowerCase();
+	return normalized === GOOGLE_AI_STUDIO_PROVIDER_ID;
+}
 
 async function requireOwnedMusicJob(
 	requestId: string,
@@ -244,6 +262,7 @@ musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 		provider !== SUNO_PROVIDER_ID &&
 		provider !== ELEVENLABS_PROVIDER_ID &&
 		provider !== MINIMAX_PROVIDER_ID &&
+		!isGoogleMusicProvider(provider) &&
 		!minimaxTaskId
 	) {
 		return err("not_supported", {
@@ -253,12 +272,58 @@ musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 		});
 	}
 
+	if (isGoogleMusicProvider(provider)) {
+		const parsed = parseMetaOutput(meta);
+		const hasAudioBase64 = typeof meta?.audioBase64 === "string" && meta.audioBase64.length > 0;
+		const output = parsed.output.length > 0
+			? parsed.output
+			: hasAudioBase64
+				? [{
+					index: 0,
+					id: meta?.nativeResponseId ?? id,
+					audio_url: null,
+					audio_base64: meta?.audioBase64 ?? null,
+					stream_audio_url: null,
+					image_url: null,
+					title: null,
+					tags: null,
+					duration: typeof meta?.duration === "number" ? meta.duration : null,
+				}]
+				: [];
+		const totalDurationSeconds = parsed.totalDurationSeconds > 0
+			? parsed.totalDurationSeconds
+			: typeof meta?.duration === "number" && meta.duration > 0
+				? meta.duration
+				: 0;
+		const status = normalizeMusicStatus(meta?.status);
+		const usage =
+			status === "completed"
+				? {
+					output_audio_count: output.filter((item) => item.audio_url || item.audio_base64).length,
+					...(totalDurationSeconds > 0 ? { output_audio_seconds: totalDurationSeconds } : {}),
+				}
+				: undefined;
+
+		return new Response(JSON.stringify({
+			id,
+			object: "music",
+			status,
+			provider: GOOGLE_AI_STUDIO_PROVIDER_ID,
+			model: meta?.model ?? null,
+			nativeResponseId: meta?.nativeResponseId ?? id,
+			audio_base64: meta?.audioBase64 ?? null,
+			result: meta?.result ?? meta?.rawResponse ?? null,
+			output,
+			...(usage ? { usage } : {}),
+		}), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+
 	if (provider === ELEVENLABS_PROVIDER_ID) {
 		const { output, totalDurationSeconds } = parseMetaOutput(meta);
-		const status =
-			typeof meta?.status === "string" && meta.status.length > 0
-				? (meta.status as "queued" | "in_progress" | "completed" | "failed")
-				: "completed";
+		const status = normalizeMusicStatus(meta?.status);
 		const usage =
 			status === "completed"
 				? {

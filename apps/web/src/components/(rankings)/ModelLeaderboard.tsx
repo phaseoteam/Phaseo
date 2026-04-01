@@ -186,8 +186,9 @@ export function ModelLeaderboard({
 				</div>
 			) : null}
 
-			<div className="grid gap-2 md:grid-cols-2">
-				{visibleEntries.map((entry, index) => {
+			<div className="space-y-2">
+				<div className="grid gap-2 md:grid-cols-2">
+					{visibleEntries.map((entry, index) => {
 					const change = getChangeDisplay(entry);
 					const rankValue =
 						typeof entry.rank === "number" ? entry.rank : NaN;
@@ -208,15 +209,15 @@ export function ModelLeaderboard({
 					return (
 						<div
 							key={entry.key}
-							className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+							className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
 						>
-							<div className="w-6 text-xs text-muted-foreground">
+							<div className="w-6 shrink-0 text-xs text-muted-foreground">
 								{rankLabel}
 							</div>
 							{logoHref ? (
 								<Link
 									href={logoHref}
-									className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60"
 									aria-label={entry.organisation_name ?? entry.model_name}
 								>
 									<div className="relative h-5 w-5">
@@ -232,7 +233,7 @@ export function ModelLeaderboard({
 									</div>
 								</Link>
 							) : (
-								<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60">
 									<div className="relative h-5 w-5">
 										<Logo
 											id={logoId}
@@ -250,29 +251,31 @@ export function ModelLeaderboard({
 								{modelHref ? (
 									<Link
 										href={modelHref}
-										className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+										className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 									>
 										{entry.model_name}
 									</Link>
 								) : (
-									<div className="font-medium truncate">{entry.model_name}</div>
+									<div className="block min-w-0 truncate font-medium">
+										{entry.model_name}
+									</div>
 								)}
 								{entry.organisation_name ? (
 									organisationHref ? (
 										<Link
 											href={organisationHref}
-											className="text-xs text-muted-foreground truncate block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+											className="block min-w-0 truncate text-xs text-muted-foreground underline decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 										>
 											{entry.organisation_name}
 										</Link>
 									) : (
-										<span className="text-xs text-muted-foreground truncate block">
+										<span className="block min-w-0 truncate text-xs text-muted-foreground">
 											{entry.organisation_name}
 										</span>
 									)
 								) : null}
 							</div>
-							<div className="text-right">
+							<div className="shrink-0 text-right">
 								<div className="tabular-nums text-sm">
 									{formatTokens(entry.tokens)}
 								</div>
@@ -283,8 +286,20 @@ export function ModelLeaderboard({
 						</div>
 					);
 				})}
-				{showAll
-					? extraEntries.map((entry, index) => {
+				</div>
+				{extraEntries.length > 0 ? (
+					<div
+						className={cn(
+							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
+							showAll
+								? "grid-rows-[1fr] opacity-100"
+								: "grid-rows-[0fr] opacity-0"
+						)}
+					>
+						<div className="overflow-hidden">
+							<div className="pt-2">
+								<div className="grid gap-2 md:grid-cols-2">
+									{extraEntries.map((entry, index) => {
 							const change = getChangeDisplay(entry);
 							const rankValue =
 								typeof entry.rank === "number"
@@ -307,18 +322,15 @@ export function ModelLeaderboard({
 							return (
 								<div
 									key={`${entry.key}-extra`}
-									className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3 animate-in fade-in slide-in-from-top-1"
-									style={{
-										animationDelay: `${index * 20}ms`,
-									}}
+									className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
 								>
-									<div className="w-6 text-xs text-muted-foreground">
+									<div className="w-6 shrink-0 text-xs text-muted-foreground">
 										{rankLabel}
 									</div>
 									{logoHref ? (
 										<Link
 											href={logoHref}
-											className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+											className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60"
 											aria-label={entry.organisation_name ?? entry.model_name}
 										>
 											<div className="relative h-5 w-5">
@@ -334,7 +346,7 @@ export function ModelLeaderboard({
 											</div>
 										</Link>
 									) : (
-										<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60">
 											<div className="relative h-5 w-5">
 												<Logo
 													id={logoId}
@@ -352,29 +364,31 @@ export function ModelLeaderboard({
 										{modelHref ? (
 											<Link
 												href={modelHref}
-												className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+												className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 											>
 												{entry.model_name}
 											</Link>
 										) : (
-											<div className="font-medium truncate">{entry.model_name}</div>
+											<div className="block min-w-0 truncate font-medium">
+												{entry.model_name}
+											</div>
 										)}
 										{entry.organisation_name ? (
 											organisationHref ? (
 												<Link
 													href={organisationHref}
-													className="text-xs text-muted-foreground truncate block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+													className="block min-w-0 truncate text-xs text-muted-foreground underline decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 												>
 													{entry.organisation_name}
 												</Link>
 											) : (
-												<span className="text-xs text-muted-foreground truncate block">
+												<span className="block min-w-0 truncate text-xs text-muted-foreground">
 													{entry.organisation_name}
 												</span>
 											)
 										) : null}
 									</div>
-									<div className="text-right">
+									<div className="shrink-0 text-right">
 										<div className="tabular-nums text-sm">
 											{formatTokens(entry.tokens)}
 										</div>
@@ -389,8 +403,12 @@ export function ModelLeaderboard({
 									</div>
 								</div>
 							);
-						})
-					: null}
+						})}
+								</div>
+							</div>
+						</div>
+					</div>
+				) : null}
 			</div>
 
 			{entries.length > maxCollapsed ? (

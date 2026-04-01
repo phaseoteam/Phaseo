@@ -52,6 +52,7 @@ const staticRoutes: Array<{
         { path: "/rankings", changeFrequency: "daily", priority: 0.95 },
         { path: "/models", changeFrequency: "weekly", priority: 0.9 },
         { path: "/api-providers", changeFrequency: "weekly", priority: 0.8 },
+        { path: "/apps", changeFrequency: "weekly", priority: 0.75 },
         { path: "/benchmarks", changeFrequency: "weekly", priority: 0.8 },
         { path: "/organisations", changeFrequency: "weekly", priority: 0.75 },
         { path: "/countries", changeFrequency: "weekly", priority: 0.75 },

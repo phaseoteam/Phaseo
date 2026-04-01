@@ -33,4 +33,28 @@ describe("getContextCapabilityCandidates", () => {
 			"text.generate",
 		]);
 	});
+
+	it("adds text.generate fallback for google image generation models", () => {
+		expect(
+			getContextCapabilityCandidates(
+				"image.generate",
+				"google/gemini-3.1-flash-image-preview",
+			),
+		).toEqual([
+			"image.generate",
+			"images.generate",
+			"images.generations",
+			"text.generate",
+		]);
+	});
+
+	it("does not add text.generate fallback for non-google image generation models", () => {
+		expect(
+			getContextCapabilityCandidates("image.generate", "openai/gpt-image-1"),
+		).toEqual([
+			"image.generate",
+			"images.generate",
+			"images.generations",
+		]);
+	});
 });

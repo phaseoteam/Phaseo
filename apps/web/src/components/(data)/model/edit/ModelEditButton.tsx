@@ -15,13 +15,17 @@ function mapPageTabToEditorTab(tab: string | undefined): string | null {
 
 	const map: Record<string, string> = {
 		overview: "basic",
+		playground: "providers",
 		family: "basic",
 		timeline: "basic",
 		benchmarks: "benchmarks",
+		plans: "plans",
 		providers: "providers",
 		pricing: "pricing",
 		quickstart: "providers",
 		performance: "providers",
+		apps: "providers",
+		activity: "providers",
 		basic: "basic",
 		details: "details",
 	};

@@ -4,8 +4,9 @@ import yaml from "js-yaml";
 
 const ROOT = path.join(__dirname, "..");
 const OPENAPI_PATH = path.join(ROOT, "apps", "docs", "openapi", "v1", "openapi.yaml");
-const MANIFEST_PATH = path.join(ROOT, "apps", "web", "src", "data", "manifest.json");
-const BENCHMARKS_DIR = path.join(ROOT, "apps", "web", "src", "data", "benchmarks");
+const DATA_ROOT = path.join(ROOT, "packages", "data", "catalog", "src", "data");
+const MANIFEST_PATH = path.join(DATA_ROOT, "manifest.json");
+const BENCHMARKS_DIR = path.join(DATA_ROOT, "benchmarks");
 
 function readYaml(file: string): any {
   return yaml.load(fs.readFileSync(file, "utf8"));

@@ -8,8 +8,10 @@ import {
 } from "@/lib/fetchers/models/getAllModels";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import {
-	getRankings,
+	getModelRankingsRows,
+	getWeeklyModelProviderTokens,
 	type RankingModel,
+	type WeeklyModelProviderTokens,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import type { Metadata } from "next";
 import { featureOrder } from "@/lib/config/featureLabels";
@@ -44,10 +46,25 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"image",
 	"video",
 	"audio",
+	"music",
 	"file",
 	"moderations",
 	"embeddings",
 ] as const;
+
+const PROVIDER_STATUS_PRIORITY_ORDER = [
+	"active",
+	"deranked_lvl1",
+	"deranked_lvl2",
+	"deranked_lvl3",
+	"inactive",
+	"disabled",
+	"not_listed",
+] as const;
+
+const providerStatusPriority = new Map<string, number>(
+	PROVIDER_STATUS_PRIORITY_ORDER.map((status, index) => [status, index]),
+);
 
 function getModelYear(model: ModelsPageModel): string {
 	if (Number.isFinite(model.primary_timestamp)) {
@@ -69,6 +86,7 @@ function normalizeModalityKey(value: string): string {
 	if (normalized.includes("moderat")) return "moderations";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
+	if (normalized.includes("music")) return "music";
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("text")) return "text";
@@ -103,6 +121,36 @@ function normalizeModalityList(values: string[]): string[] {
 			),
 		),
 	);
+}
+
+function normalizeProviderGatewayStatus(value: unknown): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+	if (!normalized) return "inactive";
+	if (normalized === "not_active") return "inactive";
+	if (normalized === "deranked" || normalized === "de_ranked") {
+		return "deranked_lvl1";
+	}
+	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
+	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
+	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	return normalized;
+}
+
+function statusPriority(status: string): number {
+	return providerStatusPriority.get(status) ?? providerStatusPriority.size + 1;
+}
+
+function chooseProviderGatewayStatus(
+	currentStatus: string | undefined,
+	candidateStatus: string,
+): string {
+	if (!currentStatus) return candidateStatus;
+	return statusPriority(candidateStatus) < statusPriority(currentStatus)
+		? candidateStatus
+		: currentStatus;
 }
 
 function sortModalityOptions(
@@ -249,7 +297,10 @@ type GatewaySignals = {
 	providerIds: Set<string>;
 	providerNames: Set<string>;
 	activeProviderNames: Set<string>;
-	providerDetails: Map<string, { id: string; name: string; isActive: boolean }>;
+	providerDetails: Map<
+		string,
+		{ id: string; name: string; isActive: boolean; status: string }
+	>;
 	apiModelIds: Set<string>;
 	activeProviderIds: Set<string>;
 	endpoints: Set<string>;
@@ -272,7 +323,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		activeProviderNames: new Set<string>(),
 		providerDetails: new Map<
 			string,
-			{ id: string; name: string; isActive: boolean }
+			{ id: string; name: string; isActive: boolean; status: string }
 		>(),
 		apiModelIds: new Set<string>(),
 		activeProviderIds: new Set<string>(),
@@ -309,24 +360,30 @@ function aggregateGatewaySignals(
 		const providerId = String(row.provider.id ?? "").trim();
 		const providerName = String(row.provider.name ?? "").trim();
 		const providerDetailKey = providerId || providerName;
+		const rowGatewayStatus = normalizeProviderGatewayStatus(row.gatewayStatus);
 		if (providerId) {
 			existing.providerIds.add(providerId);
-			if (row.gatewayStatus === "active") {
+			if (rowGatewayStatus === "active") {
 				existing.activeProviderIds.add(providerId);
 			}
 		}
 		if (providerName) {
 			existing.providerNames.add(providerName);
-			if (row.gatewayStatus === "active") {
+			if (rowGatewayStatus === "active") {
 				existing.activeProviderNames.add(providerName);
 			}
 		}
 		if (providerDetailKey) {
 			const previous = existing.providerDetails.get(providerDetailKey);
-			const isActive = row.gatewayStatus === "active" || previous?.isActive === true;
+			const status = chooseProviderGatewayStatus(
+				previous?.status,
+				rowGatewayStatus,
+			);
+			const isActive = status === "active";
 			existing.providerDetails.set(providerDetailKey, {
 				id: providerId,
 				name: providerName || previous?.name || providerDetailKey,
+				status,
 				isActive,
 			});
 		}
@@ -493,10 +550,29 @@ function aggregateWeeklyRankingMetrics(
 	);
 }
 
+function aggregateWeeklyTokenMetrics(
+	rows: WeeklyModelProviderTokens[],
+): Map<string, number> {
+	const tokensByModel = new Map<string, number>();
+
+	for (const row of rows) {
+		const key = normalizeRankingModelKey(row.model_id);
+		if (!key || key === "unknown" || key === "other") continue;
+
+		const tokens = Number(row.total_tokens ?? 0);
+		if (!Number.isFinite(tokens) || tokens <= 0) continue;
+
+		tokensByModel.set(key, (tokensByModel.get(key) ?? 0) + tokens);
+	}
+
+	return tokensByModel;
+}
+
 function resolveModelWeeklyMetrics(
 	model: ModelCard,
 	signals: GatewaySignals | undefined,
 	metricsByKey: Map<string, WeeklyRankingMetrics>,
+	tokenTotalsByKey: Map<string, number>,
 ): WeeklyRankingMetrics {
 	const candidateKeys = [
 		model.model_id,
@@ -520,22 +596,37 @@ function resolveModelWeeklyMetrics(
 		}
 	}
 
-	return (
-		selected ?? {
-			tokensWeek: null,
-			throughputWeek: null,
-			latencyWeek: null,
-		}
-	);
+	let tokensWeek: number | null = null;
+	for (const key of candidateKeys) {
+		const tokens = tokenTotalsByKey.get(key);
+		if (!Number.isFinite(Number(tokens)) || Number(tokens) <= 0) continue;
+		tokensWeek =
+			tokensWeek === null ? Number(tokens) : Math.max(tokensWeek, Number(tokens));
+	}
+
+	if (selected) {
+		return {
+			...selected,
+			tokensWeek: tokensWeek ?? selected.tokensWeek ?? null,
+		};
+	}
+
+	return {
+		tokensWeek,
+		throughputWeek: null,
+		latencyWeek: null,
+	};
 }
 
 function withGatewayMetadata(
 	baseModels: ModelCard[],
 	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
 	rankingRows: RankingModel[],
+	weeklyTokenRows: WeeklyModelProviderTokens[],
 ): ModelsPageModel[] {
 	const signalsByModelId = aggregateGatewaySignals(monitorRows);
 	const weeklyMetricsByKey = aggregateWeeklyRankingMetrics(rankingRows);
+	const weeklyTokenTotalsByKey = aggregateWeeklyTokenMetrics(weeklyTokenRows);
 	const baseModelById = new Map(
 		baseModels.map((model) => [String(model.model_id ?? "").trim(), model]),
 	);
@@ -548,6 +639,7 @@ function withGatewayMetadata(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
 			weeklyMetricsByKey,
+			weeklyTokenTotalsByKey,
 		);
 		const providerCount = signals?.providerIds.size ?? 0;
 		const activeProviderCount = signals?.activeProviderIds.size ?? 0;
@@ -622,6 +714,7 @@ function withGatewayMetadata(
 				.map((provider) => ({
 					id: String(provider.id ?? "").trim(),
 					name: String(provider.name ?? "").trim(),
+					status: provider.status,
 					is_active: Boolean(provider.isActive),
 				}))
 				.filter((provider) => provider.name)
@@ -687,6 +780,7 @@ function withGatewayMetadata(
 				model,
 				undefined,
 				weeklyMetricsByKey,
+				weeklyTokenTotalsByKey,
 			);
 			const modelId = String(model.model_id ?? "").trim();
 
@@ -745,15 +839,19 @@ async function ModelsPageContent() {
 	cacheTag("page:models");
 
 	const includeHidden = false;
-	const [monitorResult, rankingsResult, allModels] = await Promise.all([
-		getMonitorModels({}, includeHidden),
-		getRankings("week", "tokens", 3000),
-		getAllModelsCached(includeHidden),
-	]);
+	const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+	const [monitorResult, rankingsResult, weeklyUsageResult, allModels] =
+		await Promise.all([
+			getMonitorModels({}, includeHidden),
+			getModelRankingsRows("week", "tokens", 3000),
+			getWeeklyModelProviderTokens(sinceIso),
+			getAllModelsCached(includeHidden),
+		]);
 	const models = withGatewayMetadata(
 		allModels,
 		monitorResult.models,
-		rankingsResult.rankings,
+		rankingsResult,
+		weeklyUsageResult.data ?? [],
 	);
 	const facets = buildModelsFilterFacets(models);
 

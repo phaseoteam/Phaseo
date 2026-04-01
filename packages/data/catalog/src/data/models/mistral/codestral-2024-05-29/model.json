@@ -1,0 +1,48 @@
+{
+  "model_id": "mistral/codestral-2024-05-29",
+  "organisation_id": "mistral",
+  "name": "Codestral (2024-05-29)",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2024-05-29T00:00:00",
+  "release_date": "2024-05-29T00:00:00",
+  "deprecation_date": "2024-12-02T00:00:00",
+  "retirement_date": "2025-06-16T00:00:00",
+  "license": "Mistral AI Non Production License",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "mistral/codestral-2024-05-29",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/api/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.mistral.ai/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/codestral/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Codestral-22B-v0.1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 32768
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
+    },
+    {
+      "name": "parameter_count",
+      "value": 22200000000
+    }
+  ],
+  "benchmarks": []
+}

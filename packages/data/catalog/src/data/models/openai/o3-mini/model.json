@@ -1,0 +1,49 @@
+{
+  "model_id": "openai/o3-mini",
+  "organisation_id": "openai",
+  "name": "o3 mini",
+  "status": "Available",
+  "previous_model_id": "openai/o1-mini-2024-09-12",
+  "announced_date": null,
+  "release_date": "2025-01-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/o3-mini",
+  "family_id": "openai/o3",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models"
+    },
+    {
+      "platform": "paper",
+      "url": "https://cdn.openai.com/o3-mini-system-card.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/openai-o3-mini/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/openai"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-09-30T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 100000
+    }
+  ],
+  "benchmarks": []
+}

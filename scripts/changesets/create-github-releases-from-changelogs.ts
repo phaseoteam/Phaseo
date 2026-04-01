@@ -12,6 +12,7 @@ interface PackageConfig {
 }
 
 type ReleaseMode = "off" | "notable_only" | "all";
+type ChangeBucket = "major" | "minor" | "patch" | "other";
 
 const PACKAGES: PackageConfig[] = [
     // Gateway API
@@ -178,7 +179,7 @@ function extractContributorHandles(markdown: string): string[] {
         handles.add(match[1]);
     }
 
-    return [...handles];
+    return [...handles].sort((a, b) => a.localeCompare(b));
 }
 
 function formatContributorList(handles: string[]): string {
@@ -189,12 +190,117 @@ function formatContributorList(handles: string[]): string {
     return `${linked.slice(0, -1).join(", ")}, and ${linked[linked.length - 1]}`;
 }
 
-function appendCredits(body: string): string {
-    const contributors = extractContributorHandles(body);
+function appendCredits(body: string, contributors: string[]): string {
     if (contributors.length === 0) return body;
-
     const credits = `## Credits\n\nHuge thanks to ${formatContributorList(contributors)} for helping!`;
-    return `${body.trim()}\n\n---\n\n${credits}`;
+    return `${body.trim()}\n\n${credits}`;
+}
+
+function bucketFromHeading(heading: string): ChangeBucket {
+    const normalized = heading.toLowerCase();
+    if (normalized.includes("major")) return "major";
+    if (normalized.includes("minor")) return "minor";
+    if (normalized.includes("patch")) return "patch";
+    return "other";
+}
+
+function cleanBulletText(raw: string): string {
+    let text = raw.replace(/\s+/g, " ").trim();
+
+    const prLink = text.match(/\[#\d+\]\([^\)]+\)/)?.[0] ?? null;
+
+    // Drop leading PR/commit link metadata that Changesets prepends.
+    text = text.replace(/^(?:\[[^\]]+\]\([^\)]+\)\s*)+/, "");
+    text = text.replace(/^Thanks\s+\[@[a-zA-Z0-9-]+\]\([^\)]+\)!?\s*-\s*/i, "");
+    text = text.replace(/^\s*-\s*/, "");
+
+    if (!text.length) {
+        text = raw.replace(/\s+/g, " ").trim();
+    }
+
+    if (prLink && !text.includes(prLink)) {
+        text = `${text} ${prLink}`;
+    }
+
+    return text.trim();
+}
+
+function parseChangelogBullets(markdown: string): Record<ChangeBucket, string[]> {
+    const buckets: Record<ChangeBucket, string[]> = {
+        major: [],
+        minor: [],
+        patch: [],
+        other: [],
+    };
+
+    const lines = markdown.split(/\r?\n/);
+    let currentBucket: ChangeBucket = "other";
+    let currentBulletLines: string[] = [];
+
+    const flushCurrentBullet = () => {
+        if (!currentBulletLines.length) return;
+        const text = cleanBulletText(currentBulletLines.join(" "));
+        if (text.length) {
+            buckets[currentBucket].push(text);
+        }
+        currentBulletLines = [];
+    };
+
+    for (const line of lines) {
+        const headingMatch = line.match(/^###\s+(.+)$/);
+        if (headingMatch) {
+            flushCurrentBullet();
+            currentBucket = bucketFromHeading(headingMatch[1]);
+            continue;
+        }
+
+        const bulletMatch = line.match(/^\s*-\s+(.+)$/);
+        if (bulletMatch) {
+            flushCurrentBullet();
+            currentBulletLines = [bulletMatch[1].trim()];
+            continue;
+        }
+
+        if (!currentBulletLines.length) {
+            continue;
+        }
+
+        const trimmed = line.trim();
+        if (!trimmed) {
+            continue;
+        }
+
+        currentBulletLines.push(trimmed);
+    }
+
+    flushCurrentBullet();
+    return buckets;
+}
+
+function formatBulletLines(items: string[]): string {
+    return items.map((item) => `- ${item}`).join("\n");
+}
+
+function formatReleaseBody(changelogSection: string): string {
+    const buckets = parseChangelogBullets(changelogSection);
+    const coreChanges = [...buckets.major, ...buckets.minor];
+    const miscChanges = [...buckets.patch, ...buckets.other];
+    const sections: string[] = [];
+
+    if (coreChanges.length) {
+        sections.push(`## Core Changes\n\n${formatBulletLines(coreChanges)}`);
+    }
+
+    if (miscChanges.length) {
+        sections.push(`## Misc Changes\n\n${formatBulletLines(miscChanges)}`);
+    }
+
+    // Fallback for unusual changelog formats.
+    if (!sections.length) {
+        return changelogSection.trim();
+    }
+
+    return sections.join("\n\n");
 }
 
 function parseSemverParts(version: string): [number, number, number] | null {
@@ -231,7 +337,7 @@ function main() {
         throw new Error("GITHUB_TOKEN is required");
     }
 
-    const mode = (process.env.AI_STATS_GH_RELEASE_MODE ?? "notable_only").trim().toLowerCase() as ReleaseMode;
+    const mode = (process.env.AI_STATS_GH_RELEASE_MODE ?? "all").trim().toLowerCase() as ReleaseMode;
     if (mode === "off") {
         console.log("[releases] AI_STATS_GH_RELEASE_MODE=off; skipping GitHub release creation");
         return;
@@ -278,7 +384,8 @@ function main() {
             }
         }
 
-        const body = appendCredits(changelogSection);
+        const contributors = extractContributorHandles(changelogSection);
+        const body = appendCredits(formatReleaseBody(changelogSection), contributors);
 
         const tmpPath = path.join(
             ".changeset",

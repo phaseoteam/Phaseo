@@ -1,0 +1,182 @@
+[
+  {
+    "api_model_id": "suno/suno-v4",
+    "provider_api_model_id": "suno:suno/suno-v4",
+    "provider_model_slug": null,
+    "internal_model_id": "suno/suno-v4",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v4.5",
+    "provider_api_model_id": "suno:suno/suno-v4.5",
+    "provider_model_slug": null,
+    "internal_model_id": "suno/suno-v4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v4.5+",
+    "provider_api_model_id": "suno:suno/suno-v4.5+",
+    "provider_model_slug": null,
+    "internal_model_id": "suno/suno-v4.5+",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v4.5-all",
+    "provider_api_model_id": "suno:suno/suno-v4.5-all",
+    "provider_model_slug": null,
+    "internal_model_id": "suno/suno-v4.5-all",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v5",
+    "provider_api_model_id": "suno:suno/suno-v5",
+    "provider_model_slug": null,
+    "internal_model_id": "suno/suno-v5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/v4",
+    "provider_api_model_id": "suno:suno/v4",
+    "provider_model_slug": "V4",
+    "internal_model_id": "suno/suno-v4",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "music",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "suno/v4.5",
+    "provider_api_model_id": "suno:suno/v4.5",
+    "provider_model_slug": "V4_5",
+    "internal_model_id": "suno/suno-v4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "music",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "suno/v4.5+",
+    "provider_api_model_id": "suno:suno/v4.5+",
+    "provider_model_slug": "V4_5PLUS",
+    "internal_model_id": "suno/suno-v4.5+",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "music",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "suno/v4.5-all",
+    "provider_api_model_id": "suno:suno/v4.5-all",
+    "provider_model_slug": "V4_5ALL",
+    "internal_model_id": "suno/suno-v4.5-all",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "music",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "suno/v5",
+    "provider_api_model_id": "suno:suno/v5",
+    "provider_model_slug": "V5",
+    "internal_model_id": "suno/suno-v5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "music",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  }
+]

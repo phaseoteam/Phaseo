@@ -20,9 +20,69 @@ import { resolveGoogleModelCandidates } from "../shared/model";
 const BASE_URL = "https://generativelanguage.googleapis.com";
 
 type GeminiEmbeddingContent = {
-	role: "user";
 	parts: Array<Record<string, any>>;
 };
+
+function isHttpUrl(value: string): boolean {
+	return /^https?:\/\//i.test(value);
+}
+
+function isGoogleFilesUri(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return (
+			url.hostname === "generativelanguage.googleapis.com" ||
+			url.hostname.endsWith(".googleapis.com")
+		);
+	} catch {
+		return false;
+	}
+}
+
+function expectedMimePrefix(part: IREmbeddingsContentPart): string | null {
+	if (part.type === "image") return "image/";
+	if (part.type === "audio") return "audio/";
+	if (part.type === "video") return "video/";
+	return null;
+}
+
+function sourceUrlForPart(part: IREmbeddingsContentPart): string | null {
+	if (part.type === "video") return part.url;
+	if (part.type === "image" || part.type === "audio") return part.data;
+	return null;
+}
+
+function assertEmbeddingMediaPart(part: IREmbeddingsContentPart, geminiPart: Record<string, any>) {
+	if (part.type === "text") return;
+
+	const sourceUrl = sourceUrlForPart(part);
+	const fallbackFileUri =
+		typeof geminiPart?.file_data?.file_uri === "string"
+			? geminiPart.file_data.file_uri
+			: null;
+	if (
+		sourceUrl &&
+		part.source === "url" &&
+		isHttpUrl(sourceUrl) &&
+		fallbackFileUri &&
+		!isGoogleFilesUri(fallbackFileUri)
+	) {
+		throw new Error(
+			`Google embeddings could not inline ${part.type} URL "${sourceUrl}". Use a direct public file URL, a data URL, or upload bytes from the client.`,
+		);
+	}
+
+	const expectedPrefix = expectedMimePrefix(part);
+	const actualMime =
+		typeof geminiPart?.inline_data?.mime_type === "string"
+			? geminiPart.inline_data.mime_type.trim().toLowerCase()
+			: null;
+	if (expectedPrefix && actualMime && !actualMime.startsWith(expectedPrefix)) {
+		throw new Error(
+			`Google embeddings expected ${expectedPrefix} input for ${part.type} but received "${actualMime}". Use a direct media file URL.`,
+		);
+	}
+}
 
 function baseHeaders() {
 	return {
@@ -57,23 +117,22 @@ function tokenArrayToText(tokens: number[]): string {
 async function normalizeEmbeddingInput(item: IREmbeddingsInputItem): Promise<GeminiEmbeddingContent> {
 	if (typeof item === "string") {
 		return {
-			role: "user",
 			parts: [{ text: item }],
 		};
 	}
 
 	if (isTokenArray(item)) {
 		return {
-			role: "user",
 			parts: [{ text: tokenArrayToText(item) }],
 		};
 	}
 
-	const parts = await Promise.all(
-		(item as IREmbeddingsContentPart[]).map((part) => irPartToGeminiPart(part)),
-	);
+	const parts = await Promise.all((item as IREmbeddingsContentPart[]).map(async (part) => {
+		const geminiPart = await irPartToGeminiPart(part);
+		assertEmbeddingMediaPart(part, geminiPart);
+		return geminiPart;
+	}));
 	return {
-		role: "user",
 		parts: parts.length > 0 ? parts : [{ text: "" }],
 	};
 }
@@ -238,7 +297,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 		: {
 			content: contents[0] ?? {
-				role: "user",
 				parts: [{ text: "" }],
 			},
 			...(taskType ? { taskType } : {}),

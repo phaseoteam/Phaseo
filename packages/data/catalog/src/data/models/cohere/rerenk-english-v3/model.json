@@ -1,0 +1,18 @@
+{
+  "model_id": "cohere/rerenk-english-v3",
+  "organisation_id": "cohere",
+  "name": "Rerenk English V3",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "cohere/rerenk-english-v3",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

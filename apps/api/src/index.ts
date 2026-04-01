@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
 import { rootRouter } from "@/routes/root";
+import { authRouter } from "@/routes/auth";
 import { v1Router } from "@/routes/v1";
 import { internalRouter } from "@/routes/internal";
 import { handleScheduledEvent } from "@/scheduled";
@@ -14,6 +15,7 @@ import { handleScheduledEvent } from "@/scheduled";
 const app = new Hono<Env>();
 
 app.route("/", rootRouter);
+app.route("/auth", authRouter);
 app.route("/v1", v1Router);
 app.route("/internal", internalRouter);
 

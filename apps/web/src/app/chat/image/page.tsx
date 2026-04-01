@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
-import { MediaStudioRoom } from "@/components/(chat)/rooms/MediaStudioRoom";
+import { ImageStudioRoom } from "@/components/(chat)/rooms/ImageStudioRoom";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Image Studio - AI Stats Chat",
@@ -15,7 +15,7 @@ export default async function ChatImagePage() {
 	const models = await fetchFrontendGatewayModels();
 	return (
 		<RoomScaffold>
-			<MediaStudioRoom roomId="image" models={models} />
+			<ImageStudioRoom models={models} />
 		</RoomScaffold>
 	);
 }

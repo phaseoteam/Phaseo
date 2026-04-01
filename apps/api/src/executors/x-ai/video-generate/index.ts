@@ -38,6 +38,26 @@ function parseDurationSeconds(ir: IRVideoGenerationRequest): number | undefined 
 		toPositiveNumber(ir.seconds);
 }
 
+function normalizeXAiVideoModel(value: string | null | undefined): string {
+	let model = String(value ?? "").trim();
+	if (!model) return "grok-video";
+	if (model.includes("/")) {
+		model = model.split("/").pop() ?? model;
+	}
+	const normalized = model.trim().toLowerCase().replace(/\s+/g, "-");
+	if (
+		normalized === "grok-imagine-video" ||
+		normalized === "grok-imagine-video-latest" ||
+		normalized === "grok-imagine" ||
+		normalized === "imagine-video" ||
+		normalized === "xai-grok-imagine-video" ||
+		normalized === "x-ai-grok-imagine-video"
+	) {
+		return "grok-imagine-video";
+	}
+	return model;
+}
+
 function toVideoStatus(value: unknown): IRVideoGenerationResponse["status"] {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "done" || status === "completed" || status === "succeeded" || status === "success") return "completed";
@@ -78,7 +98,7 @@ function extractVideoOutput(json: any): Array<{ index: number; uri: string | nul
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
-	const model = args.providerModelSlug || ir.model || "grok-video";
+	const model = normalizeXAiVideoModel(args.providerModelSlug || ir.model || "grok-video");
 	const seconds = parseDurationSeconds(ir);
 	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
 	const quality = ir.quality ?? null;
@@ -264,19 +284,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const encodedId = nativeId ? encodeXAiVideoId(nativeId) : undefined;
 	if (encodedId) {
 		try {
-			await saveVideoJobMeta(args.teamId, encodedId, {
+			await saveVideoJobMeta(args.teamId, args.requestId, {
 				provider: args.providerId,
+				providerTaskId: nativeId ?? encodedId,
+				requestId: args.requestId,
+				sessionId: args.meta.sessionId ?? null,
+				appId: args.meta.appId ?? null,
 				model,
 				seconds: seconds ?? null,
 				resolution: size ?? null,
 				quality,
+				outputAccess: ir.outputAccess ?? "both",
+				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,
 				reservedNanos,
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			}, toVideoStatus(json?.status));
+			}, nativeId ?? encodedId, toVideoStatus(json?.status));
 		} catch (error) {
 			console.error("xai_video_job_meta_store_failed", {
 				error,
@@ -335,4 +361,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 }
 
 export const executor: ProviderExecutor = execute;
+
+export const __xAiVideoGenerateTestUtils = {
+	normalizeXAiVideoModel,
+};
 

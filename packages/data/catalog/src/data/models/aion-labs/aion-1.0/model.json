@@ -1,0 +1,18 @@
+{
+  "model_id": "aion-labs/aion-1.0",
+  "organisation_id": "aion-labs",
+  "name": "Aion 1.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-01-29T00:00:00",
+  "release_date": "2025-01-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "aion-labs/aion-1.0",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

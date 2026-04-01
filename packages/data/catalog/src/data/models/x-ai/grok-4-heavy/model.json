@@ -1,0 +1,23 @@
+{
+  "model_id": "x-ai/grok-4-heavy",
+  "organisation_id": "x-ai",
+  "name": "Grok 4 Heavy",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-07-10T00:00:00",
+  "release_date": "2025-07-10T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "x-ai/grok-4-heavy",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok-4"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

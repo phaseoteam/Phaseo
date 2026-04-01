@@ -30,7 +30,7 @@ export default async function AppUsageStats({
 
 	for (const row of rows) {
 		if (row.success) {
-			currentRequests += 1;
+			currentRequests += Number(row.requests ?? 1);
 			currentTokens += row.usage?.total_tokens ? Number(row.usage.total_tokens) : 0;
 		}
 	}

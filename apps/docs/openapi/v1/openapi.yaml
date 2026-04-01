@@ -36,7 +36,7 @@ paths:
         - Gateway
       operationId: listModels
       summary: List gateway models
-      description: Returns models currently servable through the gateway.
+      description: Returns shared non-hidden models currently servable through the gateway.
       parameters:
         - name: endpoints
           in: query
@@ -75,17 +75,6 @@ paths:
             type: array
             items:
               type: string
-        - name: privacy_scope
-          in: query
-          description: >-
-            Response privacy scope. shared is supported today; team is reserved
-            and returns not implemented.
-          schema:
-            type: string
-            enum:
-              - shared
-              - team
-            default: shared
         - name: limit
           in: query
           description: Limit the number of results
@@ -154,12 +143,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: privacy_scope=team is reserved for future support
+  /gateway/models/me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listTeamModels
+      summary: List team-scoped gateway models
+      description: Returns team-scoped gateway model listings.
+      parameters:
+        - name: endpoints
+          in: query
+          description: Filter by endpoints
+          schema:
+            type: array
+            items:
+              type: string
+        - name: organisation
+          in: query
+          description: Filter by organisation
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/OrganisationId'
+              - type: array
+                items:
+                  $ref: '#/components/schemas/OrganisationId'
+        - name: input_types
+          in: query
+          description: Filter by input types
+          schema:
+            type: array
+            items:
+              type: string
+        - name: output_types
+          in: query
+          description: Filter by output types
+          schema:
+            type: array
+            items:
+              type: string
+        - name: params
+          in: query
+          description: Filter by params
+          schema:
+            type: array
+            items:
+              type: string
+        - name: limit
+          in: query
+          description: Limit the number of results
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 5000
+        - name: format
+          in: query
+          description: Response format. Defaults to json.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+            default: json
+        - name: feed
+          in: query
+          description: Alias for format. Accepts json, rss, or atom.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+      responses:
+        '200':
+          description: List of models
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ModelsPrivacyScopeNotImplementedResponse'
+                $ref: '#/components/schemas/GatewayModelsResponse'
+            application/rss+xml:
+              schema:
+                type: string
+                description: RSS 2.0 XML feed
+            application/atom+xml:
+              schema:
+                type: string
+                description: Atom XML feed
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /providers:
     get:
       x-beta: true
@@ -279,6 +376,20 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ChatCompletionsRequest'
+            examples:
+              datetimeServerTool:
+                summary: Built-in datetime server tool
+                value:
+                  model: openai/gpt-5-nano
+                  stream: false
+                  messages:
+                    - role: user
+                      content: What is the current datetime in Europe/London?
+                  tools:
+                    - type: 'gateway:datetime'
+                      parameters:
+                        timezone: Europe/London
+                  tool_choice: auto
       responses:
         '200':
           description: Chat completion response
@@ -299,6 +410,20 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ResponsesRequest'
+            examples:
+              datetimeServerTool:
+                summary: Built-in datetime server tool
+                value:
+                  model: openai/gpt-5-nano
+                  stream: false
+                  input:
+                    - role: user
+                      content: Give me the current datetime in Asia/Tokyo.
+                  tools:
+                    - type: 'gateway:datetime'
+                      parameters:
+                        timezone: Asia/Tokyo
+                  tool_choice: auto
       responses:
         '200':
           description: Response
@@ -379,6 +504,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AnthropicMessagesRequest'
+            examples:
+              datetimeServerTool:
+                summary: Built-in datetime server tool
+                value:
+                  model: anthropic/claude-sonnet-4
+                  max_tokens: 512
+                  stream: false
+                  messages:
+                    - role: user
+                      content: What time is it in America/New_York right now?
+                  tools:
+                    - type: 'gateway:datetime'
+                      parameters:
+                        timezone: America/New_York
+                  tool_choice:
+                    type: auto
       responses:
         '200':
           description: Message response
@@ -540,13 +681,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/ImagesEditResponse'
   /videos:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideos
+      summary: List videos
+      description: Lists async video generation jobs for the authenticated team.
+      responses:
+        '200':
+          description: Video list response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
     post:
       x-beta: true
       tags:
         - Gateway
       operationId: createVideo
       summary: Create video
-      description: Creates a video from a prompt.
+      description: Creates an async video generation job. Poll the returned `polling_url` every 20 seconds until the job reaches a terminal status.
       requestBody:
         required: true
         content:
@@ -554,12 +710,35 @@ paths:
             schema:
               $ref: '#/components/schemas/VideoGenerationRequest'
       responses:
-        '200':
+        '202':
           description: Video response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoGenerationResponse'
+  /videos/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideoModels
+      summary: List video model capabilities
+      description: Returns DB-backed video model/provider capability metadata for the video playground and SDK validation.
+      responses:
+        '200':
+          description: Video model capability list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
   /videos/{video_id}:
     get:
       x-beta: true
@@ -567,7 +746,7 @@ paths:
         - Gateway
       operationId: getVideo
       summary: Get video status
-      description: Retrieves the status for a video generation request.
+      description: Retrieves the status for a video generation request. Poll every 20 seconds unless you are using webhooks.
       parameters:
         - name: video_id
           in: path
@@ -588,7 +767,7 @@ paths:
         - Gateway
       operationId: deleteVideo
       summary: Delete video
-      description: Deletes a video generation request.
+      description: Tombstones a terminal video generation record. In-progress jobs cannot be deleted.
       parameters:
         - name: video_id
           in: path
@@ -603,6 +782,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoDeleteResponse'
+  /videos/{video_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelVideo
+      summary: Cancel video
+      description: Temporarily disabled while provider-level cancellation support is standardized.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: The internal AI Stats video job ID (`G-...`).
+          schema:
+            type: string
+      responses:
+        '501':
+          description: Video cancellation is currently disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /videos/{video_id}/content:
     get:
       x-beta: true
@@ -765,6 +966,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotImplementedResponse'
+  /files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveFileContent
+      summary: Retrieve file content
+      description: Retrieves binary content for a previously uploaded file.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: The ID of the file to retrieve.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batches:
     post:
       x-beta: true
@@ -826,25 +1062,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotImplementedResponse'
-  /analytics:
+  /batches/{batch_id}/cancel:
     post:
       x-beta: true
       tags:
         - Gateway
-      operationId: getAnalytics
-      summary: Get analytics
-      description: Returns aggregated analytics data.
-      security:
-        - bearerAuth: []
+      operationId: cancelBatch
+      summary: Cancel batch
+      description: Cancels a batch request.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: The ID of the batch to cancel.
+          schema:
+            type: string
       responses:
         '200':
-          description: Analytics data
+          description: Batch status response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AnalyticsNotImplementedResponse'
+                type: object
+                additionalProperties: true
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /analytics:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getActivityAlias
+      summary: Get user activity grouped by endpoint (alias)
+      description: Alias of /activity. Returns user activity grouped by endpoint for the last 30 completed UTC days.
+      parameters:
+        - name: date
+          in: query
+          description: Filter by a single UTC date in the last 30 completed days (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+        '400':
+          description: Bad Request Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -908,76 +1202,42 @@ paths:
       tags:
         - Gateway
       operationId: getActivity
-      summary: Get activity
-      description: Returns recent API activity for a team.
+      summary: Get user activity grouped by endpoint
+      description: Returns user activity data grouped by endpoint for the last 30 completed UTC days.
       parameters:
-        - name: team_id
+        - name: date
           in: query
-          description: The team ID to query
-          required: true
+          description: Filter by a single UTC date in the last 30 completed days (YYYY-MM-DD).
           schema:
             type: string
-        - name: days
-          in: query
-          description: Number of days to look back
-          schema:
-            type: integer
-            default: 30
-            minimum: 1
-            maximum: 90
-        - name: limit
-          in: query
-          description: Maximum number of records to return
-          schema:
-            type: integer
-            default: 50
-            minimum: 1
-            maximum: 250
-        - name: offset
-          in: query
-          description: Pagination offset
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
+            format: date
       responses:
         '200':
-          description: Activity data
+          description: Retrieved
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  period_days:
-                    type: integer
-                    example: 30
-                  limit:
-                    type: integer
-                    example: 50
-                  offset:
-                    type: integer
-                    example: 0
-                  total:
-                    type: integer
-                    example: 1250
-                  total_cost_cents:
-                    type: number
-                    example: 12.5
-                  activity:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ActivityEntry'
+                $ref: '#/components/schemas/ActivityResponse'
         '400':
-          description: Bad request
+          description: Bad Request Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Server error
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -1778,6 +2038,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /video/generations:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideosAlias
+      summary: List videos (alias)
+      description: Alias of /videos.
+      responses:
+        '200':
+          description: Video list response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
     post:
       x-beta: true
       tags:
@@ -1792,12 +2067,35 @@ paths:
             schema:
               $ref: '#/components/schemas/VideoGenerationRequest'
       responses:
-        '200':
+        '202':
           description: Video response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoGenerationResponse'
+  /video/generations/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listVideoModelsAlias
+      summary: List video model capabilities (alias)
+      description: Alias of /videos/models.
+      responses:
+        '200':
+          description: Video model capability list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      type: object
   /video/generations/{video_id}:
     get:
       x-beta: true
@@ -1839,6 +2137,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoDeleteResponse'
+  /video/generations/{video_id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelVideoAlias
+      summary: Cancel video (alias)
+      description: Alias of /videos/{video_id}/cancel (currently disabled).
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '501':
+          description: Video cancellation is currently disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /video/generations/{video_id}/content:
     get:
       x-beta: true
@@ -1963,6 +2282,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotImplementedResponse'
+  /batch/{id}/cancel:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: cancelBatchAlias
+      summary: Cancel batch (alias)
+      description: Alias of /batches/{batch_id}/cancel.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch status response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /data/models:
     get:
       x-beta: true
@@ -2095,174 +2448,6 @@ paths:
                     type: string
                   message:
                     type: string
-  /realtime:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createRealtimeSessionPlaceholder
-      summary: Realtime placeholder
-      description: Reserved endpoint for realtime API. Currently returns not implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /realtime/sessions:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createRealtimeSessionsPlaceholder
-      summary: Realtime sessions placeholder
-      description: >-
-        Reserved endpoint for realtime sessions. Currently returns not
-        implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /realtime/client_secrets:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createRealtimeClientSecretsPlaceholder
-      summary: Realtime client secrets placeholder
-      description: >-
-        Reserved endpoint for realtime client secrets. Currently returns not
-        implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /realtime/calls:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createRealtimeCallPlaceholder
-      summary: Realtime calls placeholder
-      description: Reserved endpoint for realtime calls. Currently returns not implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /realtime/calls/{call_id}:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: getRealtimeCallPlaceholder
-      summary: Realtime call retrieval placeholder
-      description: >-
-        Reserved endpoint for realtime call retrieval. Currently returns not
-        implemented.
-      parameters:
-        - name: call_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /audio/realtime:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createAudioRealtimeSessionPlaceholder
-      summary: Audio realtime placeholder
-      description: Alias of /realtime. Currently returns not implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /audio/realtime/sessions:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createAudioRealtimeSessionsPlaceholder
-      summary: Audio realtime sessions placeholder
-      description: Alias of /realtime/sessions. Currently returns not implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /audio/realtime/client_secrets:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createAudioRealtimeClientSecretsPlaceholder
-      summary: Audio realtime client secrets placeholder
-      description: Alias of /realtime/client_secrets. Currently returns not implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /audio/realtime/calls:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createAudioRealtimeCallPlaceholder
-      summary: Audio realtime calls placeholder
-      description: Alias of /realtime/calls. Currently returns not implemented.
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
-  /audio/realtime/calls/{call_id}:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: getAudioRealtimeCallPlaceholder
-      summary: Audio realtime call retrieval placeholder
-      description: Alias of /realtime/calls/{call_id}. Currently returns not implemented.
-      parameters:
-        - name: call_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '501':
-          description: Realtime is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
   /endpoints:
     get:
       x-beta: true
@@ -2675,13 +2860,13 @@ components:
           default: 1
         tools:
           type: array
+          description: >
+            Tool definitions for model function calls and gateway server tools.
+            The only built-in gateway server tool is `gateway:datetime`.
+            Web-search tool types (for example `web_search_preview`) are
+            temporarily disabled by the gateway.
           items:
-            type: object
-            properties:
-              type:
-                type: string
-                enum:
-                  - function
+            $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
           type: integer
           minimum: 1
@@ -2689,9 +2874,7 @@ components:
           type: boolean
           default: true
         tool_choice:
-          oneOf:
-            - type: string
-            - type: object
+          $ref: '#/components/schemas/TextToolChoice'
         logprobs:
           type: boolean
           default: false
@@ -2722,6 +2905,10 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - text
+              - image
+              - audio
         image_config:
           $ref: '#/components/schemas/ImageConfig'
         usage:
@@ -2780,6 +2967,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
         tool_call_id:
           type: string
       discriminator:
@@ -2819,6 +3014,56 @@ components:
             url:
               type: string
               description: HTTP(S) URL or data URI.
+    ChatImageOutputPart:
+      type: object
+      required:
+        - type
+        - image_url
+      properties:
+        type:
+          type: string
+          enum:
+            - image_url
+        image_url:
+          type: object
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              description: HTTP(S) URL or data URI.
+        mime_type:
+          type: string
+    ChatAudioOutputPart:
+      type: object
+      required:
+        - type
+        - audio_url
+      properties:
+        type:
+          type: string
+          enum:
+            - audio_url
+        audio_url:
+          type: object
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              description: HTTP(S) URL or data URI.
+        mime_type:
+          type: string
+        format:
+          type: string
+          enum:
+            - wav
+            - mp3
+            - flac
+            - m4a
+            - ogg
+            - pcm16
+            - pcm24
     AudioContentPart:
       type: object
       required:
@@ -2901,6 +3146,75 @@ components:
               type: string
             parameters:
               type: object
+    FunctionToolDefinition:
+      type: object
+      required:
+        - type
+        - function
+      properties:
+        type:
+          type: string
+          enum:
+            - function
+        function:
+          type: object
+          required:
+            - name
+            - parameters
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            parameters:
+              type: object
+      additionalProperties: true
+    GatewayDatetimeToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway executes the datetime lookup and
+        injects the result back into the model tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - 'gateway:datetime'
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+              description: IANA timezone name (for example Europe/London).
+          additionalProperties: false
+        timezone:
+          type: string
+          description: Legacy shortcut for default timezone (IANA).
+      additionalProperties: false
+    TextGenerateTool:
+      oneOf:
+        - $ref: '#/components/schemas/FunctionToolDefinition'
+        - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
+    TextToolChoice:
+      description: >
+        Tool selection strategy. `gateway:datetime` is accepted and rewritten by
+        the gateway into an upstream function/tool target.
+      oneOf:
+        - type: string
+          enum:
+            - auto
+            - none
+            - required
+            - 'gateway:datetime'
+        - type: object
+    ServerToolUsage:
+      type: object
+      properties:
+        datetime_requests:
+          type: integer
+          minimum: 0
+      additionalProperties: false
     ReasoningConfig:
       type: object
       properties:
@@ -3000,6 +3314,8 @@ components:
           type: integer
         total_tokens:
           type: integer
+        server_tool_use:
+          $ref: '#/components/schemas/ServerToolUsage'
     AnthropicMessagesRequest:
       type: object
       required:
@@ -3045,9 +3361,19 @@ components:
           minimum: 1
         tools:
           type: array
+          description: >
+            Anthropic-compatible tools plus gateway server tools. The only built-in
+            gateway server tool is `gateway:datetime`.
+            Web-search tool types are temporarily disabled by the gateway.
           items:
-            $ref: '#/components/schemas/AnthropicTool'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicTool'
+              - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
         tool_choice:
+          description: >
+            Anthropic tool choice object/string. `gateway:datetime` is also accepted
+            and rewritten by the gateway.
+            Web-search tool choices are temporarily disabled.
           oneOf:
             - type: object
             - type: string
@@ -3222,13 +3548,16 @@ components:
         text:
           type: object
         tool_choice:
-          oneOf:
-            - type: string
-            - type: object
+          $ref: '#/components/schemas/TextToolChoice'
         tools:
           type: array
+          description: >
+            Tool definitions for model function calls and gateway server tools.
+            The only built-in gateway server tool is `gateway:datetime`.
+            Web-search tool types (for example `web_search_preview`) are
+            temporarily disabled by the gateway.
           items:
-            type: object
+            $ref: '#/components/schemas/TextGenerateTool'
         top_p:
           type: number
           minimum: 0
@@ -3250,6 +3579,10 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - text
+              - image
+              - audio
         image_config:
           $ref: '#/components/schemas/ImageConfig'
         provider_options:
@@ -3326,7 +3659,90 @@ components:
         content:
           type: array
           items:
+            $ref: '#/components/schemas/ResponsesOutputContentPart'
+        call_id:
+          type: string
+        name:
+          type: string
+        arguments:
+          type: string
+    ResponsesOutputContentPart:
+      oneOf:
+        - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesOutputImagePart'
+        - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesOutputTextPart:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - output_text
+        text:
+          type: string
+        annotations:
+          type: array
+          items:
             type: object
+    ResponsesOutputImagePart:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - output_image
+        b64_json:
+          type: string
+        image_url:
+          type: object
+          properties:
+            url:
+              type: string
+        mime_type:
+          type: string
+      anyOf:
+        - required:
+            - b64_json
+        - required:
+            - image_url
+    ResponsesOutputAudioPart:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - output_audio
+        b64_json:
+          type: string
+        audio_url:
+          type: object
+          properties:
+            url:
+              type: string
+        mime_type:
+          type: string
+        format:
+          type: string
+          enum:
+            - wav
+            - mp3
+            - flac
+            - m4a
+            - ogg
+            - pcm16
+            - pcm24
+      anyOf:
+        - required:
+            - b64_json
+        - required:
+            - audio_url
     ResponsesWebSocketCreateEvent:
       type: object
       description: >
@@ -3875,94 +4291,55 @@ components:
           type: string
         prompt:
           type: string
-        seconds:
-          oneOf:
-            - type: integer
-            - type: string
-        quality:
-          type: string
-        input_reference:
-          type: string
-        input_reference_mime_type:
-          type: string
-        input:
-          type: object
-          properties:
-            image:
-              oneOf:
-                - type: string
-                - type: object
-            video:
-              oneOf:
-                - type: string
-                - type: object
-            last_frame:
-              oneOf:
-                - type: string
-                - type: object
-            reference_images:
-              type: array
-              items:
-                type: object
-                properties:
-                  reference_type:
-                    type: string
-                  image:
-                    oneOf:
-                      - type: string
-                      - type: object
-                  uri:
-                    type: string
-                  url:
-                    type: string
-        input_image:
-          oneOf:
-            - type: string
-            - type: object
-        input_video:
-          oneOf:
-            - type: string
-            - type: object
-        last_frame:
-          oneOf:
-            - type: string
-            - type: object
-        input_last_frame:
-          oneOf:
-            - type: string
-            - type: object
-        reference_images:
-          type: array
-          items:
-            type: object
         duration:
           type: integer
-          minimum: 1
-          maximum: 120
-        duration_seconds:
-          type: integer
-        ratio:
+          description: Desired duration in seconds (provider/model dependent).
+        size:
           type: string
-        aspect_ratio:
-          type: string
+          description: Explicit dimensions (for example 1280x720). Cannot be combined with resolution or aspect_ratio.
         resolution:
           type: string
-        negative_prompt:
+          description: 480p, 720p, 1080p, 1K, 2K, 4K. Can be combined with aspect_ratio. Cannot be combined with size.
+        aspect_ratio:
           type: string
-        sample_count:
-          type: integer
-        number_of_videos:
-          type: integer
+          description: Aspect ratio such as 16:9, 9:16, 1:1. Can be combined with resolution. Cannot be combined with size.
         seed:
           type: integer
-        person_generation:
+        sample_count:
+          type: integer
+        negative_prompt:
           type: string
         generate_audio:
           type: boolean
         enhance_prompt:
           type: boolean
-        output_storage_uri:
+        compression_quality:
+          type: integer
+        person_generation:
           type: string
+        resize_mode:
+          type: string
+        input_references:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoInputReference'
+        provider_params:
+          type: object
+          additionalProperties: true
+        output:
+          $ref: '#/components/schemas/VideoOutputConfig'
+        webhook:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+            secret:
+              type: string
+            events:
+              type: array
+              items:
+                type: string
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
     VideoGenerationResponse:
@@ -3970,25 +4347,161 @@ components:
       properties:
         id:
           type: string
+        polling_url:
+          type: string
         model:
           type: string
         status:
           type: string
-        created:
-          type: integer
+          enum:
+            - pending
+            - in_progress
+            - completed
+            - failed
+            - cancelled
+        output_access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+        generation_id:
+          type: string
+          nullable: true
+        created_at:
+          oneOf:
+            - type: integer
+            - type: string
+        started_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
+        completed_at:
+          nullable: true
+          oneOf:
+            - type: integer
+            - type: string
         object:
           type: string
-        output:
+          example: video
+        poll_after_seconds:
+          type: integer
+          example: 20
+        provider:
+          type: string
+        seconds:
+          type: number
+        size:
+          type: string
+        audio:
+          type: boolean
+        content_url:
+          type: string
+          description: Present when output_access includes bytes (authenticated endpoint).
+        download_url:
+          type: string
+          nullable: true
+          description: Signed first-party URL for direct download when status is completed.
+        expires_at:
+          type: integer
+          nullable: true
+          description: Unix timestamp (seconds) when the signed download_url expires.
+        progress:
+          type: integer
+          nullable: true
+        progress_source:
+          type: string
+        asset:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            mime_type:
+              type: string
+            bytes:
+              type: integer
+            sha256:
+              type: string
+            width:
+              type: integer
+            height:
+              type: integer
+            duration_seconds:
+              type: number
+        outputs:
           type: array
           items:
-            type: object
-            properties:
-              id:
-                type: string
-              type:
-                type: string
-              url:
-                type: string
+            $ref: '#/components/schemas/VideoOutput'
+        billing:
+          type: object
+          additionalProperties: true
+        usage:
+          type: object
+          properties:
+            cost:
+              type: number
+            is_byok:
+              type: boolean
+          additionalProperties: true
+        error:
+          nullable: true
+    VideoInputReference:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - image_url
+        role:
+          type: string
+          enum:
+            - first_frame
+            - last_frame
+            - reference
+            - source
+            - mask
+        reference_type:
+          type: string
+        image_url:
+          type: object
+          required:
+            - url
+          properties:
+            url:
+              type: string
+    VideoOutputConfig:
+      type: object
+      properties:
+        access:
+          type: string
+          enum:
+            - bytes
+            - signed_url
+            - both
+          default: both
+          description: bytes=authenticated content_url only, signed_url=signed download links only, both=include both.
+    VideoOutput:
+      type: object
+      properties:
+        index:
+          type: integer
+        mime_type:
+          type: string
+        bytes_available:
+          type: boolean
+        content_url:
+          type: string
+          description: Present when output_access includes bytes.
+        download_url:
+          type: string
+          description: Signed first-party URL for this output.
+        expires_at:
+          type: integer
+          description: Unix timestamp (seconds) when this output URL expires.
     VideoDeleteResponse:
       type: object
       properties:
@@ -5521,40 +6034,66 @@ components:
           type: string
           example: Endpoint is not implemented yet.
       additionalProperties: true
+    ActivityResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityEntry'
+      additionalProperties: false
     ActivityEntry:
       type: object
+      required:
+        - date
+        - model
+        - model_permaslug
+        - endpoint_id
+        - provider_name
+        - usage
+        - byok_usage_inference
+        - requests
+        - prompt_tokens
+        - completion_tokens
+        - reasoning_tokens
       properties:
-        request_id:
+        date:
           type: string
-          example: req_abc123
-        provider:
-          type: string
-          example: openai
+          format: date
+          example: '2025-08-24'
         model:
           type: string
-          example: gpt-4o
-        endpoint:
+          example: openai/gpt-4.1
+        model_permaslug:
+          type: string
+          example: openai/gpt-4.1-2025-04-14
+        endpoint_id:
           type: string
           example: chat.completions
+        provider_name:
+          type: string
+          example: OpenAI
         usage:
-          type: object
-          properties:
-            input_tokens:
-              type: integer
-            output_tokens:
-              type: integer
-            total_tokens:
-              type: integer
-        cost_cents:
           type: number
           example: 0.015
-        latency_ms:
+        byok_usage_inference:
+          type: number
+          example: 0.012
+        requests:
           type: integer
-          example: 450
-        timestamp:
-          type: string
-          format: date-time
-          example: '2026-01-20T10:30:00Z'
+          example: 5
+        prompt_tokens:
+          type: integer
+          example: 50
+        completion_tokens:
+          type: integer
+          example: 125
+        reasoning_tokens:
+          type: integer
+          example: 25
+      additionalProperties: false
     ProvisioningKey:
       type: object
       properties:

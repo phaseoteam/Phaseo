@@ -36,7 +36,7 @@ const sessionOptions = {
  * Get current session
  */
 export async function getSession(): Promise<IronSession<SessionData>> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   return getIronSession<SessionData>(cookieStore, sessionOptions);
 }
 
@@ -66,6 +66,15 @@ export async function storeTokens(tokens: OAuthTokens): Promise<void> {
     console.error('Failed to decode JWT:', error);
   }
 
+  await session.save();
+}
+
+/**
+ * Update only token fields while preserving user metadata.
+ */
+export async function updateTokens(tokens: OAuthTokens): Promise<void> {
+  const session = await getSession();
+  session.tokens = tokens;
   await session.save();
 }
 

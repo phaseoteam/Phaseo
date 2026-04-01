@@ -10,6 +10,7 @@ export type GatewayBindings = {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
     GATEWAY_CACHE: KVNamespace;
+    VIDEO_ASSETS_BUCKET?: R2Bucket;
     KV?: KVNamespace;
     DB?: D1Database;
     GATEWAY_CONTROL_SECRET?: string;
@@ -22,6 +23,7 @@ export type GatewayBindings = {
     OPENAI_WEBHOOK_SECRET?: string;
     OPENAI_VIDEO_WEBHOOK_SECRET?: string;
     GOOGLE_AI_STUDIO_API_KEY?: string;
+    GOOGLE_VIDEO_OAUTH_BEARER_TOKEN?: string;
     GOOGLE_AI_STUDIO_BASE_URL?: string;
     GOOGLE_BASE_URL?: string;
     ANTHROPIC_API_KEY?: string;
@@ -30,6 +32,8 @@ export type GatewayBindings = {
     XAI_DEBUG_USAGE?: string;
     AI21_API_KEY?: string;
     AI21_BASE_URL?: string;
+    AKASHML_API_KEY?: string;
+    AKASHML_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     ALIBABA_VIDEO_WEBHOOK_SECRET?: string;
@@ -40,14 +44,20 @@ export type GatewayBindings = {
     AWS_SECRET_ACCESS_KEY?: string;
     AWS_SESSION_TOKEN?: string;
     AWS_REGION?: string;
+    ARCEE_AI_API_KEY?: string;
     ARCEE_API_KEY?: string;
     ARCEE_BASE_URL?: string;
     ATLAS_CLOUD_API_KEY?: string;
     ATLAS_CLOUD_BASE_URL?: string;
     BASETEN_API_KEY?: string;
     BASETEN_BASE_URL?: string;
+    LONGCAT_API_KEY?: string;
+    LONGCAT_BASE_URL?: string;
     BYTEDANCE_SEED_API_KEY?: string;
     BYTEDANCE_SEED_BASE_URL?: string;
+    BYTEPLUS_API_KEY?: string;
+    BYTEPLUS_BASE_URL?: string;
+    ARK_API_KEY?: string;
     CEREBRAS_API_KEY?: string;
     CEREBRAS_BASE_URL?: string;
     CHUTES_API_KEY?: string;
@@ -58,6 +68,8 @@ export type GatewayBindings = {
     CLOUDFLARE_AI_GATEWAY_BASE_URL?: string;
     COHERE_API_KEY?: string;
     COHERE_BASE_URL?: string;
+    VOYAGE_API_KEY?: string;
+    VOYAGE_BASE_URL?: string;
     CRUSOE_API_KEY?: string;
     CRUSOE_BASE_URL?: string;
     DEEPINFRA_API_KEY?: string;
@@ -88,6 +100,8 @@ export type GatewayBindings = {
     INFERMATIC_BASE_URL?: string;
     INFLECTION_API_KEY?: string;
     INFLECTION_BASE_URL?: string;
+    IONROUTER_API_KEY?: string;
+    IONROUTER_BASE_URL?: string;
     LIQUID_API_KEY?: string;
     LIQUID_BASE_URL?: string;
     LIQUID_AI_API_KEY?: string;
@@ -112,10 +126,14 @@ export type GatewayBindings = {
     NEBIUS_API_KEY?: string;
     NEBIUS_TOKEN_FACTORY_API_KEY?: string;
     NEBIUS_BASE_URL?: string;
+    NEBIUS_EU_NORTH_1_BASE_URL?: string;
+    NEBIUS_US_CENTRAL_1_BASE_URL?: string;
     NEXTBIT_API_KEY?: string;
     STEPFUN_API_KEY?: string;
     VENICE_API_KEY?: string;
+    VENICE_BASE_URL?: string;
     WEIGHTSANDBIASES_API_KEY?: string;
+    WANDB_API_KEY?: string;
     BLACK_FOREST_LABS_API_KEY?: string;
     BFL_API_KEY?: string;
     BLACK_FOREST_LABS_BASE_URL?: string;
@@ -130,6 +148,9 @@ export type GatewayBindings = {
     NOVITA_BASE_URL?: string;
     PARASAIL_API_KEY?: string;
     PARASAIL_BASE_URL?: string;
+    RUNWAY_API_KEY?: string;
+    RUNWAY_BASE_URL?: string;
+    RUNWAY_API_VERSION?: string;
     PERPLEXITY_API_KEY?: string;
     PERPLEXITY_BASE_URL?: string;
     PHALA_API_KEY?: string;
@@ -159,7 +180,9 @@ export type GatewayBindings = {
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
+    GATEWAY_PUBLIC_BASE_URL?: string;
     KEY_PEPPER?: string;
+    VIDEO_DOWNLOAD_SIGNING_SECRET?: string;
     GATEWAY_INTERNAL_TEST_TOKEN?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;
     MODEL_DISCOVERY_ENABLED?: string;
@@ -169,6 +192,8 @@ export type GatewayBindings = {
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;
     VIDEO_RECONCILIATION_CONCURRENCY?: string;
+    VIDEO_ASSET_RETENTION_SECONDS?: string;
+    VIDEO_API_ENABLED?: string;
     PRICING_MONITOR_ENABLED?: string;
     ENTERPRISE_INVOICING_ENABLED?: string;
     STRIPE_SECRET_KEY?: string;
@@ -193,6 +218,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
     "GATEWAY_CACHE",
+    "VIDEO_ASSETS_BUCKET",
     "GATEWAY_CONTROL_SECRET",
     "NEXT_PUBLIC_GATEWAY_VERSION",
     "AXIOM_API_KEY",
@@ -203,6 +229,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "OPENAI_WEBHOOK_SECRET",
     "OPENAI_VIDEO_WEBHOOK_SECRET",
     "GOOGLE_AI_STUDIO_API_KEY",
+    "GOOGLE_VIDEO_OAUTH_BEARER_TOKEN",
     "GOOGLE_AI_STUDIO_BASE_URL",
     "GOOGLE_BASE_URL",
     "ANTHROPIC_API_KEY",
@@ -214,6 +241,8 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "XAI_DEBUG_USAGE",
     "AI21_API_KEY",
     "AI21_BASE_URL",
+    "AKASHML_API_KEY",
+    "AKASHML_BASE_URL",
     "ALIBABA_CLOUD_API_KEY",
     "ALIBABA_BASE_URL",
     "ALIBABA_VIDEO_WEBHOOK_SECRET",
@@ -224,14 +253,20 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "AWS_SECRET_ACCESS_KEY",
     "AWS_SESSION_TOKEN",
     "AWS_REGION",
+    "ARCEE_AI_API_KEY",
     "ARCEE_API_KEY",
     "ARCEE_BASE_URL",
     "ATLAS_CLOUD_API_KEY",
     "ATLAS_CLOUD_BASE_URL",
     "BASETEN_API_KEY",
     "BASETEN_BASE_URL",
+    "LONGCAT_API_KEY",
+    "LONGCAT_BASE_URL",
     "BYTEDANCE_SEED_API_KEY",
     "BYTEDANCE_SEED_BASE_URL",
+    "BYTEPLUS_API_KEY",
+    "BYTEPLUS_BASE_URL",
+    "ARK_API_KEY",
     "CEREBRAS_API_KEY",
     "CEREBRAS_BASE_URL",
     "CHUTES_API_KEY",
@@ -242,6 +277,8 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "CLOUDFLARE_AI_GATEWAY_BASE_URL",
     "COHERE_API_KEY",
     "COHERE_BASE_URL",
+    "VOYAGE_API_KEY",
+    "VOYAGE_BASE_URL",
     "CRUSOE_API_KEY",
     "CRUSOE_BASE_URL",
     "DEEPINFRA_API_KEY",
@@ -272,6 +309,8 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "INFERMATIC_BASE_URL",
     "INFLECTION_API_KEY",
     "INFLECTION_BASE_URL",
+    "IONROUTER_API_KEY",
+    "IONROUTER_BASE_URL",
     "LIQUID_API_KEY",
     "LIQUID_BASE_URL",
     "LIQUID_AI_API_KEY",
@@ -296,10 +335,14 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "NEBIUS_API_KEY",
     "NEBIUS_TOKEN_FACTORY_API_KEY",
     "NEBIUS_BASE_URL",
+    "NEBIUS_EU_NORTH_1_BASE_URL",
+    "NEBIUS_US_CENTRAL_1_BASE_URL",
     "NEXTBIT_API_KEY",
     "STEPFUN_API_KEY",
     "VENICE_API_KEY",
+    "VENICE_BASE_URL",
     "WEIGHTSANDBIASES_API_KEY",
+    "WANDB_API_KEY",
     "BLACK_FOREST_LABS_API_KEY",
     "BFL_API_KEY",
     "BLACK_FOREST_LABS_BASE_URL",
@@ -314,6 +357,9 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "NOVITA_BASE_URL",
     "PARASAIL_API_KEY",
     "PARASAIL_BASE_URL",
+    "RUNWAY_API_KEY",
+    "RUNWAY_BASE_URL",
+    "RUNWAY_API_VERSION",
     "PERPLEXITY_API_KEY",
     "PERPLEXITY_BASE_URL",
     "PHALA_API_KEY",
@@ -343,7 +389,9 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "DISCORD_WEBHOOK_URL",
     "DISCORD_ROLE_ID",
     "DISCORD_USER_ID",
+    "GATEWAY_PUBLIC_BASE_URL",
     "NODE_ENV",
+    "VIDEO_DOWNLOAD_SIGNING_SECRET",
     "MODEL_DISCOVERY_ENABLED",
     "MODEL_DISCOVERY_RETENTION_DAYS",
     "MODEL_DISCOVERY_SHARD_SIZE",
@@ -351,6 +399,8 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "VIDEO_RECONCILIATION_ENABLED",
     "VIDEO_RECONCILIATION_LIMIT",
     "VIDEO_RECONCILIATION_CONCURRENCY",
+    "VIDEO_ASSET_RETENTION_SECONDS",
+    "VIDEO_API_ENABLED",
     "PRICING_MONITOR_ENABLED",
     "ENTERPRISE_INVOICING_ENABLED",
     "STRIPE_SECRET_KEY",

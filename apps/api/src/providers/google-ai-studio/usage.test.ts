@@ -17,6 +17,7 @@ describe("googleUsageMetadataToIRUsage", () => {
 		expect(usage?.totalTokens).toBe(2027);
 		expect(usage?.reasoningTokens).toBe(425);
 		expect(usage?._ext?.outputImageTokens).toBe(1120);
+		expect(usage?.cachedReadTokensAreSubsetOfInput).toBeUndefined();
 	});
 
 	it("falls back to modality details when coarse token counts are absent", () => {
@@ -36,6 +37,19 @@ describe("googleUsageMetadataToIRUsage", () => {
 		expect(usage?.totalTokens).toBe(21);
 		expect(usage?._ext?.inputImageTokens).toBe(3);
 		expect(usage?._ext?.outputImageTokens).toBe(11);
+		expect(usage?.cachedReadTokensAreSubsetOfInput).toBeUndefined();
+	});
+
+	it("marks cached tokens as subset-of-input in IR usage", () => {
+		const usage = googleUsageMetadataToIRUsage({
+			promptTokenCount: 120,
+			cachedContentTokenCount: 30,
+			candidatesTokenCount: 20,
+			totalTokenCount: 140,
+		});
+
+		expect(usage?.cachedInputTokens).toBe(30);
+		expect(usage?.cachedReadTokensAreSubsetOfInput).toBe(true);
 	});
 });
 

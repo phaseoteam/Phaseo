@@ -6,6 +6,7 @@ on:
             - main
         paths:
             - "apps/web/**"
+            - "packages/data/catalog/**"
             - ".github/workflows/indexnow.yml"
     pull_request:
         branches:
@@ -16,6 +17,7 @@ on:
             - reopened
         paths:
             - "apps/web/**"
+            - "packages/data/catalog/**"
             - ".github/workflows/indexnow.yml"
     workflow_dispatch:
 
@@ -121,7 +123,7 @@ jobs:
                           return {}
                       try:
                           output = subprocess.check_output(
-                              ["git", "show", f"{rev}:apps/web/src/data/manifest.json"],
+                              ["git", "show", f"{rev}:packages/data/catalog/src/data/manifest.json"],
                               text=True,
                           )
                       except Exception:

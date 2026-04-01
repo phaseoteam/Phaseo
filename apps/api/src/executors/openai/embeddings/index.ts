@@ -20,10 +20,19 @@ function normalizeModelName(model?: string | null): string {
 	return trimmed;
 }
 
+function resolveTargetModel(ir: IREmbeddingsRequest, args: ExecutorExecuteArgs): string {
+	const providerModelSlug = args.providerModelSlug?.trim();
+	if (providerModelSlug) {
+		// Preserve provider slugs verbatim (for example "baai/bge-m3" on Novita).
+		return providerModelSlug;
+	}
+	return normalizeModelName(ir.model) || ir.model;
+}
+
 function buildRequestBody(ir: IREmbeddingsRequest, args: ExecutorExecuteArgs): Record<string, any> {
 	const encoded = encodeOpenAIEmbeddingsRequest({
 		...ir,
-		model: normalizeModelName(args.providerModelSlug || ir.model) || ir.model,
+		model: resolveTargetModel(ir, args),
 	}) as Record<string, any>;
 
 	// Most OpenAI-compatible providers reject unknown provider_options fields.
@@ -33,10 +42,26 @@ function buildRequestBody(ir: IREmbeddingsRequest, args: ExecutorExecuteArgs): R
 		const mistralOptions = ir.providerOptions?.mistral;
 		if (typeof ir.dimensions === "number") {
 			encoded.output_dimension = ir.dimensions;
+			delete encoded.dimensions;
 		}
 		if (mistralOptions?.outputDtype) {
 			encoded.output_dtype = mistralOptions.outputDtype;
 		}
+	}
+
+	if (args.providerId === "cohere") {
+		// Cohere OpenAI compatibility supports only input/model/encoding_format.
+		delete encoded.dimensions;
+		delete encoded.user;
+	}
+
+	if (args.providerId === "voyage" || args.providerId === "voyageai") {
+		// Voyage uses output_dimension instead of dimensions.
+		if (typeof ir.dimensions === "number") {
+			encoded.output_dimension = ir.dimensions;
+			delete encoded.dimensions;
+		}
+		delete encoded.user;
 	}
 
 	return encoded;

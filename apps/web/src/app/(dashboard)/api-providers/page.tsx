@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import {
-	APIProviderCard,
-	getAllAPIProvidersCached,
-} from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import type { APIProviderCard } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -38,9 +36,9 @@ function APIProvidersFallback() {
 		<div className="space-y-4">
 			<Skeleton className="h-9 w-56" />
 			<Skeleton className="h-11 w-full" />
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-				{Array.from({ length: 6 }).map((_, index) => (
-					<Skeleton key={index} className="h-40 w-full rounded-xl" />
+			<div className="overflow-hidden rounded-xl border border-border/70">
+				{Array.from({ length: 8 }).map((_, index) => (
+					<Skeleton key={index} className="h-20 w-full rounded-none border-b last:border-b-0" />
 				))}
 			</div>
 		</div>
@@ -58,3 +56,4 @@ export default function Page() {
 		</main>
 	);
 }
+

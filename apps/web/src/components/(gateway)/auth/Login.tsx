@@ -2,8 +2,9 @@
 import { cookies } from "next/headers";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
+import { Button } from "@/components/ui/button";
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
-import { KeyRound } from "lucide-react";
+import { Building2, KeyRound } from "lucide-react";
 
 const OAUTH = ["google", "github", "gitlab"] as const;
 type OAuthProvider = (typeof OAUTH)[number];
@@ -93,6 +94,18 @@ export async function Login({
 			) : null}
 
 			<OAuthButtons returnUrl={returnUrl} />
+			<Button
+				type="button"
+				variant="outline"
+				className="relative h-10 w-full justify-center"
+				disabled
+				aria-disabled="true"
+			>
+				<span className="absolute left-3 flex items-center">
+					<Building2 className="h-4 w-4" aria-hidden="true" />
+				</span>
+				Enterprise Login
+			</Button>
 			<EmailPassword returnUrl={returnUrl} />
 		</div>
 	);

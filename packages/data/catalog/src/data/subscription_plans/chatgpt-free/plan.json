@@ -1,0 +1,120 @@
+{
+  "plan_id": "chatgpt-free",
+  "name": "ChatGPT Free",
+  "organisation_id": "openai",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0.0,
+      "link": "https://chatgpt.com/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Deep Research",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Advanced Voice Mode",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Memory",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Search",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Canvas",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Code edits on macOS",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Data Analysis",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Vision",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "File Upload",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Use GPTs",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Image Generation",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Study Mode",
+      "feature_value": null,
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "openai/chatgpt-4o",
+      "model_info": null,
+      "rate_limit": "Advanced Voice Mode",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/chatgpt-image-latest",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.3-chat",
+      "model_info": null,
+      "rate_limit": "10 Messages Per 5 Hours",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5-mini",
+      "model_info": null,
+      "rate_limit": "Unlimited within abuse guardrails",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.3-codex",
+      "model_info": null,
+      "rate_limit": "Codex Free Period",
+      "other_info": "Accessible Through Codex"
+    }
+  ]
+}

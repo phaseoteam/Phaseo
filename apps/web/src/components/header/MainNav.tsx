@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 const LINKS = [
 	{ href: "/models", label: "Models" },
 	{ href: "/api-providers", label: "Providers" },
+	{ href: "/apps", label: "Apps" },
 	{ href: "/rankings", label: "Rankings" },
-	{ href: "/chat", label: "Chat" },
+	{ href: "/chat", label: "Playground" },
 ];
 
 export default function MainNav() {

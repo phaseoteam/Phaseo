@@ -431,7 +431,8 @@ async function handleNonStreamResponse(
     }
 
     const headers = makeHeaders(timingHeader);
-    return ctx.timer.span("after_create_response", () => createResponse(responseBody, result.upstream.status, headers));
+    const responseStatus = ctx.endpoint === "video.generation" ? 202 : result.upstream.status;
+    return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
 
 

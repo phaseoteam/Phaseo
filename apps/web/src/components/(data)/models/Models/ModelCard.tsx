@@ -36,6 +36,7 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const PRIMARY_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
 	year: "numeric",
@@ -50,6 +51,59 @@ const MODALITY_DISPLAY_ORDER = [
 	"embedding",
 	"moderation",
 ] as const;
+const PROVIDER_STATUS_ORDER = [
+	"active",
+	"deranked_lvl1",
+	"deranked_lvl2",
+	"deranked_lvl3",
+	"inactive",
+	"disabled",
+	"not_listed",
+] as const;
+
+const PROVIDER_STATUS_META: Record<
+	string,
+	{ label: string; badgeClassName: string; dotClassName: string }
+> = {
+	active: {
+		label: "Active",
+		badgeClassName: "bg-emerald-500/10 text-emerald-600",
+		dotClassName: "bg-emerald-500",
+	},
+	deranked_lvl1: {
+		label: "Deranked L1",
+		badgeClassName: "bg-amber-500/10 text-amber-600",
+		dotClassName: "bg-amber-500",
+	},
+	deranked_lvl2: {
+		label: "Deranked L2",
+		badgeClassName: "bg-amber-600/10 text-amber-700",
+		dotClassName: "bg-amber-600",
+	},
+	deranked_lvl3: {
+		label: "Deranked L3",
+		badgeClassName: "bg-red-500/10 text-red-600",
+		dotClassName: "bg-red-500",
+	},
+	disabled: {
+		label: "Disabled",
+		badgeClassName: "bg-red-600/10 text-red-700",
+		dotClassName: "bg-red-600",
+	},
+	inactive: {
+		label: "Inactive",
+		badgeClassName: "bg-muted text-muted-foreground",
+		dotClassName: "bg-muted-foreground/60",
+	},
+	not_listed: {
+		label: "Not Listed",
+		badgeClassName: "bg-muted text-muted-foreground",
+		dotClassName: "bg-muted-foreground/60",
+	},
+};
+const providerStatusOrderIndex = new Map<string, number>(
+	PROVIDER_STATUS_ORDER.map((status, index) => [status, index]),
+);
 
 function toTitleLabel(value: string): string {
 	return value
@@ -92,6 +146,35 @@ function sortModalitiesForDisplay(values: string[]): string[] {
 		}
 		return a.localeCompare(b);
 	});
+}
+
+function normalizeProviderStatus(value: unknown): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+	if (!normalized) return "inactive";
+	if (normalized === "not_active") return "inactive";
+	if (normalized === "deranked" || normalized === "de_ranked") {
+		return "deranked_lvl1";
+	}
+	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
+	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
+	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	return normalized;
+}
+
+function providerStatusPriority(status: string): number {
+	return providerStatusOrderIndex.get(status) ?? providerStatusOrderIndex.size + 1;
+}
+
+function formatProviderStatusLabel(status: string): string {
+	const normalized = normalizeProviderStatus(status);
+	const mapped = PROVIDER_STATUS_META[normalized];
+	if (mapped) return mapped.label;
+	return normalized
+		.replace(/_/g, " ")
+		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatTokenCount(value: number): string {
@@ -169,6 +252,9 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 		.map((provider) => ({
 			id: String(provider.id ?? "").trim(),
 			name: String(provider.name ?? "").trim(),
+			status: normalizeProviderStatus(
+				provider.status ?? (provider.is_active ? "active" : "inactive"),
+			),
 			isActive: Boolean(provider.is_active),
 		}))
 		.filter((provider) => provider.name);
@@ -187,19 +273,31 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 	const providerStatusItems =
 		providerDetails.length > 0
 			? providerDetails.sort((a, b) => {
-					if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+					const priorityDiff =
+						providerStatusPriority(a.status) - providerStatusPriority(b.status);
+					if (priorityDiff !== 0) return priorityDiff;
 					return a.name.localeCompare(b.name);
 				})
 			: providerNames
 					.map((name) => ({
 						id: "",
 						name,
+						status: activeProviderNameSet.has(name) ? "active" : "inactive",
 						isActive: activeProviderNameSet.has(name),
 					}))
 					.sort((a, b) => {
-						if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+						const priorityDiff =
+							providerStatusPriority(a.status) - providerStatusPriority(b.status);
+						if (priorityDiff !== 0) return priorityDiff;
 						return a.name.localeCompare(b.name);
 					});
+	const PROVIDER_ROW_HEIGHT = 28;
+	const PROVIDER_ROW_GAP = 4;
+	const providerListHeight = Math.min(
+		224,
+		providerStatusItems.length * PROVIDER_ROW_HEIGHT +
+			Math.max(0, providerStatusItems.length - 1) * PROVIDER_ROW_GAP,
+	);
 	const inputModalities = model.gateway_input_modalities ?? [];
 	const outputModalities = model.gateway_output_modalities ?? [];
 	const contextLengths = (model.context_lengths ?? []).filter(
@@ -261,12 +359,12 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 	return (
 		<div
 			className={cn(
-				"group cursor-pointer py-4 transition-colors hover:bg-muted/20 md:py-5",
+				"group h-full cursor-pointer py-4 transition-colors hover:bg-muted/20 md:py-5",
 			)}
 			style={rowStyle}
 			onClick={handleRowClick}
 		>
-			<div className="flex flex-col gap-4">
+			<div className="flex h-full flex-col gap-4">
 				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
 					<Link
 						href={`/organisations/${model.organisation_id}`}
@@ -372,63 +470,55 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 										</span>
 									</button>
 								</HoverCardTrigger>
-								<HoverCardContent align="start" className="w-64 p-3">
+								<HoverCardContent align="start" className="w-72 p-3">
 									<div className="space-y-2">
 										<div className="text-xs font-medium text-foreground">
 											Provider Support
 										</div>
-										<div className="max-h-56 overflow-y-auto space-y-1 pr-1">
-											{providerStatusItems.map((provider) => (
-												<div
-													key={`${provider.id || "provider"}-${provider.name}`}
-													className="flex items-center justify-between gap-3 rounded-sm px-1 py-1 text-xs"
-												>
-													{provider.id ? (
-														<Link
-															href={`/api-providers/${provider.id}`}
-															prefetch={false}
-															className="flex min-w-0 items-center gap-2 text-foreground hover:underline underline-offset-2"
-														>
-															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
-																<Logo
-																	id={provider.id}
-																	alt={provider.name}
-																	className="object-contain p-[1px]"
-																	fill
-																/>
-															</span>
-															<span className="truncate">
-																{provider.name}
-															</span>
-														</Link>
-													) : (
-														<span className="flex min-w-0 items-center gap-2">
-															<span className="truncate text-foreground">
-																{provider.name}
-															</span>
-														</span>
-													)}
-													<span
-														className={cn(
-															"inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px]",
-															provider.isActive
-																? "bg-emerald-500/10 text-emerald-600"
-																: "bg-muted text-muted-foreground",
-														)}
+										<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
+											<div className="space-y-1 pr-2">
+												{providerStatusItems.map((provider) => (
+													<div
+														key={`${provider.id || "provider"}-${provider.name}`}
+														className="flex items-center justify-between gap-3 rounded-sm px-1 py-1 text-xs"
 													>
+														{provider.id ? (
+															<Link
+																href={`/api-providers/${provider.id}`}
+																prefetch={false}
+																className="flex min-w-0 items-center gap-2 text-foreground hover:underline underline-offset-2"
+															>
+																<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+																	<Logo
+																		id={provider.id}
+																		alt={provider.name}
+																		className="object-contain p-[1px]"
+																		fill
+																	/>
+																</span>
+																<span className="truncate">
+																	{provider.name}
+																</span>
+															</Link>
+														) : (
+															<span className="flex min-w-0 items-center gap-2">
+																<span className="truncate text-foreground">
+																	{provider.name}
+																</span>
+															</span>
+														)}
 														<span
-															className={cn(
-																"h-1.5 w-1.5 rounded-full",
-																provider.isActive
-																	? "bg-emerald-500"
-																	: "bg-muted-foreground/60",
-															)}
-														/>
-														{provider.isActive ? "Active" : "Inactive"}
-													</span>
-												</div>
-											))}
-										</div>
+															className={cn("inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px]", PROVIDER_STATUS_META[provider.status]?.badgeClassName ?? "bg-muted text-muted-foreground")}
+														>
+															<span
+																className={cn("h-1.5 w-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
+															/>
+															{formatProviderStatusLabel(provider.status)}
+														</span>
+													</div>
+												))}
+											</div>
+										</ScrollArea>
 									</div>
 								</HoverCardContent>
 							</HoverCard>
@@ -520,7 +610,7 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 					</div>
 				</div>
 
-				<div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+				<div className="mt-auto flex items-center justify-between gap-3 text-xs text-muted-foreground">
 					<span className="truncate">{formatPrimaryDate(model)}</span>
 					<div className="shrink-0">
 						<Tooltip>

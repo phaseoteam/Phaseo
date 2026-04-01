@@ -1,0 +1,19 @@
+{
+  "model_id": "anthropic/claude-instant-1.2",
+  "organisation_id": "anthropic",
+  "name": "Claude Instant 1.2",
+  "status": "Retired",
+  "previous_model_id": "anthropic/claude-instant-1-1",
+  "announced_date": "2023-08-09T00:00:00",
+  "release_date": "2023-08-09T00:00:00",
+  "deprecation_date": "2024-09-04T00:00:00",
+  "retirement_date": "2024-11-06T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-instant-1.2",
+  "family_id": "anthropic/claude-instant-1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -323,6 +323,72 @@ export function openAIChatToIR(
 		return out;
 	};
 
+	const toInlineAudioPart = (value: any): IRContentPart | null => {
+		if (!value || typeof value !== "object") return null;
+		const type = String(value.type ?? "").toLowerCase();
+		const isAudioType =
+			type === "output_audio" ||
+			type === "audio" ||
+			type === "audio_url" ||
+			type === "input_audio";
+		if (!isAudioType) return null;
+
+		const format =
+			typeof value.format === "string"
+				? value.format
+				: typeof value.audio_format === "string"
+					? value.audio_format
+					: typeof value.input_audio?.format === "string"
+						? value.input_audio.format
+						: undefined;
+
+		const b64 =
+			typeof value.b64_json === "string"
+				? value.b64_json
+				: typeof value.data === "string"
+					? value.data
+					: typeof value.input_audio?.data === "string"
+						? value.input_audio.data
+						: null;
+		if (b64) {
+			return {
+				type: "audio",
+				source: "data",
+				data: b64,
+				...(format ? { format } : {}),
+			} as IRContentPart;
+		}
+
+		const urlValue =
+			typeof value.audio_url === "string"
+				? value.audio_url
+				: typeof value.audio_url?.url === "string"
+					? value.audio_url.url
+					: typeof value.url === "string"
+						? value.url
+						: typeof value.input_audio?.url === "string"
+							? value.input_audio.url
+							: null;
+		if (!urlValue) return null;
+
+		return {
+			type: "audio",
+			source: "url",
+			data: urlValue,
+			...(format ? { format } : {}),
+		} as IRContentPart;
+	};
+
+	const extractInlineAudios = (value: any): IRContentPart[] => {
+		if (!Array.isArray(value)) return [];
+		const out: IRContentPart[] = [];
+		for (const part of value) {
+			const audioPart = toInlineAudioPart(part);
+			if (audioPart) out.push(audioPart);
+		}
+		return out;
+	};
+
 	const extractChoiceContent = (content: any): string => {
 		if (typeof content === "string") return content;
 		if (Array.isArray(content)) {
@@ -375,6 +441,8 @@ export function openAIChatToIR(
 		}
 		contentParts.push(...extractInlineImages(choice.message?.content));
 		contentParts.push(...extractInlineImages(choice.message?.images));
+		contentParts.push(...extractInlineAudios(choice.message?.content));
+		contentParts.push(...extractInlineAudios(choice.message?.audios));
 
 		choices.push({
 			index: choice.index || 0,
@@ -400,15 +468,35 @@ export function openAIChatToIR(
 		model,
 		provider,
 		choices,
-		usage: json.usage
-			? {
-					inputTokens: json.usage.prompt_tokens || 0,
-					outputTokens: json.usage.completion_tokens || 0,
-					totalTokens: json.usage.total_tokens || 0,
-					// Support both direct reasoning_tokens and nested completion_tokens_details.reasoning_tokens (MiniMax format)
-					reasoningTokens: json.usage.reasoning_tokens ?? json.usage.completion_tokens_details?.reasoning_tokens,
-			  }
-			: undefined,
+		usage: normalizeChatUsage(json.usage),
+	};
+}
+
+function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
+	if (!usage || typeof usage !== "object") return undefined;
+
+	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
+	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
+	const cachedInputTokens = inputDetails?.cached_tokens;
+	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
+	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
+
+	return {
+		inputTokens: usage.prompt_tokens || 0,
+		outputTokens: usage.completion_tokens || 0,
+		totalTokens: usage.total_tokens ?? ((usage.prompt_tokens || 0) + (usage.completion_tokens || 0)),
+		cachedInputTokens,
+		cachedReadTokensAreSubsetOfInput,
+		reasoningTokens,
+		_ext: {
+			inputImageTokens: inputDetails?.input_images,
+			inputAudioTokens: inputDetails?.input_audio,
+			inputVideoTokens: inputDetails?.input_videos,
+			outputImageTokens: outputDetails?.output_images,
+			outputAudioTokens: outputDetails?.output_audio,
+			outputVideoTokens: outputDetails?.output_videos,
+			cachedWriteTokens: outputDetails?.cached_tokens,
+		},
 	};
 }
 

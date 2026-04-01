@@ -207,7 +207,10 @@ function encodeUsage(
 		cache_read_input_tokens: anyUsage?.cachedInputTokens ?? null,
 		input_tokens: inputTokens ?? 0,
 		output_tokens: outputTokens ?? 0,
-		server_tool_use: null,
+		server_tool_use:
+			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
+				? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
+				: null,
 		service_tier: tier,
 	};
 }

@@ -1,9 +1,8 @@
 // src/app/(dashboard)/models/[modelId]/(data)/model/gateway/page.tsx
 import { buildMetadata } from "@/lib/seo";
-import ModelGateway from "@/components/(data)/model/quickstart/ModelGateway";
+import { ModelQuickstartSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import getModelGatewayMetadata, {
-	getModelGatewayMetadataCached,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { Metadata } from "next";
 import {
@@ -11,7 +10,6 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
-import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import { permanentRedirect } from "next/navigation";
 
@@ -99,45 +97,10 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "quickstart"));
 	}
 	const modelId = canonicalModelId;
-	const model = await fetchModel(modelId, includeHidden);
-
-	if (!model) {
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="quickstart"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
-
-	let metadata: ModelGatewayMetadata;
-	try {
-		metadata = (await getModelGatewayMetadataCached(
-			modelId,
-			includeHidden
-		)) as ModelGatewayMetadata;
-	} catch (error) {
-		console.warn("[quickstart] failed to load model gateway metadata", {
-			modelId,
-			error,
-		});
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="quickstart"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="quickstart" includeHidden={includeHidden}>
-			<ModelGateway metadata={metadata} />
+			<ModelQuickstartSection modelId={modelId} includeHidden={includeHidden} />
 		</ModelDetailShell>
 	);
 }

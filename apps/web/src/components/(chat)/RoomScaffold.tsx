@@ -70,14 +70,14 @@ function RoomSidebarDatabaseButton() {
 		<Button
 			variant="ghost"
 			asChild
-			className="h-8 min-w-0 w-full flex-1 justify-start pr-2 truncate group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+			className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
 			aria-label="Database"
 		>
 			<Link
 				href="/"
-				className="group/db flex w-full min-w-0 items-center group-data-[collapsible=icon]:justify-center"
+				className="group/db flex w-full min-w-0 items-center gap-2 group-data-[collapsible=icon]:justify-center"
 			>
-				<Database className="mr-2 h-4 w-4 shrink-0 group-data-[collapsible=icon]:mr-0" />
+				<Database className="h-4 w-4 shrink-0" />
 				<span className="truncate group-data-[collapsible=icon]:hidden">Database</span>
 			</Link>
 		</Button>

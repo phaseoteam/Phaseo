@@ -32,6 +32,47 @@ function normalizeFormKey(key: string): { key: string; array: boolean } {
     return { key, array: false };
 }
 
+function toTrimmedString(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeBoundedString(value: unknown, maxLength: number): string | null {
+    const trimmed = toTrimmedString(value);
+    if (!trimmed) return null;
+    return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function normalizeTraceObject(value: unknown, maxBytes = 16_384): Record<string, unknown> | null {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const obj = value as Record<string, unknown>;
+    const entries = Object.entries(obj).filter(([key]) => key.trim().length > 0);
+    if (entries.length === 0) return null;
+
+    const out: Record<string, unknown> = {};
+    for (const [rawKey, rawValue] of entries) {
+        const key = rawKey.trim().slice(0, 128);
+        if (!key) continue;
+        out[key] = rawValue;
+    }
+    if (Object.keys(out).length === 0) return null;
+
+    try {
+        const encoded = JSON.stringify(out);
+        if (!encoded) return null;
+        if (encoded.length <= maxBytes) return out;
+        return {
+            _truncated: true,
+            _original_size_bytes: encoded.length,
+        };
+    } catch {
+        return {
+            _invalid_trace_payload: true,
+        };
+    }
+}
+
 function maybeParseJsonFormValue(key: string, value: string): unknown {
     if (!FORM_JSON_FIELDS.has(key)) return value;
     const trimmed = value.trim();
@@ -270,6 +311,10 @@ export function makeMeta(input: {
     requestId: string;
     stream: boolean;
     req: Request;
+    rawBody?: Record<string, unknown> | null;
+    authMethod?: "api_key" | "oauth";
+    oauthClientId?: string | null;
+    oauthUserId?: string | null;
     returnMeta?: boolean;
     debug?: DebugOptions;
     providerCapabilitiesBeta?: boolean;
@@ -283,7 +328,23 @@ export function makeMeta(input: {
     beforeContextCacheWriteMs?: number | null;
     beforeContextFallbackRemap?: boolean | null;
 }): RequestMeta {
-    const { referer, appTitle, appId, appName } = readAttributionHeaders(input.req);
+    const { referer, appTitle, appId, appName, sessionId: sessionIdHeader, userId: userIdHeader } = readAttributionHeaders(input.req);
+    const rawBody = (input.rawBody && typeof input.rawBody === "object")
+        ? input.rawBody
+        : {};
+    const requestUserId = normalizeBoundedString(
+        rawBody?.user ??
+        rawBody?.user_id ??
+        userIdHeader,
+        128,
+    );
+    const sessionId = normalizeBoundedString(
+        rawBody?.session_id ??
+        rawBody?.sessionId ??
+        sessionIdHeader,
+        128,
+    );
+    const trace = normalizeTraceObject(rawBody?.trace);
     const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
     const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
@@ -314,6 +375,9 @@ export function makeMeta(input: {
         apiKeyId: input.apiKeyId,
         apiKeyRef: input.apiKeyRef,
         apiKeyKid: input.apiKeyKid,
+        authMethod: input.authMethod ?? "api_key",
+        oauthClientId: input.oauthClientId ?? null,
+        oauthUserId: input.oauthUserId ?? null,
         requestId: input.requestId,
         stream: input.stream,
         debug,
@@ -335,6 +399,9 @@ export function makeMeta(input: {
         appTitle,
         appId,
         appName,
+        requestUserId,
+        sessionId,
+        trace,
         requestMethod: input.req.method ?? null,
         accept,
         requestUrl,

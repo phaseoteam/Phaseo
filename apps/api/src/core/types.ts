@@ -35,10 +35,16 @@ export type RequestMeta = {
     apiKeyId: string;             // Internal UUID for the gateway key
     apiKeyRef: string;            // Human-readable reference, e.g. kid_xxx
     apiKeyKid: string;            // Raw kid from token
+    authMethod?: "api_key" | "oauth";
+    oauthClientId?: string | null;
+    oauthUserId?: string | null;
     referer?: string | null;
     appTitle?: string | null;
     appId?: string | null;
     appName?: string | null;
+    requestUserId?: string | null;
+    sessionId?: string | null;
+    trace?: Record<string, unknown> | null;
     requestMethod?: string | null;
     accept?: string | null;
     requestUrl?: string | null;
@@ -132,7 +138,7 @@ export type GatewayCompletionsRequest = {
     stream?: boolean;
     tools?: any[];
     response_format?: { type: 'json_object' };
-    modalities?: Array<"text" | "image">;
+    modalities?: Array<"text" | "image" | "audio">;
 };
 
 export type GatewayCompletionsResponse = {
@@ -159,6 +165,14 @@ export type GatewayCompletionsChoice = {
                 url: string;
             };
             mime_type?: string;
+        }>;
+        audios?: Array<{
+            type: "audio_url";
+            audio_url: {
+                url: string;
+            };
+            mime_type?: string;
+            format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
         }>;
         tool_calls?: Array<{
             id: string;
@@ -211,6 +225,10 @@ export type GatewayUsage = {
     reasoning_tokens?: number;
 
     cached_write_text_tokens?: number;
+
+    server_tool_use?: {
+        datetime_requests?: number;
+    };
 
 }
 

@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createAdminClient } from "../../apps/web/src/utils/supabase/admin";
 import { getProviderDiscoveryRule } from "./providers/discovery-policy";
 import type { ProviderDefinition, ProviderModel } from "./providers/_shared";
-import { getMissingEnvVars, sortKeysDeep } from "./providers/_shared";
+import { asRecord, getMissingEnvVars, sortKeysDeep } from "./providers/_shared";
 
 type ProviderSnapshot = {
     providerId: string;
@@ -28,6 +28,22 @@ type ProviderDiff = {
     added: string[];
     removed: string[];
     changed: string[];
+};
+
+type ProviderChangeSet = ProviderDiff & {
+    platformId: string;
+    platformName: string;
+};
+
+type ProviderChangeEntry = {
+    id: string;
+    ts: string;
+    action: "create" | "update" | "delete";
+    platformId: string;
+    platformName: string;
+    providerId: string;
+    providerName: string;
+    modelId: string;
 };
 
 type ProviderRunResult =
@@ -94,6 +110,27 @@ const PROVIDERS_DIR = path.join(SCRIPT_DIR, "providers");
 const STATE_DIR = path.join(SCRIPT_DIR, "state");
 const STATE_PATH = path.join(STATE_DIR, "provider-model-snapshots.json");
 const REPORT_PATH = path.join(STATE_DIR, "last-run-report.json");
+const CHANGE_FEED_PATH = path.join(STATE_DIR, "provider-change-feed.jsonl");
+const MAX_CHANGE_FEED_ENTRIES = 5000;
+const MAX_DISCORD_EVENT_LINES = 25;
+const UPSERT_BATCH_SIZE = 500;
+
+type RunStatus = "running" | "completed" | "completed_with_errors" | "failed";
+
+type SeenModelUpsertRow = {
+    provider_id: string;
+    provider_name: string;
+    model_id: string;
+    model_details: Record<string, unknown>;
+    pricing_details: unknown;
+    last_seen_at: string;
+    last_run_id: string;
+};
+
+type SeenModelDeleteRow = {
+    provider_id: string;
+    model_id: string;
+};
 
 type ApiProviderModelAllowlistRow = {
     provider_id: string | null;
@@ -336,8 +373,12 @@ function diffSnapshots(previous: ProviderSnapshot | undefined, current: Provider
 }
 
 function filterDiffByAllowlist(diff: ProviderDiff | null, allowlist: Set<string> | undefined): ProviderDiff | null {
-    if (!diff || !allowlist || allowlist.size === 0) {
+    if (!diff) {
         return null;
+    }
+
+    if (!allowlist || allowlist.size === 0) {
+        return diff;
     }
 
     const filterIds = (ids: string[]): string[] => ids.filter((id) => allowlist.has(canonicalModelKey(id)));
@@ -356,6 +397,170 @@ function filterDiffByAllowlist(diff: ProviderDiff | null, allowlist: Set<string>
         removed,
         changed,
     };
+}
+
+function extractPricingDetails(modelPayload: Record<string, unknown>): unknown {
+    const candidateKeys = ["pricing", "prices", "cost", "costs", "billing", "rates"];
+    for (const key of candidateKeys) {
+        if (key in modelPayload) {
+            return sortKeysDeep(modelPayload[key]);
+        }
+    }
+    return null;
+}
+
+async function insertRunStart(runId: string, startedAtIso: string, providersTotal: number): Promise<void> {
+    const client = createAdminClient();
+    const { error } = await client.from("model_discovery_runs").insert({
+        id: runId,
+        trigger: "scheduled",
+        source: "github-actions:check-new-models",
+        scheduled_at: startedAtIso,
+        status: "running",
+        started_at: startedAtIso,
+        providers_total: providersTotal,
+    });
+
+    if (error) {
+        throw new Error(error.message || "Failed to insert model_discovery_runs start row");
+    }
+}
+
+async function updateRunFinish(
+    runId: string,
+    status: RunStatus,
+    summary: {
+        startedAtIso: string;
+        finishedAtIso: string;
+        providersTotal: number;
+        providersSuccess: number;
+        providersSkipped: number;
+        providersError: number;
+        changesCount: number;
+        staleModelsDeleted: number;
+        reportPath: string;
+        changeFeedPath: string;
+        changeFeedNewEntries: number;
+    },
+    errorMessage?: string
+): Promise<void> {
+    const client = createAdminClient();
+    const payload = {
+        status,
+        started_at: summary.startedAtIso,
+        finished_at: summary.finishedAtIso,
+        providers_total: summary.providersTotal,
+        providers_success: summary.providersSuccess,
+        providers_skipped: summary.providersSkipped,
+        providers_error: summary.providersError,
+        changes_count: summary.changesCount,
+        stale_models_deleted: summary.staleModelsDeleted,
+        summary: {
+            reportPath: summary.reportPath,
+            changeFeedPath: summary.changeFeedPath,
+            changeFeedNewEntries: summary.changeFeedNewEntries,
+        },
+        error: errorMessage ?? null,
+    };
+    const { error } = await client.from("model_discovery_runs").update(payload).eq("id", runId);
+
+    if (error) {
+        throw new Error(error.message || "Failed to update model_discovery_runs finish row");
+    }
+}
+
+async function loadSeenModelIdsByProvider(providerIds: string[]): Promise<Map<string, Set<string>>> {
+    const out = new Map<string, Set<string>>();
+    for (const providerId of providerIds) {
+        out.set(providerId, new Set<string>());
+    }
+
+    if (providerIds.length === 0) {
+        return out;
+    }
+
+    const client = createAdminClient();
+    const pageSize = 1000;
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await client
+            .from("model_discovery_seen_models")
+            .select("provider_id, model_id")
+            .in("provider_id", providerIds)
+            .range(from, from + pageSize - 1);
+
+        if (error) {
+            throw new Error(error.message || "Failed to load model_discovery_seen_models");
+        }
+
+        const rows = (data ?? []) as Array<{ provider_id: string | null; model_id: string | null }>;
+        if (rows.length === 0) {
+            break;
+        }
+
+        for (const row of rows) {
+            if (!row.provider_id || !row.model_id) continue;
+            const bucket = out.get(row.provider_id);
+            if (!bucket) continue;
+            bucket.add(row.model_id);
+        }
+
+        if (rows.length < pageSize) {
+            break;
+        }
+
+        from += pageSize;
+    }
+
+    return out;
+}
+
+async function upsertSeenModels(rows: SeenModelUpsertRow[]): Promise<void> {
+    if (rows.length === 0) return;
+
+    const client = createAdminClient();
+    for (let index = 0; index < rows.length; index += UPSERT_BATCH_SIZE) {
+        const batch = rows.slice(index, index + UPSERT_BATCH_SIZE);
+        const { error } = await client
+            .from("model_discovery_seen_models")
+            .upsert(batch, { onConflict: "provider_id,model_id" });
+        if (error) {
+            throw new Error(error.message || "Failed to upsert model_discovery_seen_models");
+        }
+    }
+}
+
+async function deleteSeenModels(rows: SeenModelDeleteRow[]): Promise<number> {
+    if (rows.length === 0) return 0;
+
+    const client = createAdminClient();
+    const grouped = new Map<string, string[]>();
+
+    for (const row of rows) {
+        const values = grouped.get(row.provider_id) ?? [];
+        values.push(row.model_id);
+        grouped.set(row.provider_id, values);
+    }
+
+    let deletedCount = 0;
+    for (const [providerId, modelIds] of grouped.entries()) {
+        for (let index = 0; index < modelIds.length; index += UPSERT_BATCH_SIZE) {
+            const batch = modelIds.slice(index, index + UPSERT_BATCH_SIZE);
+            const { data, error } = await client
+                .from("model_discovery_seen_models")
+                .delete()
+                .eq("provider_id", providerId)
+                .in("model_id", batch)
+                .select("model_id");
+            if (error) {
+                throw new Error(error.message || "Failed to delete from model_discovery_seen_models");
+            }
+            deletedCount += Array.isArray(data) ? data.length : 0;
+        }
+    }
+
+    return deletedCount;
 }
 
 async function loadProviders(): Promise<ProviderDefinition[]> {
@@ -413,13 +618,83 @@ function limitList(values: string[], maxItems = 8): string {
     return `${values.slice(0, maxItems).join(", ")}, +${remaining} more`;
 }
 
-function buildDiscordMessage(changes: ProviderDiff[]): string {
-    const header = `Model catalog changes detected across ${changes.length} provider${changes.length === 1 ? "" : "s"}.`;
+function readChangeFeed(filePath: string): ProviderChangeEntry[] {
+    if (!fs.existsSync(filePath)) {
+        return [];
+    }
+
+    try {
+        const content = fs.readFileSync(filePath, "utf-8");
+        return content
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => JSON.parse(line) as ProviderChangeEntry);
+    } catch {
+        return [];
+    }
+}
+
+function writeChangeFeed(filePath: string, entries: ProviderChangeEntry[]): void {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    const lines = entries.map((entry) => JSON.stringify(entry));
+    fs.writeFileSync(filePath, lines.length > 0 ? `${lines.join("\n")}\n` : "", "utf-8");
+}
+
+function buildProviderChangeEntries(changes: ProviderChangeSet[], timestamp: string): ProviderChangeEntry[] {
+    const out: ProviderChangeEntry[] = [];
+
+    for (const change of changes) {
+        const append = (action: ProviderChangeEntry["action"], modelIds: string[]) => {
+            for (const modelId of modelIds) {
+                out.push({
+                    id: `${timestamp}:${change.providerId}:${action}:${modelId}`,
+                    ts: timestamp,
+                    action,
+                    platformId: change.platformId,
+                    platformName: change.platformName,
+                    providerId: change.providerId,
+                    providerName: change.providerName,
+                    modelId,
+                });
+            }
+        };
+
+        append("create", change.added);
+        append("delete", change.removed);
+        append("update", change.changed);
+    }
+
+    return out;
+}
+
+function buildDiscordMessage(changes: ProviderChangeSet[], entries: ProviderChangeEntry[]): string {
+    const cloudCount = new Set(changes.map((change) => change.platformId)).size;
+    const header =
+        `Upstream model catalog changes detected: ${entries.length} event${entries.length === 1 ? "" : "s"} ` +
+        `across ${changes.length} provider${changes.length === 1 ? "" : "s"} and ${cloudCount} cloud platform${cloudCount === 1 ? "" : "s"}.`;
     const lines = [header, ""];
+
+    if (entries.length > 0) {
+        lines.push("Recent events:");
+        const visibleEntries = entries.slice(0, MAX_DISCORD_EVENT_LINES);
+        for (const entry of visibleEntries) {
+            const actionSymbol = entry.action === "create" ? "+" : entry.action === "delete" ? "-" : "~";
+            lines.push(
+                `  ${actionSymbol} [${entry.platformName}] ${entry.providerName} (${entry.providerId}) :: ${entry.modelId}`
+            );
+        }
+        if (entries.length > visibleEntries.length) {
+            lines.push(`  ...and ${entries.length - visibleEntries.length} more event(s)`);
+        }
+        lines.push("");
+    }
+
+    lines.push("Provider summary:");
 
     for (const change of changes) {
         lines.push(
-            `${change.providerName} (${change.providerId}): +${change.added.length} / -${change.removed.length} / ~${change.changed.length} (${change.previousCount} -> ${change.currentCount})`
+            `- [${change.platformName}] ${change.providerName} (${change.providerId}): +${change.added.length} / -${change.removed.length} / ~${change.changed.length} (${change.previousCount} -> ${change.currentCount})`
         );
         if (change.added.length > 0) lines.push(`  Added: ${limitList(change.added)}`);
         if (change.removed.length > 0) lines.push(`  Removed: ${limitList(change.removed)}`);
@@ -443,11 +718,19 @@ async function sendDiscordWebhook(message: string): Promise<void> {
     }
 
     const userId = process.env.DISCORD_USER_ID;
-    const content = userId ? `<@${userId}>\n${message}` : message;
+    const roleId = process.env.DISCORD_ROLE_ID;
+    const mentions: string[] = [];
+    if (roleId) mentions.push(`<@&${roleId}>`);
+    if (userId) mentions.push(`<@${userId}>`);
+    const content = mentions.length > 0 ? `${mentions.join(" ")}\n${message}` : message;
     const payload: Record<string, unknown> = { content };
 
-    if (userId) {
-        payload.allowed_mentions = { users: [userId] };
+    if (userId || roleId) {
+        payload.allowed_mentions = {
+            parse: [],
+            users: userId ? [userId] : [],
+            roles: roleId ? [roleId] : [],
+        };
     }
 
     const response = await fetch(webhookUrl, {
@@ -474,6 +757,8 @@ async function main(): Promise<void> {
     };
 
     const providers = await loadProviders();
+    const runId = crypto.randomUUID();
+    const runStartedAtIso = nowIso();
     const providerReadiness = providers.map((provider) => {
         const discoveryRule = getProviderDiscoveryRule(provider.id);
         const isInactiveByPolicy = !discoveryRule || !discoveryRule.active;
@@ -481,6 +766,8 @@ async function main(): Promise<void> {
         return {
             providerId: provider.id,
             providerName: provider.name,
+            platformId: discoveryRule?.platformId ?? provider.id,
+            platformName: discoveryRule?.platformName ?? provider.name,
             isInactiveByPolicy,
             inactiveReason:
                 discoveryRule?.reason ??
@@ -500,139 +787,273 @@ async function main(): Promise<void> {
     }
     const missingKeys = Array.from(missingKeyTotals.keys()).sort((a, b) => a.localeCompare(b));
     const results: ProviderRunResult[] = [];
-    const changes: ProviderDiff[] = [];
+    const changes: ProviderChangeSet[] = [];
+    const upsertRows: SeenModelUpsertRow[] = [];
+    const deleteRows: SeenModelDeleteRow[] = [];
+    let staleModelsDeleted = 0;
+    let runChangeEntries: ProviderChangeEntry[] = [];
+    let mergedFeed: ProviderChangeEntry[] = [];
+    let notificationError: string | null = null;
+    let finishedAtIso = runStartedAtIso;
     const readinessById = new Map<string, string[]>(providerReadiness.map((provider) => [provider.providerId, provider.missingEnv]));
+    const platformInfoByProviderId = new Map(
+        providerReadiness.map((provider) => [
+            provider.providerId,
+            {
+                platformId: provider.platformId,
+                platformName: provider.platformName,
+            },
+        ])
+    );
     const inactiveById = new Map<string, string | undefined>(
         providerReadiness
             .filter((provider) => provider.isInactiveByPolicy)
             .map((provider) => [provider.providerId, provider.inactiveReason])
     );
+    const seenModelIdsByProvider = await loadSeenModelIdsByProvider(providers.map((provider) => provider.id));
+    await insertRunStart(runId, runStartedAtIso, providers.length);
 
-    for (const provider of providers) {
-        if (inactiveById.has(provider.id)) {
-            const inactiveReason = inactiveById.get(provider.id);
-            results.push({
-                providerId: provider.id,
-                providerName: provider.name,
-                status: "skipped",
-                reason: `Inactive by policy: ${inactiveReason || "Provider disabled until a stable models endpoint is available."}`,
-            });
-            continue;
+    try {
+        for (const provider of providers) {
+            if (inactiveById.has(provider.id)) {
+                const inactiveReason = inactiveById.get(provider.id);
+                results.push({
+                    providerId: provider.id,
+                    providerName: provider.name,
+                    status: "skipped",
+                    reason: `Inactive by policy: ${inactiveReason || "Provider disabled until a stable models endpoint is available."}`,
+                });
+                continue;
+            }
+
+            const missingEnv = readinessById.get(provider.id) ?? getMissingEnvVars(provider.requiredEnv);
+            if (missingEnv.length > 0) {
+                results.push({
+                    providerId: provider.id,
+                    providerName: provider.name,
+                    status: "skipped",
+                    reason: `Missing env vars: ${missingEnv.join(", ")}`,
+                });
+                continue;
+            }
+
+            const started = Date.now();
+            try {
+                const models = await provider.fetchModels();
+                const fetchedAt = nowIso();
+                const currentSnapshot: ProviderSnapshot = {
+                    providerId: provider.id,
+                    providerName: provider.name,
+                    fetchedAt,
+                    modelCount: models.length,
+                    models: normalizeProviderModels(models),
+                };
+
+                const previousSnapshot = previousState.providers[provider.id];
+                const rawDiff = diffSnapshots(previousSnapshot, currentSnapshot);
+                const allowlist = provider.id === "anthropic" ? undefined : apiModelAllowlistByProvider.get(provider.id);
+                const filteredDiff = filterDiffByAllowlist(rawDiff, allowlist);
+                if (filteredDiff) {
+                    const platformInfo = platformInfoByProviderId.get(provider.id) ?? {
+                        platformId: provider.id,
+                        platformName: provider.name,
+                    };
+                    changes.push({
+                        ...filteredDiff,
+                        platformId: platformInfo.platformId,
+                        platformName: platformInfo.platformName,
+                    });
+                }
+
+                const currentModelIds = new Set(models.map((model) => model.id));
+                const previousSeenIds = seenModelIdsByProvider.get(provider.id) ?? new Set<string>();
+                for (const model of models) {
+                    const modelDetails = asRecord(model.payload) ?? { value: model.payload };
+                    upsertRows.push({
+                        provider_id: provider.id,
+                        provider_name: provider.name,
+                        model_id: model.id,
+                        model_details: sortKeysDeep(modelDetails) as Record<string, unknown>,
+                        pricing_details: extractPricingDetails(modelDetails),
+                        last_seen_at: fetchedAt,
+                        last_run_id: runId,
+                    });
+                }
+                for (const previousId of previousSeenIds) {
+                    if (!currentModelIds.has(previousId)) {
+                        deleteRows.push({
+                            provider_id: provider.id,
+                            model_id: previousId,
+                        });
+                    }
+                }
+                seenModelIdsByProvider.set(provider.id, currentModelIds);
+
+                nextState.providers[provider.id] = currentSnapshot;
+
+                results.push({
+                    providerId: provider.id,
+                    providerName: provider.name,
+                    status: "success",
+                    durationMs: Date.now() - started,
+                    modelCount: models.length,
+                    diff: filteredDiff,
+                });
+            } catch (error) {
+                const reason = error instanceof Error ? error.message : String(error);
+                results.push({
+                    providerId: provider.id,
+                    providerName: provider.name,
+                    status: "error",
+                    durationMs: Date.now() - started,
+                    reason,
+                });
+            }
         }
 
-        const missingEnv = readinessById.get(provider.id) ?? getMissingEnvVars(provider.requiredEnv);
-        if (missingEnv.length > 0) {
-            results.push({
-                providerId: provider.id,
-                providerName: provider.name,
-                status: "skipped",
-                reason: `Missing env vars: ${missingEnv.join(", ")}`,
-            });
-            continue;
+        writeJson(STATE_PATH, nextState);
+        await upsertSeenModels(upsertRows);
+        staleModelsDeleted = await deleteSeenModels(deleteRows);
+
+        const runTimestamp = nowIso();
+        runChangeEntries = buildProviderChangeEntries(changes, runTimestamp);
+        const existingFeed = readChangeFeed(CHANGE_FEED_PATH);
+        const seenFeedIds = new Set<string>();
+        mergedFeed = [];
+        for (const entry of [...runChangeEntries, ...existingFeed]) {
+            if (seenFeedIds.has(entry.id)) continue;
+            seenFeedIds.add(entry.id);
+            mergedFeed.push(entry);
+            if (mergedFeed.length >= MAX_CHANGE_FEED_ENTRIES) break;
         }
+        writeChangeFeed(CHANGE_FEED_PATH, mergedFeed);
 
-        const started = Date.now();
-        try {
-            const models = await provider.fetchModels();
-            const currentSnapshot: ProviderSnapshot = {
-                providerId: provider.id,
-                providerName: provider.name,
-                fetchedAt: nowIso(),
-                modelCount: models.length,
-                models: normalizeProviderModels(models),
-            };
+        const report = {
+            generatedAt: nowIso(),
+            runId,
+            statePath: path.relative(process.cwd(), STATE_PATH),
+            changeFeedPath: path.relative(process.cwd(), CHANGE_FEED_PATH),
+            changeFeedTotalEntries: mergedFeed.length,
+            changeFeedNewEntries: runChangeEntries.length,
+            providerCount: providers.length,
+            staleModelsDeleted,
+            results,
+            changes,
+        };
+        writeJson(REPORT_PATH, report);
 
-            const previousSnapshot = previousState.providers[provider.id];
-            const rawDiff = diffSnapshots(previousSnapshot, currentSnapshot);
-            const filteredDiff = filterDiffByAllowlist(rawDiff, apiModelAllowlistByProvider.get(provider.id));
-            if (filteredDiff) changes.push(filteredDiff);
-
-            nextState.providers[provider.id] = currentSnapshot;
-
-            results.push({
-                providerId: provider.id,
-                providerName: provider.name,
-                status: "success",
-                durationMs: Date.now() - started,
-                modelCount: models.length,
-                diff: filteredDiff,
-            });
-        } catch (error) {
-            const reason = error instanceof Error ? error.message : String(error);
-            results.push({
-                providerId: provider.id,
-                providerName: provider.name,
-                status: "error",
-                durationMs: Date.now() - started,
-                reason,
-            });
+        console.log(`[model-discovery] Provider env readiness: ${readyCount}/${providers.length} ready`);
+        if (inactiveProviders.length > 0) {
+            const inactiveSummary = inactiveProviders
+                .slice(0, 12)
+                .map((provider) => `${provider.providerId}${provider.inactiveReason ? ` (${provider.inactiveReason})` : ""}`)
+                .join(", ");
+            console.log(`[model-discovery] Inactive providers by policy (${inactiveProviders.length}): ${inactiveSummary}`);
+            if (inactiveProviders.length > 12) {
+                console.log(`[model-discovery] ...and ${inactiveProviders.length - 12} more inactive providers`);
+            }
         }
-    }
-
-    writeJson(STATE_PATH, nextState);
-
-    const report = {
-        generatedAt: nowIso(),
-        statePath: path.relative(process.cwd(), STATE_PATH),
-        providerCount: providers.length,
-        results,
-        changes,
-    };
-    writeJson(REPORT_PATH, report);
-
-    console.log(`[model-discovery] Provider env readiness: ${readyCount}/${providers.length} ready`);
-    if (inactiveProviders.length > 0) {
-        const inactiveSummary = inactiveProviders
-            .slice(0, 12)
-            .map((provider) => `${provider.providerId}${provider.inactiveReason ? ` (${provider.inactiveReason})` : ""}`)
-            .join(", ");
-        console.log(`[model-discovery] Inactive providers by policy (${inactiveProviders.length}): ${inactiveSummary}`);
-        if (inactiveProviders.length > 12) {
-            console.log(`[model-discovery] ...and ${inactiveProviders.length - 12} more inactive providers`);
-        }
-    }
-    if (missingEnvProviders.length > 0) {
-        const missingEnvSummary = missingEnvProviders
-            .slice(0, 12)
-            .map((provider) => `${provider.providerId} (${provider.missingEnv.join(", ")})`)
-            .join(", ");
-        console.log(
-            `[model-discovery] Missing env vars for ${missingEnvProviders.length} provider(s): ${missingEnvSummary}`
-        );
-        if (missingEnvProviders.length > 12) {
-            console.log(`[model-discovery] ...and ${missingEnvProviders.length - 12} more`);
-        }
-        console.log(`[model-discovery] Missing env keys (${missingKeys.length}): ${missingKeys.join(", ")}`);
-    }
-
-    console.log(`[model-discovery] Providers loaded: ${providers.length}`);
-    console.log(
-        `[model-discovery] API model allowlist loaded from data_api_provider_models for ${apiModelAllowlistByProvider.size} provider(s).`
-    );
-    if (loadedEnvFiles.length > 0) {
-        console.log(`[model-discovery] Loaded local env files: ${loadedEnvFiles.join(", ")}`);
-    }
-    for (const result of results) {
-        if (result.status === "success") {
-            const suffix = result.diff ? `, changes: +${result.diff.added.length}/-${result.diff.removed.length}/~${result.diff.changed.length}` : "";
+        if (missingEnvProviders.length > 0) {
+            const missingEnvSummary = missingEnvProviders
+                .slice(0, 12)
+                .map((provider) => `${provider.providerId} (${provider.missingEnv.join(", ")})`)
+                .join(", ");
             console.log(
-                `[model-discovery] ${result.providerId}: fetched ${result.modelCount} model(s) in ${result.durationMs}ms${suffix}`
+                `[model-discovery] Missing env vars for ${missingEnvProviders.length} provider(s): ${missingEnvSummary}`
             );
-        } else if (result.status === "skipped") {
-            console.log(`[model-discovery] ${result.providerId}: skipped (${result.reason})`);
-        } else {
-            console.log(`[model-discovery] ${result.providerId}: error after ${result.durationMs}ms (${result.reason})`);
+            if (missingEnvProviders.length > 12) {
+                console.log(`[model-discovery] ...and ${missingEnvProviders.length - 12} more`);
+            }
+            console.log(`[model-discovery] Missing env keys (${missingKeys.length}): ${missingKeys.join(", ")}`);
         }
-    }
 
-    if (changes.length === 0) {
-        console.log("[model-discovery] No model changes detected.");
-        return;
-    }
+        console.log(`[model-discovery] Providers loaded: ${providers.length}`);
+        console.log(
+            `[model-discovery] API model allowlist loaded from data_api_provider_models for ${apiModelAllowlistByProvider.size} provider(s).`
+        );
+        if (loadedEnvFiles.length > 0) {
+            console.log(`[model-discovery] Loaded local env files: ${loadedEnvFiles.join(", ")}`);
+        }
+        for (const result of results) {
+            if (result.status === "success") {
+                const suffix = result.diff ? `, changes: +${result.diff.added.length}/-${result.diff.removed.length}/~${result.diff.changed.length}` : "";
+                console.log(
+                    `[model-discovery] ${result.providerId}: fetched ${result.modelCount} model(s) in ${result.durationMs}ms${suffix}`
+                );
+            } else if (result.status === "skipped") {
+                console.log(`[model-discovery] ${result.providerId}: skipped (${result.reason})`);
+            } else {
+                console.log(`[model-discovery] ${result.providerId}: error after ${result.durationMs}ms (${result.reason})`);
+            }
+        }
 
-    const message = buildDiscordMessage(changes);
-    console.log(`[model-discovery] Changes detected in ${changes.length} provider(s). Sending Discord notification.`);
-    await sendDiscordWebhook(message);
+        if (changes.length === 0) {
+            console.log("[model-discovery] No model changes detected.");
+        } else {
+            const message = buildDiscordMessage(changes, runChangeEntries);
+            console.log(`[model-discovery] Changes detected in ${changes.length} provider(s). Sending Discord notification.`);
+            try {
+                await sendDiscordWebhook(message);
+            } catch (error) {
+                notificationError = error instanceof Error ? error.message : String(error);
+                console.error(`[model-discovery] Discord notification failed: ${notificationError}`);
+            }
+        }
+
+        finishedAtIso = nowIso();
+        const providersError = results.filter((result) => result.status === "error").length;
+        const changesCount = runChangeEntries.length;
+        const status: RunStatus = providersError > 0 || notificationError ? "completed_with_errors" : "completed";
+        await updateRunFinish(
+            runId,
+            status,
+            {
+                startedAtIso: runStartedAtIso,
+                finishedAtIso,
+                providersTotal: providers.length,
+                providersSuccess: results.filter((result) => result.status === "success").length,
+                providersSkipped: results.filter((result) => result.status === "skipped").length,
+                providersError,
+                changesCount,
+                staleModelsDeleted,
+                reportPath: path.relative(process.cwd(), REPORT_PATH),
+                changeFeedPath: path.relative(process.cwd(), CHANGE_FEED_PATH),
+                changeFeedNewEntries: runChangeEntries.length,
+            },
+            notificationError ?? undefined
+        );
+
+        if (notificationError) {
+            throw new Error(`Discord notification failed: ${notificationError}`);
+        }
+    } catch (error) {
+        finishedAtIso = nowIso();
+        const message = error instanceof Error ? error.message : String(error);
+        try {
+            await updateRunFinish(
+                runId,
+                "failed",
+                {
+                    startedAtIso: runStartedAtIso,
+                    finishedAtIso,
+                    providersTotal: providers.length,
+                    providersSuccess: results.filter((result) => result.status === "success").length,
+                    providersSkipped: results.filter((result) => result.status === "skipped").length,
+                    providersError: results.filter((result) => result.status === "error").length,
+                    changesCount: runChangeEntries.length,
+                    staleModelsDeleted,
+                    reportPath: path.relative(process.cwd(), REPORT_PATH),
+                    changeFeedPath: path.relative(process.cwd(), CHANGE_FEED_PATH),
+                    changeFeedNewEntries: runChangeEntries.length,
+                },
+                message
+            );
+        } catch (updateError) {
+            const updateMessage = updateError instanceof Error ? updateError.message : String(updateError);
+            console.error(`[model-discovery] Failed to mark run as failed: ${updateMessage}`);
+        }
+        throw error;
+    }
 }
 
 main().catch((error) => {

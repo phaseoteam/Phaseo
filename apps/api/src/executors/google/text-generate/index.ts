@@ -436,9 +436,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				currency: "USD",
 			};
 
-			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage, {
-				cachedReadTokensAreSubsetOfInput: true,
-			});
+			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage);
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
@@ -469,9 +467,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			currency: "USD",
 		};
 
-		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata, {
-			cachedReadTokensAreSubsetOfInput: true,
-		});
+		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
 		if (usageMeters) {
 			bill.usage = usageMeters;
 		}

@@ -4,3 +4,50 @@ openapi: "POST /chat/completions"
 description: "Generate chat-based completions using the OpenAI-compatible chat endpoint."
 ---
 
+## Server tools
+
+`/v1/chat/completions` supports regular function tools and one gateway-managed server tool:
+
+- `gateway:datetime`
+
+Web-search tool types are temporarily disabled at the gateway request layer.
+
+### Datetime example
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "stream": false,
+    "messages": [
+      { "role": "user", "content": "What is the current datetime in Europe/London?" }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "Europe/London" }
+      }
+    ],
+    "tool_choice": "auto"
+  }'
+```
+
+When a server tool is used, usage includes:
+
+```json
+{
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 34,
+    "total_tokens": 46,
+    "server_tool_use": {
+      "datetime_requests": 1
+    }
+  }
+}
+```
+
+Use `stream: false` when tools are present.
+

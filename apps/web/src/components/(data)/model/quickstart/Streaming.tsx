@@ -31,7 +31,7 @@ export default async function Streaming({
         const endpointUrl = `${BASE_URL}${endpointPath}`;
 
 	const curlStream = `# 1) Set your key
-export AI_STATS_API_KEY="sk-live-***"
+export AI_STATS_API_KEY="aistats_***"
 
 # 2) Send a streaming request
 curl -s ${endpointUrl} \\

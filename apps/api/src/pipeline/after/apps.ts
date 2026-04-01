@@ -21,10 +21,37 @@ function hostFromUrl(u?: string | null): string | null {
     try {
         const parsed = new URL(u);
         if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-        return parsed.host || null;
+        return parsed.hostname.replace(/^www\./i, "") || null;
     } catch {
         return null;
     }
+}
+
+function normalizeAppLabel(input?: string | null): string | null {
+    const trimmed = String(input ?? "").trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed
+        .toLowerCase()
+        .replace(/[?.!]+$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (
+        normalized === "unknown" ||
+        normalized === "unknown app" ||
+        normalized === "app" ||
+        normalized === "untitled" ||
+        normalized === "n/a" ||
+        normalized === "na" ||
+        normalized === "none" ||
+        normalized === "null" ||
+        normalized === "undefined"
+    ) {
+        return null;
+    }
+
+    return trimmed;
 }
 
 function slugify(s?: string | null): string {
@@ -71,6 +98,23 @@ function deriveAppKey(identityUrl: string): string {
     return identityUrl;
 }
 
+function deriveInferredTitle(args: {
+    appName?: string | null;
+    appTitle?: string | null;
+    identityUrl: string;
+    normalizedAppId?: string | null;
+}): string {
+    const explicitTitle =
+        normalizeAppLabel(args.appName) ?? normalizeAppLabel(args.appTitle);
+    if (explicitTitle) return explicitTitle;
+
+    const hostTitle = hostFromUrl(args.identityUrl);
+    if (hostTitle) return hostTitle;
+
+    if (args.normalizedAppId) return `App ${args.normalizedAppId}`;
+    return "App";
+}
+
 /**
  * Resolve or create an app row for logging.
  */
@@ -98,11 +142,12 @@ export async function ensureAppId(params: {
 
     const supabase = getSupabaseAdmin();
     const nowIso = new Date().toISOString();
-    const inferredTitle =
-        appName ??
-        appTitle ??
-        hostFromUrl(identityUrl) ??
-        (normalizedAppId ? `App ${normalizedAppId}` : "Unknown");
+    const inferredTitle = deriveInferredTitle({
+        appName,
+        appTitle,
+        identityUrl,
+        normalizedAppId,
+    });
     const payload = {
         team_id: teamId,
         app_key,

@@ -142,6 +142,32 @@ class _ModelsResource:
         return self._parent.validate_model(model_id)
 
 
+class _VideosResource:
+    def __init__(self, parent: "AIStats"):
+        self._parent = parent
+
+    def create(self, params: dict[str, Any]) -> dict[str, Any]:
+        return self._parent.generate_video(params)
+
+    def retrieve(self, video_id: str) -> dict[str, Any]:
+        return self._parent.get_video(video_id)
+
+    def content(self, video_id: str) -> bytes:
+        return self._parent.get_video_content(video_id)
+
+    def download_url(self, video_id: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._parent.get_video_download_url(video_id, params)
+
+    def cancel(self, video_id: str) -> dict[str, Any]:
+        return self._parent.cancel_video(video_id)
+
+    def delete(self, video_id: str) -> dict[str, Any]:
+        return self._parent.delete_video(video_id)
+
+    def list_models(self) -> dict[str, Any]:
+        return self._parent.list_video_models()
+
+
 KnownModelId: TypeAlias = models.ModelId
 ModelId: TypeAlias = Union[KnownModelId, str]
 AIStatsLogLevel: TypeAlias = Literal["info", "warn", "error"]
@@ -181,6 +207,40 @@ class ChatCompletionsParams(TypedDict, total=False):
     usage: NotRequired[bool]
 
 
+class VideoInputReference(TypedDict, total=False):
+    type: Literal["image", "video", "mask"]
+    role: Literal["first_frame", "last_frame", "reference", "source", "mask"]
+    reference_type: str
+    url: str
+    data: str
+    mime_type: str
+    asset_id: str
+
+
+class VideoCreateRequest(TypedDict, total=False):
+    model: ModelId
+    prompt: str
+    duration_seconds: int
+    size: str
+    resolution: str
+    aspect_ratio: str
+    seed: int
+    sample_count: int
+    negative_prompt: str
+    generate_audio: bool
+    enhance_prompt: bool
+    compression_quality: int
+    person_generation: str
+    resize_mode: str
+    input_references: list[VideoInputReference]
+    provider_params: dict[str, Any]
+    output: dict[str, Any]
+    webhook: dict[str, Any]
+    provider: dict[str, Any]
+    debug: dict[str, Any]
+    beta: dict[str, Any]
+
+
 class AIStats:
     def __init__(
         self,
@@ -210,6 +270,7 @@ class AIStats:
         self.batches = _BatchesResource(self)
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
+        self.videos = _VideosResource(self)
         self._coming_soon_message = "This endpoint is not yet supported in the SDK."
         self._devtools = TelemetryRecorder(devtools)
         self._enable_deprecation_warnings = enable_deprecation_warnings
@@ -496,10 +557,31 @@ class AIStats:
             )
             raise
 
-    def generate_video(self, request: models.VideoGenerationRequest) -> dict[str, Any]:
+    def generate_video(self, request: VideoCreateRequest | dict[str, Any]) -> dict[str, Any]:
         payload = dict(request)
         self._maybe_warn_for_payload(payload)
         return ops.createVideo(self._client, body=payload)
+
+    def get_video(self, video_id: str) -> dict[str, Any]:
+        return ops.getVideo(self._client, path={"video_id": video_id})
+
+    def get_video_content(self, video_id: str) -> bytes:
+        url = f"{self._base_url}/videos/{video_id}/content"
+        response = httpx.get(url, headers=self._headers, timeout=self._timeout)
+        response.raise_for_status()
+        return response.content
+
+    def get_video_download_url(self, video_id: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self.request("POST", f"/videos/{video_id}/download_url", params or {})
+
+    def cancel_video(self, video_id: str) -> dict[str, Any]:
+        return self.request("POST", f"/videos/{video_id}/cancel")
+
+    def delete_video(self, video_id: str) -> dict[str, Any]:
+        return ops.deleteVideo(self._client, path={"video_id": video_id})
+
+    def list_video_models(self) -> dict[str, Any]:
+        return self.request("GET", "/videos/models")
 
     def generate_transcription(self, body: dict[str, Any]) -> dict[str, Any]:
         payload = dict(body)

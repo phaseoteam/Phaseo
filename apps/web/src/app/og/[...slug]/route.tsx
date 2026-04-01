@@ -353,7 +353,7 @@ export async function GET(
 								maxWidth: 700,
 								fontFamily:
 									"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-								fontSize: 14,
+								fontSize: 28,
 								color: "#475569",
 								overflow: "hidden",
 								whiteSpace: "nowrap",

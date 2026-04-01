@@ -258,7 +258,7 @@ export async function fetchOrganizationColors(
 		return Array.from(new Set([id, base, dotToDash, withoutOrg])).filter(Boolean);
 	};
 
-	// 1) Direct internal model IDs -> org colors
+	// 1) Direct canonical model IDs -> org colors
 	const { data: models } = await supabase
 		.from("data_models")
 		.select(
@@ -289,31 +289,49 @@ export async function fetchOrganizationColors(
 		});
 	}
 
-	// 2) API model IDs -> internal model IDs -> org colors
+	// 2) API model IDs -> canonical model IDs -> org colors
 	const apiLookupIds = Array.from(
 		new Set(uniqueModelIds.flatMap((id) => normalizeApiId(id))),
 	);
 	const { data: providerModels } = await supabase
 		.from("data_api_provider_models")
-		.select(
-			`
-			api_model_id,
-			internal_model_id,
-			model:data_models!data_api_provider_models_internal_model_id_fkey(
-				model_id,
-				organisation:data_organisations!data_models_organisation_id_fkey(colour)
-			)
-		`
-		)
+		.select("api_model_id, model_id")
 		.in("api_model_id", apiLookupIds);
+
+	const providerModelIds = Array.from(
+		new Set((providerModels ?? []).map((pm: any) => pm?.model_id).filter(Boolean)),
+	);
+	const { data: providerCanonicalModels } = providerModelIds.length
+		? await supabase
+				.from("data_models")
+				.select(
+					`
+					model_id,
+					organisation:data_organisations!data_models_organisation_id_fkey(colour)
+				`,
+				)
+				.in("model_id", providerModelIds)
+		: { data: [] as any[] };
+
+	const colorByCanonicalModelId = new Map<string, string>();
+	for (const model of providerCanonicalModels ?? []) {
+		if (typeof model?.model_id !== "string") continue;
+		const color =
+			typeof model?.organisation?.colour === "string" ? model.organisation.colour : null;
+		if (!color) continue;
+		colorByCanonicalModelId.set(model.model_id, color);
+	}
 
 	const providerApiIds = new Set<string>();
 	if (providerModels) {
 		providerModels.forEach((pm: any) => {
-			const color = pm?.model?.organisation?.colour;
+			const canonicalId =
+				typeof pm?.model_id === "string" && pm.model_id.trim().length > 0
+					? pm.model_id
+					: null;
+			const color = canonicalId ? colorByCanonicalModelId.get(canonicalId) ?? null : null;
 			if (!color) return;
 			const apiId = pm.api_model_id ?? null;
-			const internalId = pm.internal_model_id ?? pm?.model?.model_id ?? null;
 
 			if (apiId) {
 				providerApiIds.add(apiId);
@@ -331,7 +349,7 @@ export async function fetchOrganizationColors(
 					}
 				}
 			}
-			if (internalId) colorMap.set(internalId, color);
+			if (canonicalId) colorMap.set(canonicalId, color);
 		});
 	}
 
@@ -477,53 +495,62 @@ export async function fetchModelMetadata(
 		});
 	}
 
-	// Resolve API model IDs -> internal model IDs -> data_models.name
+	// Resolve API model IDs -> canonical model IDs -> data_models.name
 	const apiLookupIds = Array.from(
 		new Set(uniqueModelIds.flatMap((id) => normalizeApiId(id))),
 	);
 	const { data: providerModels } = await supabase
 		.from("data_api_provider_models")
-		.select(
-			`
-			api_model_id,
-			internal_model_id,
-			model:data_models!data_api_provider_models_internal_model_id_fkey(
-				model_id,
-				name,
-				organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
-			)
-		`
-		)
+		.select("api_model_id, model_id")
 		.in("api_model_id", apiLookupIds);
+
+	const canonicalIds = Array.from(
+		new Set((providerModels ?? []).map((pm: any) => pm?.model_id).filter(Boolean)),
+	);
+	const { data: canonicalModels } = canonicalIds.length
+		? await supabase
+				.from("data_models")
+				.select(
+					`
+					model_id,
+					name,
+					organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
+				`,
+				)
+				.in("model_id", canonicalIds)
+		: { data: [] as any[] };
+
+	const canonicalModelMap = new Map<string, any>();
+	for (const model of canonicalModels ?? []) {
+		if (typeof model?.model_id !== "string") continue;
+		canonicalModelMap.set(model.model_id, model);
+	}
 
 	if (providerModels) {
 		providerModels.forEach((pm: any) => {
 			const apiId: string | null = typeof pm?.api_model_id === "string" ? pm.api_model_id : null;
-			const internalId: string | null =
-				typeof pm?.internal_model_id === "string"
-					? pm.internal_model_id
-					: typeof pm?.model?.model_id === "string"
-						? pm.model.model_id
-						: null;
+			const canonicalId: string | null =
+				typeof pm?.model_id === "string" ? pm.model_id : null;
+			const canonicalModel = canonicalId ? canonicalModelMap.get(canonicalId) : null;
 
-			if (!apiId && !internalId) return;
+			if (!apiId && !canonicalId) return;
 
 			const organisationId =
-				typeof pm?.model?.organisation?.organisation_id === "string" &&
-				pm.model.organisation.organisation_id
-					? pm.model.organisation.organisation_id
-					: deriveOrganisationId(internalId);
+				typeof canonicalModel?.organisation?.organisation_id === "string" &&
+				canonicalModel.organisation.organisation_id
+					? canonicalModel.organisation.organisation_id
+					: deriveOrganisationId(canonicalId);
 
 			const organisationName =
-				typeof pm?.model?.organisation?.organisation_name === "string" &&
-				pm.model.organisation.organisation_name
-					? pm.model.organisation.organisation_name
+				typeof canonicalModel?.organisation?.organisation_name === "string" &&
+				canonicalModel.organisation.organisation_name
+					? canonicalModel.organisation.organisation_name
 					: organisationId;
 
 			const value = {
 				organisationId,
 				organisationName,
-				modelName: typeof pm?.model?.name === "string" ? pm.model.name : undefined,
+				modelName: typeof canonicalModel?.name === "string" ? canonicalModel.name : undefined,
 			};
 
 			addMetadata(apiId, value);
@@ -533,9 +560,9 @@ export async function fetchModelMetadata(
 			if (apiId && apiId.includes("/")) {
 				addMetadata(apiId.split("/").slice(1).join("/"), value);
 			}
-			addMetadata(internalId, value);
-			if (internalId && internalId.includes("/")) {
-				addMetadata(internalId.split("/").slice(1).join("/"), value);
+			addMetadata(canonicalId, value);
+			if (canonicalId && canonicalId.includes("/")) {
+				addMetadata(canonicalId.split("/").slice(1).join("/"), value);
 			}
 		});
 	}
@@ -611,11 +638,13 @@ export async function fetchFunStats(
 	}
 
 	const { data: rows } = await supabase
-		.from("gateway_requests")
-		.select("model_id, provider, cost_nanos, generation_ms, latency_ms")
+		.from("gateway_usage_rollup_15m_team_provider_model")
+		.select(
+			"canonical_model_id, provider, requests, total_cost_nanos, latency_sum_ms, latency_samples",
+		)
 		.eq("team_id", teamId)
-		.gte("created_at", timeRange.from)
-		.lte("created_at", timeRange.to);
+		.gte("bucket_15m", timeRange.from)
+		.lte("bucket_15m", timeRange.to);
 
 	if (!rows || rows.length === 0) {
 		return {
@@ -629,8 +658,9 @@ export async function fetchFunStats(
 	// Top model by requests
 	const modelCounts = new Map<string, number>();
 	rows.forEach((r: any) => {
-		const model = r.model_id || "unknown";
-		modelCounts.set(model, (modelCounts.get(model) || 0) + 1);
+		const model = r.canonical_model_id || "unknown";
+		const requests = Number(r.requests ?? 0) || 0;
+		modelCounts.set(model, (modelCounts.get(model) || 0) + requests);
 	});
 	const topModelEntry = Array.from(modelCounts.entries()).sort((a, b) => b[1] - a[1])[0];
 	const topModel = topModelEntry
@@ -641,7 +671,8 @@ export async function fetchFunStats(
 	const providerCounts = new Map<string, number>();
 	rows.forEach((r: any) => {
 		const provider = r.provider || "unknown";
-		providerCounts.set(provider, (providerCounts.get(provider) || 0) + 1);
+		const requests = Number(r.requests ?? 0) || 0;
+		providerCounts.set(provider, (providerCounts.get(provider) || 0) + requests);
 	});
 	const topProviderEntry = Array.from(providerCounts.entries()).sort((a, b) => b[1] - a[1])[0];
 	const topProvider = topProviderEntry
@@ -651,8 +682,8 @@ export async function fetchFunStats(
 	// Most expensive model
 	const modelCosts = new Map<string, number>();
 	rows.forEach((r: any) => {
-		const model = r.model_id || "unknown";
-		const cost = Number(r.cost_nanos ?? 0) / 1e9;
+		const model = r.canonical_model_id || "unknown";
+		const cost = Number(r.total_cost_nanos ?? 0) / 1e9;
 		modelCosts.set(model, (modelCosts.get(model) || 0) + cost);
 	});
 	const mostExpensiveEntry = Array.from(modelCosts.entries()).sort((a, b) => b[1] - a[1])[0];
@@ -661,22 +692,23 @@ export async function fetchFunStats(
 		: null;
 
 	// Fastest model (average latency)
-	const modelLatencies = new Map<string, number[]>();
+	const modelLatencySums = new Map<string, { sum: number; samples: number }>();
 	rows.forEach((r: any) => {
-		const model = r.model_id || "unknown";
-		const latency = Number(r.generation_ms ?? r.latency_ms ?? 0);
-		if (latency > 0) {
-			if (!modelLatencies.has(model)) {
-				modelLatencies.set(model, []);
-			}
-			modelLatencies.get(model)!.push(latency);
-		}
+		const model = r.canonical_model_id || "unknown";
+		const latencySum = Number(r.latency_sum_ms ?? 0) || 0;
+		const latencySamples = Number(r.latency_samples ?? 0) || 0;
+		if (latencySamples <= 0 || latencySum <= 0) return;
+		const current = modelLatencySums.get(model) ?? { sum: 0, samples: 0 };
+		current.sum += latencySum;
+		current.samples += latencySamples;
+		modelLatencySums.set(model, current);
 	});
-	const modelAvgLatencies = Array.from(modelLatencies.entries())
-		.map(([model, latencies]) => ({
+	const modelAvgLatencies = Array.from(modelLatencySums.entries())
+		.map(([model, values]) => ({
 			model,
-			avg: latencies.reduce((sum, l) => sum + l, 0) / latencies.length,
+			avg: values.samples > 0 ? values.sum / values.samples : Number.POSITIVE_INFINITY,
 		}))
+		.filter((entry) => Number.isFinite(entry.avg) && entry.avg > 0)
 		.sort((a, b) => a.avg - b.avg);
 	const fastestModel = modelAvgLatencies[0]
 		? { name: modelAvgLatencies[0].model, speedMs: Math.round(modelAvgLatencies[0].avg) }
@@ -1080,5 +1112,105 @@ export async function fetchChartData(
 			cost: { current: currentCost, previous: previousCost, avg: avgCost },
 		},
 	};
+}
+
+export interface SessionRollupParams {
+	timeRange: { from: string; to: string };
+	limit?: number;
+	offset?: number;
+	appId?: string | null;
+	modelId?: string | null;
+	provider?: string | null;
+}
+
+export interface SessionRollupRow {
+	session_id: string;
+	request_count: number;
+	total_cost_nanos: number;
+	total_cost_usd: number;
+	first_request_at: string;
+	last_request_at: string;
+	app_ids: string[] | null;
+	model_ids: string[] | null;
+	provider_ids: string[] | null;
+	end_user_ids: string[] | null;
+}
+
+export async function fetchSessionRollups(
+	params: SessionRollupParams,
+): Promise<SessionRollupRow[]> {
+	const supabase = await createClient();
+	const { teamId } = await requireAuthedTeamContext(supabase);
+
+	const { data, error } = await supabase.rpc("get_gateway_sessions_rollup", {
+		p_team: teamId,
+		p_from: params.timeRange.from,
+		p_to: params.timeRange.to,
+		p_limit: params.limit ?? 100,
+		p_offset: params.offset ?? 0,
+		p_app_id: params.appId ?? null,
+		p_model_id: params.modelId ?? null,
+		p_provider: params.provider ?? null,
+	});
+
+	if (error) {
+		console.error("Error fetching session rollups:", error);
+		return [];
+	}
+
+	return (data ?? []) as SessionRollupRow[];
+}
+
+export interface JobsRollupParams {
+	limit?: number;
+	offset?: number;
+	kind?: "video" | "batch" | "music" | null;
+	status?: string | null;
+	sessionId?: string | null;
+	provider?: string | null;
+}
+
+export interface JobsRollupRow {
+	job_id: string;
+	kind: string;
+	internal_id: string;
+	request_id: string | null;
+	session_id: string | null;
+	app_id: string | null;
+	provider: string | null;
+	model: string | null;
+	status: string | null;
+	billed_at: string | null;
+	created_at: string;
+	updated_at: string;
+	request_created_at: string | null;
+	request_endpoint: string | null;
+	request_model_id: string | null;
+	request_cost_nanos: number | null;
+	request_cost_usd: number | null;
+}
+
+export async function fetchJobsRollups(
+	params: JobsRollupParams = {},
+): Promise<JobsRollupRow[]> {
+	const supabase = await createClient();
+	const { teamId } = await requireAuthedTeamContext(supabase);
+
+	const { data, error } = await supabase.rpc("get_gateway_jobs_rollup", {
+		p_team: teamId,
+		p_limit: params.limit ?? 100,
+		p_offset: params.offset ?? 0,
+		p_kind: params.kind ?? null,
+		p_status: params.status ?? null,
+		p_session_id: params.sessionId ?? null,
+		p_provider: params.provider ?? null,
+	});
+
+	if (error) {
+		console.error("Error fetching jobs rollups:", error);
+		return [];
+	}
+
+	return (data ?? []) as JobsRollupRow[];
 }
 

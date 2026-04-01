@@ -312,6 +312,17 @@ async function connectUpstreamOpenAIWebSocket(key: string): Promise<{
 }
 
 const responsesWsHandler = async (req: Request): Promise<Response> => {
+	const websocketEnabled = (globalThis as Record<string, unknown>).__AI_STATS_ENABLE_RESPONSES_WS__ === true;
+	if (!websocketEnabled) {
+		return json({
+			error: {
+				type: "invalid_request_error",
+				code: "responses_websocket_disabled",
+				message: "WebSocket mode is temporarily disabled on /v1/responses/ws.",
+			},
+		}, 501);
+	}
+
 	if ((req.headers.get("upgrade") || "").toLowerCase() !== "websocket") {
 		return json({
 			error: {
