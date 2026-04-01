@@ -25,8 +25,20 @@ export interface PKCEChallenge {
 
 export function generateRandomString(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  const randomValues = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(randomValues).map((v) => chars[v % chars.length]).join('');
+  const charsLength = chars.length;
+  const unbiasedLimit = Math.floor(256 / charsLength) * charsLength;
+  let output = '';
+
+  while (output.length < length) {
+    const randomValues = crypto.getRandomValues(new Uint8Array(Math.max(length, 32)));
+    for (const value of randomValues) {
+      if (value >= unbiasedLimit) continue;
+      output += chars[value % charsLength];
+      if (output.length >= length) break;
+    }
+  }
+
+  return output;
 }
 
 function base64UrlEncode(buffer: Uint8Array): string {

@@ -131,6 +131,7 @@ export function withRuntime(handler: Handler) {
 
 export function json(body: any, status = 200, headers: Record<string, string> = {}) {
     // lgtm[js/stack-trace-exposure]
+    // codeql[js/stack-trace-exposure]
     // Stack-like content is stripped in stringifyJsonBody before response serialization.
     return new Response(stringifyJsonBody(body), {
         status,

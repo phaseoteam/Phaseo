@@ -28,17 +28,41 @@ import {
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
 
+function looksLikeStackTrace(value: string): boolean {
+	return /\n\s*at\s+[^\n]+/i.test(value) || /Error:\s*[^\n]+/i.test(value);
+}
+
+function sanitizeErrorExtra(extra?: Record<string, unknown>): Record<string, unknown> | undefined {
+	if (!extra) return undefined;
+	const sanitized: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(extra)) {
+		if (key === "stack" || key === "stackTrace" || key === "stacktrace") continue;
+		if (value instanceof Error) {
+			sanitized[key] = { name: value.name };
+			continue;
+		}
+		if (typeof value === "string" && looksLikeStackTrace(value)) {
+			sanitized[key] = "[redacted]";
+			continue;
+		}
+		sanitized[key] = value;
+	}
+	return sanitized;
+}
+
 function createJsonErrorResponse(
 	status: number,
 	error: string,
 	message: string,
 	extra?: Record<string, unknown>,
 ): Response {
+	const safeMessage = looksLikeStackTrace(message) ? "Internal error" : message;
+	const safeExtra = sanitizeErrorExtra(extra);
 	return new Response(
 		JSON.stringify({
 			error,
-			message,
-			...(extra ?? {}),
+			message: safeMessage,
+			...(safeExtra ?? {}),
 		}),
 		{
 			status,

@@ -41,7 +41,18 @@ describe("non-text adapter bridge", () => {
 		let capturedUrl = "";
 		const mock = installFetchMock([
 			{
-				match: (url) => url.includes("generativelanguage.googleapis.com") && url.includes(":generateContent?key="),
+				match: (url) => {
+					try {
+						const parsed = new URL(url);
+						return (
+							parsed.hostname === "generativelanguage.googleapis.com" &&
+							parsed.pathname.includes(":generateContent") &&
+							parsed.searchParams.has("key")
+						);
+					} catch {
+						return false;
+					}
+				},
 				response: jsonResponse({
 					candidates: [
 						{

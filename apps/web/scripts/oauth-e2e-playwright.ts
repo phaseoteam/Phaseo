@@ -112,6 +112,13 @@ function safeJsonParse(text: string): unknown {
 	}
 }
 
+function sanitizeLogText(value: string): string {
+	return value
+		.replace(/\bBearer\s+[A-Za-z0-9._-]+\b/gi, "Bearer [redacted]")
+		.replace(/aistats_v1_sk_[A-Za-z0-9]+_[A-Za-z0-9]+/g, "[redacted_key]")
+		.replace(/"(access_token|refresh_token|client_secret)"\s*:\s*"[^"]+"/gi, "\"$1\":\"[redacted]\"");
+}
+
 async function postJson(
 	url: string,
 	body: unknown,
@@ -407,12 +414,12 @@ async function main(): Promise<void> {
 	console.log(`Auth Start:   ${config.authStartUrl}`);
 	console.log(`Exchange URL: ${config.exchangeUrl}`);
 	console.log(`Token URL:    ${config.tokenUrl || "(not configured)"}`);
-	console.log(`Redirect URI: ${config.redirectUri}`);
-	console.log(`Model:        ${config.testModel}`);
+	console.log("Redirect URI: [configured]");
+	console.log("Model:        [configured]");
 	console.log("");
 
 	await callbackServer.start();
-	console.log(`Callback server listening on ${config.redirectUri}`);
+	console.log("Callback server listening");
 	console.log(`Start URL: ${callbackServer.startUrl}`);
 
 	const browser = await chromium.launch({ headless: config.headless });
@@ -504,7 +511,7 @@ async function main(): Promise<void> {
 		results.push({
 			name: "Code exchange",
 			status: "failed",
-			message: `HTTP ${codeExchange.status}: ${JSON.stringify(codeExchange.data)}`,
+			message: `HTTP ${codeExchange.status}: exchange failed`,
 		});
 	} else {
 		results.push({
@@ -557,7 +564,7 @@ async function main(): Promise<void> {
 			status: gatewayRequest.ok ? "passed" : "failed",
 			message: gatewayRequest.ok
 				? "Chat completion succeeded with minted key"
-				: `HTTP ${gatewayRequest.status}: ${JSON.stringify(gatewayRequest.data)}`,
+				: `HTTP ${gatewayRequest.status}: gateway request failed`,
 		});
 	}
 
@@ -602,7 +609,7 @@ async function main(): Promise<void> {
 			status: oauthGateway.ok ? "passed" : "failed",
 			message: oauthGateway.ok
 				? "Chat completion succeeded with OAuth access token"
-				: `HTTP ${oauthGateway.status}: ${JSON.stringify(oauthGateway.data)}`,
+				: `HTTP ${oauthGateway.status}: gateway request failed`,
 		});
 	}
 
@@ -619,7 +626,7 @@ async function main(): Promise<void> {
 			status: refresh.ok ? "passed" : "failed",
 			message: refresh.ok
 				? "Refresh token exchange succeeded"
-				: `HTTP ${refresh.status}: ${JSON.stringify(refresh.data)}`,
+				: `HTTP ${refresh.status}: refresh failed`,
 		});
 	} else {
 		results.push({
@@ -643,7 +650,9 @@ async function main(): Promise<void> {
 	console.log("");
 	console.log("Run complete:", summarizeResult(results));
 	for (const result of results) {
-		console.log(`- [${result.status.toUpperCase()}] ${result.name}: ${result.message}`);
+		console.log(
+			`- [${result.status.toUpperCase()}] ${result.name}: ${sanitizeLogText(result.message)}`,
+		);
 	}
 	console.log(`Report: ${reportPath}`);
 	console.log("");
