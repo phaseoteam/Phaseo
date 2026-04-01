@@ -119,32 +119,13 @@ function safeJsonParse(text: string): unknown {
 async function resolveOAuthApp(args: { clientId?: string | null; redirectUri: string }): Promise<ResolveOAuthAppResult> {
 	const supabase = getSupabaseAdmin();
 	const clientId = args.clientId?.trim() || null;
-	const hasMissingRedirectUrisColumn = (errorMessage: string | null | undefined): boolean =>
-		typeof errorMessage === "string" &&
-		errorMessage.toLowerCase().includes("oauth_app_metadata.redirect_uris");
 	if (clientId) {
-		let data: any = null;
-		let error: { message?: string } | null = null;
-		const primaryLookup = await supabase
+		const { data, error } = await supabase
 			.from("oauth_app_metadata")
 			.select("client_id, team_id, name, status, redirect_uris")
 			.eq("client_id", clientId)
 			.eq("status", "active")
 			.maybeSingle();
-		data = primaryLookup.data;
-		error = primaryLookup.error as { message?: string } | null;
-		if (error && hasMissingRedirectUrisColumn(error.message ?? null)) {
-			const fallbackLookup = await supabase
-				.from("oauth_app_metadata")
-				.select("client_id, team_id, name, status")
-				.eq("client_id", clientId)
-				.eq("status", "active")
-				.maybeSingle();
-			data = fallbackLookup.data
-				? { ...fallbackLookup.data, redirect_uris: null }
-				: null;
-			error = fallbackLookup.error as { message?: string } | null;
-		}
 		if (error) {
 			return {
 				ok: false,
@@ -168,7 +149,21 @@ async function resolveOAuthApp(args: { clientId?: string | null; redirectUri: st
 		const registeredRedirects = Array.isArray((data as any).redirect_uris)
 			? ((data as any).redirect_uris as string[])
 			: [];
-		if (registeredRedirects.length > 0 && !registeredRedirects.some((uri) => timingSafeEqual(uri, args.redirectUri))) {
+		if (registeredRedirects.length === 0) {
+			return {
+				ok: false,
+				response: json(
+					{
+						ok: false,
+						error: "oauth_app_redirects_unconfigured",
+						message: "OAuth app has no registered redirect_uris",
+					},
+					400,
+					{ "Cache-Control": "no-store" },
+				),
+			};
+		}
+		if (!registeredRedirects.some((uri) => timingSafeEqual(uri, args.redirectUri))) {
 			return {
 				ok: false,
 				response: json(
@@ -192,21 +187,6 @@ async function resolveOAuthApp(args: { clientId?: string | null; redirectUri: st
 		.contains("redirect_uris", [args.redirectUri])
 		.limit(2);
 	if (error) {
-		if (hasMissingRedirectUrisColumn(error.message ?? null)) {
-			return {
-				ok: false,
-				response: json(
-					{
-						ok: false,
-						error: "redirect_uri_lookup_unavailable",
-						message:
-							"redirect_uris metadata column is not available yet; provide client_id explicitly",
-					},
-					400,
-					{ "Cache-Control": "no-store" },
-				),
-			};
-		}
 		return {
 			ok: false,
 			response: json(
@@ -249,10 +229,7 @@ async function resolveOAuthApp(args: { clientId?: string | null; redirectUri: st
 
 function parseRedirectUriFromQuery(url: URL): string | null {
 	const redirectUri = url.searchParams.get("redirect_uri")?.trim();
-	if (redirectUri) return redirectUri;
-	const callbackUrl = url.searchParams.get("callback_url")?.trim();
-	if (callbackUrl) return callbackUrl;
-	return null;
+	return redirectUri || null;
 }
 
 function applyCorsHeaders(headers: Headers) {
@@ -287,7 +264,7 @@ authRouter.get(
 				{
 					ok: false,
 					error: "redirect_uri_required",
-					message: "Provide redirect_uri (or callback_url)",
+					message: "Provide redirect_uri",
 				},
 				400,
 				{ "Cache-Control": "no-store" },

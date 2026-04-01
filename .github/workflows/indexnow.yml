@@ -199,17 +199,18 @@ jobs:
               run: |
                   set -euo pipefail
 
-                  URL_LIST_JSON="$(jq -R -s -c 'split("\n") | map(select(length > 0))' indexnow_urls.txt)"
-                  PAYLOAD="$(jq -n \
+                  jq -Rn '[inputs | select(length > 0)]' < indexnow_urls.txt > indexnow_url_list.json
+                  jq -n \
                     --arg host "${{ steps.urls.outputs.host }}" \
                     --arg key "${INDEXNOW_KEY}" \
                     --arg keyLocation "${{ steps.urls.outputs.key_location }}" \
-                    --argjson urlList "${URL_LIST_JSON}" \
-                    '{host: $host, key: $key, keyLocation: $keyLocation, urlList: $urlList}')"
+                    --slurpfile urlList indexnow_url_list.json \
+                    '{host: $host, key: $key, keyLocation: $keyLocation, urlList: $urlList[0]}' \
+                    > indexnow_payload.json
 
                   HTTP_CODE="$(curl -sS -o indexnow_response.txt -w "%{http_code}" \
                     -H "Content-Type: application/json; charset=utf-8" \
-                    -d "${PAYLOAD}" \
+                    --data-binary @indexnow_payload.json \
                     https://api.indexnow.org/indexnow || true)"
 
                   echo "IndexNow HTTP code: ${HTTP_CODE}"

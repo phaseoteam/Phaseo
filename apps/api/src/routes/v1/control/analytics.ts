@@ -128,6 +128,7 @@ function resolveScopedTeamId(args: {
 }
 
 type AnalyticsRow = {
+    id: string | null;
     created_at: string | null;
     endpoint: string | null;
     model_id: string | null;
@@ -194,12 +195,13 @@ async function loadAnalyticsRows(args: {
     while (rows.length < MAX_ACTIVITY_ROWS) {
         const { data, error } = await supabase
             .from("gateway_requests")
-            .select("created_at,endpoint,model_id,provider,usage,byok,cost_nanos")
+            .select("id,created_at,endpoint,model_id,provider,usage,byok,cost_nanos")
             .eq("team_id", args.teamId)
             .eq("success", true)
             .gte("created_at", args.startIso)
             .lt("created_at", args.endIso)
             .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
             .range(offset, offset + PAGE_SIZE - 1);
 
         if (error) {
