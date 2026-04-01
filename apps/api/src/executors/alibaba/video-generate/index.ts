@@ -10,6 +10,7 @@ import { saveVideoJobMeta } from "@core/video-jobs";
 import { reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
+import { computeBill } from "@pipeline/pricing/engine";
 import type { ProviderExecutor } from "../../types";
 
 const DEFAULT_BASE_URL = "https://dashscope-intl.aliyuncs.com";
@@ -37,22 +38,78 @@ function toDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
 	return undefined;
 }
 
+function toNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function extractAlibabaConfig(rawRequest: Record<string, any>): Record<string, any> {
+	const fromConfig = rawRequest?.config?.alibaba;
+	const fromTopLevel = rawRequest?.alibaba;
+	const providerParams =
+		rawRequest?.provider_params && typeof rawRequest.provider_params === "object" && !Array.isArray(rawRequest.provider_params)
+			? rawRequest.provider_params
+			: null;
+	for (const candidate of [fromConfig, fromTopLevel, providerParams]) {
+		if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+			return candidate as Record<string, any>;
+		}
+	}
+	return {};
+}
+
+function normalizeInputSource(value: unknown): string | undefined {
+	if (typeof value === "string" && value.trim().length > 0) return value.trim();
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const source = value as Record<string, unknown>;
+	return toNonEmptyString(source.uri) ??
+		toNonEmptyString(source.url) ??
+		toNonEmptyString(source.gcsUri) ??
+		toNonEmptyString(source.gcs_uri);
+}
+
 function irToWanRequest(ir: IRVideoGenerationRequest, model: string): any {
+	const rawRequest = (ir.rawRequest ?? {}) as Record<string, any>;
+	const alibabaConfig = extractAlibabaConfig(rawRequest);
+	const passthroughRequest =
+		alibabaConfig.request && typeof alibabaConfig.request === "object" && !Array.isArray(alibabaConfig.request)
+			? { ...(alibabaConfig.request as Record<string, any>) }
+			: {};
+
+	if (Object.keys(passthroughRequest).length > 0) {
+		if (passthroughRequest.model == null) passthroughRequest.model = model;
+		if (passthroughRequest.input == null) {
+			passthroughRequest.input = {
+				prompt: ir.prompt,
+			};
+		}
+		return passthroughRequest;
+	}
+
 	const seconds = toDurationSeconds(ir);
 	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
-	const ratio = ir.aspectRatio || ir.ratio;
+	const ratio = toNonEmptyString(alibabaConfig.ratio) ?? ir.aspectRatio ?? ir.ratio;
+	const inputImage = normalizeInputSource(
+		alibabaConfig.img_url ??
+		alibabaConfig.image_url ??
+		ir.inputReference ??
+		ir.inputImage ??
+		ir.input?.image,
+	);
 	return {
 		model,
 		input: {
 			prompt: ir.prompt,
 			...(ir.negativePrompt ? { negative_prompt: ir.negativePrompt } : {}),
-			...(ir.inputReference ? { img_url: ir.inputReference } : {}),
+			...(inputImage ? { img_url: inputImage } : {}),
 		},
 		parameters: {
 			...(typeof seconds === "number" ? { duration: seconds } : {}),
 			...(size ? { size } : {}),
 			...(ratio ? { ratio } : {}),
 			...(typeof ir.seed === "number" ? { seed: ir.seed } : {}),
+			...(toNonEmptyString(alibabaConfig.callback_url) ? { callback_url: alibabaConfig.callback_url } : {}),
 		},
 	};
 }
@@ -261,21 +318,51 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const json = await res.json().catch(() => ({}));
 	const irResponse = wanToIR(json, args.requestId, model, args.providerId);
+	const usageMeters: Record<string, number> = {
+		requests: 1,
+	};
+	if (args.pricingCard) {
+		const priced = computeBill(usageMeters, args.pricingCard, { model });
+		bill.cost_cents = priced.pricing.total_cents;
+		bill.currency = priced.pricing.currency;
+		bill.usage = priced;
+	} else {
+		bill.usage = usageMeters;
+	}
+	irResponse.usage = {
+		...(irResponse.usage ?? { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
+		requests: 1,
+		...(requestedSeconds != null ? { output_video_seconds: requestedSeconds } : {}),
+	} as any;
 	if (irResponse.nativeId) {
+		const taskId =
+			typeof json?.output?.task_id === "string"
+				? json.output.task_id
+				: typeof json?.task_id === "string"
+					? json.task_id
+					: typeof json?.id === "string"
+						? json.id
+						: String(irResponse.nativeId);
 		try {
-			await saveVideoJobMeta(args.teamId, String(irResponse.nativeId), {
+			await saveVideoJobMeta(args.teamId, args.requestId, {
 				provider: args.providerId,
+				providerTaskId: taskId,
+				requestId: args.requestId,
+				sessionId: args.meta.sessionId ?? null,
+				appId: args.meta.appId ?? null,
 				model,
 				seconds: requestedSeconds,
 				resolution: size ?? null,
 				quality,
+				outputAccess: ir.outputAccess ?? "both",
+				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,
 				reservedNanos,
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			}, irResponse.status);
+			}, taskId, irResponse.status);
 		} catch (err) {
 			console.error("wan_video_job_meta_store_failed", {
 				error: err,

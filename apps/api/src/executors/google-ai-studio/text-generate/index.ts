@@ -24,6 +24,28 @@ import {
 } from "../../google/shared/thinking";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 
+const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
+const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
+
+function parsePositiveInt(value: unknown, fallback: number): number {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+	return Math.floor(parsed);
+}
+
+function isLyriaModelName(value: string): boolean {
+	return String(value ?? "").toLowerCase().includes("lyria-3");
+}
+
+function isRetryableGoogleStatus(status: number): boolean {
+	return status === 429 || status >= 500;
+}
+
+async function sleep(ms: number): Promise<void> {
+	if (!Number.isFinite(ms) || ms <= 0) return;
+	await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Transform IR request to Google Gemini format
  *
@@ -166,11 +188,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		}
 	}
 
-	// Response modalities (text/image)
+	// Response modalities (text/image/audio)
 	if (Array.isArray(ir.modalities) && ir.modalities.length > 0) {
 		const mapped = ir.modalities
 			.map((mode) => (typeof mode === "string" ? mode.toUpperCase() : ""))
-			.filter((mode) => mode === "TEXT" || mode === "IMAGE");
+			.filter((mode) => mode === "TEXT" || mode === "IMAGE" || mode === "AUDIO");
 		if (mapped.length > 0) {
 			generationConfig.responseModalities = mapped;
 		}
@@ -281,14 +303,10 @@ function geminiToIR(
 						});
 					}
 				} else if (inlineData?.data) {
-					// Image part (Nano Banana models)
-					contentParts.push({
-						type: "image",
-						source: "data",
-						data: inlineData.data,
-						mimeType: inlineData.mime_type,
-						thoughtSignature: inlineData.thought_signature,
-					});
+					const mediaPart = inlineDataToIRContentPart(inlineData);
+					if (mediaPart) {
+						contentParts.push(mediaPart);
+					}
 				} else if (part.functionCall) {
 					// Tool call
 					toolCalls.push({
@@ -322,13 +340,73 @@ function geminiToIR(
 
 	return {
 		id: requestId,
-		nativeId: json.id,
+		nativeId: json.id ?? json.responseId,
 		created: Math.floor(Date.now() / 1000),
 		model,
 		provider,
 		choices,
 		usage,
 	};
+}
+
+function mergeGeminiChunkArray(chunks: any[]): any {
+	const byIndex = new Map<number, any>();
+	let usageMetadata: any = undefined;
+	let responseId: string | undefined;
+	let modelVersion: string | undefined;
+
+	for (const chunk of chunks) {
+		if (!chunk || typeof chunk !== "object") continue;
+		if (chunk.usageMetadata !== undefined) {
+			usageMetadata = chunk.usageMetadata;
+		}
+		if (typeof chunk.responseId === "string" && chunk.responseId.length > 0) {
+			responseId = chunk.responseId;
+		}
+		if (typeof chunk.modelVersion === "string" && chunk.modelVersion.length > 0) {
+			modelVersion = chunk.modelVersion;
+		}
+
+		const candidates = Array.isArray(chunk.candidates) ? chunk.candidates : [];
+		for (const candidate of candidates) {
+			if (!candidate || typeof candidate !== "object") continue;
+			const index = Number.isFinite(candidate.index) ? Number(candidate.index) : 0;
+			let merged = byIndex.get(index);
+			if (!merged) {
+				merged = {
+					index,
+					content: {
+						role: candidate.content?.role ?? "model",
+						parts: [],
+					},
+				};
+				byIndex.set(index, merged);
+			}
+
+			const parts = Array.isArray(candidate.content?.parts) ? candidate.content.parts : [];
+			if (parts.length > 0) {
+				merged.content.parts.push(...parts);
+			}
+
+			if (candidate.finishReason !== undefined) {
+				merged.finishReason = candidate.finishReason;
+			}
+		}
+	}
+
+	return {
+		candidates: [...byIndex.values()].sort((a, b) => a.index - b.index),
+		usageMetadata,
+		responseId,
+		modelVersion,
+	};
+}
+
+function normalizeGeminiResponsePayload(payload: any): any {
+	if (Array.isArray(payload)) {
+		return mergeGeminiChunkArray(payload);
+	}
+	return payload;
 }
 
 /**
@@ -387,13 +465,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
 
-	const makeEndpoint = (candidateModel: string) =>
-		`${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`;
+	const makeEndpoint = (candidateModel: string, stream: boolean) =>
+		stream
+			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
+			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent`;
+
+	const lyriaRetryAttempts = parsePositiveInt(
+		bindings.GOOGLE_AI_STUDIO_LYRIA_RETRY_ATTEMPTS,
+		DEFAULT_LYRIA_RETRY_ATTEMPTS,
+	);
+	const lyriaRetryDelayMs = parsePositiveInt(
+		bindings.GOOGLE_AI_STUDIO_LYRIA_RETRY_DELAY_MS,
+		DEFAULT_LYRIA_RETRY_DELAY_MS,
+	);
+	const shouldSleepBetweenRetries = String(bindings.NODE_ENV ?? "").toLowerCase() !== "test";
 
 	try {
 		const doRequest = async (candidateModel: string) => {
 			const requestBody = await irToGemini(ir, candidateModel);
-			const endpoint = makeEndpoint(candidateModel);
+			const endpoint = makeEndpoint(candidateModel, Boolean(ir.stream));
 			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: {
@@ -405,7 +495,30 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			return { candidateModel, requestBody, response };
 		};
 
-		const attempted = await doRequest(model);
+		let attempted: Awaited<ReturnType<typeof doRequest>> | null = null;
+		for (const candidateModel of modelCandidates.length ? modelCandidates : [model]) {
+			const maxAttemptsForCandidate = isLyriaModelName(candidateModel) ? lyriaRetryAttempts : 1;
+			for (let attemptIndex = 0; attemptIndex < maxAttemptsForCandidate; attemptIndex++) {
+				const current = await doRequest(candidateModel);
+				attempted = current;
+				if (current.response.ok) break;
+				const shouldRetrySameCandidate =
+					isRetryableGoogleStatus(current.response.status) &&
+					attemptIndex + 1 < maxAttemptsForCandidate;
+				if (shouldRetrySameCandidate) {
+					if (shouldSleepBetweenRetries) {
+						await sleep(lyriaRetryDelayMs * (attemptIndex + 1));
+					}
+					continue;
+				}
+				break;
+			}
+			if (attempted?.response.ok) break;
+		}
+
+		if (!attempted) {
+			throw new Error("google_ai_studio_no_attempt");
+		}
 
 		model = attempted.candidateModel;
 		const geminiRequest = attempted.requestBody;
@@ -434,7 +547,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		if (response.body && !isJsonResponse) {
 			if (ir.stream) {
-				const transformedStream = transformStream(response.body, args);
+				const streamingArgs = {
+					...args,
+					providerModelSlug: model,
+				} as ExecutorExecuteArgs;
+				const transformedStream = transformStream(response.body, streamingArgs);
 				return {
 					kind: "stream",
 					stream: transformedStream,
@@ -449,6 +566,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 			const bufferingArgs = {
 				...args,
+				ir: {
+					...args.ir,
+					model,
+				},
+				providerModelSlug: model,
 				endpoint: "chat.completions",
 				protocol: "openai.chat.completions",
 			} as ExecutorExecuteArgs;
@@ -459,7 +581,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			});
 			const { ir: irResponse, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
 				transformedResponse,
-				args,
+				bufferingArgs,
 				"chat",
 				upstreamStartMs,
 			);
@@ -478,9 +600,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				currency: "USD",
 			};
 
-			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage, {
-				cachedReadTokensAreSubsetOfInput: true,
-			});
+			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage);
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
@@ -501,7 +621,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			};
 		}
 
-		const data = await response.json();
+		const rawData = await response.json();
+		const data = normalizeGeminiResponsePayload(rawData);
 		const irResponse = geminiToIR(data, requestId, model, providerId);
 		applyGoogleOutputTokenFallback(irResponse);
 
@@ -511,9 +632,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			currency: "USD",
 		};
 
-		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata, {
-			cachedReadTokensAreSubsetOfInput: true,
-		});
+		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
 		if (usageMeters) {
 			bill.usage = usageMeters;
 		}
@@ -528,6 +647,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			rawResponse: rawData,
 			timing: {
 				latencyMs: totalMs,
 				generationMs: 0,
@@ -573,6 +693,57 @@ function normalizeGeminiInlineData(part: any): {
 		};
 	}
 	return null;
+}
+
+function resolveAudioFormatFromMimeType(mimeType?: string): Extract<IRContentPart, { type: "audio" }>["format"] {
+	const normalized = typeof mimeType === "string" ? mimeType.toLowerCase() : "";
+	switch (normalized) {
+		case "audio/wav":
+		case "audio/x-wav":
+			return "wav";
+		case "audio/mpeg":
+		case "audio/mp3":
+			return "mp3";
+		case "audio/flac":
+			return "flac";
+		case "audio/mp4":
+		case "audio/m4a":
+		case "audio/x-m4a":
+			return "m4a";
+		case "audio/ogg":
+			return "ogg";
+		case "audio/pcm":
+		case "audio/l16":
+			return "pcm16";
+		case "audio/l24":
+			return "pcm24";
+		default:
+			return undefined;
+	}
+}
+
+function inlineDataToIRContentPart(
+	inlineData: { data?: string; mime_type?: string; thought_signature?: string },
+): IRContentPart | null {
+	if (!inlineData?.data) return null;
+	const mimeType = typeof inlineData.mime_type === "string" ? inlineData.mime_type : undefined;
+	const normalizedMimeType = mimeType?.toLowerCase();
+	if (normalizedMimeType?.startsWith("audio/")) {
+		return {
+			type: "audio",
+			source: "data",
+			data: inlineData.data,
+			format: resolveAudioFormatFromMimeType(mimeType),
+		};
+	}
+
+	return {
+		type: "image",
+		source: "data",
+		data: inlineData.data,
+		mimeType,
+		thoughtSignature: inlineData.thought_signature,
+	};
 }
 
 /**
@@ -657,7 +828,7 @@ export function transformStream(
 								// Accumulate content from parts
 								let content = "";
 								let reasoning = "";
-								const imageParts: IRContentPart[] = [];
+								const mediaParts: IRContentPart[] = [];
 								const toolCalls: Array<{
 									index: number;
 									id?: string;
@@ -730,13 +901,10 @@ export function transformStream(
 									} else {
 										const inlineData = normalizeGeminiInlineData(part);
 										if (inlineData?.data) {
-											imageParts.push({
-												type: "image",
-												source: "data",
-												data: inlineData.data,
-												mimeType: inlineData.mime_type,
-												thoughtSignature: inlineData.thought_signature,
-											} as any);
+											const mediaPart = inlineDataToIRContentPart(inlineData);
+											if (mediaPart) {
+												mediaParts.push(mediaPart);
+											}
 										}
 									}
 								}
@@ -753,8 +921,8 @@ export function transformStream(
 										text: reasoning
 									} as any);
 								}
-								if (imageParts.length > 0) {
-									deltaContentParts.push(...imageParts);
+								if (mediaParts.length > 0) {
+									deltaContentParts.push(...mediaParts);
 								}
 								if (deltaContentParts.length > 0) {
 									delta.contentParts = deltaContentParts;
@@ -842,6 +1010,29 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 						type: "image_url",
 						image_url: { url: imageUrl },
 						...(part.mimeType ? { mime_type: part.mimeType } : {}),
+					});
+				} else if (part.type === "audio") {
+					const mimeType = (() => {
+						if (part.format === "wav") return "audio/wav";
+						if (part.format === "mp3") return "audio/mpeg";
+						if (part.format === "flac") return "audio/flac";
+						if (part.format === "m4a") return "audio/m4a";
+						if (part.format === "ogg") return "audio/ogg";
+						if (part.format === "pcm16") return "audio/l16";
+						if (part.format === "pcm24") return "audio/l24";
+						return "audio/wav";
+					})();
+					const audioUrl = part.source === "data"
+						? `data:${mimeType};base64,${part.data}`
+						: part.data;
+					if (!Array.isArray(delta.audios)) {
+						delta.audios = [];
+					}
+					delta.audios.push({
+						type: "audio_url",
+						audio_url: { url: audioUrl },
+						...(part.format ? { format: part.format } : {}),
+						mime_type: mimeType,
 					});
 				}
 			}

@@ -1,0 +1,31 @@
+{
+  "model_id": "qwen/qwen3-coder-480b-a35b",
+  "organisation_id": "qwen",
+  "name": "Qwen 3 Coder 480B A35B Instruct",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "qwen/qwen3-coder-480b-a35b",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 262144
+    },
+    {
+      "name": "output_context_length",
+      "value": 262144
+    },
+    {
+      "name": "parameter_count",
+      "value": 32500000000
+    }
+  ],
+  "benchmarks": []
+}

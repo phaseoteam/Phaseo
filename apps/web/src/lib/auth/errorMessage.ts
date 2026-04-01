@@ -17,6 +17,20 @@ function mapKnownAuthError(params: URLSearchParams): string | null {
     if (errorCode === 'otp_expired') {
         return 'Your sign-in link has expired. Please try signing in again.'
     }
+    if (
+        errorCode === 'sso_provider_not_found' ||
+        errorCode === 'saml_idp_not_found' ||
+        errorCode === 'saml_relay_state_not_found' ||
+        errorCode === 'saml_relay_state_expired'
+    ) {
+        return 'Enterprise SSO is not configured for your organization yet.'
+    }
+    if (errorCode === 'saml_provider_disabled') {
+        return 'Enterprise SSO is configured but currently disabled.'
+    }
+    if (errorCode === 'user_sso_managed') {
+        return 'This account is managed by SSO. Please use Enterprise SSO to sign in.'
+    }
 
     const error = params.get('error')
     if (error === 'access_denied') {

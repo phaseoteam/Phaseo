@@ -1,0 +1,18 @@
+{
+  "model_id": "ai21/jamba-mini-2",
+  "organisation_id": "ai21",
+  "name": "Jamba Mini 2",
+  "status": "Available",
+  "previous_model_id": "ai21/jamba-mini-1.7",
+  "announced_date": "2026-01-08T00:00:00",
+  "release_date": "2026-01-08T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "ai21/jamba-mini-2",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -5,6 +5,7 @@
 
 import type { GatewayBindings } from "@/runtime/env";
 import { clearRuntime, configureRuntime } from "@/runtime/env";
+import { pruneExpiredVideoAssets } from "@core/video-assets";
 import {
 	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE,
 	getModelDiscoveryShardCount,
@@ -67,6 +68,8 @@ async function handleVideoReconciliationScheduledEvent(_event: ScheduledControll
 	try {
 		const summary = await runVideoReconciliationJob({ limit, concurrency });
 		console.log("video_reconciliation_completed", summary);
+		const pruneSummary = await pruneExpiredVideoAssets(limit);
+		console.log("video_asset_prune_completed", pruneSummary);
 	} finally {
 		clearRuntime();
 	}

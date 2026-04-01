@@ -41,34 +41,43 @@ export default async function getModelAvailability(
     if (modelError) {
         throw new Error(modelError.message || "Failed to load model metadata");
     }
-    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+    if (modelRow && !includeHidden && modelRow.hidden) {
         throw new Error("Model not found");
     }
 
     let providerModels: any[] | null = null;
     let providerError: { message?: string } | null = null;
     {
-        const res = await supabase
-            .from("data_api_provider_models")
-            .select(
-                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
-            )
-            .eq("model_id", modelId)
-            .order("provider_id", { ascending: true });
-        providerModels = res.data ?? null;
-        providerError = res.error;
-    }
+        const [byInternalRes, byApiRes] = await Promise.all([
+            supabase
+                .from("data_api_provider_models")
+                .select(
+                    "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
+                )
+                .eq("model_id", modelId)
+                .order("provider_id", { ascending: true }),
+            supabase
+                .from("data_api_provider_models")
+                .select(
+                    "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
+                )
+                .eq("api_model_id", modelId)
+                .order("provider_id", { ascending: true }),
+        ]);
 
-    if (!providerError && (!providerModels || providerModels.length === 0)) {
-        const res = await supabase
-            .from("data_api_provider_models")
-            .select(
-                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, effective_from, effective_to, created_at, updated_at"
-            )
-            .eq("internal_model_id", modelId)
-            .order("provider_id", { ascending: true });
-        providerModels = res.data ?? null;
-        providerError = res.error;
+        if (byInternalRes.error && byApiRes.error) {
+            providerModels = null;
+            providerError = byInternalRes.error;
+        } else {
+            const byProviderApiModelId = new Map<string, any>();
+            for (const row of [...(byInternalRes.data ?? []), ...(byApiRes.data ?? [])]) {
+                const key = String(row?.provider_api_model_id ?? "").trim();
+                if (!key) continue;
+                byProviderApiModelId.set(key, row);
+            }
+            providerModels = Array.from(byProviderApiModelId.values());
+            providerError = byInternalRes.error ?? byApiRes.error ?? null;
+        }
     }
 
     if (providerError) {

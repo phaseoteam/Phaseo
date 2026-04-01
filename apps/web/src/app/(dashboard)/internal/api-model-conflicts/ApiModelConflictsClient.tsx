@@ -550,7 +550,7 @@ export default function ApiModelConflictsClient({
 				<CardHeader>
 					<CardTitle className="text-lg">Orphan Pricing Directories</CardTitle>
 					<CardDescription>
-						Pricing model folders present under `src/data/pricing` that do not map to any
+						Pricing model folders present under `packages/data/catalog/src/data/pricing` that do not map to any
 						provider API model ID slug.
 					</CardDescription>
 				</CardHeader>

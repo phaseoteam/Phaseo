@@ -566,22 +566,27 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 	const outputTokens = usage.output_tokens ?? usage.completion_tokens ?? 0;
 	const totalTokens = usage.total_tokens ?? inputTokens + outputTokens;
 
-	const cachedInputTokens = usage.input_tokens_details?.cached_tokens;
-	const reasoningTokens = usage.output_tokens_details?.reasoning_tokens;
+	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
+	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
+	const cachedInputTokens = inputDetails?.cached_tokens;
+	const reasoningTokens = outputDetails?.reasoning_tokens;
+	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 
 	return {
 		inputTokens,
 		outputTokens,
 		totalTokens,
 		cachedInputTokens,
+		cachedReadTokensAreSubsetOfInput,
 		reasoningTokens,
 		_ext: {
-			inputImageTokens: usage.input_tokens_details?.input_images,
-			inputAudioTokens: usage.input_tokens_details?.input_audio,
-			inputVideoTokens: usage.input_tokens_details?.input_videos,
-			outputImageTokens: usage.output_tokens_details?.output_images,
-			outputAudioTokens: usage.output_tokens_details?.output_audio,
-			cachedWriteTokens: usage.output_tokens_details?.cached_tokens,
+			inputImageTokens: inputDetails?.input_images,
+			inputAudioTokens: inputDetails?.input_audio,
+			inputVideoTokens: inputDetails?.input_videos,
+			outputImageTokens: outputDetails?.output_images,
+			outputAudioTokens: outputDetails?.output_audio,
+			outputVideoTokens: outputDetails?.output_videos,
+			cachedWriteTokens: outputDetails?.cached_tokens,
 		},
 	};
 }

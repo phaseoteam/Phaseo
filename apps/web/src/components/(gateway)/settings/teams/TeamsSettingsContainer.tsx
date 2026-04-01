@@ -6,6 +6,7 @@ import CreateTeamInviteDialog from "@/components/(gateway)/settings/CreateTeamIn
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import TeamSettingsPanel from "./TeamSettingsPanel";
 import TeamsPanel from "./TeamsPanel";
+import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 type Team = { id: string; name: string };
 
@@ -19,6 +20,7 @@ type Props = {
 	personalTeamId?: string | null;
 	manageableTeamIds?: string[];
 	walletBalances?: Record<string, number>;
+	teamSsoSettingsByTeam?: Record<string, TeamSsoSettingsRow>;
 	hideTitle?: boolean;
 	tab?: "members" | "settings";
 };
@@ -33,6 +35,7 @@ export default function TeamsSettingsContainer({
 	personalTeamId,
 	manageableTeamIds,
 	walletBalances,
+	teamSsoSettingsByTeam,
 	hideTitle = false,
 	tab = "members",
 }: Props) {
@@ -108,6 +111,7 @@ export default function TeamsSettingsContainer({
 					currentUserId={currentUserId}
 					personalTeamId={personalTeamId}
 					walletBalances={walletBalances}
+					teamSsoSettingsByTeam={teamSsoSettingsByTeam}
 				/>
 			) : (
 				<TeamsPanel

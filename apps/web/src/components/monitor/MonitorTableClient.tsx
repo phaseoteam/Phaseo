@@ -9,15 +9,22 @@ import { type MonitorModelData } from "@/lib/fetchers/models/table-view/getMonit
 interface MonitorTableClientProps {
 	initialModelData: MonitorModelData[];
 	weeklyTokensByModel: Record<string, number>;
+	weeklyTokensByModelProvider: Record<string, number>;
 }
 
 function normalizeModelKey(value: string | null | undefined): string {
 	return String(value ?? "").trim().toLowerCase();
 }
 
+function buildModelProviderKey(modelKey: string, providerKey: string): string {
+	if (!modelKey || !providerKey) return "";
+	return `${modelKey}::${providerKey}`;
+}
+
 export function MonitorTableClient({
 	initialModelData,
 	weeklyTokensByModel,
+	weeklyTokensByModelProvider,
 }: MonitorTableClientProps) {
 	// Convert MonitorModelData to ModelData format for the table
 	const modelData: ModelData[] = initialModelData.map((item) => {
@@ -25,13 +32,37 @@ export function MonitorTableClient({
 			normalizeModelKey(item.modelId),
 			normalizeModelKey(item.apiModelId),
 		].filter(Boolean);
+		const providerKey = normalizeModelKey(item.provider.id);
 
-		let weeklyTokens = 0;
+		let weeklyTokens: number | null = null;
 		for (const candidate of modelKeyCandidates) {
-			const candidateValue = Number(weeklyTokensByModel[candidate] ?? 0);
-			if (Number.isFinite(candidateValue) && candidateValue > weeklyTokens) {
-				weeklyTokens = candidateValue;
+			const providerCompositeKey = buildModelProviderKey(candidate, providerKey);
+			if (providerCompositeKey) {
+				const providerCandidateValue = Number(
+					weeklyTokensByModelProvider[providerCompositeKey] ?? 0,
+				);
+				if (
+					Number.isFinite(providerCandidateValue) &&
+					providerCandidateValue >= 0
+				) {
+					weeklyTokens = providerCandidateValue;
+					break;
+				}
 			}
+		}
+
+		if (weeklyTokens == null) {
+			let modelFallback = 0;
+			for (const candidate of modelKeyCandidates) {
+			const modelCandidateValue = Number(weeklyTokensByModel[candidate] ?? 0);
+				if (
+					Number.isFinite(modelCandidateValue) &&
+					modelCandidateValue > modelFallback
+				) {
+					modelFallback = modelCandidateValue;
+				}
+			}
+			weeklyTokens = modelFallback;
 		}
 
 		return {
@@ -50,7 +81,7 @@ export function MonitorTableClient({
 			tier: item.tier,
 			added: item.added,
 			retired: item.retired,
-			popularityTokensWeek: weeklyTokens,
+			popularityTokensWeek: weeklyTokens ?? 0,
 		};
 	});
 

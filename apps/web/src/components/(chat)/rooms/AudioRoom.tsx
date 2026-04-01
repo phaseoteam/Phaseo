@@ -73,6 +73,7 @@ import {
 	type AudioRoomParams,
 } from "@/lib/chat/roomModelSettings";
 import { AudioModelSettingsDialog } from "@/components/(chat)/rooms/settings/AudioModelSettingsDialog";
+import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
 import {
 	ArrowUpRight,
 	Check,
@@ -97,7 +98,7 @@ import {
 	X,
 } from "lucide-react";
 
-type AudioMode = "speech" | "transcription" | "translation";
+type AudioMode = "speech" | "transcription" | "translation" | "music";
 
 type AudioHistoryPayload = {
 	conversationId?: string;
@@ -162,16 +163,23 @@ const AUDIO_MODE_SUPPORT_FALLBACK: AudioModeSupport = {
 	speech: true,
 	transcription: true,
 	translation: true,
+	music: false,
 };
 
-// Temporary UI clamp: keep audio room focused on TTS flows for now.
+// Temporary UI clamp: keep audio room focused on prompt-driven generation flows for now.
 const AUDIO_MODE_UI_ENABLED: AudioModeSupport = {
 	speech: true,
 	transcription: false,
 	translation: false,
+	music: true,
 };
 
-const AUDIO_MODE_OPTIONS: AudioMode[] = ["speech", "transcription", "translation"];
+const AUDIO_MODE_OPTIONS: AudioMode[] = [
+	"speech",
+	"music",
+	"transcription",
+	"translation",
+];
 const AUDIO_PINNED_STORAGE_KEY = "ai-stats-audio-room-pinned-conversations-v1";
 
 function nowIso() {
@@ -190,6 +198,7 @@ function truncateTitle(value: string, max = 72): string {
 
 function modeLabel(mode: AudioMode): string {
 	if (mode === "speech") return "TTS";
+	if (mode === "music") return "Music";
 	if (mode === "transcription") return "Transcription";
 	return "Translation";
 }
@@ -563,6 +572,7 @@ function intersectAudioModeSupport(
 		speech: left.speech && right.speech,
 		transcription: left.transcription && right.transcription,
 		translation: left.translation && right.translation,
+		music: left.music && right.music,
 	};
 }
 
@@ -692,7 +702,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		[models],
 	);
 	const [mode, setMode] = useState<AudioMode>("speech");
-	const [modelId, setModelId] = useState(filteredModels[0]?.modelId ?? "");
+	const [modelId, setModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [textInput, setTextInput] = useState("");
 	const [audioUrlInput, setAudioUrlInput] = useState("");
@@ -766,6 +776,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const availableModes = useMemo(() => {
 		const supported: AudioMode[] = [];
 		if (effectiveModeSupport.speech) supported.push("speech");
+		if (effectiveModeSupport.music) supported.push("music");
 		if (effectiveModeSupport.transcription) supported.push("transcription");
 		if (effectiveModeSupport.translation) supported.push("translation");
 		return supported.length ? supported : (["speech"] as AudioMode[]);
@@ -837,7 +848,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			if (current && filteredModels.some((model) => model.modelId === current)) {
 				return current;
 			}
-			return filteredModels[0]?.modelId ?? "";
+			return "";
 		});
 	}, [filteredModels]);
 
@@ -912,6 +923,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}, []);
 
 	const startNewConversation = () => {
+		setModelId("");
 		setActiveConversationId(createConversationId());
 		setTextInput("");
 		setAudioUrlInput("");
@@ -1121,12 +1133,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const retryEntry = async (entry: AudioEntry) => {
 		const prompt = entry.inputText?.trim();
 		if (!prompt || !selectedModelEnabled || isLoading) return;
+		const retryMode: AudioMode = entry.mode === "music" ? "music" : "speech";
 		setModelId(entry.modelId);
-		setMode("speech");
+		setMode(retryMode);
 		setTextInput(prompt);
 		requestAnimationFrame(() => {
 			void submit({
 				forcedPrompt: prompt,
+				forcedMode: retryMode,
 				forcedModelId: entry.modelId,
 				forcedConversationId: entry.conversationId,
 				forcedConversationTitle: entry.conversationTitle,
@@ -1152,7 +1166,8 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const timestamp = new Date(entry.createdAt)
 			.toISOString()
 			.replace(/[:.]/g, "-");
-		const filename = `tts-${timestamp}.${extension}`;
+		const prefix = entry.mode === "music" ? "music" : "audio";
+		const filename = `${prefix}-${timestamp}.${extension}`;
 
 		const triggerDownload = (href: string) => {
 			const anchor = document.createElement("a");
@@ -1184,12 +1199,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	const submit = async (overrides?: {
 		forcedPrompt?: string;
+		forcedMode?: AudioMode;
 		forcedModelId?: string;
 		forcedConversationId?: string;
 		forcedConversationTitle?: string;
 	}) => {
 		const targetModelId = overrides?.forcedModelId ?? modelId;
 		if (!targetModelId || isLoading || !selectedModelEnabled) return;
+		const targetMode = overrides?.forcedMode ?? mode;
 		const targetModeSupport =
 			targetModelId === modelId
 				? effectiveModeSupport
@@ -1198,23 +1215,32 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						AUDIO_MODE_UI_ENABLED,
 					);
 		if (
-			(mode === "speech" && !targetModeSupport.speech) ||
-			(mode === "transcription" && !targetModeSupport.transcription) ||
-			(mode === "translation" && !targetModeSupport.translation)
+			(targetMode === "speech" && !targetModeSupport.speech) ||
+			(targetMode === "music" && !targetModeSupport.music) ||
+			(targetMode === "transcription" && !targetModeSupport.transcription) ||
+			(targetMode === "translation" && !targetModeSupport.translation)
 		) {
-			setError(`Model "${targetModelId}" does not support ${mode}.`);
+			setError(`Model "${targetModelId}" does not support ${targetMode}.`);
 			return;
 		}
 		const promptTextSource = overrides?.forcedPrompt ?? textInput;
-		if (mode === "speech" && !promptTextSource.trim()) return;
 		if (
-			(mode === "transcription" || mode === "translation") &&
+			(targetMode === "speech" || targetMode === "music") &&
+			!promptTextSource.trim()
+		) {
+			return;
+		}
+		if (
+			(targetMode === "transcription" || targetMode === "translation") &&
 			!audioUrlInput.trim() &&
 			!audioFile
 		) {
 			return;
 		}
-		const promptText = mode === "speech" ? promptTextSource.trim() : "";
+		const promptText =
+			targetMode === "speech" || targetMode === "music"
+				? promptTextSource.trim()
+				: "";
 		const conversationId =
 			overrides?.forcedConversationId ?? activeConversationId ?? createConversationId();
 		if (!activeConversationId) {
@@ -1223,7 +1249,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const existingTitle = activeConversation?.title?.trim() ?? "";
 		const candidateTitle = promptText
 			? truncateTitle(promptText)
-			: `TTS ${new Date().toLocaleDateString()}`;
+			: `${targetMode === "music" ? "Music" : "TTS"} ${new Date().toLocaleDateString()}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -1244,8 +1270,10 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 					only: [selectedProviderId],
 				};
 			}
-			if (mode === "speech") {
+			if (targetMode === "speech") {
 				requestBody.input = promptText;
+			} else if (targetMode === "music") {
+				requestBody.prompt = promptText;
 			} else {
 				if (audioUrlInput.trim()) {
 					requestBody.audio_url = audioUrlInput.trim();
@@ -1257,7 +1285,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			Object.assign(
 				requestBody,
 				buildAudioRequestOptions(
-					mode,
+					targetMode,
 					targetModelId,
 					targetModelId === modelId
 						? ((selectedProfile?.params as AudioRoomParams) ??
@@ -1270,7 +1298,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					action: mode,
+					action: targetMode,
 					requestBody,
 					appHeaders: APP_HEADERS,
 				}),
@@ -1338,15 +1366,18 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 					selectedProviderId && selectedProviderId !== "auto"
 						? selectedProviderId
 						: undefined,
-				mode,
-				inputText: mode === "speech" ? promptText : undefined,
+				mode: targetMode,
+				inputText:
+					targetMode === "speech" || targetMode === "music"
+						? promptText
+						: undefined,
 				text,
 				audioSrc,
 				isTemporary: temporaryMode,
 				metrics,
 				raw: payload,
 			});
-			if (mode === "speech") {
+			if (targetMode === "speech" || targetMode === "music") {
 				setTextInput("");
 			} else {
 				setAudioUrlInput("");
@@ -1434,18 +1465,18 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
-										className={`h-8 min-w-0 w-full truncate ${
+										className={`h-8 min-w-0 w-full text-sm font-medium ${
 											collapsed
 												? "justify-center px-0"
-												: "flex-1 justify-start pr-2"
+												: "flex-1 justify-start gap-2 px-2"
 										}`}
 										onClick={startNewConversation}
 										aria-label="New Chat"
 									>
-										<SquarePen
-											className={`h-4 w-4 ${collapsed ? "mr-0" : "mr-2"}`}
-										/>
-										{collapsed ? null : "New Chat"}
+										<SquarePen className="h-4 w-4 shrink-0" />
+										{collapsed ? null : (
+											<span className="truncate text-left">New Chat</span>
+										)}
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
@@ -1455,12 +1486,12 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						) : (
 							<Button
 								variant="ghost"
-								className="h-8 min-w-0 w-full truncate flex-1 justify-start pr-2"
+								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={startNewConversation}
 								aria-label="New Chat"
 							>
-								<SquarePen className="mr-2 h-4 w-4" />
-								New Chat
+								<SquarePen className="h-4 w-4 shrink-0" />
+								<span className="truncate text-left">New Chat</span>
 							</Button>
 						)}
 						{collapsed ? (
@@ -1468,7 +1499,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
-										className="h-8 min-w-0 w-full truncate justify-center px-0"
+										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										asChild
 										aria-label="Database"
 									>
@@ -1476,7 +1507,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 											href="/"
 											className="group/db flex w-full min-w-0 items-center justify-center"
 										>
-											<Database className="h-4 w-4 shrink-0 mr-0" />
+											<Database className="h-4 w-4 shrink-0" />
 										</Link>
 									</Button>
 								</TooltipTrigger>
@@ -1487,12 +1518,12 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						) : (
 							<Button
 								variant="ghost"
-								className="h-8 min-w-0 w-full truncate flex-1 justify-start pr-2"
+								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
 								aria-label="Database"
 							>
-								<Link href="/" className="group/db flex w-full min-w-0 items-center">
-									<Database className="h-4 w-4 shrink-0 mr-2" />
+								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
+									<Database className="h-4 w-4 shrink-0" />
 									<span className="flex-1 min-w-0 truncate text-left">Database</span>
 									<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
 								</Link>
@@ -1503,11 +1534,11 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
-										className="h-8 min-w-0 w-full truncate justify-center px-0"
+										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										onClick={() => setConversationSearchOpen(true)}
 										aria-label="Search Chats"
 									>
-										<Search className="h-4 w-4 mr-0" />
+										<Search className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
@@ -1517,12 +1548,12 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						) : (
 							<Button
 								variant="ghost"
-								className="h-8 min-w-0 w-full truncate flex-1 justify-start pr-2"
+								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={() => setConversationSearchOpen(true)}
 								aria-label="Search Chats"
 							>
-								<Search className="mr-2 h-4 w-4" />
-								Search Chats
+								<Search className="h-4 w-4 shrink-0" />
+								<span className="truncate text-left">Search Chats</span>
 							</Button>
 						)}
 					</div>
@@ -1632,7 +1663,9 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 							<div>
 								<p className="text-base font-semibold">Start a new conversation</p>
 								<p className="text-sm text-muted-foreground">
-									Type your prompt and convert it to speech.
+									{mode === "music"
+										? "Describe the track you want to generate."
+										: "Type your prompt and convert it to speech."}
 								</p>
 							</div>
 						</div>
@@ -1826,7 +1859,8 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 													</TooltipTrigger>
 													<TooltipContent side="top">Download</TooltipContent>
 												</Tooltip>
-												{entry.mode === "speech" && entry.inputText ? (
+												{(entry.mode === "speech" || entry.mode === "music") &&
+												entry.inputText ? (
 													<Tooltip>
 														<TooltipTrigger asChild>
 															<Button
@@ -1931,7 +1965,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								);
 							})}
 						</div>
-						{mode === "speech" ? (
+						{mode === "speech" || mode === "music" ? (
 							<Textarea
 								value={textInput}
 								onChange={(event) => setTextInput(event.target.value)}
@@ -1942,7 +1976,11 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 									}
 								}}
 								rows={3}
-								placeholder="Type text for TTS conversion..."
+								placeholder={
+									mode === "music"
+										? "Describe the music you want to generate..."
+										: "Type text for TTS conversion..."
+								}
 								className="min-h-[72px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 							/>
 						) : (
@@ -1961,6 +1999,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								/>
 							</div>
 						)}
+						{error ? <RoomErrorNotice error={error} className="mb-2" /> : null}
 						<div className="flex items-center justify-between pt-2">
 							<div className="flex items-center gap-1.5">
 								<Tooltip>
@@ -1987,9 +2026,6 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 									</TooltipTrigger>
 									<TooltipContent side="top">{composerModelLabel}</TooltipContent>
 								</Tooltip>
-								{error ? (
-									<span className="pl-1 text-xs text-destructive">{error}</span>
-								) : null}
 							</div>
 							<Button
 								className="ml-auto"
@@ -1998,7 +2034,13 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								}}
 								disabled={isLoading || !modelId || !selectedModelEnabled}
 							>
-								{isLoading ? "Converting..." : "Convert"}
+								{isLoading
+									? mode === "music"
+										? "Generating..."
+										: "Converting..."
+									: mode === "music"
+										? "Generate"
+										: "Convert"}
 							</Button>
 						</div>
 					</div>

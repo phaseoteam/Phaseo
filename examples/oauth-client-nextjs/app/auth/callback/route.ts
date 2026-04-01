@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Validate state parameter (CSRF protection)
-  if (!validateState(state)) {
+  if (!(await validateState(state))) {
     return NextResponse.redirect(
       new URL('/?error=invalid_state&error_description=State parameter mismatch', request.url)
     );

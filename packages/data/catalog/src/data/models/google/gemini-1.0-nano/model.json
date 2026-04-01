@@ -1,0 +1,19 @@
+{
+  "model_id": "google/gemini-1.0-nano",
+  "organisation_id": "google",
+  "name": "Gemini 1.0 Nano",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2023-12-06T00:00:00",
+  "release_date": "2023-12-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "google/gemini-1.0-nano",
+  "family_id": "google/gemini-1-0",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

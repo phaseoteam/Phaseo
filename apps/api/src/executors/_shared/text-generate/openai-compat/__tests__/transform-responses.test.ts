@@ -200,6 +200,43 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.provider).toBe("openai");
 		});
 
+		it("maps cached and multimodal usage details into IR usage", () => {
+			const openaiResponse = {
+				id: "resp_usage",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "message",
+						output_index: 0,
+						role: "assistant",
+						content: [{ type: "output_text", text: "ok" }],
+					},
+				],
+				usage: {
+					input_tokens: 90,
+					output_tokens: 30,
+					total_tokens: 120,
+					input_tokens_details: {
+						cached_tokens: 40,
+						input_images: 3,
+					},
+					output_tokens_details: {
+						reasoning_tokens: 8,
+						output_images: 2,
+					},
+				},
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_usage", "gpt-4.1-mini", "openai");
+			expect(ir.usage?.cachedInputTokens).toBe(40);
+			expect(ir.usage?.cachedReadTokensAreSubsetOfInput).toBe(true);
+			expect(ir.usage?.reasoningTokens).toBe(8);
+			expect(ir.usage?._ext?.inputImageTokens).toBe(3);
+			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
+		});
+
 		it("preserves assistant message phase from responses output", () => {
 			const openaiResponse = {
 				id: "resp_openai",

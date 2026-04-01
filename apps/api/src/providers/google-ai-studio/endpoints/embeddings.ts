@@ -25,7 +25,6 @@ function baseHeaders(key: string) {
 
 function normalizeEmbeddingInput(input: string) {
     return {
-        role: "user" as const,
         parts: [{ text: input }],
     };
 }

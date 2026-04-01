@@ -2,11 +2,11 @@
 // Why: Async video billing should hold funds when the job is accepted upstream.
 // How: Computes quoted cost from pricing cards and records a wallet reservation.
 
-import { computeBill } from "@pipeline/pricing/engine";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
 import { reserveWalletCredits } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { computeVideoPricedUsage } from "@core/video-pricing";
 
 export const VIDEO_RESERVATION_PREFIX = "video_hold:";
 
@@ -22,13 +22,6 @@ function toPositiveNumber(value: unknown): number | null {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed) || parsed <= 0) return null;
 	return parsed;
-}
-
-function normalizeRequestOptions(source?: Record<string, unknown>): Record<string, unknown> {
-	if (!source) return {};
-	return Object.fromEntries(
-		Object.entries(source).filter(([, value]) => value !== null && value !== undefined && String(value).trim().length > 0),
-	);
 }
 
 export async function reserveVideoGenerationCredits(args: {
@@ -52,23 +45,32 @@ export async function reserveVideoGenerationCredits(args: {
 		};
 	}
 
-	const pricedBase = computeBill(
-		{ output_video_seconds: seconds },
-		args.pricingCard,
-		{
-			...normalizeRequestOptions(args.requestOptions),
+	const pricedBase = computeVideoPricedUsage({
+		seconds,
+		card: args.pricingCard,
+		model: args.model,
+		requestOptions: {
+			...(args.requestOptions ?? {}),
 			...buildVideoPricingRequestOptions({
+				size: (args.requestOptions as any)?.size ?? (args.requestOptions as any)?.video_params?.size,
 				resolution: (args.requestOptions as any)?.resolution ?? (args.requestOptions as any)?.video_params?.resolution,
+				input_resolution:
+					(args.requestOptions as any)?.input_resolution ?? (args.requestOptions as any)?.video_params?.input_resolution,
+				seconds:
+					(args.requestOptions as any)?.seconds ??
+					(args.requestOptions as any)?.duration_seconds ??
+					(args.requestOptions as any)?.video_params?.seconds ??
+					(args.requestOptions as any)?.video_params?.duration_seconds ??
+					seconds,
 				quality: (args.requestOptions as any)?.quality ?? (args.requestOptions as any)?.video_params?.quality,
 				video_params: (args.requestOptions as any)?.video_params,
 			}),
-			model: args.model,
 		},
-	);
+	});
 	const byokAdjusted = await applyByokServiceFee({
 		teamId: args.teamId,
 		isByok: Boolean(args.isByok),
-		baseCostNanos: Number(pricedBase?.pricing?.total_nanos ?? 0) || 0,
+		baseCostNanos: Number((pricedBase as any)?.pricing?.total_nanos ?? 0) || 0,
 		pricedUsage: pricedBase,
 		currencyHint: "USD",
 	});

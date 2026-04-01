@@ -17,6 +17,58 @@ def calculatePricing(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def cancelBatch(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = f"/batches/{path.get("batch_id", "")}/cancel"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def cancelBatchAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = f"/batch/{path.get("id", "")}/cancel"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def cancelVideo(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/videos/{path.get("video_id", "")}/cancel"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def cancelVideoAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/video/generations/{path.get("video_id", "")}/cancel"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
 def createAnthropicMessage(
 	client: Client,
 	*,
@@ -27,58 +79,6 @@ def createAnthropicMessage(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/messages"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createAudioRealtimeCallPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/audio/realtime/calls"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createAudioRealtimeClientSecretsPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/audio/realtime/client_secrets"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createAudioRealtimeSessionPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/audio/realtime"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createAudioRealtimeSessionsPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/audio/realtime/sessions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -209,58 +209,6 @@ def createOcr(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/ocr"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createRealtimeCallPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/realtime/calls"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createRealtimeClientSecretsPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/realtime/client_secrets"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createRealtimeSessionPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/realtime"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createRealtimeSessionsPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = "/realtime/sessions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -433,7 +381,7 @@ def getActivity(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def getAnalytics(
+def getActivityAlias(
 	client: Client,
 	*,
 	path: Optional[Dict[str, Any]] = None,
@@ -443,19 +391,6 @@ def getAnalytics(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/analytics"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def getAudioRealtimeCallPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = f"/audio/realtime/calls/{path.get("call_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -547,19 +482,6 @@ def getProviderDerankStatus(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/health/providers/{path.get("provider_id", "")}/derank"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def getRealtimeCallPlaceholder(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Any:
-	path = path or {}
-	resolved_path = f"/realtime/calls/{path.get("call_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -758,6 +680,71 @@ def listProviders(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listTeamModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/gateway/models/me"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listVideoModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/videos/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listVideoModelsAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/video/generations/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listVideos(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/videos"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listVideosAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/video/generations"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def openResponsesWebSocket(
 	client: Client,
 	*,
@@ -823,6 +810,19 @@ def retrieveFile(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def retrieveFileContent(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/files/{path.get("file_id", "")}/content"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def updateManagementKey(
 	client: Client,
 	*,
@@ -862,4 +862,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createOcr", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteOAuthClient", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateManagementKey", "updateOAuthClient", "uploadFile"]
+operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createOcr", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteOAuthClient", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateManagementKey", "updateOAuthClient", "uploadFile"]

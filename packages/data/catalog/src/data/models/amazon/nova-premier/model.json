@@ -1,0 +1,40 @@
+{
+  "model_id": "amazon/nova-premier",
+  "organisation_id": "amazon",
+  "name": "Nova Premier",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-04-30T00:00:00",
+  "release_date": "2025-04-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "amazon/nova-premier",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://aws.amazon.com/blogs/aws/amazon-nova-premier-our-most-capable-model-for-complex-tasks-and-teacher-for-model-distillation/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-04-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 10000
+    }
+  ],
+  "benchmarks": []
+}

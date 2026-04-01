@@ -13,6 +13,16 @@ function pickDefined<T extends Record<string, any>>(value: T): Partial<T> {
     ) as Partial<T>;
 }
 
+function extractInputReferenceString(value: unknown): string {
+	if (typeof value === "string") return value;
+	if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+	const source = value as Record<string, unknown>;
+	const candidate =
+		(source.image_url && typeof source.image_url === "object" ? (source.image_url as Record<string, unknown>).url : undefined) ??
+		source.url;
+	return typeof candidate === "string" ? candidate : "";
+}
+
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const keyInfo = await resolveOpenAICompatKey(args);
@@ -21,59 +31,48 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         ...adapterPayload,
         model: args.providerModelSlug || adapterPayload.model,
     };
+	const legacyBody = body as Record<string, any>;
+    const providerParams =
+        body.provider_params && typeof body.provider_params === "object"
+            ? body.provider_params
+            : {};
 
-    const googleConfig = body.config?.google ?? {};
-
-	const seconds = body.seconds
-		?? body.duration_seconds
-		?? body.duration
-		?? googleConfig.duration_seconds
-		?? googleConfig.durationSeconds;
-	const size = body.size ?? body.resolution ?? googleConfig.size ?? googleConfig.resolution;
-    const compressionQuality = body.compression_quality
-        ?? googleConfig.compression_quality
-        ?? googleConfig.compressionQuality;
-    const negativePrompt = body.negative_prompt
-        ?? googleConfig.negative_prompt
-        ?? googleConfig.negativePrompt;
-    const sampleCount = body.sample_count
-        ?? googleConfig.sample_count
-        ?? googleConfig.sampleCount;
-    const numberOfVideos = body.number_of_videos
-        ?? googleConfig.number_of_videos
-        ?? googleConfig.numberOfVideos;
-    const personGeneration = body.person_generation
-        ?? googleConfig.person_generation
-        ?? googleConfig.personGeneration;
-    const generateAudio = body.generate_audio
-        ?? googleConfig.generate_audio
-        ?? googleConfig.generateAudio;
-    const enhancePrompt = body.enhance_prompt
-        ?? googleConfig.enhance_prompt
-        ?? googleConfig.enhancePrompt;
-    const outputStorageUri = body.output_storage_uri
-        ?? googleConfig.output_storage_uri
-        ?? googleConfig.outputStorageUri;
-    const aspectRatio = body.aspect_ratio
-        ?? googleConfig.aspect_ratio
-        ?? googleConfig.aspectRatio;
+	const seconds = body.duration
+		?? providerParams.duration
+		?? providerParams.duration_seconds
+		?? providerParams.durationSeconds;
+	const size = body.size ?? body.resolution ?? providerParams.size ?? providerParams.resolution;
+    const compressionQuality = body.compression_quality ?? providerParams.compression_quality ?? providerParams.compressionQuality;
+    const negativePrompt = body.negative_prompt ?? providerParams.negative_prompt ?? providerParams.negativePrompt;
+    const sampleCount = body.sample_count ?? providerParams.sample_count ?? providerParams.sampleCount;
+    const numberOfVideos = legacyBody.number_of_videos ?? providerParams.number_of_videos ?? providerParams.numberOfVideos;
+    const personGeneration = body.person_generation ?? providerParams.person_generation ?? providerParams.personGeneration;
+    const generateAudio = body.generate_audio ?? providerParams.generate_audio ?? providerParams.generateAudio;
+    const enhancePrompt = body.enhance_prompt ?? providerParams.enhance_prompt ?? providerParams.enhancePrompt;
+    const outputStorageUri = legacyBody.output_storage_uri ?? providerParams.output_storage_uri ?? providerParams.outputStorageUri;
+    const aspectRatio = body.aspect_ratio ?? legacyBody.ratio ?? providerParams.aspect_ratio ?? providerParams.aspectRatio;
 
     const isOpenAIProvider = args.providerId === "openai";
-    const sendAsMultipart = isOpenAIProvider && Boolean(body.input_reference);
+	const inputReferenceValue = extractInputReferenceString(
+        Array.isArray(body.input_references)
+			? body.input_references.find((item) => item.role === "first_frame") ?? body.input_references[0]
+			: undefined,
+    );
+    const sendAsMultipart = isOpenAIProvider && inputReferenceValue.length > 0;
     const headers = openAICompatHeaders(args.providerId, keyInfo.key);
     let requestBody: BodyInit;
 
     if (sendAsMultipart) {
 		const form = new FormData();
-		form.append("model", body.model);
-		form.append("prompt", body.prompt);
-		if (seconds != null) form.append("seconds", String(seconds));
+            form.append("model", body.model);
+            form.append("prompt", body.prompt);
+            if (seconds != null) form.append("seconds", String(seconds));
 		if (size) form.append("size", size);
 
-        const ref = body.input_reference ?? "";
+        const ref = inputReferenceValue;
         let fileBlob: Blob | null = null;
         let filename = "reference";
-        let mimeType = body.input_reference_mime_type ?? "application/octet-stream";
+        let mimeType = legacyBody.input_reference_mime_type ?? "application/octet-stream";
 
         const dataUrlMatch = ref.match(/^data:([^;]+);base64,(.+)$/);
         if (dataUrlMatch) {
@@ -111,17 +110,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 			...(seconds != null ? { seconds } : {}),
 			...(size ? { size } : {}),
 			...pickDefined({
-                quality: body.quality,
-                input_reference: body.input_reference,
-                input_reference_mime_type: body.input_reference_mime_type,
-                input: body.input,
-                input_image: body.input_image,
-                input_video: body.input_video,
-                last_frame: body.last_frame ?? body.input_last_frame,
-                reference_images: body.reference_images,
-                duration: body.duration,
-                duration_seconds: body.duration_seconds,
-                ratio: body.ratio,
+                quality: legacyBody.quality,
+                input_reference: inputReferenceValue || undefined,
                 aspect_ratio: aspectRatio,
 				resolution: size,
                 compression_quality: compressionQuality,

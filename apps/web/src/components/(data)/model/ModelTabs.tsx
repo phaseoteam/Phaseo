@@ -22,15 +22,24 @@ type ModelTab = {
 
 const tabs: ModelTab[] = [
 	{ label: "Overview", key: "overview" },
+	{ label: "Playground", key: "playground" },
+	{ label: "Providers", key: "providers" },
+	{ label: "Performance", key: "performance" },
+	{ label: "Apps", key: "apps" },
+	{ label: "Activity", key: "activity" },
+	{ label: "Quickstart", key: "quickstart" },
+	{ label: "Benchmarks", key: "benchmarks" },
 	{ label: "Family", key: "family", hidden: true },
 	{ label: "Timeline", key: "timeline" },
-	{ label: "Benchmarks", key: "benchmarks" },
-	{ label: "Providers", key: "providers" },
-	{ label: "Quickstart", key: "quickstart" },
-	{ label: "Performance", key: "performance" },
 ];
 
-export default function TabBar({ modelId }: { modelId: string }) {
+export default function TabBar({
+	modelId,
+	visibleTabKeys,
+}: {
+	modelId: string;
+	visibleTabKeys?: string[];
+}) {
 	// With layouts removed, derive the active tab from the pathname.
 	const pathname = usePathname();
 	const pathnameSegments = pathname
@@ -40,7 +49,13 @@ export default function TabBar({ modelId }: { modelId: string }) {
 	const lastSegment = pathnameSegments[pathnameSegments.length - 1];
 	const normalizedLastSegment =
 		lastSegment === "pricing" ? "providers" : lastSegment;
-	const visibleTabs = tabs.filter((tab) => !tab.hidden);
+	const visibleKeySet =
+		visibleTabKeys && visibleTabKeys.length > 0
+			? new Set(visibleTabKeys)
+			: null;
+	const visibleTabs = tabs.filter(
+		(tab) => !tab.hidden && (!visibleKeySet || visibleKeySet.has(tab.key))
+	);
 	const activeKey = tabs.some((t) => t.key === lastSegment)
 		? (lastSegment as string)
 		: tabs.some((t) => t.key === normalizedLastSegment)

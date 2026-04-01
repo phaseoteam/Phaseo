@@ -204,7 +204,7 @@ export async function updateModelAliases(input: UpdateModelAliasesInput) {
 export interface CreateProviderModelInput {
 	providerId: string;
 	apiModelId: string;
-	internalModelId: string;
+	internalModelId?: string;
 	isActiveGateway: boolean;
 	inputModalities: string[];
 	outputModalities: string[];
@@ -221,7 +221,8 @@ export async function createProviderModel(input: CreateProviderModelInput) {
 	const { error } = await supabase.from("data_api_provider_models").insert({
 		provider_id: input.providerId,
 		api_model_id: input.apiModelId,
-		internal_model_id: input.internalModelId,
+		model_id: input.apiModelId,
+		internal_model_id: null,
 		is_active_gateway: input.isActiveGateway,
 		input_modalities: input.inputModalities,
 		output_modalities: input.outputModalities,
@@ -233,7 +234,7 @@ export async function createProviderModel(input: CreateProviderModelInput) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateModelDataTags({ modelId: input.internalModelId });
+	revalidateModelDataTags({ modelId: input.apiModelId });
 
 	return { success: true };
 }
@@ -255,7 +256,7 @@ export async function updateProviderModel(input: UpdateProviderModelInput) {
 
 	const { data: providerModelRow } = await supabase
 		.from("data_api_provider_models")
-		.select("internal_model_id")
+		.select("model_id")
 		.eq("provider_api_model_id", input.providerApiModelId)
 		.maybeSingle();
 
@@ -281,7 +282,7 @@ export async function updateProviderModel(input: UpdateProviderModelInput) {
 	}
 
 	revalidateModelDataTags({
-		modelId: providerModelRow?.internal_model_id ?? null,
+		modelId: providerModelRow?.model_id ?? null,
 	});
 
 	return { success: true };
@@ -295,7 +296,7 @@ export async function deleteProviderModel(providerApiModelId: string) {
 
 	const { data: providerModelRow } = await supabase
 		.from("data_api_provider_models")
-		.select("internal_model_id")
+		.select("model_id")
 		.eq("provider_api_model_id", providerApiModelId)
 		.maybeSingle();
 
@@ -309,7 +310,7 @@ export async function deleteProviderModel(providerApiModelId: string) {
 	}
 
 	revalidateModelDataTags({
-		modelId: providerModelRow?.internal_model_id ?? null,
+		modelId: providerModelRow?.model_id ?? null,
 	});
 
 	return { success: true };
@@ -558,7 +559,7 @@ export async function fetchCompleteModelData(modelId: string) {
 			effective_from,
 			effective_to
 		`)
-		.eq("internal_model_id", modelId);
+		.eq("model_id", modelId);
 
 	// Fetch benchmarks
 	const { data: benchmarks } = await supabase

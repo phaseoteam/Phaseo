@@ -22,7 +22,6 @@ import { ocrRoutes } from "./ocr";
 import { musicGenerateRoutes } from "./music-generate";
 import { batchRoutes } from "./batches";
 import { filesRoutes } from "./files";
-import { realtimeRoutes } from "./realtime";
 
 export const inferenceRouter = new Hono<Env>();
 
@@ -45,8 +44,6 @@ inferenceRouter.route("/music/generations", musicGenerateRoutes);
 inferenceRouter.route("/batch", batchRoutes);
 inferenceRouter.route("/batches", batchRoutes);
 inferenceRouter.route("/files", filesRoutes);
-inferenceRouter.route("/realtime", realtimeRoutes);
-inferenceRouter.route("/audio/realtime", realtimeRoutes);
 
 // Backward-compatible alias for existing imports.
 export const dataRouter = inferenceRouter;

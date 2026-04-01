@@ -130,6 +130,12 @@ function slugifyId(value: string) {
 		.replace(/^-+|-+$/g, "");
 }
 
+function inferOrganisationIdFromApiModelId(modelId: string): string | null {
+	const [provider] = modelId.split("/");
+	const normalized = provider?.trim().toLowerCase();
+	return normalized ? normalized : null;
+}
+
 const ORG_SOCIAL_PLATFORM_ORDER = [
 	"discord",
 	"github",
@@ -247,7 +253,7 @@ async function deleteModelGraph(
 	const { data: providerModelRows, error: providerRowsError } = await supabase
 		.from("data_api_provider_models")
 		.select("provider_api_model_id, provider_id, api_model_id")
-		.eq("internal_model_id", modelId);
+		.eq("model_id", modelId);
 	if (providerRowsError) throw new Error(providerRowsError.message);
 
 	const providerApiModelIds = (providerModelRows ?? [])
@@ -272,7 +278,7 @@ async function deleteModelGraph(
 	const { error: providerModelsDeleteError } = await supabase
 		.from("data_api_provider_models")
 		.delete()
-		.eq("internal_model_id", modelId);
+		.eq("model_id", modelId);
 	if (providerModelsDeleteError) throw new Error(providerModelsDeleteError.message);
 
 	const { error: aliasesDeleteError } = await supabase
@@ -310,6 +316,12 @@ async function deleteModelGraph(
 		.delete()
 		.eq("model_id", modelId);
 	if (modelDeleteError) throw new Error(modelDeleteError.message);
+
+	const { error: apiModelDeleteError } = await supabase
+		.from("data_api_models")
+		.delete()
+		.eq("api_model_id", modelId);
+	if (apiModelDeleteError) throw new Error(apiModelDeleteError.message);
 }
 
 export async function createOrganisationAction(formData: FormData) {
@@ -561,6 +573,14 @@ export async function createModelAction(formData: FormData) {
 			effective_to?: string | null;
 		}>
 	>(formData.get("pricing_rules_payload"), "pricing_rules_payload", []);
+	const subscriptionPlanModels = parseJsonField<
+		Array<{
+			plan_uuid?: string;
+			model_info?: unknown;
+			rate_limit?: unknown;
+			other_info?: unknown;
+		}>
+	>(formData.get("subscription_plan_models_payload"), "subscription_plan_models_payload", []);
 	const modelDetails = parseJsonField<
 		Array<{
 			detail_name?: string;
@@ -596,6 +616,25 @@ export async function createModelAction(formData: FormData) {
 
 	let insertedModel = false;
 	try {
+		const inferredOrganisationId = inferOrganisationIdFromApiModelId(modelId);
+		const canonicalOrganisationId = organisationId || inferredOrganisationId;
+		if (!canonicalOrganisationId) {
+			throw new Error("organisation_id is required");
+		}
+
+		const { error: apiModelError } = await supabase
+			.from("data_api_models")
+			.upsert(
+				{
+					api_model_id: modelId,
+					organisation_id: canonicalOrganisationId,
+					display_name: name,
+					updated_at: new Date().toISOString(),
+				},
+				{ onConflict: "api_model_id" }
+			);
+		if (apiModelError) throw new Error(apiModelError.message);
+
 		const { error } = await supabase.from("data_models").insert({
 			model_id: modelId,
 			name,
@@ -639,7 +678,7 @@ export async function createModelAction(formData: FormData) {
 		}
 
 	const providerModelRows = providerModels
-		.filter((row) => row.provider_id && row.api_model_id)
+		.filter((row) => row.provider_id)
 		.map((row) => {
 			const overrideRaw =
 				typeof row.prompt_training_policy_override === "string"
@@ -647,7 +686,7 @@ export async function createModelAction(formData: FormData) {
 					: "";
 			return {
 				provider_id: row.provider_id!.trim(),
-				api_model_id: row.api_model_id!.trim(),
+				api_model_id: modelId,
 				provider_model_slug: row.provider_model_slug?.trim() || null,
 				prompt_training_policy_override: overrideRaw
 					? normalizeProviderPromptTrainingPolicy(overrideRaw)
@@ -670,10 +709,10 @@ export async function createModelAction(formData: FormData) {
 		});
 
 	const providerCapabilityRows = providerCapabilities
-		.filter((row) => row.provider_id && row.api_model_id && row.capability_id)
+		.filter((row) => row.provider_id && row.capability_id)
 		.map((row) => ({
 			provider_id: row.provider_id!.trim(),
-			api_model_id: row.api_model_id!.trim(),
+			api_model_id: modelId,
 			capability_id: row.capability_id!.trim(),
 			status: row.status ?? "active",
 			max_input_tokens: row.max_input_tokens ?? null,
@@ -694,10 +733,10 @@ export async function createModelAction(formData: FormData) {
 		}));
 
 	const pricingRuleRows = pricingRules
-		.filter((row) => row.provider_id && row.api_model_id && row.capability_id && row.meter)
+		.filter((row) => row.provider_id && row.capability_id && row.meter)
 		.map((row) => ({
 			provider_id: row.provider_id!.trim(),
-			api_model_id: row.api_model_id!.trim(),
+			api_model_id: modelId,
 			capability_id: row.capability_id!.trim(),
 			pricing_plan: row.pricing_plan?.trim() || "standard",
 			meter: row.meter!.trim(),
@@ -751,6 +790,23 @@ export async function createModelAction(formData: FormData) {
 				pricing_rules: pricingRuleRows,
 				model_details: modelDetailRows,
 				links: modelLinkRows,
+				subscription_plan_models: subscriptionPlanModels
+					.filter((row) => typeof row.plan_uuid === "string" && row.plan_uuid.trim())
+					.map((row) => ({
+						plan_uuid: row.plan_uuid!.trim(),
+						model_info:
+							row.model_info && typeof row.model_info === "object"
+								? row.model_info
+								: {},
+						rate_limit:
+							row.rate_limit && typeof row.rate_limit === "object"
+								? row.rate_limit
+								: {},
+						other_info:
+							row.other_info && typeof row.other_info === "object"
+								? row.other_info
+								: {},
+					})),
 			});
 		}
 	} catch (error) {
@@ -774,10 +830,25 @@ export async function createModelAction(formData: FormData) {
 export async function updateModelAction(modelId: string, formData: FormData) {
 	const supabase = await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
+	const name = requiredString(formData.get("name"), "name");
+
+	const { error: apiModelError } = await supabase
+		.from("data_api_models")
+		.upsert(
+			{
+				api_model_id: modelId,
+				organisation_id: organisationId,
+				display_name: name,
+				updated_at: new Date().toISOString(),
+			},
+			{ onConflict: "api_model_id" }
+		);
+	if (apiModelError) throw new Error(apiModelError.message);
+
 	const { error } = await supabase
 		.from("data_models")
 		.update({
-			name: requiredString(formData.get("name"), "name"),
+			name,
 			organisation_id: organisationId,
 			status: optionalString(formData.get("status")),
 			previous_model_id: optionalString(formData.get("previous_model_id")),

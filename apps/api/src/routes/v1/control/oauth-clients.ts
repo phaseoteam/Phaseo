@@ -86,7 +86,7 @@ const updateOAuthClientSchema = z.object({
 	logo_url: z.string().url().optional(),
 	privacy_policy_url: z.string().url().optional(),
 	terms_of_service_url: z.string().url().optional(),
-	redirect_uris: z.array(z.string().url()).optional(),
+	redirect_uris: z.array(z.string().url()).min(1).optional(),
 });
 
 /**
@@ -151,6 +151,7 @@ app.post("/", async (c) => {
 				team_id: authCtx.teamId,
 				name: input.name,
 				description: input.description,
+				redirect_uris: input.redirect_uris,
 				homepage_url: input.homepage_url,
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
@@ -313,6 +314,7 @@ app.patch("/:clientId", async (c) => {
 				logo_url: updates.logo_url,
 				privacy_policy_url: updates.privacy_policy_url,
 				terms_of_service_url: updates.terms_of_service_url,
+				redirect_uris: updates.redirect_uris,
 				updated_at: new Date().toISOString(),
 			})
 			.eq("client_id", clientId)

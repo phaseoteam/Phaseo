@@ -1,0 +1,18 @@
+{
+  "model_id": "moonshotai/kimi-k2.5",
+  "organisation_id": "moonshotai",
+  "name": "Kimi K2.5",
+  "status": "Available",
+  "previous_model_id": "moonshotai/kimi-k2-thinking-2025-11-06",
+  "announced_date": "2026-01-27T00:00:00",
+  "release_date": "2026-01-27T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "moonshotai/kimi-k2.5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

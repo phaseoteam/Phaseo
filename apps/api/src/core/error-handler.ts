@@ -426,6 +426,59 @@ export function classifyErrorType(args: {
     return "system";
 }
 
+function hasExecuteUpstreamEvidence(body: any): boolean {
+    if (!body || typeof body !== "object") return false;
+    if (Array.isArray(body.failure_sample) && body.failure_sample.length > 0) return true;
+    if (Array.isArray(body.failed_providers) && body.failed_providers.length > 0) return true;
+    if (Array.isArray(body.failed_statuses) && body.failed_statuses.length > 0) return true;
+    if (
+        body.reason === "all_candidates_failed" ||
+        body.reason === "upstream_provider_payment_required"
+    ) {
+        return true;
+    }
+    if (typeof body.provider_payment_required_provider === "string") return true;
+    if (body.upstream_error && typeof body.upstream_error === "object") return true;
+    return false;
+}
+
+export function classifyErrorOrigin(args: {
+    stage: "before" | "execute";
+    status?: number | null;
+    errorCode?: string | null;
+    body?: any;
+}): "upstream" | "gateway" | "user" {
+    const code = String(args.errorCode ?? "").toLowerCase();
+    const status = Number(args.status ?? 0);
+
+    if (args.stage === "before") {
+        if (status >= 500) return "gateway";
+        return "user";
+    }
+
+    if (code === "upstream_error" || code === "provider_payment_required") {
+        return "upstream";
+    }
+    if (hasExecuteUpstreamEvidence(args.body)) {
+        return "upstream";
+    }
+
+    if (
+        code === "pipeline_execution_error" ||
+        code === "before_error" ||
+        code.includes("pipeline") ||
+        code.includes("gateway") ||
+        code.includes("executor")
+    ) {
+        return "gateway";
+    }
+
+    if (status >= 500) return "gateway";
+    if (status === 408 || status === 429) return "upstream";
+    if (status >= 400) return "user";
+    return "gateway";
+}
+
 // Helper to safely parse JSON from a Response
 export async function safeJson(res: Response): Promise<any> {
     try { return await res.clone().json(); } catch { return {}; }
@@ -474,17 +527,27 @@ export async function handleError({
     const upstreamUnsupportedParamSignal = extractUpstreamUnsupportedParamSignal({ stage, body });
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
     let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
+    let errorOrigin = classifyErrorOrigin({ stage, status: res.status, errorCode: errCode, body });
     if (upstreamUnsupportedParamSignal) {
         // Unsupported-param failures returned by upstream are generally a gateway/provider
         // capability-mapping issue, not caller behavior.
         attribution = "upstream";
         errorType = "system";
+        errorOrigin = "upstream";
     }
     headers.set("X-Gateway-Error-Attribution", attribution);
+    headers.set("X-Gateway-Error-Origin", errorOrigin);
 
     const attributionHeaders = req
         ? readAttributionHeaders(req)
-        : { referer: null, appTitle: null, appId: null, appName: null };
+        : {
+            referer: null,
+            appTitle: null,
+            appId: null,
+            appName: null,
+            sessionId: null,
+            userId: null,
+        };
     const requestMeta = (() => {
         if (!req) {
             return {
@@ -545,6 +608,8 @@ export async function handleError({
         status: statusCode,
         internalCode: upstreamUnsupportedParamSignal?.internalCode ?? null,
         unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
+        errorOrigin,
+        attribution,
     });
     if (debugEnabled) {
         void logDebugEvent("error.upstream", {
@@ -564,6 +629,7 @@ export async function handleError({
         status_code: statusCode,
         error: errCode,
         error_type: errorType,
+        error_origin: errorOrigin,
         description: fallbackDescription,
     };
     if (
@@ -740,6 +806,25 @@ export async function handleError({
         referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
         appId: ctx?.meta?.appId ?? body?.meta?.appId ?? attributionHeaders.appId ?? null,
         appName: ctx?.meta?.appName ?? body?.meta?.appName ?? attributionHeaders.appName ?? null,
+        authMethod: ctx?.meta?.authMethod ?? "api_key",
+        oauthClientId: ctx?.meta?.oauthClientId ?? null,
+        oauthUserId: ctx?.meta?.oauthUserId ?? null,
+        requestUserId:
+            ctx?.meta?.requestUserId ??
+            (typeof body?.user === "string" ? body.user : null) ??
+            attributionHeaders.userId ??
+            null,
+        sessionId:
+            ctx?.meta?.sessionId ??
+            (typeof body?.session_id === "string" ? body.session_id : null) ??
+            (typeof body?.sessionId === "string" ? body.sessionId : null) ??
+            attributionHeaders.sessionId ??
+            null,
+        traceData:
+            ctx?.meta?.trace ??
+            (body?.trace && typeof body.trace === "object" && !Array.isArray(body.trace)
+                ? body.trace
+                : null),
         statusCode,
         errorCode: `${attribution}:${errCode}`,
         errorMessage: description ?? fallbackDescription,

@@ -1,0 +1,36 @@
+{
+  "model_id": "x-ai/grok-1.5v",
+  "organisation_id": "x-ai",
+  "name": "Grok 1.5V",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2024-04-12T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "x-ai/grok-1.5v",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://x.ai/api"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/blog/grok-1.5v"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    }
+  ],
+  "benchmarks": []
+}

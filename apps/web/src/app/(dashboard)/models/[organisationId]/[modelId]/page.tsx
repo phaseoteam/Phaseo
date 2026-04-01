@@ -1,5 +1,5 @@
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
-import ModelOverview from "@/components/(data)/model/overview/ModelOverview";
+import ModelOverviewSections from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
@@ -8,7 +8,6 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
-import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
 import { permanentRedirect } from "next/navigation";
 
 async function fetchModelForMetadata(modelId: string, includeHidden: boolean) {
@@ -120,15 +119,13 @@ export default async function Page({
 
 	const model = await getModelOverviewCached(modelId, includeHidden);
 
-	if (!model) {
-		return <ModelNotFoundState modelId={modelId} />;
-	}
-
-	// console.log("ModelPage model:", model);
-
 	return (
-		<ModelDetailShell modelId={modelId} tab="overview">
-			<ModelOverview model={model} />
+		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
+			<ModelOverviewSections
+				modelId={modelId}
+				model={model}
+				includeHidden={includeHidden}
+			/>
 		</ModelDetailShell>
 	);
 }

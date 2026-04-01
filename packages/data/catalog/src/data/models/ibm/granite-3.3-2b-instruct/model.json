@@ -1,0 +1,40 @@
+{
+  "model_id": "ibm/granite-3.3-2b-instruct",
+  "organisation_id": "ibm",
+  "name": "Granite 3.3 2B Instruct",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-04-16T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "ibm/granite-3.3-2b-instruct",
+  "family_id": "ibm/granite-3-3",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://www.ibm.com/granite/docs/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://www.ibm.com/granite/playground/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://huggingface.co/ibm-granite/granite-3.3-8b-base"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/ibm-granite/granite-3.3-language-models"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/ibm-granite/granite-3.3-8b-base"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

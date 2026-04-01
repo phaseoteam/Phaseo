@@ -51,6 +51,8 @@ function Carousel({
   children,
   ...props
 }: React.ComponentProps<"div"> & CarouselProps) {
+  const WHEEL_SCROLL_DELTA_THRESHOLD = 180
+  const WHEEL_SCROLL_COOLDOWN_MS = 160
   const [carouselRef, api] = useEmblaCarousel(
     {
       ...opts,
@@ -60,6 +62,8 @@ function Carousel({
   )
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
+  const wheelDeltaAccumulatorRef = React.useRef(0)
+  const lastWheelScrollAtRef = React.useRef(0)
 
   const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) return
@@ -86,6 +90,45 @@ function Carousel({
       }
     },
     [scrollPrev, scrollNext]
+  )
+
+  const handleWheel = React.useCallback(
+    (event: React.WheelEvent<HTMLDivElement>) => {
+      if (orientation !== "horizontal" || !api) return
+
+      const isHorizontalGesture =
+        event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      if (!isHorizontalGesture) return
+
+      const rawDelta =
+        event.shiftKey && Math.abs(event.deltaX) < 1
+          ? event.deltaY
+          : event.deltaX
+      if (Math.abs(rawDelta) < 1) return
+
+      event.preventDefault()
+      wheelDeltaAccumulatorRef.current += rawDelta
+
+      const now = Date.now()
+      if (now - lastWheelScrollAtRef.current < WHEEL_SCROLL_COOLDOWN_MS) {
+        return
+      }
+
+      const accumulatedDelta = wheelDeltaAccumulatorRef.current
+      if (Math.abs(accumulatedDelta) < WHEEL_SCROLL_DELTA_THRESHOLD) {
+        return
+      }
+
+      if (accumulatedDelta > 0) {
+        scrollNext()
+      } else {
+        scrollPrev()
+      }
+
+      wheelDeltaAccumulatorRef.current = 0
+      lastWheelScrollAtRef.current = now
+    },
+    [api, orientation, scrollNext, scrollPrev]
   )
 
   React.useEffect(() => {
@@ -120,6 +163,7 @@ function Carousel({
     >
       <div
         onKeyDownCapture={handleKeyDown}
+        onWheelCapture={handleWheel}
         className={cn("relative", className)}
         role="region"
         aria-roledescription="carousel"

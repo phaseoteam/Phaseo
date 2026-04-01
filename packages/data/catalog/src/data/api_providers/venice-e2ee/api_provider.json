@@ -1,0 +1,8 @@
+{
+  "api_provider_id": "venice/e2ee",
+  "api_provider_name": "Venice (E2EE)",
+  "description": null,
+  "link": "https://docs.venice.ai/",
+  "country_code": "US",
+  "status": "Beta"
+}

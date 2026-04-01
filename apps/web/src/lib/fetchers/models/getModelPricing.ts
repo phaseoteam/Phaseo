@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/utils/supabase/client";
+import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 /** mirrors new rules schema */
 export interface PricingRule {
@@ -111,7 +112,7 @@ export default async function getModelPricing(
         .maybeSingle();
 
     if (modelError) throw new Error(modelError.message || "Failed to load model metadata");
-    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+    if (modelRow && !includeHidden && modelRow.hidden) {
         throw new Error("Model not found");
     }
 
@@ -121,7 +122,6 @@ export default async function getModelPricing(
         api_model_id,
         model_id,
         provider_model_slug,
-        internal_model_id,
         is_active_gateway,
         input_modalities,
         output_modalities,
@@ -158,7 +158,6 @@ export default async function getModelPricing(
         api_model_id,
         model_id,
         provider_model_slug,
-        internal_model_id,
         is_active_gateway,
         input_modalities,
         output_modalities,
@@ -189,39 +188,51 @@ export default async function getModelPricing(
     // context_length / max_output_tokens columns on data_api_provider_models.
     let pmRows: any[] | null = null;
     let pmError: any = null;
+    const fetchProviderRows = async (selectClause: string) => {
+        const [byInternalRes, byApiRes] = await Promise.all([
+            supabase
+                .from("data_api_provider_models")
+                .select(selectClause)
+                .eq("model_id", modelId),
+            supabase
+                .from("data_api_provider_models")
+                .select(selectClause)
+                .eq("api_model_id", modelId),
+        ]);
+
+        if (byInternalRes.error && byApiRes.error) {
+            return {
+                rows: null as any[] | null,
+                error: byInternalRes.error,
+            };
+        }
+
+        const mergedRows = [
+            ...((byInternalRes.data ?? []) as any[]),
+            ...((byApiRes.data ?? []) as any[]),
+        ];
+        const byProviderApiModelId = new Map<string, any>();
+        for (const row of mergedRows) {
+            const key = String(row?.provider_api_model_id ?? "").trim();
+            if (!key) continue;
+            byProviderApiModelId.set(key, row);
+        }
+
+        return {
+            rows: Array.from(byProviderApiModelId.values()),
+            error: byInternalRes.error ?? byApiRes.error ?? null,
+        };
+    };
+
     {
-        const res = await supabase
-            .from("data_api_provider_models")
-            .select(providerModelSelect)
-            .eq("model_id", modelId);
-        pmRows = res.data as any[] | null;
+        const res = await fetchProviderRows(providerModelSelect);
+        pmRows = res.rows;
         pmError = res.error;
     }
 
     if (pmError && isMissingProviderModelColumnError(pmError)) {
-        const res = await supabase
-            .from("data_api_provider_models")
-            .select(providerModelSelectLegacy)
-            .eq("model_id", modelId);
-        pmRows = res.data as any[] | null;
-        pmError = res.error;
-    }
-
-    if (!pmError && (!pmRows || pmRows.length === 0)) {
-        const res = await supabase
-            .from("data_api_provider_models")
-            .select(providerModelSelect)
-            .eq("internal_model_id", modelId);
-        pmRows = res.data as any[] | null;
-        pmError = res.error;
-    }
-
-    if (pmError && isMissingProviderModelColumnError(pmError) && (!pmRows || pmRows.length === 0)) {
-        const res = await supabase
-            .from("data_api_provider_models")
-            .select(providerModelSelectLegacy)
-            .eq("internal_model_id", modelId);
-        pmRows = res.data as any[] | null;
+        const res = await fetchProviderRows(providerModelSelectLegacy);
+        pmRows = res.rows;
         pmError = res.error;
     }
 
@@ -287,7 +298,9 @@ export default async function getModelPricing(
                 created_at: row.created_at,
                 updated_at: row.updated_at,
                 params: capability.params ?? null,
-                quantization_scheme: row.quantization_scheme ?? null,
+                quantization_scheme: normalizeQuantizationScheme(
+                    row.quantization_scheme ?? null
+                ),
                 context_length: row.context_length ?? null,
                 prompt_training_policy_override:
                     row.prompt_training_policy_override ?? null,

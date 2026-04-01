@@ -54,7 +54,7 @@ export default async function NewBroadcastDestinationPage({
 		supabase
 			.from("data_api_provider_models")
 			.select(
-				"provider_id, api_model_id, is_active_gateway, model:data_models!data_api_provider_models_internal_model_id_fkey(model_id, name, organisation_id)",
+				"provider_id, api_model_id, model_id, is_active_gateway",
 			)
 			.eq("is_active_gateway", true),
 	]);
@@ -64,6 +64,29 @@ export default async function NewBroadcastDestinationPage({
 	if (providersResult.error) throw new Error(providersResult.error.message);
 	if (activeProviderModelsResult.error) {
 		throw new Error(activeProviderModelsResult.error.message);
+	}
+
+	const canonicalModelIds = Array.from(
+		new Set(
+			(activeProviderModelsResult.data ?? [])
+				.map((row: any) => row?.model_id as string | null)
+				.filter((id): id is string => Boolean(id)),
+		),
+	);
+	const { data: activeModels, error: activeModelsError } = canonicalModelIds.length
+		? await supabase
+				.from("data_models")
+				.select("model_id, name, organisation_id")
+				.in("model_id", canonicalModelIds)
+		: { data: [] as any[], error: null as any };
+	if (activeModelsError) {
+		throw new Error(activeModelsError.message);
+	}
+	const activeModelMap = new Map<string, any>();
+	for (const row of activeModels ?? []) {
+		if (typeof row?.model_id === "string") {
+			activeModelMap.set(row.model_id, row);
+		}
 	}
 
 	const providerOptions = (providersResult.data ?? []).map((p: any) => {
@@ -82,9 +105,8 @@ export default async function NewBroadcastDestinationPage({
 	for (const row of activeProviderModelsResult.data ?? []) {
 		const modelId = (row as any).api_model_id as string | null;
 		if (!modelId) continue;
-		const modelRow = Array.isArray((row as any).model)
-			? (row as any).model[0]
-			: (row as any).model;
+		const canonicalModelId = (row as any).model_id as string | null;
+		const modelRow = canonicalModelId ? activeModelMap.get(canonicalModelId) ?? null : null;
 		const modelName = (modelRow?.name as string | null) ?? modelId;
 		const organisationId = (modelRow?.organisation_id as string | null) ?? null;
 		const subtitle = modelName === modelId ? null : modelId;

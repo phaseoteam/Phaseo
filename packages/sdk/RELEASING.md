@@ -25,7 +25,7 @@ CI workflow: `.github/workflows/ci.yml` publish job.
 - `changeset:version` now also runs:
   - `sdk-py:sync-version`
   - `sdk:sync-language-manifests`
-- OpenAPI generation now runs `openapi:sync-enums` before normalize/codegen so model-id enums stay aligned to `apps/web/src/data/manifest.json`.
+- OpenAPI generation now runs `openapi:sync-enums` before normalize/codegen so model-id enums stay aligned to `packages/data/catalog/src/data/manifest.json`.
 
 Version manifest sync script:
 
@@ -34,20 +34,18 @@ Version manifest sync script:
   - Java: `packages/sdk/sdk-java/pom.xml`
   - Ruby: `packages/sdk/sdk-ruby/lib/ai_stats_sdk/version.rb`
 
-## GitHub Release Policy (High Signal)
+## GitHub Release Policy
 
 - Package publishing and package changelogs are the source of truth.
-- GitHub Releases are intentionally **not** created for every publish.
-- CI defaults to `AI_STATS_GH_RELEASE_MODE=notable_only`:
-  - Create GitHub Release when a package bump is **major**, or
-  - Changelog section is explicitly marked notable (`#notable`, `[notable]`, or `notable: true`).
-- Weekly rollups are handled by `.github/workflows/release-rollup.yml`.
+- CI now defaults to `AI_STATS_GH_RELEASE_MODE=all`.
+- A per-package GitHub Release is created immediately when publish succeeds.
+- Release notes are generated from package changelog sections, with grouped `Core Changes`/`Misc Changes` plus `Credits` when contributors are present.
 
 Release mode controls:
 
 - `off`: never create GitHub Releases from package publishes.
-- `notable_only` (default): only major/notable releases.
-- `all`: create per-package GitHub Releases for every publish (not recommended).
+- `notable_only`: only major/notable releases.
+- `all` (default): create per-package GitHub Releases for every publish.
 
 ## SDK Semver Guardrails
 

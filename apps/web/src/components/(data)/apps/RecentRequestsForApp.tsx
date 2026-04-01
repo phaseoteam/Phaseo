@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAppUsageOverTime } from "@/lib/fetchers/apps/getAppUsageOverTime";
+import { getRecentAppRequests } from "@/lib/fetchers/apps/getAppUsageOverTime";
 import { Clock, Zap } from "lucide-react";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
@@ -11,7 +11,8 @@ export default async function RecentRequestsForApp({
 	appId: string;
 	range?: RangeKey;
 }) {
-	const rows = await getAppUsageOverTime(appId, range);
+	void range;
+	const rows = await getRecentAppRequests(appId, 25);
 
 	// Get recent successful requests
 	const recentRequests = rows

@@ -61,160 +61,171 @@ const parseModelKey = (modelKey: string) => {
 export default async function getPricingModels(
     includeHidden: boolean
 ): Promise<PricingModel[]> {
-    const supabase = await createClient();
-    const nowIso = new Date().toISOString();
+    try {
+        const supabase = await createClient();
+        const nowIso = new Date().toISOString();
 
-    const { data: providerModels, error: pmError } = await supabase
-        .from("data_api_provider_models")
-        .select(
-            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to"
-        )
-        .eq("is_active_gateway", true)
-        .lte("effective_from", nowIso)
-        .or(`effective_to.is.null,effective_to.gt.${nowIso}`);
+        const { data: providerModels, error: pmError } = await supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, effective_from, effective_to"
+            )
+            .eq("is_active_gateway", true)
+            .lte("effective_from", nowIso)
+            .or(`effective_to.is.null,effective_to.gt.${nowIso}`);
 
-    if (pmError) {
-        throw new Error(pmError.message || "Failed to load provider models");
-    }
+        if (pmError) {
+            console.error("[pricing-models] failed to load provider models", pmError);
+            return [];
+        }
 
-    const providerModelIds = (providerModels ?? [])
-        .map((row) => row.provider_api_model_id)
-        .filter((id): id is string => Boolean(id));
+        const providerModelIds = (providerModels ?? [])
+            .map((row) => row.provider_api_model_id)
+            .filter((id): id is string => Boolean(id));
+        if (providerModelIds.length === 0) {
+            return [];
+        }
 
-    const { data: capabilities, error: capError } = await supabase
-        .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id, capability_id, status")
-        .in("provider_api_model_id", providerModelIds)
-        .neq("status", "disabled");
+        const { data: capabilities, error: capError } = await supabase
+            .from("data_api_provider_model_capabilities")
+            .select("provider_api_model_id, capability_id, status")
+            .in("provider_api_model_id", providerModelIds)
+            .neq("status", "disabled");
 
-    if (capError) {
-        throw new Error(capError.message || "Failed to load provider capabilities");
-    }
+        if (capError) {
+            console.error("[pricing-models] failed to load provider capabilities", capError);
+            return [];
+        }
 
-    const { data: pricingRules, error: prError } = await supabase
-        .from("data_api_pricing_rules")
-        .select(
-            "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
-        )
-        .lte("effective_from", nowIso)
-        .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
-        .order("priority", { ascending: false });
+        const { data: pricingRules, error: prError } = await supabase
+            .from("data_api_pricing_rules")
+            .select(
+                "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
+            )
+            .lte("effective_from", nowIso)
+            .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
+            .order("priority", { ascending: false });
 
-    if (prError) {
-        throw new Error(prError.message || "Failed to load pricing rules");
-    }
+        if (prError) {
+            console.error("[pricing-models] failed to load pricing rules", prError);
+            return [];
+        }
 
-    const modelNameMap = new Map<string, string>();
-    const visibleInternalIds = new Set<string>();
-    const internalIds = Array.from(
-        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
-    );
-    if (internalIds.length) {
-        const { data: models } = await applyHiddenFilter(
-            supabase
-                .from("data_models")
-                .select("model_id, name, hidden")
-                .in("model_id", internalIds),
-            includeHidden
+        const modelNameMap = new Map<string, string>();
+        const visibleModelIds = new Set<string>();
+        const modelIds = Array.from(
+            new Set((providerModels ?? []).map((row) => row.model_id).filter(Boolean))
         );
-        for (const model of models ?? []) {
-            if (model.model_id) {
-                visibleInternalIds.add(model.model_id);
-                if (model.name) modelNameMap.set(model.model_id, model.name);
+        if (modelIds.length) {
+            const { data: models } = await applyHiddenFilter(
+                supabase
+                    .from("data_models")
+                    .select("model_id, name, hidden")
+                    .in("model_id", modelIds),
+                includeHidden
+            );
+            for (const model of models ?? []) {
+                if (model.model_id) {
+                    visibleModelIds.add(model.model_id);
+                    if (model.name) modelNameMap.set(model.model_id, model.name);
+                }
             }
         }
-    }
 
-    const modelMap = new Map<string, PricingModel>();
-    const providerById = new Map<string, any>();
-    for (const row of providerModels ?? []) {
-        if (row.provider_api_model_id) {
-            providerById.set(row.provider_api_model_id, row);
+        const modelMap = new Map<string, PricingModel>();
+        const providerById = new Map<string, any>();
+        for (const row of providerModels ?? []) {
+            if (row.provider_api_model_id) {
+                providerById.set(row.provider_api_model_id, row);
+            }
         }
-    }
 
-    const comboMap = new Map<
-        string,
-        { internal_model_id: string | null; api_model_id: string | null }
-    >();
-    for (const cap of capabilities ?? []) {
-        if (!cap.provider_api_model_id || !cap.capability_id) continue;
-        const pm = providerById.get(cap.provider_api_model_id);
-        if (!pm) continue;
-        const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
-        comboMap.set(comboKey, {
-            internal_model_id: pm.internal_model_id ?? null,
-            api_model_id: pm.api_model_id ?? null,
-        });
-    }
-
-    for (const rule of (pricingRules ?? []) as PricingRuleRow[]) {
-        const parsed = parseModelKey(rule.model_key);
-        if (!parsed) continue;
-        const comboKey = `${parsed.provider_id}:${parsed.api_model_id}:${rule.capability_id}`;
-        const combo = comboMap.get(comboKey);
-        if (!combo) continue;
-        if (!includeHidden && combo.internal_model_id && !visibleInternalIds.has(combo.internal_model_id)) {
-            continue;
-        }
-        const modelId = combo.internal_model_id ?? parsed.api_model_id;
-        const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
-
-        if (!modelMap.has(key)) {
-            modelMap.set(key, {
-                provider: parsed.provider_id,
-                model: modelId,
-                api_model_id: combo.api_model_id ?? parsed.api_model_id,
-                endpoint: rule.capability_id,
-                display_name: combo.internal_model_id
-                    ? modelNameMap.get(combo.internal_model_id)
-                    : undefined,
-                pricing_plan: rule.pricing_plan || "standard",
-                meters: [],
+        const comboMap = new Map<
+            string,
+            { model_id: string | null; api_model_id: string | null }
+        >();
+        for (const cap of capabilities ?? []) {
+            if (!cap.provider_api_model_id || !cap.capability_id) continue;
+            const pm = providerById.get(cap.provider_api_model_id);
+            if (!pm) continue;
+            const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
+            comboMap.set(comboKey, {
+                model_id: pm.model_id ?? null,
+                api_model_id: pm.api_model_id ?? null,
             });
         }
 
-        const model = modelMap.get(key)!;
+        for (const rule of (pricingRules ?? []) as PricingRuleRow[]) {
+            const parsed = parseModelKey(rule.model_key);
+            if (!parsed) continue;
+            const comboKey = `${parsed.provider_id}:${parsed.api_model_id}:${rule.capability_id}`;
+            const combo = comboMap.get(comboKey);
+            if (!combo) continue;
+            if (!includeHidden && combo.model_id && !visibleModelIds.has(combo.model_id)) {
+                continue;
+            }
+            const modelId = combo.model_id ?? parsed.api_model_id;
+            const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
 
-        const nextMeter: PricingMeter = {
-            meter: rule.meter,
-            unit: rule.unit,
-            unit_size: Number(rule.unit_size ?? 1),
-            price_per_unit: String(rule.price_per_unit ?? "0"),
-            currency: rule.currency ?? "USD",
-            conditions: rule.match ?? [],
-        };
+            if (!modelMap.has(key)) {
+                modelMap.set(key, {
+                    provider: parsed.provider_id,
+                    model: modelId,
+                    api_model_id: combo.api_model_id ?? parsed.api_model_id,
+                    endpoint: rule.capability_id,
+                    display_name: combo.model_id
+                        ? modelNameMap.get(combo.model_id)
+                        : undefined,
+                    pricing_plan: rule.pricing_plan || "standard",
+                    meters: [],
+                });
+            }
 
-        const existingIndex = model.meters.findIndex(
-            (m) =>
-                m.meter === nextMeter.meter &&
-                m.unit === nextMeter.unit &&
-                m.currency === nextMeter.currency
-        );
+            const model = modelMap.get(key)!;
 
-        if (existingIndex === -1) {
-            model.meters.push(nextMeter);
-            continue;
+            const nextMeter: PricingMeter = {
+                meter: rule.meter,
+                unit: rule.unit,
+                unit_size: Number(rule.unit_size ?? 1),
+                price_per_unit: String(rule.price_per_unit ?? "0"),
+                currency: rule.currency ?? "USD",
+                conditions: rule.match ?? [],
+            };
+
+            const existingIndex = model.meters.findIndex(
+                (m) =>
+                    m.meter === nextMeter.meter &&
+                    m.unit === nextMeter.unit &&
+                    m.currency === nextMeter.currency
+            );
+
+            if (existingIndex === -1) {
+                model.meters.push(nextMeter);
+                continue;
+            }
+
+            const existingMeter = model.meters[existingIndex];
+            const existingNormalizedPrice = getNormalizedMeterPrice(existingMeter);
+            const nextNormalizedPrice = getNormalizedMeterPrice(nextMeter);
+
+            if (nextNormalizedPrice < existingNormalizedPrice) {
+                model.meters[existingIndex] = nextMeter;
+            }
         }
 
-        const existingMeter = model.meters[existingIndex];
-        const existingNormalizedPrice = getNormalizedMeterPrice(existingMeter);
-        const nextNormalizedPrice = getNormalizedMeterPrice(nextMeter);
+        const pricingModels = Array.from(modelMap.values());
 
-        if (nextNormalizedPrice < existingNormalizedPrice) {
-            model.meters[existingIndex] = nextMeter;
-        }
+        pricingModels.sort((a, b) => {
+            if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
+            if (a.model !== b.model) return a.model.localeCompare(b.model);
+            return a.endpoint.localeCompare(b.endpoint);
+        });
+
+        return pricingModels;
+    } catch (error) {
+        console.error("[pricing-models] unexpected failure", error);
+        return [];
     }
-
-    const pricingModels = Array.from(modelMap.values());
-
-    pricingModels.sort((a, b) => {
-        if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
-        if (a.model !== b.model) return a.model.localeCompare(b.model);
-        return a.endpoint.localeCompare(b.endpoint);
-    });
-
-    return pricingModels;
 }
 
 /**

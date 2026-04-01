@@ -1,0 +1,70 @@
+{
+  "model_id": "openai/gpt-4-2023-03-14",
+  "organisation_id": "openai",
+  "name": "GPT 4 (2023-03-14)",
+  "status": "Deprecated",
+  "previous_model_id": "openai/gpt-3-5-turbo-2023-11-06",
+  "announced_date": null,
+  "release_date": "2023-03-14T00:00:00",
+  "deprecation_date": "2025-09-26T00:00:00",
+  "retirement_date": "2026-03-26T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4-2023-03-14",
+  "family_id": "openai/gpt-4",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-4"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/playground/prompts?models=gpt-4"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/research/gpt-4"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 8192
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-12-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8192
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "eqbench",
+      "score": 435.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 0.357,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1278,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 6
+    }
+  ]
+}

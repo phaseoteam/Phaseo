@@ -1,0 +1,36 @@
+{
+  "model_id": "amazon/nova-pro-1.0",
+  "organisation_id": "amazon",
+  "name": "Nova Pro 1.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2024-12-03T00:00:00",
+  "release_date": "2024-12-04T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "amazon/nova-pro-1.0",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-nova-foundation-models-bedrock"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 300000
+    },
+    {
+      "name": "output_context_length",
+      "value": 10000
+    }
+  ],
+  "benchmarks": []
+}

@@ -1,0 +1,18 @@
+{
+  "model_id": "openai/chatgpt-image-latest",
+  "organisation_id": "openai",
+  "name": "ChatGPT Image Latest",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-16T00:00:00",
+  "release_date": "2025-12-16T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text,image",
+  "api_model_id": "openai/chatgpt-image-latest",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

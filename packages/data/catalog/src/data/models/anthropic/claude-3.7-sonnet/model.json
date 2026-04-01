@@ -1,0 +1,49 @@
+{
+  "model_id": "anthropic/claude-3.7-sonnet",
+  "organisation_id": "anthropic",
+  "name": "Claude 3.7 Sonnet",
+  "status": "Retired",
+  "previous_model_id": "anthropic/claude-3-5-sonnet-2024-10-22",
+  "announced_date": "2025-02-24T00:00:00",
+  "release_date": "2025-02-24T00:00:00",
+  "deprecation_date": "2025-10-28T00:00:00",
+  "retirement_date": "2026-02-19T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-3.7-sonnet",
+  "family_id": "anthropic/claude-3-7",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table"
+    },
+    {
+      "platform": "playground",
+      "url": "https://console.anthropic.com/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://assets.anthropic.com/m/785e231869ea8b3b/original/claude-3-7-sonnet-system-card.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/claude-3-7-sonnet"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-11-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    }
+  ],
+  "benchmarks": []
+}

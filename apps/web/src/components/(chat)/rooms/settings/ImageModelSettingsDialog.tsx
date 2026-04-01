@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import { useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -40,6 +40,8 @@ type ImageModelSettingsDialogProps = {
 	onReset: () => void;
 };
 
+type ImageSettingsFormParams = Pick<ImageRoomParams, "size" | "quality" | "style">;
+
 export function ImageModelSettingsDialog({
 	open,
 	onOpenChange,
@@ -54,6 +56,46 @@ export function ImageModelSettingsDialog({
 	onReset,
 }: ImageModelSettingsDialogProps) {
 	const schema = getImageModelSchema(selectedModelId ?? "");
+	const isGoogleImageSchema = schema.variant.startsWith("google-");
+	const sizeLabel = isGoogleImageSchema ? "Aspect ratio" : "Resolution";
+	const sizePlaceholder = isGoogleImageSchema
+		? "Select aspect ratio"
+		: "Select resolution";
+	const qualityLabel = isGoogleImageSchema ? "Image size" : "Quality";
+	const qualityPlaceholder = isGoogleImageSchema
+		? "Select image size"
+		: "Select quality";
+	const normalizedParams = useMemo(() => {
+		const size = schema.sizeOptions.includes(settings.params.size)
+			? settings.params.size
+			: (schema.sizeOptions[0] ?? "1024x1024");
+		const quality = schema.qualityOptions.includes(settings.params.quality)
+			? settings.params.quality
+			: (schema.qualityOptions[0] ?? "standard");
+		const style =
+			schema.styleOptions.length === 0
+				? ""
+				: schema.styleOptions.includes(settings.params.style)
+					? settings.params.style
+					: (schema.styleOptions[0] ?? "");
+		return { size, quality, style } satisfies ImageSettingsFormParams;
+	}, [schema, settings.params]);
+
+	useEffect(() => {
+		const patch: Partial<ImageRoomParams> = {};
+		if (settings.params.size !== normalizedParams.size) {
+			patch.size = normalizedParams.size;
+		}
+		if (settings.params.quality !== normalizedParams.quality) {
+			patch.quality = normalizedParams.quality;
+		}
+		if (settings.params.style !== normalizedParams.style) {
+			patch.style = normalizedParams.style;
+		}
+		if (Object.keys(patch).length > 0) {
+			onUpdateParams(patch);
+		}
+	}, [normalizedParams, onUpdateParams, settings.params]);
 
 	return (
 		<RoomModelSettingsShell
@@ -72,13 +114,13 @@ export function ImageModelSettingsDialog({
 		>
 			<div className="grid gap-3">
 				<div className="grid gap-1.5">
-					<Label>Resolution</Label>
+					<Label>{sizeLabel}</Label>
 					<Select
-						value={settings.params.size}
+						value={normalizedParams.size}
 						onValueChange={(value) => onUpdateParams({ size: value })}
 					>
 						<SelectTrigger>
-							<SelectValue placeholder="Select resolution" />
+							<SelectValue placeholder={sizePlaceholder} />
 						</SelectTrigger>
 						<SelectContent>
 							{schema.sizeOptions.map((size) => (
@@ -90,13 +132,13 @@ export function ImageModelSettingsDialog({
 					</Select>
 				</div>
 				<div className="grid gap-1.5">
-					<Label>Quality</Label>
+					<Label>{qualityLabel}</Label>
 					<Select
-						value={settings.params.quality}
+						value={normalizedParams.quality}
 						onValueChange={(value) => onUpdateParams({ quality: value })}
 					>
 						<SelectTrigger>
-							<SelectValue placeholder="Select quality" />
+							<SelectValue placeholder={qualityPlaceholder} />
 						</SelectTrigger>
 						<SelectContent>
 							{schema.qualityOptions.map((quality) => (
@@ -111,7 +153,7 @@ export function ImageModelSettingsDialog({
 					<div className="grid gap-1.5">
 						<Label>Style</Label>
 						<Select
-							value={settings.params.style}
+							value={normalizedParams.style}
 							onValueChange={(value) => onUpdateParams({ style: value })}
 						>
 							<SelectTrigger>
@@ -127,45 +169,6 @@ export function ImageModelSettingsDialog({
 						</Select>
 					</div>
 				) : null}
-				{schema.supportsBackground ? (
-					<div className="grid gap-1.5">
-						<Label>Background</Label>
-						<Select
-							value={settings.params.background}
-							onValueChange={(value) => onUpdateParams({ background: value })}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select background mode" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="auto">auto</SelectItem>
-								<SelectItem value="opaque">opaque</SelectItem>
-								<SelectItem value="transparent">transparent</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				) : null}
-				<div className="grid gap-1.5">
-					<Label htmlFor="image-count">Image count</Label>
-					<Input
-						id="image-count"
-						type="number"
-						min={1}
-						max={schema.maxCount}
-						value={settings.params.n}
-						onChange={(event) =>
-							onUpdateParams({
-								n: Math.max(
-									1,
-									Math.min(
-										schema.maxCount,
-										Math.floor(Number(event.target.value) || 1),
-									),
-								),
-							})
-						}
-					/>
-				</div>
 			</div>
 		</RoomModelSettingsShell>
 	);

@@ -1,0 +1,21 @@
+{
+  "key": "atlascloud:kwaipilot/kat-coder-exp-72b-1010:text.generate",
+  "api_provider_id": "atlascloud",
+  "provider_slug": "atlascloud",
+  "api_model_id": "kwaipilot/kat-coder-exp-72b-1010",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.0,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

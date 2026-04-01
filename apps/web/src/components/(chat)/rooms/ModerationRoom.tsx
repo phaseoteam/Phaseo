@@ -61,6 +61,7 @@ import {
 	type ModerationRoomParams,
 } from "@/lib/chat/roomModelSettings";
 import { ModerationModelSettingsDialog } from "@/components/(chat)/rooms/settings/ModerationModelSettingsDialog";
+import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
 import {
 	ArrowUpRight,
 	Check,
@@ -550,7 +551,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 			),
 		[models],
 	);
-	const [modelId, setModelId] = useState(filteredModels[0]?.modelId ?? "");
+	const [modelId, setModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [text, setText] = useState("");
 	const [imageUrl, setImageUrl] = useState("");
@@ -675,7 +676,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 			if (current && filteredModels.some((model) => model.modelId === current)) {
 				return current;
 			}
-			return filteredModels[0]?.modelId ?? "";
+			return "";
 		});
 	}, [filteredModels]);
 
@@ -749,6 +750,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 	}, []);
 
 	const startNewConversation = () => {
+		setModelId("");
 		setActiveConversationId(createConversationId());
 		setText("");
 		setImageUrl("");
@@ -1233,11 +1235,11 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
-										className="h-8 min-w-0 w-full truncate justify-center px-0"
+										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										onClick={startNewConversation}
 										aria-label="New Chat"
 									>
-										<SquarePen className="h-4 w-4 mr-0" />
+										<SquarePen className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
@@ -1247,12 +1249,12 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 						) : (
 							<Button
 								variant="ghost"
-								className="h-8 min-w-0 w-full truncate flex-1 justify-start pr-2"
+								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={startNewConversation}
 								aria-label="New Chat"
 							>
-								<SquarePen className="mr-2 h-4 w-4" />
-								New Chat
+								<SquarePen className="h-4 w-4 shrink-0" />
+								<span className="truncate text-left">New Chat</span>
 							</Button>
 						)}
 						{collapsed ? (
@@ -1260,7 +1262,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
-										className="h-8 min-w-0 w-full truncate justify-center px-0"
+										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										asChild
 										aria-label="Database"
 									>
@@ -1268,7 +1270,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 											href="/"
 											className="group/db flex w-full min-w-0 items-center justify-center"
 										>
-											<Database className="h-4 w-4 shrink-0 mr-0" />
+											<Database className="h-4 w-4 shrink-0" />
 										</Link>
 									</Button>
 								</TooltipTrigger>
@@ -1279,12 +1281,12 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 						) : (
 							<Button
 								variant="ghost"
-								className="h-8 min-w-0 w-full truncate flex-1 justify-start pr-2"
+								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
 								aria-label="Database"
 							>
-								<Link href="/" className="group/db flex w-full min-w-0 items-center">
-									<Database className="h-4 w-4 shrink-0 mr-2" />
+								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
+									<Database className="h-4 w-4 shrink-0" />
 									<span className="flex-1 min-w-0 truncate text-left">Database</span>
 									<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
 								</Link>
@@ -1295,11 +1297,11 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
-										className="h-8 min-w-0 w-full truncate justify-center px-0"
+										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										onClick={() => setConversationSearchOpen(true)}
 										aria-label="Search Chats"
 									>
-										<Search className="h-4 w-4 mr-0" />
+										<Search className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
@@ -1309,12 +1311,12 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 						) : (
 							<Button
 								variant="ghost"
-								className="h-8 min-w-0 w-full truncate flex-1 justify-start pr-2"
+								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={() => setConversationSearchOpen(true)}
 								aria-label="Search Chats"
 							>
-								<Search className="mr-2 h-4 w-4" />
-								Search Chats
+								<Search className="h-4 w-4 shrink-0" />
+								<span className="truncate text-left">Search Chats</span>
 							</Button>
 						)}
 					</div>
@@ -1983,6 +1985,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								) : null}
 							</div>
 						) : null}
+						{error ? <RoomErrorNotice error={error} className="mb-2" /> : null}
 						<div className="flex items-center justify-between pt-2">
 							<div className="flex items-center gap-1.5">
 								<Tooltip>
@@ -2043,9 +2046,6 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									</TooltipTrigger>
 									<TooltipContent side="top">Upload image</TooltipContent>
 								</Tooltip>
-								{error ? (
-									<span className="pl-1 text-xs text-destructive">{error}</span>
-								) : null}
 							</div>
 							<Button
 								className="ml-auto"

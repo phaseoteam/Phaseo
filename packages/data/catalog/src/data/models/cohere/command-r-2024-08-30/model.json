@@ -1,0 +1,27 @@
+{
+  "model_id": "cohere/command-r-2024-08-30",
+  "organisation_id": "cohere",
+  "name": "Command R (2024-08-30)",
+  "status": "Available",
+  "previous_model_id": "cohere/command-r-2024-03-11",
+  "announced_date": "2024-08-30T00:00:00",
+  "release_date": "2024-08-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "CC-BY-NC",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "cohere/command-r-2024-08-30",
+  "links": [],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1254,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 9
+    }
+  ]
+}

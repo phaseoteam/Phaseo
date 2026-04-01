@@ -28,7 +28,8 @@
     ],
     "paths": {
       "@/*": [
-        "./src/*"
+        "./src/*",
+        "../../packages/data/catalog/src/*"
       ]
     }
   },

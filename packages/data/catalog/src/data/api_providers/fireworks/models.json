@@ -1,0 +1,512 @@
+[
+  {
+    "api_model_id": "black-forest-labs/flux-1-dev",
+    "provider_api_model_id": "fireworks:black-forest-labs/flux-1-dev",
+    "provider_model_slug": "accounts/fireworks/models/flux-1-dev-fp8",
+    "internal_model_id": null,
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-1-kontext-max",
+    "provider_api_model_id": "fireworks:black-forest-labs/flux-1-kontext-max",
+    "provider_model_slug": "accounts/fireworks/models/flux-kontext-max",
+    "internal_model_id": null,
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-1-kontext-pro",
+    "provider_api_model_id": "fireworks:black-forest-labs/flux-1-kontext-pro",
+    "provider_model_slug": "accounts/fireworks/models/flux-kontext-pro",
+    "internal_model_id": null,
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-1-schnell",
+    "provider_api_model_id": "fireworks:black-forest-labs/flux-1-schnell",
+    "provider_model_slug": "accounts/fireworks/models/flux-1-schnell-fp8",
+    "internal_model_id": null,
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cogito/cogito-671b-v2.1",
+    "provider_api_model_id": "fireworks:cogito/cogito-671b-v2.1",
+    "provider_model_slug": "accounts/cogito/models/cogito-671b-v2-p1",
+    "internal_model_id": null,
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 163840,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.1",
+    "provider_api_model_id": "fireworks:deepseek/deepseek-v3.1",
+    "provider_model_slug": "accounts/fireworks/models/deepseek-v3p1",
+    "internal_model_id": "deepseek/deepseek-v3.1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 163840,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.2",
+    "provider_api_model_id": "fireworks:deepseek/deepseek-v3.2",
+    "provider_model_slug": "accounts/fireworks/models/deepseek-v3p2",
+    "internal_model_id": "deepseek/deepseek-v3.2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 163840,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3.3-70b",
+    "provider_api_model_id": "fireworks:meta/llama-3.3-70b",
+    "provider_model_slug": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "internal_model_id": "meta/llama-3.3-70b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3-8b",
+    "provider_api_model_id": "fireworks:meta/llama-3-8b",
+    "provider_model_slug": "accounts/fireworks/models/llama-v3-8b-instruct",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": "2026-02-28T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.1",
+    "provider_api_model_id": "fireworks:minimax/minimax-m2.1",
+    "provider_model_slug": "accounts/fireworks/models/minimax-m2p1",
+    "internal_model_id": "minimax/minimax-m2.1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 196000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.5",
+    "provider_api_model_id": "fireworks:minimax/minimax-m2.5",
+    "provider_model_slug": "accounts/fireworks/models/minimax-m2p5",
+    "internal_model_id": "minimax/minimax-m2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 196000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mixtral-8x22b",
+    "provider_api_model_id": "fireworks:mistral/mixtral-8x22b",
+    "provider_model_slug": "accounts/fireworks/models/mixtral-8x22b-instruct",
+    "internal_model_id": "mistral/mixtral-8x22b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 65536,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": "2026-03-25T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "fireworks:moonshotai/kimi-k2.5",
+    "provider_model_slug": "accounts/fireworks/models/kimi-k2p5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2-0905",
+    "provider_api_model_id": "fireworks:moonshotai/kimi-k2-0905",
+    "provider_model_slug": "accounts/fireworks/models/kimi-k2-instruct-0905",
+    "internal_model_id": "moonshotai/kimi-k2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 262000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2-thinking",
+    "provider_api_model_id": "fireworks:moonshotai/kimi-k2-thinking",
+    "provider_model_slug": "accounts/fireworks/models/kimi-k2-thinking",
+    "internal_model_id": "moonshotai/kimi-k2-thinking",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 262000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b",
+    "provider_api_model_id": "fireworks:openai/gpt-oss-120b",
+    "provider_model_slug": "accounts/fireworks/models/gpt-oss-120b",
+    "internal_model_id": "openai/gpt-oss-120b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-20b",
+    "provider_api_model_id": "fireworks:openai/gpt-oss-20b",
+    "provider_model_slug": "accounts/fireworks/models/gpt-oss-20b",
+    "internal_model_id": "openai/gpt-oss-20b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/whisper-3",
+    "provider_api_model_id": "fireworks:openai/whisper-3",
+    "provider_model_slug": "accounts/fireworks/models/whisper-v3",
+    "internal_model_id": "openai/whisper-3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/whisper-3-turbo",
+    "provider_api_model_id": "fireworks:openai/whisper-3-turbo",
+    "provider_model_slug": "accounts/fireworks/models/whisper-v3-turbo",
+    "internal_model_id": "openai/whisper-3-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-8b",
+    "provider_api_model_id": "fireworks:qwen/qwen3-8b",
+    "provider_model_slug": "accounts/fireworks/models/qwen3-8b",
+    "internal_model_id": "qwen/qwen3-8b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 40000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-8b",
+    "provider_api_model_id": "fireworks:qwen/qwen3-embedding-8b",
+    "provider_model_slug": "accounts/fireworks/models/qwen3-embedding-8b",
+    "internal_model_id": "qwen/qwen3-embedding-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-reranker",
+    "provider_api_model_id": "fireworks:qwen/qwen3-reranker",
+    "provider_model_slug": "accounts/fireworks/models/qwen3-reranker-8b",
+    "internal_model_id": "qwen/qwen3-reranker-8b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
+    "provider_api_model_id": "fireworks:qwen/qwen3-vl-30b-a3b-instruct",
+    "provider_model_slug": "accounts/fireworks/models/qwen3-vl-30b-a3b-instruct",
+    "internal_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 262000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-30b-a3b-thinking",
+    "provider_api_model_id": "fireworks:qwen/qwen3-vl-30b-a3b-thinking",
+    "provider_model_slug": "accounts/fireworks/models/qwen3-vl-30b-a3b-thinking",
+    "internal_model_id": "qwen/qwen3-vl-30b-a3b-thinking",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 262000,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7",
+    "provider_api_model_id": "fireworks:z-ai/glm-4.7",
+    "provider_model_slug": "accounts/fireworks/models/glm-4p7",
+    "internal_model_id": "z-ai/glm-4.7",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 202752,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "fireworks:z-ai/glm-5",
+    "provider_model_slug": "accounts/fireworks/models/glm-5",
+    "internal_model_id": "z-ai/glm-5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 202752,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

@@ -1,5 +1,5 @@
 // Purpose: Gateway models catalogue route.
-// Why: Expose rich model metadata with OpenRouter-style compatibility fields.
+// Why: Expose rich model metadata with compatibility fields.
 // How: Loads catalogue rows, enriches each model, and returns paged results.
 
 import { Hono } from "hono";
@@ -14,10 +14,10 @@ import {
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
-type PrivacyScope = "shared" | "team";
+type ModelVisibilityScope = "shared" | "team";
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 
-type OpenRouterPricing = {
+type CompatibilityPricing = {
     prompt: string | null;
     completion: string | null;
     request: string | null;
@@ -27,7 +27,7 @@ type OpenRouterPricing = {
     web_search: string | null;
 };
 
-type OpenRouterArchitecture = {
+type CompatibilityArchitecture = {
     modality: string;
     input_modalities: string[];
     output_modalities: string[];
@@ -35,7 +35,7 @@ type OpenRouterArchitecture = {
     instruct_type: string | null;
 };
 
-type OpenRouterTopProvider = {
+type CompatibilityTopProvider = {
     context_length: number | null;
     max_completion_tokens: number | null;
     is_moderated: boolean;
@@ -93,13 +93,8 @@ function parseMultiValue(params: URLSearchParams, name: string): string[] {
     return values.flatMap((value) => toStringArray(value));
 }
 
-function parsePrivacyScope(url: URL): PrivacyScope | null {
-    const raw = (url.searchParams.get("privacy_scope") ?? url.searchParams.get("privacy") ?? "shared")
-        .trim()
-        .toLowerCase();
-    if (raw === "shared") return "shared";
-    if (raw === "team") return "team";
-    return null;
+function hasDeprecatedPrivacyScopeQuery(url: URL): boolean {
+    return url.searchParams.has("privacy_scope") || url.searchParams.has("privacy");
 }
 
 function normalizeLifecycleStatus(
@@ -194,7 +189,7 @@ function inferModality(inputTypes: string[], outputTypes: string[]): string {
     return `${input}->${output}`;
 }
 
-function toOpenRouterPricing(pricing: PricingSummary): OpenRouterPricing {
+function toCompatibilityPricing(pricing: PricingSummary): CompatibilityPricing {
     const meters = pricing.meters;
     return {
         prompt: meterToUnitPrice(meters.input_text_tokens),
@@ -209,7 +204,7 @@ function toOpenRouterPricing(pricing: PricingSummary): OpenRouterPricing {
     };
 }
 
-function toOpenRouterArchitecture(model: CatalogueModel): OpenRouterArchitecture {
+function toCompatibilityArchitecture(model: CatalogueModel): CompatibilityArchitecture {
     return {
         modality: inferModality(model.input_types, model.output_types),
         input_modalities: [...model.input_types],
@@ -219,7 +214,7 @@ function toOpenRouterArchitecture(model: CatalogueModel): OpenRouterArchitecture
     };
 }
 
-function toOpenRouterTopProvider(model: CatalogueModel): OpenRouterTopProvider {
+function toCompatibilityTopProvider(model: CatalogueModel): CompatibilityTopProvider {
     return {
         context_length: null,
         max_completion_tokens: null,
@@ -246,9 +241,9 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
         canonical_slug: model.model_id,
         created: toUnixSeconds(model.release_date),
         description: buildDescription(model),
-        architecture: toOpenRouterArchitecture(model),
+        architecture: toCompatibilityArchitecture(model),
         top_provider_id: legacyTopProvider,
-        top_provider: toOpenRouterTopProvider(model),
+        top_provider: toCompatibilityTopProvider(model),
         lifecycle: {
             status: lifecycleStatus,
             deprecation_date: model.deprecation_date,
@@ -263,13 +258,24 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
         },
         supported_parameters: [...model.supported_params],
         pricing_detail: legacyPricing,
-        pricing: toOpenRouterPricing(legacyPricing),
+        pricing: toCompatibilityPricing(legacyPricing),
         per_request_limits: null,
     };
 }
 
-async function handleModels(req: Request) {
+async function handleModels(req: Request, scope: ModelVisibilityScope) {
     const url = new URL(req.url);
+    if (hasDeprecatedPrivacyScopeQuery(url)) {
+        return json(
+            {
+                ok: false,
+                error: "invalid_request",
+                message: "privacy_scope query is no longer supported. Use /gateway/models for shared or /gateway/models/me for team-scoped listings.",
+            },
+            400,
+            { "Cache-Control": "no-store" }
+        );
+    }
     const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
     const offset = parseOffsetParam(url.searchParams.get("offset"));
     if (offset > MAX_OFFSET) {
@@ -304,34 +310,7 @@ async function handleModels(req: Request) {
         );
     }
 
-    const privacyScope = parsePrivacyScope(url);
-    if (!privacyScope) {
-        return json(
-            {
-                ok: false,
-                error: "invalid_request",
-                message: "privacy_scope must be one of: shared, team",
-            },
-            400,
-            { "Cache-Control": "no-store" }
-        );
-    }
-
-    const cacheScope = privacyScope === "team" ? `models:team:${auth.value.teamId}:v1` : "models:shared:v1";
-
-    if (privacyScope === "team") {
-        return json(
-            {
-                ok: false,
-                error: "not_implemented",
-                code: "models_privacy_scope_not_implemented",
-                message: "privacy_scope=team is reserved for future privacy-filtered model listing and is not implemented yet.",
-                privacy_scope: "team",
-            },
-            501,
-            { "Cache-Control": "no-store" }
-        );
-    }
+    const cacheScope = scope === "team" ? `models:team:${auth.value.teamId}:v1` : "models:shared:v1";
 
     const cacheOptions = {
         scope: cacheScope,
@@ -376,7 +355,7 @@ async function handleModels(req: Request) {
             });
         }
         return json(
-            { ok: true, privacy_scope: privacyScope, limit, offset, total: models.length, models: paged },
+            { ok: true, privacy_scope: scope, limit, offset, total: models.length, models: paged },
             200,
             headers
         );
@@ -391,5 +370,6 @@ async function handleModels(req: Request) {
 
 export const modelsRoutes = new Hono<Env>();
 
-modelsRoutes.get("/", withRuntime(handleModels));
+modelsRoutes.get("/me", withRuntime((req) => handleModels(req, "team")));
+modelsRoutes.get("/", withRuntime((req) => handleModels(req, "shared")));
 

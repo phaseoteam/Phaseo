@@ -1,0 +1,21 @@
+{
+  "key": "fireworks:black-forest-labs/flux-1-kontext-max:text.generate",
+  "api_provider_id": "fireworks",
+  "provider_slug": "fireworks",
+  "api_model_id": "black-forest-labs/flux-1-kontext-max",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.08,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

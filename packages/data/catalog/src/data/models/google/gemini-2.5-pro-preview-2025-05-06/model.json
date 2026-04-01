@@ -1,0 +1,19 @@
+{
+  "model_id": "google/gemini-2.5-pro-preview-2025-05-06",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Pro Preview (2025-05-06)",
+  "status": "Retired",
+  "previous_model_id": "google/gemini-2-5-pro-experimental",
+  "announced_date": "2025-05-06T00:00:00",
+  "release_date": "2025-05-06T00:00:00",
+  "deprecation_date": "2025-06-15T00:00:00",
+  "retirement_date": "2025-07-15T00:00:00",
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemini-2.5-pro-preview-2025-05-06",
+  "family_id": "google/gemini-2-5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

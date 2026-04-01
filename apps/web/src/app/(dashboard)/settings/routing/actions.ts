@@ -13,11 +13,13 @@ export type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type UpdateRoutingSettingsInput = {
 	mode: RoutingMode;
 	betaChannelEnabled?: boolean;
+	alphaChannelEnabled?: boolean;
 };
 
 export async function updateRoutingSettings({
 	mode,
 	betaChannelEnabled,
+	alphaChannelEnabled,
 }: UpdateRoutingSettingsInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
@@ -31,6 +33,12 @@ export async function updateRoutingSettings({
 		routing_mode: mode,
 		...(typeof betaChannelEnabled === "boolean"
 			? { beta_channel_enabled: betaChannelEnabled }
+			: {}),
+		...(typeof alphaChannelEnabled === "boolean"
+			? {
+					alpha_channel_enabled:
+						betaChannelEnabled === false ? false : alphaChannelEnabled,
+			  }
 			: {}),
 		updated_at: new Date().toISOString(),
 	};

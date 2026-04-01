@@ -11,6 +11,9 @@ export type MusicJobMeta = {
 	format?: string | null;
 	status?: "queued" | "in_progress" | "completed" | "failed" | string | null;
 	nativeResponseId?: string | null;
+	audioBase64?: string | null;
+	result?: unknown;
+	rawResponse?: unknown;
 	output?: Array<{
 		index?: number;
 		id?: string | null;
@@ -35,6 +38,9 @@ function parseMusicJobMeta(value: unknown): MusicJobMeta | null {
 	if (typeof source.format === "string") out.format = source.format;
 	if (typeof source.status === "string") out.status = source.status;
 	if (typeof source.nativeResponseId === "string") out.nativeResponseId = source.nativeResponseId;
+	if (typeof source.audioBase64 === "string") out.audioBase64 = source.audioBase64;
+	if ("result" in source) out.result = source.result;
+	if ("rawResponse" in source) out.rawResponse = source.rawResponse;
 	if (Array.isArray(source.output)) out.output = source.output as MusicJobMeta["output"];
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
 	return out;

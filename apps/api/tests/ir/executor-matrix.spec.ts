@@ -405,7 +405,7 @@ type UpstreamKind =
 
 function resolveUpstreamKind(providerId: string, model: string): UpstreamKind {
     if (providerId === "anthropic") return "anthropic";
-    if (providerId === "google" || providerId === "google-ai-studio") return "google-gemini";
+    if (providerId === "google-ai-studio") return "google-gemini";
     if (providerId === "amazon-bedrock") return "bedrock-converse";
     if (providerId === "google-vertex") return "vertex-openapi-chat";
 
@@ -443,7 +443,6 @@ function usesBufferedOpenAICompat(providerId: string): boolean {
         "x-ai",
         "xai",
         "anthropic",
-        "google",
         "google-ai-studio",
         "amazon-bedrock",
         "google-vertex",

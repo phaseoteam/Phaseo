@@ -35,9 +35,11 @@
 		"data:reconcile-api-model-links": "pnpm --filter @ai-stats/web run db:reconcile-api-model-links",
 		"data:check-new-models": "tsx scripts/model-discovery/run.ts",
 		"data:probe-model-endpoints": "node internal/fetch-provider-model-endpoints.mjs",
+		"oauth:e2e:mini": "tsx internal/oauth-e2e-mini/oauth-e2e-mini.ts",
 		"data:check-new-models:test": "tsx scripts/model-discovery/validate-providers.ts",
 		"data:check-new-models:test:watch": "tsx watch scripts/model-discovery/validate-providers.ts",
 		"data:test-sampling-params": "node scripts/test-sampling-params.js",
+		"data:probe-parameter-matrix": "node scripts/probe-parameter-support-matrix.js",
 		"docs:links": "cd apps/docs && pnpm run check:links",
 		"docs:build": "cd apps/docs && pnpm run build",
 		"validate:docs": "pnpm run docs:links && pnpm run docs:build",
@@ -92,7 +94,6 @@
 		"sdk:sync-language-manifests": "tsx scripts/update-sdk-language-manifest-versions.ts",
 		"sdk:check-version-literals": "tsx scripts/check-sdk-version-literals.ts",
 		"release-from-changelogs": "tsx scripts/changesets/create-github-releases-from-changelogs.ts",
-		"release:weekly-rollup": "tsx scripts/changesets/create-weekly-rollup-release.ts",
 		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && pnpm run sdk:check-version-literals && (cd apps/web && pnpm run test) && pnpm run test"
 	},
 	"devDependencies": {

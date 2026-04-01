@@ -51,7 +51,7 @@ jobs:
               id: filter
               with:
                   filters: |
-                      data: 'apps/web/src/data/**'
+                      data: 'packages/data/catalog/src/data/**'
 
     openapi-lint:
         name: OpenAPI lint
@@ -636,7 +636,7 @@ jobs:
               if: steps.changesets.outputs.published == 'true'
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-                  AI_STATS_GH_RELEASE_MODE: notable_only
+                  AI_STATS_GH_RELEASE_MODE: all
               run: |
                   pnpm run release-from-changelogs
 

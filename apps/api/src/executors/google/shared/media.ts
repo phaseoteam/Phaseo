@@ -1,6 +1,8 @@
 import type { IRContentPart } from "@core/ir";
 
 const DEFAULT_MAX_REMOTE_ASSET_BYTES = 20 * 1024 * 1024;
+const RETRY_FETCH_USER_AGENT =
+	"Mozilla/5.0 (compatible; AI-Stats-Gateway/1.0; +https://phaseo.app)";
 
 const AUDIO_MIME_BY_FORMAT: Record<string, string> = {
 	wav: "audio/wav",
@@ -67,9 +69,68 @@ function normalizeContentType(value: string | null | undefined, fallback: string
 	return base || fallback;
 }
 
+function looksBinaryMimeType(value: string): boolean {
+	const normalized = value.toLowerCase();
+	return (
+		normalized.startsWith("image/") ||
+		normalized.startsWith("audio/") ||
+		normalized.startsWith("video/") ||
+		normalized === "application/pdf" ||
+		normalized === "application/octet-stream"
+	);
+}
+
+function inferMimeTypeFromUrl(url: string): string | null {
+	try {
+		const pathname = new URL(url).pathname.toLowerCase();
+		if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) return "image/jpeg";
+		if (pathname.endsWith(".png")) return "image/png";
+		if (pathname.endsWith(".webp")) return "image/webp";
+		if (pathname.endsWith(".gif")) return "image/gif";
+		if (pathname.endsWith(".svg")) return "image/svg+xml";
+		if (pathname.endsWith(".mp3")) return "audio/mpeg";
+		if (pathname.endsWith(".wav")) return "audio/wav";
+		if (pathname.endsWith(".ogg")) return "audio/ogg";
+		if (pathname.endsWith(".m4a")) return "audio/mp4";
+		if (pathname.endsWith(".mp4")) return "video/mp4";
+		if (pathname.endsWith(".mov")) return "video/quicktime";
+		if (pathname.endsWith(".webm")) return "video/webm";
+		if (pathname.endsWith(".pdf")) return "application/pdf";
+	} catch {
+		// Best-effort inference only.
+	}
+	return null;
+}
+
 function audioMimeFromFormat(format?: string): string {
 	if (!format) return "audio/wav";
 	return AUDIO_MIME_BY_FORMAT[format] || `audio/${format}`;
+}
+
+async function fetchRemoteMediaWithRetry(
+	url: string,
+	fallbackMimeType: string,
+): Promise<Response | null> {
+	const first = await fetch(url).catch(() => null);
+	const firstMime = normalizeContentType(first?.headers?.get("content-type"), fallbackMimeType);
+	if (first?.ok && looksBinaryMimeType(firstMime)) {
+		return first;
+	}
+
+	const accept =
+		fallbackMimeType.startsWith("image/")
+			? "image/*,*/*;q=0.8"
+			: fallbackMimeType.startsWith("audio/")
+				? "audio/*,*/*;q=0.8"
+				: fallbackMimeType.startsWith("video/")
+					? "video/*,*/*;q=0.8"
+					: "*/*";
+	return fetch(url, {
+		headers: {
+			Accept: accept,
+			"User-Agent": RETRY_FETCH_USER_AGENT,
+		},
+	}).catch(() => null);
 }
 
 async function mediaUrlToGeminiPart(
@@ -97,8 +158,8 @@ async function mediaUrlToGeminiPart(
 	}
 
 	try {
-		const res = await fetch(url);
-		if (!res.ok) {
+		const res = await fetchRemoteMediaWithRetry(url, fallbackMimeType);
+		if (!res || !res.ok) {
 			return {
 				file_data: {
 					mime_type: fallbackMimeType,
@@ -127,9 +188,19 @@ async function mediaUrlToGeminiPart(
 			};
 		}
 
+		const rawMimeHeader = res.headers.get("content-type");
+		const normalizedRawMime = normalizeContentType(rawMimeHeader, "");
+		const inferredMime = inferMimeTypeFromUrl(url);
+		const chosenMime =
+			normalizedRawMime &&
+			looksBinaryMimeType(normalizedRawMime) &&
+			normalizedRawMime !== "application/octet-stream"
+				? normalizedRawMime
+				: inferredMime ??
+					normalizeContentType(rawMimeHeader, fallbackMimeType);
 		return {
 			inline_data: {
-				mime_type: normalizeContentType(res.headers.get("content-type"), fallbackMimeType),
+				mime_type: chosenMime,
 				data: encodeBase64(bytes),
 			},
 		};

@@ -51,11 +51,13 @@ describe("chat room request builders", () => {
 		const urls = extractGenerationUrls({
 			url: "https://example.com/direct.png",
 			data: [{ b64_json: "abc123" }, { url: "https://example.com/alt.png" }],
+			output: [{ uri: "https://example.com/video.mp4" }],
 		});
 		expect(urls).toEqual([
 			"https://example.com/direct.png",
 			"data:image/png;base64,abc123",
 			"https://example.com/alt.png",
+			"https://example.com/video.mp4",
 		]);
 	});
 

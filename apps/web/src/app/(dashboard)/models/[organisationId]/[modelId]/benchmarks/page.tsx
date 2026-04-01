@@ -1,9 +1,6 @@
 import { buildMetadata } from "@/lib/seo";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmarks";
-import {
-	getModelBenchmarkHighlights,
-} from "@/lib/fetchers/models/getModelBenchmarkData";
+import { ModelBenchmarksSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import { getModelOverview } from "@/lib/fetchers/models/getModel";
 import type { Metadata } from "next";
 import {
@@ -89,29 +86,10 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "benchmarks"));
 	}
 	const modelId = canonicalModelId;
-	const model = await fetchModel(modelId, includeHidden);
-
-	if (!model) {
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="benchmarks"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
-
-	const highlightCards = await getModelBenchmarkHighlights(modelId, includeHidden);
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="benchmarks" includeHidden={includeHidden}>
-			<ModelBenchmarks
-				modelId={modelId}
-				highlightCards={highlightCards}
-				mode="summary"
-			/>
+			<ModelBenchmarksSection modelId={modelId} includeHidden={includeHidden} />
 		</ModelDetailShell>
 	);
 }
