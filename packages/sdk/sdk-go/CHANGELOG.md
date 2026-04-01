@@ -1,5 +1,19 @@
 # @ai-stats/go-sdk
 
+## 1.1.1
+
+### Patch Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes.
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
+## 1.1.0
+
+### Minor Changes
+
+- [#201](https://github.com/AI-Stats/AI-Stats/pull/201) [`31a2268`](https://github.com/AI-Stats/AI-Stats/commit/31a226829939099401558cb206890d9fede74495) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bump all functional SDKs to 1.1.0 due to model-surface changes and cross-language SDK updates.
+
 ## 1.0.1
 
 ### Patch Changes

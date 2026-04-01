@@ -57,7 +57,7 @@ namespace AiStatsSdk
             _enableDeprecationWarnings = enableDeprecationWarnings;
             _warningsAsErrors = warningsAsErrors;
             _logger = logger;
-            _telemetry = new TelemetryRecorder(devtools, "1.0.1");
+            _telemetry = new TelemetryRecorder(devtools, "1.1.1");
             _lifecycleResolver = lifecycleResolver ?? FetchModelLifecycleAsync;
         }
 

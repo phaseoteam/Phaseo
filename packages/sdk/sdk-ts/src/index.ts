@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AudioSpeechRequest,
   AudioTranscriptionRequest,
   AudioTranscriptionResponse,
@@ -249,7 +249,9 @@ export class AIStats {
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
-    this.telemetry = new TelemetryCapture(opts.devtools, "1.0.2");
+
+    this.telemetry = new TelemetryCapture(opts.devtools, "1.1.1");
+
   }
 
   rawClient(): Client {
