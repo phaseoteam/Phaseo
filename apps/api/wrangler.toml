@@ -13,7 +13,6 @@ MODEL_DISCOVERY_RETENTION_DAYS = "7"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 VIDEO_RECONCILIATION_ENABLED = "true"
 VIDEO_RECONCILIATION_LIMIT = "100"
-VIDEO_ASSET_RETENTION_SECONDS = "900"
 VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "true"
 ENTERPRISE_INVOICING_ENABLED = "true"
@@ -39,8 +38,3 @@ invocation_logs = true
 binding = "GATEWAY_CACHE"
 id = "f5e23068fcd94125ad9860c817c543d9"
 preview_id = "f5e23068fcd94125ad9860c817c543d9"
-
-[[r2_buckets]]
-binding = "VIDEO_ASSETS_BUCKET"
-bucket_name = "ai-stats-video-assets"
-preview_bucket_name = "ai-stats-video-assets-preview"

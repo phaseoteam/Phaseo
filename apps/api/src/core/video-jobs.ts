@@ -14,21 +14,6 @@ import {
 	upsertAsyncOperation,
 } from "@core/async-operations";
 
-export type VideoStoredAssetMeta = {
-	index: number;
-	storageProvider: "r2";
-	storageKey: string;
-	mimeType: string;
-	bytes: number;
-	sha256: string | null;
-	sourceUrl?: string | null;
-	width?: number | null;
-	height?: number | null;
-	durationSeconds?: number | null;
-	storedAt: string;
-	expiresAt: string;
-};
-
 export type VideoJobMeta = {
 	provider: string;
 	providerTaskId?: string | null;
@@ -64,7 +49,6 @@ export type VideoJobMeta = {
 	reservationStatus?: string | null;
 	keySource?: "gateway" | "byok" | null;
 	byokKeyId?: string | null;
-	storedOutputs?: VideoStoredAssetMeta[] | null;
 	webhookDeliveries?: Record<string, string> | null;
 	lastWebhookProgress?: number | null;
 	lastWebhookProgressAt?: string | null;
@@ -87,90 +71,6 @@ export type VideoJobRecord = {
 	updatedAt: string | null;
 	createdAt: string | null;
 };
-
-function parseStoredOutputs(value: unknown): VideoStoredAssetMeta[] | null {
-	if (!Array.isArray(value)) return null;
-	const out: VideoStoredAssetMeta[] = [];
-	for (const item of value) {
-		if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-		const source = item as Record<string, unknown>;
-		const index =
-			typeof source.index === "number" && Number.isFinite(source.index)
-				? Math.max(0, Math.trunc(source.index))
-				: null;
-		const storageProvider =
-			source.storageProvider === "r2" || source.storage_provider === "r2"
-				? "r2"
-				: null;
-		const storageKey =
-			typeof source.storageKey === "string"
-				? source.storageKey
-				: typeof source.storage_key === "string"
-					? source.storage_key
-					: null;
-		const mimeType =
-			typeof source.mimeType === "string"
-				? source.mimeType
-				: typeof source.mime_type === "string"
-					? source.mime_type
-					: null;
-		const bytes =
-			typeof source.bytes === "number" && Number.isFinite(source.bytes)
-				? Math.max(0, Math.trunc(source.bytes))
-				: null;
-		const storedAt =
-			typeof source.storedAt === "string"
-				? source.storedAt
-				: typeof source.stored_at === "string"
-					? source.stored_at
-					: null;
-		const expiresAt =
-			typeof source.expiresAt === "string"
-				? source.expiresAt
-				: typeof source.expires_at === "string"
-					? source.expires_at
-					: null;
-		if (index == null || !storageProvider || !storageKey || !mimeType || bytes == null || !storedAt || !expiresAt) {
-			continue;
-		}
-		out.push({
-			index,
-			storageProvider,
-			storageKey,
-			mimeType,
-			bytes,
-			sha256:
-				typeof source.sha256 === "string"
-					? source.sha256
-					: typeof source.sha_256 === "string"
-						? source.sha_256
-						: null,
-			sourceUrl:
-				typeof source.sourceUrl === "string"
-					? source.sourceUrl
-					: typeof source.source_url === "string"
-						? source.source_url
-						: null,
-			width:
-				typeof source.width === "number" && Number.isFinite(source.width)
-					? Math.max(0, Math.trunc(source.width))
-					: null,
-			height:
-				typeof source.height === "number" && Number.isFinite(source.height)
-					? Math.max(0, Math.trunc(source.height))
-					: null,
-			durationSeconds:
-				typeof source.durationSeconds === "number" && Number.isFinite(source.durationSeconds)
-					? source.durationSeconds
-					: typeof source.duration_seconds === "number" && Number.isFinite(source.duration_seconds)
-						? source.duration_seconds
-						: null,
-			storedAt,
-			expiresAt,
-		});
-	}
-	return out.length > 0 ? out : null;
-}
 
 function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -246,7 +146,6 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
 	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
-	out.storedOutputs = parseStoredOutputs(source.storedOutputs ?? source.stored_outputs);
 	if (source.webhookDeliveries && typeof source.webhookDeliveries === "object" && !Array.isArray(source.webhookDeliveries)) {
 		out.webhookDeliveries = source.webhookDeliveries as Record<string, string>;
 	}
