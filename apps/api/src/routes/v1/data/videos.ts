@@ -25,7 +25,6 @@ import {
 	resolveVertexApiBase,
 } from "@providers/google-vertex/auth";
 import { finalizeVideoJob } from "@core/video-finalization";
-import { deleteStoredVideoAssets, ensureVideoAssetStored, persistVideoAsset, serveStoredVideoAsset } from "@core/video-assets";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import {
 	getVideoJobRecord,
@@ -262,15 +261,6 @@ function buildContentHeaders(
 }
 
 function toPublicVideoOutputs(requestUrl: string, id: string, payload: Record<string, unknown>, meta: VideoJobMeta | null) {
-	const storedOutputs = Array.isArray(meta?.storedOutputs) ? meta.storedOutputs : [];
-	if (storedOutputs.length > 0) {
-		return storedOutputs.map((item) => ({
-			index: item.index,
-			mime_type: item.mimeType ?? "video/mp4",
-			bytes_available: true,
-			content_url: buildVideoContentUrl(requestUrl, id, item.index),
-		}));
-	}
 	const output = Array.isArray(payload.output) ? payload.output : [];
 	return output.map((item: any, index: number) => ({
 		index,
@@ -345,7 +335,6 @@ async function toPublicVideoResponse(args: {
 		});
 	const firstOutput = outputs[0] ?? null;
 	const outputRaw = Array.isArray(args.payload.output) ? (args.payload.output[0] as Record<string, unknown> | undefined) : undefined;
-	const storedAsset = Array.isArray(args.meta?.storedOutputs) ? args.meta?.storedOutputs?.find((item) => item.index === 0) ?? null : null;
 	let download: { download_url: string; expires_at: number } | null = null;
 	if (status === "completed" && includeSignedUrls && args.record?.teamId) {
 		const signedPerOutput = await Promise.all(
@@ -427,17 +416,7 @@ async function toPublicVideoResponse(args: {
 				? (args.payload.error as any).message
 				: args.payload.error;
 	const asset = status === "completed" && firstOutput
-		? storedAsset
-			? {
-				id: `ast_${args.id.replace(/^G-/, "")}`,
-				mime_type: storedAsset.mimeType ?? "video/mp4",
-				bytes: storedAsset.bytes,
-				sha256: storedAsset.sha256,
-				width: storedAsset.width ?? null,
-				height: storedAsset.height ?? null,
-				duration_seconds: storedAsset.durationSeconds ?? durationSeconds,
-			}
-			: {
+		? {
 			id: `ast_${args.id.replace(/^G-/, "")}`,
 			mime_type: firstOutput.mime_type ?? "video/mp4",
 			bytes: inferOutputBytes(typeof (outputRaw as any)?.b64_json === "string" ? (outputRaw as any).b64_json : typeof (outputRaw as any)?.b64Json === "string" ? (outputRaw as any).b64Json : null),
@@ -859,21 +838,6 @@ async function finalizeVideoStatusIfTerminal(args: {
 			polledStatus: args.status,
 		},
 	});
-	const refreshed = await getVideoJobRecord(args.auth.teamId, args.videoId);
-	if (args.status === "completed" && refreshed) {
-		await ensureVideoAssetStored({
-			job: refreshed,
-			rawPayload: args.rawPayload,
-			index: 0,
-		}).catch((error) => {
-			console.error("video_asset_store_after_finalize_failed", {
-				error,
-				teamId: args.auth.teamId,
-				videoId: args.videoId,
-				providerId: args.providerId,
-			});
-		});
-	}
 	dispatchVideoWebhookEventInBackground({
 		teamId: args.auth.teamId,
 		videoId: args.videoId,
@@ -1088,22 +1052,6 @@ async function persistBufferedVideoResponse(args: {
 	contentDisposition?: "attachment" | "inline" | null;
 	filename?: string | null;
 }): Promise<Response> {
-	await persistVideoAsset({
-		teamId: args.teamId,
-		videoId: args.videoId,
-		index: args.index,
-		buffer: args.buffer,
-		mimeType: args.mimeType,
-		sourceUrl: args.sourceUrl,
-	}).catch((error) => {
-		console.error("video_asset_persist_failed", {
-			error,
-			teamId: args.teamId,
-			videoId: args.videoId,
-			index: args.index,
-			sourceUrl: args.sourceUrl ?? null,
-		});
-	});
 	return new Response(args.buffer.slice(0), {
 		status: 200,
 		headers: buildContentHeaders(undefined, {
@@ -2453,13 +2401,6 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 		});
 	}
 	const videoMeta = ownedVideo.meta;
-	const storedVideo = await serveStoredVideoAsset({
-		meta: videoMeta,
-		index: requestedIndex,
-		contentDisposition,
-		filename: contentFilename,
-	});
-	if (storedVideo) return storedVideo;
 	const vertexOperationName = resolveGoogleVertexOperationName(ownedVideo.record, videoMeta, id);
 	if (vertexOperationName) {
 		const cachedUri =
@@ -3257,17 +3198,6 @@ videosRoutes.delete("/:videoId", withRuntime(async (req) => {
 			status: publicStatus,
 		});
 	}
-	await deleteStoredVideoAssets({
-		teamId: authValue.teamId,
-		videoId: id,
-		meta: ownedVideo.meta,
-	}).catch((error) => {
-		console.error("video_asset_delete_failed", {
-			error,
-			teamId: authValue.teamId,
-			videoId: id,
-		});
-	});
 	await setVideoJobStatus(authValue.teamId, id, ownedVideo.record.status === "cancelled" ? "cancelled" : (ownedVideo.record.status === "completed" ? "completed" : (ownedVideo.record.status === "expired" ? "expired" : "failed")), {
 		tombstoned: true,
 		tombstonedAt: new Date().toISOString(),

@@ -65,17 +65,9 @@ function buildBilling(meta: VideoJobMeta | null, status: ReturnType<typeof toPub
 }
 
 function buildAsset(meta: VideoJobMeta | null, videoId: string) {
-	const first = Array.isArray(meta?.storedOutputs) ? meta!.storedOutputs![0] : null;
-	if (!first) return null;
-	return {
-		id: `ast_${videoId.replace(/^G-/, "")}`,
-		mime_type: first.mimeType,
-		bytes: first.bytes,
-		sha256: first.sha256,
-		width: first.width ?? null,
-		height: first.height ?? null,
-		duration_seconds: first.durationSeconds ?? null,
-	};
+	void meta;
+	void videoId;
+	return null;
 }
 
 async function signWebhook(secret: string, timestamp: string, body: string): Promise<string> {
