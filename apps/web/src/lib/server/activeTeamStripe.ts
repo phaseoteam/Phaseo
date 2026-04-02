@@ -90,7 +90,17 @@ export async function requireActiveTeamStripeCustomer(
         throw new Error("missing_team");
     }
 
-    await requireTeamMembership(supabase, user.id, teamId);
+    try {
+        await requireTeamMembership(supabase, user.id, teamId);
+    } catch (error) {
+        if (
+            error instanceof Error &&
+            error.message.toLowerCase() === "unauthorized"
+        ) {
+            throw new Error("unauthorized");
+        }
+        throw error;
+    }
 
     const { data: wallet, error: walletErr } = await supabase
         .from("wallets")
