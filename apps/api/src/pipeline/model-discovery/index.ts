@@ -101,7 +101,13 @@ type ConfiguredModelCoverageMonitorSummary = {
 	updatesDetected: number;
 	providersChanged: number;
 	providerChanges: PricingProviderChange[];
+	fingerprint: string | null;
 	error?: string | null;
+};
+
+type ConfiguredModelCoverageState = {
+	fingerprint: string | null;
+	fallbackFingerprint: string | null;
 };
 
 type ProviderResult =
@@ -544,6 +550,58 @@ function canonicalCoverageModelId(value: string): string {
 	return value.trim().toLowerCase().replace(/\s+/g, "");
 }
 
+function fnv1aHash(value: string): string {
+	let hash = 0x811c9dc5;
+	for (let index = 0; index < value.length; index += 1) {
+		hash ^= value.charCodeAt(index);
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function normalizeConfiguredCoverageChanges(
+	providerChanges: PricingProviderChange[],
+	maxSamplesPerProvider?: number
+): PricingProviderChange[] {
+	const limit = Number.isFinite(maxSamplesPerProvider)
+		? Math.max(0, Math.floor(maxSamplesPerProvider as number))
+		: null;
+	const normalized: PricingProviderChange[] = [];
+
+	for (const provider of providerChanges) {
+		const providerId = canonicalProviderId(String(provider.providerId ?? ""));
+		if (!providerId) continue;
+
+		const samples = Array.from(
+			new Set(
+				(provider.samples ?? [])
+					.filter((sample): sample is string => typeof sample === "string" && sample.trim().length > 0)
+					.map((sample) => canonicalCoverageModelId(sample))
+			)
+		).sort((a, b) => a.localeCompare(b));
+
+		const updates = Number.isFinite(provider.updates) && provider.updates > 0
+			? Math.floor(provider.updates)
+			: samples.length;
+		const limitedSamples = limit === null ? samples : samples.slice(0, limit);
+		normalized.push({ providerId, updates, samples: limitedSamples });
+	}
+
+	return normalized.sort((a, b) => a.providerId.localeCompare(b.providerId));
+}
+
+function computeConfiguredModelCoverageFingerprint(
+	providerChanges: PricingProviderChange[],
+	maxSamplesPerProvider?: number
+): string | null {
+	const normalized = normalizeConfiguredCoverageChanges(providerChanges, maxSamplesPerProvider);
+	if (normalized.length === 0) return null;
+	const serialized = normalized
+		.map((provider) => `${provider.providerId}:${provider.updates}:${provider.samples.join(",")}`)
+		.join("|");
+	return `v1:${normalized.length}:${serialized.length}:${fnv1aHash(serialized)}`;
+}
+
 function expandProviderLookupIds(providerIds: string[]): string[] {
 	const ids = new Set(providerIds.map((id) => canonicalProviderId(id)));
 	for (const [alias, canonical] of Object.entries(PROVIDER_ID_ALIASES)) {
@@ -704,6 +762,74 @@ async function loadLatestPricingCursor(): Promise<PricingCursor | null> {
 	for (const row of data ?? []) {
 		const cursor = parsePricingCursorFromSummary((row as Record<string, unknown>).summary);
 		if (cursor) return cursor;
+	}
+	return null;
+}
+
+function parseConfiguredCoverageProviderChanges(value: unknown): PricingProviderChange[] {
+	const rows = asArray(value);
+	const providerChanges: PricingProviderChange[] = [];
+	for (const rowValue of rows) {
+		const row = asRecord(rowValue);
+		if (!row) continue;
+		const providerIdRaw =
+			typeof row.providerId === "string"
+				? row.providerId
+				: typeof row.provider_id === "string"
+					? row.provider_id
+					: "";
+		const providerId = canonicalProviderId(providerIdRaw);
+		if (!providerId) continue;
+		const samples = asArray(row.samples)
+			.filter((sample): sample is string => typeof sample === "string" && sample.trim().length > 0)
+			.map((sample) => canonicalCoverageModelId(sample));
+		const updates =
+			typeof row.updates === "number" && Number.isFinite(row.updates) && row.updates >= 0
+				? Math.floor(row.updates)
+				: samples.length;
+		providerChanges.push({ providerId, updates, samples });
+	}
+	return providerChanges;
+}
+
+function parseConfiguredCoverageStateFromSummary(summary: unknown): ConfiguredModelCoverageState | null {
+	const summaryRecord = asRecord(summary);
+	if (!summaryRecord) return null;
+	const coverageRecord = asRecord(summaryRecord.configuredModelCoverageMonitor);
+	if (!coverageRecord) return null;
+
+	const providerChanges = parseConfiguredCoverageProviderChanges(coverageRecord.providerChanges);
+	const fingerprint =
+		typeof coverageRecord.fingerprint === "string" && coverageRecord.fingerprint.trim().length > 0
+			? coverageRecord.fingerprint.trim()
+			: null;
+	const fallbackFingerprint = computeConfiguredModelCoverageFingerprint(
+		providerChanges,
+		MAX_SUMMARY_MODEL_SAMPLES
+	);
+	return { fingerprint, fallbackFingerprint };
+}
+
+async function loadLatestConfiguredCoverageState(source?: string): Promise<ConfiguredModelCoverageState | null> {
+	const supabase = getSupabaseAdmin();
+	let query = supabase
+		.from("model_discovery_runs")
+		.select("summary,status,started_at")
+		.in("status", ["completed", "completed_with_errors"])
+		.order("started_at", { ascending: false });
+
+	const sourceValue = typeof source === "string" ? source.trim() : "";
+	if (sourceValue) {
+		query = query.eq("source", sourceValue);
+	}
+
+	const { data, error } = await query.limit(200);
+
+	if (error) throw new Error(error.message || "Failed to load configured model coverage state");
+
+	for (const row of data ?? []) {
+		const state = parseConfiguredCoverageStateFromSummary((row as Record<string, unknown>).summary);
+		if (state) return state;
 	}
 	return null;
 }
@@ -1022,12 +1148,17 @@ function buildConfiguredModelCoverageDiscordSection(summary: ConfiguredModelCove
 	return lines.join("\n").trim();
 }
 
+function shouldNotifyConfiguredModelCoverage(): boolean {
+	return toBool(readBindingEnv(["CONFIGURED_MODEL_COVERAGE_NOTIFY_ENABLED"]) ?? "false", false);
+}
+
 function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
 	pricing: PricingMonitorSummary;
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): string {
+	const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
 	const pricingSection = buildPricingDiscordSection(args.pricing);
@@ -1036,7 +1167,9 @@ function buildDiscordMessage(args: {
 	if (modelSection) sections.push(modelSection);
 	if (pricingSection) sections.push(pricingSection);
 	if (providerApiPricingSection) sections.push(providerApiPricingSection);
-	if (configuredModelCoverageSection) sections.push(configuredModelCoverageSection);
+	if (includeConfiguredCoverageNotifications && configuredModelCoverageSection) {
+		sections.push(configuredModelCoverageSection);
+	}
 	const text = sections.join("\n\n").trim();
 	if (text.length <= 1900) return text;
 	return `${text.slice(0, 1888)}\n...[truncated]`;
@@ -1048,11 +1181,16 @@ async function sendDiscordNotification(args: {
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): Promise<void> {
+	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
+	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
+		? args.configuredModelCoverage.updatesDetected
+		: 0;
+
 	if (
 		args.modelChanges.length === 0 &&
 		args.pricing.updatesDetected === 0 &&
 		args.providerApiPricing.updatesDetected === 0 &&
-		args.configuredModelCoverage.updatesDetected === 0
+		configuredCoverageUpdatesForNotifications === 0
 	) {
 		return;
 	}
@@ -1068,6 +1206,7 @@ async function sendDiscordNotification(args: {
 	}
 
 	const message = buildDiscordMessage(args);
+	if (!message.trim()) return;
 	const roleId = readBindingEnv(["DISCORD_ROLE_ID"]);
 	const userId = readBindingEnv(["DISCORD_USER_ID"]);
 	const mentions: string[] = [];
@@ -1168,6 +1307,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 				updates: provider.updates,
 				samples: provider.samples.slice(0, MAX_SUMMARY_MODEL_SAMPLES),
 			})),
+			fingerprint: summary.configuredModelCoverageMonitor.fingerprint,
 			error: summary.configuredModelCoverageMonitor.error ?? undefined,
 		},
 		notificationError: extra.notificationError ?? undefined,
@@ -1511,6 +1651,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			updatesDetected: 0,
 			providersChanged: 0,
 			providerChanges: [],
+			fingerprint: null,
 		};
 
 		if (pricingExecuted) {
@@ -1549,10 +1690,47 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					(total, providerChange) => total + providerChange.updates,
 					0
 				);
+				configuredModelCoverageMonitor.fingerprint =
+					computeConfiguredModelCoverageFingerprint(providerChanges);
 			} catch (error) {
 				const reason = error instanceof Error ? error.message : String(error);
 				configuredModelCoverageMonitor.error = reason;
 				console.error("[model-discovery] Configured model coverage monitor failed:", reason);
+			}
+		}
+
+		let configuredModelCoverageNotificationSummary = configuredModelCoverageMonitor;
+		if (
+			configuredModelCoverageMonitor.executed &&
+			!configuredModelCoverageMonitor.error &&
+			configuredModelCoverageMonitor.updatesDetected > 0 &&
+			configuredModelCoverageMonitor.providerChanges.length > 0
+		) {
+			try {
+				const previousConfiguredCoverage = await loadLatestConfiguredCoverageState(args.source);
+				if (previousConfiguredCoverage) {
+					const currentFingerprint =
+						configuredModelCoverageMonitor.fingerprint ??
+						computeConfiguredModelCoverageFingerprint(configuredModelCoverageMonitor.providerChanges);
+					const currentFallbackFingerprint = computeConfiguredModelCoverageFingerprint(
+						configuredModelCoverageMonitor.providerChanges,
+						MAX_SUMMARY_MODEL_SAMPLES
+					);
+					const changed = previousConfiguredCoverage.fingerprint
+						? previousConfiguredCoverage.fingerprint !== currentFingerprint
+						: previousConfiguredCoverage.fallbackFingerprint !== currentFallbackFingerprint;
+					if (!changed) {
+						configuredModelCoverageNotificationSummary = {
+							...configuredModelCoverageMonitor,
+							updatesDetected: 0,
+							providersChanged: 0,
+							providerChanges: [],
+						};
+					}
+				}
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : String(error);
+				console.error("[model-discovery] Failed to compare configured model coverage state:", reason);
 			}
 		}
 
@@ -1563,7 +1741,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					modelChanges: changes,
 					pricing: pricingMonitor,
 					providerApiPricing: providerApiPricingMonitor,
-					configuredModelCoverage: configuredModelCoverageMonitor,
+					configuredModelCoverage: configuredModelCoverageNotificationSummary,
 				});
 			} catch (error) {
 				notificationError = error instanceof Error ? error.message : String(error);
@@ -1643,6 +1821,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				updatesDetected: 0,
 				providersChanged: 0,
 				providerChanges: [],
+				fingerprint: null,
 			},
 		};
 		try {
