@@ -394,7 +394,7 @@ export default function ModelsTableDisplay({
 		clearOnDefault: true,
 	});
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
-		defaultValue: ["standard"] as string[],
+		defaultValue: [] as string[],
 		parse: parseCsvParam,
 		serialize: serializeCsvParam,
 		shallow: true,
@@ -413,8 +413,7 @@ export default function ModelsTableDisplay({
 	const isTable = pathname?.includes("/models/table");
 	const isCollections = pathname?.includes("/models/collections");
 
-	const isDefaultTiers =
-		selectedTiers.length === 1 && selectedTiers[0] === "standard";
+	const isDefaultTiers = selectedTiers.length === 0;
 
 	const counts = useMemo(() => {
 		const inputMap = new Map<string, number>();
@@ -621,7 +620,7 @@ export default function ModelsTableDisplay({
 		setSelectedInputModalities([]);
 		setSelectedOutputModalities([]);
 		setSelectedFeatures([]);
-		setSelectedTiers(["standard"]);
+		setSelectedTiers([]);
 		setYearSelected(0);
 	};
 
