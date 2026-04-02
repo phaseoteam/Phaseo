@@ -53,8 +53,7 @@ export async function handlePasswordSignIn(formData: FormData) {
 
 	const { error } = await supabase.auth.signInWithPassword({ email, password });
 	if (error) {
-		const message = error.message || "Authentication failed";
-		redirect(`/sign-in?error=${encodeURIComponent(message)}`);
+		redirect("/sign-in?error=auth-failed");
 	}
 
 	await setAuthProviderCookie("email");
