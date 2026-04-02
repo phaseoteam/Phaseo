@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { requireTeamMembership } from "@/utils/serverActionAuth";
 import { getStripe } from "@/lib/stripe";
 
 type ActiveTeamStripeCustomer = {
@@ -88,6 +89,8 @@ export async function requireActiveTeamStripeCustomer(
     if (!teamId) {
         throw new Error("missing_team");
     }
+
+    await requireTeamMembership(supabase, user.id, teamId);
 
     const { data: wallet, error: walletErr } = await supabase
         .from("wallets")
