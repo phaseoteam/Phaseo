@@ -133,7 +133,7 @@
 		"@tailwindcss/postcss": "^4",
 		"@types/jest": "^29.5.12",
 		"@types/node": "^25",
-		"@types/react": "19.2.7",
+		"@types/react": "19.2.14",
 		"@types/react-dom": "19.2.3",
 		"@types/three": "^0.180.0",
 		"baseline-browser-mapping": "^2.9.0",
@@ -150,7 +150,7 @@
 		"wrangler": "^4.66.0"
 	},
 	"overrides": {
-		"@types/react": "19.2.7",
+		"@types/react": "19.2.14",
 		"@types/react-dom": "19.2.3"
 	}
 }

@@ -367,13 +367,13 @@ jobs:
 
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@v4
+              uses: actions/setup-dotnet@v5
               with:
                   dotnet-version: "8.0.x"
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@v4
+              uses: actions/setup-java@v5
               with:
                   distribution: "temurin"
                   java-version: "17"

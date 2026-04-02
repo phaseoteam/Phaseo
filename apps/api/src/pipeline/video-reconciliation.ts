@@ -3,7 +3,6 @@
 // How: Poll pending jobs, update status, and finalize completion billing exactly-once.
 
 import { fetchVideoProviderStatus } from "@core/video-reconciliation";
-import { ensureVideoAssetStored } from "@core/video-assets";
 import { finalizeVideoJob } from "@core/video-finalization";
 import { listPendingVideoJobs } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
@@ -58,7 +57,6 @@ export async function runVideoReconciliationJob(args?: {
 						reconciledFromStatus: "completed",
 					},
 				});
-				await ensureVideoAssetStored({ job, index: 0 }).catch(() => null);
 				dispatchVideoWebhookEventInBackground({
 					teamId: job.teamId,
 					videoId: job.videoId,
@@ -125,26 +123,6 @@ export async function runVideoReconciliationJob(args?: {
 				},
 			});
 			if (finalized.status === "completed") {
-				await ensureVideoAssetStored({
-					job: {
-						...job,
-						status: finalized.status,
-						meta: {
-							provider: String(job.provider ?? job.meta?.provider ?? polled.providerId),
-							...(job.meta ?? {}),
-							...((polled.metaPatch ?? {}) as Record<string, unknown>),
-						},
-					},
-					rawPayload: polled.raw,
-					index: 0,
-				}).catch((error) => {
-					console.error("video_reconcile_asset_store_failed", {
-						error,
-						teamId: job.teamId,
-						videoId: job.videoId,
-						provider: polled.providerId,
-					});
-				});
 				dispatchVideoWebhookEventInBackground({
 					teamId: job.teamId,
 					videoId: job.videoId,
