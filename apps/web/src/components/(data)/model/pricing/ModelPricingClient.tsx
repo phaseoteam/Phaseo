@@ -67,6 +67,12 @@ const PRICING_METER_PREFERENCE = [
 ] as const;
 const DEFAULT_VISIBLE_PROVIDER_COUNT = 4;
 
+function getPreferredPlan(plans: string[]): string {
+    if (plans.includes("standard")) return "standard";
+    if (plans.includes("free")) return "free";
+    return plans[0] || "standard";
+}
+
 function normalizedRulePrice(
     rule: ProviderPricing["pricing_rules"][number]
 ): number | null {
@@ -111,10 +117,13 @@ function getProviderModelScopeForPlan(
     const matchingProviderModels = provider.provider_models.filter((pm) =>
         planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
     );
+    return matchingProviderModels;
+}
 
-    return matchingProviderModels.length
-        ? matchingProviderModels
-        : provider.provider_models;
+function hasPricingForPlan(provider: ProviderPricing, plan: string): boolean {
+    return provider.pricing_rules.some(
+        (rule) => (rule.pricing_plan || "standard") === plan
+    );
 }
 
 function isProviderModelActiveForPlan(
@@ -157,13 +166,7 @@ export default function ModelPricingClient({
         return PLAN_ORDER.filter((x) => s.has(x));
     }, [providers]);
 
-    const [plan, setPlan] = useState<string>(
-        availablePlans.includes("standard")
-            ? "standard"
-            : availablePlans.includes("free")
-            ? "free"
-            : availablePlans[0] || "standard"
-    );
+    const [plan, setPlan] = useState<string>(getPreferredPlan(availablePlans));
     const [sort, setSort] = useState<SortOption>(() => {
         const fromUrl = searchParams.get(SORT_QUERY_KEY);
         return isSortOption(fromUrl) ? fromUrl : "default";
@@ -206,7 +209,7 @@ export default function ModelPricingClient({
     const hasQuantizationOptions = quantizationOptions.length > 0;
 
     const sortedProviders = useMemo(() => {
-        const list = [...providers];
+        const list = providers.filter((provider) => hasPricingForPlan(provider, plan));
         const getProviderSortPrice = (provider: ProviderPricing): number | null => {
             const planRules = provider.pricing_rules.filter(
                 (r) => (r.pricing_plan || "standard") === plan
@@ -374,6 +377,14 @@ export default function ModelPricingClient({
         },
         [pathname, router, searchParams]
     );
+
+    useEffect(() => {
+        if (availablePlans.some((availablePlan) => availablePlan === plan)) return;
+        const fallbackPlan = getPreferredPlan(availablePlans);
+        if (fallbackPlan !== plan) {
+            setPlan(fallbackPlan);
+        }
+    }, [availablePlans, plan]);
 
     useEffect(() => {
         const nextSort = isSortOption(searchParams.get(SORT_QUERY_KEY))
