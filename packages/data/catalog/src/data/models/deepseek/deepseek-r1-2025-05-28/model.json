@@ -1,0 +1,155 @@
+{
+  "model_id": "deepseek/deepseek-r1-2025-05-28",
+  "organisation_id": "deepseek",
+  "name": "Deepseek R1 (2025-05-28)",
+  "status": "Available",
+  "previous_model_id": "deepseek/deepseek-r1-2025-01-20",
+  "announced_date": "2025-05-28T00:00:00",
+  "release_date": "2025-05-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-r1-2025-05-28",
+  "links": [],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2-sciarena",
+      "score": 1061.94,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://sciarena.allen.ai/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 0.914,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250528",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 0.855,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250528",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 0.212,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.011,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 14.56,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 6.354,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 0.81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250528",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 0.177,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250528",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 0.6939,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1411,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1408.84,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.498,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 0.408,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.74,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 0.212,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": null,
+      "rank": 2
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.011,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": null,
+      "rank": 3
+    }
+  ]
+}

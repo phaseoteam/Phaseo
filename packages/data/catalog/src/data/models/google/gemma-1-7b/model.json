@@ -1,0 +1,32 @@
+{
+  "model_id": "google/gemma-1-7b",
+  "organisation_id": "google",
+  "name": "Gemma 1 7B",
+  "status": "Deprecated",
+  "previous_model_id": null,
+  "announced_date": "2024-02-21T00:00:00",
+  "release_date": "2024-02-21T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Gemma",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "google/gemma-1-7b",
+  "family_id": "google/gemma-1",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 8192
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-11-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8192
+    }
+  ],
+  "benchmarks": []
+}

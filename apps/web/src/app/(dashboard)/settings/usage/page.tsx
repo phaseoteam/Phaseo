@@ -139,32 +139,53 @@ async function UsageSettingsContent({
 	const from = fromForRange(range).toISOString();
 	const nowIso = new Date().toISOString();
 
-	// Fetch aggregated data for unique models, providers, and apps
-	const { data: uniqueData } = await supabase
-		.from("gateway_requests")
-		.select("model_id, provider, app_id")
+	// Fetch aggregated data for unique models and providers from team rollups.
+	const { data: modelProviderRollups } = await supabase
+		.from("gateway_usage_rollup_15m_team_provider_model")
+		.select("canonical_model_id, provider")
 		.eq("team_id", teamId)
-		.gte("created_at", from)
-		.lte("created_at", nowIso);
+		.gte("bucket_15m", from)
+		.lte("bucket_15m", nowIso);
+
+	// Apps are scoped by team membership and activity in app/model rollups.
+	const { data: teamApps } = await supabase
+		.from("api_apps")
+		.select("id")
+		.eq("team_id", teamId);
+	const teamAppIds = Array.from(
+		new Set((teamApps ?? []).map((row: any) => row?.id).filter(Boolean)),
+	);
+	const { data: appRollups } =
+		teamAppIds.length > 0
+			? await supabase
+					.from("gateway_usage_rollup_15m_app_model")
+					.select("app_id")
+					.in("app_id", teamAppIds)
+					.gte("bucket_15m", from)
+					.lte("bucket_15m", nowIso)
+			: { data: [] as any[] };
 
 	// Extract unique values for filters
 	const uniqueModels = Array.from(
 		new Set(
-			(uniqueData ?? []).map((r: any) => r.model_id).filter(Boolean),
+			(modelProviderRollups ?? [])
+				.map((r: any) => r.canonical_model_id)
+				.filter(Boolean),
 		),
 	);
 	const uniqueProviders = Array.from(
 		new Set(
-			(uniqueData ?? []).map((r: any) => r.provider).filter(Boolean),
+			(modelProviderRollups ?? []).map((r: any) => r.provider).filter(Boolean),
 		),
 	);
 	const uniqueAppIds = Array.from(
-		new Set((uniqueData ?? []).map((r: any) => r.app_id).filter(Boolean)),
+		new Set((appRollups ?? []).map((r: any) => r.app_id).filter(Boolean)),
 	);
 	const modelProviders = (() => {
 		const providerSetsByModel = new Map<string, Set<string>>();
-		for (const row of uniqueData ?? []) {
-			const modelId = typeof row?.model_id === "string" ? row.model_id : null;
+		for (const row of modelProviderRollups ?? []) {
+			const modelId =
+				typeof row?.canonical_model_id === "string" ? row.canonical_model_id : null;
 			const providerId = typeof row?.provider === "string" ? row.provider : null;
 			if (!modelId || !providerId) continue;
 			if (!providerSetsByModel.has(modelId)) {
@@ -182,7 +203,7 @@ async function UsageSettingsContent({
 
 	const [colorMap, appNames, providerNames, modelMetadata] =
 		await Promise.all([
-			fetchOrganizationColors(uniqueAppIds),
+			fetchOrganizationColors(uniqueModels),
 			fetchAppNames(uniqueAppIds),
 			fetchProviderNames(uniqueProviders),
 			fetchModelMetadata(uniqueModels),

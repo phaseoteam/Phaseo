@@ -10,9 +10,11 @@ import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingCl
 export default async function ModelPricing({
 	modelId,
 	includeHidden,
+	showHeader = true,
 }: {
 	modelId: string;
 	includeHidden: boolean;
+	showHeader?: boolean;
 }) {
 	const [providers, header, subscriptionPlans] = await Promise.all([
 		getModelPricing(modelId, includeHidden),
@@ -26,15 +28,15 @@ export default async function ModelPricing({
 		}),
 	]);
 
-	// Only consider providers that actually have pricing rules
-	const providersWithRules = (providers || []).filter(
-		(p) => Array.isArray(p.pricing_rules) && p.pricing_rules.length > 0
+	// Show providers with model mappings even when pricing rules are missing.
+	const providersForDisplay = (providers || []).filter(
+		(p) => Array.isArray(p.provider_models) && p.provider_models.length > 0
 	);
 
 	const runtimeStats = await getModelProviderRuntimeStatsCached({
 		modelId,
-		providerIds: providersWithRules.map((p) => p.provider.api_provider_id),
-		modelAliases: providersWithRules.flatMap((p) =>
+		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
+		modelAliases: providersForDisplay.flatMap((p) =>
 			p.provider_models.flatMap((pm) => [
 				pm.model_id,
 				pm.provider_model_slug ?? "",
@@ -42,7 +44,7 @@ export default async function ModelPricing({
 		),
 	});
 	const routingHealth = await getModelProviderRoutingHealthCached({
-		providerIds: providersWithRules.map((p) => p.provider.api_provider_id),
+		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 		windowHours: 24,
 	});
 
@@ -54,12 +56,12 @@ export default async function ModelPricing({
 	// 	}))
 	// );
 
-	if (!providersWithRules.length && !subscriptionPlans.length) {
+	if (!providersForDisplay.length && !subscriptionPlans.length) {
 		return (
 			<Card className="p-6">
-				<h2 className="text-xl font-semibold mb-2">
-					Availability + Pricing
-				</h2>
+				{showHeader ? (
+					<h2 className="mb-2 text-xl font-semibold">Availability + Pricing</h2>
+				) : null}
 				<p className="text-sm text-muted-foreground">
 					No API pricing or subscription plan information is available
 					for this model yet.
@@ -84,11 +86,12 @@ export default async function ModelPricing({
 
 	return (
 		<ModelPricingClient
-			providers={providersWithRules}
+			providers={providersForDisplay}
 			subscriptionPlans={subscriptionPlans}
 			creatorOrgId={header?.organisation_id ?? null}
 			runtimeStats={runtimeStats}
 			routingHealth={routingHealth}
+			showHeader={showHeader}
 		/>
 	);
 }

@@ -586,12 +586,22 @@ function MediaPlayerVolumeIndicator({
 	);
 }
 
-function MediaPlayerControls({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+type MediaPlayerControlsProps = React.HTMLAttributes<HTMLDivElement> & {
+	layout?: "overlay" | "inline";
+};
+
+function MediaPlayerControls({
+	className,
+	layout = "overlay",
+	...props
+}: MediaPlayerControlsProps) {
 	const { theme } = useMediaPlayer();
 	return (
 		<div
 			className={cn(
-				"absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-3",
+				layout === "overlay"
+					? "absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-3"
+					: "flex w-full flex-col gap-2 border-t border-border/70 px-3 py-2",
 				theme === "surface" ? "text-foreground" : "text-white",
 				className,
 			)}
@@ -691,11 +701,16 @@ function MediaPlayerSeekForward({
 	);
 }
 
-function MediaPlayerVolume({ className }: { className?: string }) {
+type MediaPlayerVolumeProps = {
+	className?: string;
+	collapsed?: boolean;
+};
+
+function MediaPlayerVolume({ className, collapsed = false }: MediaPlayerVolumeProps) {
 	const { muted, volume, setVolume, toggleMute, theme } = useMediaPlayer();
 	const displayVolume = muted ? 0 : volume;
 	return (
-		<div className={cn("flex items-center gap-2", className)}>
+		<div className={cn("group/media-volume flex items-center gap-2", className)}>
 			<Button
 				type="button"
 				size="icon"
@@ -719,7 +734,9 @@ function MediaPlayerVolume({ className }: { className?: string }) {
 					setVolume(next / 100);
 				}}
 				className={cn(
-					"w-20",
+					collapsed
+						? "w-0 overflow-hidden opacity-0 transition-all duration-200 pointer-events-none group-hover/media-volume:w-20 group-hover/media-volume:opacity-100 group-hover/media-volume:pointer-events-auto group-focus-within/media-volume:w-20 group-focus-within/media-volume:opacity-100 group-focus-within/media-volume:pointer-events-auto"
+						: "w-20",
 					theme === "surface"
 						? "[&_[data-slot='slider-track']]:bg-border/70 [&_[data-slot='slider-range']]:bg-foreground/80 [&_[data-slot='slider-thumb']]:border-foreground/70 [&_[data-slot='slider-thumb']]:bg-background"
 						: "[&_[data-slot='slider-track']]:bg-white/20 [&_[data-slot='slider-range']]:bg-white [&_[data-slot='slider-thumb']]:border-white/80 [&_[data-slot='slider-thumb']]:bg-white",
@@ -940,11 +957,13 @@ function MediaPlayerDownload({
 type MediaPlayerSettingsProps = {
 	speeds?: number[];
 	className?: string;
+	showPiP?: boolean;
 };
 
 function MediaPlayerSettings({
 	speeds = [0.5, 0.75, 1, 1.25, 1.5, 2],
 	className,
+	showPiP = true,
 }: MediaPlayerSettingsProps) {
 	const {
 		playbackRate,
@@ -957,7 +976,7 @@ function MediaPlayerSettings({
 	} = useMediaPlayer();
 
 	return (
-		<DropdownMenu>
+		<DropdownMenu modal={false}>
 			<DropdownMenuTrigger asChild>
 				<Button
 					type="button"
@@ -970,8 +989,9 @@ function MediaPlayerSettings({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
+				sideOffset={8}
 				className={cn(
-					"w-44",
+					"z-[200] w-44",
 					theme === "surface"
 						? "border-border bg-popover text-popover-foreground"
 						: "border-white/20 bg-black/90 text-white",
@@ -1002,7 +1022,7 @@ function MediaPlayerSettings({
 					<Repeat className="h-4 w-4" />
 					{loop ? "Disable loop" : "Enable loop"}
 				</DropdownMenuItem>
-				{mediaKind === "video" ? (
+				{mediaKind === "video" && showPiP ? (
 					<DropdownMenuItem onSelect={togglePiP}>
 						<MonitorUp className="h-4 w-4" />
 						Picture in Picture

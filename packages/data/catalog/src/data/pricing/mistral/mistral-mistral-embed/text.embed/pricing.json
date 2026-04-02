@@ -1,0 +1,21 @@
+{
+  "key": "mistral:mistral/mistral-embed:text.embed",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/mistral-embed",
+  "capability_id": "text.embed",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

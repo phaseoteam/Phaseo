@@ -185,7 +185,7 @@ export default function WorksWithPage() {
 							<li>Fork this repository.</li>
 							<li>
 								Add your app entry to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/src/data/works-with-ai-stats.json</code>.
+								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-ai-stats.json</code>.
 							</li>
 							<li>
 								Add your logo to{" "}

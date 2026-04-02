@@ -1,0 +1,8 @@
+{
+  "benchmark_id": "graphwalks-bfs-lt-128k",
+  "benchmark_name": "Graphwalks bfs <128k",
+  "category": null,
+  "ascending_order": null,
+  "link": null,
+  "total_models": 0
+}

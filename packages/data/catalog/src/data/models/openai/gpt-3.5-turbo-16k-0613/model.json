@@ -1,0 +1,19 @@
+{
+  "model_id": "openai/gpt-3.5-turbo-16k-0613",
+  "organisation_id": "openai",
+  "name": "GPT 3.5 Turbo 16K 0613",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2023-06-13T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-3.5-turbo-16k-0613",
+  "family_id": "openai/gpt-3",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,18 @@
+{
+  "model_id": "eleven-labs/eleven-flash-v2.5",
+  "organisation_id": "eleven-labs",
+  "name": "Eleven Flash V2.5",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "eleven-labs/eleven-flash-v2.5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

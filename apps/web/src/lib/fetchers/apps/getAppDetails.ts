@@ -35,10 +35,9 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 
 		// Get aggregated usage stats
 		const { data: stats, error: statsError } = await supabase
-			.from("gateway_requests")
-			.select("usage, cost_nanos, success")
-			.eq("app_id", appId)
-			.eq("success", true);
+			.from("gateway_usage_rollup_daily_app")
+			.select("requests, success_requests, total_tokens")
+			.eq("app_id", appId);
 
 		if (statsError) {
 			console.error("Error fetching app stats:", statsError);
@@ -47,17 +46,17 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 
 		// Calculate totals
 		let totalTokens = 0;
+		let totalSuccessfulRequests = 0;
 
 		for (const row of stats || []) {
-			if (row.usage?.total_tokens) {
-				totalTokens += Number(row.usage.total_tokens);
-			}
+			totalTokens += Number((row as any)?.total_tokens ?? 0);
+			totalSuccessfulRequests += Number((row as any)?.success_requests ?? 0);
 		}
 
 		return {
 			...app,
 			total_tokens: totalTokens,
-			total_requests: stats?.length || 0,
+			total_requests: totalSuccessfulRequests,
 		};
 	} catch (err) {
 		console.error("Unexpected error fetching app details:", err);

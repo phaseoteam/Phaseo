@@ -147,16 +147,16 @@ export default async function Page({ params }: PageProps) {
 		new Set(rawModelIds.flatMap((id) => getModelLookupVariants(id))),
 	);
 
-	const providerToInternalByKey = new Map<string, string>();
-	const internalByApi = new Map<string, Set<string>>();
+	const providerToCanonicalByKey = new Map<string, string>();
+	const canonicalByApi = new Map<string, Set<string>>();
 
 	if (apiLookupIds.length > 0) {
 		const supabase = createAdminClient();
 		let providerModelsQuery = supabase
 			.from("data_api_provider_models")
-			.select("provider_id, api_model_id, internal_model_id")
+			.select("provider_id, api_model_id, model_id")
 			.in("api_model_id", apiLookupIds)
-			.not("internal_model_id", "is", null);
+			.not("model_id", "is", null);
 
 		if (providerIds.length > 0) {
 			providerModelsQuery = providerModelsQuery.in("provider_id", providerIds);
@@ -166,27 +166,27 @@ export default async function Page({ params }: PageProps) {
 		for (const row of providerModels ?? []) {
 			const providerId = row.provider_id?.trim();
 			const apiModelId = row.api_model_id?.trim();
-			const internalModelId = row.internal_model_id?.trim();
-			if (!providerId || !apiModelId || !internalModelId) continue;
+			const canonicalModelId = row.model_id?.trim();
+			if (!providerId || !apiModelId || !canonicalModelId) continue;
 
-			providerToInternalByKey.set(
+			providerToCanonicalByKey.set(
 				`${providerId}:${apiModelId}`,
-				internalModelId,
+				canonicalModelId,
 			);
 
-			const current = internalByApi.get(apiModelId) ?? new Set<string>();
-			current.add(internalModelId);
-			internalByApi.set(apiModelId, current);
+			const current = canonicalByApi.get(apiModelId) ?? new Set<string>();
+			current.add(canonicalModelId);
+			canonicalByApi.set(apiModelId, current);
 		}
 	}
 
 	const candidateModelIds = new Set<string>(rawModelIds);
-	for (const internalId of providerToInternalByKey.values()) {
-		candidateModelIds.add(internalId);
+	for (const canonicalId of providerToCanonicalByKey.values()) {
+		candidateModelIds.add(canonicalId);
 	}
-	for (const ids of internalByApi.values()) {
-		for (const internalId of ids) {
-			candidateModelIds.add(internalId);
+	for (const ids of canonicalByApi.values()) {
+		for (const canonicalId of ids) {
+			candidateModelIds.add(canonicalId);
 		}
 	}
 
@@ -208,7 +208,7 @@ export default async function Page({ params }: PageProps) {
 		for (const apiModelId of variants) {
 			if (!apiModelId) continue;
 			if (providerId) {
-				const providerSpecific = providerToInternalByKey.get(
+				const providerSpecific = providerToCanonicalByKey.get(
 					`${providerId}:${apiModelId}`,
 				);
 				if (providerSpecific && hasMeta(providerSpecific)) {
@@ -216,7 +216,7 @@ export default async function Page({ params }: PageProps) {
 				}
 			}
 
-			const globalMatches = internalByApi.get(apiModelId);
+			const globalMatches = canonicalByApi.get(apiModelId);
 			if (globalMatches && globalMatches.size === 1) {
 				const only = Array.from(globalMatches)[0];
 				if (hasMeta(only)) return only;

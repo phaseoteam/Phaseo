@@ -5,22 +5,34 @@ namespace AIStats\Gen;
 
 class ActivityEntry
 {
-	/** @var float|null */
-	public $cost_cents;
-	/** @var string|null */
-	public $endpoint;
-	/** @var int|null */
-	public $latency_ms;
-	/** @var string|null */
+	/** @var float */
+	public $byok_usage_inference;
+	/** @var int */
+	public $completion_tokens;
+	/** @var string */
+	public $date;
+	/** @var string */
+	public $endpoint_id;
+	/** @var string */
 	public $model;
-	/** @var string|null */
-	public $provider;
-	/** @var string|null */
-	public $request_id;
-	/** @var string|null */
-	public $timestamp;
-	/** @var array<string, mixed>|null */
+	/** @var string */
+	public $model_permaslug;
+	/** @var int */
+	public $prompt_tokens;
+	/** @var string */
+	public $provider_name;
+	/** @var int */
+	public $reasoning_tokens;
+	/** @var int */
+	public $requests;
+	/** @var float */
 	public $usage;
+}
+
+class ActivityResponse
+{
+	/** @var array */
+	public $data;
 }
 
 class AnalyticsAccessTokenRequiredResponse
@@ -299,6 +311,18 @@ class CacheControl
 	public $type;
 }
 
+class ChatAudioOutputPart
+{
+	/** @var array<string, mixed> */
+	public $audio_url;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $mime_type;
+	/** @var string */
+	public $type;
+}
+
 class ChatChoice
 {
 	/** @var string|null */
@@ -401,10 +425,24 @@ class ChatCompletionsResponse
 	public $usage;
 }
 
+class ChatImageOutputPart
+{
+	/** @var array<string, mixed> */
+	public $image_url;
+	/** @var string|null */
+	public $mime_type;
+	/** @var string */
+	public $type;
+}
+
 class ChatMessage
 {
+	/** @var array|null */
+	public $audios;
 	/** @var string|array|null */
 	public $content;
+	/** @var array|null */
+	public $images;
 	/** @var string|null */
 	public $name;
 	/** @var string */
@@ -543,6 +581,24 @@ class FileUploadRequest
 	public $file;
 	/** @var string */
 	public $purpose;
+}
+
+class FunctionToolDefinition
+{
+	/** @var array<string, mixed> */
+	public $function;
+	/** @var string */
+	public $type;
+}
+
+class GatewayDatetimeToolDefinition
+{
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string|null */
+	public $timezone;
+	/** @var string */
+	public $type;
 }
 
 class GatewayModelsResponse
@@ -1181,13 +1237,57 @@ class ResponsesInputItem
 	public $type;
 }
 
+class ResponsesOutputAudioPart
+{
+	/** @var array<string, mixed>|null */
+	public $audio_url;
+	/** @var string|null */
+	public $b64_json;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $mime_type;
+	/** @var string */
+	public $type;
+}
+
+class ResponsesOutputContentPart { }
+
+class ResponsesOutputImagePart
+{
+	/** @var string|null */
+	public $b64_json;
+	/** @var array<string, mixed>|null */
+	public $image_url;
+	/** @var string|null */
+	public $mime_type;
+	/** @var string */
+	public $type;
+}
+
 class ResponsesOutputItem
 {
+	/** @var string|null */
+	public $arguments;
+	/** @var string|null */
+	public $call_id;
 	/** @var array|null */
 	public $content;
 	/** @var string|null */
+	public $name;
+	/** @var string|null */
 	public $role;
 	/** @var string|null */
+	public $type;
+}
+
+class ResponsesOutputTextPart
+{
+	/** @var array|null */
+	public $annotations;
+	/** @var string */
+	public $text;
+	/** @var string */
 	public $type;
 }
 
@@ -1317,6 +1417,12 @@ class ResponsesWebSocketUpgradeRequiredResponse
 	public $error;
 }
 
+class ServerToolUsage
+{
+	/** @var int|null */
+	public $datetime_requests;
+}
+
 class TextContentPart
 {
 	/** @var string */
@@ -1325,6 +1431,8 @@ class TextContentPart
 	public $type;
 }
 
+class TextGenerateTool { }
+
 class TextModerationInput
 {
 	/** @var string */
@@ -1332,6 +1440,8 @@ class TextModerationInput
 	/** @var string */
 	public $type;
 }
+
+class TextToolChoice { }
 
 class ToolCall
 {
@@ -1359,6 +1469,8 @@ class Usage
 	public $completion_tokens;
 	/** @var int|null */
 	public $prompt_tokens;
+	/** @var array<string, mixed>|null */
+	public $server_tool_use;
 	/** @var int|null */
 	public $total_tokens;
 }
@@ -1386,69 +1498,127 @@ class VideoGenerationRequest
 	/** @var string|null */
 	public $aspect_ratio;
 	/** @var int|null */
-	public $duration;
+	public $compression_quality;
 	/** @var int|null */
-	public $duration_seconds;
+	public $duration;
 	/** @var bool|null */
 	public $enhance_prompt;
 	/** @var bool|null */
 	public $generate_audio;
-	/** @var array<string, mixed>|null */
-	public $input;
-	/** @var string|array<string, mixed>|null */
-	public $input_image;
-	/** @var string|array<string, mixed>|null */
-	public $input_last_frame;
-	/** @var string|null */
-	public $input_reference;
-	/** @var string|null */
-	public $input_reference_mime_type;
-	/** @var string|array<string, mixed>|null */
-	public $input_video;
-	/** @var string|array<string, mixed>|null */
-	public $last_frame;
+	/** @var array|null */
+	public $input_references;
 	/** @var string */
 	public $model;
 	/** @var string|null */
 	public $negative_prompt;
-	/** @var int|null */
-	public $number_of_videos;
-	/** @var string|null */
-	public $output_storage_uri;
+	/** @var array<string, mixed>|null */
+	public $output;
 	/** @var string|null */
 	public $person_generation;
 	/** @var string */
 	public $prompt;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_params;
 	/** @var string|null */
-	public $quality;
-	/** @var string|null */
-	public $ratio;
-	/** @var array|null */
-	public $reference_images;
+	public $resize_mode;
 	/** @var string|null */
 	public $resolution;
 	/** @var int|null */
 	public $sample_count;
-	/** @var int|string|null */
-	public $seconds;
 	/** @var int|null */
 	public $seed;
+	/** @var string|null */
+	public $size;
+	/** @var array<string, mixed>|null */
+	public $webhook;
 }
 
 class VideoGenerationResponse
 {
+	/** @var array<string, mixed>|null */
+	public $asset;
+	/** @var bool|null */
+	public $audio;
+	/** @var array<string, mixed>|null */
+	public $billing;
+	/** @var int|string|null */
+	public $completed_at;
+	/** @var string|null */
+	public $content_url;
+	/** @var int|string|null */
+	public $created_at;
+	/** @var string|null */
+	public $download_url;
+	/** @var mixed|null */
+	public $error;
 	/** @var int|null */
-	public $created;
+	public $expires_at;
+	/** @var string|null */
+	public $generation_id;
 	/** @var string|null */
 	public $id;
 	/** @var string|null */
 	public $model;
 	/** @var string|null */
 	public $object;
+	/** @var string|null */
+	public $output_access;
 	/** @var array|null */
-	public $output;
+	public $outputs;
+	/** @var int|null */
+	public $poll_after_seconds;
+	/** @var string|null */
+	public $polling_url;
+	/** @var int|null */
+	public $progress;
+	/** @var string|null */
+	public $progress_source;
+	/** @var string|null */
+	public $provider;
+	/** @var float|null */
+	public $seconds;
+	/** @var string|null */
+	public $size;
+	/** @var int|string|null */
+	public $started_at;
 	/** @var string|null */
 	public $status;
+	/** @var array<string, mixed>|null */
+	public $usage;
+}
+
+class VideoInputReference
+{
+	/** @var array<string, mixed>|null */
+	public $image_url;
+	/** @var string|null */
+	public $reference_type;
+	/** @var string|null */
+	public $role;
+	/** @var string */
+	public $type;
+}
+
+class VideoOutput
+{
+	/** @var bool|null */
+	public $bytes_available;
+	/** @var string|null */
+	public $content_url;
+	/** @var string|null */
+	public $download_url;
+	/** @var int|null */
+	public $expires_at;
+	/** @var int|null */
+	public $index;
+	/** @var string|null */
+	public $mime_type;
+}
+
+class VideoOutputConfig
+{
+	/** @var string|null */
+	public $access;
 }

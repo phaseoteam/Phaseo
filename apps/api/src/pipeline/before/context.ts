@@ -46,12 +46,27 @@ const EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES = [
     "embeddings",
     "text.embed",
 ] as const;
+const IMAGE_CONTEXT_CAPABILITY_ALIASES = [
+    "image.generate",
+    "images.generate",
+    "images.generations",
+] as const;
 
 function normalizeContextCapability(value: string): string {
     return String(value ?? "").trim().toLowerCase();
 }
 
-export function getContextCapabilityCandidates(capability: string): string[] {
+function isGoogleImageGenerationModel(model: string | null | undefined): boolean {
+    const normalized = String(model ?? "").trim().toLowerCase();
+    if (!normalized.startsWith("google/")) return false;
+    return (
+        normalized.includes("image") ||
+        normalized.includes("imagen") ||
+        normalized.includes("nano-banana")
+    );
+}
+
+export function getContextCapabilityCandidates(capability: string, model?: string): string[] {
     const normalized = normalizeContextCapability(capability);
     if (!normalized) return [];
     if (
@@ -73,6 +88,20 @@ export function getContextCapabilityCandidates(capability: string): string[] {
             normalized,
             ...EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES,
         ]));
+    }
+    if (
+        IMAGE_CONTEXT_CAPABILITY_ALIASES.includes(
+            normalized as (typeof IMAGE_CONTEXT_CAPABILITY_ALIASES)[number]
+        )
+    ) {
+        const candidates = [
+            normalized,
+            ...IMAGE_CONTEXT_CAPABILITY_ALIASES,
+        ];
+        if (isGoogleImageGenerationModel(model)) {
+            candidates.push("text.generate");
+        }
+        return Array.from(new Set<string>(candidates));
     }
     return [normalized];
 }
@@ -377,6 +406,24 @@ const ROUTABLE_CAPABILITY_STATUSES_WITH_TESTING = [
     "internal_testing",
 ] as const;
 
+const NEBIUS_REGIONAL_MODEL_ALLOWLIST: Record<string, readonly string[]> = {
+    "nebius-token-factory-eu-north-1": [
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3-super-2026-03-11",
+    ],
+    "nebius-token-factory-us-central-1": [
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3-super-2026-03-11",
+    ],
+};
+
+const NEBIUS_REGIONAL_MODEL_ALLOWLIST_SETS = Object.fromEntries(
+    Object.entries(NEBIUS_REGIONAL_MODEL_ALLOWLIST).map(([providerId, modelIds]) => [
+        providerId,
+        new Set(modelIds.map((modelId) => String(modelId).trim().toLowerCase()).filter(Boolean)),
+    ])
+) as Record<string, Set<string>>;
+
 function parseModalities(value: unknown): Set<string> {
     if (Array.isArray(value)) {
         return new Set(
@@ -415,8 +462,11 @@ function supportsEndpointViaModalities(args: {
         case "audio.translations":
             return hasInput("audio") && hasOutput("text");
         case "images.generations":
+        case "images.generate":
+        case "image.generate":
             return hasInput("text", "image") && hasOutput("image");
         case "images.edits":
+        case "image.edit":
             return hasInput("image", "text") && hasOutput("image");
         case "video.generation":
         case "video.generate":
@@ -456,6 +506,79 @@ function splitProviderScopedModel(model: string): { providerId: string; provider
     const providerModelSlug = value.slice(slash + 1).trim();
     if (!providerId || !providerModelSlug) return null;
     return { providerId, providerModelSlug };
+}
+
+function normalizeModelId(value: string | null | undefined): string {
+    return String(value ?? "").trim().toLowerCase();
+}
+
+function providerAllowsNebiusRegionalModel(args: {
+    providerId: string;
+    providerModelSlug: string | null;
+    resolvedModel: string | null | undefined;
+    requestedModel: string;
+}): boolean {
+    const allowlist = NEBIUS_REGIONAL_MODEL_ALLOWLIST_SETS[args.providerId];
+    if (!allowlist) return true;
+
+    const directSlug = normalizeModelId(args.providerModelSlug);
+    if (directSlug && allowlist.has(directSlug)) return true;
+
+    const resolvedModel = normalizeModelId(args.resolvedModel);
+    if (resolvedModel && allowlist.has(resolvedModel)) return true;
+
+    const requestedModel = normalizeModelId(args.requestedModel);
+    if (requestedModel && allowlist.has(requestedModel)) return true;
+
+    const requestedScoped = splitProviderScopedModel(args.requestedModel);
+    if (requestedScoped && requestedScoped.providerId === args.providerId) {
+        const scopedSlug = normalizeModelId(requestedScoped.providerModelSlug);
+        if (scopedSlug && allowlist.has(scopedSlug)) return true;
+    }
+
+    const resolvedScoped = splitProviderScopedModel(String(args.resolvedModel ?? ""));
+    if (resolvedScoped && resolvedScoped.providerId === args.providerId) {
+        const scopedSlug = normalizeModelId(resolvedScoped.providerModelSlug);
+        if (scopedSlug && allowlist.has(scopedSlug)) return true;
+    }
+
+    return false;
+}
+
+export function applyNebiusRegionalModelAllowlist(args: {
+    parsed: GatewayContextData;
+    requestedModel: string;
+}): GatewayContextData {
+    const parsed = args.parsed;
+    const providers = Array.isArray(parsed.providers) ? parsed.providers : [];
+    if (!providers.length) return parsed;
+
+    let changed = false;
+    const filteredProviders = providers.filter((provider) => {
+        const allowed = providerAllowsNebiusRegionalModel({
+            providerId: provider.providerId,
+            providerModelSlug: provider.providerModelSlug,
+            resolvedModel: parsed.resolvedModel,
+            requestedModel: args.requestedModel,
+        });
+        if (!allowed) changed = true;
+        return allowed;
+    });
+
+    if (!changed) return parsed;
+
+    const allowedProviderIds = new Set(filteredProviders.map((provider) => provider.providerId));
+    const filteredPricing = Object.fromEntries(
+        Object.entries(parsed.pricing ?? {}).filter(([providerId]) =>
+            allowedProviderIds.has(providerId)
+        )
+    );
+
+    return {
+        ...parsed,
+        providers: filteredProviders,
+        pricing: filteredPricing,
+    };
 }
 
 type ProviderScopedModelRow = {
@@ -514,31 +637,18 @@ async function backfillProviderModalities(args: {
 
     const supabase = getSupabaseAdmin();
     const nowMs = Date.now();
-    const [byApiModelResult, byInternalModelResult] = await Promise.all([
-        supabase
-            .from("data_api_provider_models")
-            .select(
-                "provider_id,provider_model_slug,input_modalities,output_modalities,effective_from,effective_to"
-            )
-            .eq("is_active_gateway", true)
-            .in("provider_id", providerIds)
-            .in("api_model_id", modelCandidates),
-        supabase
-            .from("data_api_provider_models")
-            .select(
-                "provider_id,provider_model_slug,input_modalities,output_modalities,effective_from,effective_to"
-            )
-            .eq("is_active_gateway", true)
-            .in("provider_id", providerIds)
-            .in("internal_model_id", modelCandidates),
-    ]);
+    const byApiModelResult = await supabase
+        .from("data_api_provider_models")
+        .select(
+            "provider_id,provider_model_slug,input_modalities,output_modalities,effective_from,effective_to"
+        )
+        .eq("is_active_gateway", true)
+        .in("provider_id", providerIds)
+        .in("api_model_id", modelCandidates);
 
-    if (byApiModelResult.error && byInternalModelResult.error) return parsed;
+    if (byApiModelResult.error) return parsed;
 
-    const rows = [
-        ...(byApiModelResult.data ?? []),
-        ...(byInternalModelResult.data ?? []),
-    ] as ProviderModalitiesRow[];
+    const rows = (byApiModelResult.data ?? []) as ProviderModalitiesRow[];
     if (!rows.length) return parsed;
 
     const rowsByProviderId = new Map<string, ProviderModalitiesRow[]>();
@@ -620,7 +730,10 @@ async function resolveProviderScopedModelToApiModel(args: {
     );
     if (!providerApiModelIds.length) return null;
 
-    const capabilityCandidates = getContextCapabilityCandidates(args.endpoint);
+    const capabilityCandidates = getContextCapabilityCandidates(
+        args.endpoint,
+        args.model,
+    );
     const { data: capabilityRows, error: capabilityError } = await supabase
         .from("data_api_provider_model_capabilities")
         .select("provider_api_model_id")
@@ -668,30 +781,17 @@ async function fetchTestingProviderSnapshots(args: {
     );
     if (!modelCandidates.length) return [];
 
-    const [byApiModelResult, byInternalModelResult] = await Promise.all([
-        supabase
-            .from("data_api_provider_models")
-            .select(
-                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,routing_status,effective_from,effective_to,input_modalities,output_modalities"
-            )
-            .in("api_model_id", modelCandidates),
-        supabase
-            .from("data_api_provider_models")
-            .select(
-                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,routing_status,effective_from,effective_to,input_modalities,output_modalities"
-            )
-            .in("internal_model_id", modelCandidates),
-    ]);
+    const byApiModelResult = await supabase
+        .from("data_api_provider_models")
+        .select(
+            "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,routing_status,effective_from,effective_to,input_modalities,output_modalities"
+        )
+        .in("api_model_id", modelCandidates);
 
-    if (byApiModelResult.error && byInternalModelResult.error) return [];
+    if (byApiModelResult.error) return [];
 
     const providerRowById = new Map<string, any>();
     for (const row of byApiModelResult.data ?? []) {
-        const key = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
-        if (!key) continue;
-        providerRowById.set(key, row);
-    }
-    for (const row of byInternalModelResult.data ?? []) {
         const key = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
         if (!key) continue;
         providerRowById.set(key, row);
@@ -949,7 +1049,10 @@ export async function fetchGatewayContext(args: {
             return value;
         };
 
-        const contextCapabilityCandidates = getContextCapabilityCandidates(args.endpoint);
+        const contextCapabilityCandidates = getContextCapabilityCandidates(
+            args.endpoint,
+            args.model,
+        );
         let contextCapability = contextCapabilityCandidates[0] ?? args.endpoint;
         let parsed = await fetchParsedContextMeasured(args.model, contextCapability);
 
@@ -979,17 +1082,37 @@ export async function fetchGatewayContext(args: {
             }
         }
 
+        parsed = applyNebiusRegionalModelAllowlist({
+            parsed,
+            requestedModel: args.model,
+        });
+
         const resolvedModelForPricing = parsed.resolvedModel ?? args.model;
         if ((parsed.providers ?? []).length > 0) {
             const pricingByProvider: Record<string, any> = {
                 ...(parsed.pricing ?? {}),
             };
-            const pricingCapabilityCandidates = getContextCapabilityCandidates(contextCapability);
+            const pricingCapabilityCandidates = Array.from(
+                new Set<string>([
+                    ...getContextCapabilityCandidates(
+                        args.endpoint,
+                        resolvedModelForPricing,
+                    ),
+                    ...getContextCapabilityCandidates(
+                        contextCapability,
+                        resolvedModelForPricing,
+                    ),
+                ]),
+            );
             const missingProviders = Array.from(
                 new Set(
                     (parsed.providers ?? [])
                         .map((provider) => provider.providerId)
-                        .filter((providerId) => Boolean(providerId) && !pricingByProvider[providerId])
+                        .filter((providerId) => {
+                            if (!providerId) return false;
+                            if (!pricingByProvider[providerId]) return true;
+                            return contextCapability !== args.endpoint;
+                        })
                 )
             );
 
@@ -1037,11 +1160,63 @@ export async function fetchGatewayContext(args: {
             }
         }
 
+        // Testing-mode enrichment appends providers after initial pricing hydration.
+        // Re-run pricing lookup so newly added providers are not dropped as pricing_missing.
+        if ((parsed.providers ?? []).length > 0) {
+            const pricingByProvider: Record<string, any> = {
+                ...(parsed.pricing ?? {}),
+            };
+            const resolvedModelForPricing = parsed.resolvedModel ?? args.model;
+            const pricingCapabilityCandidates = Array.from(
+                new Set<string>([
+                    ...getContextCapabilityCandidates(
+                        args.endpoint,
+                        resolvedModelForPricing,
+                    ),
+                    ...getContextCapabilityCandidates(
+                        contextCapability,
+                        resolvedModelForPricing,
+                    ),
+                ]),
+            );
+            const missingProviders = Array.from(
+                new Set(
+                    (parsed.providers ?? [])
+                        .map((provider) => provider.providerId)
+                        .filter((providerId) => providerId && !pricingByProvider[providerId])
+                )
+            );
+            if (missingProviders.length > 0) {
+                await Promise.all(
+                    missingProviders.map(async (providerId) => {
+                        for (const capabilityCandidate of pricingCapabilityCandidates) {
+                            const card = await loadPriceCard(
+                                providerId,
+                                resolvedModelForPricing,
+                                capabilityCandidate,
+                            );
+                            if (card) {
+                                pricingByProvider[providerId] = card;
+                                break;
+                            }
+                        }
+                    })
+                );
+                parsed.pricing = pricingByProvider;
+            }
+        }
+
+        parsed = applyNebiusRegionalModelAllowlist({
+            parsed,
+            requestedModel: args.model,
+        });
+
         // Enrich with team settings + provider rollout statuses.
         parsed.teamSettings = {
             routingMode: null,
             byokFallbackEnabled: null,
             betaChannelEnabled: false,
+            alphaChannelEnabled: false,
             cacheAwareRoutingEnabled: null,
             billingMode: "wallet",
         };
@@ -1065,7 +1240,7 @@ export async function fetchGatewayContext(args: {
             const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
                 supabase
                     .from("team_settings")
-                    .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,cache_aware_routing_enabled")
+                    .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,cache_aware_routing_enabled")
                     .eq("team_id", args.teamId)
                     .maybeSingle(),
                 providerStatusQuery,
@@ -1088,6 +1263,8 @@ export async function fetchGatewayContext(args: {
                         settingsResult.data?.byok_fallback_enabled ?? null,
                     betaChannelEnabled:
                         settingsResult.data?.beta_channel_enabled ?? false,
+                    alphaChannelEnabled:
+                        settingsResult.data?.alpha_channel_enabled ?? false,
                     cacheAwareRoutingEnabled:
                         settingsResult.data?.cache_aware_routing_enabled ?? null,
                     billingMode,

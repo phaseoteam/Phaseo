@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemini-embedding-001",
+  "organisation_id": "google",
+  "name": "Gemini Embedding 001",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-05-20T00:00:00",
+  "release_date": "2025-05-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemini-embedding-001",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

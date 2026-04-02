@@ -1,11 +1,6 @@
 name: Sync PHP SDK Split Repo
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "packages/sdk/sdk-php/**"
-      - ".github/workflows/sync-sdk-php-split.yml"
   workflow_dispatch:
 
 permissions:

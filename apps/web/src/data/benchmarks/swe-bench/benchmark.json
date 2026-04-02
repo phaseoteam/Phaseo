@@ -1,8 +1,0 @@
-{
-  "benchmark_id": "swe-bench",
-  "benchmark_name": "SWE-Bench",
-  "category": "code",
-  "ascending_order": null,
-  "link": "https://www.swebench.com/",
-  "total_models": 21
-}

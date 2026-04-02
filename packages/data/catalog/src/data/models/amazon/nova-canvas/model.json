@@ -1,0 +1,18 @@
+{
+  "model_id": "amazon/nova-canvas",
+  "organisation_id": "amazon",
+  "name": "Nova Canvas",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2024-12-03T00:00:00",
+  "release_date": "2024-12-03T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "amazon/nova-canvas",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

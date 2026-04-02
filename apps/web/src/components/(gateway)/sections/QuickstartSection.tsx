@@ -83,6 +83,14 @@ type EndpointConfig = {
 	body: (model: string) => Record<string, unknown>;
 };
 
+function resolveSpeechVoiceForModel(model: string): string {
+	const provider = model.split("/")[0]?.toLowerCase();
+	if (provider === "xiaomi") return "mimo_default";
+	if (provider === "google" || provider === "google-ai-studio") return "Kore";
+	if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
+	return "alloy";
+}
+
 const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	{
 		id: "completions",
@@ -144,9 +152,9 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		path: "/audio/speech",
 		body: (model) => ({
 			model,
-			voice: "alloy",
+			voice: resolveSpeechVoiceForModel(model),
 			input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are always in your control.",
-			format: "mp3",
+			response_format: "mp3",
 		}),
 	},
 	{

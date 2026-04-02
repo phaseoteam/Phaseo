@@ -1,0 +1,28 @@
+{
+  "model_id": "openai/o1-mini",
+  "organisation_id": "openai",
+  "name": "o1 mini",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2024-09-12T00:00:00",
+  "deprecation_date": "2025-04-28T00:00:00",
+  "retirement_date": "2025-10-27T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/o1-mini",
+  "family_id": "openai/o1",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    }
+  ],
+  "benchmarks": []
+}

@@ -42,7 +42,10 @@ export async function runVideoGeneratePipeline(args: PipelineRunnerArgs): Promis
 		}
 
 		if (exec.result.kind === "completed" && exec.result.ir) {
-			exec.result.normalized = encodeVideoIRToOpenAIResponse(exec.result.ir as any, pre.ctx.requestId);
+			exec.result.normalized = encodeVideoIRToOpenAIResponse(
+				exec.result.ir as any,
+				pre.ctx.requestId,
+			);
 		}
 
 		const header = timing.timer.header();

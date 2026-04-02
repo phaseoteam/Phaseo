@@ -1,0 +1,19 @@
+{
+  "model_id": "microsoft/phi-4-mini-flash-reasoning",
+  "organisation_id": "microsoft",
+  "name": "Phi 4 Mini Flash Reasoning",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "microsoft/phi-4-mini-flash-reasoning",
+  "family_id": "microsoft/phi-4-0",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

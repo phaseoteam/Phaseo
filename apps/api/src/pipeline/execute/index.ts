@@ -91,6 +91,30 @@ function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): str
 	return `${trimmed.slice(0, limit)}...[truncated ${trimmed.length - limit} chars]`;
 }
 
+function redactSensitiveUrl(url: string | null | undefined): string | null {
+	if (!url || typeof url !== "string") return null;
+	try {
+		const parsed = new URL(url);
+		const sensitiveParams = [
+			"key",
+			"api_key",
+			"x-api-key",
+			"access_token",
+			"token",
+			"sig",
+			"signature",
+		];
+		for (const param of sensitiveParams) {
+			if (parsed.searchParams.has(param)) {
+				parsed.searchParams.set(param, "[redacted]");
+			}
+		}
+		return parsed.toString();
+	} catch {
+		return url;
+	}
+}
+
 function extractUpstreamErrorSummary(payload: unknown): {
 	upstream_error_code: string | null;
 	upstream_error_type: string | null;
@@ -468,6 +492,13 @@ async function attemptProviderWithIR(
 						typeof (ctx.rawBody as any)?.model === "string"
 							? ((ctx.rawBody as any).model as string)
 							: undefined,
+					appId: ctx.meta.appId ?? null,
+					sessionId: ctx.meta.sessionId ?? null,
+					requestUserId: ctx.meta.requestUserId ?? null,
+					trace: ctx.meta.trace ?? null,
+					authMethod: ctx.meta.authMethod ?? "api_key",
+					oauthClientId: ctx.meta.oauthClientId ?? null,
+					oauthUserId: ctx.meta.oauthUserId ?? null,
 					forceGatewayKey,
 				},
 			}) as ExecutorExecuteArgs;
@@ -578,7 +609,7 @@ async function attemptProviderWithIR(
 				type: "upstream_non_2xx",
 				status: executorResult.upstream.status,
 				status_text: executorResult.upstream.statusText || null,
-				upstream_url: executorResult.upstream.url || null,
+				upstream_url: redactSensitiveUrl(executorResult.upstream.url || null),
 				key_source: executorResult.keySource ?? null,
 				byok_key_id: executorResult.byokKeyId ?? null,
 				upstream_payload_preview: upstreamFailure.payload_preview,

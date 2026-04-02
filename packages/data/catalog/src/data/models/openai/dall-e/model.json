@@ -1,0 +1,18 @@
+{
+  "model_id": "openai/dall-e",
+  "organisation_id": "openai",
+  "name": "Dall-E",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2021-01-05T00:00:00",
+  "release_date": "2021-01-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "openai/dall-e",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

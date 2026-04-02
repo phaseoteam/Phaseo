@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemini-2.5-computer-use-preview",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Computer Use Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-10-07T00:00:00",
+  "release_date": "2025-10-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemini-2.5-computer-use-preview",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

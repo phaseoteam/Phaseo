@@ -136,7 +136,7 @@ function main(): void {
   const { base, head } = findRange();
   console.log(`[semver] inspecting ${base}..${head}`);
 
-  const manifestDiff = getDiff(base, head, "apps/web/src/data/manifest.json");
+  const manifestDiff = getDiff(base, head, "packages/data/catalog/src/data/manifest.json");
   const tsUnionDiff = getDiff(base, head, "packages/sdk/sdk-ts/src/oapi-gen/models/ModelId.ts");
 
   const manifestChange = extractModelIdsFromManifestDiff(manifestDiff);

@@ -1,0 +1,40 @@
+{
+  "model_id": "x-ai/grok-4-fast-reasoning",
+  "organisation_id": "x-ai",
+  "name": "Grok 4 Fast Reasoning",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-09-20T00:00:00",
+  "release_date": "2025-09-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "x-ai/grok-4-fast-reasoning",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok-4-fast"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://docs.x.ai/docs/models/grok-4-fast-reasoning"
+    },
+    {
+      "platform": "paper",
+      "url": "https://data.x.ai/2025-09-19-grok-4-fast-model-card.pdf"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 2000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 2000000
+    }
+  ],
+  "benchmarks": []
+}

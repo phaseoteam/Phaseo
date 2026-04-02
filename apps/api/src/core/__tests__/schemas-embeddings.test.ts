@@ -47,6 +47,22 @@ describe("embeddings schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("accepts Perplexity embedding encoding formats", () => {
+		const base64Int8 = EmbeddingsSchema.safeParse({
+			model: "perplexity/pplx-embed-v1-0.6b",
+			input: "hello",
+			encoding_format: "base64_int8",
+		});
+		const base64Binary = EmbeddingsSchema.safeParse({
+			model: "perplexity/pplx-embed-v1-4b",
+			input: "hello",
+			encoding_format: "base64_binary",
+		});
+
+		expect(base64Int8.success).toBe(true);
+		expect(base64Binary.success).toBe(true);
+	});
+
 	it("rejects requests missing input", () => {
 		const parsed = EmbeddingsSchema.safeParse({
 			model: "openai/text-embedding-3-large",

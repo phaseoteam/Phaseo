@@ -25,6 +25,15 @@ const RELEVANT_PATH_PREFIXES = [
   "packages/sdk/sdk-ruby/lib/ai_stats_sdk/version.rb",
   "packages/sdk/sdk-ruby/ai_stats_sdk.gemspec",
 ];
+const SDK_PACKAGES = [
+  "@ai-stats/sdk",
+  "@ai-stats/py-sdk",
+  "@ai-stats/go-sdk",
+  "@ai-stats/csharp-sdk",
+  "@ai-stats/java-sdk",
+  "@ai-stats/php-sdk",
+  "@ai-stats/ruby-sdk",
+];
 
 function git(args) {
   return execSync(`git ${args}`, { encoding: "utf8" }).trim();
@@ -60,6 +69,78 @@ function hasRelevantChanges(base, head) {
   );
 }
 
+function getDiff(base, head, filePath) {
+  try {
+    return git(`diff --unified=0 ${base} ${head} -- "${filePath}"`);
+  } catch {
+    return "";
+  }
+}
+
+function extractModelIdsFromManifestDiff(diff) {
+  const added = new Set();
+  const removed = new Set();
+  for (const line of diff.split(/\r?\n/)) {
+    if (line.startsWith("+++ ") || line.startsWith("--- ") || line.startsWith("@@")) continue;
+    let match = line.match(/^\+\s*"([^"]+\/[^"]+)"/);
+    if (match) added.add(match[1]);
+    match = line.match(/^\-\s*"([^"]+\/[^"]+)"/);
+    if (match) removed.add(match[1]);
+  }
+  return { added, removed };
+}
+
+function extractModelIdsFromTsUnionDiff(diff) {
+  const added = new Set();
+  const removed = new Set();
+  for (const line of diff.split(/\r?\n/)) {
+    if (line.startsWith("+++ ") || line.startsWith("--- ") || line.startsWith("@@")) continue;
+    let match = line.match(/^\+\s*\|\s*"([^"]+)"/);
+    if (match) added.add(match[1]);
+    match = line.match(/^\-\s*\|\s*"([^"]+)"/);
+    if (match) removed.add(match[1]);
+  }
+  return { added, removed };
+}
+
+function mergeSets(...sets) {
+  const merged = new Set();
+  for (const set of sets) {
+    for (const value of set) merged.add(value);
+  }
+  return merged;
+}
+
+function computeAutoBump(base, head) {
+  const manifestDiff = getDiff(base, head, "packages/data/catalog/src/data/manifest.json");
+  const tsUnionDiff = getDiff(base, head, "packages/sdk/sdk-ts/src/oapi-gen/models/ModelId.ts");
+  const manifestChange = extractModelIdsFromManifestDiff(manifestDiff);
+  const tsChange = extractModelIdsFromTsUnionDiff(tsUnionDiff);
+  const added = mergeSets(manifestChange.added, tsChange.added);
+  const removed = mergeSets(manifestChange.removed, tsChange.removed);
+
+  if (removed.size > 0) {
+    const sample = Array.from(removed).slice(0, 6).join(", ");
+    return {
+      bump: "major",
+      reason: `model IDs removed (${removed.size}) [${sample}]`,
+    };
+  }
+
+  if (added.size > 0) {
+    const sample = Array.from(added).slice(0, 6).join(", ");
+    return {
+      bump: "minor",
+      reason: `model IDs added (${added.size}) [${sample}]`,
+    };
+  }
+
+  return {
+    bump: "patch",
+    reason: "sdk/openapi changes with no model-id surface changes",
+  };
+}
+
 function hasManualChangeset(changesetDir) {
   if (!fs.existsSync(changesetDir)) return false;
   return fs
@@ -72,35 +153,53 @@ function hasManualChangeset(changesetDir) {
     );
 }
 
-function createAutoChangeset(changesetDir, head) {
+function isReleaseVersionCommit(head) {
+  const message = git(`log -1 --pretty=%B ${head}`);
+  const lines = message
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return false;
+
+  const versionTitleRe = /^Version Packages(?:\s+\(#\d+\))?$/;
+  if (versionTitleRe.test(lines[0])) return true;
+
+  if (/^Merge pull request #\d+ /.test(lines[0]) && lines[1] && versionTitleRe.test(lines[1])) {
+    return true;
+  }
+
+  return false;
+}
+
+function createAutoChangeset(changesetDir, head, bump, reason) {
   const shortSha = git(`rev-parse --short ${head}`);
   const filename = `auto-sdk-release-${shortSha}.md`;
   const filepath = path.join(changesetDir, filename);
   const body = [
     "---",
-    "\"@ai-stats/sdk\": patch",
-    "\"@ai-stats/py-sdk\": patch",
-    "\"@ai-stats/go-sdk\": patch",
-    "\"@ai-stats/csharp-sdk\": patch",
-    "\"@ai-stats/java-sdk\": patch",
-    "\"@ai-stats/php-sdk\": patch",
-    "\"@ai-stats/ruby-sdk\": patch",
+    ...SDK_PACKAGES.map((pkg) => `"${pkg}": ${bump}`),
     "---",
     "",
-    "Auto-release functional SDK packages after OpenAPI or model-surface changes.",
+    `Auto-release functional SDK packages after OpenAPI or model-surface changes (${reason}).`,
     "",
     "Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.",
     "",
   ].join("\n");
 
   fs.writeFileSync(filepath, body, "utf8");
-  console.log(`[changesets] created ${filepath}`);
+  console.log(`[changesets] created ${filepath} (bump=${bump}; reason=${reason})`);
 }
 
 function main() {
   const changesetDir = path.resolve(".changeset");
   const { base, head } = findRange();
   console.log(`[changesets] inspecting diff range ${base}..${head}`);
+
+  if (isReleaseVersionCommit(head)) {
+    console.log("[changesets] release-version commit detected; skipping auto changeset");
+    return;
+  }
 
   if (!hasRelevantChanges(base, head)) {
     console.log("[changesets] no SDK/OpenAPI changes detected; skipping auto changeset");
@@ -112,7 +211,8 @@ function main() {
     return;
   }
 
-  createAutoChangeset(changesetDir, head);
+  const auto = computeAutoBump(base, head);
+  createAutoChangeset(changesetDir, head, auto.bump, auto.reason);
 }
 
 main();

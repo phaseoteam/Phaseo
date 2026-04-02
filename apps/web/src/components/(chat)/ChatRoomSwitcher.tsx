@@ -36,7 +36,8 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	moderation: BadgeCheck,
 	embeddings: Sparkles,
 };
-const COMING_SOON_ROOMS = new Set<ChatRoomId>(["image", "video"]);
+
+const DISABLED_ROOMS = new Set<ChatRoomId>(["video"]);
 
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {
@@ -64,7 +65,7 @@ export function ChatRoomSwitcher() {
 								<Button
 									variant="ghost"
 									className={cn(
-										"h-8 gap-2 text-xs",
+										"h-8 gap-0 px-2 text-sm font-medium",
 										collapsed
 											? "w-8 justify-center px-0"
 											: "w-full justify-between px-2",
@@ -72,11 +73,11 @@ export function ChatRoomSwitcher() {
 									aria-label={activeRoom.label}
 								>
 									<span className="inline-flex items-center gap-2">
-										<ActiveIcon className="h-3.5 w-3.5 shrink-0" />
+										<ActiveIcon className="h-4 w-4 shrink-0" />
 										{!collapsed ? activeRoom.label : null}
 									</span>
 									{!collapsed ? (
-										<ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+										<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 									) : null}
 								</Button>
 							</DropdownMenuTrigger>
@@ -90,7 +91,7 @@ export function ChatRoomSwitcher() {
 						<Button
 							variant="ghost"
 							className={cn(
-								"h-8 gap-2 text-xs",
+								"h-8 gap-0 px-2 text-sm font-medium",
 								collapsed
 									? "w-8 justify-center px-0"
 									: "w-full justify-between px-2",
@@ -98,11 +99,11 @@ export function ChatRoomSwitcher() {
 							aria-label={activeRoom.label}
 						>
 							<span className="inline-flex items-center gap-2">
-								<ActiveIcon className="h-3.5 w-3.5 shrink-0" />
+								<ActiveIcon className="h-4 w-4 shrink-0" />
 								{!collapsed ? activeRoom.label : null}
 							</span>
 							{!collapsed ? (
-								<ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+								<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 							) : null}
 						</Button>
 					</DropdownMenuTrigger>
@@ -116,25 +117,22 @@ export function ChatRoomSwitcher() {
 					{CHAT_ROOMS.map((room) => {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
-						const isComingSoon = COMING_SOON_ROOMS.has(room.id);
-						if (isComingSoon) {
+						const disabled = DISABLED_ROOMS.has(room.id);
+						if (disabled) {
 							return (
 								<Tooltip key={room.id}>
 									<TooltipTrigger asChild>
-										<DropdownMenuItem
-											onSelect={(event) => event.preventDefault()}
-											className={cn(
-												"cursor-not-allowed opacity-50 focus:bg-transparent focus:text-foreground",
-												active ? "bg-muted/50" : "",
-											)}
-										>
-											<span className="flex items-center gap-2">
+										<div>
+											<DropdownMenuItem
+												disabled
+												className="cursor-not-allowed opacity-60"
+											>
 												<Icon className="h-4 w-4" />
 												<span>{room.label}</span>
-											</span>
-										</DropdownMenuItem>
+											</DropdownMenuItem>
+										</div>
 									</TooltipTrigger>
-									<TooltipContent side="right" align="center" sideOffset={10}>
+									<TooltipContent side="right" align="center">
 										Coming Soon
 									</TooltipContent>
 								</Tooltip>

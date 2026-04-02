@@ -1,8 +1,0 @@
-{
-  "benchmark_id": "browsecomp-long-context-128k",
-  "benchmark_name": "BrowseComp Long Context 128k",
-  "category": null,
-  "ascending_order": null,
-  "link": null,
-  "total_models": 8
-}

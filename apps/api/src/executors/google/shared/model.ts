@@ -12,7 +12,38 @@ const EXPLICIT_MODEL_ALIASES: Record<string, string> = {
 	"gemini-2-5-flash-image": "gemini-2.5-flash-image",
 	"google/gemini-2.5-flash-image": "gemini-2.5-flash-image",
 	"gemini-2.5-flash-image": "gemini-2.5-flash-image",
+	// Accept canonical gateway identifiers for Google Lyria music models.
+	"google/lyria-3": "lyria-3",
+	"google/lyria-3-pro": "lyria-3-pro",
+	"google/lyria-3-pro-preview": "lyria-3-pro-preview",
+	"google/lyria-3-clip": "lyria-3-clip",
+	"google/lyria-3-clip-preview": "lyria-3-clip-preview",
 };
+
+function dedupeCandidates(values: string[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const value of values) {
+		const trimmed = String(value ?? "").trim();
+		if (!trimmed || seen.has(trimmed)) continue;
+		seen.add(trimmed);
+		out.push(trimmed);
+	}
+	return out;
+}
+
+function lyriaModelCandidates(model: string): string[] {
+	const value = String(model ?? "").trim().toLowerCase();
+	if (!value) return [];
+	if (value === "lyria-3" || value === "lyria-3-preview") {
+		return ["lyria-3-pro", "lyria-3-pro-preview", "lyria-3-clip", "lyria-3-clip-preview", "lyria-3"];
+	}
+	if (value === "lyria-3-pro") return ["lyria-3-pro", "lyria-3-pro-preview"];
+	if (value === "lyria-3-pro-preview") return ["lyria-3-pro-preview"];
+	if (value === "lyria-3-clip") return ["lyria-3-clip", "lyria-3-clip-preview"];
+	if (value === "lyria-3-clip-preview") return ["lyria-3-clip-preview"];
+	return [];
+}
 
 export function normalizeGoogleModelSlug(model: string): string {
 	let value = String(model ?? "").trim();
@@ -33,5 +64,5 @@ export function normalizeGoogleModelSlug(model: string): string {
 export function resolveGoogleModelCandidates(model: string): string[] {
 	const primary = normalizeGoogleModelSlug(model);
 	if (!primary) return [];
-	return [primary];
+	return dedupeCandidates([primary, ...lyriaModelCandidates(primary)]);
 }

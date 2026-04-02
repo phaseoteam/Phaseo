@@ -1,0 +1,49 @@
+{
+  "model_id": "openai/gpt-5",
+  "organisation_id": "openai",
+  "name": "GPT 5",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-4-5-2025-02-27",
+  "announced_date": "2025-08-07T00:00:00",
+  "release_date": "2025-08-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-5",
+  "family_id": "openai/gpt-5-2",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-5"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/chat/edit?models=gpt-5-2025-08-07"
+    },
+    {
+      "platform": "paper",
+      "url": "https://cdn.openai.com/pdf/8124a3ce-ab78-4f06-96eb-49ea29ffb52f/gpt5-system-card-aug7.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 400000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-10-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    }
+  ],
+  "benchmarks": []
+}

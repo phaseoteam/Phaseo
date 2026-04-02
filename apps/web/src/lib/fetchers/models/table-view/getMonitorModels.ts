@@ -15,6 +15,105 @@ import {
 
 export type { MonitorModelData } from "./types";
 
+async function fetchProviderModelsPaginated({
+	supabase,
+	selectClause,
+	pageSize = 1000,
+}: {
+	supabase: ReturnType<typeof createAdminClient>;
+	selectClause: string;
+	pageSize?: number;
+}): Promise<{ data: any[] | null; error: any | null }> {
+	const rows: any[] = [];
+
+	for (let from = 0; ; from += pageSize) {
+		const to = from + pageSize - 1;
+		const { data, error } = await supabase
+			.from("data_api_provider_models")
+			.select(selectClause)
+			.not("api_model_id", "is", null)
+			.order("provider_api_model_id", { ascending: true })
+			.range(from, to);
+
+		if (error) {
+			return { data: null, error };
+		}
+		if (!Array.isArray(data) || data.length === 0) {
+			break;
+		}
+
+		rows.push(...data);
+		if (data.length < pageSize) {
+			break;
+		}
+	}
+
+	return { data: rows, error: null };
+}
+
+async function fetchPricingRulesByModelKeysInBatches({
+	supabase,
+	modelKeys,
+	batchSize = 120,
+}: {
+	supabase: ReturnType<typeof createAdminClient>;
+	modelKeys: string[];
+	batchSize?: number;
+}): Promise<
+	Array<{
+		model_key: string;
+		meter: string;
+		unit_size: number;
+		price_per_unit: number;
+		pricing_plan: string | null;
+		effective_from: string | null;
+		effective_to: string | null;
+	}>
+> {
+	const rows: Array<{
+		model_key: string;
+		meter: string;
+		unit_size: number;
+		price_per_unit: number;
+		pricing_plan: string | null;
+		effective_from: string | null;
+		effective_to: string | null;
+	}> = [];
+	const nowIso = new Date().toISOString();
+
+	for (let i = 0; i < modelKeys.length; i += batchSize) {
+		const batch = modelKeys.slice(i, i + batchSize);
+		if (!batch.length) continue;
+
+		const { data, error } = await supabase
+			.from("data_api_pricing_rules")
+			.select(`
+        model_key,
+        meter,
+        unit_size,
+        price_per_unit,
+        pricing_plan,
+        effective_from,
+        effective_to
+      `)
+			.in("model_key", batch)
+			.or(`effective_to.is.null,effective_to.gt.${nowIso}`)
+			.order("effective_from", { ascending: false });
+
+		if (error) {
+			throw new Error(
+				`Fetching pricing batch failed at index ${i}: ${error.message ?? String(error)}`,
+			);
+		}
+
+		if (Array.isArray(data) && data.length > 0) {
+			rows.push(...data);
+		}
+	}
+
+	return rows;
+}
+
 export async function getMonitorModels(
 	filters: MonitorModelFilters = {},
 	includeHidden: boolean
@@ -41,7 +140,6 @@ export async function getMonitorModels(
 		provider_id,
 		model_id,
 		api_model_id,
-		internal_model_id,
 		provider_model_slug,
 		is_active_gateway,
 		input_modalities,
@@ -62,27 +160,12 @@ export async function getMonitorModels(
 			api_provider_id,
 			api_provider_name,
 			link
-		),
-		model: data_models!data_api_provider_models_internal_model_id_fkey(
-			model_id,
-			name,
-			release_date,
-			retirement_date,
-			status,
-			input_types,
-			output_types,
-			hidden,
-			organisation: data_organisations!data_models_organisation_id_fkey(
-				organisation_id,
-				name
-			)
 		)
 	`;
 	const legacySelect = `
 		provider_api_model_id,
 		provider_id,
 		api_model_id,
-		internal_model_id,
 		provider_model_slug,
 		is_active_gateway,
 		input_modalities,
@@ -100,30 +183,17 @@ export async function getMonitorModels(
 			api_provider_id,
 			api_provider_name,
 			link
-		),
-		model: data_models!data_api_provider_models_internal_model_id_fkey(
-			model_id,
-			name,
-			release_date,
-			retirement_date,
-			status,
-			input_types,
-			output_types,
-			hidden,
-			organisation: data_organisations!data_models_organisation_id_fkey(
-				organisation_id,
-				name
-			)
 		)
 	`;
 
 	let providerModels: any[] | null = null;
 	let providerModelsError: any = null;
 	{
-		const res = await supabase
-			.from("data_api_provider_models")
-			.select(baseSelect)
-			.not("api_model_id", "is", null);
+		const res = await fetchProviderModelsPaginated({
+			supabase,
+			selectClause: baseSelect,
+			pageSize: 1000,
+		});
 		providerModels = res.data ?? null;
 		providerModelsError = res.error;
 	}
@@ -133,16 +203,61 @@ export async function getMonitorModels(
 			String(providerModelsError?.message ?? ""),
 		);
 	if (providerModelsError && providerModelLegacySchemaMissing) {
-		const res = await supabase
-			.from("data_api_provider_models")
-			.select(legacySelect)
-			.not("api_model_id", "is", null);
+		const res = await fetchProviderModelsPaginated({
+			supabase,
+			selectClause: legacySelect,
+			pageSize: 1000,
+		});
 		providerModels = res.data ?? null;
 		providerModelsError = res.error;
 	}
 
 	if (providerModelsError) {
 		throw providerModelsError;
+	}
+
+	const modelIds = Array.from(
+		new Set(
+			(providerModels ?? [])
+				.map((pm: any) => {
+					const modelId = String(pm?.model_id ?? pm?.api_model_id ?? "").trim();
+					return modelId.length > 0 ? modelId : null;
+				})
+				.filter((modelId): modelId is string => Boolean(modelId)),
+		),
+	);
+
+	const { data: modelRows, error: modelRowsError } = modelIds.length
+		? await supabase
+				.from("data_models")
+				.select(
+					`
+					model_id,
+					name,
+					release_date,
+					retirement_date,
+					status,
+					input_types,
+					output_types,
+					hidden,
+					organisation: data_organisations!data_models_organisation_id_fkey(
+						organisation_id,
+						name
+					)
+					`,
+				)
+				.in("model_id", modelIds)
+		: { data: [] as any[], error: null as any };
+
+	if (modelRowsError) {
+		throw modelRowsError;
+	}
+
+	const modelById = new Map<string, any>();
+	for (const row of modelRows ?? []) {
+		const modelId = String((row as any)?.model_id ?? "").trim();
+		if (!modelId) continue;
+		modelById.set(modelId, row);
 	}
 
 	const ctxByModelId = new Map<
@@ -155,14 +270,12 @@ export async function getMonitorModels(
 	const providerModelByKey = new Map<string, any>();
 
 	for (const pm of providerModels ?? []) {
-		const modelRow = Array.isArray(pm.model) ? pm.model[0] : pm.model;
-		if (!includeHidden && modelRow?.hidden) continue;
 		const modelId =
 			pm.model_id ??
-			pm.internal_model_id ??
 			pm.api_model_id ??
-			modelRow?.model_id ??
 			"";
+		const modelRow = modelById.get(modelId) ?? null;
+		if (!includeHidden && modelRow?.hidden) continue;
 		const capabilities: any[] = Array.isArray(pm.capabilities)
 			? pm.capabilities
 			: [];
@@ -245,22 +358,11 @@ export async function getMonitorModels(
 		| null = [];
 
 	if (modelKeys.length) {
-		const { data: pricingRows } = await supabase
-			.from("data_api_pricing_rules")
-			.select(`
-        model_key,
-        meter,
-        unit_size,
-        price_per_unit,
-        pricing_plan,
-        effective_from,
-        effective_to
-      `)
-			.in("model_key", modelKeys)
-			.or("effective_to.is.null,effective_to.gt." + new Date().toISOString())
-			.order("effective_from", { ascending: false });
-
-		pricingData = pricingRows ?? [];
+		pricingData = await fetchPricingRulesByModelKeysInBatches({
+			supabase,
+			modelKeys,
+			batchSize: 120,
+		});
 	}
 
 	const allTiers = [
@@ -278,9 +380,7 @@ export async function getMonitorModels(
 	const freeByKey = new Map<string, boolean>();
 	for (const p of pricingData ?? []) {
 		if (p.model_key) {
-			const plan = String(p.pricing_plan ?? "").toLowerCase();
-			const price = Number(p.price_per_unit ?? 0);
-			if (price === 0 || plan.includes("free")) {
+			if (String(p.model_key).toLowerCase().includes(":free:")) {
 				freeByKey.set(p.model_key, true);
 			}
 		}
@@ -315,14 +415,12 @@ export async function getMonitorModels(
 		const pm = providerModelByKey.get(
 			`${gatewayModel.api_provider_id}:${gatewayModel.api_model_id}`
 		);
-		const modelRow = Array.isArray(pm?.model) ? pm?.model[0] : pm?.model;
 		const modelId =
 			pm?.model_id ??
-			pm?.internal_model_id ??
 			pm?.api_model_id ??
 			gatewayModel.model_id ??
-			modelRow?.model_id ??
 			"";
+		const modelRow = modelById.get(modelId) ?? null;
 
 		const { context, maxOutput, quantization } =
 			ctxByModelId.get(modelId) ?? {

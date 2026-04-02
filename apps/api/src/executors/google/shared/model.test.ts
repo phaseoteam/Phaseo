@@ -25,4 +25,21 @@ describe("google model normalization", () => {
 			"gemini-2.5-flash-image",
 		]);
 	});
+
+	it("expands Lyria 3 aliases to pro/clip candidates", () => {
+		expect(resolveGoogleModelCandidates("google/lyria-3")).toEqual([
+			"lyria-3",
+			"lyria-3-pro",
+			"lyria-3-pro-preview",
+			"lyria-3-clip",
+			"lyria-3-clip-preview",
+		]);
+		expect(resolveGoogleModelCandidates("lyria-3-pro")).toEqual([
+			"lyria-3-pro",
+			"lyria-3-pro-preview",
+		]);
+		expect(resolveGoogleModelCandidates("lyria-3-clip-preview")).toEqual([
+			"lyria-3-clip-preview",
+		]);
+	});
 });

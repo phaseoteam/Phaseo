@@ -15,16 +15,17 @@ RETURNS TABLE(
 ) AS $$
 WITH base AS (
     SELECT
-        gr.created_at,
-        gr.provider,
-        gr.model_id,
-        gr.usage,
-        gr.cost_nanos
-    FROM public.gateway_requests gr
-    WHERE gr.team_id = p_team
-      AND gr.created_at >= p_from
-      AND gr.created_at <= p_to
-      AND (p_key_id IS NULL OR gr.key_id = p_key_id)
+        r.bucket_15m AS created_at,
+        r.provider,
+        r.canonical_model_id AS model_id,
+        r.requests,
+        r.total_tokens,
+        r.total_cost_nanos
+    FROM public.gateway_usage_rollup_15m_team_provider_model r
+    WHERE r.team_id = p_team
+      AND r.bucket_15m >= p_from
+      AND r.bucket_15m <= p_to
+      AND (p_key_id IS NULL OR r.key_id = p_key_id)
 ),
 bucketed AS (
     SELECT
@@ -39,37 +40,16 @@ bucketed AS (
         END AS bucket,
         COALESCE(provider, 'unknown') AS provider,
         COALESCE(model_id, 'unknown') AS model_id,
-        COALESCE(
-            CASE
-                WHEN (usage->>'total_tokens') ~ '^\d+$' THEN (usage->>'total_tokens')::bigint
-            END,
-            COALESCE(
-                CASE
-                    WHEN (usage->>'input_text_tokens') ~ '^\d+$' THEN (usage->>'input_text_tokens')::bigint
-                END,
-                CASE
-                    WHEN (usage->>'input_tokens') ~ '^\d+$' THEN (usage->>'input_tokens')::bigint
-                END,
-                0
-            ) +
-            COALESCE(
-                CASE
-                    WHEN (usage->>'output_text_tokens') ~ '^\d+$' THEN (usage->>'output_text_tokens')::bigint
-                END,
-                CASE
-                    WHEN (usage->>'output_tokens') ~ '^\d+$' THEN (usage->>'output_tokens')::bigint
-                END,
-                0
-            )
-        ) AS tokens,
-        COALESCE(cost_nanos, 0)::numeric / 1e9 AS cost
+        COALESCE(requests, 0)::bigint AS requests,
+        COALESCE(total_tokens, 0)::bigint AS tokens,
+        COALESCE(total_cost_nanos, 0)::numeric / 1e9 AS cost
     FROM base
 )
 SELECT
     bucket,
     provider,
     model_id,
-    COUNT(*)::bigint AS requests,
+    SUM(requests)::bigint AS requests,
     SUM(tokens)::bigint AS tokens,
     SUM(cost)::numeric AS cost
 FROM bucketed

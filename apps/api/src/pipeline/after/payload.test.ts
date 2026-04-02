@@ -172,6 +172,46 @@ describe("enrichSuccessPayload model selection", () => {
 		expect(payload.model).toBe("openai/gpt-5-nano");
 	});
 
+	it("preserves server tool usage meters on responses payload usage", async () => {
+		const ctx: any = {
+			endpoint: "responses",
+			protocol: "openai.responses",
+			requestId: "req_test_server_tool_usage",
+			model: "openai/gpt-4.1",
+			body: {},
+			meta: {},
+		};
+		const result: any = {
+			provider: "openai",
+			ir: {
+				choices: [{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [{ type: "text", text: "current time" }],
+					},
+					finishReason: "stop",
+				}],
+				usage: {
+					inputTokens: 12,
+					outputTokens: 4,
+					totalTokens: 16,
+					_ext: {
+						serverToolUse: {
+							datetime_requests: 1,
+						},
+					},
+				},
+			},
+			rawResponse: null,
+		};
+
+		const payload = await enrichSuccessPayload(ctx, result);
+		expect(payload.usage.server_tool_use).toEqual({
+			datetime_requests: 1,
+		});
+	});
+
 	it("includes assistant phase in fallback responses output", async () => {
 		const ctx: any = {
 			endpoint: "responses",
@@ -207,6 +247,57 @@ describe("enrichSuccessPayload model selection", () => {
 			type: "message",
 			role: "assistant",
 			phase: "final_answer",
+		});
+	});
+
+	it("emits output_audio in fallback responses output when IR contains audio parts", async () => {
+		const ctx: any = {
+			endpoint: "responses",
+			protocol: "openai.responses",
+			requestId: "req_test_audio",
+			model: "google/lyria-3-pro-preview",
+			body: {},
+			meta: {},
+		};
+		const result: any = {
+			provider: "google-ai-studio",
+			ir: {
+				choices: [{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "text", text: "Hook ready" },
+							{
+								type: "audio",
+								source: "data",
+								data: "UklGRlIAAABXQVZFZm10",
+								format: "wav",
+							},
+						],
+					},
+					finishReason: "stop",
+				}],
+				usage: {
+					inputTokens: 5,
+					outputTokens: 7,
+					totalTokens: 12,
+				},
+			},
+			rawResponse: null,
+		};
+
+		const payload = await enrichSuccessPayload(ctx, result);
+		const message = payload.output[0];
+		expect(message.type).toBe("message");
+		expect(message.role).toBe("assistant");
+		expect(Array.isArray(message.content)).toBe(true);
+		expect(message.content.some((item: any) => item.type === "output_audio")).toBe(true);
+		expect(message.content).toContainEqual({
+			type: "output_audio",
+			b64_json: "UklGRlIAAABXQVZFZm10",
+			mime_type: "audio/wav",
+			format: "wav",
 		});
 	});
 });

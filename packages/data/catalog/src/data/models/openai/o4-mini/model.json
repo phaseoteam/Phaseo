@@ -1,0 +1,49 @@
+{
+  "model_id": "openai/o4-mini",
+  "organisation_id": "openai",
+  "name": "o4 Mini",
+  "status": "Available",
+  "previous_model_id": "openai/o3-mini-2025-01-30",
+  "announced_date": "2025-04-16T00:00:00",
+  "release_date": "2025-04-16T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "image,text",
+  "output_types": "text",
+  "api_model_id": "openai/o4-mini",
+  "family_id": "openai/o4",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/o4-mini"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/playground/prompts?models=o4-mini"
+    },
+    {
+      "platform": "paper",
+      "url": "https://cdn.openai.com/pdf/2221c875-02dc-4789-800b-e7758f3722c1/o3-and-o4-mini-system-card.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-o3-and-o4-mini/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-06-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 100000
+    }
+  ],
+  "benchmarks": []
+}

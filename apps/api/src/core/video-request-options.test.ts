@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVideoPricingRequestOptions, resolveVideoResolution, resolveVideoSize } from "./video-request-options";
+import { buildVideoPricingRequestOptions, resolveVideoResolution, resolveVideoSeconds, resolveVideoSize } from "./video-request-options";
 
 describe("video-request-options", () => {
 	it("resolves canonical size from explicit size first", () => {
@@ -14,20 +14,28 @@ describe("video-request-options", () => {
 	it("falls back to nested video_params aliases", () => {
 		expect(resolveVideoSize({ video_params: { size: "576p" } })).toBe("576p");
 		expect(resolveVideoSize({ video_params: { resolution: "480p" } })).toBe("480p");
+		expect(resolveVideoSeconds({ video_params: { duration_seconds: 6 } })).toBe(6);
 	});
 
 	it("builds canonical pricing keys", () => {
 		const options = buildVideoPricingRequestOptions({
 			size: "768p",
+			seconds: 8,
 			quality: "standard",
 		});
 
 		expect(options).toEqual({
 			size: "768p",
 			resolution: "768p",
+			input_resolution: "768p",
+			seconds: 8,
+			duration_seconds: 8,
 			quality: "standard",
 			video_params: {
 				resolution: "768p",
+				input_resolution: "768p",
+				seconds: 8,
+				duration_seconds: 8,
 				quality: "standard",
 			},
 		});

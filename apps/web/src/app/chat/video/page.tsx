@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
-import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
-import { MediaStudioRoom } from "@/components/(chat)/rooms/MediaStudioRoom";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Video Studio - AI Stats Chat",
@@ -12,10 +10,5 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function ChatVideoPage() {
-	const models = await fetchFrontendGatewayModels();
-	return (
-		<RoomScaffold>
-			<MediaStudioRoom roomId="video" models={models} />
-		</RoomScaffold>
-	);
+	redirect("/chat");
 }

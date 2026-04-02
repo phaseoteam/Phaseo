@@ -11,6 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import {
 	Dialog,
 	DialogClose,
 	DialogContent,
@@ -28,7 +35,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Shield } from "lucide-react";
 
 import {
 	type ProviderRestrictionMode,
@@ -318,10 +325,17 @@ function GuardrailsSection(props: {
 					</div>
 				</div>
 			) : (
-				<div className="rounded-xl border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
-					No guardrails yet. Create one to restrict models/providers and set
-					budgets per key group.
-				</div>
+				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<Shield className="h-5 w-5" />
+						</EmptyMedia>
+						<EmptyTitle>No guardrails yet</EmptyTitle>
+						<EmptyDescription>
+							Create one to restrict models/providers and set budgets per key group.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
 			)}
 		</div>
 	);

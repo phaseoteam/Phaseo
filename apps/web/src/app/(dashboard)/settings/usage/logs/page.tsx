@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Briefcase, Clock3, FileText } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import { cn } from "@/lib/utils";
 
 import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
 import {
@@ -20,12 +30,39 @@ export const metadata: Metadata = {
 };
 
 type RangeKey = "1h" | "1d" | "1w" | "1m" | "1y";
+type LogsViewKey = "logs" | "jobs" | "sessions";
 
 function parseRange(range?: string | null): RangeKey {
 	const r = (range ?? "").toLowerCase();
 	return r === "1h" || r === "1d" || r === "1w" || r === "1m" || r === "1y"
 		? r
 		: "1m";
+}
+
+function parseView(view?: string | null): LogsViewKey {
+	const v = (view ?? "").toLowerCase();
+	return v === "logs" || v === "jobs" || v === "sessions" ? v : "logs";
+}
+
+function buildViewHref(
+	view: LogsViewKey,
+	searchParams: Record<string, string | string[] | undefined>,
+): string {
+	const next = new URLSearchParams();
+	for (const [key, rawValue] of Object.entries(searchParams)) {
+		if (key === "view") continue;
+		if (typeof rawValue === "string") {
+			next.set(key, rawValue);
+			continue;
+		}
+		if (Array.isArray(rawValue)) {
+			for (const item of rawValue) {
+				if (typeof item === "string") next.append(key, item);
+			}
+		}
+	}
+	next.set("view", view);
+	return `/settings/usage/logs?${next.toString()}`;
 }
 
 export default function Page(props: {
@@ -75,6 +112,85 @@ async function UsageLogsContent({
 				? sp?.range?.[0]
 				: undefined,
 	);
+	const view = parseView(
+		typeof sp?.view === "string"
+			? sp?.view
+			: Array.isArray(sp?.view)
+				? sp?.view?.[0]
+				: undefined,
+	);
+	const viewHref = {
+		logs: buildViewHref("logs", sp),
+		jobs: buildViewHref("jobs", sp),
+		sessions: buildViewHref("sessions", sp),
+	} as const;
+
+	const viewTabs = [
+		{ key: "logs" as const, label: "Logs", icon: FileText, href: viewHref.logs },
+		{ key: "jobs" as const, label: "Jobs", icon: Briefcase, href: viewHref.jobs },
+		{
+			key: "sessions" as const,
+			label: "Sessions",
+			icon: Clock3,
+			href: viewHref.sessions,
+		},
+	];
+
+	if (view !== "logs") {
+		return (
+			<div className="space-y-6">
+				<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+					<div className="space-y-1">
+						<h1 className="text-2xl font-semibold tracking-tight">Usage Logs</h1>
+						<p className="text-sm text-muted-foreground">
+							Inspect logs, jobs, and sessions as logging streams expand.
+						</p>
+					</div>
+					<div className="inline-flex flex-wrap items-center gap-2 rounded-lg border border-border/70 p-1 md:ml-auto">
+						{viewTabs.map((tab) => {
+							const Icon = tab.icon;
+							const isActive = tab.key === view;
+							return (
+								<Link
+									key={tab.key}
+									href={tab.href}
+									prefetch={false}
+									className={cn(
+										"inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+										isActive
+											? "bg-primary text-primary-foreground"
+											: "text-muted-foreground hover:bg-muted hover:text-foreground",
+									)}
+								>
+									<Icon className="h-4 w-4" />
+									{tab.label}
+								</Link>
+							);
+						})}
+					</div>
+				</div>
+
+				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							{view === "jobs" ? (
+								<Briefcase className="h-5 w-5" />
+							) : (
+								<Clock3 className="h-5 w-5" />
+							)}
+						</EmptyMedia>
+						<EmptyTitle>
+							{view === "jobs" ? "Jobs" : "Sessions"} view coming soon
+						</EmptyTitle>
+						<EmptyDescription>
+							This view has been scaffolded and will populate as the new
+							logging datasets are wired in.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			</div>
+		);
+	}
 
 	const nowIso = new Date().toISOString();
 	const from = (() => {
@@ -147,8 +263,37 @@ async function UsageLogsContent({
 	return (
 		<div className="space-y-6">
 			<div className="space-y-4">
+				<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+					<div className="space-y-1">
+						<h1 className="text-2xl font-semibold tracking-tight">Usage Logs</h1>
+						<p className="text-sm text-muted-foreground">
+							Inspect logs, jobs, and sessions as logging streams expand.
+						</p>
+					</div>
+					<div className="inline-flex flex-wrap items-center gap-2 rounded-lg border border-border/70 p-1 md:ml-auto">
+						{viewTabs.map((tab) => {
+							const Icon = tab.icon;
+							const isActive = tab.key === view;
+							return (
+								<Link
+									key={tab.key}
+									href={tab.href}
+									prefetch={false}
+									className={cn(
+										"inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+										isActive
+											? "bg-primary text-primary-foreground"
+											: "text-muted-foreground hover:bg-muted hover:text-foreground",
+									)}
+								>
+									<Icon className="h-4 w-4" />
+									{tab.label}
+								</Link>
+							);
+						})}
+					</div>
+				</div>
 				<RequestsSection
-					title="Logs"
 					timeRange={{ from, to: nowIso }}
 					appNames={appNames}
 					models={uniqueModels}

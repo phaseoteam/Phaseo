@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FlaskConical, Layers3 } from "lucide-react";
+import { FlaskConical, Layers3, Rocket } from "lucide-react";
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +53,23 @@ export default function ExperimentsPage() {
 						<CardContent>
 							<Button asChild>
 								<Link href="/experiments/council">Open Council</Link>
+							</Button>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Rocket className="h-5 w-5" />
+								Spawn+ (BYOC)
+							</CardTitle>
+							<CardDescription>
+								Generate BYOC spawn commands and bootstrap scripts. You provision and pay cloud
+								infra in your own account; AI Stats only bills Gateway usage.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<Button asChild>
+								<Link href="/experiments/spawn">Open Spawn+</Link>
 							</Button>
 						</CardContent>
 					</Card>

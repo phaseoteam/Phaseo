@@ -20,11 +20,12 @@ interface ConsentFormProps {
 	user: any;
 	teams: Array<{ id: string; name: string }>;
 	requestedScopes: string[];
-	clientId: string;
-	redirectUri: string;
+	authorizationId?: string;
+	clientId?: string;
+	redirectUri?: string;
 	state?: string;
-	codeChallenge: string;
-	codeChallengeMethod: string;
+	codeChallenge?: string;
+	codeChallengeMethod?: string;
 }
 
 // Scope descriptions for user-friendly display
@@ -56,6 +57,7 @@ export default function ConsentForm({
 	user,
 	teams,
 	requestedScopes,
+	authorizationId,
 	clientId,
 	redirectUri,
 	state,
@@ -83,6 +85,7 @@ export default function ConsentForm({
 			);
 
 			const result = await approveAuthorizationAction({
+				authorization_id: authorizationId,
 				client_id: clientId,
 				team_id: selectedTeamId,
 				scopes: requestedScopes,
@@ -118,6 +121,7 @@ export default function ConsentForm({
 			);
 
 			const result = await denyAuthorizationAction({
+				authorization_id: authorizationId,
 				redirect_uri: redirectUri,
 				state: state,
 			});

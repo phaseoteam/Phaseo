@@ -6,18 +6,22 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
 	BarChart2,
+	Boxes,
 	Check,
 	CreditCard,
 	Key as KeyIcon,
 	LifeBuoy,
 	Lock,
 	LogOut,
-	Menu,
 	Monitor,
 	Moon,
 	FlaskConical,
 	ChevronDown,
 	Settings,
+	Server,
+	AppWindow,
+	Trophy,
+	MessageSquare,
 	Sun,
 	Users,
 } from "lucide-react";
@@ -110,21 +114,31 @@ export default function HeaderClient({
 	}
 
 	const navLinks = [
-		{ href: "/models", label: "Models" },
-		{ href: "/api-providers", label: "Providers" },
-		{ href: "/rankings", label: "Rankings" },
-		{ href: "/chat", label: "Chat" },
+		{ href: "/models", label: "Models", icon: Boxes },
+		{ href: "/api-providers", label: "Providers", icon: Server },
+		{ href: "/apps", label: "Apps", icon: AppWindow },
+		{ href: "/rankings", label: "Rankings", icon: Trophy },
+		{ href: "/chat", label: "Playground", icon: MessageSquare },
 	];
 
 	if (variant === "mobile") {
 		return (
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon" aria-label="Open menu">
-						<Menu className="h-6 w-6" />
+					<Button
+						variant="ghost"
+						size="icon"
+						className="group overflow-hidden"
+						aria-label="Toggle menu"
+					>
+						<span className="relative block h-5 w-5 overflow-hidden" aria-hidden="true">
+							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center -translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:rotate-45" />
+							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:opacity-0" />
+							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:-rotate-45" />
+						</span>
 					</Button>
 				</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-36 rounded-xl p-1">
+					<DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
 						{isLoggedIn && teams.length > 0 && (
 							<>
 								<Popover
@@ -204,7 +218,7 @@ export default function HeaderClient({
 							</>
 						)}
 
-					{navLinks.map(({ href, label }) => {
+					{navLinks.map(({ href, label, icon: Icon }) => {
 						const isActive =
 							pathname === href || pathname.startsWith(href + "/");
 						return (
@@ -216,8 +230,9 @@ export default function HeaderClient({
 									isActive && "font-semibold text-blue-500",
 								)}
 							>
-								<Link href={href} prefetch={false}>
-									{label}
+								<Link href={href} prefetch={false} className="flex items-center gap-2">
+									<Icon className="h-4 w-4" />
+									<span>{label}</span>
 								</Link>
 							</DropdownMenuItem>
 						);

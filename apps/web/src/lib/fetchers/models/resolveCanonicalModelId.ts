@@ -1,11 +1,19 @@
 import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
-type ResolveModelIdSource = "direct" | "redirect" | "alias" | "provider" | "unresolved";
+type ResolveModelIdSource =
+	| "direct"
+	| "redirect"
+	| "alias"
+	| "api_model"
+	| "provider_mapping"
+	| "legacy_internal_mapping"
+	| "unresolved";
 
 export type ResolveCanonicalModelIdResult = {
 	requestedModelId: string;
 	canonicalModelId: string | null;
+	internalModelId: string | null;
 	source: ResolveModelIdSource;
 };
 
@@ -35,26 +43,91 @@ async function modelExistsVisible(
 	return Boolean(data?.model_id);
 }
 
-async function pickProviderCanonicalId(
+async function apiModelExists(
 	supabase: Awaited<ReturnType<typeof createClient>>,
-	column: "model_id" | "api_model_id" | "internal_model_id" | "provider_model_slug",
-	value: string,
-): Promise<string | null> {
+	apiModelId: string,
+): Promise<boolean> {
+	if (!apiModelId) return false;
+	const { data, error } = await supabase
+		.from("data_api_models")
+		.select("api_model_id")
+		.eq("api_model_id", apiModelId)
+		.maybeSingle();
+	if (error) return false;
+	return Boolean(data?.api_model_id);
+}
+
+async function providerMappingExistsForApiModel(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	apiModelId: string,
+): Promise<boolean> {
+	if (!apiModelId) return false;
 	const { data, error } = await supabase
 		.from("data_api_provider_models")
-		.select("model_id, api_model_id, is_active_gateway, updated_at")
-		.eq(column, value)
-		.order("is_active_gateway", { ascending: false })
-		.order("updated_at", { ascending: false })
-		.limit(1)
-		.maybeSingle();
+		.select("provider_api_model_id")
+		.eq("api_model_id", apiModelId)
+		.limit(1);
+	if (error) return false;
+	return Array.isArray(data) && data.length > 0;
+}
 
+async function resolveApiModelIdFromInternalModelId(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	internalModelId: string,
+): Promise<string | null> {
+	if (!internalModelId) return null;
+	const { data, error } = await supabase
+		.from("data_api_provider_models")
+		.select("api_model_id")
+		.eq("model_id", internalModelId)
+		.not("api_model_id", "is", null);
 	if (error) return null;
 	return (
-		(typeof data?.model_id === "string" && data.model_id.trim()) ||
-		(typeof data?.api_model_id === "string" && data.api_model_id.trim()) ||
-		null
+		Array.from(
+			new Set(
+				(data ?? [])
+					.map((row: any) => String(row?.api_model_id ?? "").trim())
+					.filter(Boolean),
+			),
+		)[0] ?? null
 	);
+}
+
+async function resolveVisibleInternalModelIdForApiModel(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	apiModelId: string,
+	includeHidden: boolean,
+): Promise<string | null> {
+	if (!apiModelId) return null;
+
+	if (await modelExistsVisible(supabase, apiModelId, includeHidden)) {
+		return apiModelId;
+	}
+
+	const { data, error } = await supabase
+		.from("data_api_provider_models")
+		.select("model_id")
+		.eq("api_model_id", apiModelId)
+		.not("model_id", "is", null);
+
+	if (error) return null;
+
+	const candidates = Array.from(
+		new Set(
+			(data ?? [])
+				.map((row: any) => String(row?.model_id ?? "").trim())
+				.filter(Boolean),
+		),
+	);
+
+	for (const candidate of candidates) {
+		if (includeHidden) return candidate;
+		if (await modelExistsVisible(supabase, candidate, includeHidden)) {
+			return candidate;
+		}
+	}
+
+	return null;
 }
 
 export async function resolveCanonicalModelId(
@@ -66,18 +139,31 @@ export async function resolveCanonicalModelId(
 		return {
 			requestedModelId: modelId,
 			canonicalModelId: null,
+			internalModelId: null,
 			source: "unresolved",
 		};
 	}
 
 	const supabase = await createClient();
-
-	if (await modelExistsVisible(supabase, modelId, includeHidden)) {
+	const buildResult = async (
+		canonicalModelId: string,
+		source: ResolveModelIdSource,
+	): Promise<ResolveCanonicalModelIdResult> => {
+		const internalModelId = await resolveVisibleInternalModelIdForApiModel(
+			supabase,
+			canonicalModelId,
+			includeHidden,
+		);
 		return {
 			requestedModelId: modelId,
-			canonicalModelId: modelId,
-			source: "direct",
+			canonicalModelId,
+			internalModelId,
+			source,
 		};
+	};
+
+	if (await modelExistsVisible(supabase, modelId, includeHidden)) {
+		return buildResult(modelId, "direct");
 	}
 
 	try {
@@ -86,14 +172,21 @@ export async function resolveCanonicalModelId(
 			.select("model_id")
 			.eq("legacy_model_id", modelId)
 			.maybeSingle();
+
 		if (!redirectError && redirectRow?.model_id) {
 			const candidate = String(redirectRow.model_id).trim();
+			const mappedApiModelId = await resolveApiModelIdFromInternalModelId(
+				supabase,
+				candidate,
+			);
+			if (mappedApiModelId) {
+				return buildResult(mappedApiModelId, "redirect");
+			}
+			if (await apiModelExists(supabase, candidate)) {
+				return buildResult(candidate, "redirect");
+			}
 			if (await modelExistsVisible(supabase, candidate, includeHidden)) {
-				return {
-					requestedModelId: modelId,
-					canonicalModelId: candidate,
-					source: "redirect",
-				};
+				return buildResult(candidate, "redirect");
 			}
 		}
 	} catch (error) {
@@ -114,37 +207,36 @@ export async function resolveCanonicalModelId(
 
 	if (!aliasError && aliasRow?.api_model_id) {
 		const candidate = String(aliasRow.api_model_id).trim();
-		if (await modelExistsVisible(supabase, candidate, includeHidden)) {
-			return {
-				requestedModelId: modelId,
-				canonicalModelId: candidate,
-				source: "alias",
-			};
+		const internalModelId = await resolveVisibleInternalModelIdForApiModel(
+			supabase,
+			candidate,
+			includeHidden,
+		);
+		if (internalModelId || (await apiModelExists(supabase, candidate))) {
+			return buildResult(candidate, "alias");
 		}
 	}
 
-	const providerCandidates = await Promise.all([
-		pickProviderCanonicalId(supabase, "model_id", modelId),
-		pickProviderCanonicalId(supabase, "api_model_id", modelId),
-		pickProviderCanonicalId(supabase, "internal_model_id", modelId),
-		pickProviderCanonicalId(supabase, "provider_model_slug", modelId),
-	]);
+	if (await apiModelExists(supabase, modelId)) {
+		return buildResult(modelId, "api_model");
+	}
 
-	for (const candidateRaw of providerCandidates) {
-		const candidate = String(candidateRaw ?? "").trim();
-		if (!candidate) continue;
-		if (await modelExistsVisible(supabase, candidate, includeHidden)) {
-			return {
-				requestedModelId: modelId,
-				canonicalModelId: candidate,
-				source: "provider",
-			};
-		}
+	if (await providerMappingExistsForApiModel(supabase, modelId)) {
+		return buildResult(modelId, "provider_mapping");
+	}
+
+	const mappedApiModelId = await resolveApiModelIdFromInternalModelId(
+		supabase,
+		modelId,
+	);
+	if (mappedApiModelId) {
+		return buildResult(mappedApiModelId, "legacy_internal_mapping");
 	}
 
 	return {
 		requestedModelId: modelId,
 		canonicalModelId: null,
+		internalModelId: null,
 		source: "unresolved",
 	};
 }

@@ -5,20 +5,19 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 const DEFAULT_DAYS = 30;
 const DEFAULT_TOP_APPS = 20;
-const PAGE_SIZE = 1000;
-const MAX_PAGES_PER_DAY = 12;
+const PAGE_SIZE = 5000;
 
-type TopAppRpcRow = {
+type ProviderAppRollupRow = {
+	bucket_15m: string;
 	app_id: string | null;
-	title: string | null;
-	url: string | null;
 	total_tokens: number | null;
 };
 
-type GatewayAppRequestRow = {
-	created_at: string;
-	app_id: string | null;
-	usage: unknown;
+type AppMetaRow = {
+	id: string;
+	title: string | null;
+	url: string | null;
+	image_url: string | null;
 };
 
 export type ProviderAppSeriesApp = {
@@ -40,77 +39,18 @@ export type ProviderAppTokenTimeseries = {
 	points: ProviderAppSeriesPoint[];
 };
 
-function parseTokenValue(value: unknown): number {
-	if (value == null) return 0;
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : 0;
-	}
-	const numeric = Number.parseFloat(String(value));
-	return Number.isFinite(numeric) ? numeric : 0;
-}
-
-function getUsageTotalTokens(usage: unknown): number {
-	if (usage == null) return 0;
-
-	let normalized = usage;
-	if (typeof usage === "string") {
-		try {
-			normalized = JSON.parse(usage);
-		} catch {
-			return 0;
-		}
-	}
-
-	if (typeof normalized !== "object" || normalized == null) {
-		return 0;
-	}
-
-	const record = normalized as Record<string, unknown>;
-	const totalTokens = parseTokenValue(
-		record.total_tokens ?? record.totalTokens ?? null,
-	);
-	if (totalTokens > 0) return totalTokens;
-
-	const priorityKeys = [
-		"input_tokens",
-		"output_tokens",
-		"input_text_tokens",
-		"output_text_tokens",
-		"input_audio_tokens",
-		"output_audio_tokens",
-		"input_video_tokens",
-		"output_video_tokens",
-		"input_image_tokens",
-		"output_image_tokens",
-		"cached_read_text_tokens",
-		"cached_write_text_tokens",
-		"cached_read_audio_tokens",
-		"cached_write_audio_tokens",
-		"cached_read_video_tokens",
-		"cached_write_video_tokens",
-		"cached_read_image_tokens",
-		"cached_write_image_tokens",
-	] as const;
-
-	let sum = 0;
-	for (const key of priorityKeys) {
-		sum += parseTokenValue(record[key]);
-	}
-	if (sum > 0) return sum;
-
-	let fallback = 0;
-	for (const [key, value] of Object.entries(record)) {
-		const lower = key.toLowerCase();
-		if (!lower.endsWith("_tokens")) continue;
-		if (lower === "total_tokens") continue;
-		if (lower.includes("reasoning")) continue;
-		fallback += parseTokenValue(value);
-	}
-	return fallback;
-}
-
 function toIsoDate(value: Date): string {
 	return value.toISOString().slice(0, 10);
+}
+
+function buildDayBuckets(since: Date, days: number): string[] {
+	const buckets: string[] = [];
+	for (let i = 0; i < days; i++) {
+		const day = new Date(since);
+		day.setUTCDate(since.getUTCDate() + i);
+		buckets.push(toIsoDate(day));
+	}
+	return buckets;
 }
 
 function isUnknownAppIdentity(appId: string, title: string | null | undefined): boolean {
@@ -127,102 +67,65 @@ function isUnknownAppIdentity(appId: string, title: string | null | undefined): 
 	);
 }
 
-async function fetchTopAppsForWindow(
+async function fetchProviderAppRollupRows(
 	apiProviderId: string,
 	sinceIso: string,
-	limit: number,
-): Promise<ProviderAppSeriesApp[]> {
+	nowIso: string,
+): Promise<ProviderAppRollupRow[]> {
 	const supabase = createAdminClient();
+	const rows: ProviderAppRollupRow[] = [];
 
-	const { data, error } = await supabase.rpc("get_top_apps_stats", {
-		p_provider: apiProviderId,
-		p_since: sinceIso,
-		p_limit: limit,
-	});
-
-	if (error) {
-		console.error("Error loading provider top apps for timeseries:", error);
-		return [];
-	}
-
-	const rows = ((data ?? []) as TopAppRpcRow[]).filter(
-		(row): row is Required<Pick<TopAppRpcRow, "app_id">> & TopAppRpcRow =>
-			Boolean(row.app_id),
-	);
-	const filteredRows = rows.filter((row) => {
-		const appId = String(row.app_id).trim();
-		return !isUnknownAppIdentity(appId, row.title);
-	});
-	if (!filteredRows.length) return [];
-
-	const appIds = filteredRows
-		.map((row) => String(row.app_id).trim())
-		.filter(Boolean);
-
-	const imageById = new Map<string, string | null>();
-	const { data: appRows, error: appError } = await supabase
-		.from("api_apps")
-		.select("id, image_url")
-		.in("id", appIds);
-
-	if (appError) {
-		console.error("Error loading app metadata for timeseries:", appError);
-	}
-
-	for (const appRow of appRows ?? []) {
-		const id = String((appRow as any).id ?? "").trim();
-		if (!id) continue;
-		imageById.set(id, ((appRow as any).image_url as string | null) ?? null);
-	}
-
-	return filteredRows.map((row) => {
-		const appId = String(row.app_id).trim();
-		return {
-			appId,
-			title: row.title?.trim() || appId,
-			url: row.url ?? null,
-			imageUrl: imageById.get(appId) ?? null,
-			totalTokens: Number(row.total_tokens ?? 0),
-		};
-	});
-}
-
-async function fetchProviderAppRowsForDay(
-	apiProviderId: string,
-	dayStartIso: string,
-	dayEndIso: string,
-	appIds: string[],
-): Promise<GatewayAppRequestRow[]> {
-	if (!appIds.length) return [];
-
-	const supabase = createAdminClient();
-	const rows: GatewayAppRequestRow[] = [];
-
-	for (let page = 0; page < MAX_PAGES_PER_DAY; page++) {
-		const from = page * PAGE_SIZE;
+	for (let from = 0; ; from += PAGE_SIZE) {
 		const to = from + PAGE_SIZE - 1;
-
 		const { data, error } = await supabase
-			.from("gateway_requests")
-			.select("created_at, app_id, usage")
+			.from("gateway_usage_rollup_15m_provider_app")
+			.select("bucket_15m, app_id, total_tokens")
 			.eq("provider", apiProviderId)
-			.gte("created_at", dayStartIso)
-			.lt("created_at", dayEndIso)
-			.in("app_id", appIds)
-			.order("created_at", { ascending: true })
+			.gte("bucket_15m", sinceIso)
+			.lte("bucket_15m", nowIso)
+			.order("bucket_15m", { ascending: true })
 			.range(from, to);
 
 		if (error) {
-			console.error("Error loading provider app request rows for chart:", error);
+			console.error("Error loading provider app rollup rows for chart:", error);
 			break;
 		}
-		if (!data?.length) break;
+		if (!Array.isArray(data) || data.length === 0) break;
 
-		rows.push(...(data as GatewayAppRequestRow[]));
+		rows.push(...(data as ProviderAppRollupRow[]));
 		if (data.length < PAGE_SIZE) break;
 	}
 
 	return rows;
+}
+
+async function fetchAppMetaByIds(appIds: string[]): Promise<Map<string, AppMetaRow>> {
+	const map = new Map<string, AppMetaRow>();
+	if (!appIds.length) return map;
+
+	const supabase = createAdminClient();
+	const { data, error } = await supabase
+		.from("api_apps")
+		.select("id, title, url, image_url")
+		.in("id", appIds);
+
+	if (error) {
+		console.error("Error loading app metadata for timeseries:", error);
+		return map;
+	}
+
+	for (const row of data ?? []) {
+		const id = String((row as any)?.id ?? "").trim();
+		if (!id) continue;
+		map.set(id, {
+			id,
+			title: ((row as any)?.title as string | null) ?? null,
+			url: ((row as any)?.url as string | null) ?? null,
+			image_url: ((row as any)?.image_url as string | null) ?? null,
+		});
+	}
+
+	return map;
 }
 
 export async function getProviderAppTokenTimeseries(
@@ -233,8 +136,8 @@ export async function getProviderAppTokenTimeseries(
 	},
 ): Promise<ProviderAppTokenTimeseries> {
 	cacheLife("minutes");
-	cacheTag("data:gateway_requests");
-	cacheTag(`data:gateway_requests:provider:${apiProviderId}`);
+	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
 
 	if (!apiProviderId) return { apps: [], points: [] };
 
@@ -245,57 +148,72 @@ export async function getProviderAppTokenTimeseries(
 	const since = new Date(now);
 	since.setUTCDate(since.getUTCDate() - (days - 1));
 	since.setUTCHours(0, 0, 0, 0);
+
 	const sinceIso = since.toISOString();
+	const nowIso = now.toISOString();
+	const dayBuckets = buildDayBuckets(since, days);
+	const dayBucketSet = new Set(dayBuckets);
 
-	const apps = await fetchTopAppsForWindow(apiProviderId, sinceIso, topAppsLimit);
-	if (!apps.length) return { apps: [], points: [] };
+	const rollupRows = await fetchProviderAppRollupRows(
+		apiProviderId,
+		sinceIso,
+		nowIso,
+	);
+	if (!rollupRows.length) return { apps: [], points: [] };
 
-	const appIds = apps.map((app) => app.appId);
-	const tokensByBucketAndApp = new Map<string, Map<string, number>>();
+	const totalByApp = new Map<string, number>();
+	const tokensByDayAndApp = new Map<string, Map<string, number>>();
 
-	for (let i = 0; i < days; i++) {
-		const dayStart = new Date(since);
-		dayStart.setUTCDate(since.getUTCDate() + i);
-		const dayEnd = new Date(dayStart);
-		dayEnd.setUTCDate(dayStart.getUTCDate() + 1);
+	for (const row of rollupRows) {
+		const appId = String(row?.app_id ?? "").trim();
+		if (!appId) continue;
 
-		const dayRows = await fetchProviderAppRowsForDay(
-			apiProviderId,
-			dayStart.toISOString(),
-			dayEnd.toISOString(),
-			appIds,
-		);
+		const tokens = Number(row?.total_tokens ?? 0);
+		if (!Number.isFinite(tokens) || tokens <= 0) continue;
 
-		for (const row of dayRows) {
-			const appId = row.app_id?.trim();
-			if (!appId) continue;
-			if (!appIds.includes(appId)) continue;
+		const day = toIsoDate(new Date(row.bucket_15m));
+		if (!dayBucketSet.has(day)) continue;
 
-			const tokens = getUsageTotalTokens(row.usage);
-			if (!Number.isFinite(tokens) || tokens <= 0) continue;
-
-			const date = new Date(row.created_at);
-			if (Number.isNaN(date.getTime())) continue;
-			const bucket = toIsoDate(date);
-
-			const bucketMap = tokensByBucketAndApp.get(bucket) ?? new Map();
-			bucketMap.set(appId, (bucketMap.get(appId) ?? 0) + tokens);
-			tokensByBucketAndApp.set(bucket, bucketMap);
-		}
+		totalByApp.set(appId, (totalByApp.get(appId) ?? 0) + tokens);
+		const dayMap = tokensByDayAndApp.get(day) ?? new Map<string, number>();
+		dayMap.set(appId, (dayMap.get(appId) ?? 0) + tokens);
+		tokensByDayAndApp.set(day, dayMap);
 	}
 
-	const points: ProviderAppSeriesPoint[] = [];
-	for (let i = 0; i < days; i++) {
-		const bucketDate = new Date(since);
-		bucketDate.setUTCDate(since.getUTCDate() + i);
-		const bucket = toIsoDate(bucketDate);
-		const bucketMap = tokensByBucketAndApp.get(bucket) ?? new Map();
+	const topAppIds = Array.from(totalByApp.entries())
+		.sort((a, b) => b[1] - a[1])
+		.map(([appId]) => appId)
+		.slice(0, topAppsLimit);
 
+	if (!topAppIds.length) return { apps: [], points: [] };
+
+	const appMetaById = await fetchAppMetaByIds(topAppIds);
+	const apps: ProviderAppSeriesApp[] = topAppIds
+		.map((appId) => {
+			const meta = appMetaById.get(appId);
+			const title = meta?.title?.trim() || appId;
+			if (isUnknownAppIdentity(appId, title)) return null;
+
+			return {
+				appId,
+				title,
+				url: meta?.url ?? null,
+				imageUrl: meta?.image_url ?? null,
+				totalTokens: Math.round(totalByApp.get(appId) ?? 0),
+			};
+		})
+		.filter((value): value is ProviderAppSeriesApp => Boolean(value));
+
+	if (!apps.length) return { apps: [], points: [] };
+
+	const points: ProviderAppSeriesPoint[] = [];
+	for (const day of dayBuckets) {
+		const dayMap = tokensByDayAndApp.get(day) ?? new Map<string, number>();
 		for (const app of apps) {
 			points.push({
-				bucket,
+				bucket: day,
 				appId: app.appId,
-				tokens: Math.round(bucketMap.get(app.appId) ?? 0),
+				tokens: Math.round(dayMap.get(app.appId) ?? 0),
 			});
 		}
 	}

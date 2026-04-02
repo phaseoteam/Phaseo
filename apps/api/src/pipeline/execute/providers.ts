@@ -27,6 +27,7 @@ export async function rankProviders(
         body: ctx.body,
         routingMode: ctx.routingMode ?? ctx.teamSettings?.routingMode ?? null,
         betaChannelEnabled: ctx.teamSettings?.betaChannelEnabled ?? false,
+        alphaChannelEnabled: ctx.teamSettings?.alphaChannelEnabled ?? false,
         providerCapabilitiesBeta: ctx.providerCapabilitiesBeta ?? false,
         testingMode: ctx.testingMode ?? false,
         requestId: ctx.requestId ?? null,

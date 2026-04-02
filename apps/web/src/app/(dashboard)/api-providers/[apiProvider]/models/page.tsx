@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import APIProviderDetailShell from "@/components/(data)/api-providers/APIProviderDetailShell";
-import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { getAPIProviderModelsListByAddedCached } from "@/lib/fetchers/api-providers/getAPIProvider";
 import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
 import { buildMetadata } from "@/lib/seo";
@@ -16,23 +15,6 @@ async function fetchProviderMeta(apiProviderId: string) {
 		});
 		return null;
 	}
-}
-
-function resolveAccessibleEndpoints(value?: string[] | null): string[] {
-	const source = value ?? [];
-	const expanded = source.flatMap((entry) => {
-		const mapped = capabilityToEndpoints[entry];
-		if (mapped?.length) return mapped;
-		return [entry];
-	});
-
-	return Array.from(
-		new Set(
-			expanded
-				.map((item) => String(item).trim())
-				.filter(Boolean),
-		),
-	);
 }
 
 export async function generateMetadata(props: {
@@ -73,23 +55,12 @@ export default async function Page({
 
 	const models = await getAPIProviderModelsListByAddedCached(apiProvider, false);
 
-	const accessibleModels = models
-		.map((model) => ({
-			model,
-			endpoints: resolveAccessibleEndpoints(model.endpoints),
-		}))
-		.filter(
-			(entry) =>
-				Boolean(entry.model.is_active_gateway) && entry.endpoints.length > 0,
-		)
-		.map((entry) => entry.model);
-
 	return (
 		<APIProviderDetailShell apiProviderId={apiProvider}>
 			<ProviderModelsClient
 				apiProvider={apiProvider}
 				providerLabel={providerLabel}
-				models={accessibleModels}
+				models={models}
 			/>
 		</APIProviderDetailShell>
 	);

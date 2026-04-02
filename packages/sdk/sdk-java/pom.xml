@@ -5,7 +5,7 @@
 
   <groupId>app.phaseo</groupId>
   <artifactId>ai-stats-sdk</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.1</version>
   <packaging>jar</packaging>
   <name>AI Stats Java SDK</name>
   <description>Official AI Stats Gateway SDK for Java.</description>

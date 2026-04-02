@@ -1,0 +1,29 @@
+{
+  "plan_id": "claude-free",
+  "name": "Claude Free",
+  "organisation_id": "anthropic",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0.0,
+      "link": "https://claude.com/pricing",
+      "other_info": null
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 0.0,
+      "link": "https://claude.com/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [],
+  "models": [
+    {
+      "model_id": "anthropic/claude-sonnet-4.5",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

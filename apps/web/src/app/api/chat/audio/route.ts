@@ -4,7 +4,7 @@ import {
 	proxyGatewayPost,
 } from "@/app/api/chat/_shared/gatewayProxy";
 
-type AudioAction = "speech" | "transcription" | "translation";
+type AudioAction = "speech" | "transcription" | "translation" | "music";
 type AudioRoutePayload = {
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
@@ -16,10 +16,16 @@ const ACTION_TO_PATH: Record<AudioAction, string> = {
 	speech: "/audio/speech",
 	transcription: "/audio/transcriptions",
 	translation: "/audio/translations",
+	music: "/music/generations",
 };
 
 function isAudioAction(value: unknown): value is AudioAction {
-	return value === "speech" || value === "transcription" || value === "translation";
+	return (
+		value === "speech" ||
+		value === "transcription" ||
+		value === "translation" ||
+		value === "music"
+	);
 }
 
 export async function POST(request: NextRequest) {

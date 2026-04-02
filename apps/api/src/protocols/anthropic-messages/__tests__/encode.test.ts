@@ -232,6 +232,39 @@ describe("encodeAnthropicMessagesResponse", () => {
 		});
 	});
 
+	it("should include server tool usage when provided", () => {
+		const ir: IRChatResponse = {
+			id: "req-usage-server-tools",
+			nativeId: "msg-usage-server-tools",
+			model: "claude-3-5-sonnet-20241022",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [{ type: "text", text: "Done" }],
+					},
+					finishReason: "stop",
+				},
+			],
+			usage: {
+				inputTokens: 10,
+				outputTokens: 5,
+				totalTokens: 15,
+				_ext: {
+					serverToolUse: {
+						datetime_requests: 1,
+					},
+				},
+			},
+		};
+
+		const response = encodeAnthropicMessagesResponse(ir);
+		expect(response.usage.server_tool_use).toEqual({
+			datetime_requests: 1,
+		});
+	});
+
 	it("should use fallback ID when nativeId is missing", () => {
 		const ir: IRChatResponse = {
 			id: "req-456",

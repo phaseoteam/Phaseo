@@ -1,0 +1,28 @@
+{
+  "model_id": "google/gemini-1.5-pro-002",
+  "organisation_id": "google",
+  "name": "Gemini 1.5 Pro 002",
+  "status": "Retired",
+  "previous_model_id": "google/gemini-1-0-pro-2023-12-06",
+  "announced_date": "2024-09-24T00:00:00",
+  "release_date": "2024-09-24T00:00:00",
+  "deprecation_date": "2025-09-24T00:00:00",
+  "retirement_date": "2025-09-29T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "google/gemini-1.5-pro-002",
+  "family_id": "google/gemini-1-5",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 2097152
+    },
+    {
+      "name": "output_context_length",
+      "value": 8192
+    }
+  ],
+  "benchmarks": []
+}

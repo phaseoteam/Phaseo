@@ -23,7 +23,7 @@ jobs:
           node-version: "22"
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"
@@ -40,6 +40,29 @@ jobs:
             version="$(node -p "require('./packages/sdk/sdk-java/package.json').version")"
           fi
           echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate telemetry literal matches publish version
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const version = process.env.VERSION;
+          const filePath = "packages/sdk/sdk-java/src/ai/stats/sdk/AIStats.java";
+          const source = fs.readFileSync(filePath, "utf8");
+          const match = source.match(/new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/);
+          if (!match) {
+            console.error(`::error::Unable to find telemetry version literal in ${filePath}.`);
+            process.exit(1);
+          }
+          const actual = match[1];
+          if (actual !== version) {
+            console.error(`::error::Telemetry version mismatch in ${filePath}: expected ${version}, found ${actual}. Run pnpm run sdk:sync-language-manifests and commit the update before publishing.`);
+            process.exit(1);
+          }
+          NODE
 
       - name: Check required secrets
         env:

@@ -1,0 +1,57 @@
+{
+  "model_id": "microsoft/phi-4-multimodal-instruct",
+  "organisation_id": "microsoft",
+  "name": "Phi 4 multimodal instruct",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-02-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "microsoft/phi-4-multimodal-instruct",
+  "family_id": "microsoft/phi-4-0",
+  "links": [
+    {
+      "platform": "playground",
+      "url": "https://ai.azure.com/explore/models?selectedCollection=phi&tid=72f988bf-86f1-41af-91ab-2d7cd011db47"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2503.01743"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://azure.microsoft.com/en-us/blog/empowering-innovation-the-next-generation-of-the-phi-family/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-06-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "parameter_count",
+      "value": 5600000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 5000000000000
+    }
+  ],
+  "benchmarks": []
+}

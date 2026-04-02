@@ -1,0 +1,93 @@
+{
+  "key": "minimax:minimax/hailuo-2.3-fast:video.generate",
+  "api_provider_id": "minimax",
+  "provider_slug": "minimax",
+  "api_model_id": "minimax/hailuo-2.3-fast",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.19,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        },
+        {
+          "path": "video_params.seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 6.0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-24T00:00:00"
+    },
+    {
+      "meter": "output_video",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.32,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        },
+        {
+          "path": "video_params.seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 10.0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-24T00:00:00"
+    },
+    {
+      "meter": "output_video",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.33,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080P"
+        },
+        {
+          "path": "video_params.seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 6.0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-24T00:00:00"
+    }
+  ]
+}

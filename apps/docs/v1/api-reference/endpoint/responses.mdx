@@ -2,3 +2,37 @@
 title: "Responses"
 openapi: "POST /responses"
 ---
+
+## Server tools
+
+`/v1/responses` supports regular function tools and one gateway-managed server tool:
+
+- `gateway:datetime`
+
+Web-search tool types are temporarily disabled at the gateway request layer.
+
+### Datetime example
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "stream": false,
+    "input": [
+      { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "Asia/Tokyo" }
+      }
+    ],
+    "tool_choice": "auto"
+  }'
+```
+
+When a server tool is used, usage includes `usage.server_tool_use.datetime_requests`.
+
+Use `stream: false` when tools are present.

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AudioSpeechRequest,
   AudioTranscriptionRequest,
   AudioTranscriptionResponse,
@@ -61,6 +61,80 @@ export type ModelLifecycleInfo = {
 };
 
 type MessageContentPartInput = Record<string, unknown> | string;
+export type VideoOutputAccess = "bytes" | "signed_url" | "both";
+export type VideoInputReference = {
+  type: "image" | "video" | "mask";
+  role?: "first_frame" | "last_frame" | "reference" | "source" | "mask";
+  reference_type?: "asset" | "style" | "character" | "location" | "generic" | string;
+  url?: string;
+  data?: string;
+  mime_type?: string;
+  asset_id?: string;
+};
+
+export type VideoCreateRequest = {
+  model: ModelId;
+  prompt: string;
+  duration_seconds?: number;
+  size?: string;
+  resolution?: string;
+  aspect_ratio?: string;
+  seed?: number;
+  sample_count?: number;
+  negative_prompt?: string;
+  generate_audio?: boolean;
+  enhance_prompt?: boolean;
+  compression_quality?: number;
+  person_generation?: string;
+  resize_mode?: string;
+  input_references?: VideoInputReference[];
+  provider_params?: Record<string, unknown>;
+  output?: { access?: VideoOutputAccess };
+  webhook?: { url: string; secret?: string; events?: string[] };
+  provider?: Record<string, unknown>;
+  debug?: Record<string, unknown>;
+  beta?: Record<string, unknown>;
+};
+
+export type VideoStatusResponse = {
+  id: string;
+  object: "video";
+  status: "queued" | "in_progress" | "completed" | "failed" | "cancelled";
+  polling_url: string;
+  poll_after_seconds?: number;
+  provider?: string | null;
+  model?: string | null;
+  created_at?: string | number | null;
+  started_at?: string | number | null;
+  completed_at?: string | number | null;
+  progress?: number | null;
+  progress_source?: "provider" | "estimated" | "none" | null;
+  seconds?: number | null;
+  size?: string | null;
+  audio?: boolean | null;
+  content_url?: string;
+  download_url?: string | null;
+  expires_at?: number | null;
+  asset?: {
+    id: string;
+    mime_type?: string | null;
+    bytes?: number | null;
+    sha256?: string | null;
+    width?: number | null;
+    height?: number | null;
+    duration_seconds?: number | null;
+  } | null;
+  outputs?: Array<{
+    index?: number;
+    mime_type?: string | null;
+    bytes_available?: boolean;
+    content_url?: string;
+    download_url?: string;
+    expires_at?: number | null;
+  }>;
+  usage?: Record<string, unknown>;
+  error?: unknown;
+};
 
 type ChatMessageInput =
   | { role: "system"; content: string | MessageContentPartInput[]; name?: string }
@@ -102,6 +176,7 @@ export type {
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
+export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
 export type Healthz200Response = Awaited<ReturnType<typeof ops.healthz>>;
 export { ops as operations };
 export type AIStatsOptions = Options;
@@ -146,6 +221,20 @@ export class AIStats {
       this.validateModel(modelId),
   };
 
+  readonly videos = {
+    create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
+    get: async (videoId: string): Promise<VideoStatusResponse> => this.getVideo(videoId),
+    content: async (videoId: string): Promise<Uint8Array> => this.getVideoContent(videoId),
+    downloadUrl: async (
+      videoId: string,
+      body?: { ttl_seconds?: number; disposition?: "attachment" | "inline"; index?: number },
+    ): Promise<{ download_url: string; expires_at: number }> => this.getVideoDownloadUrl(videoId, body),
+    cancel: async (videoId: string): Promise<VideoStatusResponse> => this.cancelVideo(videoId),
+    delete: async (videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> =>
+      this.deleteVideo(videoId),
+    listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
+  };
+
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
     this.basePath = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
@@ -160,7 +249,9 @@ export class AIStats {
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
-    this.telemetry = new TelemetryCapture(opts.devtools, "0.2.1");
+
+    this.telemetry = new TelemetryCapture(opts.devtools, "1.1.1");
+
   }
 
   rawClient(): Client {
@@ -369,15 +460,51 @@ export class AIStats {
     );
   }
 
-  generateVideo(req: VideoGenerationRequest): Promise<VideoGenerationResponse> {
+  generateVideo(req: VideoCreateRequest): Promise<VideoStatusResponse> {
     return this.withLifecycleGuard(
       req,
       () => this.telemetry.wrap(
         "video.generations",
-        () => ops.createVideo(this.client, { body: req }),
+        () => ops.createVideo(this.client, { body: req as unknown as VideoGenerationRequest }) as Promise<VideoStatusResponse>,
         () => req
       )
     );
+  }
+
+  getVideo(videoId: string): Promise<VideoStatusResponse> {
+    return this.request("GET", `/videos/${encodeURIComponent(videoId)}`) as Promise<VideoStatusResponse>;
+  }
+
+  async getVideoContent(videoId: string): Promise<Uint8Array> {
+    const url = new URL(`videos/${encodeURIComponent(videoId)}/content`, `${this.basePath}/`);
+    const res = await this.fetchImpl(url.toString(), {
+      method: "GET",
+      headers: this.headers,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+    }
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
+  cancelVideo(videoId: string): Promise<VideoStatusResponse> {
+    return this.request("POST", `/videos/${encodeURIComponent(videoId)}/cancel`) as Promise<VideoStatusResponse>;
+  }
+
+  getVideoDownloadUrl(
+    videoId: string,
+    body?: { ttl_seconds?: number; disposition?: "attachment" | "inline"; index?: number },
+  ): Promise<{ download_url: string; expires_at: number }> {
+    return this.request("POST", `/videos/${encodeURIComponent(videoId)}/download_url`, { body: body ?? {} }) as Promise<{ download_url: string; expires_at: number }>;
+  }
+
+  deleteVideo(videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> {
+    return this.request("DELETE", `/videos/${encodeURIComponent(videoId)}`) as Promise<{ id: string; object: "video"; deleted: boolean }>;
+  }
+
+  listVideoModels(): Promise<VideoModelsResponse> {
+    return this.request("GET", "/videos/models") as Promise<VideoModelsResponse>;
   }
 
   generateEmbedding(body: Record<string, unknown>): Promise<unknown> {
@@ -504,7 +631,7 @@ export class AIStats {
   getAnalytics(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "analytics",
-      () => ops.getAnalytics(this.client, { query: params as any }),
+      () => ops.getActivity(this.client, { query: params as any }),
       () => params
     );
   }

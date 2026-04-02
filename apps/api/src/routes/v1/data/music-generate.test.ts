@@ -38,5 +38,15 @@ describe("music-generate route helpers", () => {
 		expect(parsed.output[0]?.audio_url).toBe("https://mini.example/audio.mp3");
 		expect(parsed.totalDurationSeconds).toBe(6);
 	});
+
+	it("normalizes metadata statuses and detects google music provider aliases", () => {
+		expect(__musicGenerateTestUtils.normalizeMusicStatus("running")).toBe("in_progress");
+		expect(__musicGenerateTestUtils.normalizeMusicStatus("cancelled")).toBe("failed");
+		expect(__musicGenerateTestUtils.normalizeMusicStatus("")).toBe("completed");
+
+		expect(__musicGenerateTestUtils.isGoogleMusicProvider("google")).toBe(false);
+		expect(__musicGenerateTestUtils.isGoogleMusicProvider("google-ai-studio")).toBe(true);
+		expect(__musicGenerateTestUtils.isGoogleMusicProvider("suno")).toBe(false);
+	});
 });
 

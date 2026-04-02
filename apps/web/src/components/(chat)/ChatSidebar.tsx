@@ -162,16 +162,18 @@ export function ChatSidebar({
 						<Button
 							variant="ghost"
 							className={cn(
-								"h-8 min-w-0 w-full truncate",
-								collapsed ? "justify-center px-0" : "flex-1 justify-start pr-2",
+								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
+								collapsed
+									? "justify-center px-0"
+									: "flex-1 justify-start px-2",
 							)}
 							onClick={onCreateThread}
 							aria-label="New Chat"
 						>
-							<SquarePen
-								className={cn("h-4 w-4", collapsed ? "mr-0" : "mr-2")}
-							/>
-							{collapsed ? null : "New Chat"}
+							<SquarePen className="h-4 w-4 shrink-0" />
+							{collapsed ? null : (
+								<span className="truncate text-left">New Chat</span>
+							)}
 						</Button>,
 					)}
 					{withCollapsedTooltip(
@@ -179,22 +181,22 @@ export function ChatSidebar({
 						<Button
 							variant="ghost"
 							className={cn(
-								"h-8 min-w-0 w-full truncate",
-								collapsed ? "justify-center px-0" : "flex-1 justify-start pr-2",
+								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
+								collapsed
+									? "justify-center px-0"
+									: "flex-1 justify-start px-2",
 							)}
 							asChild
 							aria-label="Database"
 						>
 							<Link
 								href="/"
-								className="group/db flex w-full items-center min-w-0"
+								className={cn(
+									"group/db flex w-full min-w-0 items-center gap-2",
+									collapsed && "justify-center",
+								)}
 							>
-								<Database
-									className={cn(
-										"h-4 w-4 shrink-0",
-										collapsed ? "mr-0" : "mr-2",
-									)}
-								/>
+								<Database className="h-4 w-4 shrink-0" />
 								{collapsed ? null : (
 									<>
 										<span className="flex-1 min-w-0 truncate text-left">
@@ -211,14 +213,18 @@ export function ChatSidebar({
 						<Button
 							variant="ghost"
 							className={cn(
-								"h-8 min-w-0 w-full truncate",
-								collapsed ? "justify-center px-0" : "flex-1 justify-start pr-2",
+								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
+								collapsed
+									? "justify-center px-0"
+									: "flex-1 justify-start px-2",
 							)}
 							onClick={onSearch}
 							aria-label="Search Chats"
 						>
-							<Search className={cn("h-4 w-4", collapsed ? "mr-0" : "mr-2")} />
-							{collapsed ? null : "Search Chats"}
+							<Search className="h-4 w-4 shrink-0" />
+							{collapsed ? null : (
+								<span className="truncate text-left">Search Chats</span>
+							)}
 						</Button>,
 					)}
 				</div>

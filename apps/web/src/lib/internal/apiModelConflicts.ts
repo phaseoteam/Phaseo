@@ -3,6 +3,8 @@ import path from "node:path";
 
 function resolveDataRoot(): string {
 	const candidates = [
+		path.join(process.cwd(), "..", "..", "packages", "data", "catalog", "src", "data"),
+		path.join(process.cwd(), "packages", "data", "catalog", "src", "data"),
 		path.join(process.cwd(), "src", "data"),
 		path.join(process.cwd(), "apps", "web", "src", "data"),
 	];

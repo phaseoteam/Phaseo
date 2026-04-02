@@ -168,43 +168,18 @@ describe("OpenAPI Runtime Response Contract", () => {
 
 	it("matches /analytics 401 response schema when authorization is missing", async () => {
 		const result = await requestJson("/v1/analytics", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({}),
-		});
-		expect(result.status).toBe(401);
-		const schema = schemaForResponse("/analytics", "post", "401");
-		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
-	});
-
-	it("matches /analytics 401 response schema when body access_token is provided without authorization", async () => {
-		const result = await requestJson("/v1/analytics", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ access_token: "demo-token" }),
-		});
-		expect(result.status).toBe(401);
-		const schema = schemaForResponse("/analytics", "post", "401");
-		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
-	});
-
-	it("matches /realtime 501 response schema", async () => {
-		const result = await requestJson("/v1/realtime", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({}),
-		});
-		expect(result.status).toBe(501);
-		const schema = schemaForResponse("/realtime", "post", "501");
-		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
-	});
-
-	it("matches /realtime/calls/{call_id} 501 response schema", async () => {
-		const result = await requestJson("/v1/realtime/calls/call_test_123", {
 			method: "GET",
 		});
-		expect(result.status).toBe(501);
-		const schema = schemaForResponse("/realtime/calls/{call_id}", "get", "501");
+		expect(result.status).toBe(401);
+		const schema = schemaForResponse("/analytics", "get", "401");
 		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
 	});
+
+	it("matches /activity 401 response schema when authorization is missing", async () => {
+		const result = await requestJson("/v1/activity", { method: "GET" });
+		expect(result.status).toBe(401);
+		const schema = schemaForResponse("/activity", "get", "401");
+		expect(validateSchema(SPEC_DOC, schema, result.body)).toEqual([]);
+	});
+
 });

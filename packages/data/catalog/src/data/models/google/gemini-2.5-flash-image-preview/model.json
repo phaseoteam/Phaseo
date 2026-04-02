@@ -1,0 +1,19 @@
+{
+  "model_id": "google/gemini-2.5-flash-image-preview",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Flash Image Preview (Nano Banana)",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2025-08-25T00:00:00",
+  "release_date": "2025-08-25T00:00:00",
+  "deprecation_date": "2026-01-15T00:00:00",
+  "retirement_date": "2026-01-15T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text,image",
+  "api_model_id": "google/gemini-2.5-flash-image-preview",
+  "family_id": "google/gemini-2-5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -35,6 +35,21 @@ function normalizeGoogleModelName(value: string): string {
 	return aliasMap[canonical] ?? canonical;
 }
 
+type GoogleVideoAuth =
+	| { kind: "api_key"; value: string }
+	| { kind: "oauth_bearer"; value: string };
+
+function resolveGoogleVideoAuth(rawCredential: string): GoogleVideoAuth {
+	const trimmed = rawCredential.trim();
+	if (/^Bearer\s+/i.test(trimmed)) {
+		return { kind: "oauth_bearer", value: trimmed.replace(/^Bearer\s+/i, "").trim() };
+	}
+	if (trimmed.startsWith("ya29.") || trimmed.startsWith("eyJ")) {
+		return { kind: "oauth_bearer", value: trimmed };
+	}
+	return { kind: "api_key", value: trimmed };
+}
+
 function toDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
 	if (typeof ir.durationSeconds === "number" && Number.isFinite(ir.durationSeconds) && ir.durationSeconds > 0) {
 		return ir.durationSeconds;
@@ -119,6 +134,10 @@ function irToGoogleVideoRequest(ir: IRVideoGenerationRequest): any {
 	const durationSeconds = toDurationSeconds(ir);
 	const aspectRatio = ir.aspectRatio ?? ir.ratio;
 	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
+	const providerParams =
+		ir.providerParams && typeof ir.providerParams === "object" && !Array.isArray(ir.providerParams)
+			? { ...(ir.providerParams as Record<string, any>) }
+			: {};
 	const numberOfVideos =
 		typeof ir.numberOfVideos === "number"
 			? ir.numberOfVideos
@@ -130,6 +149,7 @@ function irToGoogleVideoRequest(ir: IRVideoGenerationRequest): any {
 	const lastFrame = normalizeGoogleMediaSource(ir.lastFrame ?? ir.input?.lastFrame);
 	const referenceImages = normalizeReferenceImages(ir.referenceImages ?? ir.input?.referenceImages);
 	const parameters: Record<string, any> = {
+		...providerParams,
 		...(typeof durationSeconds === "number" ? { durationSeconds } : {}),
 		...(aspectRatio ? { aspectRatio } : {}),
 		...(size ? { resolution: size } : {}),
@@ -337,13 +357,24 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
+	const oauthOverride =
+		keyInfo.source === "byok"
+			? ""
+			: String(bindings.GOOGLE_VIDEO_OAUTH_BEARER_TOKEN ?? "").trim();
+	const credentialForVideo = oauthOverride || keyInfo.key;
 	let res: Response;
+	const googleAuth = resolveGoogleVideoAuth(credentialForVideo);
 	try {
 		res = await fetch(
-			`${GOOGLE_VIDEO_BASE}/v1beta/models/${encodeURIComponent(model)}:predictLongRunning?key=${encodeURIComponent(keyInfo.key)}`,
+			`${GOOGLE_VIDEO_BASE}/v1beta/models/${encodeURIComponent(model)}:predictLongRunning`,
 			{
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					...(googleAuth.kind === "api_key"
+						? { "x-goog-api-key": googleAuth.value }
+						: { Authorization: `Bearer ${googleAuth.value}` }),
+				},
 				body: requestBody,
 			},
 		);
@@ -374,6 +405,22 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const json = await res.json().catch(() => ({}));
+	console.info("google_video_create_response", {
+		requestId: args.requestId,
+		teamId: args.teamId,
+		providerId: args.providerId,
+		model,
+		modelForMeta,
+		authKind: googleAuth.kind,
+		keySource: keyInfo.source,
+		upstreamStatus: res.status,
+		operationName: (json as any)?.name ?? null,
+		reservationId,
+		reservationStatus,
+		reservedNanos,
+		requestedSeconds,
+		size,
+	});
 	const irResponse = googleVideoToIR(
 		json,
 		args.requestId,
@@ -382,20 +429,32 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		requestedSeconds ?? undefined,
 	);
 	if (irResponse.nativeId) {
+		const operationName =
+			typeof (json as any)?.name === "string"
+				? (json as any).name
+				: typeof (json as any)?.operationName === "string"
+					? (json as any).operationName
+					: String(irResponse.nativeId);
 		try {
-			await saveVideoJobMeta(args.teamId, String(irResponse.nativeId), {
+			await saveVideoJobMeta(args.teamId, args.requestId, {
 				provider: args.providerId,
+				providerTaskId: operationName,
+				requestId: args.requestId,
+				sessionId: args.meta.sessionId ?? null,
+				appId: args.meta.appId ?? null,
 				model: modelForMeta,
 				seconds: toDurationSeconds(ir) ?? null,
 				resolution: size ?? null,
 				quality,
+				outputAccess: ir.outputAccess ?? "both",
+				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,
 				reservedNanos,
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			}, irResponse.status);
+			}, operationName, irResponse.status);
 		} catch (err) {
 			console.error("google_video_job_meta_store_failed", {
 				error: err,
@@ -422,4 +481,5 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 }
 
 export const executor: ProviderExecutor = execute;
+
 
