@@ -33,6 +33,10 @@ type OgPayload = {
 
 const brandLogoPath = "/wordmark_light.svg";
 const FALLBACK_HOST = "ai-stats.org";
+const ASSET_BASE_URL =
+	process.env.NEXT_PUBLIC_WEBSITE_URL ??
+	process.env.WEBSITE_URL ??
+	"http://localhost:3000";
 
 async function loadOrganisation(
 	supabase: SupabaseClient,
@@ -157,20 +161,17 @@ function isoToFlagEmoji(iso2: string): string {
 
 function absoluteAsset(
 	src: string | undefined,
-	request: NextRequest
 ): string | undefined {
 	if (!src) return undefined;
+	if (!src.startsWith("/") || src.startsWith("//")) return undefined;
 	try {
-		return new URL(src, request.url).toString();
+		return new URL(src, ASSET_BASE_URL).toString();
 	} catch {
 		return undefined;
 	}
 }
 
-function getLogoUrl(
-	logoId: string | undefined,
-	request: NextRequest
-): string | undefined {
+function getLogoUrl(logoId: string | undefined): string | undefined {
 	if (!logoId) return undefined;
 
 	// Prefer a visible logo variant on the light OG background.
@@ -195,7 +196,7 @@ function getLogoUrl(
 
 	if (!src) return undefined;
 
-	return absoluteAsset(src, request);
+	return absoluteAsset(src);
 }
 
 async function buildPayload(
@@ -305,10 +306,10 @@ export async function GET(
 	}
 
 	const primaryLogoSrc = !isCountry
-		? getLogoUrl(payload.logoId, request)
+		? getLogoUrl(payload.logoId)
 		: undefined;
 
-	const brandLogoSrc = absoluteAsset(brandLogoPath, request);
+	const brandLogoSrc = absoluteAsset(brandLogoPath);
 
 	const stats = payload.stats ?? [];
 	const titleFontSize = getTitleFontSize(payload.name);
