@@ -83,6 +83,17 @@ describe("google-ai-studio irToGemini", () => {
 		});
 	});
 
+	it("maps audio modality for Gemini responseModalities", async () => {
+		const request = await irToGemini({
+			model: "lyria-3-pro",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "Write and sing a short hook" }] }],
+			modalities: ["text", "audio"],
+		} as any);
+
+		expect(request.generationConfig?.responseModalities).toEqual(["TEXT", "AUDIO"]);
+	});
+
 	it("maps reasoning.effort to thinkingLevel for Gemini 3.1 image preview", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.1-flash-image-preview",

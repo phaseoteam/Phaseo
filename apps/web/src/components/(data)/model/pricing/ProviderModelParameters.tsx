@@ -4,15 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { ProviderModel } from "@/lib/fetchers/models/getModelPricing";
 import {
-	AudioLines,
-	Braces,
-	Dices,
-	Image as ImageIcon,
-	Settings2,
 	Sliders,
-	Shield,
-	SlidersHorizontal,
-	Wrench,
 } from "lucide-react";
 
 const META_KEYS = new Set([
@@ -94,53 +86,6 @@ function extractSupportedParameterNames(params: unknown): string[] {
 	return Array.from(found).sort((a, b) => a.localeCompare(b));
 }
 
-function iconForParamName(name: string) {
-	const n = name.toLowerCase();
-	if (
-		n.includes("temperature") ||
-		n.includes("top_p") ||
-		n.includes("topk") ||
-		n.includes("top_k") ||
-		n.includes("penalty")
-	) {
-		return SlidersHorizontal;
-	}
-	if (
-		n.includes("tool") ||
-		n.includes("function_call") ||
-		n.includes("parallel_tool")
-	) {
-		return Wrench;
-	}
-	if (
-		n.includes("response_format") ||
-		n.includes("json") ||
-		n.includes("schema") ||
-		n.includes("structured")
-	) {
-		return Braces;
-	}
-	if (n.includes("seed")) return Dices;
-	if (
-		n.includes("image") ||
-		n.includes("size") ||
-		n.includes("quality") ||
-		n.includes("style")
-	) {
-		return ImageIcon;
-	}
-	if (
-		n.includes("audio") ||
-		n.includes("voice") ||
-		n.includes("speech") ||
-		n.includes("sample_rate")
-	) {
-		return AudioLines;
-	}
-	if (n.includes("safe") || n.includes("moderation")) return Shield;
-	return Settings2;
-}
-
 type Combo = {
 	id: string;
 	title: string;
@@ -183,15 +128,11 @@ export default function ProviderModelParameters({
 					<p className="text-muted-foreground">Supported parameters</p>
 					<div className="max-h-72 overflow-auto pr-1">
 						<div className="flex flex-wrap gap-1.5">
-							{parameters.map((param) => {
-								const ParamIcon = iconForParamName(param);
-								return (
-									<Badge key={param} variant="outline" className="gap-1 text-[10px]">
-										<ParamIcon className="h-3 w-3" />
-										{prettifyParamName(param)}
-									</Badge>
-								);
-							})}
+							{parameters.map((param) => (
+								<Badge key={param} variant="outline" className="text-xs">
+									{prettifyParamName(param)}
+								</Badge>
+							))}
 						</div>
 					</div>
 				</div>

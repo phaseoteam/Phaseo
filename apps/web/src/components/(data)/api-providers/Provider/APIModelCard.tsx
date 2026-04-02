@@ -282,7 +282,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 							</span>
 						</button>
 					</HoverCardTrigger>
-					<HoverCardContent className="w-80">
+					<HoverCardContent className="w-80 text-xs">
 						<div className="space-y-2">
 							<div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
 								Supported endpoints
@@ -309,11 +309,11 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 								<span className="font-medium">Alias</span>
 							</button>
 						</HoverCardTrigger>
-						<HoverCardContent className="w-80">
+						<HoverCardContent className="w-80 text-xs">
 							<div className="space-y-2">
-								<div className="text-sm font-medium">Provider alias</div>
+								<div className="text-xs font-medium">Provider alias</div>
 								<div className="flex items-center gap-2">
-									<code className="font-mono text-sm break-all flex-1">
+									<code className="font-mono text-xs break-all flex-1">
 										{model.provider_model_slug}
 									</code>
 									<CopyButton

@@ -27,6 +27,11 @@ describe('auth error helpers', () => {
         expect(resolveCallbackErrorMessage(url)).toBe('Sign-in was cancelled or denied. Please try again.')
     })
 
+    it('maps SSO provider disabled errors to an explicit message', () => {
+        const url = new URL('https://example.com/auth/callback?error_code=saml_provider_disabled')
+        expect(resolveCallbackErrorMessage(url)).toBe('Enterprise SSO is configured but currently disabled.')
+    })
+
     it('builds an error redirect URL with a sanitized message', () => {
         const redirectUrl = buildAuthErrorRedirectUrl('https://example.com/auth/callback', '  Detailed failure  ')
 

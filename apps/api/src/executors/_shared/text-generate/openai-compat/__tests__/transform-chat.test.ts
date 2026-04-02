@@ -185,6 +185,45 @@ describe("openAIChatToIR", () => {
 			expect(ir.provider).toBe("openai");
 		});
 
+		it("maps cached and multimodal usage details into IR usage", () => {
+			const response = {
+				id: "chatcmpl_usage",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "gpt-4.1-mini",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "ok",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 120,
+					completion_tokens: 30,
+					total_tokens: 150,
+					input_tokens_details: {
+						cached_tokens: 70,
+						input_images: 4,
+					},
+					completion_tokens_details: {
+						reasoning_tokens: 11,
+						output_images: 2,
+					},
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_usage", "gpt-4.1-mini", "openai");
+			expect(ir.usage?.cachedInputTokens).toBe(70);
+			expect(ir.usage?.cachedReadTokensAreSubsetOfInput).toBe(true);
+			expect(ir.usage?.reasoningTokens).toBe(11);
+			expect(ir.usage?._ext?.inputImageTokens).toBe(4);
+			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
+		});
+
 		it("parses output_image blocks from structured message content", () => {
 			const response = {
 				id: "chatcmpl_img_1",
@@ -259,6 +298,60 @@ describe("openAIChatToIR", () => {
 			expect(imagePart).toBeDefined();
 			expect(imagePart.source).toBe("url");
 			expect(imagePart.data).toBe("https://example.com/generated.png");
+		});
+
+		it("parses output_audio blocks and message.audios into IR audio parts", () => {
+			const response = {
+				id: "chatcmpl_audio_1",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "lyria-3-pro",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: [
+								{ type: "output_text", text: "Here is your hook." },
+								{
+									type: "output_audio",
+									b64_json: "UklGRlIAAABXQVZFZm10",
+									format: "wav",
+								},
+							],
+							audios: [
+								{
+									type: "audio_url",
+									audio_url: { url: "https://example.com/hook.wav" },
+									format: "wav",
+								},
+							],
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 4,
+					total_tokens: 9,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_audio_1", "lyria-3-pro", "google-ai-studio");
+			const audioParts = ir.choices[0].message.content.filter((p) => p.type === "audio") as Array<any>;
+			expect(audioParts).toHaveLength(2);
+			expect(audioParts[0]).toMatchObject({
+				type: "audio",
+				source: "data",
+				data: "UklGRlIAAABXQVZFZm10",
+				format: "wav",
+			});
+			expect(audioParts[1]).toMatchObject({
+				type: "audio",
+				source: "url",
+				data: "https://example.com/hook.wav",
+				format: "wav",
+			});
 		});
 
 		it("should handle tool calls", () => {

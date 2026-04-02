@@ -6,10 +6,13 @@ interface ModelDetail {
 interface OtherInfoProps {
 	// Accept the older single value for compatibility, or an array of detail objects
 	details?: ModelDetail[] | null;
+	showHeading?: boolean;
 }
 
-export default function OtherInfo({ details }: OtherInfoProps) {
-	// Normalize incoming details into a map for easy lookup
+export default function OtherInfo({
+	details,
+	showHeading = true,
+}: OtherInfoProps) {
 	const detailsMap: Record<string, string> = {};
 	if (Array.isArray(details)) {
 		for (const d of details) {
@@ -20,10 +23,8 @@ export default function OtherInfo({ details }: OtherInfoProps) {
 		}
 	}
 
-	// Helper to resolve either the legacy single `details` prop or value from detailsMap
 	const resolve = (key: string) => {
 		if (!Array.isArray(details)) {
-			// legacy behavior: details might be a raw count or string; return as-is for parameterCount
 			if (
 				key === "parameter_count" &&
 				(typeof details === "number" || typeof details === "string")
@@ -34,13 +35,11 @@ export default function OtherInfo({ details }: OtherInfoProps) {
 		}
 		return detailsMap[key];
 	};
+
 	const formatCount = (value?: number | string) => {
-		// Explicitly bail out on empty‐string, null or undefined
-		if (value === "" || value == null || value === 0) return "-";
+		if (value === "" || value == null || value === 0) return null;
 		const num = Number(value);
-		// If it’s not a finite number, also bail out
-		if (!Number.isFinite(num)) return "-";
-		// Otherwise format it
+		if (!Number.isFinite(num)) return null;
 		return num.toLocaleString();
 	};
 
@@ -48,32 +47,44 @@ export default function OtherInfo({ details }: OtherInfoProps) {
 	const license = resolve("license");
 	const trainingTokens = resolve("training_tokens");
 
+	const items = [
+		{
+			key: "parameters",
+			label: "Parameters",
+			value: formatCount(parameterCount),
+		},
+		{
+			key: "license",
+			label: "License",
+			value: license && license.trim().length > 0 ? license : null,
+		},
+		{
+			key: "training_tokens",
+			label: "Training Tokens",
+			value: formatCount(trainingTokens),
+		},
+	].filter((item) => Boolean(item.value));
+	const hasSingleItem = items.length === 1;
+
+	if (items.length === 0) return null;
+
 	return (
-		<section>
-			<h2 className="text-xl font-semibold mb-4">Other Info</h2>
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
-					<span className="text-xl font-bold">
-						{formatCount(parameterCount)}
-					</span>
-					<span className="text-sm font-medium text-gray-500 mt-1">
-						Parameters
-					</span>
-				</div>
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
-					<span className="text-xl font-bold">{license || "-"}</span>
-					<span className="text-sm font-medium text-gray-500 mt-1">
-						License
-					</span>
-				</div>
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
-					<span className="text-xl font-bold">
-						{formatCount(trainingTokens)}
-					</span>
-					<span className="text-sm font-medium text-gray-500 mt-1">
-						Training Tokens
-					</span>
-				</div>
+		<section className="space-y-2">
+			{showHeading ? <h3 className="text-base font-semibold">Other Info</h3> : null}
+			<div className="flex flex-wrap gap-2">
+				{items.map((item) => (
+					<div
+						key={item.key}
+						className={
+							hasSingleItem
+								? "w-full max-w-sm rounded-md border border-border/70 bg-muted/20 px-3 py-2"
+								: "min-w-[12rem] rounded-md border border-border/70 bg-muted/20 px-3 py-2"
+						}
+					>
+						<p className="text-xs text-muted-foreground">{item.label}</p>
+						<p className="mt-1 text-sm font-semibold">{item.value}</p>
+					</div>
+				))}
 			</div>
 		</section>
 	);

@@ -1,12 +1,16 @@
 {
 	"name": "@ai-stats/csharp-sdk",
-	"version": "1.0.1",
+	"version": "1.1.1",
 	"private": true,
 	"description": "AI Stats C# SDK (preview) - generated client with models wrapper",
 	"license": "MIT",
 	"scripts": {
 		"postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/csharp-sdk",
+		"build": "dotnet build AIStats.Sdk.csproj -c Release",
+		"test": "dotnet test tests/AIStats.Sdk.Tests/AIStats.Sdk.Tests.csproj -c Release",
+		"pack": "dotnet pack AIStats.Sdk.csproj -c Release -o artifacts",
 		"smoke:chat": "dotenv -e .env.local -- dotnet run --project tests/SmokeChat/SmokeChat.csproj",
-		"smoke:responses": "dotenv -e .env.local -- dotnet run --project tests/SmokeChat/SmokeChat.csproj -- responses"
+		"smoke:responses": "dotenv -e .env.local -- dotnet run --project tests/SmokeChat/SmokeChat.csproj -- responses",
+		"smoke:responses:sdk": "dotenv -e .env.local -- dotnet run --project tests/SmokeChat/SmokeChat.csproj -- responses"
 	}
 }

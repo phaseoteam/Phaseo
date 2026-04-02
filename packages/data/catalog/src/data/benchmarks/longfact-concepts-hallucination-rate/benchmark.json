@@ -1,0 +1,8 @@
+{
+  "benchmark_id": "longfact-concepts-hallucination-rate",
+  "benchmark_name": "LongFact-Concepts hallucination rate",
+  "category": "hallucinations",
+  "ascending_order": true,
+  "link": null,
+  "total_models": 0
+}

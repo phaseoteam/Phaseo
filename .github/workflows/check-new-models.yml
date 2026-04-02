@@ -57,6 +57,32 @@ jobs:
                     --webhook-url "${{ secrets.DISCORD_WEBHOOK_URL }}" \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
+                    --skip-hf
+
+            - name: Check for new external provider models
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+                  DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+                  AION_LABS_API_KEY: ${{ secrets.AION_LABS_API_KEY }}
+                  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+                  ARCEE_AI_API_KEY: ${{ secrets.ARCEE_AI_API_KEY }}
+              run: |
+                  if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ]; then
+                    echo "Skipping external provider model check: missing Supabase secrets."
+                    exit 0
+                  fi
+                  pnpm exec tsx scripts/model-discovery/run.ts
+
+            - name: Check for new external Hugging Face models
+              run: |
+                  pnpm exec tsx scripts/model-discovery/run-internal.ts \
+                    --webhook-url "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+                    --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
+                    --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
+                    --skip-internal \
                     --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
                     --hf-token "${{ secrets.HF_TOKEN }}"
 

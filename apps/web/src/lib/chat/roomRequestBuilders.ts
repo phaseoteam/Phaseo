@@ -40,6 +40,13 @@ export type EmbeddingContentPart =
 	| { type: "input_audio"; input_audio: { data?: string; url?: string; format?: string } }
 	| { type: "input_video"; url: string | { url: string } };
 
+export function splitEmbeddingTextInput(text: string): string[] {
+	return text
+		.split(/\r?\n/g)
+		.map((line) => line.trim())
+		.filter(Boolean);
+}
+
 export function buildEmbeddingsMultimodalInput(parts: EmbeddingContentPart[]) {
 	return {
 		content: parts,
@@ -60,13 +67,50 @@ export function extractGenerationUrls(payload: any): string[] {
 	addUrl(payload?.audio_url);
 	addUrl(payload?.content_url);
 	addUrl(payload?.result_url);
+	addUrl(payload?.video?.url);
+	addUrl(payload?.result?.url);
 
 	if (Array.isArray(payload?.data)) {
 		for (const entry of payload.data) {
 			addUrl(entry?.url);
+			addUrl(entry?.uri);
+			addUrl(entry?.video_url);
+			addUrl(entry?.content_url);
+			addUrl(entry?.result_url);
+			addUrl(entry?.video?.url);
 			if (typeof entry?.b64_json === "string" && entry.b64_json.trim()) {
 				addUrl(`data:image/png;base64,${entry.b64_json}`);
 			}
+		}
+	}
+	if (Array.isArray(payload?.output)) {
+		for (const entry of payload.output) {
+			addUrl(entry?.url);
+			addUrl(entry?.uri);
+			addUrl(entry?.video_url);
+			addUrl(entry?.content_url);
+			addUrl(entry?.result_url);
+			addUrl(entry?.video?.url);
+		}
+	}
+	if (Array.isArray(payload?.result?.output)) {
+		for (const entry of payload.result.output) {
+			addUrl(entry?.url);
+			addUrl(entry?.uri);
+			addUrl(entry?.video_url);
+			addUrl(entry?.content_url);
+			addUrl(entry?.result_url);
+			addUrl(entry?.video?.url);
+		}
+	}
+	if (
+		Array.isArray(
+			payload?.response?.generateVideoResponse?.generatedSamples,
+		)
+	) {
+		for (const entry of payload.response.generateVideoResponse.generatedSamples) {
+			addUrl(entry?.video?.uri);
+			addUrl(entry?.video?.url);
 		}
 	}
 
@@ -77,6 +121,7 @@ export type NormalizedModerationResult = {
 	flagged: boolean;
 	categories: Record<string, boolean>;
 	categoryScores: Record<string, number>;
+	categoryAppliedInputTypes: Record<string, Array<"text" | "image">>;
 	raw: unknown;
 };
 
@@ -94,10 +139,28 @@ export function normalizeModerationResult(
 		result.category_scores && typeof result.category_scores === "object"
 			? (result.category_scores as Record<string, number>)
 			: {};
+	const categoryAppliedInputTypes =
+		result.category_applied_input_types &&
+		typeof result.category_applied_input_types === "object"
+			? Object.fromEntries(
+					Object.entries(
+						result.category_applied_input_types as Record<string, unknown>,
+					).map(([category, value]) => [
+						category,
+						Array.isArray(value)
+							? value.filter(
+									(type): type is "text" | "image" =>
+										type === "text" || type === "image",
+								)
+							: [],
+					]),
+				)
+			: {};
 	return {
 		flagged: Boolean(result.flagged),
 		categories,
 		categoryScores,
+		categoryAppliedInputTypes,
 		raw: result,
 	};
 }

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
 )
 
 type operation struct {
@@ -57,7 +57,7 @@ func TestSmokeSuite(t *testing.T) {
 		baseURL = strings.TrimRight(m.DefaultBaseUrl, "/")
 	}
 
-	client := New(apiKey, baseURL)
+	client := NewAIStats(apiKey, baseURL)
 	ctx := context.Background()
 
 	healthOp := m.Operations["health"]

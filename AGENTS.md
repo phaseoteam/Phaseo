@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - Monorepo managed by pnpm + turbo: `apps/web` (Next.js 15 App Router, Tailwind UI in `src/components` and `components/ui`), `apps/api` (Cloudflare Workers + Hono), `apps/docs` (Mintlify site).
 - SDKs: `packages/sdk-ts` TypeScript client (`src`, generated `src/gen`, builds to `dist`); `packages/sdk-py` Python client (`src`, tests in `packages/sdk-py/tests`).
-- Shared tooling lives in `scripts/`, release metadata in `.changeset/`; web data/benchmarks sit under `apps/web/src/data` with Jest cases nearby.
+- Shared tooling lives in `scripts/`, release metadata in `.changeset/`; canonical data/benchmarks sit under `packages/data/catalog/src/data` with Jest cases nearby.
 
 ## Build, Test, and Development Commands
 - Install: `pnpm install` (Node >=20).
@@ -28,6 +28,7 @@
 ## Commit & Pull Request Guidelines
 - Commit subjects in history are short, descriptive, and scoped. Add a `.changeset` entry when shipping SDK/API/web changes that should version.
 - Never commit directly to `main`. Always work on a branch, open a PR, and merge via the PR flow.
+- Never enable PR auto-merge (for example `gh pr merge --auto`) unless the user has explicitly approved auto-merge for that PR.
 - PRs: describe intent and scope, list commands run (lint/typecheck/build/tests/validations), link issues, and include screenshots or notes for UI changes.
 - When creating/editing PR descriptions via CLI/API, use real multiline Markdown (or a body file). Do not submit escaped newline text like `\n` in the final PR body.
 

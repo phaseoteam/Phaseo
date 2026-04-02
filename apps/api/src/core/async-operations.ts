@@ -10,6 +10,9 @@ export type AsyncOperationRecord = {
 	teamId: string;
 	kind: AsyncOperationKind;
 	internalId: string;
+	requestId: string | null;
+	sessionId: string | null;
+	appId: string | null;
 	provider: string | null;
 	nativeId: string | null;
 	model: string | null;
@@ -24,6 +27,9 @@ type AsyncOperationRow = {
 	team_id: string;
 	kind: AsyncOperationKind;
 	internal_id: string;
+	request_id: string | null;
+	session_id: string | null;
+	app_id: string | null;
 	provider: string | null;
 	native_id: string | null;
 	model: string | null;
@@ -40,6 +46,14 @@ function normalizeText(value: unknown): string | null {
 	return trimmed.length > 0 ? trimmed : null;
 }
 
+function normalizeUuid(value: unknown): string | null {
+	const text = normalizeText(value);
+	if (!text) return null;
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)
+		? text
+		: null;
+}
+
 function normalizeMeta(value: unknown): Record<string, unknown> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 	return value as Record<string, unknown>;
@@ -50,6 +64,9 @@ function mapRow(row: AsyncOperationRow): AsyncOperationRecord {
 		teamId: row.team_id,
 		kind: row.kind,
 		internalId: row.internal_id,
+		requestId: row.request_id ?? null,
+		sessionId: row.session_id ?? null,
+		appId: row.app_id ?? null,
 		provider: row.provider,
 		nativeId: row.native_id,
 		model: row.model,
@@ -65,6 +82,9 @@ export async function upsertAsyncOperation(args: {
 	teamId: string;
 	kind: AsyncOperationKind;
 	internalId: string;
+	requestId?: string | null;
+	sessionId?: string | null;
+	appId?: string | null;
 	provider?: string | null;
 	nativeId?: string | null;
 	model?: string | null;
@@ -80,6 +100,9 @@ export async function upsertAsyncOperation(args: {
 		team_id: teamId,
 		kind: args.kind,
 		internal_id: internalId,
+		request_id: normalizeText(args.requestId) ?? null,
+		session_id: normalizeText(args.sessionId) ?? null,
+		app_id: normalizeUuid(args.appId) ?? null,
 		provider: normalizeText(args.provider) ?? null,
 		native_id: normalizeText(args.nativeId) ?? null,
 		model: normalizeText(args.model) ?? null,
@@ -105,7 +128,7 @@ export async function listAsyncOperations(args: {
 	let query = getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
 		.eq("kind", args.kind)
 		.order("updated_at", { ascending: true })
@@ -136,6 +159,40 @@ export async function listAsyncOperations(args: {
 	return (data ?? []).map((row) => mapRow(row as AsyncOperationRow));
 }
 
+export async function listTeamAsyncOperations(args: {
+	teamId: string;
+	kind: AsyncOperationKind;
+	limit?: number;
+	statuses?: string[];
+}): Promise<AsyncOperationRecord[]> {
+	const teamId = normalizeText(args.teamId);
+	if (!teamId) return [];
+	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
+
+	let query = getSupabaseAdmin()
+		.from("gateway_async_operations")
+		.select(
+			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+		)
+		.eq("team_id", teamId)
+		.eq("kind", args.kind)
+		.order("updated_at", { ascending: false })
+		.limit(limit);
+
+	if (args.statuses && args.statuses.length > 0) {
+		const statuses = args.statuses
+			.map((value) => normalizeText(value))
+			.filter((value): value is string => Boolean(value));
+		if (statuses.length > 0) {
+			query = query.in("status", statuses);
+		}
+	}
+
+	const { data, error } = await query;
+	if (error) throw error;
+	return (data ?? []).map((row) => mapRow(row as AsyncOperationRow));
+}
+
 export async function getAsyncOperation(
 	teamIdRaw: string,
 	kind: AsyncOperationKind,
@@ -148,7 +205,7 @@ export async function getAsyncOperation(
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
 		.eq("team_id", teamId)
 		.eq("kind", kind)
@@ -171,7 +228,7 @@ export async function findAsyncOperationByNativeId(
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
 		.eq("kind", kind)
 		.eq("provider", provider)
@@ -279,3 +336,43 @@ export async function setAsyncOperationStatus(args: {
 		.eq("internal_id", internalId);
 	if (error) throw error;
 }
+
+export async function patchAsyncOperationMeta(args: {
+	teamId: string;
+	kind: AsyncOperationKind;
+	internalId: string;
+	metaPatch: Record<string, unknown>;
+}): Promise<void> {
+	const teamId = normalizeText(args.teamId);
+	const internalId = normalizeText(args.internalId);
+	if (!teamId || !internalId) return;
+	if (!args.metaPatch || typeof args.metaPatch !== "object" || Array.isArray(args.metaPatch)) return;
+
+	const { data: existing, error: readError } = await getSupabaseAdmin()
+		.from("gateway_async_operations")
+		.select("meta")
+		.eq("team_id", teamId)
+		.eq("kind", args.kind)
+		.eq("internal_id", internalId)
+		.maybeSingle();
+	if (readError) throw readError;
+
+	const now = new Date().toISOString();
+	const currentMeta = normalizeMeta((existing as { meta?: unknown } | null)?.meta);
+	const mergedMeta = {
+		...currentMeta,
+		...args.metaPatch,
+	};
+
+	const { error } = await getSupabaseAdmin()
+		.from("gateway_async_operations")
+		.update({
+			meta: mergedMeta,
+			updated_at: now,
+		})
+		.eq("team_id", teamId)
+		.eq("kind", args.kind)
+		.eq("internal_id", internalId);
+	if (error) throw error;
+}
+

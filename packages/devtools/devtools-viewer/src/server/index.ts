@@ -29,6 +29,33 @@ const resolveDevtoolsDir = () =>
 let devtoolsDir = resolveDevtoolsDir();
 let writer = new DevToolsWriter(devtoolsDir);
 
+function getGatewayRequestId(entry: DevToolsEntry): string | undefined {
+  const response = entry.response;
+  if (!response || typeof response !== "object") {
+    return undefined;
+  }
+
+  const responseRecord = response as Record<string, unknown>;
+  const metadata = responseRecord.metadata;
+  if (metadata && typeof metadata === "object") {
+    const gatewayId = (metadata as Record<string, unknown>).aistats_request_id;
+    if (typeof gatewayId === "string" && gatewayId.trim().length > 0) {
+      return gatewayId;
+    }
+  }
+
+  const requestId = responseRecord.request_id;
+  if (typeof requestId === "string" && requestId.trim().length > 0) {
+    return requestId;
+  }
+
+  return undefined;
+}
+
+function matchesGenerationLookupId(entry: DevToolsEntry, lookupId: string): boolean {
+  return entry.id === lookupId || getGatewayRequestId(entry) === lookupId;
+}
+
 /**
  * API Routes
  */
@@ -82,9 +109,9 @@ app.get("/api/generations", (c) => {
 // Get a specific generation by ID
 app.get("/api/generations/:id", (c) => {
   try {
-    const id = c.req.param("id");
+    const lookupId = c.req.param("id");
     const entries = writer.readEntries();
-    const entry = entries.find((e) => e.id === id);
+    const entry = entries.find((e) => matchesGenerationLookupId(e, lookupId));
 
     if (!entry) {
       return c.json({ error: "Generation not found" }, 404);

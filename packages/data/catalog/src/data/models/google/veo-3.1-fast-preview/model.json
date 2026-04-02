@@ -1,0 +1,18 @@
+{
+  "model_id": "google/veo-3.1-fast-preview",
+  "organisation_id": "google",
+  "name": "Veo 3.1 Fast Preview",
+  "status": "Available",
+  "previous_model_id": "google/veo-3-0-fast-generate-preview-2025-07-17",
+  "announced_date": "2025-10-15T00:00:00",
+  "release_date": "2025-10-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/veo-3.1-fast-preview",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

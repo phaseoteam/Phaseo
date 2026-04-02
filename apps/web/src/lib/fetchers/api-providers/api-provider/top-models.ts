@@ -77,10 +77,12 @@ export async function getTopModelsCached(
     includeHidden: boolean,
     count: number = 6
 ): Promise<ModelStats[]> {
-    "use cache";
+	"use cache";
 
-    cacheLife("hours");
-    cacheTag("data:top_models");
+	cacheLife("hours");
+	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
+	cacheTag("data:top_models");
 
     console.log(`[fetch] HIT JSON for top models - ${apiProviderId}`);
     return getTopModels(apiProviderId, includeHidden, count);

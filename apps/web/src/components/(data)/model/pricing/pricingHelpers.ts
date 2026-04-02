@@ -3,7 +3,7 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 /* ---------- shared types ---------- */
 export type Direction = "input" | "output" | "cached" | "cachewrite" | "other";
 export type Modality = "text" | "image" | "audio" | "video" | "embeddings" | "multimodal" | "other";
-export type UnitClass = "token" | "image" | "minute" | "second" | "call" | "character" | "unknown";
+export type UnitClass = "token" | "image" | "video" | "minute" | "second" | "call" | "character" | "unknown";
 
 export type Condition = { op: string; path: string; value: any; or_group?: number; and_index?: number };
 
@@ -12,6 +12,7 @@ export type TokenTier = {
     price: number;
     label: string; // range or condition label
     basePer1M?: number | null;
+    basePrice?: number | null;
     discountEndsAt?: string | null;
     endpoint?: string | null;
     effFrom?: string | null;
@@ -20,10 +21,29 @@ export type TokenTier = {
     isCurrent: boolean;
 };
 
-export type TokenTriple = { in: TokenTier[]; cached: TokenTier[]; out: TokenTier[]; };
+export type TokenTriple = {
+    in: TokenTier[];
+    cached: TokenTier[];
+    write: TokenTier[];
+    out: TokenTier[];
+};
 
-export type QualityRow = { quality: string; items: { label: string; price: number }[]; };
-export type ResolutionRow = { resolution: string; unitLabel: string; price: number };
+export type QualityRow = {
+    quality: string;
+    items: {
+        label: string;
+        price: number;
+        basePrice?: number | null;
+        discountEndsAt?: string | null;
+    }[];
+};
+export type ResolutionRow = {
+    resolution: string;
+    unitLabel: string;
+    price: number;
+    basePrice?: number | null;
+    discountEndsAt?: string | null;
+};
 export type UsageRow = {
     label: string;
     price: number;
@@ -36,6 +56,30 @@ export type UsageRow = {
     isCurrent: boolean;
 };
 
+export type PricingSectionKey =
+    | "textTokens"
+    | "requests"
+    | "imageInputs"
+    | "videoInputs"
+    | "imageTokens"
+    | "imageGen"
+    | "audioTokens"
+    | "videoTokens"
+    | "videoGen"
+    | "other";
+
+export type UpcomingPricingChange = {
+    sectionKey: PricingSectionKey;
+    title: string;
+    subtitle?: string | null;
+    price: number;
+    currentPrice?: number | null;
+    unitLabel: string;
+    effectiveFrom: string;
+    endpoint?: string | null;
+    trend?: "up" | "down" | "flat" | null;
+};
+
 export type ProviderSections = {
     providerName: string;
     providerId: string;
@@ -43,11 +87,11 @@ export type ProviderSections = {
     imageTokens?: TokenTriple;
     audioTokens?: TokenTriple;
     videoTokens?: TokenTriple;
-    cacheWrites?: TokenTier[];               // NEW: cached_write_text_tokens etc.
     imageGen?: QualityRow[];
     videoGen?: ResolutionRow[];
     mediaInputs?: UsageRow[];                // NEW: input_image, input_video_seconds
     requests?: TokenTier[];                  // NEW: requests pricing
+    upcomingChanges?: UpcomingPricingChange[];
     otherRules: {
         meter: string;
         unitLabel: string;
@@ -77,6 +121,7 @@ export function unitLabel(unit: UnitClass, unitSize?: number | null) {
     switch (unit) {
         case "token": return "Per 1M tokens";
         case "image": return u === 1 ? "Per image" : `Per ${u} images`;
+        case "video": return u === 1 ? "Per video" : `Per ${u} videos`;
         case "second": return u === 1 ? "Per second" : `Per ${u} seconds`;
         case "minute": return u === 1 ? "Per minute" : `Per ${u} minutes`;
         case "call": return u === 1 ? "Per call" : `Per ${u} calls`;
@@ -97,8 +142,9 @@ export function isCurrentWindow(effFrom?: string | null, effTo?: string | null) 
 }
 
 /* ---------- parsing & labels ---------- */
-export function parseMeter(meter?: string): { dir: Direction; mod: Modality; unit: UnitClass; raw: string } {
+export function parseMeter(meter?: string, explicitUnit?: string | null): { dir: Direction; mod: Modality; unit: UnitClass; raw: string } {
     const m = (meter || "").toLowerCase();
+    const u = (explicitUnit || "").toLowerCase();
     let dir: Direction = "other";
     if (m.startsWith("input")) dir = "input";
     else if (m.startsWith("output")) dir = "output";
@@ -114,12 +160,20 @@ export function parseMeter(meter?: string): { dir: Direction; mod: Modality; uni
                             m.includes("multimodal") ? "multimodal" : "other";
 
     const unit: UnitClass =
-        m.includes("token") ? "token" :
-            (m.includes("image") && !m.includes("tokens")) ? "image" :
-                m.includes("minute") ? "minute" :
-                    m.includes("second") ? "second" :
-                        m.includes("character") ? "character" :
-                            (m.includes("call") || m.includes("request")) ? "call" : "unknown";
+        u.includes("token") ? "token" :
+            u.includes("image") ? "image" :
+                (u.includes("video") || u.includes("clip")) ? "video" :
+                    u.includes("minute") ? "minute" :
+                        u.includes("second") ? "second" :
+                            u.includes("character") ? "character" :
+                                (u.includes("call") || u.includes("request")) ? "call" :
+                                    m.includes("token") ? "token" :
+                                        (m.includes("image") && !m.includes("tokens")) ? "image" :
+                                            m.includes("video") ? "video" :
+                                                m.includes("minute") ? "minute" :
+                                                    m.includes("second") ? "second" :
+                                                        m.includes("character") ? "character" :
+                                                            (m.includes("call") || m.includes("request")) ? "call" : "unknown";
 
     return { dir, mod, unit, raw: m };
 }
@@ -187,6 +241,9 @@ function normaliseResolutionValues(val: any): string[] {
         }
         return [s.replace(/['"]/g, "")];
     }
+    if (typeof val === "number" || typeof val === "boolean") {
+        return [String(val)];
+    }
     return [];
 }
 export function extractResolutionLabels(conds?: Condition[] | null): string[] {
@@ -196,12 +253,189 @@ export function extractResolutionLabels(conds?: Condition[] | null): string[] {
     return normaliseResolutionValues(c.value);
 }
 
+function extractVideoDurationLabels(conds?: Condition[] | null): string[] {
+    if (!conds?.length) return [];
+    const c = conds.find((x) => {
+        const path = String(x.path).toLowerCase();
+        return path.includes("seconds") || path.includes("duration");
+    });
+    if (!c) return [];
+    return normaliseResolutionValues(c.value)
+        .map((value) => {
+            const n = Number(value);
+            if (!Number.isFinite(n)) return `${String(value).trim()}s`;
+            return `${n}s`;
+        })
+        .filter(Boolean);
+}
+
 export function qualityRank(q: string) {
     const s = q.toLowerCase();
     if (s.includes("low")) return 0;
     if (s.includes("medium") || s.includes("med")) return 1;
     if (s.includes("high")) return 2;
     return 99;
+}
+
+function directionLabel(dir: Direction): string | null {
+    if (dir === "input") return "Input";
+    if (dir === "output") return "Output";
+    if (dir === "cached") return "Cache Reads";
+    if (dir === "cachewrite") return "Cache Writes";
+    return null;
+}
+
+function modalityLabel(mod: Modality): string | null {
+    if (mod === "text") return "Text";
+    if (mod === "image") return "Image";
+    if (mod === "audio") return "Audio";
+    if (mod === "video") return "Video";
+    if (mod === "embeddings") return "Embeddings";
+    if (mod === "multimodal") return "Multimodal";
+    return null;
+}
+
+function buildUpcomingChangeLabels(rule: any): {
+    sectionKey: PricingSectionKey;
+    title: string;
+    subtitle?: string | null;
+} {
+    const { dir, mod, unit } = parseMeter(rule.meter || "", rule.unit || "");
+    const conds: Condition[] = Array.isArray(rule.match)
+        ? rule.match.map((m: any) => ({
+            op: String(m.op ?? ""),
+            path: String(m.path ?? ""),
+            value: m.value,
+            or_group: m.or_group,
+            and_index: m.and_index,
+        }))
+        : [];
+
+    if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
+        const modLabel = modalityLabel(mod) ?? "Token";
+        const scope = tokenRangeFromConditions(conds) ?? conciseConditionLabel(conds);
+        return {
+            sectionKey:
+                mod === "text"
+                    ? "textTokens"
+                    : mod === "image"
+                    ? "imageTokens"
+                    : mod === "audio"
+                    ? "audioTokens"
+                    : mod === "video"
+                    ? "videoTokens"
+                    : "other",
+            title: `${modLabel} Tokens${directionLabel(dir) ? ` · ${directionLabel(dir)}` : ""}`,
+            subtitle: scope === "All usage" ? null : scope,
+        };
+    }
+
+    if (mod === "image" && dir === "output" && unit === "image") {
+        const qualityCondition = conds.find((c) => c.path.toLowerCase().includes("quality"));
+        const resVals = extractResolutionLabels(conds);
+        const quality = qualityCondition?.value ? String(qualityCondition.value) : null;
+        const resolution = resVals.length ? resVals.join(" / ") : null;
+        return {
+            sectionKey: "imageGen",
+            title: "Image Generation",
+            subtitle: [quality, resolution].filter(Boolean).join(" · ") || null,
+        };
+    }
+
+    if (mod === "video" && dir === "output" && (unit === "second" || unit === "minute" || unit === "video")) {
+        const resVals = extractResolutionLabels(conds);
+        const durations = extractVideoDurationLabels(conds);
+        let subtitle: string | null = null;
+        if (resVals.length && durations.length) subtitle = `${resVals.join(" / ")} · ${durations.join(" / ")}`;
+        else if (resVals.length) subtitle = resVals.join(" / ");
+        else if (durations.length) subtitle = durations.join(" / ");
+        return { sectionKey: "videoGen", title: "Video Generation", subtitle };
+    }
+
+    if (unit === "call" && String(rule.meter || "").toLowerCase().includes("request")) {
+        const scope = conciseConditionLabel(conds);
+        return {
+            sectionKey: "requests",
+            title: "Requests",
+            subtitle: scope === "All usage" ? null : scope,
+        };
+    }
+
+    if (
+        dir === "input" &&
+        ((mod === "image" && unit === "image") || (mod === "video" && (unit === "second" || unit === "minute")))
+    ) {
+        const scope = conciseConditionLabel(conds);
+        return {
+            sectionKey: mod === "image" ? "imageInputs" : "videoInputs",
+            title: `${modalityLabel(mod) ?? "Media"} Inputs`,
+            subtitle: scope === "All usage" ? null : scope,
+        };
+    }
+
+    const fallbackScope = conciseConditionLabel(conds);
+    return {
+        sectionKey: "other",
+        title: formatMeterName(rule.meter || "Other"),
+        subtitle: fallbackScope === "All usage" ? null : fallbackScope,
+    };
+}
+
+function ruleConditions(rule: any): Condition[] {
+    return Array.isArray(rule?.match)
+        ? rule.match.map((m: any) => ({
+            op: String(m.op ?? "").toLowerCase(),
+            path: String(m.path ?? "").toLowerCase(),
+            value: m.value,
+            or_group: m.or_group,
+            and_index: m.and_index,
+        }))
+        : [];
+}
+
+function normalizeConditionValues(value: any): string[] {
+    if (Array.isArray(value)) return value.map((v) => String(v).toLowerCase());
+    if (typeof value === "string") return normaliseResolutionValues(value).map((v) => String(v).toLowerCase());
+    if (typeof value === "number" || typeof value === "boolean") return [String(value).toLowerCase()];
+    return [];
+}
+
+function conditionCovers(candidate: Condition, target: Condition): boolean {
+    if ((candidate.path ?? "").toLowerCase() !== (target.path ?? "").toLowerCase()) return false;
+    const cOp = String(candidate.op ?? "").toLowerCase();
+    const tOp = String(target.op ?? "").toLowerCase();
+    const cVals = normalizeConditionValues(candidate.value);
+    const tVals = normalizeConditionValues(target.value);
+
+    if (tOp === "eq") {
+        const wanted = tVals[0];
+        if (!wanted) return false;
+        if (cOp === "eq") return cVals[0] === wanted;
+        if (cOp === "in") return cVals.includes(wanted);
+        return false;
+    }
+
+    if (tOp === "in") {
+        if (!tVals.length) return false;
+        if (cOp === "in") return tVals.every((v) => cVals.includes(v));
+        if (cOp === "eq") return tVals.length === 1 && cVals[0] === tVals[0];
+        return false;
+    }
+
+    return (
+        cOp === tOp &&
+        JSON.stringify(candidate.value) === JSON.stringify(target.value)
+    );
+}
+
+function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
+    const targetConds = ruleConditions(targetRule);
+    if (!targetConds.length) return true;
+    const candidateConds = ruleConditions(candidateRule);
+    if (!candidateConds.length) return false;
+    return targetConds.every((targetCond) =>
+        candidateConds.some((candidateCond) => conditionCovers(candidateCond, targetCond))
+    );
 }
 
 /* ---------- section builder (uses fixes) ---------- */
@@ -242,10 +476,24 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         if (to !== null && to <= nowMs) return false;
         return true;
     };
-    const isUpcomingRule = (r: any) => {
-        const from = toMs(r.effective_from);
-        return from !== null && from > nowMs;
+    const sortByPriorityAndFromDesc = (a: any, b: any) => {
+        if (a.priority !== b.priority) return b.priority - a.priority;
+        const aFrom = toMs(a.effective_from);
+        const bFrom = toMs(b.effective_from);
+        return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
     };
+    const ruleSignature = (r: any) => {
+        const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
+        return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
+    };
+    const currentRulesBySignature = new Map<string, any[]>();
+    for (const r of rules as any[]) {
+        if (!isCurrentRule(r)) continue;
+        const sig = ruleSignature(r);
+        const list = currentRulesBySignature.get(sig) ?? [];
+        list.push(r);
+        currentRulesBySignature.set(sig, list);
+    }
 
     for (const r of rules as any[]) {
         const endpoint = endpointByKey.get(r.model_key) ?? null;
@@ -256,42 +504,87 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     }
 
     const entries: RuleEntry[] = [];
+    const upcomingChanges: UpcomingPricingChange[] = [];
     for (const [groupKey, group] of grouped) {
         const currentRules = group.filter(isCurrentRule);
-        const upcomingRules = group.filter(isUpcomingRule);
-        const selectionMode = currentRules.length
-            ? "current"
-            : upcomingRules.length
-            ? "upcoming"
-            : "fallback";
-        const candidates =
-            selectionMode === "current"
-                ? currentRules
-                : selectionMode === "upcoming"
-                ? upcomingRules
-                : group;
-        const sorted = [...candidates].sort((a, b) => {
-            if (a.priority !== b.priority) return b.priority - a.priority;
-            const aFrom = toMs(a.effective_from);
-            const bFrom = toMs(b.effective_from);
-            if (selectionMode === "upcoming") {
-                return (aFrom ?? Infinity) - (bFrom ?? Infinity);
+        const upcomingRules = group
+            .filter((r) => {
+                const from = toMs(r.effective_from);
+                return from !== null && from > nowMs;
+            })
+            .sort((a, b) => {
+                const aFrom = toMs(a.effective_from) ?? Infinity;
+                const bFrom = toMs(b.effective_from) ?? Infinity;
+                if (aFrom !== bFrom) return aFrom - bFrom;
+                if (a.priority !== b.priority) return b.priority - a.priority;
+                return 0;
+            });
+        const nextUpcoming = upcomingRules[0];
+
+        if (nextUpcoming?.effective_from) {
+            const { sectionKey, title, subtitle } = buildUpcomingChangeLabels(nextUpcoming);
+            const nextPriceRaw = Number(nextUpcoming.price_per_unit ?? Number.NaN);
+            const nextPrice = Number.isFinite(nextPriceRaw) ? nextPriceRaw : null;
+            const exactCurrentCandidate = [...currentRules].sort(sortByPriorityAndFromDesc)[0];
+            const signatureCurrentPool =
+                currentRulesBySignature.get(ruleSignature(nextUpcoming)) ?? [];
+            const coverageCurrentCandidate = signatureCurrentPool
+                .filter((candidate) => ruleMatchCovers(candidate, nextUpcoming))
+                .sort(sortByPriorityAndFromDesc)[0];
+            const currentCandidate = exactCurrentCandidate ?? coverageCurrentCandidate;
+            const currentPriceRaw = currentCandidate ? Number(currentCandidate.price_per_unit ?? Number.NaN) : Number.NaN;
+            const currentPrice = Number.isFinite(currentPriceRaw) ? currentPriceRaw : null;
+            let trend: UpcomingPricingChange["trend"] = null;
+            if (nextPrice != null && currentPrice != null) {
+                if (nextPrice > currentPrice) trend = "up";
+                else if (nextPrice < currentPrice) trend = "down";
+                else trend = "flat";
             }
-            if (selectionMode === "fallback") {
-                const aTo = toMs(a.effective_to);
-                const bTo = toMs(b.effective_to);
-                if (aTo !== bTo) return (bTo ?? -Infinity) - (aTo ?? -Infinity);
+            if (nextPrice != null) {
+                upcomingChanges.push({
+                    sectionKey,
+                    title,
+                    subtitle,
+                    price: nextPrice,
+                    currentPrice,
+                    unitLabel: unitLabel(parseMeter(nextUpcoming.meter || "", nextUpcoming.unit || "").unit, nextUpcoming.unit_size ?? 1),
+                    effectiveFrom: nextUpcoming.effective_from,
+                    endpoint: endpointByKey.get(nextUpcoming.model_key) ?? null,
+                    trend,
+                });
             }
-            return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
-        });
+        }
+
+        if (!currentRules.length) continue;
+
+        const sorted = [...currentRules].sort(sortByPriorityAndFromDesc);
         const current = sorted[0];
-        const baseCandidates = group.filter((r) => r.priority < current.priority);
-        const base = [...baseCandidates].sort((a, b) => {
-            if (a.priority !== b.priority) return b.priority - a.priority;
-            const aFrom = toMs(a.effective_from);
-            const bFrom = toMs(b.effective_from);
-            return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
-        })[0];
+        const currentPrice = Number(current.price_per_unit ?? Number.NaN);
+        const currentFrom = toMs(current.effective_from) ?? -Infinity;
+
+        let baseCandidates = currentRules.filter((r) => r.priority < current.priority);
+        if (!baseCandidates.length) {
+            baseCandidates = currentRules.filter((r) => {
+                if (r.priority !== current.priority) return false;
+                const from = toMs(r.effective_from) ?? -Infinity;
+                return from < currentFrom;
+            });
+        }
+
+        const base = [...baseCandidates]
+            .sort((a, b) => {
+                if (a.priority !== b.priority) return b.priority - a.priority;
+                const aFrom = toMs(a.effective_from);
+                const bFrom = toMs(b.effective_from);
+                return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
+            })
+            .find((candidate) => {
+                const candidatePrice = Number(candidate.price_per_unit ?? Number.NaN);
+                if (!Number.isFinite(candidatePrice) || !Number.isFinite(currentPrice)) {
+                    return false;
+                }
+                return candidatePrice > currentPrice;
+            });
         const endpoint = endpointByKey.get(current.model_key) ?? null;
         const matchKey = JSON.stringify(current.match ?? []);
         const dedupeKey = `${current.meter}|${current.unit}|${current.unit_size}|${matchKey}`;
@@ -304,12 +597,25 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         });
     }
 
-    const hasDiscounts = entries.some(
-        (e) => e.base && e.rule.effective_to
-    );
+    if (upcomingChanges.length) {
+        const seenUpcoming = new Set<string>();
+        out.upcomingChanges = upcomingChanges
+            .sort((a, b) => {
+                const aFrom = new Date(a.effectiveFrom).getTime();
+                const bFrom = new Date(b.effectiveFrom).getTime();
+                if (aFrom !== bFrom) return aFrom - bFrom;
+                return a.title.localeCompare(b.title);
+            })
+            .filter((row) => {
+                const key = `${row.title}|${row.subtitle ?? ""}|${row.price}|${row.effectiveFrom}|${row.unitLabel}`;
+                if (seenUpcoming.has(key)) return false;
+                seenUpcoming.add(key);
+                return true;
+            });
+    }
+
     const seen = new Set<string>();
     const filteredEntries = entries.filter((e) => {
-        if (hasDiscounts) return true;
         if (seen.has(e.dedupeKey)) return false;
         seen.add(e.dedupeKey);
         return true;
@@ -318,7 +624,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     for (const entry of filteredEntries) {
         const r = entry.rule;
         const base = entry.base;
-        const { dir, mod, unit } = parseMeter(r.meter || "");
+        const { dir, mod, unit } = parseMeter(r.meter || "", r.unit || "");
         const unitSize = r.unit_size ?? 1;
         const price = Number(r.price_per_unit ?? 0);
         const per1M = perMillionIfTokens(unit, price, unitSize);
@@ -327,16 +633,30 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             ? r.match.map((m: any) => ({ op: String(m.op ?? ""), path: String(m.path ?? ""), value: m.value, or_group: m.or_group, and_index: m.and_index }))
             : [];
 
-        const basePrice = base ? Number(base.price_per_unit ?? 0) : null;
+        const basePriceRaw = base ? Number(base.price_per_unit ?? Number.NaN) : Number.NaN;
+        const basePrice = Number.isFinite(basePriceRaw) ? basePriceRaw : null;
+        const effectiveToMs = toMs(r.effective_to);
+        const currentPriority = Number(r.priority ?? Number.NaN);
+        const basePriority = Number(base?.priority ?? Number.NaN);
+        const hasPriorityOverride =
+            Number.isFinite(currentPriority) &&
+            Number.isFinite(basePriority) &&
+            currentPriority !== basePriority;
+        const hasFutureEnd = effectiveToMs != null && effectiveToMs > nowMs;
+        const hasActiveDiscount =
+            basePrice != null &&
+            basePrice > price &&
+            (hasFutureEnd || hasPriorityOverride);
+        const displayBasePrice = hasActiveDiscount ? basePrice : null;
         const basePer1M =
-            basePrice != null && unit === "token"
+            displayBasePrice != null && unit === "token"
                 ? perMillionIfTokens(
                     unit,
-                    basePrice,
+                    displayBasePrice,
                     base.unit_size ?? unitSize
                 )
                 : null;
-        const discountEndsAt = base && r.effective_to ? r.effective_to : null;
+        const discountEndsAt = hasActiveDiscount && hasFutureEnd ? r.effective_to ?? null : null;
 
         // 1) token tiles (text/image/audio/video)
         if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
@@ -347,6 +667,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 price,
                 label,
                 basePer1M: basePer1M ?? null,
+                basePrice: displayBasePrice,
                 discountEndsAt,
                 endpoint: entry.endpoint,
                 effFrom: r.effective_from ?? null,
@@ -354,8 +675,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 ruleId: r.id ?? null,
                 isCurrent: current,
             };
-            const push = (triple: TokenTriple | undefined, which: "in" | "cached" | "out") => {
-                const t = triple ?? { in: [], cached: [], out: [] };
+            const push = (triple: TokenTriple | undefined, which: "in" | "cached" | "write" | "out") => {
+                const t = triple ?? { in: [], cached: [], write: [], out: [] };
                 t[which].push(tier);
                 return t;
             };
@@ -364,24 +685,22 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 if (dir === "input") out.textTokens = push(out.textTokens, "in");
                 else if (dir === "cached") out.textTokens = push(out.textTokens, "cached");
                 else if (dir === "output") out.textTokens = push(out.textTokens, "out");
-                else if (dir === "cachewrite") {    // cache writes as own section
-                    (out.cacheWrites ??= []).push(tier);
-                }
+                else if (dir === "cachewrite") out.textTokens = push(out.textTokens, "write");
             } else if (mod === "image") {
                 if (dir === "input") out.imageTokens = push(out.imageTokens, "in");
                 else if (dir === "cached") out.imageTokens = push(out.imageTokens, "cached");
                 else if (dir === "output") out.imageTokens = push(out.imageTokens, "out");
-                else if (dir === "cachewrite") (out.cacheWrites ??= []).push(tier);
+                else if (dir === "cachewrite") out.imageTokens = push(out.imageTokens, "write");
             } else if (mod === "audio") {
                 if (dir === "input") out.audioTokens = push(out.audioTokens, "in");
                 else if (dir === "cached") out.audioTokens = push(out.audioTokens, "cached");
                 else if (dir === "output") out.audioTokens = push(out.audioTokens, "out");
-                else if (dir === "cachewrite") (out.cacheWrites ??= []).push(tier);
+                else if (dir === "cachewrite") out.audioTokens = push(out.audioTokens, "write");
             } else if (mod === "video") {
                 if (dir === "input") out.videoTokens = push(out.videoTokens, "in");
                 else if (dir === "cached") out.videoTokens = push(out.videoTokens, "cached");
                 else if (dir === "output") out.videoTokens = push(out.videoTokens, "out");
-                else if (dir === "cachewrite") (out.cacheWrites ??= []).push(tier);
+                else if (dir === "cachewrite") out.videoTokens = push(out.videoTokens, "write");
             }
             continue;
         }
@@ -395,15 +714,40 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             (out.imageGen ??= []);
             let q = out.imageGen.find(x => x.quality.toLowerCase() === String(quality).toLowerCase());
             if (!q) { q = { quality: String(quality), items: [] }; out.imageGen.push(q); }
-            q.items.push({ label: String(resolution), price });
+            q.items.push({
+                label: String(resolution),
+                price,
+                basePrice: displayBasePrice,
+                discountEndsAt,
+            });
             continue;
         }
 
         // 3) video generation per time
-        if (mod === "video" && dir === "output" && (unit === "second" || unit === "minute")) {
+        if (mod === "video" && dir === "output" && (unit === "second" || unit === "minute" || unit === "video")) {
             const res = extractResolutionLabels(conds);
-            const label = res.length ? res.join(" • ") : "Any resolution";
-            (out.videoGen ??= []).push({ resolution: label, unitLabel: unitLabel(unit, unitSize), price });
+            const durations = extractVideoDurationLabels(conds);
+            let labels: string[] = [];
+            if (res.length > 0 && durations.length > 0) {
+                labels = res.flatMap((resolution) =>
+                    durations.map((duration) => `${resolution} - ${duration}`)
+                );
+            } else if (res.length > 0) {
+                labels = res;
+            } else if (durations.length > 0) {
+                labels = durations;
+            } else {
+                labels = ["Any resolution"];
+            }
+            for (const label of labels) {
+                (out.videoGen ??= []).push({
+                    resolution: label,
+                    unitLabel: unitLabel(unit, unitSize),
+                    price,
+                    basePrice: displayBasePrice,
+                    discountEndsAt,
+                });
+            }
             continue;
         }
 
@@ -419,7 +763,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 price,
                 unitLabel: unitLabel(unit, unitSize),
                 mod: mod === "image" ? "image" : "video",
-                basePrice,
+                basePrice: displayBasePrice,
                 discountEndsAt,
                 endpoint: entry.endpoint,
                 ruleId: r.id ?? null,
@@ -436,6 +780,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 price,
                 label,
                 basePer1M: null,
+                basePrice: displayBasePrice,
                 discountEndsAt,
                 endpoint: entry.endpoint,
                 effFrom: r.effective_from ?? null,
@@ -452,7 +797,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             meter: r.meter || "—",
             unitLabel: unitLabel(unit, unitSize),
             price,
-            basePrice,
+            basePrice: displayBasePrice,
             discountEndsAt,
             endpoint: entry.endpoint,
             ruleId: r.id ?? null,
@@ -464,14 +809,12 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     const sortTiers = (tt?: TokenTriple) => {
         if (!tt) return;
         const s = (arr: TokenTier[]) => arr.sort((a, b) => a.per1M - b.per1M);
-        s(tt.in); s(tt.cached); s(tt.out);
+        s(tt.in); s(tt.cached); s(tt.write); s(tt.out);
     };
     sortTiers(out.textTokens);
     sortTiers(out.imageTokens);
     sortTiers(out.audioTokens);
     sortTiers(out.videoTokens);
-    out.cacheWrites?.sort((a, b) => a.per1M - b.per1M);
-
     out.imageGen?.forEach((q) => q.items.sort((a, b) => a.label.localeCompare(b.label)));
     out.imageGen?.sort((a, b) => {
         const ra = qualityRank(a.quality), rb = qualityRank(b.quality);

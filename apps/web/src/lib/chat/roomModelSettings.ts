@@ -1,4 +1,12 @@
-type AudioMode = "speech" | "transcription" | "translation";
+export type AudioMode = "speech" | "transcription" | "translation" | "music";
+export const CHAT_AUDIO_SPEECH_FORMAT = "mp3";
+
+export type AudioModeSupport = {
+	speech: boolean;
+	transcription: boolean;
+	translation: boolean;
+	music: boolean;
+};
 
 export type ImageRoomParams = {
 	size: string;
@@ -46,6 +54,7 @@ type ImageModelSchema = {
 type VideoModelSchema = {
 	sizeOptions: string[];
 	durationOptions: number[];
+	durationOptionsBySize?: Record<string, number[]>;
 	maxCount: number;
 };
 
@@ -54,6 +63,13 @@ type AudioModelSchema = {
 	formatOptions: string[];
 	supportsSpeechSpeed: boolean;
 	supportsLanguageHint: boolean;
+};
+
+const AUDIO_MODE_SUPPORT_FALLBACK: AudioModeSupport = {
+	speech: true,
+	transcription: true,
+	translation: true,
+	music: false,
 };
 
 type EmbeddingsModelSchema = {
@@ -108,11 +124,108 @@ export function getImageModelSchema(modelId: string): ImageModelSchema {
 }
 
 export function getVideoModelSchema(modelId: string): VideoModelSchema {
+	if (modelIdIncludes(modelId, ["minimax/hailuo-2.3-fast", "hailuo-2.3-fast"])) {
+		return {
+			sizeOptions: ["768P", "1080P"],
+			durationOptions: [6, 10],
+			durationOptionsBySize: {
+				"768P": [6, 10],
+				"1080P": [6],
+			},
+			maxCount: 1,
+		};
+	}
+	if (modelIdIncludes(modelId, ["minimax/hailuo-2.3", "hailuo-2.3"])) {
+		return {
+			sizeOptions: ["768P", "1080P"],
+			durationOptions: [6, 10],
+			durationOptionsBySize: {
+				"768P": [6, 10],
+				"1080P": [6],
+			},
+			maxCount: 1,
+		};
+	}
+	if (modelIdIncludes(modelId, ["minimax/hailuo-02", "hailuo-02"])) {
+		return {
+			sizeOptions: ["512P", "768P", "1080P"],
+			durationOptions: [6, 10],
+			durationOptionsBySize: {
+				"512P": [6, 10],
+				"768P": [6, 10],
+				"1080P": [6],
+			},
+			maxCount: 1,
+		};
+	}
+	if (modelIdIncludes(modelId, ["veo-3.1", "veo-3-1"])) {
+		return {
+			sizeOptions: ["720p", "1080p", "4k"],
+			durationOptions: [4, 6, 8],
+			durationOptionsBySize: {
+				"720p": [4, 6, 8],
+				"1080p": [8],
+				"4k": [8],
+			},
+			maxCount: 1,
+		};
+	}
+	if (
+		modelIdIncludes(modelId, [
+			"veo-3.0",
+			"veo-3-preview",
+			"veo-3-fast",
+			"veo-3-generate",
+			"veo-3",
+		])
+	) {
+		return {
+			sizeOptions: ["720p", "1080p", "4k"],
+			durationOptions: [4, 6, 8],
+			durationOptionsBySize: {
+				"720p": [4, 6, 8],
+				"1080p": [8],
+				"4k": [8],
+			},
+			maxCount: 1,
+		};
+	}
+	if (modelIdIncludes(modelId, ["veo-2.0", "veo-2", "veo2"])) {
+		return {
+			sizeOptions: ["720p"],
+			durationOptions: [5, 6, 8],
+			durationOptionsBySize: {
+				"720p": [5, 6, 8],
+			},
+			maxCount: 1,
+		};
+	}
+	if (modelIdIncludes(modelId, ["sora-2-pro"])) {
+		return {
+			sizeOptions: [
+				"720x1280",
+				"1280x720",
+				"1024x1792",
+				"1792x1024",
+				"1080x1920",
+				"1920x1080",
+			],
+			durationOptions: [4, 8, 12],
+			maxCount: 1,
+		};
+	}
+	if (modelIdIncludes(modelId, ["sora-2"])) {
+		return {
+			sizeOptions: ["720x1280", "1280x720"],
+			durationOptions: [4, 8, 12],
+			maxCount: 1,
+		};
+	}
 	if (modelIdIncludes(modelId, ["sora"])) {
 		return {
-			sizeOptions: ["854x480", "1280x720", "1920x1080"],
-			durationOptions: [5, 10, 15, 20],
-			maxCount: 2,
+			sizeOptions: ["720x1280", "1280x720"],
+			durationOptions: [4, 8, 12],
+			maxCount: 1,
 		};
 	}
 	return {
@@ -122,7 +235,38 @@ export function getVideoModelSchema(modelId: string): VideoModelSchema {
 	};
 }
 
+function getVideoDurationOptionsForSchema(
+	schema: VideoModelSchema,
+	size: string,
+): number[] {
+	const durationOptions = schema.durationOptionsBySize?.[size];
+	if (Array.isArray(durationOptions) && durationOptions.length > 0) {
+		return durationOptions;
+	}
+	return schema.durationOptions;
+}
+
+export function getVideoDurationOptions(
+	modelId: string,
+	size?: string | null,
+): number[] {
+	const schema = getVideoModelSchema(modelId);
+	const normalizedSize =
+		typeof size === "string" && schema.sizeOptions.includes(size)
+			? size
+			: (schema.sizeOptions[0] ?? "");
+	return getVideoDurationOptionsForSchema(schema, normalizedSize);
+}
+
 export function getAudioModelSchema(modelId: string): AudioModelSchema {
+	if (modelIdIncludes(modelId, ["mimo-v2-tts"])) {
+		return {
+			voiceOptions: ["mimo_Default"],
+			formatOptions: ["mp3", "wav", "pcm"],
+			supportsSpeechSpeed: false,
+			supportsLanguageHint: false,
+		};
+	}
 	if (modelIdIncludes(modelId, ["gpt-4o-mini-tts", "gpt-4o-audio"])) {
 		return {
 			voiceOptions: ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer"],
@@ -145,6 +289,91 @@ export function getAudioModelSchema(modelId: string): AudioModelSchema {
 		supportsSpeechSpeed: true,
 		supportsLanguageHint: true,
 	};
+}
+
+function normalizeCapabilityId(value: string): string {
+	return value.trim().toLowerCase();
+}
+
+function hasCapabilityMatch(
+	capabilities: string[],
+	hints: string[],
+): boolean {
+	return capabilities.some((capabilityId) =>
+		hints.some((hint) => capabilityId.includes(hint)),
+	);
+}
+
+function hasAnyAudioCapability(capabilities: string[]): boolean {
+	return capabilities.some(
+		(capabilityId) =>
+			capabilityId === "audio" ||
+			capabilityId === "music" ||
+			capabilityId.startsWith("audio.") ||
+			capabilityId.startsWith("music."),
+	);
+}
+
+export function getAudioModeSupportForCapabilities(
+	capabilityIds: string[] | null | undefined,
+): AudioModeSupport {
+	const normalized = Array.from(
+		new Set((capabilityIds ?? []).map(normalizeCapabilityId).filter(Boolean)),
+	);
+	if (normalized.length === 0) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	if (!hasAnyAudioCapability(normalized)) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	const hasGenericAudio = normalized.includes("audio");
+	const hasGenericMusic = normalized.includes("music");
+	if (hasGenericAudio) {
+		return {
+			...AUDIO_MODE_SUPPORT_FALLBACK,
+			music:
+				hasGenericMusic ||
+				hasCapabilityMatch(normalized, ["music.generate", "music"]),
+		};
+	}
+	return {
+		speech: hasCapabilityMatch(normalized, ["audio.speech", "audio.generate"]),
+		transcription: hasCapabilityMatch(normalized, [
+			"audio.transcription",
+			"audio.transcribe",
+		]),
+		translation: hasCapabilityMatch(normalized, [
+			"audio.translation",
+			"audio.translate",
+		]),
+		music: hasCapabilityMatch(normalized, ["music.generate", "music"]),
+	};
+}
+
+export function mergeAudioModeSupport(
+	support: AudioModeSupport[],
+): AudioModeSupport {
+	if (support.length === 0) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	const merged = support.reduce<AudioModeSupport>(
+		(acc, current) => ({
+			speech: acc.speech || current.speech,
+			transcription: acc.transcription || current.transcription,
+			translation: acc.translation || current.translation,
+			music: acc.music || current.music,
+		}),
+		{ speech: false, transcription: false, translation: false, music: false },
+	);
+	if (
+		!merged.speech &&
+		!merged.transcription &&
+		!merged.translation &&
+		!merged.music
+	) {
+		return { ...AUDIO_MODE_SUPPORT_FALLBACK };
+	}
+	return merged;
 }
 
 export function getEmbeddingsModelSchema(modelId: string): EmbeddingsModelSchema {
@@ -185,18 +414,23 @@ export function getDefaultImageRoomParams(modelId: string): ImageRoomParams {
 
 export function getDefaultVideoRoomParams(modelId: string): VideoRoomParams {
 	const schema = getVideoModelSchema(modelId);
+	const size = schema.sizeOptions[0] ?? "1280x720";
+	const durationOptions = getVideoDurationOptionsForSchema(schema, size);
 	return {
-		duration: schema.durationOptions[0] ?? 5,
-		size: schema.sizeOptions[0] ?? "1280x720",
+		duration: durationOptions[0] ?? schema.durationOptions[0] ?? 5,
+		size,
 		n: 1,
 	};
 }
 
 export function getDefaultAudioRoomParams(modelId: string): AudioRoomParams {
 	const schema = getAudioModelSchema(modelId);
+	const defaultSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
+		? CHAT_AUDIO_SPEECH_FORMAT
+		: (schema.formatOptions[0] ?? CHAT_AUDIO_SPEECH_FORMAT);
 	return {
 		speechVoice: schema.voiceOptions[0] ?? "alloy",
-		speechFormat: schema.formatOptions[0] ?? "mp3",
+		speechFormat: defaultSpeechFormat,
 		speechSpeed: 1,
 		transcriptionLanguage: "",
 		transcriptionPrompt: "",
@@ -248,12 +482,13 @@ export function buildVideoRequestOptions(
 ): Record<string, unknown> {
 	const schema = getVideoModelSchema(modelId);
 	const next: Record<string, unknown> = {};
-	const duration = schema.durationOptions.includes(params.duration)
-		? params.duration
-		: schema.durationOptions[0] ?? 5;
 	const size = schema.sizeOptions.includes(params.size)
 		? params.size
 		: schema.sizeOptions[0] ?? "1280x720";
+	const durationOptions = getVideoDurationOptionsForSchema(schema, size);
+	const duration = durationOptions.includes(params.duration)
+		? params.duration
+		: durationOptions[0] ?? schema.durationOptions[0] ?? 5;
 	const count = Math.max(1, Math.min(schema.maxCount, Math.floor(params.n || 1)));
 	next.duration = duration;
 	next.size = size;
@@ -272,13 +507,17 @@ export function buildAudioRequestOptions(
 		if (schema.voiceOptions.includes(params.speechVoice)) {
 			next.voice = params.speechVoice;
 		}
-		if (schema.formatOptions.includes(params.speechFormat)) {
-			next.format = params.speechFormat;
-		}
+		const normalizedSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
+			? CHAT_AUDIO_SPEECH_FORMAT
+			: (schema.formatOptions[0] ?? CHAT_AUDIO_SPEECH_FORMAT);
+		next.response_format = normalizedSpeechFormat;
 		if (schema.supportsSpeechSpeed) {
 			next.speed = Math.max(0.25, Math.min(4, Number(params.speechSpeed) || 1));
 		}
 		return next;
+	}
+	if (mode === "music") {
+		return {};
 	}
 	if (mode === "transcription") {
 		const next: Record<string, unknown> = {};

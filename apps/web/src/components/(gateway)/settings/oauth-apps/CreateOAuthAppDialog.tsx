@@ -21,15 +21,11 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 
 interface CreateOAuthAppDialogProps {
-	currentUserId: string;
 	currentTeamId: string | null;
-	teams: any[];
 }
 
 export default function CreateOAuthAppDialog({
-	currentUserId,
 	currentTeamId,
-	teams,
 }: CreateOAuthAppDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
@@ -46,6 +42,10 @@ export default function CreateOAuthAppDialog({
 	});
 
 	const handleCreate = async () => {
+		if (!currentTeamId) {
+			setError("Select a team before creating an OAuth app");
+			return;
+		}
 		setLoading(true);
 		setError(null);
 
@@ -107,7 +107,7 @@ export default function CreateOAuthAppDialog({
 		return (
 			<Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
 				<DialogTrigger asChild>
-					<Button>
+					<Button disabled={!currentTeamId}>
 						<Plus className="h-4 w-4 mr-2" />
 						Create OAuth App
 					</Button>
@@ -185,7 +185,7 @@ export default function CreateOAuthAppDialog({
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button>
+				<Button disabled={!currentTeamId}>
 					<Plus className="h-4 w-4 mr-2" />
 					Create OAuth App
 				</Button>

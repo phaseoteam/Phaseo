@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AudioSpeechRequest,
   AudioTranscriptionRequest,
   AudioTranscriptionResponse,
@@ -9,13 +9,14 @@ import type {
   ChatCompletionsRequest,
   ChatCompletionsResponse,
   ChatMessage,
+  DataModel,
   FileResponse as FileObject,
   ImagesEditRequest,
   ImagesEditResponse,
   ImagesGenerationRequest,
   ImagesGenerationResponse,
   ListFilesResponse as FileListResponse,
-  ModelId,
+  ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
   ResponsesRequest,
@@ -28,19 +29,112 @@ import { Client } from "./runtime/client.js";
 import { TelemetryCapture, extractChatMetadata, extractImageMetadata } from "./devtools/telemetry.js";
 import type { DevToolsConfig } from "./devtools/core.js";
 
-export type ModelIdLiteral = ModelId;
-export const MODEL_IDS: ModelIdLiteral[] = [];
-export const MODEL_ID_SET = new Set<ModelIdLiteral>(MODEL_IDS);
+export type KnownModelId = OapiModelId;
+export type ModelIdLiteral = KnownModelId;
+// Allow new server-side models before a package release while preserving known-ID autocomplete.
+export type ModelId = KnownModelId | (string & {});
+export type OpenApiModelId = OapiModelId;
+export const MODEL_IDS: KnownModelId[] = [];
+export const MODEL_ID_SET = new Set<KnownModelId>(MODEL_IDS);
 
 type Options = {
-  apiKey: string;
+  apiKey?: string;
   baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
   devtools?: Partial<DevToolsConfig>;
+  enableDeprecationWarnings?: boolean;
+  warningsAsErrors?: boolean;
+  logger?: AIStatsLogger;
+};
+
+export type AIStatsLogLevel = "info" | "warn" | "error";
+export type AIStatsLogger = (level: AIStatsLogLevel, message: string, meta?: Record<string, unknown>) => void;
+
+export type ModelLifecycleInfo = {
+  modelId: string;
+  status: "active" | "deprecated" | "retired";
+  deprecationDate: string | null;
+  retirementDate: string | null;
+  replacementModelId: string | null;
+  message: string | null;
 };
 
 type MessageContentPartInput = Record<string, unknown> | string;
+export type VideoOutputAccess = "bytes" | "signed_url" | "both";
+export type VideoInputReference = {
+  type: "image" | "video" | "mask";
+  role?: "first_frame" | "last_frame" | "reference" | "source" | "mask";
+  reference_type?: "asset" | "style" | "character" | "location" | "generic" | string;
+  url?: string;
+  data?: string;
+  mime_type?: string;
+  asset_id?: string;
+};
+
+export type VideoCreateRequest = {
+  model: ModelId;
+  prompt: string;
+  duration_seconds?: number;
+  size?: string;
+  resolution?: string;
+  aspect_ratio?: string;
+  seed?: number;
+  sample_count?: number;
+  negative_prompt?: string;
+  generate_audio?: boolean;
+  enhance_prompt?: boolean;
+  compression_quality?: number;
+  person_generation?: string;
+  resize_mode?: string;
+  input_references?: VideoInputReference[];
+  provider_params?: Record<string, unknown>;
+  output?: { access?: VideoOutputAccess };
+  webhook?: { url: string; secret?: string; events?: string[] };
+  provider?: Record<string, unknown>;
+  debug?: Record<string, unknown>;
+  beta?: Record<string, unknown>;
+};
+
+export type VideoStatusResponse = {
+  id: string;
+  object: "video";
+  status: "queued" | "in_progress" | "completed" | "failed" | "cancelled";
+  polling_url: string;
+  poll_after_seconds?: number;
+  provider?: string | null;
+  model?: string | null;
+  created_at?: string | number | null;
+  started_at?: string | number | null;
+  completed_at?: string | number | null;
+  progress?: number | null;
+  progress_source?: "provider" | "estimated" | "none" | null;
+  seconds?: number | null;
+  size?: string | null;
+  audio?: boolean | null;
+  content_url?: string;
+  download_url?: string | null;
+  expires_at?: number | null;
+  asset?: {
+    id: string;
+    mime_type?: string | null;
+    bytes?: number | null;
+    sha256?: string | null;
+    width?: number | null;
+    height?: number | null;
+    duration_seconds?: number | null;
+  } | null;
+  outputs?: Array<{
+    index?: number;
+    mime_type?: string | null;
+    bytes_available?: boolean;
+    content_url?: string;
+    download_url?: string;
+    expires_at?: number | null;
+  }>;
+  usage?: Record<string, unknown>;
+  error?: unknown;
+};
 
 type ChatMessageInput =
   | { role: "system"; content: string | MessageContentPartInput[]; name?: string }
@@ -49,7 +143,7 @@ type ChatMessageInput =
   | { role: "tool"; content: string | MessageContentPartInput[]; name?: string; tool_call_id: string };
 
 export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "messages"> & {
-  model: ModelIdLiteral;
+  model: ModelId;
   messages: ChatMessageInput[];
 };
 
@@ -66,13 +160,13 @@ export type {
   ChatCompletionsRequest,
   ChatCompletionsResponse,
   ChatMessage,
+  DataModel,
   FileObject,
   FileListResponse,
   ImagesEditRequest,
   ImagesEditResponse,
   ImagesGenerationRequest,
   ImagesGenerationResponse,
-  ModelId,
   ModerationsRequest,
   ModerationsResponse,
   ResponsesRequest,
@@ -82,13 +176,22 @@ export type {
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
+export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
 export type Healthz200Response = Awaited<ReturnType<typeof ops.healthz>>;
+export { ops as operations };
+export type AIStatsOptions = Options;
 
 export class AIStats {
   private readonly client: Client;
   private readonly basePath: string;
   private readonly headers: Record<string, string>;
   private readonly telemetry: TelemetryCapture;
+  private readonly fetchImpl: typeof fetch;
+  private readonly enableDeprecationWarnings: boolean;
+  private readonly warningsAsErrors: boolean;
+  private readonly logger?: AIStatsLogger;
+  private readonly warnedModels = new Set<string>();
+  private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
 
   readonly responses = {
     create: async (req: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<string>> => {
@@ -110,30 +213,179 @@ export class AIStats {
     }
   };
 
-  constructor(private readonly opts: Options) {
+  readonly models = {
+    list: async (params: Record<string, unknown> = {}): Promise<ModelListResponse> => this.getModels(params),
+    getDeprecationInfo: async (modelId: string): Promise<ModelLifecycleInfo | null> =>
+      this.getModelDeprecationInfo(modelId),
+    validate: async (modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> =>
+      this.validateModel(modelId),
+  };
+
+  readonly videos = {
+    create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
+    get: async (videoId: string): Promise<VideoStatusResponse> => this.getVideo(videoId),
+    content: async (videoId: string): Promise<Uint8Array> => this.getVideoContent(videoId),
+    downloadUrl: async (
+      videoId: string,
+      body?: { ttl_seconds?: number; disposition?: "attachment" | "inline"; index?: number },
+    ): Promise<{ download_url: string; expires_at: number }> => this.getVideoDownloadUrl(videoId, body),
+    cancel: async (videoId: string): Promise<VideoStatusResponse> => this.cancelVideo(videoId),
+    delete: async (videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> =>
+      this.deleteVideo(videoId),
+    listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
+  };
+
+  constructor(private readonly opts: Options = {}) {
+    const apiKey = resolveApiKey(opts.apiKey);
     this.basePath = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
-    this.headers = { Authorization: `Bearer ${opts.apiKey}` };
+    this.headers = { Authorization: `Bearer ${apiKey}` };
     this.client = new Client({
       baseUrl: this.basePath,
       headers: this.headers,
       timeoutMs: opts.timeoutMs,
       fetchImpl: opts.fetchImpl
     });
-    this.telemetry = new TelemetryCapture(opts.devtools, "0.2.1");
+    this.fetchImpl = opts.fetchImpl ?? fetch;
+    this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
+    this.warningsAsErrors = opts.warningsAsErrors ?? false;
+    this.logger = opts.logger;
+
+    this.telemetry = new TelemetryCapture(opts.devtools, "1.1.1");
+
+  }
+
+  rawClient(): Client {
+    return this.client;
+  }
+
+  async request(method: string, path: string, options: {
+    query?: Record<string, string | number | boolean>;
+    headers?: Record<string, string>;
+    body?: unknown;
+  } = {}): Promise<unknown> {
+    const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
+    if (options.query) {
+      for (const [key, value] of Object.entries(options.query)) {
+        url.searchParams.set(key, String(value));
+      }
+    }
+    const res = await this.fetchImpl(url.toString(), {
+      method,
+      headers: {
+        ...this.headers,
+        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(options.headers ?? {})
+      },
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+    }
+    if (res.status === 204) return null;
+    const text = await res.text();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  async getModelDeprecationInfo(modelId: string): Promise<ModelLifecycleInfo | null> {
+    if (!modelId || !modelId.trim()) return null;
+    return this.resolveModelLifecycle(modelId.trim());
+  }
+
+  async validateModel(modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> {
+    const info = await this.getModelDeprecationInfo(modelId);
+    if (!info) return { ok: true, info: null };
+    if (info.status === "retired") {
+      return { ok: false, info, reason: info.message ?? `Model "${modelId}" is retired.` };
+    }
+    return { ok: true, info };
+  }
+
+  private async withLifecycleGuard<T>(payload: unknown, fn: () => Promise<T>): Promise<T> {
+    await this.maybeWarnForPayload(payload);
+    return fn();
+  }
+
+  private async maybeWarnForPayload(payload: unknown): Promise<void> {
+    const modelId = extractModelIdFromPayload(payload);
+    if (!modelId) return;
+    await this.maybeWarnForModel(modelId);
+  }
+
+  private async maybeWarnForModel(modelId: string): Promise<void> {
+    if (!this.enableDeprecationWarnings) return;
+    const normalizedModelId = modelId.trim();
+    if (!normalizedModelId) return;
+    const lifecycle = await this.resolveModelLifecycle(normalizedModelId);
+    if (!lifecycle || lifecycle.status === "active") return;
+
+    const message =
+      lifecycle.message ??
+      buildLifecycleMessage(lifecycle.status, lifecycle.modelId, lifecycle.deprecationDate, lifecycle.retirementDate, lifecycle.replacementModelId);
+
+    if (this.warningsAsErrors) {
+      throw new Error(message);
+    }
+
+    if (this.warnedModels.has(normalizedModelId)) return;
+    this.warnedModels.add(normalizedModelId);
+    if (this.logger) {
+      this.logger("warn", message, lifecycle);
+      return;
+    }
+    console.warn(message);
+  }
+
+  private async resolveModelLifecycle(modelId: string): Promise<ModelLifecycleInfo | null> {
+    const normalizedModelId = modelId.trim();
+    if (!normalizedModelId) return null;
+    if (this.modelLifecycleCache.has(normalizedModelId)) {
+      return this.modelLifecycleCache.get(normalizedModelId) ?? null;
+    }
+
+    try {
+      const payload = await this.request("GET", "/data/models", {
+        query: { model_id: normalizedModelId, limit: 1 },
+      });
+      const models = Array.isArray((payload as { models?: unknown }).models)
+        ? ((payload as { models: DataModel[] }).models ?? [])
+        : [];
+      const model = models.find((entry) => (entry?.model_id ?? "").trim() === normalizedModelId);
+      if (!model) {
+        this.modelLifecycleCache.set(normalizedModelId, null);
+        return null;
+      }
+
+      const lifecycle = toModelLifecycleInfo(model, normalizedModelId);
+      this.modelLifecycleCache.set(normalizedModelId, lifecycle);
+      return lifecycle;
+    } catch {
+      this.modelLifecycleCache.set(normalizedModelId, null);
+      return null;
+    }
   }
 
   async generateText(req: ChatCompletionsParams): Promise<ChatCompletionsResponse> {
     const payload = { ...req, stream: false, messages: req.messages.map(normalizeMessage) };
-    return this.telemetry.wrap(
-      "chat.completions",
-      () => ops.createChatCompletion(this.client, { body: payload }),
-      () => payload,
-      extractChatMetadata
+    return this.withLifecycleGuard(
+      payload,
+      () => this.telemetry.wrap(
+        "chat.completions",
+        () => ops.createChatCompletion(this.client, { body: payload }),
+        () => payload,
+        extractChatMetadata
+      )
     );
   }
 
   async *streamText(req: ChatCompletionsParams): AsyncGenerator<string> {
     const payload = { ...req, stream: true, messages: req.messages.map(normalizeMessage) };
+    await this.maybeWarnForPayload(payload);
     const body = JSON.stringify(payload);
 
     const generator = async function* (this: AIStats) {
@@ -159,15 +411,19 @@ export class AIStats {
   }
 
   generateImage(req: ImagesGenerationRequest): Promise<ImagesGenerationResponse> {
-    return this.telemetry.wrap(
-      "images.generations",
-      () => ops.createImage(this.client, { body: req }),
-      () => req,
-      extractImageMetadata
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "images.generations",
+        () => ops.createImage(this.client, { body: req }),
+        () => req,
+        extractImageMetadata
+      )
     );
   }
 
   async generateImageEdit(req: ImagesEditRequest): Promise<ImagesEditResponse> {
+    await this.maybeWarnForPayload(req);
     return this.telemetry.wrap(
       "images.edits",
       async () => {
@@ -194,40 +450,89 @@ export class AIStats {
   }
 
   generateModeration(req: ModerationsRequest): Promise<ModerationsResponse> {
-    return this.telemetry.wrap(
-      "moderations",
-      () => ops.createModeration(this.client, { body: req }),
-      () => req
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "moderations",
+        () => ops.createModeration(this.client, { body: req }),
+        () => req
+      )
     );
   }
 
-  generateVideo(req: VideoGenerationRequest): Promise<VideoGenerationResponse> {
-    return this.telemetry.wrap(
-      "video.generations",
-      () => ops.createVideo(this.client, { body: req }),
-      () => req
+  generateVideo(req: VideoCreateRequest): Promise<VideoStatusResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "video.generations",
+        () => ops.createVideo(this.client, { body: req as unknown as VideoGenerationRequest }) as Promise<VideoStatusResponse>,
+        () => req
+      )
     );
+  }
+
+  getVideo(videoId: string): Promise<VideoStatusResponse> {
+    return this.request("GET", `/videos/${encodeURIComponent(videoId)}`) as Promise<VideoStatusResponse>;
+  }
+
+  async getVideoContent(videoId: string): Promise<Uint8Array> {
+    const url = new URL(`videos/${encodeURIComponent(videoId)}/content`, `${this.basePath}/`);
+    const res = await this.fetchImpl(url.toString(), {
+      method: "GET",
+      headers: this.headers,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+    }
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
+  cancelVideo(videoId: string): Promise<VideoStatusResponse> {
+    return this.request("POST", `/videos/${encodeURIComponent(videoId)}/cancel`) as Promise<VideoStatusResponse>;
+  }
+
+  getVideoDownloadUrl(
+    videoId: string,
+    body?: { ttl_seconds?: number; disposition?: "attachment" | "inline"; index?: number },
+  ): Promise<{ download_url: string; expires_at: number }> {
+    return this.request("POST", `/videos/${encodeURIComponent(videoId)}/download_url`, { body: body ?? {} }) as Promise<{ download_url: string; expires_at: number }>;
+  }
+
+  deleteVideo(videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> {
+    return this.request("DELETE", `/videos/${encodeURIComponent(videoId)}`) as Promise<{ id: string; object: "video"; deleted: boolean }>;
+  }
+
+  listVideoModels(): Promise<VideoModelsResponse> {
+    return this.request("GET", "/videos/models") as Promise<VideoModelsResponse>;
   }
 
   generateEmbedding(body: Record<string, unknown>): Promise<unknown> {
-    return this.telemetry.wrap(
-      "embeddings",
-      () => ops.createEmbedding(this.client, { body: body as any }),
-      () => body
+    return this.withLifecycleGuard(
+      body,
+      () => this.telemetry.wrap(
+        "embeddings",
+        () => ops.createEmbedding(this.client, { body: body as any }),
+        () => body
+      )
     );
   }
 
   generateResponse(req: ResponsesRequest): Promise<ResponsesResponse> {
-    return this.telemetry.wrap(
-      "responses",
-      () => ops.createResponse(this.client, { body: req }),
-      () => req,
-      extractChatMetadata
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "responses",
+        () => ops.createResponse(this.client, { body: req }),
+        () => req,
+        extractChatMetadata
+      )
     );
   }
 
   async *streamResponse(req: ResponsesRequest): AsyncGenerator<string> {
     const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
 
     const generator = async function* (this: AIStats) {
       const res = await fetch(`${this.basePath}/responses`, {
@@ -326,12 +631,13 @@ export class AIStats {
   getAnalytics(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "analytics",
-      () => ops.getAnalytics(this.client, { query: params as any }),
+      () => ops.getActivity(this.client, { query: params as any }),
       () => params
     );
   }
 
   async generateSpeech(body: AudioSpeechRequest): Promise<Blob> {
+    await this.maybeWarnForPayload(body);
     return this.telemetry.wrap(
       "audio.speech",
       async () => {
@@ -356,18 +662,24 @@ export class AIStats {
   }
 
   generateTranscription(body: AudioTranscriptionRequest | Record<string, unknown>): Promise<AudioTranscriptionResponse> {
-    return this.telemetry.wrap(
-      "audio.transcriptions",
-      () => ops.createTranscription(this.client, { body: body as AudioTranscriptionRequest }),
-      () => body
+    return this.withLifecycleGuard(
+      body,
+      () => this.telemetry.wrap(
+        "audio.transcriptions",
+        () => ops.createTranscription(this.client, { body: body as AudioTranscriptionRequest }),
+        () => body
+      )
     );
   }
 
   generateTranslation(body: AudioTranslationRequest | Record<string, unknown>): Promise<AudioTranslationResponse> {
-    return this.telemetry.wrap(
-      "audio.translations",
-      () => ops.createTranslation(this.client, { body: body as AudioTranslationRequest }),
-      () => body
+    return this.withLifecycleGuard(
+      body,
+      () => this.telemetry.wrap(
+        "audio.translations",
+        () => ops.createTranslation(this.client, { body: body as AudioTranslationRequest }),
+        () => body
+      )
     );
   }
 
@@ -440,3 +752,141 @@ export type {
   ContentBlock,
   MessageRole
 } from "./compat/anthropic.js";
+
+export default AIStats;
+
+function resolveApiKey(explicit?: string): string {
+  const key = explicit ?? readEnv("AI_STATS_API_KEY");
+  if (!key) {
+    throw new Error(
+      "Missing API key. Pass `{ apiKey }` to `new AIStats(...)` or set `AI_STATS_API_KEY`.",
+    );
+  }
+  return key;
+}
+
+function readEnv(name: string): string | undefined {
+  if (typeof process !== "undefined" && process?.env) {
+    return process.env[name];
+  }
+  return undefined;
+}
+
+function extractModelIdFromPayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const obj = payload as Record<string, unknown>;
+  const direct =
+    asTrimmedString(obj.model) ??
+    asTrimmedString(obj.model_id);
+  if (direct) return direct;
+
+  const nestedCandidates = [
+    obj.body,
+    obj.payload,
+    obj.request,
+    obj.params
+  ];
+  for (const candidate of nestedCandidates) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const nested = candidate as Record<string, unknown>;
+    const nestedModelId =
+      asTrimmedString(nested.model) ??
+      asTrimmedString(nested.model_id);
+    if (nestedModelId) return nestedModelId;
+  }
+
+  return null;
+}
+
+function toModelLifecycleInfo(
+  model: DataModel & { lifecycle?: Record<string, unknown> | null },
+  fallbackModelId: string
+): ModelLifecycleInfo {
+  const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
+  const modelId = asTrimmedString(model.model_id) ?? fallbackModelId;
+
+  const deprecationDate =
+    asTrimmedString(lifecycle.deprecation_date) ??
+    asTrimmedString(model.deprecation_date) ??
+    null;
+  const retirementDate =
+    asTrimmedString(lifecycle.retirement_date) ??
+    asTrimmedString(model.retirement_date) ??
+    null;
+
+  const status = normalizeLifecycleStatus(
+    asTrimmedString(lifecycle.status) ?? asTrimmedString(model.status),
+    deprecationDate,
+    retirementDate
+  );
+  const replacementModelId = asTrimmedString(lifecycle.replacement_model_id) ?? null;
+  const message =
+    asTrimmedString(lifecycle.message) ??
+    buildLifecycleMessage(status, modelId, deprecationDate, retirementDate, replacementModelId);
+
+  return {
+    modelId,
+    status,
+    deprecationDate,
+    retirementDate,
+    replacementModelId,
+    message,
+  };
+}
+
+function normalizeLifecycleStatus(
+  status: string | null,
+  deprecationDate: string | null,
+  retirementDate: string | null
+): ModelLifecycleInfo["status"] {
+  const now = Date.now();
+  const retirementAt = parseDateMs(retirementDate);
+  if (retirementAt !== null && retirementAt <= now) return "retired";
+
+  const normalized = (status ?? "").trim().toLowerCase();
+  if (normalized === "retired") return "retired";
+
+  const deprecatedAt = parseDateMs(deprecationDate);
+  if (deprecatedAt !== null && deprecatedAt <= now) return "deprecated";
+  if (normalized === "deprecated") return "deprecated";
+
+  return "active";
+}
+
+function buildLifecycleMessage(
+  status: ModelLifecycleInfo["status"],
+  modelId: string,
+  deprecationDate: string | null,
+  retirementDate: string | null,
+  replacementModelId: string | null
+): string | null {
+  const replacement = replacementModelId ? ` Use "${replacementModelId}" instead.` : "";
+  if (status === "retired") {
+    if (retirementDate) {
+      return `[ai-stats] Model "${modelId}" is retired as of ${retirementDate}.${replacement}`;
+    }
+    return `[ai-stats] Model "${modelId}" is retired.${replacement}`;
+  }
+  if (status === "deprecated") {
+    if (retirementDate) {
+      return `[ai-stats] Model "${modelId}" is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`;
+    }
+    if (deprecationDate) {
+      return `[ai-stats] Model "${modelId}" has been deprecated since ${deprecationDate}.${replacement}`;
+    }
+    return `[ai-stats] Model "${modelId}" is deprecated.${replacement}`;
+  }
+  return null;
+}
+
+function asTrimmedString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized ? normalized : null;
+}
+
+function parseDateMs(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}

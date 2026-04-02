@@ -26,8 +26,16 @@ export function readAttributionHeaders(req: Request) {
     // Stable app identity for attribution dedupe.
     const appId = req.headers.get("x-app-id") ?? null;
     const appName = req.headers.get("x-app-name") ?? null;
+    const sessionId =
+        req.headers.get("x-session-id") ??
+        req.headers.get("x-aistats-session-id") ??
+        null;
+    const userId =
+        req.headers.get("x-user-id") ??
+        req.headers.get("x-aistats-user-id") ??
+        null;
 
     // Return structured attribution metadata
-    return { referer, appTitle, appId, appName };
+    return { referer, appTitle, appId, appName, sessionId, userId };
 }
 

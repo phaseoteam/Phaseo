@@ -1,19 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { classifyGatewayRequestForUptime } from "@/lib/fetchers/gateway/uptimeClassification";
-
-type RawGatewayRequest = {
-	created_at: string;
-	success: boolean | number | string | null;
-	latency_ms?: number | null;
-	generation_ms?: number | null;
-	usage?: any;
-	provider?: string | null;
-	model_id?: string | null;
-	error_code?: string | null;
-	status_code?: number | null;
-};
 
 type ActiveProviderModelRow = {
 	api_model_id: string | null;
@@ -22,24 +9,13 @@ type ActiveProviderModelRow = {
 	effective_to?: string | null;
 };
 
-type GatewayUsageSnapshotRow = {
-	window_start?: string | null;
-	window_end?: string | null;
-	timeframe_hours?: number | null;
-	total_requests?: number | null;
-	uptime_pct?: number | null;
-	uptime_events?: number | null;
-	total_tokens?: number | null;
-};
-
-type GatewayUsageSnapshot = {
-	windowStart: string | null;
-	windowEnd: string | null;
-	timeframeHours: number | null;
-	totalRequests: number;
-	uptimePct: number | null;
-	uptimeEvents: number;
-	totalTokens: number;
+type GatewayMarketingRollupRow = {
+	bucket_hour: string | null;
+	requests: number | null;
+	success_requests: number | null;
+	total_tokens: number | null;
+	latency_sum_ms: number | null;
+	latency_samples: number | null;
 };
 
 export type GatewayTimeseriesPoint = {
@@ -81,119 +57,15 @@ export type GatewayMarketingMetrics = {
 };
 
 const HOURS_DEFAULT = 24;
-const PAGE_SIZE = 1000;
-const MAX_PAGES = 12; // cap at 12k rows for marketing snapshot
 
 function coerceNumber(value: unknown, fallback = 0): number {
-	if (value == null) return fallback;
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : fallback;
-	}
-	const parsed = Number.parseFloat(String(value));
+	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function coerceNullableNumber(value: unknown): number | null {
-	if (value == null) return null;
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : null;
-	}
-	const parsed = Number.parseFloat(String(value));
+	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getUsageTotalTokens(payload: unknown): number {
-	if (payload == null) return 0;
-
-	let normalized: unknown = payload;
-	if (typeof payload === "string") {
-		try {
-			normalized = JSON.parse(payload);
-		} catch {
-			return 0;
-		}
-	}
-
-	if (typeof normalized === "number") {
-		return Number.isFinite(normalized) ? normalized : 0;
-	}
-
-	if (typeof normalized === "object" && normalized !== null) {
-		const record = normalized as Record<string, unknown>;
-		const candidate =
-			record["total_tokens"] ?? record["totalTokens"] ?? null;
-		if (candidate == null) return 0;
-		return coerceNumber(candidate, 0);
-	}
-
-	return 0;
-}
-
-function mapUsageSnapshotRow(
-	row?: GatewayUsageSnapshotRow | null
-): GatewayUsageSnapshot | null {
-	if (!row) return null;
-	return {
-		windowStart:
-			typeof row.window_start === "string" ? row.window_start : null,
-		windowEnd: typeof row.window_end === "string" ? row.window_end : null,
-		timeframeHours: coerceNullableNumber(row.timeframe_hours),
-		totalRequests: coerceNumber(row.total_requests, 0),
-		uptimePct: coerceNullableNumber(row.uptime_pct),
-		uptimeEvents: coerceNumber(row.uptime_events, 0),
-		totalTokens: coerceNumber(row.total_tokens, 0),
-	};
-}
-
-async function fetchGatewayUsageSnapshot(
-	client: SupabaseClient,
-	hours = HOURS_DEFAULT
-): Promise<GatewayUsageSnapshot | null> {
-	const { data, error } = await client.rpc(
-		"gateway_marketing_uptime_tokens",
-		{
-			hours_window: hours,
-		}
-	);
-
-	if (error) {
-		throw new Error(
-			error.message ?? "Failed to load gateway usage snapshot"
-		);
-	}
-
-	const rows = Array.isArray(data) ? data : data ? [data] : [];
-	return mapUsageSnapshotRow(rows[0] as GatewayUsageSnapshotRow | null);
-}
-
-function applyUsageSnapshot(
-	metrics: GatewayMarketingMetrics,
-	snapshot: GatewayUsageSnapshot | null
-): GatewayMarketingMetrics {
-	if (!snapshot) return metrics;
-	return {
-		...metrics,
-		summary: {
-			...metrics.summary,
-			tokens24h:
-				typeof snapshot.totalTokens === "number"
-					? snapshot.totalTokens
-					: metrics.summary.tokens24h,
-		},
-	};
-}
-
-function attachMetricsError(
-	metrics: GatewayMarketingMetrics,
-	...errors: Array<string | undefined>
-): GatewayMarketingMetrics {
-	if (metrics.error) return metrics;
-	const message = errors.find((err) => typeof err === "string" && err.length);
-	if (!message) return metrics;
-	return {
-		...metrics,
-		error: message,
-	};
 }
 
 function percentile(values: number[], p: number): number | null {
@@ -209,56 +81,18 @@ function percentile(values: number[], p: number): number | null {
 
 function average(values: number[]): number | null {
 	if (!values.length) return null;
-	const sum = values.reduce((acc, v) => acc + v, 0);
-	return sum / values.length;
+	return values.reduce((acc, value) => acc + value, 0) / values.length;
 }
 
-function bucketStartISO(date: Date): string {
+function bucketStartISOHour(date: Date): string {
 	const bucket = new Date(date);
-	bucket.setMinutes(0, 0, 0);
+	bucket.setUTCMinutes(0, 0, 0);
 	return bucket.toISOString();
-}
-
-async function fetchRequests(
-	client: SupabaseClient,
-	hours = HOURS_DEFAULT,
-	now = new Date()
-): Promise<RawGatewayRequest[]> {
-	const rows: RawGatewayRequest[] = [];
-	const toIso = now.toISOString();
-	const fromIso = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
-
-	for (let page = 0; page < MAX_PAGES; page++) {
-		const from = page * PAGE_SIZE;
-		const to = from + PAGE_SIZE - 1;
-		const { data, error } = await client
-			.from("gateway_requests")
-			.select(
-				"created_at, success, latency_ms, generation_ms, usage, provider, model_id, error_code, status_code"
-			)
-			.gte("created_at", fromIso)
-			.lte("created_at", toIso)
-			.order("created_at", { ascending: true })
-			.range(from, to);
-
-		if (error) throw new Error(error.message ?? "Failed to load gateway data");
-		if (!data?.length) break;
-
-		rows.push(
-			...(data as RawGatewayRequest[]).filter((row) =>
-				Boolean(row?.created_at)
-			)
-		);
-
-		if (data.length < PAGE_SIZE) break;
-	}
-
-	return rows;
 }
 
 async function fetchActiveGatewayModels(
 	client: SupabaseClient,
-	now = new Date()
+	now = new Date(),
 ): Promise<ActiveProviderModelRow[]> {
 	const nowIso = now.toISOString();
 	const effectiveClause = [
@@ -274,8 +108,6 @@ async function fetchActiveGatewayModels(
 		.eq("is_active_gateway", true)
 		.or(effectiveClause);
 
-	console.log("Supabase response for active gateway models:", { data, error });
-
 	if (error) {
 		throw new Error(error.message ?? "Failed to load supported models");
 	}
@@ -283,161 +115,102 @@ async function fetchActiveGatewayModels(
 	return (data ?? []) as ActiveProviderModelRow[];
 }
 
-function buildMetricsFromRows(
-	rows: RawGatewayRequest[],
+async function fetchGatewayMarketingRollup(
+	client: SupabaseClient,
+	hours = HOURS_DEFAULT,
+): Promise<GatewayMarketingRollupRow[]> {
+	const { data, error } = await client.rpc("get_gateway_marketing_rollup", {
+		p_hours: hours,
+	});
+
+	if (error) {
+		throw new Error(error.message ?? "Failed to load gateway marketing rollup");
+	}
+
+	return (data ?? []) as GatewayMarketingRollupRow[];
+}
+
+function buildMetricsFromRollup(
+	rollupRows: GatewayMarketingRollupRow[],
 	supportedModels: ActiveProviderModelRow[],
 	now = new Date(),
-	hours = HOURS_DEFAULT
+	hours = HOURS_DEFAULT,
 ): GatewayMarketingMetrics {
-	const buckets = new Map<
+	const timelineHours =
+		Number.isFinite(hours) && hours > 0 ? Math.round(hours) : HOURS_DEFAULT;
+
+	const byHour = new Map<
 		string,
 		{
 			requests: number;
-			uptimeEvents: number;
-			uptimeSuccess: number;
-			latencies: number[];
-			tokens: number;
+			successRequests: number;
+			totalTokens: number;
+			latencySum: number;
+			latencySamples: number;
 		}
 	>();
 
-	let totalRequests = 0;
-	let totalUptimeEvents = 0;
-	let totalUptimeSuccess = 0;
-	const allLatencies: number[] = [];
-	let totalTokens = 0;
-	const timelineHours =
-		Number.isFinite(hours) && hours > 0 ? hours : HOURS_DEFAULT;
-
-	for (const row of rows) {
-		const createdAt = new Date(row.created_at);
-		if (Number.isNaN(createdAt.getTime())) continue;
-
-		const bucketKey = bucketStartISO(createdAt);
-		const bucket =
-			buckets.get(bucketKey) ??
-			{
-				requests: 0,
-				uptimeEvents: 0,
-				uptimeSuccess: 0,
-				latencies: [],
-				tokens: 0,
-			};
-
-		bucket.requests += 1;
-		totalRequests += 1;
-
-		const uptimeOutcome = classifyGatewayRequestForUptime(row);
-		if (uptimeOutcome !== "exclude") {
-			bucket.uptimeEvents += 1;
-			totalUptimeEvents += 1;
-			if (uptimeOutcome === "count_success") {
-				bucket.uptimeSuccess += 1;
-				totalUptimeSuccess += 1;
-			}
-		}
-
-		const latencyCandidate =
-			row.generation_ms ?? undefined;
-		if (latencyCandidate != null && Number.isFinite(Number(latencyCandidate))) {
-			const latency = Number(latencyCandidate);
-			bucket.latencies.push(latency);
-			allLatencies.push(latency);
-		}
-
-		const tokens = getUsageTotalTokens(row.usage);
-		if (tokens > 0) {
-			bucket.tokens += tokens;
-			totalTokens += tokens;
-		}
-
-		buckets.set(bucketKey, bucket);
+	for (const row of rollupRows) {
+		const bucket = String(row.bucket_hour ?? "").trim();
+		if (!bucket) continue;
+		byHour.set(bucket, {
+			requests: coerceNumber(row.requests, 0),
+			successRequests: coerceNumber(row.success_requests, 0),
+			totalTokens: coerceNumber(row.total_tokens, 0),
+			latencySum: coerceNumber(row.latency_sum_ms, 0),
+			latencySamples: coerceNumber(row.latency_samples, 0),
+		});
 	}
 
 	const uptimeSeries: GatewayTimeseriesPoint[] = [];
 	const latencySeries: GatewayTimeseriesPoint[] = [];
 	const throughputSeries: GatewayTimeseriesPoint[] = [];
+	const hourlyLatencyAverages: number[] = [];
 
-	const sortedKeys = Array.from(buckets.keys()).sort(
-		(a, b) => new Date(a).getTime() - new Date(b).getTime()
-	);
-
-	const timeline: Array<{
-		timestamp: string;
-		hoursAgo: number;
-		data: {
-			requests: number;
-			uptimeEvents: number;
-			uptimeSuccess: number;
-			latencies: number[];
-			tokens: number;
-		};
-	}> = [];
+	let totalRequests = 0;
+	let totalSuccessful = 0;
+	let totalTokens = 0;
+	let totalLatencySum = 0;
+	let totalLatencySamples = 0;
 
 	for (let h = timelineHours - 1; h >= 0; h--) {
-		const timestamp = bucketStartISO(
-			new Date(now.getTime() - h * 60 * 60 * 1000)
-		);
-		const bucket =
-			buckets.get(timestamp) ?? {
-				requests: 0,
-				uptimeEvents: 0,
-				uptimeSuccess: 0,
-				latencies: [],
-				tokens: 0,
-			};
-		timeline.push({ timestamp, hoursAgo: h, data: bucket });
-	}
+		const ts = new Date(now.getTime() - h * 60 * 60 * 1000);
+		const bucket = bucketStartISOHour(ts);
+		const row = byHour.get(bucket) ?? {
+			requests: 0,
+			successRequests: 0,
+			totalTokens: 0,
+			latencySum: 0,
+			latencySamples: 0,
+		};
 
-	for (const entry of timeline) {
-		const data = entry.data;
-		const uptime =
-			data.uptimeEvents > 0
-				? (data.uptimeSuccess / data.uptimeEvents) * 100
-				: null;
-		const p95 = percentile(data.latencies, 0.95);
-		const p50 = percentile(data.latencies, 0.5);
-		const avg = average(data.latencies);
-		const requestsPerMin = data.requests / 60;
-		const tokensPerMin = data.tokens / 60;
+		totalRequests += row.requests;
+		totalSuccessful += row.successRequests;
+		totalTokens += row.totalTokens;
+		totalLatencySum += row.latencySum;
+		totalLatencySamples += row.latencySamples;
+
+		const avgLatency =
+			row.latencySamples > 0 ? row.latencySum / row.latencySamples : null;
+		if (avgLatency != null) hourlyLatencyAverages.push(avgLatency);
 
 		const point: GatewayTimeseriesPoint = {
-			timestamp: entry.timestamp,
-			requests: data.requests,
-			uptimePct: uptime,
-			p50Ms: p50,
-			p95Ms: p95,
-			avgMs: avg,
-			requestsPerMin,
-			tokensPerMin,
-			hoursAgo: entry.hoursAgo,
+			timestamp: bucket,
+			requests: row.requests,
+			uptimePct:
+				row.requests > 0 ? (row.successRequests / row.requests) * 100 : null,
+			p50Ms: avgLatency,
+			p95Ms: avgLatency,
+			avgMs: avgLatency,
+			requestsPerMin: row.requests / 60,
+			tokensPerMin: row.totalTokens / 60,
+			hoursAgo: h,
 		};
 
 		uptimeSeries.push(point);
 		latencySeries.push(point);
 		throughputSeries.push(point);
 	}
-
-	const uptimePct =
-		totalUptimeEvents > 0
-			? (totalUptimeSuccess / totalUptimeEvents) * 100
-			: null;
-	const latencyP95 = percentile(allLatencies, 0.95);
-	const latencyP50 = percentile(allLatencies, 0.5);
-	const latencyAvg = average(allLatencies);
-
-	const spanMinutes =
-		Number.isFinite(hours) && hours > 0
-			? hours * 60
-			: Math.max(
-				1,
-				Math.abs(
-					new Date(sortedKeys[sortedKeys.length - 1] ?? now).getTime() -
-					new Date(sortedKeys[0] ?? now).getTime()
-				) /
-				60000
-			);
-	const requestsPerMinAvg =
-		totalRequests > 0 && spanMinutes > 0 ? totalRequests / spanMinutes : null;
 
 	const modelIds = new Set<string>();
 	const providerIds = new Set<string>();
@@ -448,14 +221,17 @@ function buildMetricsFromRows(
 
 	return {
 		summary: {
-			uptimePct,
-			latencyP95Ms: latencyP95,
-			latencyP50Ms: latencyP50,
-			latencyAvgMs: latencyAvg,
+			uptimePct:
+				totalRequests > 0 ? (totalSuccessful / totalRequests) * 100 : null,
+			latencyP95Ms: percentile(hourlyLatencyAverages, 0.95),
+			latencyP50Ms: percentile(hourlyLatencyAverages, 0.5),
+			latencyAvgMs:
+				totalLatencySamples > 0 ? totalLatencySum / totalLatencySamples : null,
 			requests24h: totalRequests,
-			successful24h: totalUptimeSuccess,
+			successful24h: totalSuccessful,
 			tokens24h: totalTokens,
-			requestsPerMinAvg,
+			requestsPerMinAvg:
+				timelineHours > 0 ? totalRequests / (timelineHours * 60) : null,
 			supportedModels: modelIds.size || null,
 			supportedProviders: providerIds.size || null,
 		},
@@ -468,7 +244,7 @@ function buildMetricsFromRows(
 			modelIds: Array.from(modelIds),
 			providerIds: Array.from(providerIds),
 		},
-		fallback: false,
+		fallback: totalRequests <= 0,
 	};
 }
 
@@ -476,16 +252,13 @@ function buildFallbackMetrics(
 	supportedModels: ActiveProviderModelRow[],
 	now = new Date(),
 	hours = HOURS_DEFAULT,
-	error?: string
+	error?: string,
 ): GatewayMarketingMetrics {
-	const uptimeSeries: GatewayTimeseriesPoint[] = [];
-	const latencySeries: GatewayTimeseriesPoint[] = [];
-	const throughputSeries: GatewayTimeseriesPoint[] = [];
-
+	const points: GatewayTimeseriesPoint[] = [];
 	for (let h = hours - 1; h >= 0; h--) {
-		const ts = new Date(now.getTime() - h * 60 * 60 * 1000);
-		const point: GatewayTimeseriesPoint = {
-			timestamp: bucketStartISO(ts),
+		const timestamp = bucketStartISOHour(new Date(now.getTime() - h * 60 * 60 * 1000));
+		points.push({
+			timestamp,
 			requests: 0,
 			uptimePct: 100,
 			p50Ms: null,
@@ -494,11 +267,7 @@ function buildFallbackMetrics(
 			requestsPerMin: 0,
 			tokensPerMin: 0,
 			hoursAgo: h,
-		};
-
-		uptimeSeries.push(point);
-		latencySeries.push(point);
-		throughputSeries.push(point);
+		});
 	}
 
 	const modelIds = new Set<string>();
@@ -522,9 +291,9 @@ function buildFallbackMetrics(
 			supportedProviders: providerIds.size || null,
 		},
 		timeseries: {
-			uptime: uptimeSeries,
-			latency: latencySeries,
-			throughput: throughputSeries,
+			uptime: points,
+			latency: points,
+			throughput: points,
 		},
 		supported: {
 			modelIds: Array.from(modelIds),
@@ -536,7 +305,7 @@ function buildFallbackMetrics(
 }
 
 export async function getGatewayMarketingMetrics(
-	hours = HOURS_DEFAULT
+	hours = HOURS_DEFAULT,
 ): Promise<GatewayMarketingMetrics> {
 	"use cache";
 
@@ -549,8 +318,9 @@ export async function getGatewayMarketingMetrics(
 	} else {
 		cacheLife("minutes");
 	}
+
 	cacheTag("gateway:marketing-metrics");
-	cacheTag("data:gateway_requests");
+	cacheTag("data:gateway_usage_rollups");
 
 	const now = new Date();
 	const client = createAdminClient();
@@ -560,50 +330,38 @@ export async function getGatewayMarketingMetrics(
 	try {
 		supportedRows = await fetchActiveGatewayModels(client, now);
 	} catch (err: any) {
-		supportedError = String(err?.message ?? err);
 		supportedRows = [];
-	}
-
-	let usageSnapshot: GatewayUsageSnapshot | null = null;
-	let usageSnapshotError: string | undefined;
-	try {
-		usageSnapshot = await fetchGatewayUsageSnapshot(client, hours);
-	} catch (err: any) {
-		usageSnapshotError = String(err?.message ?? err);
+		supportedError = String(err?.message ?? err);
 	}
 
 	try {
-		const rows = await fetchRequests(client, hours, now);
-		if (!rows.length) {
-			const fallback = applyUsageSnapshot(
-				buildFallbackMetrics(
-					supportedRows,
-					now,
-					hours,
-					"No recent gateway traffic available."
-				),
-				usageSnapshot
+		const rollupRows = await fetchGatewayMarketingRollup(client, normalizedHours);
+		if (!rollupRows.length) {
+			return buildFallbackMetrics(
+				supportedRows,
+				now,
+				normalizedHours,
+				supportedError ?? "No recent gateway traffic available.",
 			);
-			return attachMetricsError(fallback, supportedError, usageSnapshotError);
 		}
 
-		const metrics = applyUsageSnapshot(
-			buildMetricsFromRows(rows, supportedRows, now, hours),
-			usageSnapshot
+		const metrics = buildMetricsFromRollup(
+			rollupRows,
+			supportedRows,
+			now,
+			normalizedHours,
 		);
-		return attachMetricsError(metrics, supportedError, usageSnapshotError);
+		if (supportedError && !metrics.error) {
+			return { ...metrics, error: supportedError };
+		}
+		return metrics;
 	} catch (err: any) {
 		const errorMessage =
 			supportedError ??
-			usageSnapshotError ??
 			String(
 				err?.message ??
-				"Unable to load live gateway metrics; falling back to synthetic data."
+					"Unable to load rollup gateway metrics; falling back to synthetic data.",
 			);
-		const fallback = applyUsageSnapshot(
-			buildFallbackMetrics(supportedRows, now, hours, errorMessage),
-			usageSnapshot
-		);
-		return attachMetricsError(fallback, supportedError, usageSnapshotError);
+		return buildFallbackMetrics(supportedRows, now, normalizedHours, errorMessage);
 	}
 }

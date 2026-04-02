@@ -609,7 +609,7 @@ function ChatPlaygroundContent({
 	);
 
 	const ensureInitialThread = useCallback(
-		async (existing: ChatThread[], preferredModelId: string) => {
+		async (existing: ChatThread[]) => {
 			if (existing.length > 0) return existing;
 			const id = generateId();
 			const createdAt = nowIso();
@@ -617,13 +617,13 @@ function ChatPlaygroundContent({
 				id,
 				title: "New chat",
 				titleLocked: false,
-				modelId: preferredModelId,
+				modelId: "",
 				createdAt,
 				updatedAt: createdAt,
 				messages: [],
 				settings: {
 					...DEFAULT_SETTINGS,
-					systemPrompt: buildDefaultSystemPrompt(preferredModelId),
+					systemPrompt: buildDefaultSystemPrompt(""),
 				},
 			};
 			await upsertChat(newThread, "text");
@@ -675,7 +675,7 @@ function ChatPlaygroundContent({
 			});
 
 			const chats = await getAllChats("text");
-			const normalized = await ensureInitialThread(chats, resolvedModel);
+			const normalized = await ensureInitialThread(chats);
 			if (!mounted) return;
 			setThreads(normalized);
 
@@ -788,11 +788,18 @@ function ChatPlaygroundContent({
 			setError(null);
 			const id = generateId();
 			const createdAt = nowIso();
+			const normalizedSettings =
+				modelId.trim().length > 0
+					? settings
+					: {
+							...settings,
+							compareModelIds: [],
+						};
 			const systemPrompt =
-				settings.systemPrompt ?? buildDefaultSystemPrompt(modelId);
-			const modelOverridesById = ensureModelOverridesForIds(settings, [
+				normalizedSettings.systemPrompt ?? buildDefaultSystemPrompt(modelId);
+			const modelOverridesById = ensureModelOverridesForIds(normalizedSettings, [
 				modelId,
-				...(settings.compareModelIds ?? []),
+				...(normalizedSettings.compareModelIds ?? []),
 			]);
 			const newThread: ChatThread = {
 				id,
@@ -803,7 +810,7 @@ function ChatPlaygroundContent({
 				updatedAt: createdAt,
 				messages: [],
 				settings: {
-					...settings,
+					...normalizedSettings,
 					systemPrompt,
 					modelOverridesById,
 				},
@@ -816,9 +823,7 @@ function ChatPlaygroundContent({
 	);
 
 	const createThread = useCallback(async () => {
-		const selectedModel =
-			activeThread?.modelId || lastModelId || defaultModelId;
-		if (!selectedModel) return;
+		const selectedModel = "";
 		if (activeThread) {
 			const changes = getChangedSettings(
 				activeThread.settings,
@@ -839,7 +844,7 @@ function ChatPlaygroundContent({
 			systemPrompt: buildDefaultSystemPrompt(selectedModel),
 		};
 		await createThreadWithSettings(selectedModel, defaults);
-	}, [activeThread, defaultModelId, lastModelId, createThreadWithSettings]);
+	}, [activeThread, createThreadWithSettings]);
 
 	const handleNewChatDecision = useCallback(
 		(useCurrent: boolean) => {
@@ -1153,12 +1158,16 @@ function ChatPlaygroundContent({
 				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
 				}
+				const tools: Array<Record<string, unknown>> = [];
 				if (
 					isUnified &&
-					(sendPayload?.webSearchEnabled ??
-						thread.settings.webSearchEnabled)
+					(sendPayload?.apiServerToolsEnabled ??
+						thread.settings.apiServerToolsEnabled)
 				) {
-					requestBody.tools = [{ type: "web_search_preview" }];
+					tools.push({ type: "gateway:datetime" });
+				}
+				if (tools.length > 0) {
+					requestBody.tools = tools;
 				}
 			}
 
@@ -2803,6 +2812,7 @@ function ChatPlaygroundContent({
 			reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 			endpoint: DEFAULT_SETTINGS.endpoint,
 			webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
+			apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
 			imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 			enabled: true,
 			displayName: "",
@@ -2955,8 +2965,8 @@ function ChatPlaygroundContent({
 	]);
 
 	return (
-		<div className="flex min-h-screen w-full bg-background text-foreground overflow-x-hidden">
-			<Sidebar className="border-r border-border bg-background">
+		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
+			<Sidebar collapsible="icon" className="border-r border-border bg-background">
 				<ChatSidebar
 					groupedThreads={groupedThreads}
 					threads={threads}
@@ -2974,7 +2984,7 @@ function ChatPlaygroundContent({
 				/>
 				<SidebarRail />
 			</Sidebar>
-			<SidebarInset className="flex h-dvh min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
+			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
 				<ChatHeader
 					activeThread={activeThread}
 					modelOptions={modelOptions}
@@ -3021,6 +3031,12 @@ function ChatPlaygroundContent({
 					}
 					onWebSearchEnabledChange={(enabled) =>
 						updateActiveSettings({ webSearchEnabled: enabled })
+					}
+					apiServerToolsEnabled={
+						activeThread?.settings.apiServerToolsEnabled ?? false
+					}
+					onApiServerToolsEnabledChange={(enabled) =>
+						updateActiveSettings({ apiServerToolsEnabled: enabled })
 					}
 					reasoningEnabled={
 						activeThread?.settings.reasoningEnabled ?? false
@@ -3138,7 +3154,7 @@ function ChatPlaygroundContent({
 
 export default function ChatPlayground(props: ChatPlaygroundProps) {
 	return (
-		<SidebarProvider defaultOpen className="h-dvh overflow-hidden">
+		<SidebarProvider defaultOpen contained className="h-full overflow-hidden">
 			<ChatPlaygroundContent {...props} />
 		</SidebarProvider>
 	);

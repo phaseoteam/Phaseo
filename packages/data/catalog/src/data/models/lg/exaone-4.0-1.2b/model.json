@@ -1,0 +1,57 @@
+{
+  "model_id": "lg/exaone-4.0-1.2b",
+  "organisation_id": "lg",
+  "name": "EXAONE 4.0 1.2B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-07-15T00:00:00",
+  "release_date": "2025-07-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "EXAONE AI Model License Agreement 1.2 - NC",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "lg/exaone-4.0-1.2b",
+  "family_id": "lg/exaone-4-0",
+  "links": [
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2507.11407"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://www.lgresearch.ai/blog/view?seq=576"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/LG-AI-EXAONE/EXAONE-4.0"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 65536
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-11-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    },
+    {
+      "name": "parameter_count",
+      "value": 1280000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 12000000000000
+    }
+  ],
+  "benchmarks": []
+}

@@ -18,6 +18,7 @@ type OrganisationDetails = {
 
 type DataModelRow = {
     model_id?: string | null;
+    previous_model_id?: string | null;
     name?: string | null;
     release_date?: string | null;
     deprecation_date?: string | null;
@@ -29,6 +30,8 @@ type DataModelRow = {
     organisation_id?: string | null;
     organisation?: OrganisationDetails | OrganisationDetails[] | null;
 };
+
+type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -109,6 +112,48 @@ function compareRows(a: DataModelRow, b: DataModelRow): number {
     return String(a.model_id ?? "").localeCompare(String(b.model_id ?? ""));
 }
 
+function normalizeLifecycleStatus(
+    status: string | null | undefined,
+    deprecationDate: string | null | undefined,
+    retirementDate: string | null | undefined
+): LifecycleStatus {
+    const now = Date.now();
+    const retirementAt = parseDate(retirementDate);
+    if (retirementAt !== null && retirementAt <= now) return "retired";
+
+    const normalized = (status ?? "").trim().toLowerCase();
+    if (normalized === "retired") return "retired";
+
+    const deprecatedAt = parseDate(deprecationDate);
+    if (deprecatedAt !== null && deprecatedAt <= now) return "deprecated";
+    if (normalized === "deprecated") return "deprecated";
+
+    if (!normalized) return null;
+    return "active";
+}
+
+function buildLifecycleMessage(
+    lifecycleStatus: LifecycleStatus,
+    deprecationDate: string | null | undefined,
+    retirementDate: string | null | undefined,
+    replacementModelId: string | null
+): string | null {
+    const replacement = replacementModelId ? ` Use "${replacementModelId}" instead.` : "";
+    if (lifecycleStatus === "retired") {
+        return retirementDate
+            ? `Model retired on ${retirementDate}.${replacement}`
+            : `Model is retired.${replacement}`;
+    }
+    if (lifecycleStatus === "deprecated") {
+        return retirementDate
+            ? `Model is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`
+            : deprecationDate
+                ? `Model is deprecated since ${deprecationDate}.${replacement}`
+                : `Model is deprecated.${replacement}`;
+    }
+    return null;
+}
+
 async function handleDataModels(req: Request) {
     const url = new URL(req.url);
     const auth = await guardAuth(req, { useKvCache: false });
@@ -139,6 +184,7 @@ async function handleDataModels(req: Request) {
     const includeHidden = parseBooleanParam(url.searchParams.get("include_hidden"), false);
     const statuses = parseMultiValue(url.searchParams, "status");
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
+    const modelIds = [...parseMultiValue(url.searchParams, "model_id"), ...parseMultiValue(url.searchParams, "id")];
     const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
     const offset = parseOffsetParam(url.searchParams.get("offset"));
 
@@ -147,19 +193,12 @@ async function handleDataModels(req: Request) {
         let query = supabase
             .from("data_models")
             .select(
-                "model_id, name, release_date, deprecation_date, retirement_date, status, hidden, input_types, output_types, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
+                "model_id, previous_model_id, name, release_date, deprecation_date, retirement_date, status, hidden, input_types, output_types, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
             );
 
         if (!includeHidden) {
             query = query.eq("hidden", false);
         }
-        if (statuses.length) {
-            query = query.in("status", statuses);
-        }
-        if (organisationIds.length) {
-            query = query.in("organisation_id", organisationIds);
-        }
-
         const { data, error } = await query;
         if (error) {
             throw new Error(error.message || "Failed to load model data");
@@ -168,10 +207,35 @@ async function handleDataModels(req: Request) {
         const sortedRows = (data ?? [])
             .filter((row: DataModelRow) => Boolean(row?.model_id))
             .sort(compareRows);
-        const paged = sortedRows.slice(offset, offset + limit);
+        const replacementByPreviousModel = new Map<string, string>();
+        for (const row of sortedRows) {
+            const previousModelId = String(row.previous_model_id ?? "").trim();
+            const replacementModelId = String(row.model_id ?? "").trim();
+            if (!previousModelId || !replacementModelId || replacementByPreviousModel.has(previousModelId)) continue;
+            replacementByPreviousModel.set(previousModelId, replacementModelId);
+        }
+        const filteredRows = sortedRows
+            .filter((row: DataModelRow) => {
+                if (statuses.length) {
+                    const status = String(row.status ?? "").trim();
+                    if (!status || !statuses.includes(status)) return false;
+                }
+                if (organisationIds.length) {
+                    const organisationId = String(row.organisation_id ?? "").trim();
+                    if (!organisationId || !organisationIds.includes(organisationId)) return false;
+                }
+                if (modelIds.length) {
+                    const modelId = String(row.model_id ?? "").trim();
+                    if (!modelId || !modelIds.includes(modelId)) return false;
+                }
+                return true;
+            });
+        const paged = filteredRows.slice(offset, offset + limit);
 
         const models = paged.map((row: DataModelRow) => {
             const organisation = Array.isArray(row.organisation) ? row.organisation[0] : row.organisation;
+            const replacementModelId = replacementByPreviousModel.get(String(row.model_id ?? "").trim()) ?? null;
+            const lifecycleStatus = normalizeLifecycleStatus(row.status, row.deprecation_date, row.retirement_date);
             return {
                 model_id: row.model_id ?? null,
                 name: row.name ?? null,
@@ -179,6 +243,18 @@ async function handleDataModels(req: Request) {
                 deprecation_date: row.deprecation_date ?? null,
                 retirement_date: row.retirement_date ?? null,
                 status: row.status ?? null,
+                lifecycle: {
+                    status: lifecycleStatus,
+                    deprecation_date: row.deprecation_date ?? null,
+                    retirement_date: row.retirement_date ?? null,
+                    replacement_model_id: replacementModelId,
+                    message: buildLifecycleMessage(
+                        lifecycleStatus,
+                        row.deprecation_date,
+                        row.retirement_date,
+                        replacementModelId
+                    ),
+                },
                 hidden: Boolean(row.hidden),
                 input_types: toStringArray(row.input_types),
                 output_types: toStringArray(row.output_types),
@@ -219,7 +295,7 @@ async function handleDataModels(req: Request) {
                 ok: true,
                 limit,
                 offset,
-                total: sortedRows.length,
+                total: filteredRows.length,
                 include_hidden: includeHidden,
                 models,
             },

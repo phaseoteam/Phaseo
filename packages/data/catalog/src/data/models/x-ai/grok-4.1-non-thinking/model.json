@@ -1,0 +1,18 @@
+{
+  "model_id": "x-ai/grok-4.1-non-thinking",
+  "organisation_id": "x-ai",
+  "name": "Grok 4.1 Non Thinking",
+  "status": "Available",
+  "previous_model_id": "x-ai/grok-4-fast-non-reasoning-2025-09-20",
+  "announced_date": "2025-11-17T00:00:00",
+  "release_date": "2025-11-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "x-ai/grok-4.1-non-thinking",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

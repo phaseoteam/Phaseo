@@ -311,7 +311,7 @@ export default function ProviderModelsClient({
 							</EmptyMedia>
 							<EmptyTitle>No models found</EmptyTitle>
 							<EmptyDescription>
-								There are no gateway-accessible models for this provider yet.
+								There are no models for this provider yet.
 							</EmptyDescription>
 						</EmptyHeader>
 						<EmptyContent>

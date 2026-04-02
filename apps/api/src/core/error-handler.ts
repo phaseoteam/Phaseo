@@ -57,6 +57,47 @@ function headersToRecord(headers: Headers | null | undefined): Record<string, st
     return Object.keys(out).length > 0 ? out : null;
 }
 
+function toExecuteFailureSample(
+    value: unknown,
+): Array<{
+    provider: string | null;
+    type: string | null;
+    status: number | null;
+    upstream_error_code: string | null;
+    upstream_error_message: string | null;
+    upstream_error_description: string | null;
+    upstream_error_param: string | null;
+    upstream_payload_preview: string | null;
+    retryable: boolean | null;
+}> | null {
+    if (!Array.isArray(value) || value.length === 0) return null;
+    const mapped = value.slice(0, 3).map((entry) => {
+        const e = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
+        const status = Number(e.status ?? NaN);
+        return {
+            provider: typeof e.provider === "string" ? e.provider : null,
+            type: typeof e.type === "string" ? e.type : null,
+            status: Number.isFinite(status) ? status : null,
+            upstream_error_code:
+                typeof e.upstream_error_code === "string" ? e.upstream_error_code : null,
+            upstream_error_message:
+                typeof e.upstream_error_message === "string" ? e.upstream_error_message : null,
+            upstream_error_description:
+                typeof e.upstream_error_description === "string"
+                    ? e.upstream_error_description
+                    : null,
+            upstream_error_param:
+                typeof e.upstream_error_param === "string" ? e.upstream_error_param : null,
+            upstream_payload_preview:
+                typeof e.upstream_payload_preview === "string"
+                    ? e.upstream_payload_preview
+                    : null,
+            retryable: typeof e.retryable === "boolean" ? e.retryable : null,
+        };
+    });
+    return mapped.length ? mapped : null;
+}
+
 function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
     const attemptErrors = ctx ? (ctx as any).attemptErrors ?? null : null;
     const safeAttemptErrors = Array.isArray(attemptErrors)
@@ -82,6 +123,7 @@ function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
                 upstream_error_type: e.upstream_error_type ?? null,
                 upstream_error_message: e.upstream_error_message ?? null,
                 upstream_error_description: e.upstream_error_description ?? null,
+                upstream_error_param: e.upstream_error_param ?? null,
                 upstream_payload_preview: e.upstream_payload_preview ?? null,
             };
         })
@@ -263,6 +305,45 @@ export function extractUpstreamUnsupportedParamSignal(args: {
         }
     }
 
+    const failureSample = Array.isArray((body as any)?.failure_sample)
+        ? ((body as any).failure_sample as Array<Record<string, any>>)
+        : [];
+    for (const sample of failureSample) {
+        if (!sample || typeof sample !== "object") continue;
+        const sampleParam =
+            typeof sample.upstream_error_param === "string"
+                ? sample.upstream_error_param.trim()
+                : "";
+        const sampleMessage =
+            typeof sample.upstream_error_message === "string"
+                ? sample.upstream_error_message
+                : "";
+        const sampleDescription =
+            typeof sample.upstream_error_description === "string"
+                ? sample.upstream_error_description
+                : "";
+        const mergedMessage = `${sampleMessage} ${sampleDescription}`.trim();
+        const paramSignalMessage = mergedMessage.toLowerCase();
+        const hasParamSignal =
+            paramSignalMessage.includes("param") ||
+            paramSignalMessage.includes("unknown voice") ||
+            paramSignalMessage.includes("unknown field") ||
+            paramSignalMessage.includes("unknown parameter") ||
+            paramSignalMessage.includes("unsupported");
+        if (
+            (sampleParam && hasParamSignal) ||
+            looksLikeUnsupportedParamMessage(mergedMessage) ||
+            paramSignalMessage.includes("unknown voice")
+        ) {
+            return {
+                internalCode: "UPSTREAM_UNSUPPORTED_PARAM",
+                param: sampleParam || extractParamFromMessage(mergedMessage),
+                path: null,
+                keyword: null,
+            };
+        }
+    }
+
     const topLevelCode = String(
         (body as any)?.error?.code ??
         (body as any)?.code ??
@@ -345,6 +426,59 @@ export function classifyErrorType(args: {
     return "system";
 }
 
+function hasExecuteUpstreamEvidence(body: any): boolean {
+    if (!body || typeof body !== "object") return false;
+    if (Array.isArray(body.failure_sample) && body.failure_sample.length > 0) return true;
+    if (Array.isArray(body.failed_providers) && body.failed_providers.length > 0) return true;
+    if (Array.isArray(body.failed_statuses) && body.failed_statuses.length > 0) return true;
+    if (
+        body.reason === "all_candidates_failed" ||
+        body.reason === "upstream_provider_payment_required"
+    ) {
+        return true;
+    }
+    if (typeof body.provider_payment_required_provider === "string") return true;
+    if (body.upstream_error && typeof body.upstream_error === "object") return true;
+    return false;
+}
+
+export function classifyErrorOrigin(args: {
+    stage: "before" | "execute";
+    status?: number | null;
+    errorCode?: string | null;
+    body?: any;
+}): "upstream" | "gateway" | "user" {
+    const code = String(args.errorCode ?? "").toLowerCase();
+    const status = Number(args.status ?? 0);
+
+    if (args.stage === "before") {
+        if (status >= 500) return "gateway";
+        return "user";
+    }
+
+    if (code === "upstream_error" || code === "provider_payment_required") {
+        return "upstream";
+    }
+    if (hasExecuteUpstreamEvidence(args.body)) {
+        return "upstream";
+    }
+
+    if (
+        code === "pipeline_execution_error" ||
+        code === "before_error" ||
+        code.includes("pipeline") ||
+        code.includes("gateway") ||
+        code.includes("executor")
+    ) {
+        return "gateway";
+    }
+
+    if (status >= 500) return "gateway";
+    if (status === 408 || status === 429) return "upstream";
+    if (status >= 400) return "user";
+    return "gateway";
+}
+
 // Helper to safely parse JSON from a Response
 export async function safeJson(res: Response): Promise<any> {
     try { return await res.clone().json(); } catch { return {}; }
@@ -393,17 +527,27 @@ export async function handleError({
     const upstreamUnsupportedParamSignal = extractUpstreamUnsupportedParamSignal({ stage, body });
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
     let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
+    let errorOrigin = classifyErrorOrigin({ stage, status: res.status, errorCode: errCode, body });
     if (upstreamUnsupportedParamSignal) {
         // Unsupported-param failures returned by upstream are generally a gateway/provider
         // capability-mapping issue, not caller behavior.
         attribution = "upstream";
         errorType = "system";
+        errorOrigin = "upstream";
     }
     headers.set("X-Gateway-Error-Attribution", attribution);
+    headers.set("X-Gateway-Error-Origin", errorOrigin);
 
     const attributionHeaders = req
         ? readAttributionHeaders(req)
-        : { referer: null, appTitle: null, appId: null, appName: null };
+        : {
+            referer: null,
+            appTitle: null,
+            appId: null,
+            appName: null,
+            sessionId: null,
+            userId: null,
+        };
     const requestMeta = (() => {
         if (!req) {
             return {
@@ -464,6 +608,8 @@ export async function handleError({
         status: statusCode,
         internalCode: upstreamUnsupportedParamSignal?.internalCode ?? null,
         unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
+        errorOrigin,
+        attribution,
     });
     if (debugEnabled) {
         void logDebugEvent("error.upstream", {
@@ -483,10 +629,65 @@ export async function handleError({
         status_code: statusCode,
         error: errCode,
         error_type: errorType,
+        error_origin: errorOrigin,
         description: fallbackDescription,
     };
+    if (
+        stage === "execute" &&
+        (errCode === "upstream_error" || errCode === "provider_payment_required")
+    ) {
+        if (typeof body?.reason === "string") errorPayload.reason = body.reason;
+        const attemptCount = Number(body?.attempt_count ?? NaN);
+        if (Number.isFinite(attemptCount) && attemptCount > 0) {
+            errorPayload.attempt_count = attemptCount;
+        }
+        if (Array.isArray(body?.failed_providers) && body.failed_providers.length > 0) {
+            errorPayload.failed_providers = body.failed_providers
+                .filter((provider: unknown): provider is string => typeof provider === "string")
+                .slice(0, 8);
+        }
+        if (Array.isArray(body?.failed_statuses) && body.failed_statuses.length > 0) {
+            errorPayload.failed_statuses = body.failed_statuses
+                .map((status: unknown) => Number(status ?? NaN))
+                .filter((status: number) => Number.isFinite(status));
+        }
+        const failureSample = toExecuteFailureSample(body?.failure_sample);
+        if (failureSample) {
+            errorPayload.failure_sample = failureSample;
+            const first = failureSample[0];
+            errorPayload.upstream_error = {
+                code: first?.upstream_error_code ?? null,
+                message: first?.upstream_error_message ?? null,
+                description: first?.upstream_error_description ?? null,
+                param: first?.upstream_error_param ?? null,
+            };
+        }
+        if (typeof body?.provider_payment_required_provider === "string") {
+            errorPayload.provider_payment_required_provider = body.provider_payment_required_provider;
+        }
+        if (typeof body?.provider_payment_required_support_notice === "string") {
+            errorPayload.provider_payment_required_support_notice =
+                body.provider_payment_required_support_notice;
+        }
+    }
     if (errCode === "validation_error" && Array.isArray(body?.details)) {
         errorPayload.details = body.details;
+    }
+    if (errCode === "unsupported_model_or_endpoint") {
+        if (typeof body?.reason === "string" && body.reason.trim().length > 0) {
+            errorPayload.reason = body.reason;
+        }
+        if (body?.provider_candidate_diagnostics && typeof body.provider_candidate_diagnostics === "object") {
+            errorPayload.provider_candidate_diagnostics = body.provider_candidate_diagnostics;
+        }
+        if (body?.provider_enablement && typeof body.provider_enablement === "object") {
+            errorPayload.provider_enablement = body.provider_enablement;
+        }
+        if (Array.isArray(body?.missing_pricing_providers) && body.missing_pricing_providers.length > 0) {
+            errorPayload.missing_pricing_providers = body.missing_pricing_providers
+                .filter((provider: unknown): provider is string => typeof provider === "string")
+                .slice(0, 16);
+        }
     }
     if (debugEnabled) {
         const routingDebug = ctx
@@ -605,6 +806,25 @@ export async function handleError({
         referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
         appId: ctx?.meta?.appId ?? body?.meta?.appId ?? attributionHeaders.appId ?? null,
         appName: ctx?.meta?.appName ?? body?.meta?.appName ?? attributionHeaders.appName ?? null,
+        authMethod: ctx?.meta?.authMethod ?? "api_key",
+        oauthClientId: ctx?.meta?.oauthClientId ?? null,
+        oauthUserId: ctx?.meta?.oauthUserId ?? null,
+        requestUserId:
+            ctx?.meta?.requestUserId ??
+            (typeof body?.user === "string" ? body.user : null) ??
+            attributionHeaders.userId ??
+            null,
+        sessionId:
+            ctx?.meta?.sessionId ??
+            (typeof body?.session_id === "string" ? body.session_id : null) ??
+            (typeof body?.sessionId === "string" ? body.sessionId : null) ??
+            attributionHeaders.sessionId ??
+            null,
+        traceData:
+            ctx?.meta?.trace ??
+            (body?.trace && typeof body.trace === "object" && !Array.isArray(body.trace)
+                ? body.trace
+                : null),
         statusCode,
         errorCode: `${attribution}:${errCode}`,
         errorMessage: description ?? fallbackDescription,

@@ -17,21 +17,21 @@
     "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
     "nanoid": "^5.1.6",
-    "react": "19.2.3",
+    "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "@types/react": "19.2.7",
+    "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^40.4.1",
     "electron-vite": "^5.0.0",
     "rimraf": "^6.0.0",
     "typescript": "^5.7.3",
-    "vite": "^6.0.5",
+    "vite": "^8.0.3",
     "vitest": "^4.0.18"
   }
 }

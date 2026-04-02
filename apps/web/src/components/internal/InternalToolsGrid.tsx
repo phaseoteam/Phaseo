@@ -17,6 +17,7 @@ import {
 	Users,
 	GitCompare,
 	RefreshCcw,
+	Gift,
 } from "lucide-react";
 
 const internalTools = [
@@ -63,6 +64,15 @@ const internalTools = [
 			"Revalidate cached model, provider, search, ranking, and landing data from one admin surface.",
 		icon: RefreshCcw,
 		href: "/internal/cache",
+		comingSoon: false,
+	},
+	{
+		id: "promo-credits",
+		title: "Promo Credits",
+		description:
+			"Create, review, and disable friendly promo credit codes for wallet credits.",
+		icon: Gift,
+		href: "/internal/credits",
 		comingSoon: false,
 	},
 	{

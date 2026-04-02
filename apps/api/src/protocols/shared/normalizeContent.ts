@@ -32,6 +32,20 @@ function resolveImageMimeType(value: unknown): string | undefined {
 				: undefined;
 }
 
+function resolveAudioFormat(value: unknown): string | undefined {
+	if (!value || typeof value !== "object") return undefined;
+	const direct =
+		typeof (value as any)?.format === "string"
+			? (value as any).format
+			: typeof (value as any)?.audio_format === "string"
+				? (value as any).audio_format
+				: undefined;
+	if (direct) return direct;
+	const nested = (value as any)?.input_audio;
+	if (!nested || typeof nested !== "object") return undefined;
+	return typeof nested?.format === "string" ? nested.format : undefined;
+}
+
 function parseDataUrl(value: string): { data: string; mimeType?: string } {
 	const commaIndex = value.indexOf(",");
 	if (commaIndex < 0) return { data: "" };
@@ -112,7 +126,7 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 			} as IRContentPart;
 		}
 
-		if (part?.type === "input_audio") {
+		if (part?.type === "input_audio" || part?.type === "output_audio" || part?.type === "audio") {
 			const audioData = part.input_audio?.data || part.data;
 			const audioUrl =
 				part.input_audio?.url ||
@@ -123,7 +137,7 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 				type: "audio",
 				source: audioUrl ? "url" : "data",
 				data: audioUrl || audioData,
-				format: part.input_audio?.format || part.format,
+				format: resolveAudioFormat(part),
 			} as IRContentPart;
 		}
 

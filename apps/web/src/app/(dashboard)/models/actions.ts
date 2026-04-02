@@ -175,6 +175,12 @@ export interface ModelUpdatePayload {
     family_name?: string
     family_description?: string | null
   }
+  subscription_plan_models?: Array<{
+    plan_uuid: string
+    model_info?: unknown
+    rate_limit?: unknown
+    other_info?: unknown
+  }>
 }
 
 function buildProviderApiModelId(providerId: string, apiModelId: string) {
@@ -187,6 +193,12 @@ function buildPricingModelKey(
   capabilityId: string
 ) {
   return `${providerId}:${apiModelId}:${capabilityId || "text.generate"}`
+}
+
+function inferOrganisationIdFromApiModelId(modelId: string): string | null {
+  const [provider] = modelId.split("/")
+  const normalized = provider?.trim().toLowerCase()
+  return normalized ? normalized : null
 }
 
 type ProviderPair = { provider_id: string; api_model_id: string }
@@ -268,6 +280,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     provider_capabilities,
     aliases,
     family,
+    subscription_plan_models,
   } = payload
 
   const nowIso = new Date().toISOString()
@@ -297,11 +310,42 @@ export async function updateModel(payload: ModelUpdatePayload) {
 
   const { data: existingModelRow } = await supabase
     .from("data_models")
-    .select("organisation_id")
+    .select("organisation_id,name")
     .eq("model_id", modelId)
     .maybeSingle()
   if (!existingModelRow) {
     throw new Error(`Model not found: ${modelId}`)
+  }
+
+  const canonicalOrganisationId =
+    (organisation_id && organisation_id.trim()) ||
+    (existingModelRow.organisation_id && existingModelRow.organisation_id.trim()) ||
+    inferOrganisationIdFromApiModelId(modelId)
+
+  if (!canonicalOrganisationId) {
+    throw new Error("Could not infer organisation_id for canonical api model")
+  }
+
+  const canonicalDisplayName =
+    (name && name.trim()) ||
+    (existingModelRow.name && existingModelRow.name.trim()) ||
+    modelId
+
+  const { error: apiModelError } = await supabase
+    .from("data_api_models")
+    .upsert(
+      {
+        api_model_id: modelId,
+        organisation_id: canonicalOrganisationId,
+        display_name: canonicalDisplayName,
+        updated_at: nowIso,
+      },
+      { onConflict: "api_model_id" }
+    )
+
+  if (apiModelError) {
+    console.error("[updateModel] Error upserting data_api_models:", apiModelError)
+    throw new Error(apiModelError.message)
   }
 
   const { error: modelError } = await supabase
@@ -458,7 +502,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     pricing_rules === undefined
       ? undefined
       : pricing_rules
-          .filter((rule) => rule.provider_id && rule.api_model_id && rule.meter)
+          .filter((rule) => rule.provider_id && rule.meter)
           .map((rule) => {
             const capabilityId = rule.capability_id?.trim() || "text.generate"
             const unitSize = Number(rule.unit_size ?? 1)
@@ -466,11 +510,11 @@ export async function updateModel(payload: ModelUpdatePayload) {
             const priority = Number(rule.priority ?? 100)
             return {
               provider_id: rule.provider_id.trim(),
-              api_model_id: rule.api_model_id.trim(),
+              api_model_id: modelId,
               capability_id: capabilityId,
               model_key: buildPricingModelKey(
                 rule.provider_id.trim(),
-                rule.api_model_id.trim(),
+                modelId,
                 capabilityId
               ),
               pricing_plan: rule.pricing_plan?.trim() || "standard",
@@ -493,7 +537,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     const { data: existingProviderModelRows, error: existingProviderModelRowsError } = await supabase
       .from("data_api_provider_models")
       .select("provider_api_model_id, provider_id, api_model_id")
-      .eq("internal_model_id", modelId)
+      .eq("model_id", modelId)
 
     if (existingProviderModelRowsError) {
       console.error("[updateModel] Error loading existing provider models:", existingProviderModelRowsError)
@@ -525,7 +569,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     const { error: deleteProvidersError } = await supabase
       .from("data_api_provider_models")
       .delete()
-      .eq("internal_model_id", modelId)
+      .eq("model_id", modelId)
 
     if (deleteProvidersError) {
       console.error("[updateModel] Error replacing provider models:", deleteProvidersError)
@@ -533,20 +577,20 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
 
     const providerRows = provider_models
-      .filter((pm) => pm.provider_id && pm.api_model_id)
+      .filter((pm) => pm.provider_id)
       .map((pm) => ({
+        api_model_id: modelId,
         provider_api_model_id:
           pm.id && !pm.id.startsWith("new-")
             ? pm.id
-            : buildProviderApiModelId(pm.provider_id, pm.api_model_id),
+            : buildProviderApiModelId(pm.provider_id, modelId),
         provider_id: pm.provider_id,
-        api_model_id: pm.api_model_id,
         provider_model_slug: pm.provider_model_slug ?? null,
         prompt_training_policy_override: pm.prompt_training_policy_override ?? null,
         prompt_training_override_notes: pm.prompt_training_override_notes ?? null,
         prompt_training_override_source_url:
           pm.prompt_training_override_source_url ?? null,
-        internal_model_id: modelId,
+        internal_model_id: null,
         is_active_gateway: pm.is_active_gateway ?? false,
         input_modalities: pm.input_modalities ?? null,
         output_modalities: pm.output_modalities ?? null,
@@ -589,7 +633,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     const { data: providerModelRows, error: providerModelsError } = await supabase
       .from("data_api_provider_models")
       .select("provider_api_model_id, provider_id, api_model_id")
-      .eq("internal_model_id", modelId)
+      .eq("model_id", modelId)
 
     if (providerModelsError) {
       console.error("[updateModel] Error loading provider models for capabilities:", providerModelsError)
@@ -644,12 +688,12 @@ export async function updateModel(payload: ModelUpdatePayload) {
     )
 
     const capabilityRows = provider_capabilities
-      .filter((capability) => capability.provider_id && capability.api_model_id && capability.capability_id)
+      .filter((capability) => capability.provider_id && capability.capability_id)
       .map((capability) => {
         const capabilityId = capability.capability_id.trim()
         const providerApiModelId =
-          providerApiModelIdByPair.get(`${capability.provider_id}:${capability.api_model_id}`) ??
-          buildProviderApiModelId(capability.provider_id, capability.api_model_id)
+          providerApiModelIdByPair.get(`${capability.provider_id}:${modelId}`) ??
+          buildProviderApiModelId(capability.provider_id, modelId)
         const parsedStatus =
           capability.status === "deranked" || capability.status === "disabled"
             ? capability.status
@@ -700,7 +744,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     const { data: providerModelRows, error: providerModelsError } = await supabase
       .from("data_api_provider_models")
       .select("provider_api_model_id, provider_id, api_model_id")
-      .eq("internal_model_id", modelId)
+      .eq("model_id", modelId)
 
     if (providerModelsError) {
       console.error("[updateModel] Error loading provider models for pricing:", providerModelsError)
@@ -720,7 +764,8 @@ export async function updateModel(payload: ModelUpdatePayload) {
         provider_api_model_id: buildProviderApiModelId(pair.provider_id, pair.api_model_id),
         provider_id: pair.provider_id,
         api_model_id: pair.api_model_id,
-        internal_model_id: modelId,
+        model_id: modelId,
+        internal_model_id: null,
         is_active_gateway: false,
         created_at: nowIso,
         updated_at: nowIso,
@@ -743,7 +788,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     const { data: providerModelRowsAfter, error: providerModelsAfterError } = await supabase
       .from("data_api_provider_models")
       .select("provider_api_model_id, provider_id, api_model_id")
-      .eq("internal_model_id", modelId)
+      .eq("model_id", modelId)
 
     if (providerModelsAfterError) {
       console.error(
@@ -867,6 +912,42 @@ export async function updateModel(payload: ModelUpdatePayload) {
           console.error("[updateModel] Error inserting aliases:", insertAliasesError)
           throw new Error(insertAliasesError.message)
         }
+      }
+    }
+  }
+
+  if (subscription_plan_models !== undefined) {
+    const { error: deletePlanModelsError } = await supabase
+      .from("data_subscription_plan_models")
+      .delete()
+      .eq("model_id", modelId)
+
+    if (deletePlanModelsError) {
+      console.error("[updateModel] Error replacing subscription plan model links:", deletePlanModelsError)
+      throw new Error(deletePlanModelsError.message)
+    }
+
+    const planModelRows = subscription_plan_models
+      .filter((row) => typeof row.plan_uuid === "string" && row.plan_uuid.trim())
+      .map((row) => ({
+        plan_uuid: row.plan_uuid.trim(),
+        model_id: modelId,
+        model_info:
+          row.model_info && typeof row.model_info === "object" ? row.model_info : {},
+        rate_limit:
+          row.rate_limit && typeof row.rate_limit === "object" ? row.rate_limit : {},
+        other_info:
+          row.other_info && typeof row.other_info === "object" ? row.other_info : {},
+      }))
+
+    if (planModelRows.length > 0) {
+      const { error: insertPlanModelsError } = await supabase
+        .from("data_subscription_plan_models")
+        .upsert(planModelRows, { onConflict: "plan_uuid,model_id" })
+
+      if (insertPlanModelsError) {
+        console.error("[updateModel] Error upserting subscription plan model links:", insertPlanModelsError)
+        throw new Error(insertPlanModelsError.message)
       }
     }
   }
@@ -1006,7 +1087,7 @@ export async function deleteProviderModel(id: string) {
 
   const { data: providerModelRow } = await supabase
     .from("data_api_provider_models")
-    .select("internal_model_id")
+    .select("model_id")
     .eq("provider_api_model_id", id)
     .maybeSingle()
 
@@ -1019,7 +1100,7 @@ export async function deleteProviderModel(id: string) {
     throw new Error(error.message)
   }
 
-  revalidateModelApiInfoTags({ modelId: providerModelRow?.internal_model_id ?? null })
+  revalidateModelApiInfoTags({ modelId: providerModelRow?.model_id ?? null })
   revalidatePath(`/models/**`)
   return { ok: true }
 }

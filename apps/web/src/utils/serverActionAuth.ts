@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/utils/supabase/server";
+import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -46,6 +47,13 @@ export async function requireTeamMembership(
 
 	const { data, error } = await q;
 	if (error || !data) throw new Error("Unauthorized");
+
+	await evaluateTeamSsoEnforcementNoop({
+		teamId,
+		userId,
+		authMethod: "unknown",
+		source: "server_action",
+	});
 }
 
 export function requireActingUser(

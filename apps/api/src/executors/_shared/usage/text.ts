@@ -37,14 +37,16 @@ export function normalizeTextUsageForPricing(
 
 	const tokenUsage = resolveCanonicalTokenUsage(usageRaw);
 
+	const cachedReadTokensFromOpenAICompatDetails = pickFirstNumber(usageRaw, [
+		"input_tokens_details.cached_tokens",
+		"prompt_tokens_details.cached_tokens",
+	]);
 	const cachedReadTokens = pickFirstNumber(usageRaw, [
 		"cached_read_text_tokens",
 		"cache_read_input_tokens",
 		"cachedInputTokens",
 		"cachedContentTokenCount",
-		"input_tokens_details.cached_tokens",
-		"prompt_tokens_details.cached_tokens",
-	]);
+	]) ?? cachedReadTokensFromOpenAICompatDetails;
 	const cachedWriteTokens = pickFirstNumber(usageRaw, [
 		"cached_write_text_tokens",
 		"cache_creation_input_tokens",
@@ -92,7 +94,20 @@ export function normalizeTextUsageForPricing(
 		"output_tokens_details.output_videos",
 	]);
 	const requests = resolveRequestCountUsage(usageRaw);
-	const cachedReadAsSubset = options?.cachedReadTokensAreSubsetOfInput === true;
+	const usageRecord = usageRaw as Record<string, any>;
+	const explicitSubsetHint =
+		usageRecord.cached_read_tokens_are_subset_of_input ??
+		usageRecord.cachedReadTokensAreSubsetOfInput;
+	const cachedReadAsSubset =
+		options?.cachedReadTokensAreSubsetOfInput === true ||
+		(
+			options?.cachedReadTokensAreSubsetOfInput !== false &&
+			explicitSubsetHint !== false &&
+			(
+				explicitSubsetHint === true ||
+				typeof cachedReadTokensFromOpenAICompatDetails === "number"
+			)
+		);
 	const cachedReadValue = typeof cachedReadTokens === "number" ? Math.max(0, Math.round(cachedReadTokens)) : 0;
 	const uncachedInputTokens = cachedReadAsSubset
 		? Math.max(0, tokenUsage.inputTokens - cachedReadValue)

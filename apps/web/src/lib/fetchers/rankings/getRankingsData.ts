@@ -128,6 +128,120 @@ export type TopAppData = {
     image_url?: string | null;
 };
 
+export type TrendingAppData = {
+    app_id: string;
+    app_name: string;
+    current_week_tokens: number;
+    previous_week_tokens: number;
+    growth_tokens: number;
+    growth_pct: number | null;
+};
+
+export type WeeklyModelProviderTokens = {
+    week_bucket: string;
+    model_id: string;
+    provider: string;
+    requests: number;
+    total_tokens: number;
+    total_cost_usd: number;
+    success_rate: number | null;
+};
+
+export type DailyAppRollup = {
+    day_bucket: string;
+    app_id: string;
+    requests: number;
+    total_tokens: number;
+    total_cost_usd: number;
+    unique_models: number;
+    success_rate: number | null;
+};
+
+function hasValidAppId(appId: unknown): appId is string {
+    const normalizedId = String(appId ?? "").trim();
+    if (!normalizedId) return false;
+
+    const lowerId = normalizedId.toLowerCase();
+    return (
+        lowerId !== "unknown" &&
+        lowerId !== "unknown-app" &&
+        lowerId !== "unknown_app"
+    );
+}
+
+function normalizeAppTitle(value: unknown): string | null {
+    const trimmed = String(value ?? "").trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed
+        .toLowerCase()
+        .replace(/[?.!]+$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (
+        normalized === "unknown" ||
+        normalized === "unknown app" ||
+        normalized === "app" ||
+        normalized === "untitled" ||
+        normalized === "n/a" ||
+        normalized === "na" ||
+        normalized === "none" ||
+        normalized === "null" ||
+        normalized === "undefined"
+    ) {
+        return null;
+    }
+
+    return trimmed;
+}
+
+function deriveTitleFromUrl(value: unknown): string | null {
+    const raw = String(value ?? "").trim();
+    if (!raw) return null;
+
+    try {
+        const url = new URL(raw);
+        if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+        const hostname = url.hostname.replace(/^www\./i, "").trim();
+        return hostname || null;
+    } catch {
+        return null;
+    }
+}
+
+async function resolveFallbackAppTitlesById(
+    appIds: string[]
+): Promise<Map<string, string>> {
+    const uniqueIds = Array.from(new Set(appIds.filter(hasValidAppId)));
+    if (uniqueIds.length === 0) return new Map();
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+        .from("api_apps")
+        .select("id, title, url")
+        .in("id", uniqueIds);
+
+    if (error) {
+        console.error("[resolveFallbackAppTitlesById] Error:", error);
+        return new Map();
+    }
+
+    const titleById = new Map<string, string>();
+    for (const row of data ?? []) {
+        const appId = String(row?.id ?? "").trim();
+        if (!hasValidAppId(appId)) continue;
+
+        const resolvedTitle =
+            normalizeAppTitle(row?.title) ?? deriveTitleFromUrl(row?.url);
+        if (!resolvedTitle) continue;
+
+        titleById.set(appId, resolvedTitle);
+    }
+
+    return titleById;
+}
+
 export type TopModelWithMetadata = {
     model_id: string;
     model_name: string;
@@ -579,7 +693,138 @@ export async function getTopApps(
         p_limit: limit,
     });
 
-    return { data: (data ?? []) as TopAppData[] };
+    const filteredData = ((data ?? []) as TopAppData[])
+        .filter((row) => hasValidAppId(row?.app_id))
+        .map((row) => ({
+            ...row,
+            app_id: row.app_id.trim(),
+        }));
+
+    const unresolvedIds = filteredData
+        .filter((row) => !normalizeAppTitle(row.app_name))
+        .map((row) => row.app_id);
+    const fallbackTitlesById = await resolveFallbackAppTitlesById(unresolvedIds);
+
+    return {
+        data: filteredData.map((row) => ({
+            ...row,
+            app_name:
+                normalizeAppTitle(row.app_name) ??
+                fallbackTitlesById.get(row.app_id) ??
+                row.app_id,
+        })),
+    };
+}
+
+/**
+ * Get model rankings rows only (without trending + summary companion RPCs).
+ */
+export async function getModelRankingsRows(
+    timeRange: string = "week",
+    metric: string = "tokens",
+    limit: number = 50
+): Promise<RankingModel[]> {
+    cacheLife(RANKINGS_CACHE);
+    cacheTag("public-rankings");
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("get_public_model_rankings", {
+        p_time_range: timeRange,
+        p_metric: metric,
+        p_limit: limit,
+    });
+
+    if (error) {
+        console.error("[getModelRankingsRows] Error:", error);
+        return [];
+    }
+
+    return (data ?? []) as RankingModel[];
+}
+
+/**
+ * Get trending apps by week-over-week token growth.
+ */
+export async function getTrendingApps(
+    limit: number = 20,
+    minWeekTokens: number = 0
+): Promise<{ data: TrendingAppData[] }> {
+    cacheLife(RANKINGS_CACHE);
+    cacheTag("public-top-apps");
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("get_public_trending_apps", {
+        p_limit: limit,
+        p_min_week_tokens: minWeekTokens,
+    });
+
+    if (error) {
+        console.error("[getTrendingApps] Error:", error);
+        return { data: [] };
+    }
+
+    const filteredData = ((data ?? []) as TrendingAppData[])
+        .filter((row) => hasValidAppId(row?.app_id))
+        .map((row) => ({
+            ...row,
+            app_id: row.app_id.trim(),
+        }));
+
+    const unresolvedIds = filteredData
+        .filter((row) => !normalizeAppTitle(row.app_name))
+        .map((row) => row.app_id);
+    const fallbackTitlesById = await resolveFallbackAppTitlesById(unresolvedIds);
+
+    return {
+        data: filteredData.map((row) => ({
+            ...row,
+            app_name:
+                normalizeAppTitle(row.app_name) ??
+                fallbackTitlesById.get(row.app_id) ??
+                row.app_id,
+        })),
+    };
+}
+
+export async function getWeeklyModelProviderTokens(
+    sinceIso?: string,
+): Promise<{ data: WeeklyModelProviderTokens[] }> {
+    cacheLife(RANKINGS_CACHE);
+    cacheTag("public-rankings");
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc(
+        "get_usage_tokens_weekly_model_provider",
+        {
+            p_since: sinceIso ?? null,
+        },
+    );
+
+    if (error) {
+        console.error("[getWeeklyModelProviderTokens] Error:", error);
+        return { data: [] };
+    }
+
+    return { data: (data ?? []) as WeeklyModelProviderTokens[] };
+}
+
+export async function getDailyAppRollup(
+    sinceIso?: string,
+): Promise<{ data: DailyAppRollup[] }> {
+    cacheLife(RANKINGS_CACHE);
+    cacheTag("public-top-apps");
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("get_usage_daily_app", {
+        p_since: sinceIso ?? null,
+    });
+
+    if (error) {
+        console.error("[getDailyAppRollup] Error:", error);
+        return { data: [] };
+    }
+
+    return { data: (data ?? []) as DailyAppRollup[] };
 }
 
 /**

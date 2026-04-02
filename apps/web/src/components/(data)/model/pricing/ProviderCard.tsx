@@ -3,8 +3,7 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { BadgeX, AlertTriangle, PauseCircle } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
 	HoverCard,
@@ -17,8 +16,8 @@ import {
 	VideoGenSection,
 	InputsSection,
 	AdvancedTable,
-	CacheWriteSection,
 	RequestsSection,
+	UpcomingPricingSection,
 } from "@/components/(data)/model/pricing/sections";
 import ProviderModelParameters from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
@@ -88,11 +87,118 @@ function formatLeavingDate(value: string, now: Date): string {
 	});
 }
 
+const PROVIDER_STATUS_PRIORITY_ORDER = [
+	"active",
+	"deranked_lvl1",
+	"deranked_lvl2",
+	"deranked_lvl3",
+	"inactive",
+	"disabled",
+	"not_listed",
+] as const;
+
+type CanonicalGatewayStatus = (typeof PROVIDER_STATUS_PRIORITY_ORDER)[number];
+
+const providerStatusPriority = new Map<string, number>(
+	PROVIDER_STATUS_PRIORITY_ORDER.map((status, index) => [status, index])
+);
+
+const PROVIDER_STATUS_META: Record<
+	CanonicalGatewayStatus,
+	{
+		label: string;
+		icon: React.ElementType;
+		iconClass: string;
+		description: string;
+	}
+> = {
+	active: {
+		label: "Active",
+		icon: CheckCircle2,
+		iconClass: "text-green-600",
+		description: "Active on gateway.",
+	},
+	deranked_lvl1: {
+		label: "Deranked Level 1",
+		icon: AlertTriangle,
+		iconClass: "text-amber-500",
+		description: "Deranked on gateway (Level 1).",
+	},
+	deranked_lvl2: {
+		label: "Deranked Level 2",
+		icon: AlertTriangle,
+		iconClass: "text-amber-600",
+		description: "Deranked on gateway (Level 2).",
+	},
+	deranked_lvl3: {
+		label: "Deranked Level 3",
+		icon: AlertTriangle,
+		iconClass: "text-red-500",
+		description: "Deranked on gateway (Level 3).",
+	},
+	inactive: {
+		label: "Inactive",
+		icon: XCircle,
+		iconClass: "text-zinc-500",
+		description: "Configured but not active on gateway.",
+	},
+	disabled: {
+		label: "Disabled",
+		icon: Ban,
+		iconClass: "text-red-600",
+		description: "Capability is disabled.",
+	},
+	not_listed: {
+		label: "Not Listed",
+		icon: XCircle,
+		iconClass: "text-zinc-500",
+		description: "No gateway status listed for this provider.",
+	},
+};
+
+function normalizeGatewayStatusValue(value: unknown): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+	if (!normalized) return "";
+	if (normalized === "not_active") return "inactive";
+	if (normalized === "deranked" || normalized === "de_ranked") {
+		return "deranked_lvl1";
+	}
+	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
+	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
+	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	return normalized;
+}
+
+function resolveGatewayStatus(
+	isActiveGateway: boolean | null | undefined,
+	capabilityStatus: unknown
+): string {
+	const normalizedCapabilityStatus =
+		normalizeGatewayStatusValue(capabilityStatus);
+
+	if (normalizedCapabilityStatus === "disabled") return "disabled";
+	if (normalizedCapabilityStatus.startsWith("deranked")) {
+		return normalizedCapabilityStatus;
+	}
+	if (
+		normalizedCapabilityStatus &&
+		normalizedCapabilityStatus !== "active" &&
+		normalizedCapabilityStatus !== "inactive"
+	) {
+		return normalizedCapabilityStatus;
+	}
+	if (normalizedCapabilityStatus === "inactive") return "inactive";
+	return isActiveGateway ? "active" : "inactive";
+}
+
 export default function ProviderCard({
 	provider,
 	plan,
 	runtimeStats,
-	routingStatus,
+	routingStatus: _routingStatus,
 }: {
 	provider: ProviderPricing;
 	plan: string;
@@ -111,13 +217,10 @@ export default function ProviderCard({
 	const matchingProviderModels = provider.provider_models.filter((pm) =>
 		planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
 	);
-	const matchingProviderModel = matchingProviderModels[0];
-	const hasDisabledPlanModel = matchingProviderModels.some(
-		(pm) => pm.capability_status === "disabled"
-	);
-	const isActiveGateway = matchingProviderModels.some(
-		(pm) => pm.is_active_gateway && pm.capability_status !== "disabled"
-	);
+	const providerModelsInScope =
+		matchingProviderModels.length > 0
+			? matchingProviderModels
+			: provider.provider_models;
 
 	const leavingSoonRule = planRules
 		.filter((r) => {
@@ -131,45 +234,60 @@ export default function ProviderCard({
 				new Date(b.effective_to!).getTime()
 		)[0];
 
-	let status: "Active" | "Leaving Soon" | "Not Active" | "Not Available";
-	let statusIcon: React.ElementType;
-	let statusClass: string;
-
-	if (isActiveGateway && leavingSoonRule) {
-		status = "Leaving Soon";
-		statusIcon = AlertTriangle;
-		statusClass = "h-3.5 w-3.5 text-amber-500";
-	} else if (isActiveGateway) {
-		status = "Active";
-		statusIcon = AlertTriangle;
-		statusClass = "h-3.5 w-3.5 text-emerald-500";
-	} else if (hasDisabledPlanModel) {
-		status = "Not Active";
-		statusIcon = PauseCircle;
-		statusClass = "h-3.5 w-3.5 text-amber-500";
-	} else {
-		status = "Not Available";
-		statusIcon = BadgeX;
-		statusClass = "h-3.5 w-3.5 text-red-500";
-	}
-
-	const showPrimaryStatusBadge =
-		status === "Leaving Soon" || status === "Not Active" || status === "Not Available";
-	const statusBadgeLabel =
-		status === "Leaving Soon" && leavingSoonRule?.effective_to
-			? `Leaving on ${formatLeavingDate(leavingSoonRule.effective_to, now)}`
-			: status;
+	const resolvedGatewayStatuses = providerModelsInScope.map((providerModel) =>
+		resolveGatewayStatus(
+			providerModel.is_active_gateway,
+			providerModel.capability_status
+		)
+	);
+	const chosenGatewayStatus =
+		resolvedGatewayStatuses.reduce<string | undefined>((current, candidate) => {
+			if (!current) return candidate;
+			const currentPriority =
+				providerStatusPriority.get(current) ?? providerStatusPriority.size + 1;
+			const candidatePriority =
+				providerStatusPriority.get(candidate) ?? providerStatusPriority.size + 1;
+			return candidatePriority < currentPriority ? candidate : current;
+		}, undefined) ?? "not_listed";
+	const statusKey = chosenGatewayStatus as CanonicalGatewayStatus;
+	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
+	const statusIcon = statusMeta.icon;
+	const statusClass = cn("h-3.5 w-3.5", statusMeta.iconClass);
+	const statusLabel = statusMeta.label;
+	const statusDetail =
+		statusKey === "active" && leavingSoonRule?.effective_to
+			? `${statusMeta.description} Leaving on ${formatLeavingDate(leavingSoonRule.effective_to, now)}`
+			: statusMeta.description;
 
 	const isFreePlan = plan === "free";
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
 	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
-	const textProviderModels = provider.provider_models.filter(
-		(pm) =>
-			pm.endpoint === "text.generate" &&
-			pm.is_active_gateway &&
-			pm.capability_status !== "disabled" &&
-			planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
+	const upcomingFor = (
+		sectionKey:
+			| "textTokens"
+			| "requests"
+			| "imageInputs"
+			| "videoInputs"
+			| "imageTokens"
+			| "imageGen"
+			| "audioTokens"
+			| "videoTokens"
+			| "videoGen"
+			| "other"
+	) => sec.upcomingChanges?.filter((change) => change.sectionKey === sectionKey) ?? [];
+	const textProviderModels = providerModelsInScope.filter(
+		(pm) => pm.endpoint === "text.generate"
 	);
+	const hasTextLikeEndpoint = providerModelsInScope.some(
+		(pm) => pm.endpoint === "text.generate" || pm.endpoint === "text.embed"
+	);
+	const hasTextSection = Boolean(sec.textTokens) || hasTextLikeEndpoint;
+	const textTripleForDisplay = sec.textTokens ?? {
+		in: [],
+		cached: [],
+		write: [],
+		out: [],
+	};
 	const maxFrom = (values: Array<number | null | undefined>) => {
 		const nums = values.filter(
 			(v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0
@@ -182,29 +300,55 @@ export default function ProviderCard({
 	const maxContextTokens = maxFrom(
 		textProviderModels.map((pm) => pm.context_length)
 	);
-	const textLimitMetrics = [
-		maxContextTokens !== null
-			? { label: "Total Context", value: formatTokenLimit1dp(maxContextTokens) }
-			: null,
-		maxOutputTokens !== null
-			? { label: "Max output", value: formatTokenLimit(maxOutputTokens) }
-			: null,
-	].filter((tile): tile is { label: string; value: string } => Boolean(tile));
-	const tokenTypeCount = [
-		Boolean(sec.textTokens),
-		Boolean(sec.imageTokens),
-		Boolean(sec.audioTokens),
-		Boolean(sec.videoTokens),
-	].filter(Boolean).length;
-	const showTextTokenHeader = tokenTypeCount > 1;
-	const infoScope = matchingProviderModel
-		? provider.provider_models.filter(
-				(pm) =>
-					planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
-		  )
-		: provider.provider_models;
+		const capacityMetrics = [
+			maxContextTokens !== null
+				? {
+						label: "Total Context",
+						value: formatTokenLimit1dp(maxContextTokens),
+				  }
+				: null,
+			maxOutputTokens !== null
+				? {
+						label: "Max Output",
+						value: formatTokenLimit(maxOutputTokens),
+				  }
+				: null,
+		].filter(
+			(
+				metric
+			): metric is {
+				label: string;
+				value: string;
+			} => Boolean(metric)
+		);
+	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
-	const quantizationSchemes = infoScope.map((pm) => pm.quantization_scheme);
+	const quantizationScheme =
+		infoScope
+			.find(
+				(pm) =>
+					pm.is_active_gateway &&
+					pm.capability_status !== "disabled" &&
+					typeof pm.quantization_scheme === "string" &&
+					pm.quantization_scheme.trim()
+			)
+			?.quantization_scheme?.trim() ??
+		infoScope
+			.find(
+				(pm) =>
+					pm.endpoint === "text.generate" &&
+					typeof pm.quantization_scheme === "string" &&
+					pm.quantization_scheme.trim()
+			)
+			?.quantization_scheme?.trim() ??
+		infoScope
+			.find(
+				(pm) =>
+					typeof pm.quantization_scheme === "string" &&
+					pm.quantization_scheme.trim()
+			)
+			?.quantization_scheme?.trim() ??
+		null;
 	const allEmpty =
 		!sec.textTokens &&
 		!sec.imageTokens &&
@@ -214,12 +358,11 @@ export default function ProviderCard({
 		!sec.videoGen &&
 		!imageInputs.length &&
 		!videoInputs.length &&
-		!sec.cacheWrites?.length &&
 		!sec.requests?.length &&
+		!sec.upcomingChanges?.length &&
 		!sec.otherRules.length;
 
-	if (!hasPlanPricing) return null;
-	if (allEmpty && !isFreePlan) return null;
+	if (allEmpty && !isFreePlan && hasPlanPricing) return null;
 
 	const uptimePct = runtimeStats?.uptimePct3d;
 	const throughputValue = formatThroughputValue(runtimeStats?.throughput30m);
@@ -237,11 +380,7 @@ export default function ProviderCard({
 			uptimePct: match?.uptimePct ?? null,
 		};
 	});
-	const headerMetrics = [
-		...textLimitMetrics.map((metric) => ({
-			label: metric.label,
-			value: metric.value as React.ReactNode,
-		})),
+	const performanceMetrics = [
 		{
 			label: "Latency",
 			value: formatLatencySeconds(runtimeStats?.latencyMs30m) as React.ReactNode,
@@ -251,7 +390,7 @@ export default function ProviderCard({
 			value: throughputValue ? (
 				<>
 					{throughputValue}
-					<span className="ml-0.5 text-[0.75em] font-medium">tps</span>
+					<span className="ml-0.5 text-[0.68em] font-medium">tps</span>
 				</>
 			) : (
 				"--"
@@ -261,7 +400,7 @@ export default function ProviderCard({
 			label: "Uptime",
 			value: (
 				<div
-					className="mt-1.5 flex items-center justify-center gap-[3px]"
+					className="mt-0.5 flex items-center justify-center gap-[3px]"
 					aria-label={`Uptime ${formatPercent(uptimePct)}`}
 				>
 					{uptimeBars.map((bar) => (
@@ -271,7 +410,7 @@ export default function ProviderCard({
 									type="button"
 									aria-label={`Uptime ${formatPercent(bar.uptimePct)} ${bar.label}`}
 									className={cn(
-										"h-[18px] w-[7px] rounded-[2px] transition-colors",
+										"h-[16px] w-[7px] rounded-[2px] transition-colors",
 										uptimeBarCount(bar.uptimePct) > 0
 											? uptimeBarColorClass(bar.uptimePct)
 											: "bg-muted"
@@ -295,116 +434,95 @@ export default function ProviderCard({
 			<CardHeader className="px-4 py-3">
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 					<div className="min-w-0 flex-1 space-y-1.5">
-						<div className="flex min-w-0 items-center gap-2">
-							<Link href={`/api-providers/${sec.providerId}`} className="group">
-								<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-background dark:border-zinc-800">
-									<div className="relative h-5 w-5">
-										<Logo
-											id={sec.providerId}
-											alt={`${sec.providerName} logo`}
-											className="object-contain transition group-hover:opacity-80"
-											fill
-										/>
-									</div>
-								</div>
-							</Link>
-							<div className="flex min-w-0 flex-wrap items-center gap-2">
+							<div className="flex min-w-0 items-center gap-2">
 								<Link href={`/api-providers/${sec.providerId}`} className="group">
+									<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-background dark:border-zinc-800">
+										<div className="relative h-5 w-5">
+											<Logo
+												id={sec.providerId}
+												alt={`${sec.providerName} logo`}
+												className="object-contain transition group-hover:opacity-80"
+												fill
+											/>
+										</div>
+									</div>
+								</Link>
+								<Link href={`/api-providers/${sec.providerId}`} className="group min-w-0">
 									<CardTitle className="truncate text-lg transition-colors group-hover:text-primary">
 										{sec.providerName}
 									</CardTitle>
 								</Link>
-								{showPrimaryStatusBadge ? (
-									<div className="inline-flex items-center gap-1 rounded-full border border-zinc-200/80 bg-background px-2 py-1 dark:border-zinc-800">
-										{React.createElement(statusIcon, {
-											className: statusClass,
-										})}
-										<span className="text-[0.7rem] font-semibold text-foreground">
-											{statusBadgeLabel}
-										</span>
-									</div>
-								) : null}
-								{routingStatus?.deranked ? (
-									<Badge
-										variant="destructive"
-										className="text-[0.65rem] uppercase"
-										title="Provider is temporarily deranked by routing health breakers."
-									>
-										Deranked
-									</Badge>
-								) : routingStatus?.recovering ? (
-									<Badge
-										variant="secondary"
-										className="text-[0.65rem] uppercase"
-										title="Provider is in half-open breaker recovery."
-									>
-										Recovering
-									</Badge>
-								) : null}
+							</div>
+							<div className="flex flex-wrap items-center gap-1.5">
+								<HoverCard openDelay={120} closeDelay={80}>
+									<HoverCardTrigger asChild>
+										<button
+											type="button"
+											aria-label={`Provider status: ${statusLabel}`}
+											className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors hover:border-slate-300 dark:border-zinc-800 dark:hover:border-slate-700"
+										>
+											{React.createElement(statusIcon, {
+												className: statusClass,
+											})}
+										</button>
+									</HoverCardTrigger>
+									<HoverCardContent align="start" className="w-auto p-2 text-xs">
+										<p className="font-semibold">{statusLabel}</p>
+										<p>{statusDetail}</p>
+									</HoverCardContent>
+								</HoverCard>
+								<ProviderInfoHoverIcons
+									providerId={sec.providerId}
+									providerModelSlugs={providerModelSlugs}
+									quantizationScheme={quantizationScheme}
+									promptTraining={
+										infoScope.length > 0
+											? infoScope.map((providerModel) => ({
+													policy:
+														providerModel.prompt_training_policy_override ??
+														provider.provider.prompt_training_policy ??
+														null,
+													notes:
+														providerModel.prompt_training_override_notes ??
+														provider.provider.prompt_training_notes ??
+														null,
+													sourceUrl:
+														providerModel.prompt_training_override_source_url ??
+														provider.provider.prompt_training_source_url ??
+														null,
+													isOverride: Boolean(
+														providerModel.prompt_training_policy_override,
+													),
+											  }))
+											: [
+													{
+														policy:
+															provider.provider.prompt_training_policy ?? null,
+														notes:
+															provider.provider.prompt_training_notes ?? null,
+														sourceUrl:
+															provider.provider
+																.prompt_training_source_url ?? null,
+														isOverride: false,
+													},
+											  ]
+									}
+								/>
+								<ProviderModelParameters models={infoScope} />
 							</div>
 						</div>
-						<div className="flex flex-wrap items-center gap-1.5">
-							<ProviderInfoHoverIcons
-								providerId={sec.providerId}
-								providerModelSlugs={providerModelSlugs}
-								quantizationSchemes={quantizationSchemes}
-								promptTraining={
-									infoScope.length > 0
-										? infoScope.map((providerModel) => ({
-												policy:
-													providerModel.prompt_training_policy_override ??
-													provider.provider.prompt_training_policy ??
-													null,
-												notes:
-													providerModel.prompt_training_override_notes ??
-													provider.provider.prompt_training_notes ??
-													null,
-												sourceUrl:
-													providerModel.prompt_training_override_source_url ??
-													provider.provider.prompt_training_source_url ??
-													null,
-												isOverride: Boolean(
-													providerModel.prompt_training_policy_override,
-												),
-										  }))
-										: [
-												{
-													policy:
-														provider.provider.prompt_training_policy ?? null,
-													notes:
-														provider.provider.prompt_training_notes ?? null,
-													sourceUrl:
-														provider.provider
-															.prompt_training_source_url ?? null,
-													isOverride: false,
-												},
-										  ]
-								}
-							/>
-							<ProviderModelParameters models={infoScope} />
-						</div>
-					</div>
 
-					<div className="w-full rounded-lg border border-zinc-200/80 bg-background px-3 py-2 dark:border-zinc-800 lg:w-auto lg:min-w-[330px]">
-						<div
-							className={cn(
-								"grid divide-x divide-zinc-200/70 dark:divide-zinc-800",
-								headerMetrics.length <= 3
-									? "grid-cols-3"
-									: headerMetrics.length === 4
-									? "grid-cols-2 sm:grid-cols-4"
-									: "grid-cols-3 sm:grid-cols-5"
-							)}
-						>
-							{headerMetrics.map((metric) => (
+					<div className="w-full lg:w-auto lg:min-w-[300px]">
+						<div className="grid grid-cols-3 divide-x divide-zinc-200/70 dark:divide-zinc-800">
+							{performanceMetrics.map((metric) => (
 								<div
 									key={metric.label}
-									className="flex min-w-0 flex-col items-center justify-center px-2 text-center"
+									className="flex min-w-0 flex-col items-center justify-center px-3 text-center"
 								>
-									<p className="text-[11px] font-medium text-muted-foreground">
+									<p className="text-[10px] font-medium text-muted-foreground">
 										{metric.label}
 									</p>
-									<div className="text-sm font-semibold leading-tight text-foreground tabular-nums">
+									<div className="text-xs font-semibold leading-tight text-foreground tabular-nums">
 										{metric.value}
 									</div>
 								</div>
@@ -415,52 +533,89 @@ export default function ProviderCard({
 			</CardHeader>
 			<CardContent className="px-4 pb-4 pt-0">
 				<div className="grid grid-cols-1 gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
+					{!hasPlanPricing ? (
+						<div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+							Pricing is not available for the selected tier on this provider.
+						</div>
+					) : null}
 					{isFreePlan && (
-						<div className="rounded-lg border border-zinc-200/80 bg-background px-3 py-2 dark:border-zinc-800">
+						<div className="px-1 py-1">
 							<div className="mb-0.5 text-xs text-muted-foreground">
 								Per 1M tokens
 							</div>
-							<div className="text-lg font-semibold leading-tight tabular-nums">
+							<div className="text-xs font-semibold leading-tight tabular-nums">
 								{fmtUSD(0)}
 							</div>
 						</div>
 					)}
-
-					{!isFreePlan && sec.textTokens && (
+					{!isFreePlan && hasTextSection && (
 						<TokenTripleSection
-							title={showTextTokenHeader ? "Text Tokens" : undefined}
-							triple={sec.textTokens}
-							hideHeader={!showTextTokenHeader}
+							title="Text Tokens"
+							triple={textTripleForDisplay}
+							hideHeader={false}
+							leadingTiles={capacityMetrics}
+							minimumSegments={["Input", "Cache Reads", "Output"]}
 							compact
 						/>
 					)}
-					{!isFreePlan && sec.cacheWrites && sec.cacheWrites.length > 0 && (
-						<CacheWriteSection rows={sec.cacheWrites} />
+					{!isFreePlan && upcomingFor("textTokens").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("textTokens")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && sec.requests && sec.requests.length > 0 && (
 						<RequestsSection rows={sec.requests} />
 					)}
+					{!isFreePlan && upcomingFor("requests").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
+					)}
 					{!isFreePlan && imageInputs.length > 0 && (
 						<InputsSection title="Image inputs" rows={imageInputs} />
+					)}
+					{!isFreePlan && upcomingFor("imageInputs").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && videoInputs.length > 0 && (
 						<InputsSection title="Video inputs" rows={videoInputs} />
 					)}
+					{!isFreePlan && upcomingFor("videoInputs").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
+					)}
 					{!isFreePlan && sec.imageTokens && (
 						<TokenTripleSection title="Image Tokens" triple={sec.imageTokens} compact />
 					)}
+					{!isFreePlan && upcomingFor("imageTokens").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("imageTokens")} title="Upcoming" compact />
+					)}
 					{!isFreePlan && sec.imageGen && <ImageGenSection rows={sec.imageGen} />}
+					{!isFreePlan && upcomingFor("imageGen").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("imageGen")} title="Upcoming" compact />
+					)}
 					{!isFreePlan && sec.audioTokens && (
 						<TokenTripleSection title="Audio Tokens" triple={sec.audioTokens} compact />
+					)}
+					{!isFreePlan && upcomingFor("audioTokens").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("audioTokens")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && sec.videoTokens && (
 						<TokenTripleSection title="Video Tokens" triple={sec.videoTokens} compact />
 					)}
+					{!isFreePlan && upcomingFor("videoTokens").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("videoTokens")} title="Upcoming" compact />
+					)}
 					{!isFreePlan && sec.videoGen && <VideoGenSection rows={sec.videoGen} />}
+					{!isFreePlan && upcomingFor("videoGen").length > 0 && (
+						<UpcomingPricingSection rows={upcomingFor("videoGen")} title="Upcoming" compact />
+					)}
 					{!isFreePlan && sec.otherRules.length > 0 && (
 						<div>
 							<AdvancedTable rows={sec.otherRules} />
 						</div>
+					)}
+					{!isFreePlan && upcomingFor("other").length > 0 && (
+						<UpcomingPricingSection
+							rows={upcomingFor("other")}
+							title="Other Upcoming Pricing"
+							compact
+						/>
 					)}
 				</div>
 			</CardContent>

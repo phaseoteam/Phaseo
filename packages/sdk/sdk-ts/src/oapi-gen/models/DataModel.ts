@@ -2,6 +2,13 @@ export interface DataModel {
   deprecation_date?: string | null;
   hidden?: boolean;
   input_types?: string[];
+  lifecycle?: {
+    deprecation_date?: string | null;
+    message?: string | null;
+    replacement_model_id?: string | null;
+    retirement_date?: string | null;
+    status?: "active" | "deprecated" | "retired" | null;
+  };
   model_id?: string | null;
   name?: string | null;
   organisation?: {

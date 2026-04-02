@@ -42,6 +42,7 @@ const runtime = vi.hoisted(() => {
                                 routing_mode: null,
                                 byok_fallback_enabled: null,
                                 beta_channel_enabled: false,
+                                alpha_channel_enabled: false,
                                 cache_aware_routing_enabled: true,
                             },
                             error: null,

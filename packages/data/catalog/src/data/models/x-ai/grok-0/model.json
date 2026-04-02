@@ -1,0 +1,61 @@
+{
+  "model_id": "x-ai/grok-0",
+  "organisation_id": "x-ai",
+  "name": "Grok 0",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "x-ai/grok-0",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 314000000000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "gsm8k",
+      "score": 0.568,
+      "is_self_reported": true,
+      "other_info": "8 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 0.397,
+      "is_self_reported": true,
+      "other_info": "0 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "math",
+      "score": 0.154,
+      "is_self_reported": true,
+      "other_info": "4 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 0.657,
+      "is_self_reported": true,
+      "other_info": "5 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 3
+    }
+  ]
+}

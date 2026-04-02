@@ -47,9 +47,15 @@ async function insertGatewayRequest(row: any) {
 
 function buildSupaRow(args: {
     requestId: string; teamId?: string | null;
-    endpoint: Endpoint; model?: string | null; provider?: string | null;
+    endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
     stream?: boolean; byok?: boolean;
     nativeResponseId?: string | null;
+    authMethod?: "api_key" | "oauth" | null;
+    oauthClientId?: string | null;
+    oauthUserId?: string | null;
+    requestUserId?: string | null;
+    sessionId?: string | null;
+    traceData?: Record<string, unknown> | null;
     statusCode?: number | null; success: boolean;
     errorCode?: string | null; errorMessage?: string | null;
     appId?: string | null; keyId?: string | null;
@@ -69,8 +75,15 @@ function buildSupaRow(args: {
         app_id: args.appId ?? null,
         endpoint: args.endpoint,
         model_id: args.model ?? null,
+        canonical_model_id: args.canonicalModel ?? args.model ?? null,
         provider: args.provider ?? null,
         native_response_id: args.nativeResponseId ?? null,
+        auth_method: args.authMethod ?? "api_key",
+        oauth_client_id: args.oauthClientId ?? null,
+        oauth_user_id: args.oauthUserId ?? null,
+        end_user_id: args.requestUserId ?? null,
+        session_id: args.sessionId ?? null,
+        trace_data: args.traceData ?? null,
         stream: !!args.stream,
         byok: !!args.byok,
         status_code: args.statusCode ?? null,
@@ -108,6 +121,12 @@ export async function auditSuccess(args: {
     requestMethod?: string | null;
     requestPath?: string | null;
     requestUrl?: string | null;
+    authMethod?: "api_key" | "oauth" | null;
+    oauthClientId?: string | null;
+    oauthUserId?: string | null;
+    requestUserId?: string | null;
+    sessionId?: string | null;
+    traceData?: Record<string, unknown> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -154,10 +173,17 @@ export async function auditSuccess(args: {
             teamId: args.teamId,
             endpoint: args.endpoint,
             model: args.model,
+            canonicalModel: args.model,
             provider: args.provider,
             stream: args.stream,
             byok: args.byok,
             nativeResponseId: args.nativeResponseId ?? null,
+            authMethod: args.authMethod ?? "api_key",
+            oauthClientId: args.oauthClientId ?? null,
+            oauthUserId: args.oauthUserId ?? null,
+            requestUserId: args.requestUserId ?? null,
+            sessionId: args.sessionId ?? null,
+            traceData: args.traceData ?? null,
             statusCode: args.statusCode,
             success: true,
             errorCode: null,
@@ -212,6 +238,12 @@ type AuditFailureBefore = {
     requestMethod?: string | null;
     requestPath?: string | null;
     requestUrl?: string | null;
+    authMethod?: "api_key" | "oauth" | null;
+    oauthClientId?: string | null;
+    oauthUserId?: string | null;
+    requestUserId?: string | null;
+    sessionId?: string | null;
+    traceData?: Record<string, unknown> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -245,6 +277,12 @@ type AuditFailureExecute = {
     requestMethod?: string | null;
     requestPath?: string | null;
     requestUrl?: string | null;
+    authMethod?: "api_key" | "oauth" | null;
+    oauthClientId?: string | null;
+    oauthUserId?: string | null;
+    requestUserId?: string | null;
+    sessionId?: string | null;
+    traceData?: Record<string, unknown> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -278,10 +316,17 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 teamId: args.teamId ?? null,
                 endpoint: args.endpoint,
                 model: args.model ?? null,
+                canonicalModel: args.model ?? null,
                 provider: null,
                 stream: false,
                 byok: false,
                 nativeResponseId: null,
+                authMethod: args.authMethod ?? "api_key",
+                oauthClientId: args.oauthClientId ?? null,
+                oauthUserId: args.oauthUserId ?? null,
+                requestUserId: args.requestUserId ?? null,
+                sessionId: args.sessionId ?? null,
+                traceData: args.traceData ?? null,
                 statusCode: args.statusCode,
                 success: false,
                 errorCode: args.errorCode,
@@ -326,10 +371,17 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             teamId: args.teamId,
             endpoint: args.endpoint,
             model: args.model,
+            canonicalModel: args.model,
             provider: args.provider ?? null,
             stream: !!args.stream,
             byok: !!args.byok,
             nativeResponseId: null,
+            authMethod: args.authMethod ?? "api_key",
+            oauthClientId: args.oauthClientId ?? null,
+            oauthUserId: args.oauthUserId ?? null,
+            requestUserId: args.requestUserId ?? null,
+            sessionId: args.sessionId ?? null,
+            traceData: args.traceData ?? null,
             statusCode: args.statusCode,
             success: false,
             errorCode: args.errorCode,

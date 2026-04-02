@@ -38,9 +38,11 @@ const AUDIO_CAPABILITY_HINTS = [
 	"audio.transcription",
 	"audio.translate",
 	"audio.translation",
+	"music.generate",
 	"audio",
+	"music",
 ];
-const MODERATION_CAPABILITY_HINTS = ["moderation", "moderations.create"];
+const MODERATION_CAPABILITY_HINTS = ["moderation", "moderations.create", "text.moderate"];
 const EMBEDDINGS_CAPABILITY_HINTS = ["text.embed", "embeddings", "embedding"];
 
 export const CHAT_ROOMS: ChatRoomConfig[] = [
@@ -69,7 +71,7 @@ export const CHAT_ROOMS: ChatRoomConfig[] = [
 		id: "audio",
 		label: "Audio",
 		route: "/chat/audio",
-		description: "Speech, transcription, and translation workspace.",
+		description: "Speech, music generation, transcription, and translation workspace.",
 		capabilityHints: AUDIO_CAPABILITY_HINTS,
 	},
 	{
@@ -113,6 +115,10 @@ const AUDIO_MODEL_HINTS = [
 	"transcribe",
 	"transcription",
 	"tts",
+	"music",
+	"suno",
+	"udio",
+	"melody",
 ];
 const MODERATION_MODEL_HINTS = ["moderation"];
 const EMBEDDING_MODEL_HINTS = ["embedding", "embed"];
@@ -131,7 +137,8 @@ export function capabilityIdToRoomId(
 	const normalized = normalizeCapability(capabilityId);
 	if (
 		TEXT_CAPABILITY_HINTS.some((hint) => normalized.includes(hint)) &&
-		!normalized.includes("embed")
+		!normalized.includes("embed") &&
+		!normalized.includes("moderate")
 	) {
 		return "text";
 	}

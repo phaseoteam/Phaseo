@@ -385,5 +385,76 @@ describe("encodeOpenAIChatResponse", () => {
 			mime_type: "image/png",
 		});
 	});
+
+	it("should encode audio parts onto message.audios", () => {
+		const ir: IRChatResponse = {
+			id: "req-audio-123",
+			nativeId: "chatcmpl-audio-123",
+			model: "google/lyria-3-pro",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "text", text: "Here is your clip." },
+							{
+								type: "audio",
+								source: "data",
+								data: "UklGRlIAAABXQVZFZm10",
+								format: "wav",
+							},
+						],
+					},
+					finishReason: "stop",
+				},
+			],
+		};
+
+		const response = encodeOpenAIChatResponse(ir, "req-audio-123");
+		const audios = response.choices[0].message.audios ?? [];
+		expect(audios).toHaveLength(1);
+		expect(audios[0]).toEqual({
+			type: "audio_url",
+			audio_url: {
+				url: "data:audio/wav;base64,UklGRlIAAABXQVZFZm10",
+			},
+			mime_type: "audio/wav",
+			format: "wav",
+		});
+	});
+
+	it("should include server tool usage in usage payload when present", () => {
+		const ir: IRChatResponse = {
+			id: "req-server-tools",
+			nativeId: "chatcmpl-server-tools",
+			model: "openai/gpt-4.1",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [{ type: "text", text: "Current time is 12:00." }],
+					},
+					finishReason: "stop",
+				},
+			],
+			usage: {
+				inputTokens: 20,
+				outputTokens: 8,
+				totalTokens: 28,
+				_ext: {
+					serverToolUse: {
+						datetime_requests: 1,
+					},
+				},
+			},
+		};
+
+		const response = encodeOpenAIChatResponse(ir, "req-server-tools");
+		expect((response.usage as any)?.server_tool_use).toEqual({
+			datetime_requests: 1,
+		});
+	});
 });
 

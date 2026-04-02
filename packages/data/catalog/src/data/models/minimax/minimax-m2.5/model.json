@@ -1,0 +1,28 @@
+{
+  "model_id": "minimax/minimax-m2.5",
+  "organisation_id": "minimax",
+  "name": "MiniMax M2.5",
+  "status": "Available",
+  "previous_model_id": "minimax/minimax-m2-1-2025-12-23",
+  "announced_date": "2026-02-12T00:00:00",
+  "release_date": "2026-02-12T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "minimax/minimax-m2.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.minimax.io/news/minimax-m25"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 204800
+    }
+  ],
+  "benchmarks": []
+}

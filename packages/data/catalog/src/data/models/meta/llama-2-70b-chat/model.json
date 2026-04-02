@@ -1,0 +1,24 @@
+{
+  "model_id": "meta/llama-2-70b-chat",
+  "organisation_id": "meta",
+  "name": "Llama 2 70B Chat",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2023-06-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "meta/llama-2-70b-chat",
+  "family_id": "meta/llama-2-0",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 4096
+    }
+  ],
+  "benchmarks": []
+}

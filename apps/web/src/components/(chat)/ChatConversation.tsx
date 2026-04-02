@@ -20,6 +20,7 @@ export type ChatSendPayload = {
 	content: string;
 	attachments: File[];
 	webSearchEnabled: boolean;
+	apiServerToolsEnabled: boolean;
 };
 
 type ChatConversationProps = {
@@ -29,6 +30,8 @@ type ChatConversationProps = {
 	mode?: "classic" | "unified";
 	webSearchEnabled?: boolean;
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
+	apiServerToolsEnabled?: boolean;
+	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
 	reasoningEnabled?: boolean;
 	reasoningEffort?: ChatSettings["reasoningEffort"];
 	onReasoningEnabledChange?: (enabled: boolean) => void;
@@ -62,6 +65,8 @@ export function ChatConversation({
 	mode = "classic",
 	webSearchEnabled = false,
 	onWebSearchEnabledChange,
+	apiServerToolsEnabled = false,
+	onApiServerToolsEnabledChange,
 	reasoningEnabled = false,
 	reasoningEffort = "medium",
 	onReasoningEnabledChange,
@@ -355,10 +360,31 @@ export function ChatConversation({
 	}, []);
 
 	const handleCopy = useCallback(async (text: string) => {
+		const value = text ?? "";
+		if (!value.trim()) return false;
 		try {
-			await navigator.clipboard.writeText(text);
+			await navigator.clipboard.writeText(value);
+			return true;
 		} catch {
-			// ignore clipboard errors
+			// fall through to legacy fallback
+		}
+		try {
+			const textArea = document.createElement("textarea");
+			textArea.value = value;
+			textArea.setAttribute("readonly", "");
+			textArea.style.position = "fixed";
+			textArea.style.left = "-9999px";
+			textArea.style.top = "0";
+			textArea.style.opacity = "0";
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+			textArea.setSelectionRange(0, textArea.value.length);
+			const copied = document.execCommand("copy");
+			document.body.removeChild(textArea);
+			return copied;
+		} catch {
+			return false;
 		}
 	}, []);
 
@@ -384,6 +410,7 @@ export function ChatConversation({
 			content: text,
 			attachments,
 			webSearchEnabled: isUnified ? webSearchEnabled : false,
+			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
 		});
 		setComposer("");
 		setAttachments([]);
@@ -411,7 +438,7 @@ export function ChatConversation({
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<ScrollArea className="flex-1" ref={scrollAreaRef}>
+			<ScrollArea className="flex-1 overscroll-contain" ref={scrollAreaRef}>
 				<div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
 					{isRecording ? (
 						<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
@@ -473,6 +500,8 @@ export function ChatConversation({
 				isUnified={isUnified}
 				webSearchEnabled={webSearchEnabled}
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
+				apiServerToolsEnabled={apiServerToolsEnabled}
+				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}

@@ -19,11 +19,13 @@ export async function resolveModelRouteIds(
 ): Promise<{
 	requestedModelId: string;
 	canonicalModelId: string;
+	internalModelId: string | null;
 }> {
 	const requestedModelId = getModelIdFromParams(params);
 	const resolved = await resolveCanonicalModelId(requestedModelId, includeHidden);
 	return {
 		requestedModelId,
 		canonicalModelId: resolved.canonicalModelId ?? requestedModelId,
+		internalModelId: resolved.internalModelId ?? null,
 	};
 }

@@ -1,0 +1,52 @@
+{
+  "model_id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "organisation_id": "nvidia",
+  "name": "Llama 3.1 Nemotron Ultra 253B v1",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-04-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Llama 3.1 Community License",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "links": [
+    {
+      "platform": "playground",
+      "url": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2502.00203"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/nvidia/Llama-3_1-Nemotron-Ultra-253B-v1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-12-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    },
+    {
+      "name": "parameter_count",
+      "value": 49900000000
+    }
+  ],
+  "benchmarks": []
+}

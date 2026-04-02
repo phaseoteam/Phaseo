@@ -10,7 +10,6 @@ type ProviderModelRow = {
     provider_id: string | null;
     api_model_id: string | null;
     model_id: string | null;
-    internal_model_id: string | null;
     provider_model_slug?: string | null;
     is_active_gateway: boolean | null;
     input_modalities?: unknown;
@@ -89,6 +88,7 @@ export type PricingSummary = {
 
 export type CatalogueModel = {
     model_id: string;
+    previous_model_id: string | null;
     name: string | null;
     release_date: string | null;
     deprecation_date: string | null;
@@ -288,7 +288,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const modelQuery = supabase
         .from("data_models")
         .select(
-            "model_id, name, release_date, deprecation_date, retirement_date, status, organisation_id, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
+            "model_id, previous_model_id, name, release_date, deprecation_date, retirement_date, status, organisation_id, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
         )
         .eq("hidden", false);
     const { data: modelRows, error: modelError } = await modelQuery;
@@ -300,6 +300,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         string,
         {
             model_id: string;
+            previous_model_id: string | null;
             name: string | null;
             release_date: string | null;
             deprecation_date: string | null;
@@ -317,6 +318,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         const organisation = Array.isArray(model.organisation) ? model.organisation[0] : model.organisation;
         baseModels.set(model.model_id, {
             model_id: model.model_id,
+            previous_model_id: model.previous_model_id ?? null,
             name: model.name ?? null,
             release_date: model.release_date ?? null,
             deprecation_date: model.deprecation_date ?? null,
@@ -346,7 +348,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         const { data, error: providerError } = await supabase
             .from("data_api_provider_models")
             .select(
-                "provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
             )
             .in("model_id", modelIdChunk);
 
@@ -356,20 +358,6 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
         const chunkRows = (data ?? []) as ProviderModelRow[];
         providerRows.push(...chunkRows);
-        if (!chunkRows.length) {
-            const legacy = await supabase
-                .from("data_api_provider_models")
-                .select(
-                    "provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
-                )
-                .in("internal_model_id", modelIdChunk);
-            if (legacy.error) {
-                throw new Error(
-                    `Failed to load provider models (legacy fallback): ${legacy.error.message || "unknown error"}`
-                );
-            }
-            providerRows.push(...((legacy.data ?? []) as ProviderModelRow[]));
-        }
     }
 
     const providerModelIds = providerRows
@@ -413,7 +401,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             aliasByApiModel.set(alias.api_model_id, existing);
         }
         for (const row of providerRows) {
-            const canonicalModelId = row.model_id ?? row.api_model_id ?? row.internal_model_id;
+            const canonicalModelId = row.model_id ?? row.api_model_id;
             if (!canonicalModelId || !row.api_model_id) continue;
             const aliasesForApi = aliasByApiModel.get(row.api_model_id) ?? [];
             if (!aliasesForApi.length) continue;
@@ -432,7 +420,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const providersByModel = new Map<string, ProviderModelRow[]>();
     const providerIdSet = new Set<string>();
     for (const row of providerRows) {
-        const canonicalModelId = row?.model_id ?? row?.api_model_id ?? row?.internal_model_id;
+        const canonicalModelId = row?.model_id ?? row?.api_model_id;
         if (!canonicalModelId || !row?.provider_id) continue;
         providerIdSet.add(row.provider_id);
         if (!row.is_active_gateway) continue;
@@ -503,7 +491,6 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             model_id:
                 providerModel.model_id ??
                 providerModel.api_model_id ??
-                providerModel.internal_model_id ??
                 null,
             provider_id: providerModel.provider_id,
         });
@@ -643,6 +630,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
         const model: CatalogueModel = {
             model_id: info.model_id,
+            previous_model_id: info.previous_model_id,
             name: info.name,
             release_date: info.release_date,
             deprecation_date: info.deprecation_date,

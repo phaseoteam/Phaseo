@@ -17,24 +17,34 @@ async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
 }
 
 function baseHeaders(key: string) {
+    const trimmed = key.trim();
+    const isBearer =
+        /^Bearer\s+/i.test(trimmed) ||
+        trimmed.startsWith("ya29.") ||
+        trimmed.startsWith("eyJ");
+    if (isBearer) {
+        const token = /^Bearer\s+/i.test(trimmed) ? trimmed.replace(/^Bearer\s+/i, "").trim() : trimmed;
+        return {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        };
+    }
     return {
         "Content-Type": "application/json",
+        "x-goog-api-key": trimmed,
     };
 }
 
 function mapGatewayToGoogleVideo(body: VideoGenerationRequest) {
-    const durationSeconds = typeof body.duration_seconds === "number"
-        ? body.duration_seconds
-        : typeof body.duration === "number"
-            ? body.duration
-            : typeof body.seconds === "string"
-                ? Number(body.seconds)
-                : typeof body.seconds === "number"
-                    ? body.seconds
-                    : undefined;
-    const aspectRatio = body.aspect_ratio ?? body.ratio;
-    const size = body.size ?? body.resolution ?? body.config?.google?.size ?? body.config?.google?.resolution;
+    const providerParams =
+        body.provider_params && typeof body.provider_params === "object"
+            ? body.provider_params
+            : {};
+    const durationSeconds = typeof body.duration === "number" ? body.duration : undefined;
+    const aspectRatio = body.aspect_ratio ?? providerParams.aspectRatio ?? providerParams.aspect_ratio;
+    const size = body.size ?? body.resolution ?? providerParams.size ?? providerParams.resolution;
     const parameters: Record<string, any> = {
+        ...(providerParams as Record<string, any>),
         ...(typeof durationSeconds === "number" && !Number.isNaN(durationSeconds) ? { durationSeconds } : {}),
         ...(aspectRatio ? { aspectRatio } : {}),
         ...(size ? { resolution: size } : {}),
@@ -42,7 +52,7 @@ function mapGatewayToGoogleVideo(body: VideoGenerationRequest) {
         ...(body.sample_count ? { sampleCount: body.sample_count } : {}),
         ...(typeof body.seed === "number" ? { seed: body.seed } : {}),
         ...(body.person_generation ? { personGeneration: body.person_generation } : {}),
-        ...(body.output_storage_uri ? { storageUri: body.output_storage_uri } : {}),
+        ...(typeof providerParams.storageUri === "string" ? { storageUri: providerParams.storageUri } : {}),
     };
 
     return {
@@ -75,7 +85,6 @@ function mapGoogleToGatewayVideo(json: any, args: ProviderExecuteArgs, request: 
     const usageSeconds =
         json?.videoMetadata?.durationSeconds ??
         json?.response?.videoMetadata?.durationSeconds ??
-        request.duration_seconds ??
         request.duration ??
         null;
 
@@ -114,7 +123,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     };
     const modelForUrl = args.providerModelSlug || args.model;
     const req = mapGatewayToGoogleVideo(modifiedBody);
-    const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:predictLongRunning?key=${key}`, {
+    const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:predictLongRunning`, {
         method: "POST",
         headers: baseHeaders(key),
         body: JSON.stringify(req),

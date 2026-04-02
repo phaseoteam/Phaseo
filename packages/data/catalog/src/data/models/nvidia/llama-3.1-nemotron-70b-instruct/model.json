@@ -1,0 +1,52 @@
+{
+  "model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
+  "organisation_id": "nvidia",
+  "name": "Llama 3.1 Nemotron 70B Instruct",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2024-10-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Llama 3.1 Community License",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2410.01257"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://developer.nvidia.com/blog/advancing-the-accuracy-efficiency-frontier-with-llama-3-1-nemotron-51b/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-12-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 4000
+    },
+    {
+      "name": "parameter_count",
+      "value": 8000000000
+    }
+  ],
+  "benchmarks": []
+}

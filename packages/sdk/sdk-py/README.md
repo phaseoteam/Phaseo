@@ -13,43 +13,60 @@ Requires Python 3.9+.
 ## Quick start
 
 ```python
-import asyncio
 from ai_stats import AIStats
 
-async def main():
-    client = AIStats(api_key="sk_test_xxx")
-    async with client:
-        completion = await client.generate_text(
-            {"model": "openai/gpt-5-nano", "messages": [{"role": "user", "content": "Say hi"}]}
-        )
-        print(completion.choices[0].message.content)
-
-asyncio.run(main())
+# Uses AI_STATS_API_KEY from environment by default.
+client = AIStats()
+response = client.generate_response(
+    {"model": "openai/gpt-5.4", "input": "Write a one-sentence bedtime story about a unicorn."}
+)
+print(response.get("output_text"))
 ```
 
 ### Streaming
 
 ```python
-async with AIStats(api_key="...") as client:
-    async for chunk in client.stream_text(
-        {"model": "openai/gpt-5-nano", "messages": [{"role": "user", "content": "Stream hi"}]}
-    ):
-        print(chunk, end="", flush=True)
+client = AIStats(api_key="sk_test_xxx")
+for chunk in client.stream_text(
+    {"model": "openai/gpt-5.4", "messages": [{"role": "user", "content": "Stream hi"}]}
+):
+    print(chunk, end="", flush=True)
 ```
 
 ### Models and other helpers
 
 ```python
-async with AIStats(api_key="...") as client:
-    models = await client.get_models()
-    print([m.id for m in models.data])
+client = AIStats()
+models = client.get_models()
+print(models)
 
-    await client.generate_image({"model": "image-alpha", "prompt": "A purple nebula"})
-    await client.generate_embedding({"model": "google/gemini-embedding-001", "input": "hello"})
-    await client.generate_moderation({"model": "openai/omni-moderation", "input": "safe?"})
-    await client.generate_video({"model": "video-alpha", "prompt": "Ocean waves"})
-    await client.generate_speech({"model": "tts-alpha", "input": "Hello!"})
-    await client.generate_transcription({"model": "whisper-alpha", "file": "<base64 data>"})
+client.generate_image({"model": "image-alpha", "prompt": "A purple nebula"})
+client.generate_embedding({"model": "google/gemini-embedding-001", "input": "hello"})
+client.generate_moderation({"model": "openai/omni-moderation", "input": "safe?"})
+client.generate_video({"model": "video-alpha", "prompt": "Ocean waves"})
+client.generate_speech({"model": "tts-alpha", "input": "Hello!"})
+client.generate_transcription({"model": "whisper-alpha", "file": "<base64 data>"})
+```
+
+### Model ID future-proofing
+
+Model fields are typed as `KnownModelId | str`, so new gateway model IDs are still accepted before a package update.
+
+### Deprecation lifecycle warnings
+
+The SDK checks `/v1/data/models` and warns once per process for deprecated/retired models.
+
+```python
+from ai_stats import AIStats
+
+client = AIStats(
+    enable_deprecation_warnings=True,  # default
+    warnings_as_errors=False,          # set True to raise instead of warn
+    logger=lambda level, message, meta: print(level, message, meta),
+)
+
+info = client.models.get_deprecation_info("openai/old-model")
+validation = client.models.validate("openai/old-model")
 ```
 
 ## Features
@@ -69,7 +86,6 @@ The Python SDK bundles telemetry capture directly. Enable it by passing
 from ai_stats import AIStats, create_ai_stats_devtools
 
 client = AIStats(
-    api_key="sk_test_xxx",
     devtools=create_ai_stats_devtools(
         directory=".ai-stats-devtools",
         capture_headers=False,
@@ -84,7 +100,7 @@ viewed with:
 npx @ai-stats/devtools-viewer
 ```
 
-Note: Provide the API key explicitly via the `api_key` parameter or by adding an `Authorization` header through `headers`. The SDK does not read environment variables.
+Note: The client reads `AI_STATS_API_KEY` by default. You can still pass `api_key` explicitly.
 
 Refer to the docstrings for each method to see accepted parameters and return values—everything is annotated for IntelliSense.
 

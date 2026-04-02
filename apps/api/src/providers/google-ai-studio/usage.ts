@@ -149,7 +149,10 @@ export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined): I
         totalTokens,
     };
 
-    if (cachedInputTokens != null) irUsage.cachedInputTokens = cachedInputTokens;
+    if (cachedInputTokens != null) {
+        irUsage.cachedInputTokens = cachedInputTokens;
+        irUsage.cachedReadTokensAreSubsetOfInput = true;
+    }
     if (reasoningTokens != null) irUsage.reasoningTokens = reasoningTokens;
     if (Object.keys(ext).length > 0) irUsage._ext = ext;
 

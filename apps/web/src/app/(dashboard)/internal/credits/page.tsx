@@ -12,6 +12,10 @@ export const metadata = {
 	description: "Admin controls for promo credit grants.",
 };
 
+const BIGINT_ZERO = BigInt(0);
+const NANOS_PER_USD = BigInt(1_000_000_000);
+const NANOS_PER_CENT = BigInt(10_000_000);
+
 function formatUsdFromNanos(nanos: number | null | undefined): string {
 	const value = Number(nanos ?? 0);
 	if (!Number.isFinite(value)) return "$0.00";
@@ -23,13 +27,26 @@ function formatUsdFromNanos(nanos: number | null | undefined): string {
 	}).format(value / 1_000_000_000);
 }
 
-function parseNanos(value: unknown): number {
-	if (typeof value === "number" && Number.isFinite(value)) return value;
-	if (typeof value === "string") {
-		const parsed = Number(value.trim());
-		if (Number.isFinite(parsed)) return parsed;
+function parseNanos(value: unknown): bigint {
+	if (typeof value === "bigint") return value;
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return BigInt(Math.trunc(value));
 	}
-	return 0;
+	if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
+		return BigInt(value.trim());
+	}
+	return BIGINT_ZERO;
+}
+
+function formatUsdFromNanosBigInt(nanos: bigint): string {
+	const isNegative = nanos < BIGINT_ZERO;
+	const absolute = isNegative ? -nanos : nanos;
+	const dollars = absolute / NANOS_PER_USD;
+	const cents = (absolute % NANOS_PER_USD) / NANOS_PER_CENT;
+	const sign = isNegative ? "-" : "";
+	return `${sign}$${dollars.toLocaleString("en-US")}.${cents
+		.toString()
+		.padStart(2, "0")}`;
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -41,33 +58,24 @@ function formatDate(value: string | null | undefined): string {
 
 export default async function InternalCreditsPage() {
 	const supabase = await createClient();
-	const [grantsResult, outstandingResult] = await Promise.all([
-		supabase
-			.from("credit_grants")
-			.select(
-				"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
-			)
-			.order("created_at", { ascending: false })
-			.limit(250),
-		supabase
-			.from("credit_grants")
-			.select("amount_nanos, max_redemptions, redemptions_count, expires_at")
-			.eq("is_active", true),
-	]);
-
-	const { data: grants, error } = grantsResult;
-	const { data: outstandingGrants, error: outstandingError } = outstandingResult;
+	const { data: grants, error } = await supabase
+		.from("credit_grants")
+		.select(
+			"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
+		)
+		.order("created_at", { ascending: false })
+		.limit(250);
 
 	if (error) {
 		throw new Error(error.message);
 	}
-	if (outstandingError) {
-		throw new Error(outstandingError.message);
-	}
 
 	const now = Date.now();
-	let outstandingNanos = 0;
-	for (const grant of outstandingGrants ?? []) {
+	let outstandingNanos = BIGINT_ZERO;
+	for (const grant of grants ?? []) {
+		const isActive = Boolean(grant?.is_active);
+		if (!isActive) continue;
+
 		const expiresAtRaw = grant?.expires_at ? String(grant.expires_at) : null;
 		if (expiresAtRaw) {
 			const expiresAtMs = new Date(expiresAtRaw).getTime();
@@ -83,8 +91,8 @@ export default async function InternalCreditsPage() {
 		if (remainingRedemptions <= 0) continue;
 
 		const amountNanos = parseNanos(grant?.amount_nanos);
-		if (amountNanos <= 0) continue;
-		outstandingNanos += amountNanos * remainingRedemptions;
+		if (amountNanos <= BIGINT_ZERO) continue;
+		outstandingNanos += amountNanos * BigInt(remainingRedemptions);
 	}
 
 	return (
@@ -161,7 +169,7 @@ export default async function InternalCreditsPage() {
 						<div className="rounded-md border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
 							<p className="uppercase tracking-wide">Outstanding (active + unexpired)</p>
 							<p className="text-sm font-semibold text-foreground">
-								{formatUsdFromNanos(outstandingNanos)}
+								{formatUsdFromNanosBigInt(outstandingNanos)}
 							</p>
 						</div>
 					</div>

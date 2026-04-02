@@ -1,0 +1,31 @@
+{
+  "model_id": "anthropic/claude-sonnet-4.6",
+  "organisation_id": "anthropic",
+  "name": "Claude Sonnet 4.6",
+  "status": "Available",
+  "previous_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+  "announced_date": "2026-02-17T00:00:00",
+  "release_date": "2026-02-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-sonnet-4.6",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-08-01T00:00:00"
+    }
+  ],
+  "benchmarks": []
+}

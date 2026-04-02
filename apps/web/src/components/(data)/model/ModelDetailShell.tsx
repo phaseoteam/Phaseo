@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Scale } from "lucide-react";
+import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
+import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
+import { ModelCreatorModelsSection } from "@/components/(data)/model/overview/ModelOverviewSections";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -20,6 +24,37 @@ function isModelNotFoundError(error: unknown): boolean {
 	const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
 	if (message.includes("model not found")) return true;
 	return false;
+}
+
+async function getVisibleTabKeys(
+	modelId: string,
+	includeHidden: boolean,
+	hasInternalModelData: boolean,
+): Promise<string[]> {
+	const baseTabs: string[] = [
+		"overview",
+		"playground",
+		"providers",
+		"performance",
+		"apps",
+		"activity",
+		"quickstart",
+	];
+
+	const visibleTabs = [...baseTabs];
+
+	if (hasInternalModelData) {
+		visibleTabs.push("timeline");
+		const benchmarkHighlights = await getModelBenchmarkHighlights(
+			modelId,
+			includeHidden
+		).catch(() => []);
+		if (benchmarkHighlights.length > 0) {
+			visibleTabs.push("benchmarks");
+		}
+	}
+
+	return visibleTabs;
 }
 
 export default async function ModelDetailShell({
@@ -38,6 +73,17 @@ export default async function ModelDetailShell({
 	if (!header) {
 		return <ModelNotFoundState modelId={modelId} />;
 	}
+
+	const modelOverview: ModelOverviewPage | null = await getModelOverviewCached(
+		modelId,
+		includeHidden,
+	).catch(() => null);
+	const hasInternalModelData = Boolean(modelOverview);
+	const visibleTabKeys = await getVisibleTabKeys(
+		modelId,
+		includeHidden,
+		hasInternalModelData,
+	);
 
 	return (
 		<main className="flex flex-col">
@@ -92,9 +138,18 @@ export default async function ModelDetailShell({
 					</div>
 				</div>
 
-				<TabBar modelId={modelId} />
+				<TabBar modelId={modelId} visibleTabKeys={visibleTabKeys} />
 
 				<div className="mt-6 min-h-full">{children}</div>
+				{modelOverview ? (
+					<div className="mt-10">
+						<ModelCreatorModelsSection
+							modelId={modelId}
+							includeHidden={includeHidden}
+							model={modelOverview}
+						/>
+					</div>
+				) : null}
 			</div>
 		</main>
 	);

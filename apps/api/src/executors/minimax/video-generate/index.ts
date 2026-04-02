@@ -32,6 +32,20 @@ function toPositiveNumber(value: unknown): number | undefined {
 	return undefined;
 }
 
+function toNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeMiniMaxResolutionForPricing(value: unknown): string | undefined {
+	const raw = toNonEmptyString(value);
+	if (!raw) return undefined;
+	const pMatch = raw.match(/^(\d+)\s*p$/i);
+	if (pMatch) return `${pMatch[1]}P`;
+	return raw;
+}
+
 function parseDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
 	return toPositiveNumber(ir.durationSeconds) ??
 		toPositiveNumber(ir.duration) ??
@@ -72,6 +86,11 @@ function extractVideoOutput(json: any): Array<{ index: number; uri: string | nul
 	return [];
 }
 
+function isMiniMaxImageToVideoOnlyModel(model: string): boolean {
+	const normalized = model.trim().toLowerCase();
+	return normalized === "minimax-hailuo-2.3-fast" || normalized.endsWith("/hailuo-2.3-fast");
+}
+
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model || "video-01";
@@ -87,7 +106,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	);
 
 	const rawRequest = (ir.rawRequest ?? {}) as Record<string, any>;
-	const minimaxExtensions = (rawRequest.minimax ?? {}) as Record<string, any>;
+	const rawConfig =
+		rawRequest.config && typeof rawRequest.config === "object" && !Array.isArray(rawRequest.config)
+			? (rawRequest.config as Record<string, any>)
+			: {};
+	const minimaxExtensions = (
+		rawRequest.minimax ??
+		rawConfig.minimax ??
+		rawRequest.provider_params ??
+		{}
+	) as Record<string, any>;
 	const passthroughRequest =
 		minimaxExtensions.request &&
 		typeof minimaxExtensions.request === "object" &&
@@ -98,17 +126,69 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (passthroughRequest.model == null) passthroughRequest.model = model;
 	if (passthroughRequest.prompt == null) passthroughRequest.prompt = ir.prompt;
 	if (passthroughRequest.duration == null && seconds != null) passthroughRequest.duration = seconds;
-	if (passthroughRequest.size == null && size) passthroughRequest.size = size;
+	if (passthroughRequest.resolution == null) {
+		const resolution =
+			toNonEmptyString(passthroughRequest.size) ??
+			toNonEmptyString(passthroughRequest.resolution) ??
+			size;
+		if (resolution) passthroughRequest.resolution = resolution;
+	}
+	if ("size" in passthroughRequest) delete passthroughRequest.size;
 	if (passthroughRequest.quality == null && quality) passthroughRequest.quality = quality;
 	if (passthroughRequest.first_frame_image == null && ir.inputReference) {
 		passthroughRequest.first_frame_image = ir.inputReference;
 	}
 	if (passthroughRequest.seed == null && typeof ir.seed === "number") passthroughRequest.seed = ir.seed;
-
 	const requestBody = JSON.stringify(passthroughRequest);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)
 		? requestBody
 		: undefined;
+	if (isMiniMaxImageToVideoOnlyModel(model) && !toNonEmptyString(passthroughRequest.first_frame_image)) {
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "input_reference_required",
+					message: "MiniMax-Hailuo-2.3-Fast requires input_reference / first_frame_image.",
+				},
+			}),
+			{ status: 400, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined as any,
+				upstream_id: undefined,
+				finish_reason: null as string | null,
+			},
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+		};
+	}
+	const passthroughSeconds = toPositiveNumber(
+		passthroughRequest.duration ??
+		passthroughRequest.duration_seconds ??
+		passthroughRequest.seconds ??
+		passthroughRequest.video_params?.duration_seconds ??
+		passthroughRequest.video_params?.seconds,
+	);
+	const secondsForBilling = seconds ?? passthroughSeconds ?? null;
+	const passthroughResolution =
+		toNonEmptyString(passthroughRequest.resolution) ??
+		toNonEmptyString(passthroughRequest.input_resolution) ??
+		toNonEmptyString(passthroughRequest.video_params?.resolution) ??
+		toNonEmptyString(passthroughRequest.video_params?.input_resolution);
+	const resolutionForBilling = normalizeMiniMaxResolutionForPricing(size ?? passthroughResolution);
+	const qualityForBilling =
+		toNonEmptyString(quality) ??
+		toNonEmptyString(passthroughRequest.quality) ??
+		toNonEmptyString(passthroughRequest.video_params?.quality) ??
+		null;
+
 	let reservationId: string | null = null;
 	let reservationStatus: string | null = null;
 	let reservedNanos: number | null = null;
@@ -119,12 +199,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			videoId: `req_${args.requestId}`,
 			providerId: args.providerId,
 			model,
-			seconds: seconds ?? null,
+			seconds: secondsForBilling,
 			pricingCard: args.pricingCard,
 			requestOptions: buildVideoPricingRequestOptions({
-				size,
+				size: resolutionForBilling,
 				resolution: ir.resolution,
-				quality,
+				quality: qualityForBilling,
+				seconds: secondsForBilling,
 			}),
 			isByok: keyInfo.source === "byok",
 		});
@@ -272,19 +353,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const encodedId = taskId ? encodeMiniMaxVideoId(taskId) : undefined;
 	if (encodedId) {
 		try {
-			await saveVideoJobMeta(args.teamId, encodedId, {
+			await saveVideoJobMeta(args.teamId, args.requestId, {
 				provider: args.providerId,
+				providerTaskId: taskId ?? encodedId,
+				requestId: args.requestId,
+				sessionId: args.meta.sessionId ?? null,
+				appId: args.meta.appId ?? null,
 				model,
-				seconds: seconds ?? null,
-				resolution: size ?? null,
-				quality,
+				seconds: secondsForBilling,
+				resolution: resolutionForBilling ?? null,
+				quality: qualityForBilling,
+				outputAccess: ir.outputAccess ?? "both",
+				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,
 				reservedNanos,
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			}, toVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status));
+			}, taskId ?? encodedId, toVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status));
 		} catch (error) {
 			console.error("minimax_video_job_meta_store_failed", {
 				error,
@@ -325,7 +412,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			outputTokens: 0,
 			totalTokens: 0,
 			requests: 1,
-			...(seconds != null ? { output_video_seconds: seconds } : {}),
+			...(secondsForBilling != null ? { output_video_seconds: secondsForBilling } : {}),
 		} as any,
 		rawResponse: json,
 	};

@@ -1,10 +1,9 @@
 "use client";
 
 import ModelPerformanceCards from "./ModelPerformanceCards";
-import ModelProviderPerformanceTable from "./ModelProviderPerformanceTable";
 import ModelSuccessChart from "./ModelSuccessChart";
-import ModelTimeOfDayChart from "./ModelTimeOfDayChart";
 import ModelTokenTrajectoryChart from "./ModelTokenTrajectory";
+import { Activity } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import type { ModelTokenTrajectory } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { Card } from "@/components/ui/card";
@@ -15,22 +14,38 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import { Activity } from "lucide-react";
 
 interface ModelPerformanceDashboardProps {
 	metrics: ModelPerformanceMetrics;
 	tokenTrajectory: ModelTokenTrajectory | null;
+	mode?: "overview" | "page";
+}
+
+function formatReleaseDate(date: string | null | undefined): string | null {
+	if (!date) return null;
+	const parsed = new Date(date);
+	if (!Number.isFinite(parsed.getTime())) return null;
+	return parsed.toLocaleDateString("en-GB", {
+		day: "2-digit",
+		month: "short",
+		year: "numeric",
+	});
 }
 
 export default function ModelPerformanceDashboard({
 	metrics,
 	tokenTrajectory,
+	mode = "overview",
 }: ModelPerformanceDashboardProps) {
 	const hasTelemetry =
 		metrics.summary.totalRequests > 0 ||
 		metrics.hourly.some((point) => point.requests > 0);
-
-	console.log(`[dash] hasTelemetry=${hasTelemetry} reqs=${metrics.summary.totalRequests} hourlyWithReqs=${metrics.hourly.filter(p => p.requests > 0).length} providers=${metrics.providerPerformance.length}`);
+	const showDetailedPanels = mode === "page";
+	const cumulativeTokens =
+		metrics.cumulativeTokens != null
+			? Math.round(metrics.cumulativeTokens).toLocaleString()
+			: "N/A";
+	const cumulativeSince = formatReleaseDate(metrics.releaseDate);
 
 	return (
 		<section className="space-y-10">
@@ -40,30 +55,45 @@ export default function ModelPerformanceDashboard({
 						summary={metrics.summary}
 						prevSummary={metrics.prevSummary}
 						hourly={metrics.hourly}
+						providerDaily7d={metrics.providerDaily7d}
 					/>
-					<ModelProviderPerformanceTable
-						providers={metrics.providerPerformance}
-					/>
-					<ModelSuccessChart successSeries={metrics.successSeries} />
-					<ModelTimeOfDayChart timeOfDay={metrics.timeOfDay} />
-					<ModelTokenTrajectoryChart data={tokenTrajectory} />
+					{showDetailedPanels ? (
+						<>
+							<Card className="px-5 py-4">
+								<div className="flex flex-wrap items-center justify-between gap-2">
+									<div className="space-y-1">
+										<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+											Cumulative Tokens
+										</p>
+										<p className="text-2xl font-semibold text-foreground">
+											{cumulativeTokens}
+										</p>
+									</div>
+									<p className="text-xs text-muted-foreground">
+										{cumulativeSince
+											? `Since ${cumulativeSince}`
+											: "Since model release"}
+									</p>
+								</div>
+							</Card>
+							<ModelSuccessChart successSeries={metrics.successSeries} />
+							<ModelTokenTrajectoryChart data={tokenTrajectory} />
+						</>
+					) : null}
 				</>
 			) : (
-				<Card className="p-6">
-					<Empty>
-						<EmptyHeader>
-							<EmptyMedia variant="icon">
-								<Activity />
-							</EmptyMedia>
-							<EmptyTitle>No gateway telemetry yet</EmptyTitle>
-							<EmptyDescription>
-								This model hasn’t processed any gateway traffic
-								in the selected window. Live charts will appear
-								as soon as requests arrive.
-							</EmptyDescription>
-						</EmptyHeader>
-					</Empty>
-				</Card>
+				<Empty className="rounded-lg border p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<Activity className="size-5" />
+						</EmptyMedia>
+						<EmptyTitle>No gateway telemetry yet</EmptyTitle>
+						<EmptyDescription>
+							This model hasn't processed any gateway traffic in the selected
+							window. Live charts will appear as soon as requests arrive.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
 			)}
 		</section>
 	);

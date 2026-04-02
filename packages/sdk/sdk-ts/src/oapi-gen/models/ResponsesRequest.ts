@@ -37,7 +37,7 @@ export interface ResponsesRequest {
   metadata?: {
     [key: string]: string;
   };
-  modalities?: string[];
+  modalities?: "text" | "image" | "audio"[];
   model: string;
   parallel_tool_calls?: boolean;
   previous_response_id?: string;
@@ -87,8 +87,24 @@ export interface ResponsesRequest {
   stream?: boolean;
   temperature?: number;
   text?: {};
-  tool_choice?: string | {};
-  tools?: {}[];
+  tool_choice?: "auto" | "none" | "required" | "gateway:datetime" | {};
+  tools?:
+    | {
+        function: {
+          description?: string;
+          name: string;
+          parameters: {};
+        };
+        type: "function";
+        [key: string]: unknown;
+      }
+    | {
+        parameters?: {
+          timezone?: string;
+        };
+        timezone?: string;
+        type: "gateway:datetime";
+      }[];
   top_p?: number;
   truncation?: "auto" | "disabled";
   usage?: boolean;

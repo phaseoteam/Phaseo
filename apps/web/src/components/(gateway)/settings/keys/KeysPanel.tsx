@@ -7,12 +7,19 @@ import {
 	DropdownMenuTrigger,
 	DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
-import { Ban, CheckCircle2, Infinity as InfinityIcon, MoreVertical, OctagonAlert } from "lucide-react";
+import { Ban, CheckCircle2, Infinity as InfinityIcon, Key, MoreVertical, OctagonAlert } from "lucide-react";
 import {
 	Tooltip,
 	TooltipTrigger,
 	TooltipContent,
 } from "@/components/ui/tooltip";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 import {
 	Table,
 	TableBody,
@@ -263,9 +270,17 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 
 	if (!sortedTeams || sortedTeams.length === 0) {
 		return (
-			<div className="mt-6 text-sm text-muted-foreground">
-				No teams or keys to manage.
-			</div>
+			<Empty className="mt-6 rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<Key className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>No API keys yet</EmptyTitle>
+					<EmptyDescription>
+						Create your first key to start sending gateway requests.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 
@@ -274,9 +289,20 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 			{sortedTeams.map((team: any) => (
 				<div key={team.id ?? "personal"} className="space-y-2">
 					{!team.keys || team.keys.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No keys for this team.
-						</div>
+						<Empty
+							size="compact"
+							className="rounded-lg border border-dashed border-border/80 p-6"
+						>
+							<EmptyHeader>
+								<EmptyMedia variant="icon">
+									<Key className="h-5 w-5" />
+								</EmptyMedia>
+								<EmptyTitle className="text-base">No keys for this team</EmptyTitle>
+								<EmptyDescription>
+									Create an API key to manage access and usage limits.
+								</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
 					) : (
 						<div className="rounded-lg border border-border/60 bg-card overflow-hidden">
 							<div className="divide-y divide-border/60 md:hidden">

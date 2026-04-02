@@ -14,7 +14,11 @@
 
 import type { ProviderExecutor } from "./types";
 import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
-import { supportsAdapterBackedCapability, type AdapterBackedCapability } from "@providers/capabilities";
+import {
+	getProviderCapabilityProfile,
+	supportsAdapterBackedCapability,
+	type AdapterBackedCapability,
+} from "@providers/capabilities";
 import type { Endpoint } from "@core/types";
 
 // Text generation executors (migrated providers only)
@@ -24,6 +28,7 @@ import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
 import { executor as googleAudioSpeech } from "./google/audio-speech";
+import { executor as googleMusic } from "./google/music-generate";
 import { executor as xAiText } from "./x-ai/text-generate";
 import { executor as deepseekText } from "./deepseek/text-generate";
 import { executor as minimaxText } from "./minimax/text-generate";
@@ -37,6 +42,7 @@ import { executor as moonshotText } from "./moonshotai/text-generate";
 import { executor as aionLabsText } from "./aion-labs/text-generate";
 import { executor as amazonBedrockText } from "./amazon-bedrock/text-generate";
 import { executor as googleVertexText } from "./google-vertex/text-generate";
+import { executor as googleVertexVideo } from "./google-vertex/video-generate";
 import { executor as deepinfraText } from "./deepinfra/text-generate";
 import { executor as togetherText } from "./together/text-generate";
 
@@ -52,10 +58,11 @@ import { nonTextAdapterExecutor } from "./_shared/non-text/adapter-bridge";
 import { executor as blackForestLabsImage } from "./black-forest-labs/image-generate";
 
 // Video generation executors
-import { executor as googleVideo } from "./google/video-generate";
 import { executor as alibabaVideo } from "./alibaba/video-generate";
 import { executor as xAiVideo } from "./x-ai/video-generate";
 import { executor as minimaxVideo } from "./minimax/video-generate";
+import { executor as bytedanceSeedVideo } from "./bytedance-seed/video-generate";
+import { executor as runwayVideo } from "./runway/video-generate";
 import { executor as minimaxMusic } from "./minimax/music-generate";
 
 type Capability =
@@ -87,6 +94,7 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"text.embed": "embeddings",
 	moderation: "moderations",
 	"moderations.create": "moderations",
+	"text.moderate": "moderations",
 	"image.generations": "image.generate",
 	"images.generate": "image.generate",
 	"images.generations": "image.generate",
@@ -103,6 +111,13 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 const OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST = new Set<string>([
 ]);
 const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([]);
+const OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST = new Set<string>([]);
+
+function supportsOpenAICompatEmbeddings(providerId: string): boolean {
+	if (!isOpenAICompatProvider(providerId)) return false;
+	if (OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)) return false;
+	return !getProviderCapabilityProfile(providerId).textOnly;
+}
 
 export function normalizeCapability(capability: string): Capability {
 	return CAPABILITY_ALIASES[capability] ?? (capability as Capability);
@@ -134,15 +149,20 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": googleAiStudioText,
 		embeddings: googleAiStudioEmbeddings,
 		"audio.speech": googleAudioSpeech,
-		"video.generate": googleVideo,
+		"music.generate": googleMusic,
 	},
+	"bytedance-seed": { "video.generate": bytedanceSeedVideo },
+	byteplus: { "video.generate": bytedanceSeedVideo },
 	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo },
 	xai: { "text.generate": xAiText, "video.generate": xAiVideo },
 	deepseek: { "text.generate": deepseekText },
 	minimax: { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic },
 	"minimax-lightning": { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic },
 	alibaba: { "text.generate": alibabaText, "video.generate": alibabaVideo },
+	"alibaba-cloud": { "video.generate": alibabaVideo },
 	qwen: { "text.generate": qwenText, "video.generate": alibabaVideo },
+	runway: { "video.generate": runwayVideo },
+	runwayml: { "video.generate": runwayVideo },
 	"z-ai": { "text.generate": zAiText },
 	zai: { "text.generate": zaiText },
 	xiaomi: { "text.generate": xiaomiText },
@@ -152,7 +172,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"aion-labs": { "text.generate": aionLabsText },
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
-	"google-vertex": { "text.generate": googleVertexText },
+	"google-vertex": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
 	deepinfra: { "text.generate": deepinfraText },
 	together: { "text.generate": togetherText },
 	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },
@@ -174,10 +194,16 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 	}
 	if (
 		normalizedCapability === "embeddings" &&
-		isOpenAICompatProvider(providerId) &&
-		!OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)
+		supportsOpenAICompatEmbeddings(providerId)
 	) {
 		return openaiEmbeddings;
+	}
+	if (
+		normalizedCapability === "moderations" &&
+		isOpenAICompatProvider(providerId) &&
+		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
+	) {
+		return openaiModerations;
 	}
 	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
 	if (
@@ -202,8 +228,14 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 	}
 	if (
 		normalizedCapability === "embeddings" &&
+		supportsOpenAICompatEmbeddings(providerId)
+	) {
+		return true;
+	}
+	if (
+		normalizedCapability === "moderations" &&
 		isOpenAICompatProvider(providerId) &&
-		!OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)
+		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
 	) {
 		return true;
 	}

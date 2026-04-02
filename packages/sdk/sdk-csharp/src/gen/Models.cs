@@ -6,29 +6,45 @@ namespace AiStats.Gen;
 
 public sealed class ActivityEntry
 {
-	[JsonPropertyName("cost_cents")]
-	public double? CostCents { get; set; }
+	[JsonPropertyName("byok_usage_inference")]
+	public double ByokUsageInference { get; set; }
 
-	[JsonPropertyName("endpoint")]
-	public string? Endpoint { get; set; }
+	[JsonPropertyName("completion_tokens")]
+	public int CompletionTokens { get; set; }
 
-	[JsonPropertyName("latency_ms")]
-	public int? LatencyMs { get; set; }
+	[JsonPropertyName("date")]
+	public string Date { get; set; }
+
+	[JsonPropertyName("endpoint_id")]
+	public string EndpointId { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
-	[JsonPropertyName("provider")]
-	public string? Provider { get; set; }
+	[JsonPropertyName("model_permaslug")]
+	public string ModelPermaslug { get; set; }
 
-	[JsonPropertyName("request_id")]
-	public string? RequestId { get; set; }
+	[JsonPropertyName("prompt_tokens")]
+	public int PromptTokens { get; set; }
 
-	[JsonPropertyName("timestamp")]
-	public string? Timestamp { get; set; }
+	[JsonPropertyName("provider_name")]
+	public string ProviderName { get; set; }
+
+	[JsonPropertyName("reasoning_tokens")]
+	public int ReasoningTokens { get; set; }
+
+	[JsonPropertyName("requests")]
+	public int Requests { get; set; }
 
 	[JsonPropertyName("usage")]
-	public Dictionary<string, object>? Usage { get; set; }
+	public double Usage { get; set; }
+
+}
+
+public sealed class ActivityResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
 
 }
 
@@ -144,7 +160,7 @@ public sealed class AnthropicMessagesRequest
 	public object? ToolChoice { get; set; }
 
 	[JsonPropertyName("tools")]
-	public List<Dictionary<string, object>>? Tools { get; set; }
+	public List<object>? Tools { get; set; }
 
 	[JsonPropertyName("top_k")]
 	public int? TopK { get; set; }
@@ -409,6 +425,22 @@ public sealed class CacheControl
 
 }
 
+public sealed class ChatAudioOutputPart
+{
+	[JsonPropertyName("audio_url")]
+	public Dictionary<string, object> AudioUrl { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("mime_type")]
+	public string? MimeType { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ChatChoice
 {
 	[JsonPropertyName("finish_reason")]
@@ -515,7 +547,7 @@ public sealed class ChatCompletionsRequest
 	public object? ToolChoice { get; set; }
 
 	[JsonPropertyName("tools")]
-	public List<Dictionary<string, object>>? Tools { get; set; }
+	public List<object>? Tools { get; set; }
 
 	[JsonPropertyName("top_logprobs")]
 	public int? TopLogprobs { get; set; }
@@ -556,10 +588,29 @@ public sealed class ChatCompletionsResponse
 
 }
 
+public sealed class ChatImageOutputPart
+{
+	[JsonPropertyName("image_url")]
+	public Dictionary<string, object> ImageUrl { get; set; }
+
+	[JsonPropertyName("mime_type")]
+	public string? MimeType { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ChatMessage
 {
+	[JsonPropertyName("audios")]
+	public List<Dictionary<string, object>>? Audios { get; set; }
+
 	[JsonPropertyName("content")]
 	public object? Content { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<Dictionary<string, object>>? Images { get; set; }
 
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
@@ -585,6 +636,9 @@ public sealed class DataModel
 
 	[JsonPropertyName("input_types")]
 	public List<string>? InputTypes { get; set; }
+
+	[JsonPropertyName("lifecycle")]
+	public ModelLifecycle? Lifecycle { get; set; }
 
 	[JsonPropertyName("model_id")]
 	public string? ModelId { get; set; }
@@ -745,6 +799,29 @@ public sealed class FileUploadRequest
 
 	[JsonPropertyName("purpose")]
 	public string Purpose { get; set; }
+
+}
+
+public sealed class FunctionToolDefinition
+{
+	[JsonPropertyName("function")]
+	public Dictionary<string, object> Function { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class GatewayDatetimeToolDefinition
+{
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("timezone")]
+	public string? Timezone { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -1151,6 +1228,9 @@ public sealed class Model
 	[JsonPropertyName("input_types")]
 	public List<string>? InputTypes { get; set; }
 
+	[JsonPropertyName("lifecycle")]
+	public ModelLifecycle? Lifecycle { get; set; }
+
 	[JsonPropertyName("model_id")]
 	public string? ModelId { get; set; }
 
@@ -1205,6 +1285,25 @@ public sealed class Model
 }
 
 public sealed class ModelId { }
+
+public sealed class ModelLifecycle
+{
+	[JsonPropertyName("deprecation_date")]
+	public string? DeprecationDate { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("replacement_model_id")]
+	public string? ReplacementModelId { get; set; }
+
+	[JsonPropertyName("retirement_date")]
+	public string? RetirementDate { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
 
 public sealed class ModelsPrivacyScopeNotImplementedResponse
 {
@@ -1590,16 +1689,75 @@ public sealed class ResponsesInputItem
 
 }
 
+public sealed class ResponsesOutputAudioPart
+{
+	[JsonPropertyName("audio_url")]
+	public Dictionary<string, object>? AudioUrl { get; set; }
+
+	[JsonPropertyName("b64_json")]
+	public string? B64Json { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("mime_type")]
+	public string? MimeType { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ResponsesOutputContentPart { }
+
+public sealed class ResponsesOutputImagePart
+{
+	[JsonPropertyName("b64_json")]
+	public string? B64Json { get; set; }
+
+	[JsonPropertyName("image_url")]
+	public Dictionary<string, object>? ImageUrl { get; set; }
+
+	[JsonPropertyName("mime_type")]
+	public string? MimeType { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ResponsesOutputItem
 {
+	[JsonPropertyName("arguments")]
+	public string? Arguments { get; set; }
+
+	[JsonPropertyName("call_id")]
+	public string? CallId { get; set; }
+
 	[JsonPropertyName("content")]
-	public List<Dictionary<string, object>>? Content { get; set; }
+	public List<object>? Content { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
 
 	[JsonPropertyName("role")]
 	public string? Role { get; set; }
 
 	[JsonPropertyName("type")]
 	public string? Type { get; set; }
+
+}
+
+public sealed class ResponsesOutputTextPart
+{
+	[JsonPropertyName("annotations")]
+	public List<Dictionary<string, object>>? Annotations { get; set; }
+
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -1681,7 +1839,7 @@ public sealed class ResponsesRequest
 	public object? ToolChoice { get; set; }
 
 	[JsonPropertyName("tools")]
-	public List<Dictionary<string, object>>? Tools { get; set; }
+	public List<object>? Tools { get; set; }
 
 	[JsonPropertyName("top_p")]
 	public double? TopP { get; set; }
@@ -1782,6 +1940,13 @@ public sealed class ResponsesWebSocketUpgradeRequiredResponse
 
 }
 
+public sealed class ServerToolUsage
+{
+	[JsonPropertyName("datetime_requests")]
+	public int? DatetimeRequests { get; set; }
+
+}
+
 public sealed class TextContentPart
 {
 	[JsonPropertyName("text")]
@@ -1792,6 +1957,8 @@ public sealed class TextContentPart
 
 }
 
+public sealed class TextGenerateTool { }
+
 public sealed class TextModerationInput
 {
 	[JsonPropertyName("text")]
@@ -1801,6 +1968,8 @@ public sealed class TextModerationInput
 	public string Type { get; set; }
 
 }
+
+public sealed class TextToolChoice { }
 
 public sealed class ToolCall
 {
@@ -1836,6 +2005,9 @@ public sealed class Usage
 	[JsonPropertyName("prompt_tokens")]
 	public int? PromptTokens { get; set; }
 
+	[JsonPropertyName("server_tool_use")]
+	public Dictionary<string, object>? ServerToolUse { get; set; }
+
 	[JsonPropertyName("total_tokens")]
 	public int? TotalTokens { get; set; }
 
@@ -1869,11 +2041,11 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("aspect_ratio")]
 	public string? AspectRatio { get; set; }
 
+	[JsonPropertyName("compression_quality")]
+	public int? CompressionQuality { get; set; }
+
 	[JsonPropertyName("duration")]
 	public int? Duration { get; set; }
-
-	[JsonPropertyName("duration_seconds")]
-	public int? DurationSeconds { get; set; }
 
 	[JsonPropertyName("enhance_prompt")]
 	public bool? EnhancePrompt { get; set; }
@@ -1881,26 +2053,8 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("generate_audio")]
 	public bool? GenerateAudio { get; set; }
 
-	[JsonPropertyName("input")]
-	public Dictionary<string, object>? Input { get; set; }
-
-	[JsonPropertyName("input_image")]
-	public object? InputImage { get; set; }
-
-	[JsonPropertyName("input_last_frame")]
-	public object? InputLastFrame { get; set; }
-
-	[JsonPropertyName("input_reference")]
-	public string? InputReference { get; set; }
-
-	[JsonPropertyName("input_reference_mime_type")]
-	public string? InputReferenceMimeType { get; set; }
-
-	[JsonPropertyName("input_video")]
-	public object? InputVideo { get; set; }
-
-	[JsonPropertyName("last_frame")]
-	public object? LastFrame { get; set; }
+	[JsonPropertyName("input_references")]
+	public List<Dictionary<string, object>>? InputReferences { get; set; }
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
@@ -1908,11 +2062,8 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("negative_prompt")]
 	public string? NegativePrompt { get; set; }
 
-	[JsonPropertyName("number_of_videos")]
-	public int? NumberOfVideos { get; set; }
-
-	[JsonPropertyName("output_storage_uri")]
-	public string? OutputStorageUri { get; set; }
+	[JsonPropertyName("output")]
+	public Dictionary<string, object>? Output { get; set; }
 
 	[JsonPropertyName("person_generation")]
 	public string? PersonGeneration { get; set; }
@@ -1923,14 +2074,11 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
-	[JsonPropertyName("quality")]
-	public string? Quality { get; set; }
+	[JsonPropertyName("provider_params")]
+	public Dictionary<string, object>? ProviderParams { get; set; }
 
-	[JsonPropertyName("ratio")]
-	public string? Ratio { get; set; }
-
-	[JsonPropertyName("reference_images")]
-	public List<Dictionary<string, object>>? ReferenceImages { get; set; }
+	[JsonPropertyName("resize_mode")]
+	public string? ResizeMode { get; set; }
 
 	[JsonPropertyName("resolution")]
 	public string? Resolution { get; set; }
@@ -1938,18 +2086,48 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("sample_count")]
 	public int? SampleCount { get; set; }
 
-	[JsonPropertyName("seconds")]
-	public object? Seconds { get; set; }
-
 	[JsonPropertyName("seed")]
 	public int? Seed { get; set; }
+
+	[JsonPropertyName("size")]
+	public string? Size { get; set; }
+
+	[JsonPropertyName("webhook")]
+	public Dictionary<string, object>? Webhook { get; set; }
 
 }
 
 public sealed class VideoGenerationResponse
 {
-	[JsonPropertyName("created")]
-	public int? Created { get; set; }
+	[JsonPropertyName("asset")]
+	public Dictionary<string, object>? Asset { get; set; }
+
+	[JsonPropertyName("audio")]
+	public bool? Audio { get; set; }
+
+	[JsonPropertyName("billing")]
+	public Dictionary<string, object>? Billing { get; set; }
+
+	[JsonPropertyName("completed_at")]
+	public object? CompletedAt { get; set; }
+
+	[JsonPropertyName("content_url")]
+	public string? ContentUrl { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public object? CreatedAt { get; set; }
+
+	[JsonPropertyName("download_url")]
+	public string? DownloadUrl { get; set; }
+
+	[JsonPropertyName("error")]
+	public object? Error { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public int? ExpiresAt { get; set; }
+
+	[JsonPropertyName("generation_id")]
+	public string? GenerationId { get; set; }
 
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
@@ -1960,10 +2138,85 @@ public sealed class VideoGenerationResponse
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
 
-	[JsonPropertyName("output")]
-	public List<Dictionary<string, object>>? Output { get; set; }
+	[JsonPropertyName("output_access")]
+	public string? OutputAccess { get; set; }
+
+	[JsonPropertyName("outputs")]
+	public List<Dictionary<string, object>>? Outputs { get; set; }
+
+	[JsonPropertyName("poll_after_seconds")]
+	public int? PollAfterSeconds { get; set; }
+
+	[JsonPropertyName("polling_url")]
+	public string? PollingUrl { get; set; }
+
+	[JsonPropertyName("progress")]
+	public int? Progress { get; set; }
+
+	[JsonPropertyName("progress_source")]
+	public string? ProgressSource { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
+
+	[JsonPropertyName("seconds")]
+	public double? Seconds { get; set; }
+
+	[JsonPropertyName("size")]
+	public string? Size { get; set; }
+
+	[JsonPropertyName("started_at")]
+	public object? StartedAt { get; set; }
 
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class VideoInputReference
+{
+	[JsonPropertyName("image_url")]
+	public Dictionary<string, object>? ImageUrl { get; set; }
+
+	[JsonPropertyName("reference_type")]
+	public string? ReferenceType { get; set; }
+
+	[JsonPropertyName("role")]
+	public string? Role { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class VideoOutput
+{
+	[JsonPropertyName("bytes_available")]
+	public bool? BytesAvailable { get; set; }
+
+	[JsonPropertyName("content_url")]
+	public string? ContentUrl { get; set; }
+
+	[JsonPropertyName("download_url")]
+	public string? DownloadUrl { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public int? ExpiresAt { get; set; }
+
+	[JsonPropertyName("index")]
+	public int? Index { get; set; }
+
+	[JsonPropertyName("mime_type")]
+	public string? MimeType { get; set; }
+
+}
+
+public sealed class VideoOutputConfig
+{
+	[JsonPropertyName("access")]
+	public string? Access { get; set; }
 
 }

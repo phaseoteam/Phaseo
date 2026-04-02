@@ -13,12 +13,13 @@
 		"lint": "eslint",
 		"typecheck": "tsc --noEmit",
 		"clean": "rimraf .next",
-		"validate": "tsx src/data/validate.ts --preset structure",
-		"validate:pricing": "tsx src/data/validate.ts --preset pricing",
-		"validate:gateway": "tsx src/data/validate-gateway.ts",
+		"validate": "tsx ../../packages/data/catalog/src/data/validate.ts --preset structure",
+		"validate:pricing": "tsx ../../packages/data/catalog/src/data/validate.ts --preset pricing",
+		"validate:gateway": "tsx ../../packages/data/catalog/src/data/validate-gateway.ts",
 		"update-db": "tsx scripts/importer/main.ts",
 		"db:reconcile-api-model-links": "tsx scripts/importer/reconcile-api-model-links.ts",
-		"db-progress": "cd src/data && python -X utf8 progressCalc.py",
+		"db-progress": "cd ../../packages/data/catalog/src/data && python -X utf8 progressCalc.py",
+		"oauth:e2e:playwright": "tsx scripts/oauth-e2e-playwright.ts",
 		"test": "jest --runInBand"
 	},
 	"dependencies": {
@@ -132,7 +133,7 @@
 		"@tailwindcss/postcss": "^4",
 		"@types/jest": "^29.5.12",
 		"@types/node": "^25",
-		"@types/react": "19.2.7",
+		"@types/react": "19.2.14",
 		"@types/react-dom": "19.2.3",
 		"@types/three": "^0.180.0",
 		"baseline-browser-mapping": "^2.9.0",
@@ -149,7 +150,7 @@
 		"wrangler": "^4.66.0"
 	},
 	"overrides": {
-		"@types/react": "19.2.7",
+		"@types/react": "19.2.14",
 		"@types/react-dom": "19.2.3"
 	}
 }

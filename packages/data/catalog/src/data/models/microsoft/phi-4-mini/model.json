@@ -1,0 +1,32 @@
+{
+  "model_id": "microsoft/phi-4-mini",
+  "organisation_id": "microsoft",
+  "name": "Phi 4 Mini",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-02-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "microsoft/phi-4-mini",
+  "family_id": "microsoft/phi-4-0",
+  "links": [
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/pdf/2503.01743"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://azure.microsoft.com/en-us/blog/empowering-innovation-the-next-generation-of-the-phi-family/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/microsoft/Phi-4-mini-instruct"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

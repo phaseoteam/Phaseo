@@ -1,0 +1,19 @@
+{
+  "model_id": "meta/llama-4-scout",
+  "organisation_id": "meta",
+  "name": "Llama 4 Scout",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-04-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "meta/llama-4-scout",
+  "family_id": "meta/llama-4-0",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

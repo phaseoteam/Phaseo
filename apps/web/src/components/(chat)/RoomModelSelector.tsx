@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -288,10 +288,31 @@ export function RoomModelSelector({
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
 	const [nowMs, setNowMs] = useState<number | null>(null);
+	const [quickFilters, setQuickFilters] = useState({
+		free: false,
+		new: false,
+	});
 
 	useEffect(() => {
 		setNowMs(Date.now());
 	}, []);
+
+	const toggleQuickFilter = (key: "free" | "new") => {
+		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+	};
+
+	const optionMatchesQuickFilters = useCallback(
+		(option: ModelOption) => {
+			if (quickFilters.free && !option.modelId.endsWith(":free")) {
+				return false;
+			}
+			if (quickFilters.new && !isNewModel(option.releaseDate, nowMs)) {
+				return false;
+			}
+			return true;
+		},
+		[nowMs, quickFilters.free, quickFilters.new],
+	);
 
 	const selectedModelPreview = selectedModelIds.slice(0, 5);
 	const hiddenSelectedCount = Math.max(
@@ -463,13 +484,37 @@ export function RoomModelSelector({
 		() => Array.from(modelOptions.comingSoon.entries()),
 		[modelOptions.comingSoon],
 	);
+	const filteredFeatured = useMemo(
+		() => modelOptions.featured.filter(optionMatchesQuickFilters),
+		[modelOptions.featured, optionMatchesQuickFilters],
+	);
+	const filteredGroupedEntries = useMemo(
+		() =>
+			groupedEntries
+				.map(([orgId, options]) => [
+					orgId,
+					options.filter(optionMatchesQuickFilters),
+				] as const)
+				.filter(([, options]) => options.length > 0),
+		[groupedEntries, optionMatchesQuickFilters],
+	);
+	const filteredComingSoonEntries = useMemo(
+		() =>
+			comingSoonEntries
+				.map(([orgId, options]) => [
+					orgId,
+					options.filter(optionMatchesQuickFilters),
+				] as const)
+				.filter(([, options]) => options.length > 0),
+		[comingSoonEntries, optionMatchesQuickFilters],
+	);
 	const allModelOptions = useMemo(
 		() => [
-			...modelOptions.featured,
-			...groupedEntries.flatMap(([, options]) => options),
-			...comingSoonEntries.flatMap(([, options]) => options),
+			...filteredFeatured,
+			...filteredGroupedEntries.flatMap(([, options]) => options),
+			...filteredComingSoonEntries.flatMap(([, options]) => options),
 		],
-		[comingSoonEntries, groupedEntries, modelOptions.featured],
+		[filteredComingSoonEntries, filteredFeatured, filteredGroupedEntries],
 	);
 	const normalizedSearchValue = useMemo(
 		() => normalizeSearchText(searchValue),
@@ -494,8 +539,11 @@ export function RoomModelSelector({
 	}, [allModelOptions, hasSearchValue, normalizedSearchValue]);
 	const comingSoonCount = useMemo(
 		() =>
-			comingSoonEntries.reduce((total, [, list]) => total + list.length, 0),
-		[comingSoonEntries],
+			filteredComingSoonEntries.reduce(
+				(total, [, list]) => total + list.length,
+				0,
+			),
+		[filteredComingSoonEntries],
 	);
 	const handleOpenChange = (nextOpen: boolean) => {
 		setOpen(nextOpen);
@@ -531,8 +579,18 @@ export function RoomModelSelector({
 
 			<ModelSelector open={open} onOpenChange={handleOpenChange}>
 				<ModelSelectorTrigger asChild>
-					<Button variant="ghost" size="icon" className="h-8 w-8">
+					<Button
+						variant="ghost"
+						size="sm"
+						className={cn(
+							"h-8 gap-1.5",
+							selectedModelIds.length === 0 ? "px-2 text-xs" : "w-8 px-0",
+						)}
+					>
 						<Plus className="h-4 w-4" />
+						{selectedModelIds.length === 0 ? (
+							<span className="truncate text-xs">Add Model</span>
+						) : null}
 					</Button>
 				</ModelSelectorTrigger>
 				<ModelSelectorContent
@@ -545,6 +603,34 @@ export function RoomModelSelector({
 						value={searchValue}
 						onValueChange={setSearchValue}
 					/>
+					<div className="flex items-center gap-1 border-b border-border px-3 py-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => toggleQuickFilter("free")}
+							className={cn(
+								"h-7 rounded-md px-2.5 text-xs",
+								quickFilters.free &&
+									"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+							)}
+						>
+							Free
+						</Button>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => toggleQuickFilter("new")}
+							className={cn(
+								"h-7 rounded-md px-2.5 text-xs",
+								quickFilters.new &&
+									"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+							)}
+						>
+							New
+						</Button>
+					</div>
 					<ModelSelectorList className="max-h-[70vh] p-3">
 						<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
 						{hasSearchValue ? (
@@ -580,13 +666,13 @@ export function RoomModelSelector({
 								))}
 							</ModelSelectorGroup>
 						) : null}
-						{!hasSearchValue && modelOptions.featured.length > 0 ? (
+						{!hasSearchValue && filteredFeatured.length > 0 ? (
 							<>
 								<ModelSelectorGroup
 									heading="Featured"
 									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 								>
-									{modelOptions.featured.map((option) => (
+									{filteredFeatured.map((option) => (
 										<ModelSelectorItem
 											key={option.modelId}
 											value={option.modelId}
@@ -617,7 +703,7 @@ export function RoomModelSelector({
 						) : null}
 
 						{!hasSearchValue &&
-							groupedEntries.map(([orgId, options]) => {
+							filteredGroupedEntries.map(([orgId, options]) => {
 							const orgLabel = options[0]?.orgName ?? formatOrgLabel(orgId);
 							return (
 								<ModelSelectorGroup key={orgId} heading={orgLabel} className="pb-2">
@@ -653,7 +739,7 @@ export function RoomModelSelector({
 						{!hasSearchValue && comingSoonCount > 0 ? (
 							<>
 								<ModelSelectorSeparator />
-								{comingSoonEntries.map(([orgId, options]) => {
+								{filteredComingSoonEntries.map(([orgId, options]) => {
 									const orgLabel = options[0]?.orgName ?? formatOrgLabel(orgId);
 									return (
 										<ModelSelectorGroup

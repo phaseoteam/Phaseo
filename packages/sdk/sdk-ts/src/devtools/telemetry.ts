@@ -1,4 +1,4 @@
-import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "./core.js";
+﻿import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "./core.js";
 import { randomUUID } from "crypto";
 
 /**
@@ -14,7 +14,9 @@ export class TelemetryCapture {
   private flushTimer: NodeJS.Timeout | null = null;
   private readonly sdkVersion: string;
 
-  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "0.2.1") {
+
+  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "1.1.1") {
+
     // Check if devtools is enabled via env var or config
     if (config?.enabled !== undefined) {
       this.enabled = config.enabled;

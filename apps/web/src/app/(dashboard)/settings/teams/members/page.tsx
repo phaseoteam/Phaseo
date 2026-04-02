@@ -30,6 +30,7 @@ async function TeamMembersContent() {
 			personalTeamId={data.personalTeamId}
 			manageableTeamIds={data.manageableTeamIds}
 			walletBalances={data.walletBalances}
+			teamSsoSettingsByTeam={data.teamSsoSettingsByTeam}
 			tab="members"
 		/>
 	);

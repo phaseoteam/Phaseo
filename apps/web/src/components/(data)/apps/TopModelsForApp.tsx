@@ -31,7 +31,7 @@ export default async function TopModelsForApp({
 		const model = row.model_id || "unknown";
 		const m = modelAgg.get(model) || { requests: 0, tokens: 0 };
 
-		m.requests += 1;
+		m.requests += Number(row.requests ?? 1);
 		m.tokens += row.usage?.total_tokens ? Number(row.usage.total_tokens) : 0;
 
 		modelAgg.set(model, m);

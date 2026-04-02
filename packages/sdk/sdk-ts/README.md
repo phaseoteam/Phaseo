@@ -37,38 +37,50 @@ The generated directory (`src/gen`) is committed so diffs are visible in PRs. Re
 ## Usage
 
 ```ts
-import { AIStats, MODEL_IDS } from "@ai-stats/ts-sdk";
+import AIStats from "@ai-stats/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+// Uses AI_STATS_API_KEY from environment by default.
+const client = new AIStats();
 
-// text
-const completion = await client.generateText({
-	model: MODEL_IDS[0],
-	messages: [{ role: "user", content: "Say hi." }],
+const response = await client.responses.create({
+  model: "openai/gpt-5.4",
+  input: "Write a one-sentence bedtime story about a unicorn.",
 });
 
-// streaming text
-for await (const chunk of client.streamText({
-	model: MODEL_IDS[0],
-	messages: [{ role: "user", content: "Stream hi." }],
-})) {
-	process.stdout.write(chunk);
-}
+console.log(response.output_text);
+```
 
-// models
-const models = await client.getModels();
-console.log(models.data.map((m) => m.id));
+With an explicit key:
 
-// images, embeddings, moderation, video, speech, transcription
-await client.generateImage({ model: "image-alpha", prompt: "A purple nebula" });
-await client.generateEmbedding({ input: "hello", model: MODEL_IDS[0] });
-await client.generateModeration({ model: MODEL_IDS[0], input: "Safe?" });
-await client.generateVideo({ model: "video-alpha", prompt: "A calm ocean" });
-await client.generateSpeech({ model: "tts-alpha", input: "Hello!" });
-await client.generateTranscription({
-	model: "whisper-alpha",
-	file: "<base64>",
+```ts
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY!,
+  // baseUrl: "https://api.phaseo.app/v1",
 });
+```
+
+### Model ID Future-Proofing
+
+`model` params are typed as `KnownModelId | string`, so new gateway models work before the next SDK publish while still preserving autocomplete for known IDs.
+
+### Model Deprecation Warnings
+
+By default, the SDK checks `/v1/data/models` and warns once per process when you call a deprecated or retired model.
+
+```ts
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY!,
+  enableDeprecationWarnings: true, // default
+  warningsAsErrors: false, // set true to throw instead of warn
+  logger: (level, message, meta) => {
+    console.log(level, message, meta);
+  },
+});
+
+const info = await client.models.getDeprecationInfo("openai/old-model");
+const validation = await client.models.validate("openai/old-model");
 ```
 
 ## DevTools

@@ -1,14 +1,13 @@
 export interface ActivityEntry {
-  cost_cents?: number;
-  endpoint?: string;
-  latency_ms?: number;
-  model?: string;
-  provider?: string;
-  request_id?: string;
-  timestamp?: string;
-  usage?: {
-    input_tokens?: number;
-    output_tokens?: number;
-    total_tokens?: number;
-  };
+  byok_usage_inference: number;
+  completion_tokens: number;
+  date: string;
+  endpoint_id: string;
+  model: string;
+  model_permaslug: string;
+  prompt_tokens: number;
+  provider_name: string;
+  reasoning_tokens: number;
+  requests: number;
+  usage: number;
 }

@@ -110,7 +110,11 @@ function capabilityIdToUnifiedEndpoint(
 	if (normalized === "audio.translate" || normalized === "audio.translation") {
 		return "audio.translation";
 	}
-	if (normalized === "moderation" || normalized === "moderations.create") {
+	if (
+		normalized === "moderation" ||
+		normalized === "moderations.create" ||
+		normalized === "text.moderate"
+	) {
 		return "moderations";
 	}
 	if (normalized === "text.embed" || normalized === "embeddings") {

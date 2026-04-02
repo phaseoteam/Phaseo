@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
-import type { ModelData } from "../ModelEditDialog"
 import {
   PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
   PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
@@ -57,7 +56,6 @@ export interface ProviderCapabilityRow {
 
 interface ProvidersTabProps {
   modelId: string
-  model: ModelData
   providers: Array<{ id: string; name: string }>
   focusProviderId?: string
   onProviderModelsChange?: (providerModels: ProviderModelRow[]) => void
@@ -205,7 +203,6 @@ function FieldRow({
 
 export default function ProvidersTab({
   modelId,
-  model,
   providers,
   focusProviderId,
   onProviderModelsChange,
@@ -252,12 +249,12 @@ export default function ProvidersTab({
       const { data: providerModelData } = await supabase
         .from("data_api_provider_models")
         .select("*")
-        .eq("internal_model_id", modelId)
+        .eq("model_id", modelId)
 
       const mappedProviderModels: ProviderModelRow[] = (providerModelData ?? []).map((providerModel: any) => ({
         id: providerModel.provider_api_model_id,
         provider_id: providerModel.provider_id,
-        api_model_id: providerModel.api_model_id,
+        api_model_id: modelId,
         provider_model_slug: providerModel.provider_model_slug,
         prompt_training_policy_override: providerModel.prompt_training_policy_override ?? null,
         prompt_training_override_notes: providerModel.prompt_training_override_notes ?? null,
@@ -295,7 +292,7 @@ export default function ProvidersTab({
           id: capability.id ?? `${providerRow.id}:${capability.capability_id}:${createCapabilityId()}`,
           provider_row_id: providerRow.id,
           provider_id: providerRow.provider_id,
-          api_model_id: providerRow.api_model_id,
+          api_model_id: modelId,
           capability_id: capability.capability_id,
           status:
             capability.status === "disabled" || capability.status === "deranked"
@@ -349,7 +346,7 @@ export default function ProvidersTab({
       const newRow: ProviderModelRow = {
         id: `new-${providerId}-${Date.now()}`,
         provider_id: providerId,
-        api_model_id: model.model_id,
+        api_model_id: modelId,
         provider_model_slug: null,
         prompt_training_policy_override: null,
         prompt_training_override_notes: null,
@@ -374,14 +371,14 @@ export default function ProvidersTab({
       prev.map((row) => (row.id === providerRowId ? { ...row, [field]: value } : row))
     )
 
-    if (field === "provider_id" || field === "api_model_id") {
+    if (field === "provider_id") {
       setProviderCapabilities((prev) =>
         prev.map((capability) => {
           if (capability.provider_row_id !== providerRowId) return capability
           return {
             ...capability,
-            provider_id: field === "provider_id" ? value : capability.provider_id,
-            api_model_id: field === "api_model_id" ? value : capability.api_model_id,
+            provider_id: value,
+            api_model_id: modelId,
           }
         })
       )
@@ -517,11 +514,9 @@ export default function ProvidersTab({
 
               <FieldRow label="Provider API model ID">
                 <Input
-                  value={providerModel.api_model_id}
-                  onChange={(event) =>
-                    updateProviderModel(providerModel.id, "api_model_id", event.target.value)
-                  }
-                  placeholder="e.g. gpt-4.1-mini"
+                  value={modelId}
+                  readOnly
+                  disabled
                 />
               </FieldRow>
 
@@ -540,7 +535,7 @@ export default function ProvidersTab({
               </FieldRow>
 
               <FieldRow label="Internal model ID">
-                <Input value={model.model_id} readOnly disabled />
+                <Input value={modelId} readOnly disabled />
               </FieldRow>
 
               <FieldRow label="Gateway active">

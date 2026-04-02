@@ -72,12 +72,19 @@ function renderModels(models: IRModel[]): string {
 
 function renderModel(model: IRModel): string {
 	if (model.schema.kind === "object") {
+		const required = new Set(model.schema.required);
 		const fields = Object.keys(model.schema.properties).sort((a, b) => a.localeCompare(b));
 		if (fields.length === 0) {
 			return `    ${model.name} = Struct.new(:_unused, keyword_init: true)`;
 		}
+		const docs: string[] = [];
+		for (const field of fields) {
+			const name = sanitizeIdentifier(field);
+			docs.push(`    # @!attribute [rw] ${name}`);
+			docs.push(`    #   @return [${rubyYardType(model.schema.properties[field], required.has(field))}]`);
+		}
 		const fieldList = fields.map((field) => `:${sanitizeIdentifier(field)}`).join(", ");
-		return `    ${model.name} = Struct.new(${fieldList}, keyword_init: true)`;
+		return `${docs.join("\n")}\n    ${model.name} = Struct.new(${fieldList}, keyword_init: true)`;
 	}
 	return `    ${model.name} = Object`;
 }
@@ -124,6 +131,60 @@ function sanitizeIdentifier(name: string): string {
 		return name;
 	}
 	return name.replace(/[^a-zA-Z0-9_]/g, "_");
+}
+
+function rubyYardType(schema: IRSchema, required: boolean): string {
+	let type = rubyYardBaseType(schema);
+	if (!required && !hasNilType(type)) {
+		type = `${type}, nil`;
+	}
+	return type;
+}
+
+function rubyYardBaseType(schema: IRSchema): string {
+	switch (schema.kind) {
+		case "primitive":
+			if (schema.type === "boolean") return "Boolean";
+			if (schema.type === "integer") return "Integer";
+			if (schema.type === "number") return "Float";
+			return "String";
+		case "literal":
+			return "Object";
+		case "enum":
+			return "String";
+		case "array":
+			return `Array<${rubyYardBaseType(schema.items)}>`;
+		case "object":
+			if (isModelLifecycleObject(schema)) return "ModelLifecycle";
+			return "Hash{String => Object}";
+		case "union": {
+			const variants = Array.from(new Set(schema.variants.map((variant) => rubyYardBaseType(variant))));
+			return variants.length ? variants.join(", ") : "Object";
+		}
+		case "intersection":
+		case "unknown":
+			return "Object";
+		case "ref":
+			return schema.name;
+		case "nullable": {
+			const inner = rubyYardBaseType(schema.inner);
+			return hasNilType(inner) ? inner : `${inner}, nil`;
+		}
+		default:
+			return "Object";
+	}
+}
+
+function hasNilType(type: string): boolean {
+	return type.split(",").map((part) => part.trim()).includes("nil");
+}
+
+function isModelLifecycleObject(schema: IRSchema): boolean {
+	if (schema.kind !== "object" || schema.additionalProperties) return false;
+	const keys = Object.keys(schema.properties).sort((a, b) => a.localeCompare(b));
+	const expected = ["deprecation_date", "message", "replacement_model_id", "retirement_date", "status"];
+	if (keys.length !== expected.length) return false;
+	return expected.every((value, index) => keys[index] === value);
 }
 
 function _unusedType(_schema: IRSchema): string {

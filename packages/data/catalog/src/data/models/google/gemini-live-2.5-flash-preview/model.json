@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemini-live-2.5-flash-preview",
+  "organisation_id": "google",
+  "name": "Gemini Live 2.5 Flash Preview",
+  "status": "Deprecated",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-04-09T00:00:00",
+  "deprecation_date": "2025-12-09T00:00:00",
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemini-live-2.5-flash-preview",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

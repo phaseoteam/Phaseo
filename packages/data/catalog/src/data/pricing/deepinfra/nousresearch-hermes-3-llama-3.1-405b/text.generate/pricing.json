@@ -1,0 +1,21 @@
+{
+  "key": "deepinfra:nousresearch/hermes-3-llama-3.1-405b:text.generate",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "nousresearch/hermes-3-llama-3.1-405b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.0,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

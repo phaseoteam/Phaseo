@@ -1,0 +1,19 @@
+{
+  "model_id": "openai/gpt-4-turbo-2023-11-06",
+  "organisation_id": "openai",
+  "name": "GPT 4 Turbo (2023-11-06)",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-4-turbo-2023-03-14",
+  "announced_date": null,
+  "release_date": "2023-11-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4-turbo-2023-11-06",
+  "family_id": "openai/gpt-4",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

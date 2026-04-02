@@ -10,38 +10,38 @@ function calculatePricing(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function cancelBatch(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/{$path["batch_id"]}/cancel";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function cancelBatchAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/{$path["id"]}/cancel";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function cancelVideo(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/videos/{$path["video_id"]}/cancel";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function cancelVideoAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/video/generations/{$path["video_id"]}/cancel";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createAnthropicMessage(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/messages";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createAudioRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/audio/realtime/calls";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createAudioRealtimeClientSecretsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/audio/realtime/client_secrets";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createAudioRealtimeSessionPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/audio/realtime";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createAudioRealtimeSessionsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/audio/realtime/sessions";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -112,34 +112,6 @@ function createOcr(Client $client, ?array $path = null, ?array $query = null, ?a
 {
 	$path = $path ?? [];
 	$resolvedPath = "/ocr";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/realtime/calls";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createRealtimeClientSecretsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/realtime/client_secrets";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createRealtimeSessionPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/realtime";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createRealtimeSessionsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/realtime/sessions";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -234,17 +206,10 @@ function getActivity(Client $client, ?array $path = null, ?array $query = null, 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function getAnalytics(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function getActivityAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/analytics";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function getAudioRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/audio/realtime/calls/{$path["call_id"]}";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -294,13 +259,6 @@ function getProviderDerankStatus(Client $client, ?array $path = null, ?array $qu
 {
 	$path = $path ?? [];
 	$resolvedPath = "/health/providers/{$path["provider_id"]}/derank";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function getRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/realtime/calls/{$path["call_id"]}";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -409,6 +367,41 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/gateway/models/me";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listVideoModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/videos/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listVideoModelsAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/video/generations/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listVideos(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/videos";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listVideosAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/video/generations";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function openResponsesWebSocket(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -441,6 +434,13 @@ function retrieveFile(Client $client, ?array $path = null, ?array $query = null,
 {
 	$path = $path ?? [];
 	$resolvedPath = "/files/{$path["file_id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function retrieveFileContent(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/files/{$path["file_id"]}/content";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

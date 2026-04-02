@@ -159,7 +159,7 @@ export default function CreditsPurchaseDialog({
 		? "--"
 		: formatUSD(total);
 
-	const quickPicks = [10, 25, 50, 100];
+	const quickPicks = [25, 100, 250, 500];
 
 	// Default selection: only auto-select the Stripe default payment method.
 	const [selectedPm, setSelectedPm] = useState<string | "new" | null>(() => {

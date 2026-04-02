@@ -1,0 +1,18 @@
+{
+  "model_id": "minimax/speech-2.5-hd-preview",
+  "organisation_id": "minimax",
+  "name": "Speech 2.5 HD Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-08-06T00:00:00",
+  "release_date": "2025-08-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "minimax/speech-2.5-hd-preview",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

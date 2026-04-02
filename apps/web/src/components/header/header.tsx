@@ -15,8 +15,8 @@ const showHeaderAnnouncement = false;
 
 export default function Header() {
 	const headerContent = (
-		<div className="flex h-16 items-center justify-between gap-6">
-			<div className="flex min-w-0 flex-1 items-center gap-5 overflow-hidden">
+		<div className="flex h-[var(--site-header-height,4rem)] items-center justify-between gap-[var(--site-header-gap,1.5rem)]">
+			<div className="flex min-w-0 flex-1 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden">
 				<Link
 					href="/"
 					className="flex shrink-0 items-center text-2xl font-semibold tracking-tight"
@@ -26,7 +26,7 @@ export default function Header() {
 						alt="AI Stats"
 						width={154}
 						height={40}
-						className="h-10 w-auto select-none dark:hidden"
+						className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:hidden"
 						priority
 					/>
 					<Image
@@ -34,20 +34,20 @@ export default function Header() {
 						alt="AI Stats"
 						width={154}
 						height={40}
-						className="hidden h-10 w-auto select-none dark:block"
+						className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:block"
 						priority
 					/>
 				</Link>
-				<div className="hidden h-6 w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />
+				<div className="hidden h-[var(--site-header-divider-height,1.5rem)] w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />
 				<div className="hidden max-w-full lg:block">
 					<Suspense
 						fallback={
 							<div className="flex items-center gap-1.5">
-								<Skeleton className="h-10 w-24 rounded-lg" />
-								<Skeleton className="h-10 w-16 rounded-lg" />
-								<Skeleton className="h-10 w-24 rounded-lg" />
-								<Skeleton className="h-10 w-20 rounded-lg" />
-								<Skeleton className="h-10 w-16 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-24 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-16 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-24 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-20 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-16 rounded-lg" />
 							</div>
 						}
 					>
@@ -58,15 +58,17 @@ export default function Header() {
 
 			<div className="hidden shrink-0 items-center gap-3 lg:flex">
 				<Suspense
-					fallback={<Skeleton className="h-10 w-[15rem] rounded-lg" />}
+					fallback={
+						<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-[15rem] rounded-lg" />
+					}
 				>
-					<SearchWrapper className="w-[13rem] xl:w-[15rem]" />
+					<SearchWrapper className="w-[var(--site-header-search-width,13rem)] xl:w-[var(--site-header-search-width-xl,15rem)]" />
 				</Suspense>
 				<Suspense
 					fallback={
 						<div className="flex items-center gap-2">
-							<Skeleton className="h-9 w-32 rounded-lg" />
-							<Skeleton className="h-8 w-8 rounded-lg" />
+							<Skeleton className="h-[calc(var(--site-header-control-h,2.5rem)-0.125rem)] w-32 rounded-lg" />
+							<Skeleton className="h-[calc(var(--site-header-control-h,2.5rem)-0.25rem)] w-8 rounded-lg" />
 						</div>
 					}
 				>
@@ -75,7 +77,11 @@ export default function Header() {
 			</div>
 
 			<div className="lg:hidden">
-				<Suspense fallback={<Skeleton className="h-10 w-10 rounded-lg" />}>
+				<Suspense
+					fallback={
+						<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-[var(--site-header-control-h,2.5rem)] rounded-lg" />
+					}
+				>
 					<AuthControls variant="mobile" />
 				</Suspense>
 			</div>

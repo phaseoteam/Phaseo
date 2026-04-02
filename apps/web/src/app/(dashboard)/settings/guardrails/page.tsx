@@ -5,6 +5,14 @@ import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import GuardrailsSettingsClient from "@/components/(gateway)/settings/guardrails/GuardrailsSettingsClient";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import { Shield } from "lucide-react";
 
 export const metadata = {
 	title: "Guardrails - Settings",
@@ -30,9 +38,17 @@ async function GuardrailsSettingsContent() {
 
 	if (!teamId) {
 		return (
-			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a team to manage guardrails.
-			</div>
+			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<Shield className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>Select a team</EmptyTitle>
+					<EmptyDescription>
+						Choose a team to view and manage its guardrails.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 

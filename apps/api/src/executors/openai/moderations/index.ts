@@ -7,6 +7,17 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import type { ProviderExecutor } from "../../types";
 
+function normalizeModelName(model?: string | null): string {
+	if (!model) return "";
+	const trimmed = model.trim();
+	if (!trimmed) return "";
+	if (trimmed.includes("/")) {
+		const parts = trimmed.split("/");
+		return parts[parts.length - 1] || trimmed;
+	}
+	return trimmed;
+}
+
 function mapOpenAIResult(entry: any): IRModerationsResult {
 	return {
 		flagged: Boolean(entry?.flagged),
@@ -23,7 +34,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const requestBody = {
 		input: ir.input,
-		model: args.providerModelSlug || ir.model,
+		model: normalizeModelName(args.providerModelSlug || ir.model) || ir.model,
 	};
 
 	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);

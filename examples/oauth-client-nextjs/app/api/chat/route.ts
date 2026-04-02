@@ -5,10 +5,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getTokens } from '@/lib/session';
+import { getTokens, updateTokens } from '@/lib/session';
 import { isTokenExpired, refreshAccessToken } from '@/lib/oauth';
 
-const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://gateway.aistats.ai';
+const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.phaseo.app').replace(/\/+$/, '');
+const GATEWAY_BASE = /\/v1$/i.test(GATEWAY_ORIGIN) ? GATEWAY_ORIGIN : `${GATEWAY_ORIGIN}/v1`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (isTokenExpired(tokens)) {
       try {
         tokens = await refreshAccessToken(tokens.refresh_token);
-        // TODO: Update session with new tokens
+        await updateTokens(tokens);
       } catch (error) {
         return NextResponse.json(
           { error: 'Token refresh failed' },
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward request to AI Stats gateway
-    const response = await fetch(`${GATEWAY_URL}/v1/chat/completions`, {
+    const response = await fetch(`${GATEWAY_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${tokens.access_token}`,

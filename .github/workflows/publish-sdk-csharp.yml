@@ -1,0 +1,90 @@
+name: Publish C# SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (defaults to packages/sdk/sdk-csharp/package.json version)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-csharp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="$(node -p "require('./packages/sdk/sdk-csharp/package.json').version")"
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate telemetry literal matches publish version
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const version = process.env.VERSION;
+          const filePath = "packages/sdk/sdk-csharp/Client.cs";
+          const source = fs.readFileSync(filePath, "utf8");
+          const match = source.match(/new TelemetryRecorder\(devtools,\s*"([^"]+)"\)/);
+          if (!match) {
+            console.error(`::error::Unable to find telemetry version literal in ${filePath}.`);
+            process.exit(1);
+          }
+          const actual = match[1];
+          if (actual !== version) {
+            console.error(`::error::Telemetry version mismatch in ${filePath}: expected ${version}, found ${actual}. Run pnpm run sdk:sync-language-manifests and commit the update before publishing.`);
+            process.exit(1);
+          }
+          NODE
+
+      - name: Build package
+        run: |
+          dotnet test packages/sdk/sdk-csharp/tests/AIStats.Sdk.Tests/AIStats.Sdk.Tests.csproj -c Release
+          dotnet pack packages/sdk/sdk-csharp/AIStats.Sdk.csproj \
+            -c Release \
+            -o artifacts/csharp \
+            /p:Version=${{ steps.version.outputs.value }} \
+            /p:PackageVersion=${{ steps.version.outputs.value }}
+
+      - name: NuGet login (OIDC -> temporary API key)
+        id: nuget_login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_TRUSTED_PUBLISHING_USER || github.repository_owner }}
+
+      - name: Publish to NuGet
+        run: |
+          dotnet nuget push "artifacts/csharp/*.nupkg" \
+            --api-key "${{ steps.nuget_login.outputs.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
+          dotnet nuget push "artifacts/csharp/*.snupkg" \
+            --api-key "${{ steps.nuget_login.outputs.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate

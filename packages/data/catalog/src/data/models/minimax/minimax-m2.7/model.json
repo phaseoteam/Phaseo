@@ -1,0 +1,32 @@
+{
+  "model_id": "minimax/minimax-m2.7",
+  "organisation_id": "minimax",
+  "name": "MiniMax M2.7",
+  "status": "Available",
+  "previous_model_id": "minimax/minimax-m2-5-2026-02-12",
+  "announced_date": "2026-03-18T00:00:00",
+  "release_date": "2026-03-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "minimax/minimax-m2.7",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.minimax.io/news/minimax-m27-en"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 204800
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    }
+  ],
+  "benchmarks": []
+}

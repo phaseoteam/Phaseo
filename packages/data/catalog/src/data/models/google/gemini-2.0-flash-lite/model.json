@@ -1,0 +1,45 @@
+{
+  "model_id": "google/gemini-2.0-flash-lite",
+  "organisation_id": "google",
+  "name": "Gemini 2.0 Flash Lite",
+  "status": "Retired",
+  "previous_model_id": "google/gemini-1-5-flash-8b-2024-03-15",
+  "announced_date": "2025-02-05T00:00:00",
+  "release_date": "2025-02-05T00:00:00",
+  "deprecation_date": "2026-02-25T00:00:00",
+  "retirement_date": "2026-02-25T00:00:00",
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemini-2.0-flash-lite",
+  "family_id": "google/gemini-2-0",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash-lite"
+    },
+    {
+      "platform": "playground",
+      "url": "https://aistudio.google.com/prompts/new_chat?model=gemini-2.0-flash-lite"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://developers.googleblog.com/en/gemini-2-family-expands"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1048576
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-06-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8192
+    }
+  ],
+  "benchmarks": []
+}

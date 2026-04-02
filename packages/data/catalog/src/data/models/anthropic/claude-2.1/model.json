@@ -1,0 +1,41 @@
+{
+  "model_id": "anthropic/claude-2.1",
+  "organisation_id": "anthropic",
+  "name": "Claude 2.1",
+  "status": "Retired",
+  "previous_model_id": "anthropic/claude-2-0-2023-07-12",
+  "announced_date": "2023-11-21T00:00:00",
+  "release_date": "2023-11-22T00:00:00",
+  "deprecation_date": "2025-01-21T00:00:00",
+  "retirement_date": "2025-07-21T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-2.1",
+  "family_id": "anthropic/claude-2",
+  "links": [
+    {
+      "platform": "paper",
+      "url": "https://www-cdn.anthropic.com/5c49cc247484cecf107c699baf29250302e5da70/claude-2-model-card.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/claude-2-1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-01-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 4096
+    }
+  ],
+  "benchmarks": []
+}

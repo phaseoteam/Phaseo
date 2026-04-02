@@ -3,6 +3,19 @@
 	"description": "AI Stats PHP SDK",
 	"type": "library",
 	"license": "MIT",
+	"keywords": ["ai", "sdk", "llm", "gateway"],
+	"homepage": "https://docs.ai-stats.phaseo.app",
+	"authors": [
+		{
+			"name": "AI Stats",
+			"email": "danielbutler500@gmail.com"
+		}
+	],
+	"support": {
+		"docs": "https://docs.ai-stats.phaseo.app",
+		"issues": "https://github.com/AI-Stats/AI-Stats/issues",
+		"source": "https://github.com/AI-Stats/AI-Stats"
+	},
 	"require": {
 		"php": ">=8.1",
 		"guzzlehttp/guzzle": "^7.0",

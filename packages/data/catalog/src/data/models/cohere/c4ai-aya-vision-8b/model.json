@@ -1,0 +1,18 @@
+{
+  "model_id": "cohere/c4ai-aya-vision-8b",
+  "organisation_id": "cohere",
+  "name": "C4AI Aya Vision 8B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-03-04T00:00:00",
+  "release_date": "2025-03-04T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "cohere/c4ai-aya-vision-8b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

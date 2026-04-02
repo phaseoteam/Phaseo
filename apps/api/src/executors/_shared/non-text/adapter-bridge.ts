@@ -34,6 +34,8 @@ import * as mistralOcr from "@providers/mistral/endpoints/ocr";
 import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-speech";
 import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
 import * as elevenLabsMusic from "@providers/elevenlabs/endpoints/music-generate";
+import * as googleAiStudioImages from "@providers/google-ai-studio/endpoints/images";
+import * as xiaomiAudioSpeech from "@providers/xiaomi/endpoints/audio-speech";
 import * as sunoMusic from "@providers/suno/endpoints/music-generate";
 
 type NonTextEndpoint =
@@ -426,6 +428,9 @@ async function executeProviderEndpoint(
 ) {
 	switch (endpoint) {
 		case "images.generations":
+			if (providerId === "google-ai-studio") {
+				return googleAiStudioImages.exec(providerArgs);
+			}
 			if (!isOpenAICompatProvider(providerId)) {
 				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
 			}
@@ -438,6 +443,9 @@ async function executeProviderEndpoint(
 		case "audio.speech":
 			if (providerId === "elevenlabs") {
 				return elevenLabsAudioSpeech.exec(providerArgs);
+			}
+			if (providerId === "xiaomi") {
+				return xiaomiAudioSpeech.exec(providerArgs);
 			}
 			if (!isOpenAICompatProvider(providerId)) {
 				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);

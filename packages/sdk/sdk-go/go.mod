@@ -1,3 +1,3 @@
-module github.com/AI-Stats/ai-stats-go-sdk-wrapper
+module github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go
 
 go 1.23

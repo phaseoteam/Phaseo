@@ -385,6 +385,19 @@ def fetch_ai21_models() -> list[str]:
     except requests.RequestException:
         return []
 
+def fetch_aion_labs_models() -> list[str]:
+    api_key = os.getenv('AION_LABS_API_KEY')
+    if not api_key:
+        return []
+    try:
+        response = requests.get('https://api.aionlabs.ai/v1/models', headers={'Authorization': f'Bearer {api_key}'})
+        if response.status_code != 200:
+            return []
+        data = response.json()
+        return [f"aion-labs/{m['id']}" for m in data.get('data', [])]
+    except requests.RequestException:
+        return []
+
 def fetch_azure_models() -> list[str]:
     api_key = os.getenv('AZURE_API_KEY')
     endpoint = os.getenv('AZURE_ENDPOINT')
@@ -423,6 +436,7 @@ def fetch_all_provider_models() -> list[dict]:
         {'id': 'bedrock', 'name': 'Amazon Bedrock', 'fetch': fetch_bedrock_models},
         {'id': 'azure', 'name': 'Azure OpenAI', 'fetch': fetch_azure_models},
         {'id': 'ai21', 'name': 'AI21', 'fetch': fetch_ai21_models},
+        {'id': 'aion-labs', 'name': 'Aion Labs', 'fetch': fetch_aion_labs_models},
     ]
     results = []
     for provider in providers:

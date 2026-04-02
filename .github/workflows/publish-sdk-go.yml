@@ -1,0 +1,92 @@
+name: Publish Go SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag (defaults to packages/sdk/sdk-go/package.json version)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.23"
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="$(node -p "require('./packages/sdk/sdk-go/package.json').version")"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid version: $version"
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate telemetry literal matches publish version
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const version = process.env.VERSION;
+          const filePath = "packages/sdk/sdk-go/devtools.go";
+          const source = fs.readFileSync(filePath, "utf8");
+          const match = source.match(/const goSDKVersion = "([^"]+)"/);
+          if (!match) {
+            console.error(`::error::Unable to find telemetry version literal in ${filePath}.`);
+            process.exit(1);
+          }
+          const actual = match[1];
+          if (actual !== version) {
+            console.error(`::error::Telemetry version mismatch in ${filePath}: expected ${version}, found ${actual}. Run pnpm run sdk:sync-language-manifests and commit the update before publishing.`);
+            process.exit(1);
+          }
+          NODE
+
+      - name: Run tests
+        working-directory: packages/sdk/sdk-go
+        run: go test ./...
+
+      - name: Create and push module tag
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="packages/sdk/sdk-go/v${VERSION}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag already exists locally: $tag"
+          else
+            git tag -a "$tag" -m "Go SDK v${VERSION}"
+          fi
+          if git ls-remote --tags origin "$tag" | grep -q "$tag"; then
+            echo "Tag already exists on origin: $tag"
+            exit 0
+          fi
+          git push origin "$tag"
+          echo "Published Go module tag: $tag"

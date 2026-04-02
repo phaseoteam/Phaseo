@@ -19,7 +19,20 @@ export type ChatProxyEnvelope = {
 	debug?: boolean;
 };
 
-export const GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+function normalizeGatewayBaseUrl(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+	if (!trimmed) return undefined;
+	const withoutTrailingSlash = trimmed.replace(/\/+$/, "");
+	return withoutTrailingSlash.endsWith("/v1")
+		? withoutTrailingSlash
+		: `${withoutTrailingSlash}/v1`;
+}
+
+const configuredGatewayBaseUrl = normalizeGatewayBaseUrl(
+	process.env.AI_STATS_GATEWAY_URL,
+);
+export const GATEWAY_BASE_URL = configuredGatewayBaseUrl ?? "";
 const ALLOWED_APP_HEADERS = new Set([
 	"x-title",
 	"http-referer",
@@ -189,6 +202,19 @@ function buildGatewayUnreachableResponse(error: unknown): Response {
 	);
 }
 
+function buildGatewayMissingConfigResponse(): Response {
+	return new Response(
+		JSON.stringify({
+			error: "gateway_not_configured",
+			message: "Missing AI_STATS_GATEWAY_URL for chat gateway proxy.",
+		}),
+		{
+			status: 500,
+			headers: { "Content-Type": "application/json" },
+		},
+	);
+}
+
 export async function forwardUpstreamResponse(args: {
 	upstream: Response;
 	streamRequested: boolean;
@@ -235,6 +261,10 @@ export async function proxyGatewayPost(args: {
 	stream?: boolean;
 	contentType?: string | null;
 }): Promise<Response> {
+	if (!configuredGatewayBaseUrl) {
+		return buildGatewayMissingConfigResponse();
+	}
+
 	const apiKeyOrResponse = await resolveGatewayApiKey();
 	if (apiKeyOrResponse instanceof Response) {
 		return apiKeyOrResponse;
@@ -242,7 +272,7 @@ export async function proxyGatewayPost(args: {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(`${GATEWAY_BASE_URL}${args.path}`, {
+		upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
 			method: "POST",
 			headers: buildProxyHeaders({
 				appHeaders: args.appHeaders,
@@ -268,6 +298,10 @@ export async function proxyGatewayGet(args: {
 	appHeaders?: unknown;
 	debug?: boolean;
 }): Promise<Response> {
+	if (!configuredGatewayBaseUrl) {
+		return buildGatewayMissingConfigResponse();
+	}
+
 	const apiKeyOrResponse = await resolveGatewayApiKey();
 	if (apiKeyOrResponse instanceof Response) {
 		return apiKeyOrResponse;
@@ -275,7 +309,7 @@ export async function proxyGatewayGet(args: {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(`${GATEWAY_BASE_URL}${args.path}`, {
+		upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
 			method: "GET",
 			headers: buildProxyHeaders({
 				appHeaders: args.appHeaders,

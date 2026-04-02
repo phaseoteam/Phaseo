@@ -3,10 +3,16 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 
 interface RedirectUriManagerProps {
 	clientId: string;
@@ -20,6 +26,7 @@ export default function RedirectUriManager({
 	const [redirectUris, setRedirectUris] = useState<string[]>(initialRedirectUris);
 	const [newUri, setNewUri] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
 
 	const isValidUri = (uri: string): boolean => {
 		try {
@@ -30,7 +37,35 @@ export default function RedirectUriManager({
 		}
 	};
 
-	const addUri = () => {
+	const persistRedirectUris = async (
+		nextRedirectUris: string[],
+		successMessage: string,
+	) => {
+		const previous = redirectUris;
+		setSaving(true);
+		setError(null);
+		setRedirectUris(nextRedirectUris);
+		try {
+			const { updateRedirectUrisAction } = await import(
+				"@/app/(dashboard)/settings/oauth-apps/actions"
+			);
+			const result = await updateRedirectUrisAction(clientId, nextRedirectUris);
+			if (result.error) {
+				throw new Error(result.error);
+			}
+			toast.success(successMessage);
+		} catch (err: any) {
+			setRedirectUris(previous);
+			const message =
+				err?.message || "Failed to update redirect URIs. Please try again.";
+			setError(message);
+			toast.error(message);
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const addUri = async () => {
 		const trimmedUri = newUri.trim();
 
 		if (!trimmedUri) {
@@ -48,17 +83,19 @@ export default function RedirectUriManager({
 			return;
 		}
 
-		setRedirectUris([...redirectUris, trimmedUri]);
+		const next = [...redirectUris, trimmedUri];
 		setNewUri("");
 		setError(null);
-
-		toast.success("Redirect URI added successfully");
+		await persistRedirectUris(next, "Redirect URI added successfully");
 	};
 
-	const removeUri = (uri: string) => {
-		setRedirectUris(redirectUris.filter((u) => u !== uri));
-
-		toast.success("Redirect URI removed successfully");
+	const removeUri = async (uri: string) => {
+		if (redirectUris.length <= 1) {
+			setError("At least one redirect URI is required");
+			return;
+		}
+		const next = redirectUris.filter((u) => u !== uri);
+		await persistRedirectUris(next, "Redirect URI removed successfully");
 	};
 
 	return (
@@ -67,6 +104,7 @@ export default function RedirectUriManager({
 				<Input
 					placeholder="https://example.com/auth/callback"
 					value={newUri}
+					disabled={saving}
 					onChange={(e) => {
 						setNewUri(e.target.value);
 						setError(null);
@@ -74,13 +112,13 @@ export default function RedirectUriManager({
 					onKeyDown={(e) => {
 						if (e.key === "Enter") {
 							e.preventDefault();
-							addUri();
+							void addUri();
 						}
 					}}
 				/>
-				<Button onClick={addUri} size="sm">
+				<Button onClick={() => void addUri()} size="sm" disabled={saving}>
 					<Plus className="h-4 w-4 mr-1" />
-					Add
+					{saving ? "Saving..." : "Add"}
 				</Button>
 			</div>
 
@@ -92,9 +130,20 @@ export default function RedirectUriManager({
 			)}
 
 			{redirectUris.length === 0 ? (
-				<div className="text-sm text-muted-foreground text-center py-4 border-2 border-dashed rounded-md">
-					No redirect URIs configured
-				</div>
+				<Empty
+					size="compact"
+					className="rounded-lg border border-dashed border-border/80 p-6"
+				>
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<AlertCircle className="h-5 w-5" />
+						</EmptyMedia>
+						<EmptyTitle className="text-base">No redirect URIs configured</EmptyTitle>
+						<EmptyDescription>
+							Add at least one callback URL to complete your OAuth setup.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
 			) : (
 				<div className="space-y-2">
 					{redirectUris.map((uri) => (
@@ -106,7 +155,8 @@ export default function RedirectUriManager({
 							<Button
 								variant="ghost"
 								size="sm"
-								onClick={() => removeUri(uri)}
+								onClick={() => void removeUri(uri)}
+								disabled={saving}
 								className="ml-2 text-red-600 hover:text-red-700"
 							>
 								<Trash2 className="h-4 w-4" />

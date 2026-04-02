@@ -5,11 +5,11 @@ import Link from "next/link";
 import {
 	Brain,
 	Check,
+	Clock3,
 	Cpu,
 	Info,
 	Mic,
 	Paperclip,
-	Search,
 	SendHorizontal,
 	Square,
 	X,
@@ -51,6 +51,8 @@ interface ChatConversationComposerProps {
 	isUnified: boolean;
 	webSearchEnabled: boolean;
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
+	apiServerToolsEnabled: boolean;
+	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
 	reasoningEnabled: boolean;
 	reasoningPickerOpen: boolean;
 	onReasoningPickerOpenChange: (open: boolean) => void;
@@ -87,8 +89,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		fileInputRef,
 		audioInputRef,
 		isUnified,
-		webSearchEnabled,
-		onWebSearchEnabledChange,
+		apiServerToolsEnabled,
+		onApiServerToolsEnabledChange,
 		reasoningEnabled,
 		reasoningPickerOpen,
 		onReasoningPickerOpenChange,
@@ -279,24 +281,24 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										disabled={!isUnified}
 										className={cn(
 											"h-8 w-8",
-											webSearchEnabled && isUnified
+											apiServerToolsEnabled && isUnified
 												? "bg-muted text-foreground"
 												: "",
 										)}
 										onClick={() => {
 											if (!isUnified) return;
-											const next = !webSearchEnabled;
-											onWebSearchEnabledChange?.(next);
+											const next = !apiServerToolsEnabled;
+											onApiServerToolsEnabledChange?.(next);
 										}}
 									>
-										<Search className="h-4 w-4" />
+										<Clock3 className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent>
 									{isUnified
-										? webSearchEnabled
-											? "Disable web search"
-											: "Enable web search"
+										? apiServerToolsEnabled
+											? "Disable API server tools"
+											: "Enable API server tools"
 										: "Not available in this room"}
 								</TooltipContent>
 							</Tooltip>

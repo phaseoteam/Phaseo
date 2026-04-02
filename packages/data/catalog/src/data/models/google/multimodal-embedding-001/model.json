@@ -1,0 +1,18 @@
+{
+  "model_id": "google/multimodal-embedding-001",
+  "organisation_id": "google",
+  "name": "Multimodal Embedding 001",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2024-02-12T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/multimodal-embedding-001",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

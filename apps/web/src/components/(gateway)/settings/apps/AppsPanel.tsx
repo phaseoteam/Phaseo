@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
 	BarChart2,
+	Blocks,
 	ChevronDown,
 	Globe,
 	Lock,
@@ -26,6 +27,13 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 
 type AppItem = {
 	id: string;
@@ -107,9 +115,17 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 
 	if (!sortedApps.length) {
 		return (
-			<div className="rounded-xl border border-dashed border-border/60 p-6 text-sm text-muted-foreground">
-				No apps found for this team yet.
-			</div>
+			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<Blocks className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>No apps found</EmptyTitle>
+					<EmptyDescription>
+						App attribution records will appear here after your requests include app headers.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 

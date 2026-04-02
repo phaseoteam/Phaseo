@@ -107,9 +107,15 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 		Record<string, StoredRoomModelProfile<TParams>>
 	>({});
 	const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
+	const [hasAppliedStoredModelSelection, setHasAppliedStoredModelSelection] =
+		useState(false);
 
 	const storageKey = useMemo(
 		() => getRoomScopedStorageKey(roomId, "model-profiles-v2"),
+		[roomId],
+	);
+	const selectedModelStorageKey = useMemo(
+		() => getRoomScopedStorageKey(roomId, "last-model-id"),
 		[roomId],
 	);
 
@@ -133,6 +139,44 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 		if (typeof window === "undefined" || !hasLoadedFromStorage) return;
 		window.localStorage.setItem(storageKey, JSON.stringify(storedProfilesById));
 	}, [hasLoadedFromStorage, storageKey, storedProfilesById]);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const normalizedSelectedModelId = selectedModelId.trim();
+		if (!normalizedSelectedModelId) return;
+		window.localStorage.setItem(
+			selectedModelStorageKey,
+			normalizedSelectedModelId,
+		);
+	}, [selectedModelId, selectedModelStorageKey]);
+
+	useEffect(() => {
+		if (hasAppliedStoredModelSelection) return;
+		if (typeof window === "undefined") return;
+		if (models.length === 0) return;
+
+		const storedModelId = (
+			window.localStorage.getItem(selectedModelStorageKey) ?? ""
+		).trim();
+		if (!storedModelId) {
+			setHasAppliedStoredModelSelection(true);
+			return;
+		}
+
+		const hasStoredModel = models.some(
+			(model) => model.modelId === storedModelId,
+		);
+		if (hasStoredModel && storedModelId !== selectedModelId) {
+			onModelChange(storedModelId);
+		}
+		setHasAppliedStoredModelSelection(true);
+	}, [
+		hasAppliedStoredModelSelection,
+		models,
+		onModelChange,
+		selectedModelId,
+		selectedModelStorageKey,
+	]);
 
 	const modelSettingsModelId = modelSettingsTargetModelId ?? selectedModelId ?? null;
 

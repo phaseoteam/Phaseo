@@ -219,22 +219,27 @@ function encodeResponsesUsage(usage: IRUsage) {
     }
 
     const inputTextTokens = usage.inputTokens;
-    const out: any = {
-        input_tokens: usage.inputTokens,
-        output_tokens: usage.outputTokens,
-        total_tokens: usage.totalTokens,
-        input_text_tokens: inputTextTokens,
-        output_text_tokens: usage.outputTokens,
-    };
+	const out: any = {
+		input_tokens: usage.inputTokens,
+		output_tokens: usage.outputTokens,
+		total_tokens: usage.totalTokens,
+		input_text_tokens: inputTextTokens,
+		output_text_tokens: usage.outputTokens,
+	};
     if (typeof usage.cachedInputTokens === "number") {
         out.cached_read_text_tokens = usage.cachedInputTokens;
     }
-    if (typeof usage.reasoningTokens === "number") {
-        out.reasoning_tokens = usage.reasoningTokens;
-    }
-    if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
-    if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
-    return out;
+	if (typeof usage.reasoningTokens === "number") {
+		out.reasoning_tokens = usage.reasoningTokens;
+	}
+	if (typeof usage._ext?.serverToolUse?.datetime_requests === "number") {
+		out.server_tool_use = {
+			datetime_requests: usage._ext.serverToolUse.datetime_requests,
+		};
+	}
+	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
+	if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
+	return out;
 }
 
 function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
@@ -244,6 +249,7 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
         const reasoningParts = choice.message.content.filter((p) => p.type === "reasoning_text");
         const textParts = choice.message.content.filter((p) => p.type === "text");
         const imageParts = choice.message.content.filter((p) => p.type === "image");
+        const audioParts = choice.message.content.filter((p) => p.type === "audio");
 
         // Add reasoning output items
         for (const reasoningPart of reasoningParts) {
@@ -261,8 +267,8 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
             });
         }
 
-        // Add message output item with regular text and images
-        if (textParts.length > 0 || imageParts.length > 0) {
+        // Add message output item with regular text, images, and audio
+        if (textParts.length > 0 || imageParts.length > 0 || audioParts.length > 0) {
             output.push({
                 type: "message",
                 id: `msg_${requestId}_${idx}`,
@@ -289,6 +295,34 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
                                 url: p.data,
                             },
                             mime_type: p.mimeType,
+                        };
+                    }),
+                    ...audioParts.map((p: any) => {
+                        const mimeType = (() => {
+                            if (p.format === "wav") return "audio/wav";
+                            if (p.format === "mp3") return "audio/mpeg";
+                            if (p.format === "flac") return "audio/flac";
+                            if (p.format === "m4a") return "audio/m4a";
+                            if (p.format === "ogg") return "audio/ogg";
+                            if (p.format === "pcm16") return "audio/l16";
+                            if (p.format === "pcm24") return "audio/l24";
+                            return "audio/wav";
+                        })();
+                        if (p.source === "data") {
+                            return {
+                                type: "output_audio",
+                                b64_json: p.data,
+                                mime_type: mimeType,
+                                ...(p.format ? { format: p.format } : {}),
+                            };
+                        }
+                        return {
+                            type: "output_audio",
+                            audio_url: {
+                                url: p.data,
+                            },
+                            mime_type: mimeType,
+                            ...(p.format ? { format: p.format } : {}),
                         };
                     }),
                 ],
@@ -359,6 +393,10 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
 
     const inputDetails = shaped.input_tokens_details ?? shaped.input_details ?? {};
     const outputDetails = shaped.output_tokens_details ?? shaped.completion_tokens_details ?? {};
+    const serverToolUse =
+        shaped.server_tool_use && typeof shaped.server_tool_use === "object"
+            ? shaped.server_tool_use
+            : undefined;
 
     const pricing = (() => {
         const p = shaped.pricing ?? shaped.pricing_breakdown;
@@ -380,6 +418,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
         };
         if (Object.keys(inputDetails).length) out.prompt_tokens_details = inputDetails;
         if (Object.keys(outputDetails).length) out.completion_tokens_details = outputDetails;
+        if (serverToolUse) out.server_tool_use = serverToolUse;
         if (pricing) out.pricing = pricing;
         return out;
     }
@@ -398,6 +437,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
 
     if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
     if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
+    if (serverToolUse) out.server_tool_use = serverToolUse;
     if (pricing) out.pricing_breakdown = pricing;
     return out;
 }
@@ -625,9 +665,13 @@ function encodeChatUsage(usage: IRUsage) {
         input_text_tokens: inputTextTokens,
         output_text_tokens: usage.outputTokens,
         cached_read_text_tokens: usage.cachedInputTokens,
-        cached_read_tokens_are_subset_of_input: undefined,
+        cached_read_tokens_are_subset_of_input: usage.cachedReadTokensAreSubsetOfInput,
         reasoning_tokens: usage.reasoningTokens,
         cached_write_text_tokens: usage._ext?.cachedWriteTokens,
+        server_tool_use:
+            typeof usage._ext?.serverToolUse?.datetime_requests === "number"
+                ? { datetime_requests: usage._ext.serverToolUse.datetime_requests }
+                : undefined,
     };
 }
 

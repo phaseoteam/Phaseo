@@ -1,0 +1,18 @@
+{
+  "model_id": "openai/gpt-realtime-mini",
+  "organisation_id": "openai",
+  "name": "GPT Realtime Mini (2025-12-15)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-15T00:00:00",
+  "release_date": "2025-12-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio",
+  "output_types": "text,audio",
+  "api_model_id": "openai/gpt-realtime-mini",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

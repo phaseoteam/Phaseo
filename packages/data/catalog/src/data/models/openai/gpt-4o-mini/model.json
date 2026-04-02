@@ -1,0 +1,28 @@
+{
+  "model_id": "openai/gpt-4o-mini",
+  "organisation_id": "openai",
+  "name": "GPT 4o Mini (2024-07-18)",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-4-2023-06-13",
+  "announced_date": null,
+  "release_date": "2024-07-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4o-mini",
+  "family_id": "openai/gpt-4o",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 16384
+    }
+  ],
+  "benchmarks": []
+}
