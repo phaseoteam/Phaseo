@@ -810,14 +810,20 @@ function parseConfiguredCoverageStateFromSummary(summary: unknown): ConfiguredMo
 	return { fingerprint, fallbackFingerprint };
 }
 
-async function loadLatestConfiguredCoverageState(): Promise<ConfiguredModelCoverageState | null> {
+async function loadLatestConfiguredCoverageState(source?: string): Promise<ConfiguredModelCoverageState | null> {
 	const supabase = getSupabaseAdmin();
-	const { data, error } = await supabase
+	let query = supabase
 		.from("model_discovery_runs")
 		.select("summary,status,started_at")
 		.in("status", ["completed", "completed_with_errors"])
-		.order("started_at", { ascending: false })
-		.limit(200);
+		.order("started_at", { ascending: false });
+
+	const sourceValue = typeof source === "string" ? source.trim() : "";
+	if (sourceValue) {
+		query = query.eq("source", sourceValue);
+	}
+
+	const { data, error } = await query.limit(200);
 
 	if (error) throw new Error(error.message || "Failed to load configured model coverage state");
 
@@ -1701,7 +1707,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			configuredModelCoverageMonitor.providerChanges.length > 0
 		) {
 			try {
-				const previousConfiguredCoverage = await loadLatestConfiguredCoverageState();
+				const previousConfiguredCoverage = await loadLatestConfiguredCoverageState(args.source);
 				if (previousConfiguredCoverage) {
 					const currentFingerprint =
 						configuredModelCoverageMonitor.fingerprint ??
