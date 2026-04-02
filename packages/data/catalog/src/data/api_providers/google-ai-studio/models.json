@@ -2188,7 +2188,7 @@
     "api_model_id": "google/gemma-4-26b-a4b:free",
     "provider_api_model_id": "google-ai-studio:google/gemma-4-26b-a4b:free",
     "provider_model_slug": "gemma-4-26b-a4b-it",
-    "internal_model_id": "google/gemma-4-26b-a3b",
+    "internal_model_id": "google/gemma-4-26b-a4b",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
