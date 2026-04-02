@@ -11,25 +11,13 @@ type OAuthProvider = (typeof OAUTH)[number];
 type Provider = OAuthProvider | "email";
 type SignupNotice = "exists" | "check-email" | null;
 
-function normalizeAuthError(message: string | null): string | null {
-	if (!message) return null;
-	const lower = message.toLowerCase();
-	if (lower.includes("invalid login credentials")) {
-		return "Invalid email or password. Please try again.";
-	}
-	if (lower.includes("email not confirmed")) {
-		return "Please verify your email before signing in.";
-	}
-	return message;
-}
-
 export async function Login({
 	signupNotice = null,
 	authError = null,
 	returnUrl,
 }: {
 	signupNotice?: SignupNotice;
-	authError?: string | null;
+	authError?: "auth-failed" | null;
 	returnUrl?: string;
 }) {
 	let lastProvider: Provider | null = null;
@@ -53,7 +41,7 @@ export async function Login({
 			: signupNotice === "check-email"
 				? "Account created. Check your email to verify, then sign in."
 				: null;
-	const authErrorText = normalizeAuthError(authError);
+	const authErrorText = authError === "auth-failed" ? "Invalid email or password. Please try again." : null;
 
 	return (
 		<div className="flex flex-col gap-6">
