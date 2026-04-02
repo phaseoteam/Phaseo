@@ -42,8 +42,23 @@ type HuggingFaceOrgAdditions = {
     addedModelIds: string[];
 };
 
+const LEGACY_MODELS_ROOT_PREFIX = "apps/web/src/data/models/";
+const CANONICAL_MODELS_ROOT_PREFIX = "packages/data/catalog/src/data/models/";
+
 function nowIso(): string {
     return new Date().toISOString();
+}
+
+function normalizeRepoRelativePath(filePath: string): string {
+    return filePath.replace(/\\/g, "/");
+}
+
+function migrateModelRootPrefix(filePath: string): string {
+    const normalized = normalizeRepoRelativePath(filePath);
+    if (normalized.startsWith(LEGACY_MODELS_ROOT_PREFIX)) {
+        return `${CANONICAL_MODELS_ROOT_PREFIX}${normalized.slice(LEGACY_MODELS_ROOT_PREFIX.length)}`;
+    }
+    return normalized;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -147,7 +162,7 @@ function readModelFileSnapshot(filePath: string, repoRoot: string): ModelFileSna
                 : null;
 
         return {
-            filePath: path.relative(repoRoot, filePath),
+            filePath: migrateModelRootPrefix(path.relative(repoRoot, filePath)),
             modelId,
             modelName,
         };
@@ -156,6 +171,30 @@ function readModelFileSnapshot(filePath: string, repoRoot: string): ModelFileSna
         console.warn(`[internal-model-check] Failed to read ${path.relative(repoRoot, filePath)}: ${message}`);
         return null;
     }
+}
+
+function normalizeStateFiles(files: Record<string, unknown>): Record<string, ModelFileSnapshot> {
+    const map = new Map<string, ModelFileSnapshot>();
+    for (const [rawPath, rawSnapshot] of Object.entries(files)) {
+        const normalizedPath = migrateModelRootPrefix(rawPath);
+        const snapshot = rawSnapshot as Partial<ModelFileSnapshot> | null;
+        const modelId =
+            typeof snapshot?.modelId === "string" && snapshot.modelId.trim()
+                ? snapshot.modelId.trim()
+                : null;
+        const modelName =
+            typeof snapshot?.modelName === "string" && snapshot.modelName.trim()
+                ? snapshot.modelName.trim()
+                : null;
+
+        map.set(normalizedPath, {
+            filePath: normalizedPath,
+            modelId,
+            modelName,
+        });
+    }
+
+    return Object.fromEntries(Array.from(map.entries()).sort(([left], [right]) => left.localeCompare(right)));
 }
 
 function emptyState(): InternalModelsFileState {
@@ -181,13 +220,15 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
             return { state: emptyState(), hasHfState: false };
         }
 
+        const normalizedFiles = normalizeStateFiles(parsed.files as Record<string, unknown>);
+
         if (parsed.version === 2) {
             const hasHfState = parsed.hfOrgs !== undefined && typeof parsed.hfOrgs === "object";
             return {
                 state: {
                     version: 2,
                     generatedAt: typeof parsed.generatedAt === "string" ? parsed.generatedAt : nowIso(),
-                    files: parsed.files as Record<string, ModelFileSnapshot>,
+                    files: normalizedFiles,
                     hfOrgs: hasHfState ? (parsed.hfOrgs as Record<string, HuggingFaceOrgSnapshot>) : {},
                 },
                 hasHfState,
@@ -199,7 +240,7 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
             state: {
                 version: 2,
                 generatedAt: typeof parsed.generatedAt === "string" ? parsed.generatedAt : nowIso(),
-                files: parsed.files as Record<string, ModelFileSnapshot>,
+                files: normalizedFiles,
                 hfOrgs: {},
             },
             hasHfState: false,
@@ -215,7 +256,20 @@ function writeJson(filePath: string, value: unknown): void {
 }
 
 function buildCurrentFileMap(repoRoot: string): Record<string, ModelFileSnapshot> {
-    const modelsRoot = path.join(repoRoot, "apps", "web", "src", "data", "models");
+    const canonicalModelsRoot = path.join(repoRoot, "packages", "data", "catalog", "src", "data", "models");
+    const legacyModelsRoot = path.join(repoRoot, "apps", "web", "src", "data", "models");
+    const modelsRoot = fs.existsSync(canonicalModelsRoot)
+        ? canonicalModelsRoot
+        : fs.existsSync(legacyModelsRoot)
+            ? legacyModelsRoot
+            : null;
+    if (!modelsRoot) {
+        console.warn(
+            `[internal-model-check] No models directory found at '${CANONICAL_MODELS_ROOT_PREFIX}' or '${LEGACY_MODELS_ROOT_PREFIX}'.`
+        );
+        return {};
+    }
+
     const files = collectModelJsonFiles(modelsRoot);
     const map = new Map<string, ModelFileSnapshot>();
 
@@ -418,36 +472,18 @@ function buildHfModelLine(modelId: string): string {
 
 function buildInternalDiscordMessage(
     addedPaths: string[],
-    removedPaths: string[],
-    currentFilesByPath: Record<string, ModelFileSnapshot>,
-    previousFilesByPath: Record<string, ModelFileSnapshot>
+    currentFilesByPath: Record<string, ModelFileSnapshot>
 ): string {
     const lines = [
-        `Detected ${addedPaths.length} new and ${removedPaths.length} removed internal model${addedPaths.length + removedPaths.length === 1 ? "" : "s"}.`,
+        `Detected ${addedPaths.length} new internal model${addedPaths.length === 1 ? "" : "s"} added to the repository.`,
         "",
     ];
 
-    if (addedPaths.length > 0) {
-        lines.push(`Internal Model Additions (${addedPaths.length}):`);
-    }
+    lines.push(`Internal Model Additions (${addedPaths.length}):`);
     for (const filePath of addedPaths) {
         const snapshot = currentFilesByPath[filePath];
         if (!snapshot) continue;
         lines.push(buildInternalModelLine("New Model", snapshot));
-    }
-
-    if (addedPaths.length > 0 && removedPaths.length > 0) {
-        lines.push("");
-    }
-
-    if (removedPaths.length > 0) {
-        lines.push(`Internal Model Removals (${removedPaths.length}):`);
-    }
-
-    for (const filePath of removedPaths) {
-        const snapshot = previousFilesByPath[filePath];
-        if (!snapshot) continue;
-        lines.push(buildInternalModelLine("Removed Model", snapshot));
     }
 
     const message = lines.join("\n").trim();
@@ -588,21 +624,21 @@ async function main(): Promise<void> {
         console.log("[internal-model-check] HF baseline initialized from existing state; skipping HF notifications this run.");
     }
 
-    const internalChangeCount = shouldCheckInternal ? diff.added.length + diff.removed.length : 0;
-    if (internalChangeCount === 0 && hfAdditionsTotal === 0) {
-        console.log("[internal-model-check] No internal or HF model additions/removals detected.");
+    const internalAdditionsCount = shouldCheckInternal ? diff.added.length : 0;
+    if (internalAdditionsCount === 0 && hfAdditionsTotal === 0) {
+        console.log("[internal-model-check] No new internal or HF models detected.");
         return;
     }
 
     if (!options.webhookUrl) {
-        const total = internalChangeCount + hfAdditionsTotal;
+        const total = internalAdditionsCount + hfAdditionsTotal;
         console.log(
-            `[internal-model-check] ${total} model change(s) detected (${internalChangeCount} internal, ${hfAdditionsTotal} HF), but no webhook URL was provided.`
+            `[internal-model-check] ${total} model change(s) detected (${internalAdditionsCount} internal additions, ${hfAdditionsTotal} HF), but no webhook URL was provided.`
         );
         return;
     }
 
-    const shouldSendInternal = shouldCheckInternal && internalChangeCount > 0;
+    const shouldSendInternal = shouldCheckInternal && internalAdditionsCount > 0;
     const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0;
 
     console.log(
@@ -614,9 +650,7 @@ async function main(): Promise<void> {
     if (shouldSendInternal) {
         const internalMessage = buildInternalDiscordMessage(
             diff.added,
-            diff.removed,
-            currentFiles,
-            previousState.files
+            currentFiles
         );
         await sendDiscordWebhook(internalMessage, {
             webhookUrl: options.webhookUrl,
