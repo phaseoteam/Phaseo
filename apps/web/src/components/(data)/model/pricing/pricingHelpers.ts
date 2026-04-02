@@ -41,6 +41,7 @@ export type ResolutionRow = {
     resolution: string;
     unitLabel: string;
     price: number;
+    audioMode?: "with-audio" | "without-audio" | null;
     basePrice?: number | null;
     discountEndsAt?: string | null;
 };
@@ -269,6 +270,57 @@ function extractVideoDurationLabels(conds?: Condition[] | null): string[] {
         .filter(Boolean);
 }
 
+function extractVideoAudioMode(conds?: Condition[] | null): "with-audio" | "without-audio" | null {
+    if (!conds?.length) return null;
+    const parseBoolValues = (value: any): boolean[] => {
+        const rawValues = Array.isArray(value) ? value : [value];
+        return rawValues
+            .map((v) => {
+                if (typeof v === "boolean") return v;
+                const s = String(v).trim().toLowerCase();
+                if (s === "true" || s === "1" || s === "yes" || s === "enabled" || s === "t" || s === "on") return true;
+                if (s === "false" || s === "0" || s === "no" || s === "disabled" || s === "f" || s === "off") return false;
+                return null;
+            })
+            .filter((v): v is boolean => v !== null);
+    };
+    const resolveFromCondition = (c: Condition): "with-audio" | "without-audio" | null => {
+        const boolValues = parseBoolValues(c.value);
+        if (!boolValues.length) return null;
+        const hasTrue = boolValues.includes(true);
+        const hasFalse = boolValues.includes(false);
+        const op = String(c.op ?? "").toLowerCase();
+        const isNegation = op === "ne" || op === "neq" || op === "not_eq";
+
+        if (isNegation) {
+            if (hasTrue && !hasFalse) return "without-audio";
+            if (hasFalse && !hasTrue) return "with-audio";
+            return null;
+        }
+        if (hasTrue && !hasFalse) return "with-audio";
+        if (hasFalse && !hasTrue) return "without-audio";
+        return null;
+    };
+    const audioCandidates = conds.filter((x) =>
+        String(x.path ?? "").trim().toLowerCase() === "video_params.audio"
+    );
+    const fallbackAudioCandidates =
+        audioCandidates.length > 0
+            ? []
+            : conds.filter((x) => String(x.path ?? "").toLowerCase().includes("audio"));
+    for (const candidate of [...audioCandidates, ...fallbackAudioCandidates]) {
+        const resolved = resolveFromCondition(candidate);
+        if (resolved) return resolved;
+    }
+    return null;
+}
+
+function videoAudioModeLabel(mode: "with-audio" | "without-audio" | null): string | null {
+    if (mode === "with-audio") return "With audio";
+    if (mode === "without-audio") return "No audio";
+    return null;
+}
+
 export function qualityRank(q: string) {
     const s = q.toLowerCase();
     if (s.includes("low")) return 0;
@@ -345,10 +397,13 @@ function buildUpcomingChangeLabels(rule: any): {
     if (mod === "video" && dir === "output" && (unit === "second" || unit === "minute" || unit === "video")) {
         const resVals = extractResolutionLabels(conds);
         const durations = extractVideoDurationLabels(conds);
+        const audioLabel = videoAudioModeLabel(extractVideoAudioMode(conds));
         let subtitle: string | null = null;
-        if (resVals.length && durations.length) subtitle = `${resVals.join(" / ")} · ${durations.join(" / ")}`;
-        else if (resVals.length) subtitle = resVals.join(" / ");
-        else if (durations.length) subtitle = durations.join(" / ");
+        const parts: string[] = [];
+        if (resVals.length) parts.push(resVals.join(" / "));
+        if (durations.length) parts.push(durations.join(" / "));
+        if (audioLabel) parts.push(audioLabel);
+        if (parts.length) subtitle = parts.join(" - ");
         return { sectionKey: "videoGen", title: "Video Generation", subtitle };
     }
 
@@ -727,6 +782,14 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         if (mod === "video" && dir === "output" && (unit === "second" || unit === "minute" || unit === "video")) {
             const res = extractResolutionLabels(conds);
             const durations = extractVideoDurationLabels(conds);
+            const audioMode = extractVideoAudioMode(conds);
+            const audioHintCondition = conds.find((c) =>
+                String(c.path ?? "").toLowerCase().includes("audio")
+            );
+            const audioHintLabel =
+                audioMode == null && audioHintCondition
+                    ? conciseConditionLabel([audioHintCondition], { prefer: ["audio"] })
+                    : null;
             let labels: string[] = [];
             if (res.length > 0 && durations.length > 0) {
                 labels = res.flatMap((resolution) =>
@@ -740,10 +803,12 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 labels = ["Any resolution"];
             }
             for (const label of labels) {
+                const rowLabel = audioHintLabel ? `${label} - ${audioHintLabel}` : label;
                 (out.videoGen ??= []).push({
-                    resolution: label,
+                    resolution: rowLabel,
                     unitLabel: unitLabel(unit, unitSize),
                     price,
+                    audioMode,
                     basePrice: displayBasePrice,
                     discountEndsAt,
                 });
@@ -945,3 +1010,4 @@ export function getMeterInputConfig(
 
     return { type: "number", step: "1", placeholder: "Enter value..." };
 }
+

@@ -1,8 +1,8 @@
 {
-  "key": "google-ai-studio:google/gemma-3n-e4b:free:text.generate",
+  "key": "google-ai-studio:google/gemma-4-26b-a4b:free:text.generate",
   "api_provider_id": "google-ai-studio",
   "provider_slug": "google-ai-studio",
-  "api_model_id": "google/gemma-3n-e4b:free",
+  "api_model_id": "google/gemma-4-26b-a4b:free",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -11,12 +11,12 @@
       "unit_size": 1000000,
       "price_per_unit": 0.0,
       "currency": "USD",
-      "tiering_mode": "flat",
+      "tiering_mode": null,
       "pricing_plan": "free",
-      "note": null,
+      "note": "Free",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-06-25T00:00:00"
+      "effective_from": "2026-04-02T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -24,12 +24,12 @@
       "unit_size": 1000000,
       "price_per_unit": 0.0,
       "currency": "USD",
-      "tiering_mode": "flat",
+      "tiering_mode": null,
       "pricing_plan": "free",
-      "note": null,
+      "note": "Free",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-06-25T00:00:00"
+      "effective_from": "2026-04-02T00:00:00"
     }
   ]
 }

@@ -302,6 +302,8 @@ export async function getProviderMetrics(
 	providerId: string,
 	hours = HOURS_DEFAULT,
 ): Promise<ProviderMetrics> {
+	"use cache";
+
 	cacheLife("minutes");
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${providerId}`);

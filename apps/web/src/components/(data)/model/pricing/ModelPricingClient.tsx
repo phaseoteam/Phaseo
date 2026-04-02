@@ -166,7 +166,9 @@ export default function ModelPricingClient({
         return PLAN_ORDER.filter((x) => s.has(x));
     }, [providers]);
 
-    const [plan, setPlan] = useState<string>(getPreferredPlan(availablePlans));
+    const [plan, setPlan] = useState<string>(
+        getPreferredPlan(availablePlans)
+    );
     const [sort, setSort] = useState<SortOption>(() => {
         const fromUrl = searchParams.get(SORT_QUERY_KEY);
         return isSortOption(fromUrl) ? fromUrl : "default";

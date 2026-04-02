@@ -2188,7 +2188,7 @@
     "api_model_id": "google/gemma-4-26b-a4b:free",
     "provider_api_model_id": "google-ai-studio:google/gemma-4-26b-a4b:free",
     "provider_model_slug": "gemma-4-26b-a4b-it",
-    "internal_model_id": "google/gemma-4-26b-a4b",
+    "internal_model_id": "google/gemma-4-26b-a3b",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -2202,6 +2202,13 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
           {
             "param_id": "temperature",
             "provider_min": null,
@@ -2218,13 +2225,6 @@
           },
           {
             "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -2316,6 +2316,13 @@
         "status": "active",
         "params": [
           {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
             "param_id": "temperature",
             "provider_min": null,
             "provider_max": null,
@@ -2331,13 +2338,6 @@
           },
           {
             "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,

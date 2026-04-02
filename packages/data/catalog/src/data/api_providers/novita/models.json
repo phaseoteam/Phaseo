@@ -8655,9 +8655,9 @@
     "api_model_id": "google/gemma-4-26b-a4b",
     "provider_api_model_id": "novita:google/gemma-4-26b-a4b",
     "provider_model_slug": "google/gemma-4-26b-a4b-it",
-    "internal_model_id": "google/gemma-4-26b-a4b",
+    "internal_model_id": "google/gemma-4-26b-a3b",
     "is_active_gateway": true,
-    "quantization_scheme": "FP8",
+    "quantization_scheme": "BF16",
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 262144,
@@ -8670,7 +8670,28 @@
         "status": "active",
         "params": [
           {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
             "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -8685,13 +8706,6 @@
           },
           {
             "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -8741,13 +8755,6 @@
           },
           {
             "param_id": "logit_bias",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "structured_outputs",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -8770,7 +8777,7 @@
     "provider_model_slug": "google/gemma-4-31b-it",
     "internal_model_id": "google/gemma-4-31b",
     "is_active_gateway": true,
-    "quantization_scheme": "FP8",
+    "quantization_scheme": "BF16",
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 262144,
@@ -8783,7 +8790,28 @@
         "status": "active",
         "params": [
           {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
             "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -8798,13 +8826,6 @@
           },
           {
             "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -8854,13 +8875,6 @@
           },
           {
             "param_id": "logit_bias",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "structured_outputs",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
