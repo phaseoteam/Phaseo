@@ -38,14 +38,14 @@
     "lucide-react": "^0.544.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "recharts": "^3.8.0",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.1.2",
     "postcss": "^8.4.49",

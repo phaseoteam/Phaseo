@@ -97,7 +97,7 @@
 		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && pnpm run sdk:check-version-literals && (cd apps/web && pnpm run test) && pnpm run test"
 	},
 	"devDependencies": {
-		"@changesets/changelog-github": "^0.5.1",
+		"@changesets/changelog-github": "^0.6.0",
 		"@changesets/cli": "^2.30.0",
 		"@stoplight/spectral-cli": "^6.11.1",
 		"ajv": "^8.18.0",
