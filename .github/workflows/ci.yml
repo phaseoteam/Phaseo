@@ -573,9 +573,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Upgrade npm (for trusted publishing)
+            - name: Check runtime versions (trusted publishing)
               run: |
-                  npm install -g npm@latest
                   node -v
                   npm -v
 
