@@ -6,6 +6,7 @@ import { fetchVideoProviderStatus } from "@core/video-reconciliation";
 import { finalizeVideoJob } from "@core/video-finalization";
 import { listPendingVideoJobs } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks";
 
 export type VideoReconciliationSummary = {
 	startedAt: string;
@@ -56,6 +57,11 @@ export async function runVideoReconciliationJob(args?: {
 						reconciledFromStatus: "completed",
 					},
 				});
+				dispatchVideoWebhookEventInBackground({
+					teamId: job.teamId,
+					videoId: job.videoId,
+					eventType: "video.completed",
+				});
 				counts.jobsUpdated += 1;
 				counts.jobsCompleted += 1;
 				if (finalized.charged) counts.jobsCharged += 1;
@@ -79,6 +85,11 @@ export async function runVideoReconciliationJob(args?: {
 						reconciledFromStatus: "failed",
 					},
 				});
+				dispatchVideoWebhookEventInBackground({
+					teamId: job.teamId,
+					videoId: job.videoId,
+					eventType: "video.failed",
+				});
 				counts.jobsUpdated += 1;
 				counts.jobsFailed += 1;
 				if (finalized.charged) counts.jobsCharged += 1;
@@ -88,6 +99,14 @@ export async function runVideoReconciliationJob(args?: {
 			const polled = await fetchVideoProviderStatus(job);
 			if (!polled) return counts;
 			counts.jobsPolled += 1;
+			if (polled.status === "in_progress" && typeof polled.progress === "number") {
+				dispatchVideoWebhookEventInBackground({
+					teamId: job.teamId,
+					videoId: job.videoId,
+					eventType: "video.progress",
+					progress: polled.progress,
+				});
+			}
 
 			const finalized = await finalizeVideoJob({
 				teamId: job.teamId,
@@ -99,9 +118,24 @@ export async function runVideoReconciliationJob(args?: {
 				requestOptions: polled.requestOptions,
 				isByok: job.meta?.keySource === "byok",
 				metaPatch: {
+					...(polled.metaPatch ?? {}),
 					lastReconciledAt: new Date().toISOString(),
 				},
 			});
+			if (finalized.status === "completed") {
+				dispatchVideoWebhookEventInBackground({
+					teamId: job.teamId,
+					videoId: job.videoId,
+					eventType: "video.completed",
+				});
+			}
+			if (finalized.status === "failed") {
+				dispatchVideoWebhookEventInBackground({
+					teamId: job.teamId,
+					videoId: job.videoId,
+					eventType: "video.failed",
+				});
+			}
 
 			counts.jobsUpdated += 1;
 			if (finalized.status === "completed") counts.jobsCompleted += 1;

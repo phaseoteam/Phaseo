@@ -88,7 +88,7 @@ const MODEL_KEYWORDS = {
 } as const;
 
 const PROVIDER_PREFS = {
-	google: ["google-ai-studio", "google"],
+	google: ["google-ai-studio"],
 	xai: ["x-ai", "xai"],
 	blackForest: ["black-forest-labs"],
 	openai: ["openai"],

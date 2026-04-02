@@ -7,105 +7,130 @@ function firstDefined<T>(...values: Array<T | undefined>): T | undefined {
 	return undefined;
 }
 
+type NormalizedVideoInputReference = {
+	type: "image";
+	role?: "first_frame" | "last_frame" | "reference" | "source" | "mask";
+	referenceType?: string;
+	url?: string;
+	raw: Record<string, any>;
+};
+
+function normalizeVideoInputReference(entry: unknown, index: number): NormalizedVideoInputReference | null {
+	if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+	const raw = entry as Record<string, any>;
+	const rawType = typeof raw.type === "string" ? raw.type.trim().toLowerCase() : "";
+	if (rawType !== "image_url") return null;
+	const roleRaw = typeof raw.role === "string" ? raw.role.trim().toLowerCase() : "";
+	const role =
+		roleRaw === "first_frame" ||
+		roleRaw === "last_frame" ||
+		roleRaw === "reference" ||
+		roleRaw === "source" ||
+		roleRaw === "mask"
+			? (roleRaw as NormalizedVideoInputReference["role"])
+			: undefined;
+	const url =
+		typeof raw.image_url?.url === "string" && raw.image_url.url.trim().length > 0
+			? raw.image_url.url.trim()
+			: undefined;
+	const referenceType =
+		typeof raw.reference_type === "string" && raw.reference_type.trim().length > 0
+			? raw.reference_type.trim()
+			: undefined;
+	if (!url) return null;
+	return {
+		type: "image",
+		role: role ?? (rawType === "image_url" ? (index === 0 ? "first_frame" : "reference") : undefined),
+		referenceType,
+		url,
+		raw,
+	};
+}
+
+function normalizeReferenceValue(reference: NormalizedVideoInputReference | undefined): string | Record<string, any> | undefined {
+	if (!reference) return undefined;
+	if (reference.url) return reference.url;
+	return undefined;
+}
+
 export function decodeOpenAIVideoRequestToIR(body: any): IRVideoGenerationRequest {
-	const input = body?.input && typeof body.input === "object" && !Array.isArray(body.input)
-		? body.input
-		: undefined;
-	const googleConfig = body?.config?.google && typeof body.config.google === "object"
-		? body.config.google
-		: undefined;
-	const canonicalSize = firstDefined(
-		body?.size,
-		body?.resolution,
-		googleConfig?.size,
-		googleConfig?.resolution,
-	);
-	const referenceImages = Array.isArray(body?.reference_images)
-		? body.reference_images
-		: Array.isArray(input?.reference_images)
-			? input.reference_images
+	const rawInputReferences = Array.isArray(body?.input_references) ? body.input_references : [];
+	const providerParams =
+		body?.provider_params && typeof body.provider_params === "object" && !Array.isArray(body.provider_params)
+			? { ...(body.provider_params as Record<string, any>) }
+			: undefined;
+
+	const inputReferences = rawInputReferences
+		.map((item: unknown, index: number) => normalizeVideoInputReference(item, index))
+		.filter((item): item is NormalizedVideoInputReference => Boolean(item));
+	const firstFrame = inputReferences.find((item: any) => item?.role === "first_frame");
+	const sourceVideo = inputReferences.find((item: any) => item?.role === "source" || item?.type === "video");
+	const lastFrame = inputReferences.find((item: any) => item?.role === "last_frame");
+	const referenceImages = inputReferences
+		.filter((item: any) => item?.role === "reference")
+		.map((item: any) => ({
+			...(item?.reference_type || item?.referenceType
+				? { referenceType: item.reference_type ?? item.referenceType }
+				: {}),
+			...(normalizeReferenceValue(item) ? { image: normalizeReferenceValue(item) } : {}),
+		}))
+		.filter((item: any) => Object.keys(item).length > 0);
+
+	const canonicalSize = firstDefined(body?.size, body?.resolution);
+	const sampleCountRaw = body?.sample_count;
+	const durationSecondsRaw = body?.duration;
+	const durationSeconds =
+		typeof durationSecondsRaw === "number" && Number.isFinite(durationSecondsRaw)
+			? durationSecondsRaw
 			: undefined;
 
 	return {
 		model: body?.model,
 		prompt: body?.prompt,
-		seconds: firstDefined(
-			body?.seconds,
-			body?.duration_seconds,
-			body?.duration,
-			googleConfig?.duration_seconds,
-			googleConfig?.durationSeconds,
-		),
-		quality: body?.quality,
-		inputReference: body?.input_reference,
-		inputReferenceMimeType: body?.input_reference_mime_type,
-		input: input
-			? {
-				image: input?.image,
-				video: input?.video,
-				lastFrame: input?.last_frame ?? input?.lastFrame,
-				referenceImages,
-			}
-			: undefined,
-		inputImage: body?.input_image ?? input?.image,
-		inputVideo: body?.input_video ?? input?.video,
-		lastFrame: body?.input_last_frame ?? body?.last_frame ?? input?.last_frame ?? input?.lastFrame,
+		inputReferences: inputReferences.map((item: any) => ({
+			type: item.type,
+			role: item.role,
+			referenceType: item.referenceType,
+			url: item.url,
+			raw: item.raw ?? item,
+		})),
+		providerParams,
+		outputAccess: body?.output?.access ?? "both",
+		webhook: body?.webhook,
+		seconds: durationSeconds,
+		inputReference: normalizeReferenceValue(firstFrame),
+		inputReferenceMimeType: firstFrame?.mime_type ?? firstFrame?.mimeType,
+		input: {
+			image: normalizeReferenceValue(firstFrame),
+			video: normalizeReferenceValue(sourceVideo),
+			lastFrame: normalizeReferenceValue(lastFrame),
+			referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+		},
+		inputImage: normalizeReferenceValue(firstFrame),
+		inputVideo: normalizeReferenceValue(sourceVideo),
+		lastFrame: normalizeReferenceValue(lastFrame),
 		referenceImages,
-		duration: body?.duration,
-		durationSeconds: firstDefined(
-			body?.duration_seconds,
-			googleConfig?.duration_seconds,
-			googleConfig?.durationSeconds,
-		),
-		ratio: body?.ratio,
-		aspectRatio: firstDefined(
-			body?.aspect_ratio,
-			googleConfig?.aspect_ratio,
-			googleConfig?.aspectRatio,
-		),
+		duration: durationSeconds,
+		durationSeconds,
+		aspectRatio: body?.aspect_ratio,
 		size: canonicalSize,
 		resolution: canonicalSize,
-		compressionQuality: firstDefined(
-			body?.compression_quality,
-			googleConfig?.compression_quality,
-			googleConfig?.compressionQuality,
-		),
-		negativePrompt: firstDefined(
-			body?.negative_prompt,
-			googleConfig?.negative_prompt,
-			googleConfig?.negativePrompt,
-		),
-		sampleCount: firstDefined(
-			body?.sample_count,
-			googleConfig?.sample_count,
-			googleConfig?.sampleCount,
-		),
-		numberOfVideos: firstDefined(
-			body?.number_of_videos,
-			googleConfig?.number_of_videos,
-			googleConfig?.numberOfVideos,
-		),
-		seed: firstDefined(body?.seed, googleConfig?.seed),
-		personGeneration: firstDefined(
-			body?.person_generation,
-			googleConfig?.person_generation,
-			googleConfig?.personGeneration,
-		),
-		generateAudio: firstDefined(
-			body?.generate_audio,
-			googleConfig?.generate_audio,
-			googleConfig?.generateAudio,
-		),
-		enhancePrompt: firstDefined(
-			body?.enhance_prompt,
-			googleConfig?.enhance_prompt,
-			googleConfig?.enhancePrompt,
-		),
-		outputStorageUri: firstDefined(
-			body?.output_storage_uri,
-			googleConfig?.output_storage_uri,
-			googleConfig?.outputStorageUri,
-		),
+		compressionQuality: body?.compression_quality,
+		negativePrompt: body?.negative_prompt,
+		sampleCount: typeof sampleCountRaw === "number" ? sampleCountRaw : undefined,
+		numberOfVideos: typeof sampleCountRaw === "number" ? sampleCountRaw : undefined,
+		seed: body?.seed,
+		personGeneration: body?.person_generation,
+		generateAudio: body?.generate_audio,
+		enhancePrompt: body?.enhance_prompt,
+		resizeMode: body?.resize_mode,
+		callbackUrl: body?.webhook?.url,
+		outputStorageUri:
+			typeof providerParams?.storageUri === "string"
+				? providerParams.storageUri
+				: typeof providerParams?.outputStorageUri === "string"
+					? providerParams.outputStorageUri
+					: undefined,
 		rawRequest: body,
 	};
 }
@@ -114,49 +139,19 @@ export function encodeVideoIRToOpenAIResponse(
 	ir: IRVideoGenerationResponse,
 	requestId: string,
 ): Record<string, any> {
-	const nativeId = ir.nativeId ?? null;
-	const createdAt = Math.floor(Date.now() / 1000);
-	const result = ir.result && typeof ir.result === "object" ? ir.result : undefined;
-	const usage: any = ir.usage && typeof ir.usage === "object"
-		? {
-			input_tokens: ir.usage.inputTokens ?? 0,
-			output_tokens: ir.usage.outputTokens ?? 0,
-			total_tokens: ir.usage.totalTokens ?? ((ir.usage.inputTokens ?? 0) + (ir.usage.outputTokens ?? 0)),
-			...(typeof (ir.usage as any).requests === "number" ? { requests: (ir.usage as any).requests } : {}),
-			...(typeof (ir.usage as any).output_video_seconds === "number"
-				? { output_video_seconds: (ir.usage as any).output_video_seconds }
-				: {}),
-			...(typeof (ir.usage as any).input_image_tokens === "number"
-				? { input_image_tokens: (ir.usage as any).input_image_tokens }
-				: {}),
-			...(typeof (ir.usage as any).input_audio_tokens === "number"
-				? { input_audio_tokens: (ir.usage as any).input_audio_tokens }
-				: {}),
-			...(typeof (ir.usage as any).input_video_tokens === "number"
-				? { input_video_tokens: (ir.usage as any).input_video_tokens }
-				: {}),
-			...(typeof (ir.usage as any).output_image_tokens === "number"
-				? { output_image_tokens: (ir.usage as any).output_image_tokens }
-				: {}),
-			...(typeof (ir.usage as any).output_audio_tokens === "number"
-				? { output_audio_tokens: (ir.usage as any).output_audio_tokens }
-				: {}),
-			...(typeof (ir.usage as any).output_video_tokens === "number"
-				? { output_video_tokens: (ir.usage as any).output_video_tokens }
-				: {}),
-		}
-		: undefined;
-
+	const status =
+		ir.status === "completed"
+			? "completed"
+			: ir.status === "failed"
+				? "failed"
+				: ir.status === "cancelled"
+					? "cancelled"
+					: ir.status === "in_progress"
+						? "in_progress"
+						: "pending";
 	return {
-		id: nativeId || ir.id || requestId,
-		object: "video",
-		status: ir.status || "queued",
-		created_at: createdAt,
-		model: ir.model,
-		nativeResponseId: nativeId,
-		provider: ir.provider,
-		...(Array.isArray(ir.output) ? { output: ir.output } : {}),
-		...(result ? { result } : {}),
-		...(usage ? { usage } : {}),
+		id: requestId,
+		polling_url: `/v1/videos/${encodeURIComponent(requestId)}`,
+		status,
 	};
 }

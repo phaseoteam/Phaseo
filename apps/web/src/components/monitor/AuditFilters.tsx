@@ -142,6 +142,14 @@ export function AuditFilters({
 			serialize: (value) => value,
 		}
 	);
+	const [filterPricingGap, setFilterPricingGap] = useQueryState(
+		"pricingGap",
+		{
+			defaultValue: "",
+			parse: (value) => value || "",
+			serialize: (value) => value,
+		}
+	);
 	const [filterProvider, setFilterProvider] = useQueryState("provider", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -255,26 +263,28 @@ export function AuditFilters({
 		},
 		{
 			id: "active-no-pricing",
-			label: "Active, No Pricing",
+			label: "Active Pricing Gaps",
 			icon: DollarSign,
-			description: "Models active on gateway but with no pricing rules",
+			description:
+				"Models active on gateway with at least one active provider missing pricing",
 			apply: () => {
 				if (
 					filterGatewayStatus === "active" &&
-					filterHasPricing === "false"
+					filterPricingGap === "activeMissing"
 				) {
 					// Clear both filters
 					setFilterGatewayStatus("");
-					setFilterHasPricing("");
+					setFilterPricingGap("");
 				} else {
 					// Apply both filters
 					setFilterGatewayStatus("active");
-					setFilterHasPricing("false");
+					setFilterHasPricing("");
+					setFilterPricingGap("activeMissing");
 				}
 			},
 			isActive: () =>
 				filterGatewayStatus === "active" &&
-				filterHasPricing === "false",
+				filterPricingGap === "activeMissing",
 		},
 	];
 
@@ -290,6 +300,7 @@ export function AuditFilters({
 		setFilterBenchmarksValue("");
 		setFilterHidden("");
 		setFilterHasPricing("");
+		setFilterPricingGap("");
 		setFilterProvider("");
 	};
 
@@ -302,6 +313,7 @@ export function AuditFilters({
 		filterBenchmarksOp ||
 		filterHidden ||
 		filterHasPricing ||
+		filterPricingGap ||
 		filterProvider;
 
 	const activeFilterCount = [
@@ -313,6 +325,7 @@ export function AuditFilters({
 		filterBenchmarksOp,
 		filterHidden,
 		filterHasPricing,
+		filterPricingGap,
 		filterProvider,
 	].filter(Boolean).length;
 
@@ -779,6 +792,16 @@ export function AuditFilters({
 						>
 							Pricing{filterProvider ? " (Provider)" : ""}:{" "}
 							{filterHasPricing === "true" ? "Yes" : "No"}
+							<X className="h-3 w-3" />
+						</Badge>
+					)}
+					{filterPricingGap && (
+						<Badge
+							variant="secondary"
+							className="gap-1 cursor-pointer"
+							onClick={() => setFilterPricingGap("")}
+						>
+							Pricing Gap: Active Provider Missing
 							<X className="h-3 w-3" />
 						</Badge>
 					)}

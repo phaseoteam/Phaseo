@@ -6,25 +6,286 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime, json } from "../../utils";
-import { authenticate } from "@pipeline/before/auth";
-import type { AuthFailure } from "@pipeline/before/auth";
+import { getSupabaseAdmin } from "@/runtime/env";
+import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 
-// Coming soon: aggregated analytics endpoint; currently returns a placeholder.
-async function handleAnalytics(req: Request) {
-    const auth = await authenticate(req);
-    if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return json({ ok: false, error: "unauthorised", reason }, 401, { "Cache-Control": "no-store" });
+const COMPLETED_DAYS_WINDOW = 30;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function startOfUtcDay(date: Date): Date {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function toFiniteNumber(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number(value.trim());
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
+}
+
+function toNonEmptyString(value: unknown, fallback = "unknown"): string {
+    if (typeof value !== "string") return fallback;
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : fallback;
+}
+
+function parseDateParam(rawDate: string | null, todayStartUtc: Date): { ok: true; start: Date; end: Date } | { ok: false; response: Response } {
+    const windowStart = new Date(todayStartUtc.getTime() - COMPLETED_DAYS_WINDOW * MS_PER_DAY);
+
+    if (!rawDate) {
+        return { ok: true, start: windowStart, end: todayStartUtc };
     }
 
-    return json({ ok: true, status: "not_implemented", message: "Analytics aggregation coming soon" }, 200, {
-        "Cache-Control": "no-store",
+    const value = rawDate.trim();
+    if (!DATE_RE.test(value)) {
+        return {
+            ok: false,
+            response: json(
+                {
+                    ok: false,
+                    error: "invalid_request",
+                    message: "date must use YYYY-MM-DD format",
+                },
+                400,
+                { "Cache-Control": "no-store" }
+            ),
+        };
+    }
+
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+        return {
+            ok: false,
+            response: json(
+                {
+                    ok: false,
+                    error: "invalid_request",
+                    message: "date must be a valid UTC date in YYYY-MM-DD format",
+                },
+                400,
+                { "Cache-Control": "no-store" }
+            ),
+        };
+    }
+
+    if (parsed < windowStart || parsed >= todayStartUtc) {
+        return {
+            ok: false,
+            response: json(
+                {
+                    ok: false,
+                    error: "invalid_request",
+                    message: "date must be within the last 30 completed UTC days",
+                },
+                400,
+                { "Cache-Control": "no-store" }
+            ),
+        };
+    }
+
+    return { ok: true, start: parsed, end: new Date(parsed.getTime() + MS_PER_DAY) };
+}
+
+function resolveScopedTeamId(args: {
+    authTeamId: string;
+    requestedTeamId: string | null;
+    internal?: boolean;
+}): { ok: true; teamId: string } | { ok: false; response: Response } {
+    const requested = args.requestedTeamId?.trim();
+    if (!requested) {
+        return { ok: true, teamId: args.authTeamId };
+    }
+    if (!args.internal && requested !== args.authTeamId) {
+        return {
+            ok: false,
+            response: json(
+                {
+                    ok: false,
+                    error: "forbidden",
+                    message: "team_id must match authenticated team",
+                },
+                403,
+                { "Cache-Control": "no-store" }
+            ),
+        };
+    }
+    return { ok: true, teamId: requested };
+}
+
+type AnalyticsRollupRow = {
+    day_bucket: string | null;
+    model_id: string | null;
+    endpoint: string | null;
+    provider: string | null;
+    usage_nanos: number | string | null;
+    byok_usage_nanos: number | string | null;
+    requests: number | string | null;
+    prompt_tokens: number | string | null;
+    completion_tokens: number | string | null;
+    reasoning_tokens: number | string | null;
+};
+
+function toModelDisplay(permaslug: string): string {
+    const match = permaslug.match(/^(.*)-\d{4}-\d{2}-\d{2}$/);
+    if (match && match[1]) return match[1];
+    return permaslug;
+}
+
+function toDayBucket(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return DATE_RE.test(trimmed) ? trimmed : null;
+}
+
+function toProviderName(providerId: string): string {
+    const normalized = providerId.trim().toLowerCase();
+    const exactMap: Record<string, string> = {
+        openai: "OpenAI",
+        anthropic: "Anthropic",
+        "x-ai": "xAI",
+        "google-ai-studio": "Google AI Studio",
+        "google-vertex": "Google Vertex",
+    };
+    if (exactMap[normalized]) return exactMap[normalized];
+    return providerId
+        .split(/[-_]+/g)
+        .filter((part) => part.length > 0)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+}
+
+function toUsdFromNanos(value: number | null): number {
+    const nanos = value == null ? 0 : Math.max(0, value);
+    return nanos / 1_000_000_000;
+}
+
+function toRoundedUsage(value: number): number {
+    return Number(value.toFixed(9));
+}
+
+async function refreshAnalyticsRollup(args: {
+    teamId: string;
+    startIso: string;
+    endIso: string;
+}): Promise<void> {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.rpc("refresh_gateway_activity_rollup_daily", {
+        p_team_id: args.teamId,
+        p_start: args.startIso,
+        p_end: args.endIso,
     });
+    if (error) {
+        throw new Error(error.message || "Failed to refresh analytics rollup");
+    }
+}
+
+async function loadAnalyticsRollupRows(args: {
+    teamId: string;
+    startIso: string;
+    endIso: string;
+}): Promise<AnalyticsRollupRow[]> {
+    const supabase = getSupabaseAdmin();
+    const startDay = args.startIso.slice(0, 10);
+    const endDay = args.endIso.slice(0, 10);
+    const { data, error } = await supabase
+        .from("gateway_activity_rollup_daily")
+        .select(
+            "day_bucket,model_id,endpoint,provider,usage_nanos,byok_usage_nanos,requests,prompt_tokens,completion_tokens,reasoning_tokens"
+        )
+        .eq("team_id", args.teamId)
+        .gte("day_bucket", startDay)
+        .lt("day_bucket", endDay);
+
+    if (error) {
+        throw new Error(error.message || "Failed to load analytics rollup rows");
+    }
+
+    return (data ?? []) as AnalyticsRollupRow[];
+}
+
+async function handleAnalytics(req: Request) {
+    const auth = await guardAuth(req, { useKvCache: false });
+    if (!auth.ok) {
+        return (auth as GuardErr).response;
+    }
+    const authValue = auth.value;
+    const url = new URL(req.url);
+    const teamScope = resolveScopedTeamId({
+        authTeamId: authValue.teamId,
+        requestedTeamId: url.searchParams.get("team_id"),
+        internal: authValue.internal,
+    });
+    if (teamScope.ok === false) return teamScope.response;
+    const teamId = teamScope.teamId;
+    const todayStart = startOfUtcDay(new Date());
+    const range = parseDateParam(url.searchParams.get("date"), todayStart);
+    if (range.ok === false) return range.response;
+    const startIso = range.start.toISOString();
+    const endIso = range.end.toISOString();
+
+    try {
+        await refreshAnalyticsRollup({
+            teamId,
+            startIso,
+            endIso,
+        });
+        const rows = await loadAnalyticsRollupRows({
+            teamId,
+            startIso,
+            endIso,
+        });
+
+        const data = rows
+            .map((row) => {
+                const date = toDayBucket(row.day_bucket);
+                if (!date) return null;
+                const modelPermaslug = toNonEmptyString(row.model_id, "unknown/unknown");
+                const endpointId = toNonEmptyString(row.endpoint, "unknown");
+                const providerId = toNonEmptyString(row.provider, "unknown");
+                return {
+                    date,
+                    model: toModelDisplay(modelPermaslug),
+                    model_permaslug: modelPermaslug,
+                    endpoint_id: endpointId,
+                    provider_name: toProviderName(providerId),
+                    usage: toRoundedUsage(toUsdFromNanos(toFiniteNumber(row.usage_nanos))),
+                    byok_usage_inference: toRoundedUsage(
+                        toUsdFromNanos(toFiniteNumber(row.byok_usage_nanos))
+                    ),
+                    requests: Math.max(0, Math.round(toFiniteNumber(row.requests) ?? 0)),
+                    prompt_tokens: Math.max(0, Math.round(toFiniteNumber(row.prompt_tokens) ?? 0)),
+                    completion_tokens: Math.max(0, Math.round(toFiniteNumber(row.completion_tokens) ?? 0)),
+                    reasoning_tokens: Math.max(0, Math.round(toFiniteNumber(row.reasoning_tokens) ?? 0)),
+                };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null)
+            .sort((a, b) => {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                if (a.usage !== b.usage) return b.usage - a.usage;
+                if (a.requests !== b.requests) return b.requests - a.requests;
+                return a.model_permaslug.localeCompare(b.model_permaslug);
+            });
+
+        return json(
+            { data },
+            200,
+            { "Cache-Control": "no-store" }
+        );
+    } catch (error: any) {
+        return json(
+            { ok: false, error: "failed", message: String(error?.message ?? error) },
+            500,
+            { "Cache-Control": "no-store" }
+        );
+    }
 }
 
 export const analyticsRoutes = new Hono<Env>();
 
-analyticsRoutes.post("/", withRuntime(handleAnalytics));
+analyticsRoutes.get("/", withRuntime(handleAnalytics));
 
 
 

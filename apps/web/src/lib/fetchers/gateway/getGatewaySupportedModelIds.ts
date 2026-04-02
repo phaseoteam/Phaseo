@@ -36,6 +36,8 @@ type ActiveGatewayModelRowRaw = Omit<ActiveGatewayModelRow, "provider" | "model"
     }) | null;
 };
 
+const CAPABILITY_QUERY_CHUNK_SIZE = 200;
+
 export type GatewaySupportedModel = {
     modelId: string;
     providerId: string;
@@ -53,6 +55,28 @@ export type GatewaySupportedModel = {
     isAvailable: boolean;
 };
 
+const GATEWAY_MODEL_DEBUG_ENABLED =
+    process.env.NODE_ENV !== "production" ||
+    process.env.DEBUG_GATEWAY_SUPPORTED_MODELS === "1";
+
+function isHailuoModelId(modelId: string | null | undefined): boolean {
+    return String(modelId ?? "").trim().toLowerCase().startsWith("minimax/hailuo");
+}
+
+function logGatewayModelDebug(stage: string, payload: Record<string, unknown>): void {
+    if (!GATEWAY_MODEL_DEBUG_ENABLED) return;
+    console.log(`[gateway-supported-models] ${stage}`, payload);
+}
+
+function chunkValues<T>(values: T[], size: number): T[][] {
+    if (size <= 0) return [values];
+    const chunks: T[][] = [];
+    for (let index = 0; index < values.length; index += size) {
+        chunks.push(values.slice(index, index + size));
+    }
+    return chunks;
+}
+
 async function fetchActiveGatewayModels(
     client: SupabaseClient,
     includeHidden: boolean,
@@ -61,7 +85,7 @@ async function fetchActiveGatewayModels(
     const { data: providerModels, error } = await client
         .from("data_api_provider_models")
         .select(
-            "provider_api_model_id, provider_id, api_model_id, internal_model_id, is_active_gateway, effective_from, effective_to"
+            "provider_api_model_id, provider_id, api_model_id, model_id, is_active_gateway, effective_from, effective_to"
         );
 
     if (error) {
@@ -75,12 +99,25 @@ async function fetchActiveGatewayModels(
     let capabilitySet: Set<string> | null = null;
     const capabilityMap = new Map<string, Set<string>>();
     if (providerModelIds.length > 0) {
-        const { data: capabilities, error: capabilitiesError } = await client
-            .from("data_api_provider_model_capabilities")
-            .select("provider_api_model_id, capability_id, status")
-            .in("provider_api_model_id", providerModelIds);
+        const capabilityChunks = chunkValues(providerModelIds, CAPABILITY_QUERY_CHUNK_SIZE);
+        for (const providerModelIdChunk of capabilityChunks) {
+            const { data: capabilities, error: capabilitiesError } = await client
+                .from("data_api_provider_model_capabilities")
+                .select("provider_api_model_id, capability_id, status")
+                .in("provider_api_model_id", providerModelIdChunk);
 
-        if (!capabilitiesError && (capabilities ?? []).length > 0) {
+            if (capabilitiesError) {
+                logGatewayModelDebug("capabilities_query_error", {
+                    message: capabilitiesError.message,
+                    details: capabilitiesError.details ?? null,
+                    hint: capabilitiesError.hint ?? null,
+                    code: capabilitiesError.code ?? null,
+                    providerModelCount: providerModelIds.length,
+                    chunkSize: providerModelIdChunk.length,
+                });
+                continue;
+            }
+
             for (const row of capabilities ?? []) {
                 if (
                     row.status === "disabled" ||
@@ -93,6 +130,9 @@ async function fetchActiveGatewayModels(
                 set.add(row.capability_id);
                 capabilityMap.set(row.provider_api_model_id, set);
             }
+        }
+
+        if (capabilityMap.size > 0) {
             capabilitySet = new Set(capabilityMap.keys());
         }
     }
@@ -101,7 +141,7 @@ async function fetchActiveGatewayModels(
         new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean))
     );
     const modelIds = Array.from(
-        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
+        new Set((providerModels ?? []).map((row) => row.model_id).filter(Boolean))
     );
 
     const { data: providers } = await client
@@ -149,9 +189,31 @@ async function fetchActiveGatewayModels(
             effective_from: row.effective_from ?? null,
             effective_to: row.effective_to ?? null,
             provider: row.provider_id ? providerMap.get(row.provider_id) ?? null : null,
-            model: row.internal_model_id ? modelMap.get(row.internal_model_id) ?? null : null,
+            model: row.model_id ? modelMap.get(row.model_id) ?? null : null,
         });
     }
+
+    const hailuoRows = rows
+        .filter((row) => isHailuoModelId(row.api_model_id))
+        .map((row) => ({
+            apiModelId: row.api_model_id,
+            providerId: row.api_provider_id,
+            capabilities: row.capability_ids ?? [],
+            isActiveGateway: row.is_active_gateway ?? null,
+            effectiveFrom: row.effective_from ?? null,
+            effectiveTo: row.effective_to ?? null,
+            canonicalModelId: row.model?.model_id ?? null,
+            modelName: row.model?.name ?? null,
+            modelStatus: row.model?.status ?? null,
+            hidden: (row.model as { hidden?: boolean | null } | null)?.hidden ?? null,
+        }));
+    logGatewayModelDebug("fetchActiveGatewayModels", {
+        includeHidden,
+        providerModelCount: providerModels?.length ?? 0,
+        capabilityRowsCount: capabilityMap.size,
+        returnedRowCount: rows.length,
+        hailuoRows,
+    });
 
     return rows;
 }
@@ -211,6 +273,24 @@ export async function getGatewaySupportedModels(
             return a.modelId.localeCompare(b.modelId);
         }
         return a.providerId.localeCompare(b.providerId);
+    });
+
+    const hailuoModels = models
+        .filter((model) => isHailuoModelId(model.modelId))
+        .map((model) => ({
+            modelId: model.modelId,
+            providerId: model.providerId,
+            capabilities: model.capabilities,
+            effectiveFrom: model.effectiveFrom,
+            effectiveTo: model.effectiveTo,
+            modelStatus: model.modelStatus,
+            isAvailable: model.isAvailable,
+        }));
+    logGatewayModelDebug("getGatewaySupportedModels", {
+        includeHidden,
+        modelCount: models.length,
+        hailuoCount: hailuoModels.length,
+        hailuoModels,
     });
 
     return models;

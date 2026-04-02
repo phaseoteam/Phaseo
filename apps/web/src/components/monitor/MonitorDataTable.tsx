@@ -234,7 +234,7 @@ const statusLegendOrder = [
 	"disabled",
 	"inactive",
 ] as const;
-const TABLE_COLUMNS_COUNT = 14;
+const TABLE_COLUMNS_COUNT = 15;
 const TABLE_LOADING_SKELETON_ROWS = 12;
 const DEFAULT_SORT_FIELD = "added";
 const DEFAULT_SORT_DIRECTION: "asc" | "desc" = "desc";
@@ -242,6 +242,7 @@ const TABLE_COLUMN_WIDTHS = [
 	420, // Model
 	168, // Provider
 	132, // Gateway Status
+	170, // Capability
 	112, // Input $
 	112, // Output $
 	96, // Tier
@@ -876,12 +877,13 @@ export function MonitorDataTable({
 		);
 	};
 
-	const renderStatus = (status: string) => {
+	const renderStatus = (status: string, endpoint?: string) => {
 		const normalizedStatus = normalizeStatusValue(status);
 		const iconConfig =
 			statusMetaByKey[normalizedStatus] ?? statusMetaByKey.inactive;
 		const IconComponent = iconConfig.icon;
 		const label = formatStatusLabel(status);
+		const endpointLabel = formatEndpoint(endpoint);
 
 		return (
 			<Tooltip>
@@ -894,8 +896,14 @@ export function MonitorDataTable({
 						)}
 					</div>
 				</TooltipTrigger>
-				<TooltipContent>
-					<p>{label}</p>
+				<TooltipContent className="max-w-xs">
+					<p className="font-medium">{label}</p>
+					<p className="text-muted-foreground">
+						Capability: <span className="font-mono">{endpointLabel}</span>
+					</p>
+					<p className="text-muted-foreground">
+						Status is capability-specific, not provider-wide.
+					</p>
 				</TooltipContent>
 			</Tooltip>
 		);
@@ -963,6 +971,9 @@ export function MonitorDataTable({
 				</TableCell>
 				<TableCell className="text-center">
 					<Skeleton className="mx-auto h-4 w-4 rounded-full" />
+				</TableCell>
+				<TableCell className="text-center">
+					<Skeleton className="mx-auto h-3 w-24" />
 				</TableCell>
 				<TableCell className="text-center">
 					<Skeleton className="mx-auto h-3 w-12" />
@@ -1101,9 +1112,21 @@ export function MonitorDataTable({
 														);
 													})}
 												</div>
+												<p className="text-[11px] text-muted-foreground">
+													Applies to the row capability.
+												</p>
 											</div>
 										</HoverCardContent>
 									</HoverCard>
+								</TableHead>
+								<TableHead className="bg-background min-w-24 text-center">
+									<Button
+										variant="ghost"
+										onClick={() => handleSort("endpoint")}
+										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
+									>
+										Capability {getSortIcon("endpoint")}
+									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-20 text-center">
 									<Button
@@ -1235,7 +1258,18 @@ export function MonitorDataTable({
 												</TableCell>
 												<TableCell>{renderProvider(item.provider)}</TableCell>
 												<TableCell className="text-center">
-													{renderStatus(item.gatewayStatus)}
+													{renderStatus(
+														item.gatewayStatus,
+														item.endpoint,
+													)}
+												</TableCell>
+												<TableCell className="text-center">
+													<span
+														className="block truncate font-mono text-[11px]"
+														title={formatEndpoint(item.endpoint)}
+													>
+														{formatEndpoint(item.endpoint)}
+													</span>
 												</TableCell>
 												<TableCell className="font-mono text-center">
 													{renderPrice(item.provider.inputPrice)}

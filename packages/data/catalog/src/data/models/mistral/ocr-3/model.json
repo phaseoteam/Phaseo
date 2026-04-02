@@ -1,0 +1,18 @@
+{
+  "model_id": "mistral/ocr-3",
+  "organisation_id": "mistral",
+  "name": "OCR 3",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-18T00:00:00",
+  "release_date": "2025-12-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "image,file",
+  "output_types": "text,image",
+  "api_model_id": "mistral/ocr-3",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

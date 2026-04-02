@@ -1,110 +1,133 @@
 // app/(auth)/sign-in/actions.ts
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import {
+	resolveAuthCallbackUrl,
+	resolveAuthOrigin,
+} from "@/lib/auth/authOrigin";
+import {
+	buildStartSsoRequest,
+	mapSsoAuthErrorMessage,
+	type StartSsoInput,
+} from "@/lib/auth/sso";
 
 const cookieOpts = {
-    path: "/",
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    maxAge: 60 * 60 * 24 * 180, // 6 months
+	path: "/",
+	httpOnly: true,
+	secure: process.env.NODE_ENV === "production",
+	sameSite: "lax" as const,
+	maxAge: 60 * 60 * 24 * 180, // 6 months
 };
 
-function stripTrailingSlash(value: string): string {
-    return value.replace(/\/+$/, "");
-}
+export type { StartSsoInput } from "@/lib/auth/sso";
 
-function configuredAuthOrigins(): string[] {
-    const candidates = [
-        String(process.env.NEXT_PUBLIC_WEBSITE_URL ?? "").trim(),
-        String(process.env.WEBSITE_URL ?? "").trim(),
-    ]
-        .map((value) => stripTrailingSlash(value))
-        .filter(Boolean);
-    return [...new Set(candidates)];
-}
-
-async function resolveAuthOrigin(): Promise<string> {
-    const configuredOrigins = configuredAuthOrigins();
-    const isDev = process.env.NODE_ENV !== "production";
-
-    if (!isDev) {
-        if (configuredOrigins.length > 0) return configuredOrigins[0]!;
-        throw new Error(
-            "NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set for auth redirects in production."
-        );
-    }
-
-    const headerStore = await headers();
-    const originHeader = headerStore.get("origin")?.trim();
-    const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-    const fallbackProto = "http";
-    const hostOrigin = host ? `${fallbackProto}://${host}` : null;
-
-    if (
-        originHeader &&
-        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(originHeader)
-    ) {
-        return stripTrailingSlash(originHeader);
-    }
-    if (hostOrigin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostOrigin)) {
-        return stripTrailingSlash(hostOrigin);
-    }
-
-    return "http://localhost:3000";
+async function setAuthProviderCookie(provider: string): Promise<void> {
+	await (await cookies()).set("auth_provider", provider, cookieOpts);
 }
 
 export async function handleOAuthRedirect(formData: FormData) {
-    const supabase = await createClient();
-    const provider = String(formData.get("provider") ?? "google").toLowerCase();
-    const authOrigin = await resolveAuthOrigin();
-    const callbackBase = `${authOrigin}/auth/callback`;
-    const redirectTo = callbackBase;
+	const supabase = await createClient();
+	const provider = String(formData.get("provider") ?? "google").toLowerCase();
+	const redirectTo = await resolveAuthCallbackUrl(formData.get("returnUrl"));
 
-    // Provisional hint; callback will overwrite with the authoritative provider if needed
-    await (await cookies()).set("auth_provider", provider, cookieOpts);
+	await setAuthProviderCookie(provider);
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider as any,
-        options: { redirectTo },
-    });
+	const { data, error } = await supabase.auth.signInWithOAuth({
+		provider: provider as any,
+		options: { redirectTo },
+	});
 
-    if (error || !data?.url) redirect("/error?message=Authentication failed");
-    redirect(data.url as any);
+	if (error || !data?.url) {
+		redirect("/error?message=Authentication failed");
+	}
+	redirect(data.url as any);
 }
 
 export async function handlePasswordSignIn(formData: FormData) {
-    const supabase = await createClient();
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-    const authOrigin = await resolveAuthOrigin();
+	const supabase = await createClient();
+	const email = String(formData.get("email") ?? "").trim();
+	const password = String(formData.get("password") ?? "");
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-        const message = error.message || "Authentication failed";
-        redirect(`/sign-in?error=${encodeURIComponent(message)}`);
-    }
+	const { error } = await supabase.auth.signInWithPassword({ email, password });
+	if (error) {
+		const message = error.message || "Authentication failed";
+		redirect(`/sign-in?error=${encodeURIComponent(message)}`);
+	}
 
-    // Only remember the method, not the identifier
-    await (await cookies()).set("auth_provider", "email", cookieOpts);
+	await setAuthProviderCookie("email");
 
-    redirect(`${authOrigin}/auth/callback?type=email`);
+	const callbackUrl = new URL(
+		await resolveAuthCallbackUrl(formData.get("returnUrl")),
+	);
+	callbackUrl.searchParams.set("type", "email");
+	redirect(callbackUrl.toString());
+}
+
+export async function startSsoSignIn(input: StartSsoInput) {
+	const supabase = await createClient();
+	const redirectTo = await resolveAuthCallbackUrl(input.returnUrl);
+
+	try {
+		const request = buildStartSsoRequest(input, redirectTo);
+
+		if (request.kind === "oauth") {
+			await setAuthProviderCookie(request.params.provider);
+			const { data, error } = await supabase.auth.signInWithOAuth(
+				request.params as any,
+			);
+			if (error || !data?.url) {
+				redirect(
+					`/error?message=${encodeURIComponent(
+						mapSsoAuthErrorMessage(error),
+					)}`,
+				);
+			}
+			redirect(data.url as any);
+		}
+
+		await setAuthProviderCookie("sso");
+		const { data, error } = await supabase.auth.signInWithSSO(
+			request.params as any,
+		);
+		if (error || !data?.url) {
+			redirect(
+				`/error?message=${encodeURIComponent(
+					mapSsoAuthErrorMessage(error),
+				)}`,
+			);
+		}
+		redirect(data.url as any);
+	} catch (error) {
+		redirect(
+			`/error?message=${encodeURIComponent(mapSsoAuthErrorMessage(error))}`,
+		);
+	}
+}
+
+export async function handleEnterpriseSsoRedirect(formData: FormData) {
+	const domain = String(formData.get("domain") ?? "").trim();
+	const returnUrl = String(formData.get("returnUrl") ?? "").trim();
+	return startSsoSignIn({
+		mode: "saml",
+		domain,
+		returnUrl: returnUrl || undefined,
+	});
 }
 
 export async function forgotPasswordAction(email: string) {
-    const supabase = await createClient();
-    const authOrigin = await resolveAuthOrigin();
+	const supabase = await createClient();
+	const authOrigin = await resolveAuthOrigin();
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${authOrigin}/auth/reset-password`,
-    });
+	const { error } = await supabase.auth.resetPasswordForEmail(email, {
+		redirectTo: `${authOrigin}/auth/reset-password`,
+	});
 
-    if (error) {
-        throw new Error('Failed to send password reset email');
-    }
+	if (error) {
+		throw new Error("Failed to send password reset email");
+	}
 
-    return { success: true };
+	return { success: true };
 }

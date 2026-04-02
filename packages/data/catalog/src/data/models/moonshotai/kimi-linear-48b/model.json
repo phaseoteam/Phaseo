@@ -1,0 +1,18 @@
+{
+  "model_id": "moonshotai/kimi-linear-48b",
+  "organisation_id": "moonshotai",
+  "name": "Kimi Linear 48B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-10-30T00:00:00",
+  "release_date": "2025-10-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "moonshotai/kimi-linear-48b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

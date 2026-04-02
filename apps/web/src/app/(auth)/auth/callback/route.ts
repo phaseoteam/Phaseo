@@ -6,6 +6,9 @@ import {
     buildAuthErrorRedirectUrl,
     resolveCallbackErrorMessage,
 } from '@/lib/auth/errorMessage'
+import { sanitizeReturnUrl } from '@/lib/auth/return-url'
+import { classifyAuthMethodFromSession } from '@/lib/auth/method'
+import { evaluateTeamSsoEnforcementNoop } from '@/lib/auth/ssoEnforcement'
 
 function makeSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
@@ -187,7 +190,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const code = url.searchParams.get('code')
     const type = url.searchParams.get('type')
-    const returnUrl = "/";
+    const returnUrl = sanitizeReturnUrl(url.searchParams.get('returnUrl'), "/");
     const callbackErrorMessage = resolveCallbackErrorMessage(url)
 
     if (callbackErrorMessage) {
@@ -310,6 +313,25 @@ export async function GET(request: Request) {
             error: error instanceof Error ? error.message : String(error),
         })
         // Ignore onboarding redirect issues and continue to default destination.
+    }
+
+    try {
+        const {
+            data: { session },
+        } = await supabaseUser.auth.getSession()
+        await evaluateTeamSsoEnforcementNoop({
+            teamId,
+            userId: user.id,
+            authMethod: classifyAuthMethodFromSession(session),
+            source: "auth_callback",
+        })
+    } catch (error) {
+        console.error('Failed deferred SSO enforcement hook during auth callback', {
+            teamId,
+            userId: user.id,
+            error: error instanceof Error ? error.message : String(error),
+        })
+        // Hook is best-effort while scaffold is non-enforcing.
     }
 
     return NextResponse.redirect(new URL(returnUrl, url));

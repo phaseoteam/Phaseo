@@ -44,7 +44,7 @@ afterAll(() => {
 });
 
 describe("OpenAI-compatible video endpoint payload mapping", () => {
-	it("keeps OpenAI-compatible core shape and preserves Veo superset fields for non-openai providers", async () => {
+	it("maps custom video request shape into OpenAI-compatible upstream payload", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([
 			{
@@ -62,15 +62,16 @@ describe("OpenAI-compatible video endpoint payload mapping", () => {
 			body: {
 				model: "google/veo-3.1-generate-preview",
 				prompt: "A slow cinematic drone shot over a snow mountain.",
-				seconds: 8,
-				size: "1280x720",
-				input_reference: "https://storage.googleapis.com/reference.png",
+				duration: 8,
+				resolution: "1280x720",
 				aspect_ratio: "16:9",
-				number_of_videos: 2,
-				reference_images: [
+				sample_count: 2,
+				input_references: [
 					{
-						reference_type: "style",
-						uri: "gs://bucket/style-reference.png",
+						type: "image_url",
+						image_url: {
+							url: "https://storage.googleapis.com/reference.png",
+						},
 					},
 				],
 				generate_audio: true,
@@ -97,13 +98,12 @@ describe("OpenAI-compatible video endpoint payload mapping", () => {
 			"https://storage.googleapis.com/reference.png",
 		);
 		expect(capturedBody.aspect_ratio).toBe("16:9");
-		expect(capturedBody.number_of_videos).toBe(2);
+		expect(capturedBody.sample_count).toBe(2);
 		expect(capturedBody.generate_audio).toBe(true);
 		expect(capturedBody.enhance_prompt).toBe(true);
-		expect(Array.isArray(capturedBody.reference_images)).toBe(true);
 	});
 
-	it("maps google provider-scoped options from config.google into flat request fields", async () => {
+	it("maps provider_params options into flat request fields", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([
 			{
@@ -121,15 +121,13 @@ describe("OpenAI-compatible video endpoint payload mapping", () => {
 			body: {
 				model: "google/veo-3.1-generate-preview",
 				prompt: "A close-up of ocean waves at sunset.",
-				config: {
-					google: {
-						aspectRatio: "4:3",
-						compressionQuality: 75,
-						durationSeconds: 6,
-						generateAudio: true,
-						negativePrompt: "grainy",
-						resolution: "1080p",
-					},
+				provider_params: {
+					aspectRatio: "4:3",
+					compressionQuality: 75,
+					durationSeconds: 6,
+					generateAudio: true,
+					negativePrompt: "grainy",
+					resolution: "1080p",
 				},
 			},
 			meta: REQUEST_META,

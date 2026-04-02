@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import { useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -17,6 +17,7 @@ import type {
 	RoomModelProfile,
 } from "@/components/(chat)/rooms/useRoomModelSettings";
 import {
+	getVideoDurationOptions,
 	getVideoModelSchema,
 	type VideoRoomParams,
 } from "@/lib/chat/roomModelSettings";
@@ -37,8 +38,11 @@ type VideoModelSettingsDialogProps = {
 	supportedProvidersForModel?: string[];
 	onUpdateBase: (partial: Partial<RoomBaseModelSettings>) => void;
 	onUpdateParams: (partial: Partial<VideoRoomParams>) => void;
+	onAutoAdjustParams?: (message: string) => void;
 	onReset: () => void;
 };
+
+type VideoSettingsFormParams = Pick<VideoRoomParams, "size" | "duration">;
 
 export function VideoModelSettingsDialog({
 	open,
@@ -51,9 +55,48 @@ export function VideoModelSettingsDialog({
 	supportedProvidersForModel,
 	onUpdateBase,
 	onUpdateParams,
+	onAutoAdjustParams,
 	onReset,
 }: VideoModelSettingsDialogProps) {
 	const schema = getVideoModelSchema(selectedModelId ?? "");
+	const normalizedSize = useMemo(
+		() =>
+			schema.sizeOptions.includes(settings.params.size)
+				? settings.params.size
+				: (schema.sizeOptions[0] ?? "1280x720"),
+		[schema, settings.params.size],
+	);
+	const durationOptions = useMemo(
+		() => getVideoDurationOptions(selectedModelId ?? "", normalizedSize),
+		[normalizedSize, selectedModelId],
+	);
+	const normalizedParams = useMemo(() => {
+		const duration = durationOptions.includes(settings.params.duration)
+			? settings.params.duration
+			: (durationOptions[0] ?? schema.durationOptions[0] ?? 5);
+		return { size: normalizedSize, duration } satisfies VideoSettingsFormParams;
+	}, [durationOptions, normalizedSize, schema.durationOptions, settings.params.duration]);
+
+	useEffect(() => {
+		const patch: Partial<VideoRoomParams> = {};
+		const changes: string[] = [];
+		if (settings.params.size !== normalizedParams.size) {
+			patch.size = normalizedParams.size;
+			changes.push(`resolution ${settings.params.size} -> ${normalizedParams.size}`);
+		}
+		if (settings.params.duration !== normalizedParams.duration) {
+			patch.duration = normalizedParams.duration;
+			changes.push(
+				`duration ${settings.params.duration}s -> ${normalizedParams.duration}s`,
+			);
+		}
+		if (Object.keys(patch).length > 0) {
+			onUpdateParams(patch);
+			if (onAutoAdjustParams && changes.length > 0) {
+				onAutoAdjustParams(`Adjusted unsupported settings: ${changes.join(", ")}.`);
+			}
+		}
+	}, [normalizedParams, onAutoAdjustParams, onUpdateParams, settings.params]);
 
 	return (
 		<RoomModelSettingsShell
@@ -74,7 +117,7 @@ export function VideoModelSettingsDialog({
 				<div className="grid gap-1.5">
 					<Label>Resolution</Label>
 					<Select
-						value={settings.params.size}
+						value={normalizedParams.size}
 						onValueChange={(value) => onUpdateParams({ size: value })}
 					>
 						<SelectTrigger>
@@ -92,43 +135,22 @@ export function VideoModelSettingsDialog({
 				<div className="grid gap-1.5">
 					<Label>Duration (seconds)</Label>
 					<Select
-						value={String(settings.params.duration)}
+						value={String(normalizedParams.duration)}
 						onValueChange={(value) =>
-							onUpdateParams({ duration: Number(value) || schema.durationOptions[0] || 5 })
+							onUpdateParams({ duration: Number(value) || durationOptions[0] || 5 })
 						}
 					>
 						<SelectTrigger>
 							<SelectValue placeholder="Select duration" />
 						</SelectTrigger>
 						<SelectContent>
-							{schema.durationOptions.map((duration) => (
+							{durationOptions.map((duration) => (
 								<SelectItem key={duration} value={String(duration)}>
 									{duration}
 								</SelectItem>
 							))}
 						</SelectContent>
 					</Select>
-				</div>
-				<div className="grid gap-1.5">
-					<Label htmlFor="video-count">Video count</Label>
-					<Input
-						id="video-count"
-						type="number"
-						min={1}
-						max={schema.maxCount}
-						value={settings.params.n}
-						onChange={(event) =>
-							onUpdateParams({
-								n: Math.max(
-									1,
-									Math.min(
-										schema.maxCount,
-										Math.floor(Number(event.target.value) || 1),
-									),
-								),
-							})
-						}
-					/>
 				</div>
 			</div>
 		</RoomModelSettingsShell>

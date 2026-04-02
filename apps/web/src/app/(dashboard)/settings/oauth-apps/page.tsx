@@ -5,6 +5,14 @@ import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";
 import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
 import { Button } from "@/components/ui/button";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import { UserRoundX } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
@@ -67,9 +75,17 @@ async function OAuthAppsContent() {
 
 	if (!user) {
 		return (
-			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Please sign in to manage OAuth apps.
-			</div>
+			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<UserRoundX className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>Please sign in</EmptyTitle>
+					<EmptyDescription>
+						Sign in to create and manage OAuth apps.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 
@@ -80,23 +96,6 @@ async function OAuthAppsContent() {
 		.select("*")
 		.eq("team_id", initialTeamId)
 		.order("created_at", { ascending: false });
-
-	const { data: teamUsers } = await supabase
-		.from("team_members")
-		.select("team_id, teams(id, name)")
-		.eq("user_id", user.id);
-
-	const teams: any[] = [];
-	if (teamUsers) {
-		for (const tu of teamUsers) {
-			if (tu?.teams) {
-				const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
-				if (team?.id && team?.name) {
-					teams.push({ id: team.id, name: team.name });
-				}
-			}
-		}
-	}
 
 	return (
 		<div className="space-y-6">
@@ -120,17 +119,13 @@ async function OAuthAppsContent() {
 							</Button>
 						</Link>
 						<CreateOAuthAppDialog
-							currentUserId={user.id}
 							currentTeamId={initialTeamId}
-							teams={teams}
 						/>
 					</>
 				}
 			/>
 			<OAuthAppsPanel
 				oauthApps={oauthApps ?? []}
-				initialTeamId={initialTeamId}
-				currentUserId={user.id}
 			/>
 		</div>
 	);

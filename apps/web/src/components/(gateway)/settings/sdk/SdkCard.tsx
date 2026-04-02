@@ -26,7 +26,18 @@ type SdkCardProps = {
 export function SdkCard({ sdk }: SdkCardProps) {
 	const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
 	const isAlpha = sdk.stage === "alpha";
-	const canOpenPackage = sdk.supported || isAlpha;
+	const packageLink = (() => {
+		try {
+			const url = new URL(sdk.managerLink);
+			const path = url.pathname.trim();
+			// Only show the package CTA when this points to a concrete package page,
+			// not a generic registry homepage.
+			if (!path || path === "/") return null;
+			return sdk.managerLink;
+		} catch {
+			return null;
+		}
+	})();
 
 	const copyToClipboard = async (command: string) => {
 		try {
@@ -108,19 +119,17 @@ export function SdkCard({ sdk }: SdkCardProps) {
 							Docs
 						</Link>
 
-						<Link
-							href={sdk.managerLink}
-							target="_blank"
-							rel="noreferrer"
-							className={
-								canOpenPackage
-									? "inline-flex h-8 items-center gap-1 rounded-md border border-indigo-600 px-2 text-xs font-medium text-indigo-600 hover:border-indigo-500 hover:text-indigo-500 dark:border-indigo-400 dark:text-indigo-400 dark:hover:border-indigo-300 dark:hover:text-indigo-300"
-									: "inline-flex h-8 items-center gap-1 rounded-md border border-indigo-600 px-2 text-xs font-medium text-indigo-600 opacity-50 pointer-events-none dark:border-indigo-400 dark:text-indigo-400"
-							}
-						>
-							<ExternalLink className="h-3.5 w-3.5" />
-							Package
-						</Link>
+						{packageLink ? (
+							<Link
+								href={packageLink}
+								target="_blank"
+								rel="noreferrer"
+								className="inline-flex h-8 items-center gap-1 rounded-md border border-indigo-600 px-2 text-xs font-medium text-indigo-600 hover:border-indigo-500 hover:text-indigo-500 dark:border-indigo-400 dark:text-indigo-400 dark:hover:border-indigo-300 dark:hover:text-indigo-300"
+							>
+								<ExternalLink className="h-3.5 w-3.5" />
+								Package
+							</Link>
+						) : null}
 					</div>
 				</div>
 			</CardContent>

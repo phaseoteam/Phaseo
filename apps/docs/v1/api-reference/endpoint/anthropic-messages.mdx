@@ -22,3 +22,38 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 - At current request-validation level, `stream: true` with tools is rejected with `400 invalid_request`. Use non-streaming tool loops for now.
 - The `X-AIStats-Strictness` header controls how unsupported parameters are handled.
 
+## Server tools
+
+`/v1/messages` also supports one gateway-managed server tool:
+
+- `gateway:datetime`
+
+Web-search tool types are temporarily disabled at the gateway request layer.
+
+The gateway accepts this tool in `tools`, rewrites it to Anthropic-compatible tool format upstream, executes it server-side, and continues the tool loop.
+
+### Datetime example
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "stream": false,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "America/New_York" }
+      }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+When used, `usage.server_tool_use.datetime_requests` reports datetime tool invocations.
+

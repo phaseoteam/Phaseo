@@ -1,0 +1,57 @@
+{
+  "model_id": "ibm/granite-4.0-tiny-preview",
+  "organisation_id": "ibm",
+  "name": "Granite 4.0 Tiny Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-05-02T00:00:00",
+  "release_date": "2025-05-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "ibm/granite-4.0-tiny-preview",
+  "family_id": "ibm/granite-4-0",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://www.ibm.com/granite/docs/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://www.ibm.com/granite/playground/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/ibm-granite/granite-3.3-language-models"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "parameter_count",
+      "value": 7000000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 2500000000000
+    }
+  ],
+  "benchmarks": []
+}

@@ -2,7 +2,7 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { getModelOverview } from "@/lib/fetchers/models/getModel";
-import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
+import { ModelProvidersSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import {
 	getModelPath,
 	resolveModelRouteIds,
@@ -101,23 +101,10 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "providers"));
 	}
 	const modelId = canonicalModelId;
-	const model = await fetchModel(modelId, includeHidden);
-
-	if (!model) {
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="providers"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="providers" includeHidden={includeHidden}>
-			<ModelPricing modelId={modelId} includeHidden={includeHidden} />
+			<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
 		</ModelDetailShell>
 	);
 }

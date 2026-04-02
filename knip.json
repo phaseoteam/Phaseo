@@ -16,7 +16,7 @@
 		"**/node_modules/**",
 		"apps/api/.wrangler/**",
 		"apps/web/scripts/**",
-		"apps/web/src/data/__tests__/**"
+		"packages/data/catalog/src/data/__tests__/**"
 	],
 	"jest": false
 }

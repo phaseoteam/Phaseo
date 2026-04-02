@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
 export type PerformanceLeaderboardEntry = {
@@ -118,21 +119,36 @@ export function PerformanceLeaderboard({
 
 	return (
 		<div className="space-y-4">
-			<div className="grid gap-2 md:grid-cols-2">
-				{visibleEntries.map((entry, index) =>
-					renderRow(entry, index, index + 1)
-				)}
-				{showAll
-					? extraEntries.map((entry, index) => (
-							<div
-								key={`${entry.key}-extra`}
-								className="animate-in fade-in slide-in-from-top-1"
-								style={{ animationDelay: `${index * 20}ms` }}
-							>
-								{renderRow(entry, index, index + maxCollapsed + 1)}
+			<div className="space-y-2">
+				<div className="grid gap-2 md:grid-cols-2">
+					{visibleEntries.map((entry, index) =>
+						renderRow(entry, index, index + 1)
+					)}
+				</div>
+				{extraEntries.length > 0 ? (
+					<div
+						className={cn(
+							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
+							showAll
+								? "grid-rows-[1fr] opacity-100"
+								: "grid-rows-[0fr] opacity-0"
+						)}
+					>
+						<div className="overflow-hidden">
+							<div className="pt-2">
+								<div className="grid gap-2 md:grid-cols-2">
+									{extraEntries.map((entry, index) =>
+										renderRow(
+											entry,
+											index + maxCollapsed,
+											index + maxCollapsed + 1
+										)
+									)}
+								</div>
 							</div>
-					  ))
-					: null}
+						</div>
+					</div>
+				) : null}
 			</div>
 
 			{data.length > maxCollapsed ? (

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import type { TopAppData } from "@/lib/fetchers/rankings/getRankingsData";
+import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import {
 	Select,
@@ -143,99 +144,21 @@ export function AppsUsageList({
 				) : null}
 			</div>
 
-			<div className="grid gap-2 md:grid-cols-2">
-				{visibleEntries.map((entry, index) => (
-					<div
-						key={`${entry.app_id ?? entry.app_name}-${index}`}
-						className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
-					>
-						<div className="w-6 text-xs text-muted-foreground">
-							#{index + 1}
-						</div>
-						{entry.app_id ? (
-							<Link
-								href={`/apps/${encodeURIComponent(entry.app_id)}`}
-								aria-label={entry.app_name}
-							>
-								<Avatar className="h-8 w-8 rounded-lg border border-border/60">
-									{entry.image_url ? (
-										<AvatarImage
-											src={entry.image_url}
-											alt={entry.app_name}
-											className="object-cover"
-										/>
-									) : null}
-									<AvatarFallback className="rounded-lg text-[11px] font-semibold">
-										{getInitial(entry.app_name)}
-									</AvatarFallback>
-								</Avatar>
-							</Link>
-						) : (
-							<Avatar className="h-8 w-8 rounded-lg border border-border/60">
-								{entry.image_url ? (
-									<AvatarImage
-										src={entry.image_url}
-										alt={entry.app_name}
-										className="object-cover"
-									/>
-								) : null}
-								<AvatarFallback className="rounded-lg text-[11px] font-semibold">
-									{getInitial(entry.app_name)}
-								</AvatarFallback>
-							</Avatar>
-						)}
-						<div className="min-w-0 flex-1 flex items-center">
+			<div className="space-y-2">
+				<div className="grid gap-2 md:grid-cols-2">
+					{visibleEntries.map((entry, index) => (
+						<div
+							key={`${entry.app_id ?? entry.app_name}-${index}`}
+							className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+						>
+							<div className="w-6 shrink-0 text-xs text-muted-foreground">
+								#{index + 1}
+							</div>
 							{entry.app_id ? (
 								<Link
 									href={`/apps/${encodeURIComponent(entry.app_id)}`}
-									className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+									aria-label={entry.app_name}
 								>
-									{entry.app_name}
-								</Link>
-							) : (
-								<div className="font-medium truncate">{entry.app_name}</div>
-							)}
-							<div className="h-4" />
-						</div>
-						<div className="text-right flex items-center">
-							<div className="tabular-nums text-sm">
-								{formatTokens(entry.tokens)}{" "}
-								<span className="text-xs text-muted-foreground">Tok</span>
-							</div>
-						</div>
-					</div>
-				))}
-				{showAll
-					? extraEntries.map((entry, index) => (
-							<div
-								key={`${entry.app_id ?? entry.app_name}-extra-${index}`}
-								className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3 animate-in fade-in slide-in-from-top-1"
-								style={{
-									animationDelay: `${index * 20}ms`,
-								}}
-							>
-								<div className="w-6 text-xs text-muted-foreground">
-									#{index + maxCollapsed + 1}
-								</div>
-								{entry.app_id ? (
-									<Link
-										href={`/apps/${encodeURIComponent(entry.app_id)}`}
-										aria-label={entry.app_name}
-									>
-										<Avatar className="h-8 w-8 rounded-lg border border-border/60">
-											{entry.image_url ? (
-												<AvatarImage
-													src={entry.image_url}
-													alt={entry.app_name}
-													className="object-cover"
-												/>
-											) : null}
-											<AvatarFallback className="rounded-lg text-[11px] font-semibold">
-												{getInitial(entry.app_name)}
-											</AvatarFallback>
-										</Avatar>
-									</Link>
-								) : (
 									<Avatar className="h-8 w-8 rounded-lg border border-border/60">
 										{entry.image_url ? (
 											<AvatarImage
@@ -248,33 +171,127 @@ export function AppsUsageList({
 											{getInitial(entry.app_name)}
 										</AvatarFallback>
 									</Avatar>
-								)}
-								<div className="min-w-0 flex-1 flex items-center">
-									{entry.app_id ? (
-										<Link
-											href={`/apps/${encodeURIComponent(entry.app_id)}`}
-											className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
-										>
-											{entry.app_name}
-										</Link>
-									) : (
-										<div className="font-medium truncate">
-											{entry.app_name}
-										</div>
-									)}
-									<div className="h-4" />
-								</div>
-								<div className="text-right flex items-center">
-									<div className="tabular-nums text-sm">
-										{formatTokens(entry.tokens)}{" "}
-										<span className="text-xs text-muted-foreground">
-											Tok
-										</span>
+								</Link>
+							) : (
+								<Avatar className="h-8 w-8 rounded-lg border border-border/60">
+									{entry.image_url ? (
+										<AvatarImage
+											src={entry.image_url}
+											alt={entry.app_name}
+											className="object-cover"
+										/>
+									) : null}
+									<AvatarFallback className="rounded-lg text-[11px] font-semibold">
+										{getInitial(entry.app_name)}
+									</AvatarFallback>
+								</Avatar>
+							)}
+							<div className="min-w-0 flex-1">
+								{entry.app_id ? (
+									<Link
+										href={`/apps/${encodeURIComponent(entry.app_id)}`}
+										className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
+									>
+										{entry.app_name}
+									</Link>
+								) : (
+									<div className="block min-w-0 truncate font-medium">
+										{entry.app_name}
 									</div>
+								)}
+								<div className="h-4" />
+							</div>
+							<div className="flex shrink-0 items-center text-right">
+								<div className="tabular-nums text-sm">
+									{formatTokens(entry.tokens)}{" "}
+									<span className="text-xs text-muted-foreground">Tok</span>
 								</div>
 							</div>
-					  ))
-					: null}
+						</div>
+					))}
+				</div>
+				{extraEntries.length > 0 ? (
+					<div
+						className={cn(
+							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
+							showAll
+								? "grid-rows-[1fr] opacity-100"
+								: "grid-rows-[0fr] opacity-0"
+						)}
+					>
+						<div className="overflow-hidden">
+							<div className="pt-2">
+								<div className="grid gap-2 md:grid-cols-2">
+									{extraEntries.map((entry, index) => (
+										<div
+											key={`${entry.app_id ?? entry.app_name}-extra-${index}`}
+											className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+										>
+											<div className="w-6 shrink-0 text-xs text-muted-foreground">
+												#{index + maxCollapsed + 1}
+											</div>
+											{entry.app_id ? (
+												<Link
+													href={`/apps/${encodeURIComponent(entry.app_id)}`}
+													aria-label={entry.app_name}
+												>
+													<Avatar className="h-8 w-8 rounded-lg border border-border/60">
+														{entry.image_url ? (
+															<AvatarImage
+																src={entry.image_url}
+																alt={entry.app_name}
+																className="object-cover"
+															/>
+														) : null}
+														<AvatarFallback className="rounded-lg text-[11px] font-semibold">
+															{getInitial(entry.app_name)}
+														</AvatarFallback>
+													</Avatar>
+												</Link>
+											) : (
+												<Avatar className="h-8 w-8 rounded-lg border border-border/60">
+													{entry.image_url ? (
+														<AvatarImage
+															src={entry.image_url}
+															alt={entry.app_name}
+															className="object-cover"
+														/>
+													) : null}
+													<AvatarFallback className="rounded-lg text-[11px] font-semibold">
+														{getInitial(entry.app_name)}
+													</AvatarFallback>
+												</Avatar>
+											)}
+											<div className="min-w-0 flex-1">
+												{entry.app_id ? (
+													<Link
+														href={`/apps/${encodeURIComponent(entry.app_id)}`}
+														className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
+													>
+														{entry.app_name}
+													</Link>
+												) : (
+													<div className="block min-w-0 truncate font-medium">
+														{entry.app_name}
+													</div>
+												)}
+												<div className="h-4" />
+											</div>
+											<div className="flex shrink-0 items-center text-right">
+												<div className="tabular-nums text-sm">
+													{formatTokens(entry.tokens)}{" "}
+													<span className="text-xs text-muted-foreground">
+														Tok
+													</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				) : null}
 			</div>
 
 			{entries.length > maxCollapsed ? (

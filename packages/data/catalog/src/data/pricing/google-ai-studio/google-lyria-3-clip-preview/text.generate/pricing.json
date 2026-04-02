@@ -1,0 +1,21 @@
+{
+  "key": "google-ai-studio:google/lyria-3-clip-preview:text.generate",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/lyria-3-clip-preview",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.04,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

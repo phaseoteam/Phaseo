@@ -51,7 +51,7 @@ async function getRecentModels(
 		let q = supabase
 			.from("data_api_provider_models")
 			.select(
-				"internal_model_id, api_model_id, created_at, is_active_gateway"
+				"model_id, api_model_id, created_at, is_active_gateway"
 			)
 			.eq("provider_id", apiProviderId)
 			.order("created_at", { ascending: false })
@@ -69,7 +69,7 @@ async function getRecentModels(
 		const modelIds = Array.from(
 			new Set(
 				(providerModels ?? [])
-					.map((row) => row.internal_model_id)
+					.map((row) => row.model_id)
 					.filter(Boolean)
 			)
 		);
@@ -91,12 +91,12 @@ async function getRecentModels(
 		}
 
 		return (providerModels ?? []).map((row: any) => ({
-			model_id: row.internal_model_id,
+			model_id: row.model_id,
 			api_model_id: row.api_model_id,
 			created_at: row.created_at,
 			is_active_gateway: row.is_active_gateway,
-			data_models: row.internal_model_id
-				? modelMap.get(row.internal_model_id) ?? null
+			data_models: row.model_id
+				? modelMap.get(row.model_id) ?? null
 				: null,
 		})) as RecentModel[];
 	} catch (err) {

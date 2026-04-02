@@ -1,0 +1,18 @@
+{
+  "model_id": "minimax/minimax-m2-her",
+  "organisation_id": "minimax",
+  "name": "MiniMax M2 Her",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-24T00:00:00",
+  "release_date": "2026-01-24T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "minimax/minimax-m2-her",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

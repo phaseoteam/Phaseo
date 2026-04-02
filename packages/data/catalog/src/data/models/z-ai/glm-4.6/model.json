@@ -1,0 +1,18 @@
+{
+  "model_id": "z-ai/glm-4.6",
+  "organisation_id": "z-ai",
+  "name": "GLM 4.6",
+  "status": "Available",
+  "previous_model_id": "z-ai/glm-4-5-2025-07-28",
+  "announced_date": "2025-09-30T00:00:00",
+  "release_date": "2025-09-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "z-ai/glm-4.6",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

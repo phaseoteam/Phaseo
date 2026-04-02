@@ -10,6 +10,7 @@ import type { RequestResult } from "../execute";
 import { deriveCachePricingContext } from "../pricing/cache-context";
 import { getBaseModel } from "../execute/utils";
 import { stripUsagePricing } from "../usage";
+import { buildImagePricingRequestOptions } from "@core/image-request-options";
 
 function derivePricingPlan(_body: any, usage: any): string {
     const tierRaw =
@@ -27,6 +28,7 @@ function derivePricingPlan(_body: any, usage: any): string {
 function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string): Record<string, unknown> {
     const options: Record<string, unknown> = {
         ...deriveCachePricingContext(body),
+        ...buildImagePricingRequestOptions(body ?? {}),
         pricing_plan: pricingPlan,
     };
 

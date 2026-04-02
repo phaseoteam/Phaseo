@@ -84,7 +84,12 @@ async function PricingCalculatorPageContent({
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
 	const includeHidden = await resolveIncludeHidden();
-	const models = await getPricingModelsCached(includeHidden);
+	let models: Awaited<ReturnType<typeof getPricingModelsCached>> = [];
+	try {
+		models = await getPricingModelsCached(includeHidden);
+	} catch (error) {
+		console.error("[pricing-calculator] failed to load pricing models", error);
+	}
 	const resolvedSearchParams = await searchParams;
 	const parsedParams =
 		loadPricingCalculatorSearchParams(resolvedSearchParams);

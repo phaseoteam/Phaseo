@@ -60,7 +60,7 @@ export type ExperimentsCouncilRunRecord = {
 };
 
 const DB_NAME = "ai-stats-experiments-council";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const PRESETS_STORE = "presets";
 const CUSTOM_PRESETS_STORE = "custom_presets";
@@ -112,6 +112,42 @@ function clampModelList(models: string[]): string[] {
 	return deduped;
 }
 
+function isConstraintError(error: unknown): boolean {
+	if (error instanceof DOMException) return error.name === "ConstraintError";
+	return (
+		error instanceof Error &&
+		(error.name === "ConstraintError" ||
+			/uniqueness requirements|constraint/i.test(error.message))
+	);
+}
+
+function dedupePresetStoreAndEnsureUniqueKeyIndex(presetStore: IDBObjectStore) {
+	if (presetStore.indexNames.contains(PRESET_KEY_INDEX)) {
+		const keyIndex = presetStore.index(PRESET_KEY_INDEX);
+		if (keyIndex.unique) return;
+		presetStore.deleteIndex(PRESET_KEY_INDEX);
+	}
+
+	const seenKeys = new Set<string>();
+	const cursorRequest = presetStore.openCursor();
+	cursorRequest.onsuccess = () => {
+		const cursor = cursorRequest.result;
+		if (!cursor) {
+			presetStore.createIndex(PRESET_KEY_INDEX, "key", { unique: true });
+			return;
+		}
+		const row = cursor.value as Partial<ExperimentsCouncilPresetRecord>;
+		const normalizedKey = typeof row.key === "string" ? row.key.trim() : "";
+		if (!normalizedKey || seenKeys.has(normalizedKey)) {
+			cursor.delete();
+			cursor.continue();
+			return;
+		}
+		seenKeys.add(normalizedKey);
+		cursor.continue();
+	};
+}
+
 function openDb(): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
 		if (typeof window === "undefined") {
@@ -130,8 +166,8 @@ function openDb(): Promise<IDBDatabase> {
 						keyPath: "id",
 						autoIncrement: true,
 					});
-			if (presetStore && !presetStore.indexNames.contains(PRESET_KEY_INDEX)) {
-				presetStore.createIndex(PRESET_KEY_INDEX, "key", { unique: true });
+			if (presetStore) {
+				dedupePresetStoreAndEnsureUniqueKeyIndex(presetStore);
 			}
 
 			const customPresetStore = db.objectStoreNames.contains(CUSTOM_PRESETS_STORE)
@@ -376,7 +412,11 @@ export async function ensureExperimentsCouncilPresets(
 			}
 			continue;
 		}
-		await withStore(PRESETS_STORE, "readwrite", (store) => store.add(preset));
+		try {
+			await withStore(PRESETS_STORE, "readwrite", (store) => store.add(preset));
+		} catch (error) {
+			if (!isConstraintError(error)) throw error;
+		}
 	}
 
 	const presets = await listExperimentsCouncilPresets();

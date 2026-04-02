@@ -1,8 +1,0 @@
-{
-  "benchmark_id": "factscore-halluciation-rate",
-  "benchmark_name": "FActScore hallucination rate",
-  "category": "hallucinations",
-  "ascending_order": true,
-  "link": null,
-  "total_models": 7
-}

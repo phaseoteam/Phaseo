@@ -13,10 +13,18 @@ import {
 	TooltipTrigger,
 	TooltipContent,
 } from "@/components/ui/tooltip";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 import ManagementKeyUsageItem from "./ManagementKeyUsageItem";
 import EditManagementKeyItem from "./EditManagementKeyItem";
 import DeleteManagementKeyItem from "./DeleteManagementKeyItem";
 import ManagementKeyLimitsItem from "./ManagementKeyLimitsItem";
+import { Shield } from "lucide-react";
 
 export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 	const sortedTeams = useMemo(() => {
@@ -33,9 +41,17 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 
 	if (!sortedTeams || sortedTeams.length === 0) {
 		return (
-			<div className="mt-6 text-sm text-muted-foreground">
-				No teams or management API keys to manage.
-			</div>
+			<Empty className="mt-6 rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<Shield className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>No management keys yet</EmptyTitle>
+					<EmptyDescription>
+						Create a management key when you need elevated automation access.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 
@@ -45,9 +61,22 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 				<div key={team.id ?? "personal"}>
 					<div className="font-medium mb-2">{team.name}</div>
 					{!team.keys || team.keys.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No management API keys for this team.
-						</div>
+						<Empty
+							size="compact"
+							className="rounded-lg border border-dashed border-border/80 p-6"
+						>
+							<EmptyHeader>
+								<EmptyMedia variant="icon">
+									<Shield className="h-5 w-5" />
+								</EmptyMedia>
+								<EmptyTitle className="text-base">
+									No management keys for this team
+								</EmptyTitle>
+								<EmptyDescription>
+									Generate one to manage teams and resources programmatically.
+								</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
 					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 							{team.keys.map((k: any) => (

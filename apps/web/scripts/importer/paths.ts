@@ -6,10 +6,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = resolve(__filename, ".."); // .../apps/web/scripts/importer
 
 // If DATA_ROOT is set, resolve it from the *current working directory* (so you can override).
-// Otherwise default to the repo-local path relative to this file: ../../src/data
+// Otherwise default to the repo-local path relative to this file:
+// ../../../../packages/data/catalog/src/data
 export const DATA_ROOT = process.env.DATA_ROOT
     ? resolve(process.cwd(), process.env.DATA_ROOT)
-    : resolve(__dirname, "../../src/data");
+    : resolve(__dirname, "../../../../packages/data/catalog/src/data");
 
 export const DIR_ALIASES = resolve(DATA_ROOT, "aliases");
 export const DIR_PROVIDERS = resolve(DATA_ROOT, "api_providers");

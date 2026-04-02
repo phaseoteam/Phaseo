@@ -25,6 +25,46 @@ const toNullableInt = (value: unknown): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
+const toNullableIsoTimestamp = (value: unknown): string | null => {
+    if (value === null || value === undefined) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    // Already ISO-like / parseable.
+    const directTs = Date.parse(raw);
+    if (Number.isFinite(directTs)) {
+        return new Date(directTs).toISOString();
+    }
+
+    // Fallback for slash-separated values from spreadsheets, e.g. "29/1/4/25".
+    // If it cannot be interpreted unambiguously, prefer null over bad writes.
+    const slashParts = raw.split("/").map((part) => part.trim()).filter(Boolean);
+    if (slashParts.length === 3) {
+        // Try d/m/yyyy and d/m/yy first.
+        const [dRaw, mRaw, yRaw] = slashParts;
+        const day = Number.parseInt(dRaw, 10);
+        const month = Number.parseInt(mRaw, 10);
+        let year = Number.parseInt(yRaw, 10);
+        if (
+            Number.isFinite(day) &&
+            Number.isFinite(month) &&
+            Number.isFinite(year) &&
+            day >= 1 &&
+            day <= 31 &&
+            month >= 1 &&
+            month <= 12
+        ) {
+            if (year >= 0 && year < 100) {
+                year += year >= 70 ? 1900 : 2000;
+            }
+            const ts = Date.UTC(year, month - 1, day, 0, 0, 0);
+            if (Number.isFinite(ts)) return new Date(ts).toISOString();
+        }
+    }
+
+    return null;
+};
+
 const parseProviderStatus = (value: unknown): ProviderStatus | null => {
     const raw = value == null ? "" : String(value).trim();
     if (!raw) return null;
@@ -138,23 +178,139 @@ const squashCapabilityParams = (value: unknown): Record<string, unknown> => {
     return {};
 };
 
-const loadExistingModelIds = async (supa: ReturnType<typeof client>): Promise<Set<string>> => {
+const normalizeModelIdForMatch = (value: string): string => {
+    let normalized = value.trim().toLowerCase();
+    if (!normalized) return normalized;
+
+    // Align provider-facing IDs with internal IDs that may include dated releases.
+    normalized = normalized.replace(/-\d{4}-\d{2}-\d{2}$/, "");
+    // Normalize common Qwen ID style differences.
+    normalized = normalized.replace(/qwen3(?=[^0-9]|$)/g, "qwen-3");
+    normalized = normalized.replace(/qwen2\.5(?=[^0-9]|$)/g, "qwen-2-5");
+    // Normalize dotted version tokens used in API IDs.
+    normalized = normalized.replace(/(\d)\.(\d)/g, "$1-$2");
+    // Unify separators.
+    normalized = normalized.replace(/[._]/g, "-");
+    normalized = normalized.replace(/-+/g, "-");
+    return normalized;
+};
+
+const parseDateSuffix = (value: string): number | null => {
+    const match = value.match(/-(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const ts = Date.parse(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+    return Number.isFinite(ts) ? ts : null;
+};
+
+const choosePreferredModelId = (modelIds: string[]): string | null => {
+    if (!modelIds.length) return null;
+    if (modelIds.length === 1) return modelIds[0];
+
+    const sorted = [...modelIds].sort((a, b) => {
+        const aDate = parseDateSuffix(a);
+        const bDate = parseDateSuffix(b);
+        if (aDate !== null || bDate !== null) {
+            if (aDate === null) return 1;
+            if (bDate === null) return -1;
+            if (aDate !== bDate) return bDate - aDate;
+        }
+        return a.localeCompare(b);
+    });
+    return sorted[0] ?? null;
+};
+
+const chunkForInFilter = (
+    values: string[],
+    options: { maxChars?: number; maxItems?: number } = {}
+): string[][] => {
+    const maxChars = Math.max(256, options.maxChars ?? 6000);
+    const maxItems = Math.max(1, options.maxItems ?? 120);
+    const groups: string[][] = [];
+    let current: string[] = [];
+    let currentChars = 0;
+
+    const pushCurrent = () => {
+        if (!current.length) return;
+        groups.push(current);
+        current = [];
+        currentChars = 0;
+    };
+
+    for (const raw of values) {
+        const value = String(raw);
+        // Approximate URL impact for ",value" in PostgREST in() filter.
+        const valueChars = value.length + 1;
+        const wouldExceed =
+            current.length >= maxItems || (current.length > 0 && currentChars + valueChars > maxChars);
+
+        if (wouldExceed) pushCurrent();
+        current.push(value);
+        currentChars += valueChars;
+    }
+    pushCurrent();
+    return groups;
+};
+
+const loadExistingModelIds = async (
+    supa: ReturnType<typeof client>
+): Promise<{
+    modelIds: Set<string>;
+    apiToModelId: Map<string, string>;
+    normalizedModelIdToModelId: Map<string, string>;
+}> => {
     const modelIds = new Set<string>();
+    const apiToModelId = new Map<string, string>();
+    const normalizedModelIdCandidates = new Map<string, string[]>();
     const pageSize = 1000;
+
+    const probe = await supa.from("data_models").select("api_model_id").limit(1);
+    const hasApiModelIdColumn =
+        !probe.error ||
+        !(
+            String((probe.error as any)?.code ?? "") === "42703" ||
+            /column .*api_model_id/i.test(String(probe.error?.message ?? ""))
+        );
+
     for (let offset = 0; ; offset += pageSize) {
-        const res = await supa
-            .from("data_models")
-            .select("model_id")
-            .range(offset, offset + pageSize - 1);
-        const rows = assertOk(res, "select data_models (model_id)") as Array<{ model_id?: string | null }>;
+        const res = hasApiModelIdColumn
+            ? await supa
+                  .from("data_models")
+                  .select("model_id,api_model_id")
+                  .range(offset, offset + pageSize - 1)
+            : await supa
+                  .from("data_models")
+                  .select("model_id")
+                  .range(offset, offset + pageSize - 1);
+        const rows = assertOk(res, "select data_models (model_id,api_model_id)") as Array<{
+            model_id?: string | null;
+            api_model_id?: string | null;
+        }>;
         for (const row of rows) {
             if (typeof row?.model_id === "string" && row.model_id) {
                 modelIds.add(row.model_id);
+                const normalized = normalizeModelIdForMatch(row.model_id);
+                if (normalized) {
+                    const list = normalizedModelIdCandidates.get(normalized) ?? [];
+                    if (!list.includes(row.model_id)) list.push(row.model_id);
+                    normalizedModelIdCandidates.set(normalized, list);
+                }
+                if (typeof row?.api_model_id === "string" && row.api_model_id) {
+                    if (!apiToModelId.has(row.api_model_id)) {
+                        apiToModelId.set(row.api_model_id, row.model_id);
+                    }
+                }
             }
         }
         if (rows.length < pageSize) break;
     }
-    return modelIds;
+
+    const normalizedModelIdToModelId = new Map<string, string>();
+    for (const [normalized, modelIdCandidates] of normalizedModelIdCandidates.entries()) {
+        const preferred = choosePreferredModelId(modelIdCandidates);
+        if (preferred) normalizedModelIdToModelId.set(normalized, preferred);
+    }
+
+    return { modelIds, apiToModelId, normalizedModelIdToModelId };
 };
 
 export async function loadProviders(
@@ -165,13 +321,23 @@ export async function loadProviders(
     const modelFilter = opts?.modelId ?? null;
     const dirs = await listDirs(DIR_PROVIDERS);
     const supa = client();
-    const knownModelIds = await loadExistingModelIds(supa);
+    const {
+        modelIds: knownModelIds,
+        apiToModelId,
+        normalizedModelIdToModelId,
+    } = await loadExistingModelIds(supa);
     const existingProviderStatuses = await loadExistingProviderStatuses(supa);
-    const invalidInternalModelRefs: Array<{
+    const missingModelRefs: Array<{
         provider_id: string;
         source_file: string;
         provider_api_model_id: string;
         api_model_id: string;
+        internal_model_id: string | null;
+    }> = [];
+    const invalidInternalModelRefs: Array<{
+        provider_id: string;
+        source_file: string;
+        provider_api_model_id: string;
         internal_model_id: string;
     }> = [];
     const providerIds = new Set<string>();
@@ -256,43 +422,63 @@ export async function loadProviders(
             for (const model of models ?? []) {
                 const apiModelId =
                     typeof model?.api_model_id === "string" ? model.api_model_id.trim() : "";
-                if (!model?.provider_api_model_id || !apiModelId) continue;
-                const requestedInternalModelId =
-                    typeof model.internal_model_id === "string" && model.internal_model_id.trim()
+                const internalModelId =
+                    typeof model?.internal_model_id === "string"
                         ? model.internal_model_id.trim()
-                        : null;
-                if (modelFilter && requestedInternalModelId !== modelFilter) continue;
-                let internalModelId = requestedInternalModelId;
-                if (requestedInternalModelId && !knownModelIds.has(requestedInternalModelId)) {
-                    invalidInternalModelRefs.push({
+                        : "";
+                if (!model?.provider_api_model_id || !apiModelId) continue;
+                if (modelFilter && apiModelId !== modelFilter) continue;
+
+                const resolvedModelId =
+                    (internalModelId && knownModelIds.has(internalModelId)
+                        ? internalModelId
+                        : "") ||
+                    apiToModelId.get(apiModelId) ||
+                    normalizedModelIdToModelId.get(
+                        normalizeModelIdForMatch(apiModelId)
+                    ) ||
+                    (knownModelIds.has(apiModelId) ? apiModelId : "");
+
+                const hasResolvedModelId = Boolean(resolvedModelId);
+                if (!hasResolvedModelId) {
+                    missingModelRefs.push({
                         provider_id: j.api_provider_id,
                         source_file: modelsPath,
                         provider_api_model_id: model.provider_api_model_id,
                         api_model_id: model.api_model_id,
-                        internal_model_id: requestedInternalModelId,
+                        internal_model_id: internalModelId || null,
                     });
-                    internalModelId = null;
                 }
-                const preferredModelId =
-                    internalModelId ??
-                    (knownModelIds.has(apiModelId) ? apiModelId : null);
+                const hasValidInternalModelId =
+                    Boolean(internalModelId) && knownModelIds.has(internalModelId);
+                if (internalModelId && !hasValidInternalModelId) {
+                    invalidInternalModelRefs.push({
+                        provider_id: j.api_provider_id,
+                        source_file: modelsPath,
+                        provider_api_model_id: model.provider_api_model_id,
+                        internal_model_id: internalModelId,
+                    });
+                }
+                const effectiveInternalModelId =
+                    (hasValidInternalModelId ? internalModelId : "") ||
+                    (hasResolvedModelId ? resolvedModelId : null);
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
                 providerModelsToUpsert.push({
                     provider_api_model_id,
                     provider_id: j.api_provider_id,
                     api_model_id: apiModelId,
-                    model_id: preferredModelId,
+                    model_id: hasResolvedModelId ? resolvedModelId : null,
                     provider_model_slug: model.provider_model_slug ?? null,
-                    internal_model_id: internalModelId,
+                    internal_model_id: effectiveInternalModelId,
                     is_active_gateway: !!model.is_active_gateway,
                     input_modalities: toTextArray(model.input_modalities),
                     output_modalities: toTextArray(model.output_modalities),
                     quantization_scheme: model.quantization_scheme ?? null,
                     context_length: toNullableInt(model.context_length),
                     max_output_tokens: toNullableInt(model.max_output_tokens),
-                    effective_from: model.effective_from ?? null,
-                    effective_to: model.effective_to ?? null,
+                    effective_from: toNullableIsoTimestamp(model.effective_from),
+                    effective_to: toNullableIsoTimestamp(model.effective_to),
                 });
 
                 for (const cap of model.capabilities ?? []) {
@@ -315,24 +501,43 @@ export async function loadProviders(
         }
     }
 
-    if (invalidInternalModelRefs.length > 0) {
-        const details = invalidInternalModelRefs
-            .slice(0, 50)
+    if (missingModelRefs.length > 0) {
+        const details = missingModelRefs
+            .slice(0, 25)
             .map(
                 (row) =>
                     `- provider=${row.provider_id} provider_api_model_id=${row.provider_api_model_id} ` +
-                    `api_model_id=${row.api_model_id} internal_model_id=${row.internal_model_id} ` +
+                    `api_model_id=${row.api_model_id} internal_model_id=${row.internal_model_id ?? "<null>"} ` +
                     `source=${row.source_file}`
             )
             .join("\n");
         const suffix =
-            invalidInternalModelRefs.length > 50
-                ? `\n...and ${invalidInternalModelRefs.length - 50} more invalid rows.`
+            missingModelRefs.length > 25
+                ? `\n...and ${missingModelRefs.length - 25} more unresolved rows.`
+                : "";
+        const message =
+            `[importer] Provider model mappings with no internal model match: ${missingModelRefs.length} row(s) ` +
+            `will be imported with model_id=null.\n${details}${suffix}`;
+        console.warn(
+            `${message}\n[importer] Continuing with unresolved rows preserved.`
+        );
+    }
+    if (invalidInternalModelRefs.length > 0) {
+        const details = invalidInternalModelRefs
+            .slice(0, 25)
+            .map(
+                (row) =>
+                    `- provider=${row.provider_id} provider_api_model_id=${row.provider_api_model_id} ` +
+                    `internal_model_id=${row.internal_model_id} source=${row.source_file}`
+            )
+            .join("\n");
+        const suffix =
+            invalidInternalModelRefs.length > 25
+                ? `\n...and ${invalidInternalModelRefs.length - 25} more invalid internal_model_id values.`
                 : "";
         console.warn(
-            `[importer] Invalid provider model mappings: ${invalidInternalModelRefs.length} row(s) reference ` +
-            `internal_model_id values that do not exist in public.data_models. ` +
-            `Those rows will be imported with internal_model_id=null.\n${details}${suffix}`
+            `[importer] Found ${invalidInternalModelRefs.length} row(s) with invalid internal_model_id values. ` +
+                `Falling back to resolved IDs (or null) to preserve import continuity.\n${details}${suffix}`
         );
     }
 
@@ -397,15 +602,25 @@ export async function loadProviders(
             const providerIdsChunk = Array.from(
                 new Set(group.map((key) => key.split("::")[0]))
             );
+            const providerIdBatches = chunkForInFilter(providerIdsChunk);
             let data: any[] | null = null;
             let error: any = null;
             try {
-                const res = await supa
-                    .from("data_api_provider_model_capabilities")
-                    .select("provider_api_model_id, capability_id")
-                    .in("provider_api_model_id", providerIdsChunk);
-                data = res.data as any[] | null;
-                error = res.error;
+                const merged: any[] = [];
+                for (const batch of providerIdBatches) {
+                    const res = await supa
+                        .from("data_api_provider_model_capabilities")
+                        .select("provider_api_model_id, capability_id")
+                        .in("provider_api_model_id", batch);
+                    if (res.error) {
+                        error = res.error;
+                        break;
+                    }
+                    if (Array.isArray(res.data) && res.data.length) {
+                        merged.push(...res.data);
+                    }
+                }
+                data = merged;
             } catch (err) {
                 console.warn("Failed to fetch data_api_provider_model_capabilities for pruning:", err);
                 continue;

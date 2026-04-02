@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ChatCompletionsSchema, ResponsesSchema } from "../schemas";
+import { AnthropicMessagesSchema, ChatCompletionsSchema, ResponsesSchema } from "../schemas";
 
 describe("text request schema validation", () => {
 	it("accepts chat streaming when tools are present", () => {
@@ -14,6 +14,22 @@ describe("text request schema validation", () => {
 					parameters: { type: "object" },
 				},
 			}],
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway datetime server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "what time is it?" }],
+			tools: [{
+				type: "gateway:datetime",
+				parameters: {
+					timezone: "Europe/London",
+				},
+			}],
+			tool_choice: "gateway:datetime",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -39,6 +55,22 @@ describe("text request schema validation", () => {
 				name: "lookup",
 				parameters: { type: "object" },
 			}],
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway datetime server tool on responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "what time is it?",
+			tools: [{
+				type: "gateway:datetime",
+				parameters: {
+					timezone: "UTC",
+				},
+			}],
+			tool_choice: "gateway:datetime",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -131,6 +163,19 @@ describe("text request schema validation", () => {
 			},
 		});
 
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway datetime server tool on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "what time is it?" }],
+			tools: [{
+				type: "gateway:datetime",
+				parameters: { timezone: "Europe/London" },
+			}],
+		});
 		expect(parsed.success).toBe(true);
 	});
 

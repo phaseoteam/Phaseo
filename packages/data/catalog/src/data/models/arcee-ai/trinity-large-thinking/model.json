@@ -1,0 +1,32 @@
+{
+  "model_id": "arcee-ai/trinity-large-thinking",
+  "organisation_id": "arcee-ai",
+  "name": "Trinity Large Thinking",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-01T00:00:00",
+  "release_date": "2026-04-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "arcee-ai/trinity-large-thinking",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 398000000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 17000000000
+    }
+  ],
+  "benchmarks": []
+}

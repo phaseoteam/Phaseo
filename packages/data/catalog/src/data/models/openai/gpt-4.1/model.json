@@ -1,0 +1,32 @@
+{
+  "model_id": "openai/gpt-4.1",
+  "organisation_id": "openai",
+  "name": "GPT 4.1",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-4o-2024-08-06",
+  "announced_date": "2025-04-13T00:00:00",
+  "release_date": "2025-04-14T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "image,text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4.1",
+  "family_id": "openai/gpt-4-1",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1047576
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-05-31T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
+    }
+  ],
+  "benchmarks": []
+}

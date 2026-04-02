@@ -118,12 +118,13 @@ describe("handleError", () => {
 			} as any,
 			auditFailure: async () => { },
 		});
-		const payload = await res.json();
-		expect(payload.error).toBe("upstream_error");
-		expect(payload.reason).toBe("all_candidates_failed");
-		expect(payload.attempt_count).toBe(1);
-		expect(payload.failed_providers).toEqual(["xiaomi"]);
-		expect(payload.failed_statuses).toEqual([400]);
+			const payload = await res.json();
+			expect(payload.error).toBe("upstream_error");
+			expect(payload.error_origin).toBe("upstream");
+			expect(payload.reason).toBe("all_candidates_failed");
+			expect(payload.attempt_count).toBe(1);
+			expect(payload.failed_providers).toEqual(["xiaomi"]);
+			expect(payload.failed_statuses).toEqual([400]);
 		expect(payload.upstream_error).toEqual({
 			code: "400",
 			message: "Param Incorrect",
@@ -175,14 +176,15 @@ describe("handleError", () => {
 			} as any,
 			auditFailure: async () => { },
 		});
-		const payload = await res.json();
-		expect(payload.error).toBe("unsupported_model_or_endpoint");
-		expect(payload.reason).toBe("pricing_not_configured");
-		expect(payload.provider_candidate_diagnostics).toEqual({
-			totalProviders: 1,
-			supportsEndpointCount: 1,
-			candidateCount: 1,
-		});
+			const payload = await res.json();
+			expect(payload.error).toBe("unsupported_model_or_endpoint");
+			expect(payload.error_origin).toBe("user");
+			expect(payload.reason).toBe("pricing_not_configured");
+			expect(payload.provider_candidate_diagnostics).toEqual({
+				totalProviders: 1,
+				supportsEndpointCount: 1,
+				candidateCount: 1,
+			});
 		expect(payload.provider_enablement).toEqual({
 			capability: "moderations",
 			providersBefore: ["openai"],
@@ -190,6 +192,32 @@ describe("handleError", () => {
 			dropped: [{ providerId: "openai", reason: "pricing_missing" }],
 		});
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
+	});
+
+	it("marks pipeline execution failures as gateway-origin errors", async () => {
+		const upstream = new Response(
+			JSON.stringify({
+				error: "pipeline_execution_error",
+				description: "Internal pipeline execution error.",
+			}),
+			{ status: 500, headers: { "content-type": "application/json" } },
+		);
+
+		const res = await handleError({
+			stage: "execute",
+			res: upstream,
+			endpoint: "responses",
+			ctx: {
+				requestId: "G-TEST-3",
+				model: "google/lyria-3-clip-preview",
+			} as any,
+			auditFailure: async () => { },
+		});
+		const payload = await res.json();
+		expect(payload.error).toBe("pipeline_execution_error");
+		expect(payload.error_type).toBe("system");
+		expect(payload.error_origin).toBe("gateway");
+		expect(res.headers.get("X-Gateway-Error-Origin")).toBe("gateway");
 	});
 });
 

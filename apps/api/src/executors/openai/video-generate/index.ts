@@ -86,6 +86,63 @@ function resolveInputReferenceValue(ir: IRVideoGenerationRequest): string | unde
 		extractInputReferenceCandidate(ir.input?.image);
 }
 
+function buildOpenAiVideoJsonRequest(args: {
+	ir: IRVideoGenerationRequest;
+	model: string;
+	seconds?: string;
+	size?: string;
+	inputReference?: string;
+}): Record<string, any> {
+	const { ir, model, seconds, size, inputReference } = args;
+	const rawRequest = (ir.rawRequest ?? {}) as Record<string, any>;
+	const openaiConfig =
+		rawRequest?.config?.openai && typeof rawRequest.config.openai === "object"
+			? rawRequest.config.openai
+			: rawRequest?.openai && typeof rawRequest.openai === "object"
+				? rawRequest.openai
+				: rawRequest?.provider_params && typeof rawRequest.provider_params === "object"
+					? rawRequest.provider_params
+					: undefined;
+	const passthroughRequest =
+		openaiConfig?.request && typeof openaiConfig.request === "object" && !Array.isArray(openaiConfig.request)
+			? { ...(openaiConfig.request as Record<string, any>) }
+			: {};
+
+	const request: Record<string, any> = Object.keys(passthroughRequest).length > 0
+		? passthroughRequest
+		: {};
+
+	if (request.model == null) request.model = model;
+	if (request.prompt == null) request.prompt = ir.prompt;
+	if (request.seconds == null && seconds != null) request.seconds = seconds;
+	if (request.seconds != null) {
+		const normalizedSeconds = normalizePositiveSeconds(request.seconds);
+		if (normalizedSeconds != null) request.seconds = normalizedSeconds;
+	}
+	if (request.size == null && size) request.size = size;
+	if (request.seed == null && typeof ir.seed === "number") request.seed = ir.seed;
+	if (request.negative_prompt == null && ir.negativePrompt) request.negative_prompt = ir.negativePrompt;
+	if (request.aspect_ratio == null && ir.aspectRatio) request.aspect_ratio = ir.aspectRatio;
+	if (request.generate_audio == null && typeof ir.generateAudio === "boolean") request.generate_audio = ir.generateAudio;
+
+	if (request.input == null && ir.input && typeof ir.input === "object") {
+		request.input = {
+			...(ir.input.image ? { image: ir.input.image } : {}),
+			...(ir.input.video ? { video: ir.input.video } : {}),
+			...(ir.input.lastFrame ? { last_frame: ir.input.lastFrame } : {}),
+			...(ir.input.referenceImages ? { reference_images: ir.input.referenceImages } : {}),
+		};
+	}
+	if (request.input_image == null && ir.inputImage) request.input_image = ir.inputImage;
+	if (request.input_video == null && ir.inputVideo) request.input_video = ir.inputVideo;
+	if (request.last_frame == null && ir.lastFrame) request.last_frame = ir.lastFrame;
+	if (request.reference_images == null && ir.referenceImages) request.reference_images = ir.referenceImages;
+	if (request.input_reference == null && inputReference) request.input_reference = inputReference;
+	if (request.callback_url == null && ir.callbackUrl) request.callback_url = ir.callbackUrl;
+
+	return request;
+}
+
 async function resolveInputReferenceBlob(
 	refValue: string,
 	mimeTypeHint?: string,
@@ -295,14 +352,32 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		"Idempotency-Key": args.requestId,
 	});
 	let requestBody: BodyInit;
+	const jsonBody = buildOpenAiVideoJsonRequest({
+		ir,
+		model,
+		seconds,
+		size,
+		inputReference,
+	});
 
 	try {
 		if (inputReference) {
 			const form = new FormData();
-			form.append("model", model);
-			form.append("prompt", ir.prompt);
-			if (seconds != null) form.append("seconds", String(seconds));
-			if (size) form.append("size", size);
+			form.append("model", String(jsonBody.model ?? model));
+			form.append("prompt", String(jsonBody.prompt ?? ir.prompt));
+			if (jsonBody.seconds != null) form.append("seconds", String(jsonBody.seconds));
+			if (jsonBody.size != null) form.append("size", String(jsonBody.size));
+			if (jsonBody.quality != null) form.append("quality", String(jsonBody.quality));
+			if (jsonBody.seed != null) form.append("seed", String(jsonBody.seed));
+			if (jsonBody.aspect_ratio != null) form.append("aspect_ratio", String(jsonBody.aspect_ratio));
+			if (jsonBody.negative_prompt != null) form.append("negative_prompt", String(jsonBody.negative_prompt));
+			if (jsonBody.callback_url != null) form.append("callback_url", String(jsonBody.callback_url));
+			if (jsonBody.generate_audio != null) form.append("generate_audio", String(Boolean(jsonBody.generate_audio)));
+			if (jsonBody.input != null) form.append("input", JSON.stringify(jsonBody.input));
+			if (jsonBody.input_image != null) form.append("input_image", JSON.stringify(jsonBody.input_image));
+			if (jsonBody.input_video != null) form.append("input_video", JSON.stringify(jsonBody.input_video));
+			if (jsonBody.last_frame != null) form.append("last_frame", JSON.stringify(jsonBody.last_frame));
+			if (jsonBody.reference_images != null) form.append("reference_images", JSON.stringify(jsonBody.reference_images));
 			const resolved = await resolveInputReferenceBlob(inputReference, ir.inputReferenceMimeType);
 			if (resolved) {
 				form.append("input_reference", resolved.blob, resolved.name);
@@ -310,21 +385,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			requestBody = form;
 			delete (headers as any)["Content-Type"];
 			if (mappedRequestEnabled) {
-				mappedRequest = JSON.stringify({
-					model,
-					prompt: ir.prompt,
-					...(seconds != null ? { seconds } : {}),
-					...(size ? { size } : {}),
-					input_reference: "[multipart]",
-				});
+				mappedRequest = JSON.stringify({ ...jsonBody, input_reference: "[multipart]" });
 			}
 		} else {
-			const jsonBody = {
-				model,
-				prompt: ir.prompt,
-				...(seconds != null ? { seconds } : {}),
-				...(size ? { size } : {}),
-			};
 			requestBody = JSON.stringify(jsonBody);
 			if (mappedRequestEnabled) mappedRequest = JSON.stringify(jsonBody);
 		}
@@ -371,19 +434,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const nativeVideoId = irResponse.nativeId ?? json?.id;
 	if (nativeVideoId) {
 		try {
-			await saveVideoJobMeta(args.teamId, String(nativeVideoId), {
+			await saveVideoJobMeta(args.teamId, args.requestId, {
 				provider: args.providerId,
+				providerTaskId: String(nativeVideoId),
+				requestId: args.requestId,
+				sessionId: args.meta.sessionId ?? null,
+				appId: args.meta.appId ?? null,
 				model,
 				seconds: Number.isFinite(secondsForMeta) ? secondsForMeta : null,
 				resolution: size ?? null,
 				quality,
+				outputAccess: ir.outputAccess ?? "both",
+				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,
 				reservedNanos,
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
-			}, irResponse.status);
+			}, String(nativeVideoId), irResponse.status);
 		} catch (err) {
 			console.error("openai_video_job_meta_store_failed", {
 				error: err,

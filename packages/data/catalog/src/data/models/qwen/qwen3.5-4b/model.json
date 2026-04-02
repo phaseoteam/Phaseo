@@ -1,0 +1,18 @@
+{
+  "model_id": "qwen/qwen3.5-4b",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.5 4B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-03-02T00:00:00",
+  "release_date": "2026-03-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen3.5-4b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

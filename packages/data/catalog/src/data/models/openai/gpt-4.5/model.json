@@ -1,0 +1,45 @@
+{
+  "model_id": "openai/gpt-4.5",
+  "organisation_id": "openai",
+  "name": "GPT 4.5",
+  "status": "Retired",
+  "previous_model_id": "openai/gpt-4o-2024-08-06",
+  "announced_date": "2024-02-27T00:00:00",
+  "release_date": "2025-02-27T00:00:00",
+  "deprecation_date": "2025-04-14T00:00:00",
+  "retirement_date": "2025-07-14T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text, image",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4.5",
+  "family_id": "openai/gpt-4-5",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-4-5#gpt-4-5"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/playground"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-4-5/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-10-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 16384
+    }
+  ],
+  "benchmarks": []
+}

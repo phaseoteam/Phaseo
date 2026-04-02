@@ -159,22 +159,13 @@ export default async function getModel(
             provider_id: string | null;
             api_model_id: string | null;
             model_id: string | null;
-            internal_model_id: string | null;
         }> | null = null;
 
         {
             const { data } = await supabase
                 .from("data_api_provider_models")
-                .select("provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id")
+                .select("provider_api_model_id, provider_id, api_model_id, model_id")
                 .eq("model_id", modelId);
-            providerModels = data ?? null;
-        }
-
-        if (!providerModels?.length) {
-            const { data } = await supabase
-                .from("data_api_provider_models")
-                .select("provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id")
-                .eq("internal_model_id", modelId);
             providerModels = data ?? null;
         }
 
@@ -276,6 +267,7 @@ export interface ModelOverviewPage {
     license?: string | null;
     input_types?: string | null;
     output_types?: string | null;
+    previous_model_id?: string | null;
     family_id?: string | null;
     updated_at?: string | null;
     organisation: { name: string, country_code?: string | null };
@@ -305,6 +297,7 @@ export async function getModelOverview(
         license,
         input_types,
         output_types,
+        previous_model_id,
         family_id,
         updated_at,
         organisation: data_organisations!data_models_organisation_id_fkey(name, country_code),

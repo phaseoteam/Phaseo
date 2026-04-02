@@ -1,0 +1,18 @@
+{
+  "model_id": "liquid-ai/lfm-2-2.6b",
+  "organisation_id": "liquid-ai",
+  "name": "LFM 2 2.6B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-09-23T00:00:00",
+  "release_date": "2025-09-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "LFM 1.0",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "liquid-ai/lfm-2-2.6b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

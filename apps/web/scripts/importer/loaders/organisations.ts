@@ -4,6 +4,42 @@ import { listDirs, readJsonWithHash } from "../util";
 import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
 import { ChangeTracker } from "../state";
 
+function isOrganisationNameUniqueViolation(error: unknown): boolean {
+    const value = error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
+    const code = typeof value?.code === "string" ? value.code : "";
+    const combined = [value?.message, value?.details, value?.hint]
+        .map((part) => (typeof part === "string" ? part : ""))
+        .join(" ")
+        .toLowerCase();
+    return code === "23505" && combined.includes("organisations_name_key");
+}
+
+function isOrganisationUrlUniqueViolation(error: unknown): boolean {
+    const value = error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
+    const code = typeof value?.code === "string" ? value.code : "";
+    const combined = [value?.message, value?.details, value?.hint]
+        .map((part) => (typeof part === "string" ? part : ""))
+        .join(" ")
+        .toLowerCase();
+    return code === "23505" && combined.includes("organisation_socials_url_key");
+}
+
+function withFallbackOrganisationName(
+    row: {
+        organisation_id: string;
+        name: string;
+        country_code: string;
+        description: string | null;
+        colour: string | null;
+    }
+) {
+    const baseName = typeof row.name === "string" && row.name.trim() ? row.name.trim() : row.organisation_id;
+    return {
+        ...row,
+        name: `${baseName} (${row.organisation_id})`,
+    };
+}
+
 export async function loadOrganisations(tracker: ChangeTracker) {
     tracker.touchPrefix(DIR_ORGS);
     const dirs = await listDirs(DIR_ORGS);
@@ -44,19 +80,39 @@ export async function loadOrganisations(tracker: ChangeTracker) {
         }
 
         // 1) Upsert organisation
-        assertOk(
-            await supa.from("data_organisations").upsert(orgRow, { onConflict: "organisation_id" }),
-            "upsert data_organisations"
-        );
+        const upsertRes = await supa.from("data_organisations").upsert(orgRow, { onConflict: "organisation_id" });
+        if (!upsertRes.error) {
+            assertOk(upsertRes, "upsert data_organisations");
+        } else if (isOrganisationNameUniqueViolation(upsertRes.error)) {
+            const fallbackRow = withFallbackOrganisationName(orgRow);
+            // eslint-disable-next-line no-console
+            console.warn(
+                `[organisations-import] Duplicate organisation name '${orgRow.name}' for '${orgRow.organisation_id}', retrying as '${fallbackRow.name}'.`
+            );
+            assertOk(
+                await supa.from("data_organisations").upsert(fallbackRow, { onConflict: "organisation_id" }),
+                "upsert data_organisations (fallback name)"
+            );
+        } else {
+            assertOk(upsertRes, "upsert data_organisations");
+        }
 
         // 2) Upsert/replace links by (organisation_id, platform)
         if (linkRows.length) {
-            assertOk(
-                await supa
+            for (const row of linkRows) {
+                const linkRes = await supa
                     .from("data_organisation_links")
-                    .upsert(linkRows, { onConflict: "organisation_id,platform", ignoreDuplicates: false }),
-                "upsert data_organisation_links"
-            );
+                    .upsert(row, { onConflict: "organisation_id,platform", ignoreDuplicates: false });
+                if (!linkRes.error) continue;
+                if (isOrganisationUrlUniqueViolation(linkRes.error)) {
+                    // eslint-disable-next-line no-console
+                    console.warn(
+                        `[organisations-import] Duplicate organisation link URL '${row.url}' for '${j.organisation_id}' (${row.platform}); skipping.`
+                    );
+                    continue;
+                }
+                assertOk(linkRes, "upsert data_organisation_links");
+            }
         }
 
         // 3) Prune links that no longer exist in source

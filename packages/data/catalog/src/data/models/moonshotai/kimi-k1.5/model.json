@@ -1,0 +1,52 @@
+{
+  "model_id": "moonshotai/kimi-k1.5",
+  "organisation_id": "moonshotai",
+  "name": "Kimi K1.5",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-01-20T00:00:00",
+  "release_date": "2025-01-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "moonshotai/kimi-k1.5",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.moonshot.cn/docs/api-reference"
+    },
+    {
+      "platform": "playground",
+      "url": "https://kimi.ai/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2501.12599"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/MoonshotAI/Kimi-k1.5"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "parameter_count",
+      "value": 1000000000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 15500000000000
+    }
+  ],
+  "benchmarks": []
+}

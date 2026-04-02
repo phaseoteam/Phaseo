@@ -1,0 +1,18 @@
+{
+  "model_id": "z-ai/glm-4.1v-thinking-9b",
+  "organisation_id": "z-ai",
+  "name": "GLM 4.1V Thinking 9B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-07-02T00:00:00",
+  "release_date": "2025-07-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "z-ai/glm-4.1v-thinking-9b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

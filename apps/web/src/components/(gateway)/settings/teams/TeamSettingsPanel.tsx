@@ -4,7 +4,6 @@ import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
 import {
 	Card,
 	CardHeader,
@@ -16,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// removed Textarea and Switch imports
 import { Separator } from "@/components/ui/separator";
 import {
 	Select,
@@ -25,6 +23,7 @@ import {
 	SelectContent,
 	SelectItem,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
 	AlertDialog,
@@ -37,13 +36,14 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2, UserCog } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import {
 	updateTeamAction,
 	deleteTeamAction,
+	updateTeamSsoSettingsAction,
+	type TeamSsoMode,
 } from "@/app/(dashboard)/settings/teams/actions";
-
-/* ──────────────────────────────────────────────────────────────────────────── */
+import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 type Team = { id: string; name: string };
 type MembersByTeam = Record<
@@ -54,30 +54,59 @@ type MembersByTeam = Record<
 type Props = {
 	teams: Team[];
 	membersByTeam: MembersByTeam;
-	teamId?: string | undefined | null; // controlled team id
+	teamId?: string | undefined | null;
 	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 	personalTeamId?: string | null;
 	walletBalances?: Record<string, number>;
+	teamSsoSettingsByTeam?: Record<string, TeamSsoSettingsRow>;
 };
 
 type Settings = {
 	teamName: string;
+	ssoEnabled: boolean;
+	ssoEnforced: boolean;
+	ssoMode: TeamSsoMode;
+	ssoProviderIdentifier: string;
+	ssoDomains: string;
 };
 
 const DEFAULTS: Settings = {
 	teamName: "",
+	ssoEnabled: false,
+	ssoEnforced: false,
+	ssoMode: "none",
+	ssoProviderIdentifier: "",
+	ssoDomains: "",
 };
 
 const schema = z.object({
 	teamName: z.string().trim().min(1, "Team name is required").max(60),
-	// only keep teamName
 });
 
-/* Helper: normalise empty string -> null for nullable fields */
-function normalise(settings: Settings): Settings {
+function normalizeMode(value: unknown): TeamSsoMode {
+	const raw = String(value ?? "").trim().toLowerCase();
+	if (raw === "saml") return "saml";
+	if (raw === "custom_oidc") return "custom_oidc";
+	return "none";
+}
+
+function parseDomains(raw: string): string[] {
+	return raw
+		.split(/[,\n]/)
+		.map((domain) => domain.trim())
+		.filter(Boolean);
+}
+
+function normalizeSettings(settings: Settings): Settings {
+	const domains = parseDomains(settings.ssoDomains);
 	return {
 		...settings,
+		teamName: settings.teamName.trim(),
+		ssoEnforced: settings.ssoEnabled ? settings.ssoEnforced : false,
+		ssoMode: normalizeMode(settings.ssoMode),
+		ssoProviderIdentifier: settings.ssoProviderIdentifier.trim(),
+		ssoDomains: domains.join(", "),
 	};
 }
 
@@ -89,35 +118,29 @@ export default function TeamSettingsPanel({
 	currentUserId,
 	personalTeamId,
 	walletBalances,
+	teamSsoSettingsByTeam,
 }: Props) {
-	// teamId is controlled by parent; ensure we compute a fallback for internal use
 	const fallbackTeamId =
 		(teamId && teams.some((t) => t.id === teamId)
 			? teamId
 			: teams[0]?.id) || undefined;
 
-	// currentTeam not currently used
-
 	const roleForCurrentUser = React.useMemo(() => {
 		if (!fallbackTeamId || !currentUserId) return undefined;
-		const m = (membersByTeam[fallbackTeamId] ?? []).find(
-			(x) => x.user_id === currentUserId
+		const membership = (membersByTeam[fallbackTeamId] ?? []).find(
+			(entry) => entry.user_id === currentUserId,
 		);
-		return (m?.role || "").toLowerCase();
+		return (membership?.role || "").toLowerCase();
 	}, [fallbackTeamId, currentUserId, membersByTeam]);
 
 	const isPersonalTeam = Boolean(
-		fallbackTeamId && personalTeamId && fallbackTeamId === personalTeamId
+		fallbackTeamId && personalTeamId && fallbackTeamId === personalTeamId,
 	);
-
 	const hasTeamControl =
 		roleForCurrentUser === "owner" || roleForCurrentUser === "admin";
-
 	const canEdit = hasTeamControl && !isPersonalTeam;
 	const currentTeamBalance =
-		fallbackTeamId && walletBalances
-			? walletBalances[fallbackTeamId] ?? 0
-			: 0;
+		fallbackTeamId && walletBalances ? walletBalances[fallbackTeamId] ?? 0 : 0;
 
 	const [loading, setLoading] = React.useState(false);
 	const [saving, setSaving] = React.useState(false);
@@ -128,54 +151,82 @@ export default function TeamSettingsPanel({
 	const [initial, setInitial] = React.useState<Settings>(DEFAULTS);
 
 	const hasChanges =
-		JSON.stringify(normalise(initial)) ===
-		JSON.stringify(normalise(settings))
-			? false
-			: true;
+		JSON.stringify(normalizeSettings(initial)) !==
+		JSON.stringify(normalizeSettings(settings));
 
-	// Initialize settings from props (no network fetches)
 	React.useEffect(() => {
 		if (!teamId) return;
-		const t = teams.find((x) => x.id === teamId);
+		const team = teams.find((entry) => entry.id === teamId);
+		const ssoRow = teamSsoSettingsByTeam?.[teamId];
 		const next: Settings = {
-			teamName: t?.name ?? DEFAULTS.teamName,
+			teamName: team?.name ?? DEFAULTS.teamName,
+			ssoEnabled: Boolean(ssoRow?.sso_enabled),
+			ssoEnforced: Boolean(ssoRow?.sso_enforced),
+			ssoMode: normalizeMode(ssoRow?.sso_mode),
+			ssoProviderIdentifier: String(
+				ssoRow?.sso_provider_identifier ?? "",
+			),
+			ssoDomains: Array.isArray(ssoRow?.sso_domains)
+				? ssoRow!.sso_domains.join(", ")
+				: "",
 		};
 		setSettings(next);
 		setInitial(next);
-		// ensure loading is false when using props
 		setLoading(false);
-	}, [teamId, teams]);
+	}, [teamId, teams, teamSsoSettingsByTeam]);
 
-	function update<K extends keyof Settings>(key: K, val: Settings[K]) {
-		setSettings((prev) => ({ ...prev, [key]: val }));
+	function update<K extends keyof Settings>(key: K, value: Settings[K]) {
+		setSettings((prev) => ({ ...prev, [key]: value }));
 	}
 
 	async function handleSave() {
 		if (!teamId) return;
 		if (isPersonalTeam) {
-			toast.error("Personal team name cannot be changed.");
+			toast.error("Personal team settings cannot be edited.");
 			return;
 		}
 
 		const parsed = schema.safeParse({
-			...settings,
+			teamName: settings.teamName,
 		});
 
 		if (!parsed.success) {
 			toast.error(
-				parsed.error.issues[0]?.message ?? "Please check your inputs."
+				parsed.error.issues[0]?.message ?? "Please check your inputs.",
 			);
 			return;
 		}
 
 		setSaving(true);
 		try {
-			await toast.promise(updateTeamAction(teamId, settings.teamName), {
-				loading: "Saving team settings…",
-				success: "Saved ✅",
-				error: (err: any) => err?.message || "Could not save settings",
-			});
-			setInitial(settings);
+			await toast.promise(
+				(async () => {
+					const normalized = normalizeSettings(settings);
+					const initialNormalized = normalizeSettings(initial);
+
+					if (normalized.teamName !== initialNormalized.teamName) {
+						await updateTeamAction(teamId, normalized.teamName);
+					}
+
+					await updateTeamSsoSettingsAction(teamId, {
+						ssoEnabled: normalized.ssoEnabled,
+						ssoEnforced: normalized.ssoEnforced,
+						ssoMode: normalized.ssoMode,
+						ssoProviderIdentifier:
+							normalized.ssoProviderIdentifier || null,
+						ssoDomains: parseDomains(normalized.ssoDomains),
+					});
+
+					setSettings(normalized);
+					setInitial(normalized);
+				})(),
+				{
+					loading: "Saving team settings...",
+					success: "Saved.",
+					error: (error: any) =>
+						error?.message || "Could not save settings",
+				},
+			);
 		} finally {
 			setSaving(false);
 		}
@@ -194,9 +245,9 @@ export default function TeamSettingsPanel({
 		setDeleting(true);
 		try {
 			await toast.promise(deleteTeamAction(teamId), {
-				loading: "Deleting team…",
+				loading: "Deleting team...",
 				success: "Team deleted",
-				error: (e: any) => e?.message || "Could not delete team",
+				error: (error: any) => error?.message || "Could not delete team",
 			});
 			setDeleteDialogOpen(false);
 		} finally {
@@ -213,36 +264,36 @@ export default function TeamSettingsPanel({
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							General
-							{isPersonalTeam && (
+							{isPersonalTeam ? (
 								<Badge
 									variant="secondary"
 									className="text-[0.6rem] font-semibold uppercase"
 								>
 									Personal
 								</Badge>
-							)}
+							) : null}
 						</CardTitle>
 						<CardDescription>
-							Configure your team’s basics and defaults.
-							{isPersonalTeam && (
+							Configure your team's basics and enterprise SSO scaffold.
+							{isPersonalTeam ? (
 								<span className="mt-1 block text-xs text-muted-foreground">
-									Your personal team is immutable and always
-									serves as your default.
+									Your personal team is immutable and always serves as your
+									default.
 								</span>
-							)}
+							) : null}
 						</CardDescription>
 					</div>
 					<Select
 						value={fallbackTeamId}
-						onValueChange={(v) => onTeamChange?.(v)}
+						onValueChange={(value) => onTeamChange?.(value)}
 					>
 						<SelectTrigger className="w-full sm:w-[240px]">
-							<SelectValue placeholder="Select team…" />
+							<SelectValue placeholder="Select team..." />
 						</SelectTrigger>
 						<SelectContent>
-							{teams.map((t) => (
-								<SelectItem key={t.id} value={t.id}>
-									{t.name}
+							{teams.map((team) => (
+								<SelectItem key={team.id} value={team.id}>
+									{team.name}
 								</SelectItem>
 							))}
 						</SelectContent>
@@ -251,28 +302,136 @@ export default function TeamSettingsPanel({
 
 				<Separator />
 
-				<CardContent className="pt-6 grid gap-6 max-w-2xl">
-					{/* Team name */}
-					<div className="grid gap-4">
-						<div className="space-y-2">
-							<Label htmlFor="teamName">Team name</Label>
-							<Input
-								id="teamName"
-								value={settings.teamName}
-								onChange={(e) =>
-									update("teamName", e.target.value)
+				<CardContent className="grid max-w-2xl gap-6 pt-6">
+					<div className="grid gap-2">
+						<Label htmlFor="teamName">Team name</Label>
+						<Input
+							id="teamName"
+							value={settings.teamName}
+							onChange={(event) => update("teamName", event.target.value)}
+							disabled={!canEdit || loading}
+							placeholder="e.g. Personal, Engineering, Growth"
+							maxLength={60}
+						/>
+					</div>
+
+					<Separator />
+
+					<div className="space-y-4">
+						<div className="space-y-1">
+							<div className="flex items-center gap-2">
+								<h3 className="text-sm font-semibold">Enterprise SSO</h3>
+								<Badge variant="outline">Scaffold</Badge>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								Configuration is saved now, but sign-in enforcement remains
+								disabled until rollout is enabled.
+							</p>
+						</div>
+
+						<div className="rounded-md border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
+							Status: Coming soon. This section prepares team-level SSO settings
+							for future enforcement.
+						</div>
+
+						<div className="grid gap-3">
+							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
+								<div className="min-w-0">
+									<p className="text-sm font-medium">Enable SSO configuration</p>
+									<p className="text-xs text-muted-foreground">
+										Turn on team SSO settings storage.
+									</p>
+								</div>
+								<Switch
+									checked={settings.ssoEnabled}
+									onCheckedChange={(checked) =>
+										update("ssoEnabled", Boolean(checked))
+									}
+									disabled={!canEdit || loading}
+								/>
+							</div>
+
+							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
+								<div className="min-w-0">
+									<p className="text-sm font-medium">Require SSO for members</p>
+									<p className="text-xs text-muted-foreground">
+										Future policy target: SSO-required by team.
+									</p>
+								</div>
+								<Switch
+									checked={settings.ssoEnforced}
+									onCheckedChange={(checked) =>
+										update("ssoEnforced", Boolean(checked))
+									}
+									disabled={!canEdit || loading || !settings.ssoEnabled}
+								/>
+							</div>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="ssoMode">SSO mode</Label>
+							<Select
+								value={settings.ssoMode}
+								onValueChange={(value) =>
+									update("ssoMode", normalizeMode(value))
 								}
 								disabled={!canEdit || loading}
-								placeholder="e.g. Personal, Engineering, Growth"
-								maxLength={60}
+							>
+								<SelectTrigger id="ssoMode">
+									<SelectValue placeholder="Select SSO mode..." />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="none">None</SelectItem>
+									<SelectItem value="saml">SAML (Enterprise SSO)</SelectItem>
+									<SelectItem value="custom_oidc">
+										Custom OIDC Provider
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="ssoProviderIdentifier">
+								Provider identifier (optional)
+							</Label>
+							<Input
+								id="ssoProviderIdentifier"
+								value={settings.ssoProviderIdentifier}
+								onChange={(event) =>
+									update("ssoProviderIdentifier", event.target.value)
+								}
+								disabled={!canEdit || loading}
+								placeholder={
+									settings.ssoMode === "custom_oidc"
+										? "custom:your-oidc-provider"
+										: "Supabase SSO provider UUID (optional)"
+								}
 							/>
+							<p className="text-xs text-muted-foreground">
+								Use a provider UUID for SAML or a `custom:*` provider for OIDC.
+							</p>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="ssoDomains">Allowed work domains</Label>
+							<Input
+								id="ssoDomains"
+								value={settings.ssoDomains}
+								onChange={(event) =>
+									update("ssoDomains", event.target.value)
+								}
+								disabled={!canEdit || loading}
+								placeholder="company.com, example.org"
+							/>
+							<p className="text-xs text-muted-foreground">
+								Comma-separated domains used for domain-based SSO lookup.
+							</p>
 						</div>
 					</div>
 				</CardContent>
 
 				<CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="text-xs text-muted-foreground flex items-center gap-2">
-						{/* Delete team trigger */}
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
 						<AlertDialog
 							open={deleteDialogOpen}
 							onOpenChange={setDeleteDialogOpen}
@@ -288,16 +447,11 @@ export default function TeamSettingsPanel({
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>
-										Delete team?
-									</AlertDialogTitle>
+									<AlertDialogTitle>Delete team?</AlertDialogTitle>
 									<AlertDialogDescription>
-										This will permanently remove the team
-										and all related data. Type{" "}
-										<span className="font-semibold">
-											DELETE TEAM
-										</span>{" "}
-										to confirm.
+										This will permanently remove the team and all related data.
+										Type <span className="font-semibold">DELETE TEAM</span> to
+										confirm.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<ConfirmDeleteTeam
@@ -320,14 +474,12 @@ export default function TeamSettingsPanel({
 						</Button>
 						<Button
 							onClick={handleSave}
-							disabled={
-								!hasChanges || saving || loading || !canEdit
-							}
+							disabled={!hasChanges || saving || loading || !canEdit}
 						>
 							{saving ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Saving…
+									Saving...
 								</>
 							) : (
 								"Save changes"
@@ -340,7 +492,6 @@ export default function TeamSettingsPanel({
 	);
 }
 
-/** Inline confirmation block for destructive action */
 function ConfirmDeleteTeam({
 	onConfirm,
 	deleting,
@@ -351,11 +502,11 @@ function ConfirmDeleteTeam({
 	remainingBalance?: number;
 }) {
 	const [text, setText] = React.useState("");
+	const [ackCredits, setAckCredits] = React.useState(false);
 	const ok = text.trim().toUpperCase() === "DELETE TEAM";
 	const balance =
 		typeof remainingBalance === "number" ? Math.max(remainingBalance, 0) : 0;
 	const hasCredits = balance > 0.001;
-	const [ackCredits, setAckCredits] = React.useState(false);
 	const formattedBalance = hasCredits
 		? new Intl.NumberFormat("en-US", {
 				style: "currency",
@@ -363,6 +514,7 @@ function ConfirmDeleteTeam({
 				maximumFractionDigits: 2,
 		  }).format(balance)
 		: null;
+
 	return (
 		<div className="grid gap-3">
 			<div className="grid gap-2">
@@ -371,26 +523,25 @@ function ConfirmDeleteTeam({
 					id="confirmDeleteTeam"
 					placeholder='Type "DELETE TEAM" to confirm'
 					value={text}
-					onChange={(e) => setText(e.target.value)}
+					onChange={(event) => setText(event.target.value)}
 					autoFocus
 				/>
 			</div>
 			{hasCredits ? (
-				<div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950 dark:text-amber-200 space-y-3">
+				<div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950 dark:text-amber-200">
 					<p>
 						This team still has{" "}
-						<span className="font-semibold">
-							{formattedBalance}
-						</span>{" "}
-						in credits. Deleting the team will permanently forfeit
-						this balance.
+						<span className="font-semibold">{formattedBalance}</span> in credits.
+						Deleting the team will permanently forfeit this balance.
 					</p>
 					<label className="flex items-center gap-2 text-xs font-medium">
 						<input
 							type="checkbox"
 							className="h-4 w-4 rounded border-muted-foreground"
 							checked={ackCredits}
-							onChange={(e) => setAckCredits(e.target.checked)}
+							onChange={(event) =>
+								setAckCredits(event.target.checked)
+							}
 						/>
 						I understand these credits can't be recovered.
 					</label>
@@ -404,14 +555,12 @@ function ConfirmDeleteTeam({
 					<Button
 						variant="destructive"
 						onClick={onConfirm}
-						disabled={
-							!ok || deleting || (hasCredits && !ackCredits)
-						}
+						disabled={!ok || deleting || (hasCredits && !ackCredits)}
 					>
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Deleting…
+								Deleting...
 							</>
 						) : (
 							"Yes, delete this team"

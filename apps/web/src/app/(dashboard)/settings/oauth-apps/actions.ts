@@ -109,6 +109,7 @@ export async function createOAuthAppAction(
 				team_id: input.team_id,
 				name: input.name,
 				description: input.description,
+				redirect_uris: input.redirect_uris,
 				homepage_url: input.homepage_url,
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
@@ -469,6 +470,19 @@ export async function updateRedirectUrisAction(
 
 		if (updateError) {
 			return { error: `Failed to update redirect URIs: ${updateError.message}` };
+		}
+
+		const { error: metadataUpdateError } = await supabase
+			.from("oauth_app_metadata")
+			.update({
+				redirect_uris: redirectUris,
+			})
+			.eq("client_id", clientId)
+			.eq("team_id", app.team_id);
+		if (metadataUpdateError) {
+			return {
+				error: `Redirect URIs updated in OAuth client but metadata sync failed: ${metadataUpdateError.message}`,
+			};
 		}
 
 		revalidatePath(`/settings/oauth-apps/${clientId}`);

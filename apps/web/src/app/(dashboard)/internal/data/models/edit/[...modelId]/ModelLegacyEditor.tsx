@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
 import BasicTab from "@/components/(data)/model/edit/tabs/BasicTab";
 import DetailsTab from "@/components/(data)/model/edit/tabs/DetailsTab";
 import BenchmarksTab from "@/components/(data)/model/edit/tabs/BenchmarksTab";
 import PricingTab from "@/components/(data)/model/edit/tabs/PricingTab";
+import SubscriptionPlansTab, {
+	type SubscriptionPlanModelPayload,
+} from "@/components/(data)/model/edit/tabs/SubscriptionPlansTab";
 import ProvidersTab, {
 	type ProviderCapabilityRow,
 	type ProviderModelRow,
@@ -36,6 +40,7 @@ const SECTION_ORDER = [
 	"basic",
 	"details",
 	"benchmarks",
+	"plans",
 	"providers",
 	"pricing",
 ] as const;
@@ -60,6 +65,11 @@ const SECTION_META: Record<
 		label: "Benchmarks",
 		description: "Edit benchmark scores and source data.",
 		saveLabel: "Save Benchmarks",
+	},
+	plans: {
+		label: "Plans",
+		description: "Attach or detach subscription plans for this model.",
+		saveLabel: "Save Plans",
 	},
 	providers: {
 		label: "Providers",
@@ -86,6 +96,7 @@ function normalizeSection(value: string | undefined): EditorSection {
 		basic: "basic",
 		details: "details",
 		benchmarks: "benchmarks",
+		plans: "plans",
 		providers: "providers",
 		pricing: "pricing",
 	};
@@ -173,6 +184,9 @@ export default function ModelLegacyEditor({
 	const [linkRows, setLinkRows] = useState<LinkRow[] | null>(null);
 	const [benchmarkRows, setBenchmarkRows] = useState<BenchmarkRow[] | null>(null);
 	const [pricingRows, setPricingRows] = useState<PricingRow[] | null>(null);
+	const [subscriptionPlanRows, setSubscriptionPlanRows] = useState<
+		SubscriptionPlanModelPayload[] | null
+	>(null);
 	const [providerRows, setProviderRows] = useState<ProviderModelRow[] | null>(null);
 	const [providerCapabilityRows, setProviderCapabilityRows] = useState<
 		ProviderCapabilityRow[] | null
@@ -218,7 +232,7 @@ export default function ModelLegacyEditor({
 		setError(null);
 		setSavedMessage(null);
 
-		try {
+		const savePromise = (async () => {
 			if (activeSection === "basic") {
 				await updateModel({
 					modelId,
@@ -235,6 +249,7 @@ export default function ModelLegacyEditor({
 					output_types: model.output_types,
 					previous_model_id: model.previous_model_id,
 					family_id: model.family_id,
+					subscription_plan_models: subscriptionPlanRows ?? undefined,
 				});
 			} else if (activeSection === "details") {
 				if (detailRows === null || linkRows === null) {
@@ -299,14 +314,14 @@ export default function ModelLegacyEditor({
 				await updateModel({
 					modelId,
 					provider_models: providerRows
-						.filter((row) => row.provider_id && row.api_model_id)
+						.filter((row) => row.provider_id)
 						.map((row) => ({
 							id:
 								typeof row.id === "string" && row.id.startsWith("new-")
 									? undefined
 									: row.id,
 							provider_id: row.provider_id,
-							api_model_id: row.api_model_id,
+							api_model_id: modelId,
 							provider_model_slug: row.provider_model_slug ?? null,
 							prompt_training_policy_override:
 								row.prompt_training_policy_override ?? null,
@@ -322,12 +337,10 @@ export default function ModelLegacyEditor({
 							effective_to: row.effective_to ?? null,
 						})),
 					provider_capabilities: providerCapabilityRows
-						.filter(
-							(row) => row.provider_id && row.api_model_id && row.capability_id
-						)
+						.filter((row) => row.provider_id && row.capability_id)
 						.map((row) => ({
 							provider_id: row.provider_id,
-							api_model_id: row.api_model_id,
+							api_model_id: modelId,
 							capability_id: row.capability_id,
 							status: row.status,
 							max_input_tokens: row.max_input_tokens ?? null,
@@ -337,6 +350,15 @@ export default function ModelLegacyEditor({
 							notes: row.notes ?? null,
 							params: row.params ?? {},
 						})),
+				});
+			} else if (activeSection === "plans") {
+				if (subscriptionPlanRows === null) {
+					throw new Error("Subscription plans are still loading. Please wait a moment and retry.");
+				}
+
+				await updateModel({
+					modelId,
+					subscription_plan_models: subscriptionPlanRows,
 				});
 			} else if (activeSection === "pricing") {
 				if (pricingRows === null) {
@@ -354,7 +376,7 @@ export default function ModelLegacyEditor({
 										? undefined
 										: row.id,
 								provider_id: row.provider_id ?? parsed.provider_id,
-								api_model_id: row.api_model_id ?? parsed.api_model_id,
+								api_model_id: modelId,
 								capability_id: row.capability_id ?? parsed.capability_id,
 								pricing_plan: row.pricing_plan ?? "standard",
 								meter: row.meter,
@@ -369,10 +391,20 @@ export default function ModelLegacyEditor({
 								effective_to: row.effective_to ?? null,
 							};
 						})
-						.filter((row) => row.provider_id && row.api_model_id && row.meter),
+						.filter((row) => row.provider_id && row.meter),
 				});
 			}
+		})();
 
+		toast.promise(savePromise, {
+			loading: `Saving ${SECTION_META[activeSection].label.toLowerCase()}...`,
+			success: `Saved ${SECTION_META[activeSection].label.toLowerCase()}.`,
+			error: (saveError) =>
+				saveError instanceof Error ? saveError.message : "Failed to save.",
+		});
+
+		try {
+			await savePromise;
 			setSavedMessage(`Saved ${SECTION_META[activeSection].label.toLowerCase()}.`);
 		} catch (saveError) {
 			setError(saveError instanceof Error ? saveError.message : "Failed to save.");
@@ -453,10 +485,17 @@ export default function ModelLegacyEditor({
 						onBenchmarksChange={(rows) => setBenchmarkRows(rows)}
 					/>
 				) : null}
+				{activeSection === "plans" ? (
+					<SubscriptionPlansTab
+						modelId={modelId}
+						onSubscriptionPlanModelsChange={(rows) =>
+							setSubscriptionPlanRows(rows)
+						}
+					/>
+				) : null}
 				{activeSection === "providers" ? (
 					<ProvidersTab
 						modelId={modelId}
-						model={model as any}
 						providers={providers}
 						focusProviderId={focusProviderId}
 						onProviderModelsChange={(rows) => setProviderRows(rows)}

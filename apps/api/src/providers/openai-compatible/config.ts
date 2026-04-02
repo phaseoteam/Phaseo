@@ -32,8 +32,15 @@ const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
 ]);
 
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
-const WEIGHTSANDBIASES_API_KEY_ENVS = ["WEIGHTSANDBIASES_API_KEY"] as const;
+const WEIGHTSANDBIASES_API_KEY_ENVS = ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"] as const;
+const ARCEE_API_KEY_ENVS = ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] as const;
 const ALIBABA_CLOUD_API_KEY_ENVS = ["ALIBABA_CLOUD_API_KEY"] as const;
+const GMI_CLOUD_API_KEY_ENVS = ["GMI_API_KEY", "GMI_CLOUD_API_KEY"] as const;
+const NEBIUS_TOKEN_FACTORY_API_KEY_ENVS = ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"] as const;
+const NEBIUS_EU_NORTH_1_BASE_URL_ENVS = ["NEBIUS_EU_NORTH_1_BASE_URL", "NEBIUS_BASE_URL"] as const;
+const NEBIUS_US_CENTRAL_1_BASE_URL_ENVS = ["NEBIUS_US_CENTRAL_1_BASE_URL", "NEBIUS_BASE_URL"] as const;
+const BYTEPLUS_API_KEY_ENVS = ["BYTEPLUS_API_KEY", "BYTEDANCE_SEED_API_KEY", "ARK_API_KEY"] as const;
+const BYTEPLUS_BASE_URL_ENVS = ["BYTEPLUS_BASE_URL", "BYTEDANCE_SEED_BASE_URL"] as const;
 
 export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     openai: {
@@ -46,6 +53,22 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     "alibaba-cloud": {
         providerId: "alibaba-cloud",
+        baseUrl: "https://dashscope-intl.aliyuncs.com",
+        pathPrefix: "/compatible-mode/v1",
+        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
+        baseUrlEnv: "ALIBABA_BASE_URL",
+        supportsResponses: true,
+    },
+    alibaba: {
+        providerId: "alibaba",
+        baseUrl: "https://dashscope-intl.aliyuncs.com",
+        pathPrefix: "/compatible-mode/v1",
+        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
+        baseUrlEnv: "ALIBABA_BASE_URL",
+        supportsResponses: true,
+    },
+    qwen: {
+        providerId: "qwen",
         baseUrl: "https://dashscope-intl.aliyuncs.com",
         pathPrefix: "/compatible-mode/v1",
         apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
@@ -90,6 +113,14 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "AI21_BASE_URL",
         supportsResponses: false,
     },
+    akashml: {
+        providerId: "akashml",
+        baseUrl: "https://api.akashml.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "AKASHML_API_KEY",
+        baseUrlEnv: "AKASHML_BASE_URL",
+        supportsResponses: false,
+    },
     "amazon-bedrock": {
         providerId: "amazon-bedrock",
         baseUrlEnv: "AMAZON_BEDROCK_BASE_URL",
@@ -108,9 +139,18 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     "bytedance-seed": {
         providerId: "bytedance-seed",
+        baseUrl: "https://ark.ap-southeast.bytepluses.com",
         baseUrlEnv: "BYTEDANCE_SEED_BASE_URL",
         apiKeyEnv: "BYTEDANCE_SEED_API_KEY",
-        pathPrefix: "/v1",
+        pathPrefix: "/api/v3",
+        supportsResponses: false,
+    },
+    byteplus: {
+        providerId: "byteplus",
+        baseUrl: "https://ark.ap-southeast.bytepluses.com",
+        baseUrlEnv: "BYTEPLUS_BASE_URL",
+        apiKeyEnv: "BYTEPLUS_API_KEY",
+        pathPrefix: "/api/v3",
         supportsResponses: false,
     },
     cerebras: {
@@ -143,6 +183,22 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/compatibility/v1",
         apiKeyEnv: "COHERE_API_KEY",
         baseUrlEnv: "COHERE_BASE_URL",
+        supportsResponses: false,
+    },
+    voyage: {
+        providerId: "voyage",
+        baseUrl: "https://api.voyageai.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "VOYAGE_API_KEY",
+        baseUrlEnv: "VOYAGE_BASE_URL",
+        supportsResponses: false,
+    },
+    voyageai: {
+        providerId: "voyageai",
+        baseUrl: "https://api.voyageai.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "VOYAGE_API_KEY",
+        baseUrlEnv: "VOYAGE_BASE_URL",
         supportsResponses: false,
     },
     deepinfra: {
@@ -224,6 +280,14 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "INFLECTION_BASE_URL",
         apiKeyEnv: "INFLECTION_API_KEY",
         pathPrefix: "/v1",
+        supportsResponses: false,
+    },
+    ionrouter: {
+        providerId: "ionrouter",
+        baseUrl: "https://api.ionrouter.io",
+        pathPrefix: "/v1",
+        apiKeyEnv: "IONROUTER_API_KEY",
+        baseUrlEnv: "IONROUTER_BASE_URL",
         supportsResponses: false,
     },
     mancer: {
@@ -337,6 +401,14 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "VENICE_BASE_URL",
         supportsResponses: true,
     },
+    "venice/e2ee": {
+        providerId: "venice/e2ee",
+        baseUrl: "https://api.venice.ai",
+        pathPrefix: "/api/v1",
+        apiKeyEnv: "VENICE_API_KEY",
+        baseUrlEnv: "VENICE_BASE_URL",
+        supportsResponses: true,
+    },
     crusoe: {
         providerId: "crusoe",
         baseUrl: "https://api.crusoe.ai",
@@ -439,7 +511,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     perplexity: {
         providerId: "perplexity",
         baseUrl: "https://api.perplexity.ai",
-        pathPrefix: "",
+        pathPrefix: "/v1",
         apiKeyEnv: "PERPLEXITY_API_KEY",
         baseUrlEnv: "PERPLEXITY_BASE_URL",
         supportsResponses: false,
@@ -450,6 +522,14 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "LIQUID_API_KEY",
         baseUrlEnv: "LIQUID_BASE_URL",
+    },
+    longcat: {
+        providerId: "longcat",
+        baseUrl: "https://api.longcat.chat",
+        pathPrefix: "/openai/v1",
+        apiKeyEnv: "LONGCAT_API_KEY",
+        baseUrlEnv: "LONGCAT_BASE_URL",
+        supportsResponses: false,
     },
     "liquid-ai": {
         providerId: "liquid-ai",
@@ -464,6 +544,23 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "NEBIUS_API_KEY",
         baseUrlEnv: "NEBIUS_BASE_URL",
+        supportsResponses: false,
+    },
+    "nebius-token-factory-eu-north-1": {
+        providerId: "nebius-token-factory-eu-north-1",
+        baseUrl: "https://api.tokenfactory.nebius.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "NEBIUS_API_KEY",
+        baseUrlEnv: "NEBIUS_EU_NORTH_1_BASE_URL",
+        supportsResponses: false,
+    },
+    "nebius-token-factory-us-central-1": {
+        providerId: "nebius-token-factory-us-central-1",
+        baseUrl: "https://api.tokenfactory.nebius.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "NEBIUS_API_KEY",
+        baseUrlEnv: "NEBIUS_US_CENTRAL_1_BASE_URL",
+        supportsResponses: false,
     },
     sourceful: {
         providerId: "sourceful",
@@ -546,12 +643,39 @@ function resolveFriendliPathPrefix(basePath: string, configuredPrefix: string): 
     return configuredPrefix;
 }
 
+function resolveNebiusBaseUrl(providerId: string): string | undefined {
+    if (providerId === "nebius-token-factory-eu-north-1") {
+        return readFirstBinding(NEBIUS_EU_NORTH_1_BASE_URL_ENVS);
+    }
+    if (providerId === "nebius-token-factory-us-central-1") {
+        return readFirstBinding(NEBIUS_US_CENTRAL_1_BASE_URL_ENVS);
+    }
+    if (providerId === "nebius-token-factory") {
+        return readFirstBinding(["NEBIUS_BASE_URL"]);
+    }
+    return undefined;
+}
+
+function isNebiusTokenFactoryProvider(providerId: string): boolean {
+    return (
+        providerId === "nebius-token-factory" ||
+        providerId === "nebius-token-factory-eu-north-1" ||
+        providerId === "nebius-token-factory-us-central-1"
+    );
+}
+
 export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
     const fallback: OpenAICompatConfig = { providerId };
     const config = OPENAI_COMPAT_CONFIG[providerId] ?? fallback;
     const bindings = getBindings() as unknown as Record<string, string | undefined>;
 
-    const baseUrl = (config.baseUrlEnv && bindings[config.baseUrlEnv]) || config.baseUrl;
+    const baseUrl =
+        ((providerId === "byteplus" || providerId === "bytedance-seed")
+            ? readFirstBinding(BYTEPLUS_BASE_URL_ENVS)
+            : undefined) ||
+        resolveNebiusBaseUrl(providerId) ||
+        (config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
+        config.baseUrl;
     if (!baseUrl) {
         throw new Error(`${providerId}_base_url_missing`);
     }
@@ -641,8 +765,24 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
         return resolveProviderKey(args, () => readFirstBinding(WEIGHTSANDBIASES_API_KEY_ENVS));
     }
 
+    if (args.providerId === "arcee" || args.providerId === "arcee-ai") {
+        return resolveProviderKey(args, () => readFirstBinding(ARCEE_API_KEY_ENVS));
+    }
+
     if (args.providerId === "alibaba-cloud") {
         return resolveProviderKey(args, () => readFirstBinding(ALIBABA_CLOUD_API_KEY_ENVS));
+    }
+
+    if (args.providerId === "gmicloud") {
+        return resolveProviderKey(args, () => readFirstBinding(GMI_CLOUD_API_KEY_ENVS));
+    }
+
+    if (isNebiusTokenFactoryProvider(args.providerId)) {
+        return resolveProviderKey(args, () => readFirstBinding(NEBIUS_TOKEN_FACTORY_API_KEY_ENVS));
+    }
+
+    if (args.providerId === "byteplus" || args.providerId === "bytedance-seed") {
+        return resolveProviderKey(args, () => readFirstBinding(BYTEPLUS_API_KEY_ENVS));
     }
 
     const config = resolveOpenAICompatConfig(args.providerId);

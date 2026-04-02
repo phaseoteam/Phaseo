@@ -5,6 +5,12 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import upsertLinearCustomer from "@/lib/linear";
 import { userHasPaidTeamAccess } from "@/lib/server/teamLimits";
+import {
+	normalizeTeamSsoSettingsInput,
+	type TeamSsoMode,
+	type TeamSsoSettingsInput,
+	type TeamSsoSettingsRow,
+} from "@/lib/auth/teamSsoSettings";
 import crypto from "crypto";
 
 function makeSlug(name: string) {
@@ -108,6 +114,96 @@ async function ensureTeamOwnerOrAdmin(
     if (role !== "owner" && role !== "admin") {
         throw new Error(message);
     }
+}
+
+export type { TeamSsoMode, TeamSsoSettingsInput, TeamSsoSettingsRow };
+
+function toTeamSsoSettingsResponse(
+	row: TeamSsoSettingsRow | null | undefined,
+): TeamSsoSettingsRow {
+	return {
+		sso_enabled: Boolean(row?.sso_enabled),
+		sso_enforced: Boolean(row?.sso_enforced),
+		sso_mode: String(row?.sso_mode ?? "none"),
+		sso_provider_identifier: row?.sso_provider_identifier ?? null,
+		sso_domains: Array.isArray(row?.sso_domains) ? row!.sso_domains : [],
+	};
+}
+
+export async function getTeamSsoSettingsAction(teamId: string) {
+	if (!teamId || typeof teamId !== "string") {
+		throw new Error("Missing teamId");
+	}
+
+	const supabase = await createClient();
+	const {
+		data: { user },
+		error: authError,
+	} = await supabase.auth.getUser();
+	if (authError || !user?.id) throw new Error("Unauthorized");
+
+	await ensureTeamOwnerOrAdmin(
+		supabase,
+		user.id,
+		teamId,
+		"Only owners or admins may view SSO settings.",
+	);
+
+	const { data, error } = await supabase
+		.from("team_settings")
+		.select(
+			"sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
+		)
+		.eq("team_id", teamId)
+		.maybeSingle();
+
+	if (error) throw error;
+
+	return toTeamSsoSettingsResponse(data as TeamSsoSettingsRow | null);
+}
+
+export async function updateTeamSsoSettingsAction(
+	teamId: string,
+	input: TeamSsoSettingsInput,
+) {
+	if (!teamId || typeof teamId !== "string") {
+		throw new Error("Missing teamId");
+	}
+
+	const supabase = await createClient();
+	const {
+		data: { user },
+		error: authError,
+	} = await supabase.auth.getUser();
+	if (authError || !user?.id) throw new Error("Unauthorized");
+
+	await ensureTeamOwnerOrAdmin(
+		supabase,
+		user.id,
+		teamId,
+		"Only owners or admins may update SSO settings.",
+	);
+
+	const normalized = normalizeTeamSsoSettingsInput(input);
+
+	const payload = {
+		team_id: teamId,
+		sso_enabled: normalized.ssoEnabled,
+		sso_enforced: normalized.ssoEnforced,
+		sso_mode: normalized.ssoMode,
+		sso_provider_identifier: normalized.ssoProviderIdentifier,
+		sso_domains: normalized.ssoDomains,
+		updated_at: new Date().toISOString(),
+	};
+
+	const { error } = await supabase
+		.from("team_settings")
+		.upsert(payload, { onConflict: "team_id" });
+	if (error) throw error;
+
+	revalidatePath("/settings/teams");
+	revalidatePath("/settings/teams/settings");
+	return { success: true as const, teamId, settings: toTeamSsoSettingsResponse(payload) };
 }
 
 export async function createTeamAction(name: string, userId: string) {

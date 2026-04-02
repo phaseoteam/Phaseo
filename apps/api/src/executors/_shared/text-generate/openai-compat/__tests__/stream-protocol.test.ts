@@ -465,4 +465,63 @@ describe("resolveStreamForProtocol", () => {
 		expect(imageBlock).toBeDefined();
 		expect(typeof imageBlock?.image_url?.url === "string" || typeof imageBlock?.b64_json === "string").toBe(true);
 	});
+
+	it("preserves audio output when converting chat stream to responses stream", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_audio_1",
+					object: "chat.completion.chunk",
+					created: 1710000007,
+					model: "lyria-3-pro",
+					choices: [{ index: 0, delta: { content: "Done." } }],
+				},
+			},
+			{
+				data: {
+					id: "chatcmpl_audio_1",
+					object: "chat.completion",
+					created: 1710000007,
+					model: "lyria-3-pro",
+					choices: [{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "Done.",
+							audios: [{
+								type: "audio_url",
+								audio_url: { url: "data:audio/wav;base64,UklGRlIAAABXQVZFZm10" },
+								format: "wav",
+							}],
+						},
+						finish_reason: "stop",
+					}],
+					usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				providerId: "google-ai-studio",
+				endpoint: "responses",
+				protocol: "openai.responses",
+			}),
+			"chat",
+		);
+
+		const output = await readStreamText(stream);
+		const frames = parseSseJsonFrames(output);
+		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const outputItems = completed?.response?.output ?? [];
+		const messageItem = outputItems.find((item: any) => item?.type === "message");
+		const audioBlock = Array.isArray(messageItem?.content)
+			? messageItem.content.find((part: any) => part?.type === "output_audio")
+			: null;
+
+		expect(audioBlock).toBeDefined();
+		expect(typeof audioBlock?.audio_url?.url === "string" || typeof audioBlock?.b64_json === "string").toBe(true);
+	});
 });

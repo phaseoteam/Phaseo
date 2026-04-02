@@ -560,6 +560,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             provider_capabilities_beta: Boolean(ctx?.providerCapabilitiesBeta),
             team_routing_mode: ctx?.teamSettings?.routingMode ?? null,
             team_beta_channel_enabled: ctx?.teamSettings?.betaChannelEnabled ?? null,
+            team_alpha_channel_enabled: ctx?.teamSettings?.alphaChannelEnabled ?? null,
             team_byok_fallback_enabled: ctx?.teamSettings?.byokFallbackEnabled ?? null,
             team_billing_mode: ctx?.teamSettings?.billingMode ?? null,
             key_id: args.keyId ?? ctx?.meta?.apiKeyId ?? null,

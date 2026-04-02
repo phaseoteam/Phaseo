@@ -73,8 +73,10 @@ describe("normalizeTextUsageForPricing", () => {
 			cache_creation_input_tokens: 500,
 		});
 
+		expect(usage?.input_text_tokens).toBe(1200);
 		expect(usage?.cached_read_text_tokens).toBe(800);
 		expect(usage?.cached_write_text_tokens).toBe(500);
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBeUndefined();
 	});
 
 	it("can treat cached read tokens as subset of input tokens", () => {
@@ -100,7 +102,7 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.total_tokens).toBe(131);
 	});
 
-	it("does not subtract cached read tokens unless subset option is enabled", () => {
+	it("auto-detects OpenAI-style cached token details as subset of input", () => {
 		const usage = normalizeTextUsageForPricing({
 			input_tokens: 123,
 			output_tokens: 8,
@@ -109,6 +111,42 @@ describe("normalizeTextUsageForPricing", () => {
 				cached_tokens: 64,
 			},
 		});
+
+		expect(usage?.input_tokens).toBe(123);
+		expect(usage?.input_text_tokens).toBe(59);
+		expect(usage?.cached_read_text_tokens).toBe(64);
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBe(true);
+	});
+
+	it("honors IR cachedReadTokensAreSubsetOfInput semantics", () => {
+		const usage = normalizeTextUsageForPricing({
+			inputTokens: 123,
+			outputTokens: 8,
+			totalTokens: 131,
+			cachedInputTokens: 64,
+			cachedReadTokensAreSubsetOfInput: true,
+		});
+
+		expect(usage?.input_tokens).toBe(123);
+		expect(usage?.input_text_tokens).toBe(59);
+		expect(usage?.cached_read_text_tokens).toBe(64);
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBe(true);
+	});
+
+	it("allows explicit opt-out of subset behavior", () => {
+		const usage = normalizeTextUsageForPricing(
+			{
+				input_tokens: 123,
+				output_tokens: 8,
+				total_tokens: 131,
+				input_tokens_details: {
+					cached_tokens: 64,
+				},
+			},
+			{
+				cachedReadTokensAreSubsetOfInput: false,
+			},
+		);
 
 		expect(usage?.input_text_tokens).toBe(123);
 		expect(usage?.cached_read_text_tokens).toBe(64);

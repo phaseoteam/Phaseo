@@ -65,6 +65,7 @@ export default function ConsentPage({ searchParams }: ConsentPageProps) {
 async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
+	const oauthClient = supabase.auth.oauth as any;
 
 	// Check if user is authenticated
 	const {
@@ -98,101 +99,181 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		);
 	}
 
-	// Validate required parameters
-	if (!params.client_id) {
-		return (
-			<div className="container max-w-2xl mx-auto py-12">
-				<Card className="p-8">
-					<Alert variant="destructive">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertDescription>
-							<strong>Invalid Request:</strong> Missing client_id parameter
-						</AlertDescription>
-					</Alert>
-				</Card>
-			</div>
-		);
-	}
+	const authorizationId =
+		typeof params.authorization_id === "string" &&
+		params.authorization_id.trim().length > 0
+			? params.authorization_id.trim()
+			: null;
 
-	// Fetch OAuth app metadata
-	const { data: oauthApp, error: appError } = await supabase
-		.from("oauth_app_metadata")
-		.select("*")
-		.eq("client_id", params.client_id)
-		.eq("status", "active")
-		.single();
+	let oauthApp: any = null;
+	let resolvedClientId: string | undefined;
+	let resolvedRedirectUri: string | undefined;
+	let requestedScopes: string[] = [];
 
-	if (appError || !oauthApp) {
-		return (
-			<div className="container max-w-2xl mx-auto py-12">
-				<Card className="p-8">
-					<Alert variant="destructive">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertDescription>
-							<strong>Application Not Found:</strong> The OAuth application could not be found
-							or has been disabled.
-						</AlertDescription>
-					</Alert>
-					<p className="text-sm text-muted-foreground mt-4">
-						Client ID: <code className="text-xs">{params.client_id}</code>
-					</p>
-				</Card>
-			</div>
-		);
-	}
+	if (authorizationId) {
+		const { data: authorizationDetails, error: authorizationError } =
+			await oauthClient.getAuthorizationDetails(authorizationId);
 
-	// Verify PKCE is present (OAuth 2.1 requirement)
-	if (!params.code_challenge || !params.code_challenge_method) {
-		return (
-			<div className="container max-w-2xl mx-auto py-12">
-				<Card className="p-8">
-					<Alert variant="destructive">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertDescription>
-							<strong>Invalid Request:</strong> PKCE is required (missing code_challenge)
-						</AlertDescription>
-					</Alert>
-					<p className="text-sm text-muted-foreground mt-4">
-						OAuth 2.1 requires PKCE for all authorization flows. Please update your
-						client implementation.
-					</p>
-				</Card>
-			</div>
-		);
-	}
+		if (authorizationError || !authorizationDetails) {
+			return (
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<Alert variant="destructive">
+							<AlertTriangle className="h-4 w-4" />
+							<AlertDescription>
+								<strong>Authorization Error:</strong>{" "}
+								{authorizationError?.message ||
+									"The authorization request was not found or has expired."}
+							</AlertDescription>
+						</Alert>
+					</Card>
+				</div>
+			);
+		}
 
-	if (!params.redirect_uri) {
-		return (
-			<div className="container max-w-2xl mx-auto py-12">
-				<Card className="p-8">
-					<Alert variant="destructive">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertDescription>
-							<strong>Invalid Request:</strong> Missing redirect_uri parameter
-						</AlertDescription>
-					</Alert>
-				</Card>
-			</div>
-		);
-	}
-	const registeredRedirectUris = parseRedirectUris((oauthApp as any).redirect_uris);
-	if (
-		registeredRedirectUris.length > 0 &&
-		!registeredRedirectUris.includes(params.redirect_uri)
-	) {
-		return (
-			<div className="container max-w-2xl mx-auto py-12">
-				<Card className="p-8">
-					<Alert variant="destructive">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertDescription>
-							<strong>Invalid Request:</strong> redirect_uri is not registered for this
-							application
-						</AlertDescription>
-					</Alert>
-				</Card>
-			</div>
-		);
+		if ("redirect_url" in authorizationDetails && authorizationDetails.redirect_url) {
+			redirect(authorizationDetails.redirect_url);
+		}
+
+		resolvedClientId =
+			(typeof params.client_id === "string" && params.client_id.trim()) ||
+			(typeof authorizationDetails.client?.id === "string"
+				? authorizationDetails.client.id
+				: undefined);
+		resolvedRedirectUri = authorizationDetails.redirect_uri;
+		requestedScopes = authorizationDetails.scope
+			.split(" ")
+			.map((scope: string) => scope.trim())
+			.filter((scope: string) => scope.length > 0);
+		if (requestedScopes.length === 0) {
+			requestedScopes = ["openid", "email", "gateway:access"];
+		}
+
+		if (resolvedClientId) {
+			const { data: appMetadata } = await supabase
+				.from("oauth_app_metadata")
+				.select("*")
+				.eq("client_id", resolvedClientId)
+				.eq("status", "active")
+				.maybeSingle();
+			oauthApp = appMetadata;
+		}
+
+		if (!oauthApp) {
+			oauthApp = {
+				client_id: resolvedClientId ?? authorizationDetails.client?.id ?? null,
+				name: authorizationDetails.client?.name ?? "OAuth Application",
+				description: null,
+				homepage_url: authorizationDetails.client?.uri ?? null,
+				logo_url: authorizationDetails.client?.logo_uri ?? null,
+				redirect_uris: [authorizationDetails.redirect_uri],
+				status: "active",
+			};
+		}
+	} else {
+		// Legacy direct-parameter fallback
+		if (!params.client_id) {
+			return (
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<Alert variant="destructive">
+							<AlertTriangle className="h-4 w-4" />
+							<AlertDescription>
+								<strong>Invalid Request:</strong> Missing client_id parameter
+							</AlertDescription>
+						</Alert>
+					</Card>
+				</div>
+			);
+		}
+
+		// Fetch OAuth app metadata
+		const { data: appMetadata, error: appError } = await supabase
+			.from("oauth_app_metadata")
+			.select("*")
+			.eq("client_id", params.client_id)
+			.eq("status", "active")
+			.single();
+
+		if (appError || !appMetadata) {
+			return (
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<Alert variant="destructive">
+							<AlertTriangle className="h-4 w-4" />
+							<AlertDescription>
+								<strong>Application Not Found:</strong> The OAuth application could not be
+								found or has been disabled.
+							</AlertDescription>
+						</Alert>
+						<p className="text-sm text-muted-foreground mt-4">
+							Client ID: <code className="text-xs">{params.client_id}</code>
+						</p>
+					</Card>
+				</div>
+			);
+		}
+
+		// Verify PKCE is present (OAuth 2.1 requirement)
+		if (!params.code_challenge || !params.code_challenge_method) {
+			return (
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<Alert variant="destructive">
+							<AlertTriangle className="h-4 w-4" />
+							<AlertDescription>
+								<strong>Invalid Request:</strong> PKCE is required (missing code_challenge)
+							</AlertDescription>
+						</Alert>
+						<p className="text-sm text-muted-foreground mt-4">
+							OAuth 2.1 requires PKCE for all authorization flows. Please update your
+							client implementation.
+						</p>
+					</Card>
+				</div>
+			);
+		}
+
+		if (!params.redirect_uri) {
+			return (
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<Alert variant="destructive">
+							<AlertTriangle className="h-4 w-4" />
+							<AlertDescription>
+								<strong>Invalid Request:</strong> Missing redirect_uri parameter
+							</AlertDescription>
+						</Alert>
+					</Card>
+				</div>
+			);
+		}
+		const registeredRedirectUris = parseRedirectUris((appMetadata as any).redirect_uris);
+		if (
+			registeredRedirectUris.length > 0 &&
+			!registeredRedirectUris.includes(params.redirect_uri)
+		) {
+			return (
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<Alert variant="destructive">
+							<AlertTriangle className="h-4 w-4" />
+							<AlertDescription>
+								<strong>Invalid Request:</strong> redirect_uri is not registered for this
+								application
+							</AlertDescription>
+						</Alert>
+					</Card>
+				</div>
+			);
+		}
+
+		oauthApp = appMetadata;
+		resolvedClientId = params.client_id;
+		resolvedRedirectUri = params.redirect_uri;
+		requestedScopes = params.scope
+			? params.scope.split(" ").filter((s) => s.trim())
+			: ["openid", "email", "gateway:access"];
 	}
 
 	// Fetch user's teams
@@ -237,11 +318,6 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		})
 		.filter((t): t is { id: string; name: string } => t !== null);
 
-	// Parse requested scopes
-	const requestedScopes = params.scope
-		? params.scope.split(" ").filter((s) => s.trim())
-		: ["openid", "email", "gateway:access"];
-
 	return (
 		<div className="container max-w-2xl mx-auto py-12">
 			<ConsentForm
@@ -249,8 +325,9 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 				user={user}
 				teams={teams}
 				requestedScopes={requestedScopes}
-				clientId={params.client_id}
-				redirectUri={params.redirect_uri}
+				authorizationId={authorizationId ?? undefined}
+				clientId={resolvedClientId}
+				redirectUri={resolvedRedirectUri}
 				state={params.state}
 				codeChallenge={params.code_challenge}
 				codeChallengeMethod={params.code_challenge_method}

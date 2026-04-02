@@ -27,6 +27,9 @@ export type OpenAIResponsesResponse = {
 		completion_tokens: number;
 		total_tokens: number;
 		reasoning_tokens?: number;
+		server_tool_use?: {
+			datetime_requests?: number;
+		};
 	};
 	status: "completed" | "failed" | "incomplete";
 	status_details?: {
@@ -65,7 +68,7 @@ export function encodeOpenAIResponsesResponse(
 
 	for (const choice of ir.choices) {
 		const hasToolCalls = (choice.message.toolCalls?.length ?? 0) > 0;
-		const { textParts, reasoningParts, imageParts } = splitContentParts(choice.message.content as IRContentPart[]);
+		const { textParts, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
 
 		for (const reasoningText of reasoningParts) {
 			outputItems.push({
@@ -76,10 +79,11 @@ export function encodeOpenAIResponsesResponse(
 
 		const hasText = textParts.length > 0;
 		const hasImages = imageParts.length > 0;
+		const hasAudios = audioParts.length > 0;
 		const shouldEmitMessage =
 			Boolean(choice.message.refusal) ||
-			(!hasToolCalls && (hasText || hasImages)) ||
-			(hasToolCalls && (hasText || hasImages));
+			(!hasToolCalls && (hasText || hasImages || hasAudios)) ||
+			(hasToolCalls && (hasText || hasImages || hasAudios));
 
 		if (shouldEmitMessage) {
 			const content: any[] = [];
@@ -101,6 +105,35 @@ export function encodeOpenAIResponsesResponse(
 							type: "output_image",
 							image_url: { url: part.data },
 							mime_type: part.mimeType,
+						});
+					}
+				}
+			}
+			if (audioParts.length > 0) {
+				for (const part of audioParts) {
+					const mimeType = (() => {
+						if (part.format === "wav") return "audio/wav";
+						if (part.format === "mp3") return "audio/mpeg";
+						if (part.format === "flac") return "audio/flac";
+						if (part.format === "m4a") return "audio/m4a";
+						if (part.format === "ogg") return "audio/ogg";
+						if (part.format === "pcm16") return "audio/l16";
+						if (part.format === "pcm24") return "audio/l24";
+						return "audio/wav";
+					})();
+					if (part.source === "data") {
+						content.push({
+							type: "output_audio",
+							b64_json: part.data,
+							mime_type: mimeType,
+							format: part.format,
+						});
+					} else {
+						content.push({
+							type: "output_audio",
+							audio_url: { url: part.data },
+							mime_type: mimeType,
+							format: part.format,
 						});
 					}
 				}
@@ -147,8 +180,13 @@ export function encodeOpenAIResponsesResponse(
 	};
 }
 
-function splitContentParts(parts: IRContentPart[]): { textParts: string[]; reasoningParts: string[]; imageParts: Array<Extract<IRContentPart, { type: "image" }>> } {
-	if (!Array.isArray(parts)) return { textParts: [], reasoningParts: [], imageParts: [] };
+function splitContentParts(parts: IRContentPart[]): {
+	textParts: string[];
+	reasoningParts: string[];
+	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
+	audioParts: Array<Extract<IRContentPart, { type: "audio" }>>;
+} {
+	if (!Array.isArray(parts)) return { textParts: [], reasoningParts: [], imageParts: [], audioParts: [] };
 	const textParts = parts
 		.filter((part) => part.type === "text")
 		.map((part) => part.text);
@@ -156,7 +194,8 @@ function splitContentParts(parts: IRContentPart[]): { textParts: string[]; reaso
 		.filter((part) => part.type === "reasoning_text")
 		.map((part) => part.text);
 	const imageParts = parts.filter((part) => part.type === "image") as Array<Extract<IRContentPart, { type: "image" }>>;
-	return { textParts, reasoningParts, imageParts };
+	const audioParts = parts.filter((part) => part.type === "audio") as Array<Extract<IRContentPart, { type: "audio" }>>;
+	return { textParts, reasoningParts, imageParts, audioParts };
 }
 
 function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefined {
@@ -175,6 +214,10 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 		completion_tokens: completionTokens ?? 0,
 		total_tokens: totalTokens ?? 0,
 		reasoning_tokens: usage.reasoningTokens,
+		server_tool_use:
+			typeof usage._ext?.serverToolUse?.datetime_requests === "number"
+				? { datetime_requests: usage._ext?.serverToolUse?.datetime_requests }
+				: undefined,
 	};
 }
 

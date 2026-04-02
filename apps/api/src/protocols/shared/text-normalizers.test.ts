@@ -84,9 +84,10 @@ describe("normalizeImageConfig", () => {
 
 describe("normalizeModalities", () => {
 	it("normalizes casing and response modality aliases", () => {
-		expect(normalizeModalities(["IMAGE", "text", "images"])).toEqual([
+		expect(normalizeModalities(["IMAGE", "text", "images", "Audio", "audios"])).toEqual([
 			"image",
 			"text",
+			"audio",
 		]);
 	});
 });

@@ -30,6 +30,9 @@ export const logoManifest = {
 	"arcee-ai": {
 		color: "/logos/arcee-ai.svg",
 	},
+	akashml: {
+		color: "/logos/akashml.svg",
+	},
 	"atlas-cloud": {
 		light: "/logos/atlas-cloud_light.svg",
 		dark: "/logos/atlas-cloud_dark.svg",
@@ -51,6 +54,9 @@ export const logoManifest = {
 		color: "/logos/bytedance.svg",
 	},
 	"bytedance-seed": {
+		color: "/logos/bytedance.svg",
+	},
+	byteplus: {
 		color: "/logos/bytedance.svg",
 	},
 	cerebras: {
@@ -77,6 +83,9 @@ export const logoManifest = {
 	},
 	cohere: {
 		color: "/logos/cohere.svg",
+	},
+	cogito: {
+		color: "/logos/cogito.svg",
 	},
 	cursor: {
 		light: "/logos/cursor_light.svg",
@@ -148,6 +157,14 @@ export const logoManifest = {
 	inflection: {
 		light: "/logos/inflection_light.svg",
 		dark: "/logos/inflection_dark.svg",
+	},
+	ionrouter: {
+		light: "/logos/ionrouter_light.svg",
+		dark: "/logos/ionrouter_dark.svg",
+	},
+	kwaipilot: {
+		light: "/logos/kwaipilot_light.svg",
+		dark: "/logos/kwaipilot_dark.svg",
 	},
 	infermatic: {
 		color: "/logos/infermatic.svg",
@@ -259,10 +276,12 @@ export const logoManifest = {
 		dark: "/logos/suno_dark.svg",
 	},
 	together: {
-		light: "/logos/together_light.svg",
-		dark: "/logos/together_dark.svg",
+		color: "/logos/together.svg",
 	},
 	venice: {
+		color: "/logos/venice.svg",
+	},
+	"venice/e2ee": {
 		color: "/logos/venice.svg",
 	},
 	vercel: {

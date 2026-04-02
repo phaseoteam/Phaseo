@@ -36,6 +36,7 @@ export interface ModelCard {
         id: string;
         name: string;
         is_active: boolean;
+        status?: string | null;
     }>;
     gateway_api_model_ids?: string[];
     context_lengths?: number[];

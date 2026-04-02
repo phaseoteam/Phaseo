@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
 export type MarketShareLeaderboardEntry = {
@@ -58,130 +59,144 @@ export function MarketShareLeaderboard({
 
 	return (
 		<div className="space-y-4">
-			<div className="grid gap-2 md:grid-cols-2">
-				{visibleEntries.map((entry, index) => (
-					<div
-						key={entry.key}
-						className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
-					>
-						<div className="w-6 text-xs text-muted-foreground">
-							#{index + 1}
-						</div>
-						{entry.logo_id ? (
-							entry.href ? (
-								<Link
-									href={entry.href}
-									className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
-									aria-label={entry.name}
-								>
-									<div className="relative h-5 w-5">
-										<Logo
-											id={entry.logo_id}
-											alt={entry.name}
-											className="object-contain"
-											fill
-										/>
-									</div>
-								</Link>
-							) : (
-								<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
-									<div className="relative h-5 w-5">
-										<Logo
-											id={entry.logo_id}
-											alt={entry.name}
-											className="object-contain"
-											fill
-										/>
-									</div>
-								</div>
-							)
-						) : null}
-						<div className="min-w-0 flex-1">
-							{entry.href ? (
-								<Link
-									href={entry.href}
-									className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
-								>
-									{entry.name}
-								</Link>
-							) : (
-								<div className="font-medium truncate">{entry.name}</div>
-							)}
-						</div>
-						<div className="text-right">
-							<div className="tabular-nums text-sm">
-								{formatPercent(entry.share_pct)}
+			<div className="space-y-2">
+				<div className="grid gap-2 md:grid-cols-2">
+					{visibleEntries.map((entry, index) => (
+						<div
+							key={entry.key}
+							className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+						>
+							<div className="w-6 text-xs text-muted-foreground">
+								#{index + 1}
 							</div>
-							<div className="text-xs text-muted-foreground">
-								{formatTokens(entry.tokens)}
+							{entry.logo_id ? (
+								entry.href ? (
+									<Link
+										href={entry.href}
+										className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+										aria-label={entry.name}
+									>
+										<div className="relative h-5 w-5">
+											<Logo
+												id={entry.logo_id}
+												alt={entry.name}
+												className="object-contain"
+												fill
+											/>
+										</div>
+									</Link>
+								) : (
+									<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+										<div className="relative h-5 w-5">
+											<Logo
+												id={entry.logo_id}
+												alt={entry.name}
+												className="object-contain"
+												fill
+											/>
+										</div>
+									</div>
+								)
+							) : null}
+							<div className="min-w-0 flex-1">
+								{entry.href ? (
+									<Link
+										href={entry.href}
+										className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+									>
+										{entry.name}
+									</Link>
+								) : (
+									<div className="font-medium truncate">{entry.name}</div>
+								)}
+							</div>
+							<div className="text-right">
+								<div className="tabular-nums text-sm">
+									{formatPercent(entry.share_pct)}
+								</div>
+								<div className="text-xs text-muted-foreground">
+									{formatTokens(entry.tokens)}
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+				{extraEntries.length > 0 ? (
+					<div
+						className={cn(
+							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
+							showAll
+								? "grid-rows-[1fr] opacity-100"
+								: "grid-rows-[0fr] opacity-0"
+						)}
+					>
+						<div className="overflow-hidden">
+							<div className="pt-2">
+								<div className="grid gap-2 md:grid-cols-2">
+									{extraEntries.map((entry, index) => (
+										<div
+											key={`${entry.key}-extra`}
+											className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+										>
+											<div className="w-6 text-xs text-muted-foreground">
+												#{index + maxCollapsed + 1}
+											</div>
+											{entry.logo_id ? (
+												entry.href ? (
+													<Link
+														href={entry.href}
+														className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+														aria-label={entry.name}
+													>
+														<div className="relative h-5 w-5">
+															<Logo
+																id={entry.logo_id}
+																alt={entry.name}
+																className="object-contain"
+																fill
+															/>
+														</div>
+													</Link>
+												) : (
+													<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+														<div className="relative h-5 w-5">
+															<Logo
+																id={entry.logo_id}
+																alt={entry.name}
+																className="object-contain"
+																fill
+															/>
+														</div>
+													</div>
+												)
+											) : null}
+											<div className="min-w-0 flex-1">
+												{entry.href ? (
+													<Link
+														href={entry.href}
+														className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+													>
+														{entry.name}
+													</Link>
+												) : (
+													<div className="font-medium truncate">{entry.name}</div>
+												)}
+											</div>
+											<div className="text-right">
+												<div className="tabular-nums text-sm">
+													{formatPercent(entry.share_pct)}
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{formatTokens(entry.tokens)}
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
 							</div>
 						</div>
 					</div>
-				))}
-				{showAll
-					? extraEntries.map((entry, index) => (
-							<div
-								key={`${entry.key}-extra`}
-								className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3 animate-in fade-in slide-in-from-top-1"
-								style={{
-									animationDelay: `${index * 20}ms`,
-								}}
-							>
-								<div className="w-6 text-xs text-muted-foreground">
-									#{index + maxCollapsed + 1}
-								</div>
-								{entry.logo_id ? (
-									entry.href ? (
-										<Link
-											href={entry.href}
-											className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
-											aria-label={entry.name}
-										>
-											<div className="relative h-5 w-5">
-												<Logo
-													id={entry.logo_id}
-													alt={entry.name}
-													className="object-contain"
-													fill
-												/>
-											</div>
-										</Link>
-									) : (
-										<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
-											<div className="relative h-5 w-5">
-												<Logo
-													id={entry.logo_id}
-													alt={entry.name}
-													className="object-contain"
-													fill
-												/>
-											</div>
-										</div>
-									)
-								) : null}
-								<div className="min-w-0 flex-1">
-									{entry.href ? (
-										<Link
-											href={entry.href}
-											className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
-										>
-											{entry.name}
-										</Link>
-									) : (
-										<div className="font-medium truncate">{entry.name}</div>
-									)}
-								</div>
-								<div className="text-right">
-									<div className="tabular-nums text-sm">
-										{formatPercent(entry.share_pct)}
-									</div>
-									<div className="text-xs text-muted-foreground">
-										{formatTokens(entry.tokens)}
-									</div>
-								</div>
-							</div>
-					  ))
-					: null}
+				) : null}
 			</div>
 
 			{data.length > maxCollapsed ? (

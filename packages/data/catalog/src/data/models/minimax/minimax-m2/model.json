@@ -1,0 +1,18 @@
+{
+  "model_id": "minimax/minimax-m2",
+  "organisation_id": "minimax",
+  "name": "MiniMax M2",
+  "status": "Available",
+  "previous_model_id": "minimax/minimax-m1-2025-06-16",
+  "announced_date": "2025-10-27T00:00:00",
+  "release_date": "2025-10-27T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "minimax/minimax-m2",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,4 +1,5 @@
 import { join } from "path";
+import { promises as fs } from "fs";
 import { DIR_MODELS, DIR_FAMILIES } from "../paths";
 import { listDirs, readJson, readJsonWithHash, chunk, toInList } from "../util";
 import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
@@ -17,6 +18,7 @@ function benchDigest(score: unknown, other_info?: string | null, source_link?: s
 
 type ModelJSON = {
     model_id: string;
+    api_model_id?: string | null;
     organisation_id: string;
     name: string;
     status?: string | null;
@@ -53,11 +55,30 @@ type ModelFileMeta = {
     previous_model_id: string | null;
 };
 
+async function dataModelsHasApiModelIdColumn(
+    supa: ReturnType<typeof client>
+): Promise<boolean> {
+    const probe = await supa.from("data_models").select("api_model_id").limit(1);
+    if (!probe.error) return true;
+
+    const message = String(probe.error?.message ?? "");
+    const code = String((probe.error as any)?.code ?? "");
+    const missingColumn =
+        code === "42703" ||
+        /column .*api_model_id/i.test(message);
+    if (missingColumn) return false;
+
+    throw new Error(
+        `probe data_models.api_model_id failed: ${message}${code ? ` | code=${code}` : ""}`
+    );
+}
+
 export async function loadModels(
     tracker: ChangeTracker,
     { modelId }: { modelId: string | null }
 ) {
     const supa = client();
+    const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
     if (!modelId) tracker.touchPrefix(DIR_MODELS);
 
     // ---------- 1) Read ALL JSON up front (no DB reads) ----------
@@ -78,6 +99,11 @@ export async function loadModels(
         const modelDirs = await listDirs(orgPath);
         for (const md of modelDirs) {
             const fp = join(md, "model.json");
+            try {
+                await fs.access(fp);
+            } catch {
+                continue;
+            }
             const { data: modelJson, hash } = await readJsonWithHash<ModelJSON>(fp);
             if (modelId && modelJson.model_id !== modelId) {
                 continue;
@@ -128,11 +154,16 @@ export async function loadModels(
         const modelDirs = await listDirs(orgPath);
         for (const md of modelDirs) {
             const fp = join(md, "model.json");
+            try {
+                await fs.access(fp);
+            } catch {
+                continue;
+            }
             const m = await readJson<ModelJSON>(fp);
             if (modelId && m.model_id !== modelId) continue;
             if (!changedModels.has(m.model_id)) continue;
 
-            coreRows.push({
+            const coreRow: Record<string, any> = {
                 name: m.name,
                 organisation_id: m.organisation_id,
                 status: m.status ?? null,
@@ -148,7 +179,14 @@ export async function loadModels(
                 // only set family_id if that (org, family) exists in JSON families - otherwise NULL to satisfy FK
                 family_id:
                     m.family_id && familyExists.has(`${m.organisation_id}::${m.family_id}`) ? m.family_id : null,
-            });
+            };
+            if (hasApiModelIdColumn) {
+                coreRow.api_model_id =
+                    typeof m.api_model_id === "string" && m.api_model_id.trim()
+                        ? m.api_model_id.trim()
+                        : null;
+            }
+            coreRows.push(coreRow);
 
             // Ensure parent data_models rows exist before child-table upserts that FK on model_id.
             await flushCoreRows(coreRows.splice(0, coreRows.length));

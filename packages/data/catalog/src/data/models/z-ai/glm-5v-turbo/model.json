@@ -1,0 +1,32 @@
+{
+  "model_id": "z-ai/glm-5v-turbo",
+  "organisation_id": "z-ai",
+  "name": "GLM 5V Turbo",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-01T00:00:00",
+  "release_date": "2026-04-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "z-ai/glm-5v-turbo",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.z.ai/guides/vlm/glm-5v-turbo"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    }
+  ],
+  "benchmarks": []
+}

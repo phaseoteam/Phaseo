@@ -53,6 +53,8 @@ const LIVE_NOVITA_PROVIDER_ONLY = (process.env.LIVE_NOVITA_PROVIDER_ONLY ?? "1")
 const LIVE_NOVITA_TESTING_MODE = (process.env.LIVE_NOVITA_TESTING_MODE ?? "0").trim() !== "0";
 const INTERNAL_TEST_TOKEN =
     (process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+const LIVE_DISCOVERY_HTTP_TIMEOUT_MS = Number(process.env.LIVE_DISCOVERY_HTTP_TIMEOUT_MS ?? "25000");
+const LIVE_SUPABASE_IN_CHUNK_SIZE = Number(process.env.LIVE_SUPABASE_IN_CHUNK_SIZE ?? "120");
 
 const LIVE_PROVIDER_ALIASES: Record<string, string> = {
     arcee: "arcee-ai",
@@ -562,6 +564,18 @@ function parseModelOverrides(raw: string | undefined): Record<string, string> {
     return out;
 }
 
+function fetchTimeoutMs(): number {
+    return Number.isFinite(LIVE_DISCOVERY_HTTP_TIMEOUT_MS) && LIVE_DISCOVERY_HTTP_TIMEOUT_MS > 0
+        ? Math.floor(LIVE_DISCOVERY_HTTP_TIMEOUT_MS)
+        : 25_000;
+}
+
+function supabaseInChunkSize(): number {
+    return Number.isFinite(LIVE_SUPABASE_IN_CHUNK_SIZE) && LIVE_SUPABASE_IN_CHUNK_SIZE > 0
+        ? Math.floor(LIVE_SUPABASE_IN_CHUNK_SIZE)
+        : 120;
+}
+
 function providerList(): string[] {
     const normalizeAll = (values: string[]): string[] =>
         Array.from(new Set(values.map(normalizeLiveProviderId).filter(Boolean)));
@@ -726,21 +740,53 @@ function resolveGatewayUrl(path: string): string {
     return `${base}${suffix}`;
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(`Request timed out after ${timeoutMs}ms`), timeoutMs);
+    try {
+        return await fetch(url, {
+            ...init,
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new Error(`Request timed out after ${timeoutMs}ms: ${url}`);
+        }
+        throw error;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+function mergeDiscoveredModels(target: Map<string, string[]>, source: Map<string, string[]>) {
+    for (const [providerId, modelIds] of source.entries()) {
+        const existing = target.get(providerId) ?? [];
+        for (const modelId of modelIds) {
+            if (!existing.includes(modelId)) existing.push(modelId);
+        }
+        if (existing.length > 0) {
+            target.set(providerId, existing);
+        }
+    }
+}
+
 async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Promise<Map<string, string[]>> {
     const result = new Map<string, string[]>();
+    const targetSet = new Set(targetProviders);
+    const unresolved = new Set(targetProviders);
     let offset = 0;
     const limit = 250;
     let total = Number.POSITIVE_INFINITY;
 
-    while (offset < total) {
+    while (offset < total && unresolved.size > 0) {
         const url = new URL(resolveGatewayUrl("/gateway/models"));
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
 
-        const response = await fetch(url.toString(), {
+        const response = await fetchWithTimeout(url.toString(), {
             method: "GET",
             headers: getHeaders(),
-        });
+        }, fetchTimeoutMs());
         const payload = (await response.json()) as ModelsResponse;
         if (!response.ok) {
             throw new Error(`Failed to list models (${response.status}): ${JSON.stringify(payload)}`);
@@ -756,7 +802,7 @@ async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Pro
             const modelSupportsText = modelEndpoints.includes("text.generate");
             for (const provider of model.providers ?? []) {
                 const providerId = provider.api_provider_id;
-                if (!providerId || !targetProviders.includes(providerId)) continue;
+                if (!providerId || !targetSet.has(providerId)) continue;
                 const providerSupportsText = provider.endpoint
                     ? provider.endpoint === "text.generate"
                     : modelSupportsText;
@@ -765,6 +811,7 @@ async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Pro
                 const existing = result.get(providerId) ?? [];
                 if (!existing.includes(modelId)) existing.push(modelId);
                 result.set(providerId, existing);
+                if (existing.length > 0) unresolved.delete(providerId);
             }
         }
 
@@ -810,19 +857,24 @@ async function fetchTextGenerateModelsByProviderFromSupabase(targetProviders: st
     const providerModelIds = providerModels.map((row: any) => row.provider_api_model_id);
     if (!providerModelIds.length) return new Map<string, string[]>();
 
-    const capabilitiesRes = await supabase
-        .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id,capability_id,status")
-        .in("provider_api_model_id", providerModelIds)
-        .eq("capability_id", "text.generate")
-        .in("status", ["active", "deranked"]);
-    if (capabilitiesRes.error) {
-        throw new Error(capabilitiesRes.error.message);
+    const supportedProviderModelIds = new Set<string>();
+    const chunkSize = supabaseInChunkSize();
+    for (let index = 0; index < providerModelIds.length; index += chunkSize) {
+        const chunk = providerModelIds.slice(index, index + chunkSize);
+        const capabilitiesRes = await supabase
+            .from("data_api_provider_model_capabilities")
+            .select("provider_api_model_id,capability_id,status")
+            .in("provider_api_model_id", chunk)
+            .eq("capability_id", "text.generate")
+            .in("status", ["active", "deranked"]);
+        if (capabilitiesRes.error) {
+            throw new Error(capabilitiesRes.error.message);
+        }
+        for (const row of (capabilitiesRes.data ?? []) as Array<{ provider_api_model_id?: string }>) {
+            if (!row?.provider_api_model_id) continue;
+            supportedProviderModelIds.add(row.provider_api_model_id);
+        }
     }
-
-    const supportedProviderModelIds = new Set(
-        (capabilitiesRes.data ?? []).map((row: any) => row.provider_api_model_id)
-    );
 
     const out = new Map<string, string[]>();
     for (const row of providerModels) {
@@ -984,12 +1036,31 @@ describeLive("Live Active Providers low-cost smoke", () => {
             throw new Error("GATEWAY_API_KEY is required when LIVE_RUN=1");
         }
         const discoveryProviders = providerDiscoveryTargets(providers);
-        let discovered: Map<string, string[]>;
+        let discovered = new Map<string, string[]>();
         try {
             discovered = await fetchTextGenerateModelsByProvider(discoveryProviders);
         } catch (err) {
             console.warn(`[live-discovery] /v1/gateway/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
             discovered = await fetchTextGenerateModelsByProviderFromSupabase(discoveryProviders);
+        }
+        const unresolvedProviders = discoveryProviders.filter((providerId) => {
+            const candidates = providerModelCandidates(discovered, providerId);
+            return candidates.length === 0;
+        });
+        if (unresolvedProviders.length) {
+            try {
+                const supabaseDiscovered = await fetchTextGenerateModelsByProviderFromSupabase(unresolvedProviders);
+                mergeDiscoveredModels(discovered, supabaseDiscovered);
+                const resolvedCount = unresolvedProviders.filter((providerId) => {
+                    const candidates = providerModelCandidates(discovered, providerId);
+                    return candidates.length > 0;
+                }).length;
+                if (resolvedCount > 0) {
+                    console.log(`[live-discovery] supplemented ${resolvedCount}/${unresolvedProviders.length} providers from Supabase fallback`);
+                }
+            } catch (err) {
+                console.warn(`[live-discovery] Supabase supplement failed: ${String((err as any)?.message ?? err)}`);
+            }
         }
         for (const providerId of providers) {
             const override = overrides[providerId];

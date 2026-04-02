@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/utils/supabase/admin";
-import { cacheLife, cacheTag } from "next/cache";
 import { toUsdPerMillion } from "./helpers";
 
 export interface AuditModelData {
@@ -51,14 +50,109 @@ function parseModalitiesArray(value: any): string[] {
 	return [];
 }
 
+function normalizeCapabilityStatus(value: unknown): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+	if (!normalized) return "";
+	if (normalized === "not_active") return "inactive";
+	if (normalized === "de_ranked" || normalized === "deranked") {
+		return "deranked_lvl1";
+	}
+	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
+	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
+	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	return normalized;
+}
+
+function isCapabilityGatewayActive(status: unknown): boolean {
+	const normalized = normalizeCapabilityStatus(status);
+	if (!normalized || normalized === "active") return true;
+	if (normalized.startsWith("deranked")) return true;
+	return false;
+}
+
+async function fetchRowsByModelIdsInBatches<T>({
+	supabase,
+	modelIds,
+	batchSize = 120,
+	fetchBatch,
+	errorLabel,
+}: {
+	supabase: ReturnType<typeof createAdminClient>;
+	modelIds: string[];
+	batchSize?: number;
+	fetchBatch: (ids: string[]) => any;
+	errorLabel: string;
+}): Promise<T[]> {
+	const rows: T[] = [];
+	for (let i = 0; i < modelIds.length; i += batchSize) {
+		const batch = modelIds.slice(i, i + batchSize);
+		if (!batch.length) continue;
+		const { data, error } = (await fetchBatch(batch)) as {
+			data: T[] | null;
+			error: any;
+		};
+		if (error) {
+			throw new Error(
+				`${errorLabel} failed for batch starting at ${i}: ${error.message ?? String(error)}`
+			);
+		}
+		if (Array.isArray(data) && data.length > 0) {
+			rows.push(...data);
+		}
+	}
+	return rows;
+}
+
+async function fetchActivePricingRows({
+	supabase,
+	pageSize = 1000,
+}: {
+	supabase: ReturnType<typeof createAdminClient>;
+	pageSize?: number;
+}): Promise<
+	Array<{
+		model_key: string | null;
+		meter: string | null;
+		price_per_unit: number | null;
+		unit_size: number | null;
+	}>
+> {
+	const rows: Array<{
+		model_key: string | null;
+		meter: string | null;
+		price_per_unit: number | null;
+		unit_size: number | null;
+	}> = [];
+	const nowIso = new Date().toISOString();
+	for (let from = 0; ; from += pageSize) {
+		const to = from + pageSize - 1;
+		const { data, error } = await supabase
+			.from("data_api_pricing_rules")
+			.select("model_key, meter, price_per_unit, unit_size")
+			.or(`effective_to.is.null,effective_to.gt.${nowIso}`)
+			.range(from, to);
+		if (error) {
+			throw new Error(
+				`Fetching active pricing rows failed at range ${from}-${to}: ${error.message ?? String(error)}`,
+			);
+		}
+		if (!Array.isArray(data) || data.length === 0) {
+			break;
+		}
+		rows.push(...data);
+		if (data.length < pageSize) {
+			break;
+		}
+	}
+	return rows;
+}
+
 export async function getAuditModels(
 	includeHidden: boolean
 ): Promise<AuditModelData[]> {
-	"use cache";
-
-	cacheLife("days");
-	cacheTag("audit-models");
-
 	const supabase = createAdminClient();
 
 	// Fetch all models with their relationships
@@ -76,22 +170,6 @@ export async function getAuditModels(
 			organisation: data_organisations(
 				organisation_id,
 				name
-			),
-			provider_models: data_api_provider_models!data_api_provider_models_internal_model_id_fkey(
-				provider_id,
-				api_model_id,
-				is_active_gateway,
-				provider: data_api_providers(
-					api_provider_id,
-					api_provider_name
-				),
-				capabilities: data_api_provider_model_capabilities(
-					capability_id
-				)
-			),
-			benchmark_results: data_benchmark_results(
-				id,
-				benchmark_id
 			)
 		`)
 		.order("release_date", { ascending: false });
@@ -110,11 +188,128 @@ export async function getAuditModels(
 		return [];
 	}
 
-	// Fetch pricing data for all models
-	const { data: pricingData } = await supabase
-		.from("data_api_pricing_rules")
-		.select("model_key, meter, price_per_unit, unit_size")
-		.or("effective_to.is.null,effective_to.gt." + new Date().toISOString());
+	const modelIds = models
+		.map((model: any) => String(model?.model_id ?? "").trim())
+		.filter(Boolean);
+
+	const [providerRows, benchmarkRows] = await Promise.all([
+		modelIds.length
+			? (async () => {
+					const providerRowsByModelId = await fetchRowsByModelIdsInBatches<any>({
+						supabase,
+						modelIds,
+						batchSize: 120,
+						errorLabel: "Fetching audit provider models by model_id",
+						fetchBatch: (ids) =>
+							supabase
+								.from("data_api_provider_models")
+								.select(
+									`
+										provider_api_model_id,
+										model_id,
+										provider_id,
+										api_model_id,
+										is_active_gateway,
+										effective_from,
+										effective_to,
+										provider: data_api_providers(
+											api_provider_id,
+											api_provider_name
+										),
+										capabilities: data_api_provider_model_capabilities(
+											capability_id,
+											status
+										)
+									`,
+								)
+								.in("model_id", ids),
+					});
+					const providerRowsByApiModelId = await fetchRowsByModelIdsInBatches<any>({
+						supabase,
+						modelIds,
+						batchSize: 120,
+						errorLabel: "Fetching audit provider models by api_model_id",
+						fetchBatch: (ids) =>
+							supabase
+								.from("data_api_provider_models")
+								.select(
+									`
+										provider_api_model_id,
+										model_id,
+										provider_id,
+										api_model_id,
+										is_active_gateway,
+										effective_from,
+										effective_to,
+										provider: data_api_providers(
+											api_provider_id,
+											api_provider_name
+										),
+										capabilities: data_api_provider_model_capabilities(
+											capability_id,
+											status
+										)
+									`,
+								)
+								.in("api_model_id", ids),
+					});
+					const merged = [
+						...providerRowsByModelId,
+						...providerRowsByApiModelId,
+					];
+					const deduped = new Map<string, any>();
+					for (const row of merged) {
+						const key = String(row?.provider_api_model_id ?? "").trim();
+						if (!key) continue;
+						deduped.set(key, row);
+					}
+					return Array.from(deduped.values());
+			  })()
+			: Promise.resolve([] as any[]),
+		modelIds.length
+			? fetchRowsByModelIdsInBatches<any>({
+					supabase,
+					modelIds,
+					batchSize: 150,
+					errorLabel: "Fetching audit benchmark rows",
+					fetchBatch: (ids) =>
+						supabase
+							.from("data_benchmark_results")
+							.select("model_id, id")
+							.in("model_id", ids),
+			  })
+			: Promise.resolve([] as any[]),
+	]);
+
+	const providerModelsByModelId = new Map<string, any[]>();
+	for (const row of providerRows ?? []) {
+		const modelKeys = Array.from(
+			new Set(
+				[
+					String((row as any)?.model_id ?? "").trim(),
+					String((row as any)?.api_model_id ?? "").trim(),
+				].filter(Boolean),
+			),
+		);
+		for (const modelKey of modelKeys) {
+			const list = providerModelsByModelId.get(modelKey) ?? [];
+			list.push(row);
+			providerModelsByModelId.set(modelKey, list);
+		}
+	}
+
+	const benchmarkCountByModelId = new Map<string, number>();
+	for (const row of benchmarkRows ?? []) {
+		const modelId = String((row as any)?.model_id ?? "").trim();
+		if (!modelId) continue;
+		benchmarkCountByModelId.set(
+			modelId,
+			(benchmarkCountByModelId.get(modelId) ?? 0) + 1,
+		);
+	}
+
+	// Fetch active pricing rules with pagination to avoid default row limits.
+	const pricingData = await fetchActivePricingRows({ supabase, pageSize: 1000 });
 
 	const pricingByKey = new Map<
 		string,
@@ -131,13 +326,12 @@ export async function getAuditModels(
 
 		// Extract provider:api_model_id from model_key
 		// Format: provider_id:api_model_id:capability_id
-		const keyParts = p.model_key.split(":");
-		if (keyParts.length >= 3) {
-			// Reconstruct provider:api_model_id (handles slashes in api_model_id)
-			const provider = keyParts[0];
-			const capability = keyParts[keyParts.length - 1];
-			const apiModelId = keyParts.slice(1, -1).join(":");
-			const providerModelKey = `${provider}:${apiModelId}`;
+			const keyParts = p.model_key.split(":");
+			if (keyParts.length >= 3) {
+				// Reconstruct provider:api_model_id (handles slashes in api_model_id)
+				const provider = keyParts[0];
+				const apiModelId = keyParts.slice(1, -1).join(":");
+				const providerModelKey = `${provider}:${apiModelId}`;
 
 			if (!pricingRulesByApiModelKey.has(providerModelKey)) {
 				pricingRulesByApiModelKey.set(providerModelKey, new Set());
@@ -174,11 +368,7 @@ export async function getAuditModels(
 			? model.organisation[0]
 			: model.organisation;
 
-		const providerModels = Array.isArray(model.provider_models)
-			? model.provider_models
-			: model.provider_models
-				? [model.provider_models]
-				: [];
+		const providerModels = providerModelsByModelId.get(model.model_id) ?? [];
 
 		// Aggregate providers
 		// Precompute modalities for provider compatibility checks
@@ -196,9 +386,16 @@ export async function getAuditModels(
 				pricingRuleKeys: Set<string>;
 			}
 		>();
+		const nowIso = new Date().toISOString();
 
 		for (const pm of providerModels) {
 			if (!pm?.provider_id) continue;
+			const effectiveFrom = String(pm?.effective_from ?? "").trim();
+			const effectiveTo = String(pm?.effective_to ?? "").trim();
+			const isInWindow =
+				(!effectiveFrom || effectiveFrom <= nowIso) &&
+				(!effectiveTo || effectiveTo > nowIso);
+			const providerModelGatewayEnabled = Boolean(pm.is_active_gateway) && isInWindow;
 
 			const provider = Array.isArray(pm.provider)
 				? pm.provider[0]
@@ -222,22 +419,30 @@ export async function getAuditModels(
 			const providerData = providersMap.get(providerId)!;
 			const providerModelKey = `${providerId}:${pm.api_model_id}`;
 
-			// Track if any provider model is active on gateway
-			if (pm.is_active_gateway) {
-				providerData.isActiveGateway = true;
-			}
-
 			// Add capabilities
 			const capabilities = Array.isArray(pm.capabilities)
 				? pm.capabilities
 				: pm.capabilities
 					? [pm.capabilities]
 					: [];
+			let hasCapabilityRows = false;
+			let hasGatewayActiveCapability = false;
 
 			for (const cap of capabilities) {
 				if (cap?.capability_id) {
-					providerData.capabilities.add(cap.capability_id);
+					hasCapabilityRows = true;
+					if (isCapabilityGatewayActive(cap?.status)) {
+						hasGatewayActiveCapability = true;
+						providerData.capabilities.add(cap.capability_id);
+					}
 				}
+			}
+
+			if (
+				providerModelGatewayEnabled &&
+				(!hasCapabilityRows || hasGatewayActiveCapability)
+			) {
+				providerData.isActiveGateway = true;
 			}
 
 			const rulesForThisProviderModel = pricingRulesByApiModelKey.get(
@@ -289,10 +494,18 @@ export async function getAuditModels(
 			// compute if provider supports this model's modalities
 			supported:
 				(() => {
-					const modalities = new Set<string>([...inputTypes, ...outputTypes].filter((s)=>Boolean(s)));
+					const modalities = new Set<string>(
+						[...inputTypes, ...outputTypes]
+							.map((s) => String(s ?? "").trim().toLowerCase())
+							.filter(Boolean),
+					);
 					if (modalities.size === 0) return true;
 					for (const cap of Array.from(p.capabilities)) {
-						if (modalities.has(cap)) return true;
+						const capability = String(cap ?? "").trim().toLowerCase();
+						if (!capability) continue;
+						if (modalities.has(capability)) return true;
+						const family = capability.split(".")[0];
+						if (family && modalities.has(family)) return true;
 					}
 					return false;
 				})(),
@@ -339,13 +552,7 @@ export async function getAuditModels(
 		}
 		const pricingRulesCount = allPricingRules.size;
 
-		// Count benchmarks
-		const benchmarkResults = Array.isArray(model.benchmark_results)
-			? model.benchmark_results
-			: model.benchmark_results
-				? [model.benchmark_results]
-				: [];
-		const benchmarkCount = benchmarkResults.length;
+		const benchmarkCount = benchmarkCountByModelId.get(model.model_id) ?? 0;
 
 		// modalities are computed earlier for provider compatibility
 

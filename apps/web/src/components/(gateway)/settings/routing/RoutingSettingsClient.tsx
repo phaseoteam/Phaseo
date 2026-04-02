@@ -22,7 +22,7 @@ type RoutingOption = {
 	description: string;
 };
 
-type PreviewKind = "active" | "beta";
+type PreviewKind = "active" | "beta" | "alpha";
 type PreviewRow = {
 	name: string;
 	share: number;
@@ -55,6 +55,7 @@ const ROUTING_OPTIONS: RoutingOption[] = [
 type Props = {
 	initialMode?: RoutingMode | null;
 	initialBetaChannelEnabled?: boolean;
+	initialAlphaChannelEnabled?: boolean;
 	teamName?: string | null;
 };
 
@@ -87,27 +88,43 @@ const PREVIEW_DISTRIBUTIONS: Record<RoutingMode, PreviewRow[]> = {
 	],
 };
 
-function withBetaTraffic(rows: PreviewRow[], enabled: boolean): PreviewRow[] {
-	if (!enabled) return rows;
-	const betaShare = 5;
+function withCanaryTraffic(
+	rows: PreviewRow[],
+	betaEnabled: boolean,
+	alphaEnabled: boolean,
+): PreviewRow[] {
+	if (!betaEnabled) return rows;
+	const alphaShare = alphaEnabled ? 2 : 0;
+	const betaShare = 5 - alphaShare;
+	const totalCanaryShare = betaShare + alphaShare;
 	const next: PreviewRow[] = rows.map((row, index) => ({
 		...row,
-		share: index === 0 ? Math.max(0, row.share - betaShare) : row.share,
+		share: index === 0 ? Math.max(0, row.share - totalCanaryShare) : row.share,
 	}));
-	return [...next, { name: "Beta Pool", share: betaShare, kind: "beta" }];
+	if (betaShare > 0) {
+		next.push({ name: "Beta Pool", share: betaShare, kind: "beta" });
+	}
+	if (alphaShare > 0) {
+		next.push({ name: "Alpha Pool", share: alphaShare, kind: "alpha" });
+	}
+	return next;
 }
 
 export default function RoutingSettingsClient({
 	initialMode,
 	initialBetaChannelEnabled,
+	initialAlphaChannelEnabled,
 	teamName,
 }: Props) {
 	const defaultMode = initialMode ?? "balanced";
 	const defaultBeta = Boolean(initialBetaChannelEnabled);
+	const defaultAlpha = defaultBeta && Boolean(initialAlphaChannelEnabled);
 	const [mode, setMode] = useState<RoutingMode>(defaultMode);
 	const [betaChannelEnabled, setBetaChannelEnabled] = useState(defaultBeta);
+	const [alphaChannelEnabled, setAlphaChannelEnabled] = useState(defaultAlpha);
 	const [savedMode, setSavedMode] = useState<RoutingMode>(defaultMode);
 	const [savedBeta, setSavedBeta] = useState(defaultBeta);
+	const [savedAlpha, setSavedAlpha] = useState(defaultAlpha);
 	const [saving, setSaving] = useState(false);
 	const isFirstRun = useRef(true);
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,9 +135,20 @@ export default function RoutingSettingsClient({
 		[mode]
 	);
 	const previewRows = useMemo(
-		() => withBetaTraffic(PREVIEW_DISTRIBUTIONS[mode], betaChannelEnabled),
-		[mode, betaChannelEnabled],
+		() =>
+			withCanaryTraffic(
+				PREVIEW_DISTRIBUTIONS[mode],
+				betaChannelEnabled,
+				alphaChannelEnabled,
+			),
+		[mode, betaChannelEnabled, alphaChannelEnabled],
 	);
+
+	useEffect(() => {
+		if (!betaChannelEnabled && alphaChannelEnabled) {
+			setAlphaChannelEnabled(false);
+		}
+	}, [betaChannelEnabled, alphaChannelEnabled]);
 
 	useEffect(() => {
 		if (isFirstRun.current) {
@@ -140,6 +168,7 @@ export default function RoutingSettingsClient({
 					updateRoutingSettings({
 						mode,
 						betaChannelEnabled,
+						alphaChannelEnabled,
 					}),
 					{
 						loading: "Updating routing policy...",
@@ -150,6 +179,7 @@ export default function RoutingSettingsClient({
 				if (saveSequence === saveSequenceRef.current) {
 					setSavedMode(mode);
 					setSavedBeta(betaChannelEnabled);
+					setSavedAlpha(alphaChannelEnabled);
 				}
 			} finally {
 				if (saveSequence === saveSequenceRef.current) {
@@ -164,32 +194,39 @@ export default function RoutingSettingsClient({
 				timerRef.current = null;
 			}
 		};
-	}, [mode, betaChannelEnabled]);
+	}, [mode, betaChannelEnabled, alphaChannelEnabled]);
 
-	const isDirty = mode !== savedMode || betaChannelEnabled !== savedBeta;
+	const isDirty =
+		mode !== savedMode ||
+		betaChannelEnabled !== savedBeta ||
+		alphaChannelEnabled !== savedAlpha;
 	const stateText = saving
 		? "Saving..."
 		: isDirty
 			? "Pending sync"
 			: "Synced";
 
-	function barTone(kind?: "active" | "beta") {
+	function barTone(kind?: PreviewKind) {
 		if (kind === "beta") return "bg-amber-500/80";
+		if (kind === "alpha") return "bg-red-500/80";
 		return "bg-primary";
 	}
 
-	function barTrackTone(kind?: "active" | "beta") {
+	function barTrackTone(kind?: PreviewKind) {
 		if (kind === "beta") return "bg-amber-100/80";
+		if (kind === "alpha") return "bg-red-100/80";
 		return "bg-primary/10";
 	}
 
-	function barLabelTone(kind?: "active" | "beta") {
+	function barLabelTone(kind?: PreviewKind) {
 		if (kind === "beta") return "text-amber-700 dark:text-amber-300";
+		if (kind === "alpha") return "text-red-700 dark:text-red-300";
 		return "text-foreground";
 	}
 
-	function subLabelTone(kind?: "active" | "beta") {
+	function subLabelTone(kind?: PreviewKind) {
 		if (kind === "beta") return "text-amber-600 dark:text-amber-300";
+		if (kind === "alpha") return "text-red-600 dark:text-red-300";
 		return "text-muted-foreground";
 	}
 
@@ -246,6 +283,25 @@ export default function RoutingSettingsClient({
 						/>
 					</div>
 				</div>
+
+				{betaChannelEnabled ? (
+					<div className="grid gap-3 md:grid-cols-[240px_1fr] md:items-center">
+						<label htmlFor="alpha-channel" className="text-sm font-medium">
+							Alpha channel
+						</label>
+						<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
+							<p className="text-sm text-muted-foreground">
+								Allow alpha providers inside beta canary traffic.
+							</p>
+							<Switch
+								id="alpha-channel"
+								checked={alphaChannelEnabled}
+								onCheckedChange={setAlphaChannelEnabled}
+								aria-label="Enable alpha channel"
+							/>
+						</div>
+					</div>
+				) : null}
 
 				<div className="rounded-lg border bg-muted/30 p-4">
 					<p className="text-sm font-medium">{activeOption?.label}</p>

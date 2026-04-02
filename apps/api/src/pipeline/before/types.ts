@@ -160,6 +160,7 @@ export type TeamSettings = {
     routingMode: string | null;
     byokFallbackEnabled: boolean | null;
     betaChannelEnabled: boolean | null;
+    alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
     billingMode: "wallet" | "invoice";
 };

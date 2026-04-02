@@ -58,10 +58,37 @@ function hostFromUrl(u?: string | null): string | null {
     try {
         const parsed = new URL(u);
         if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-        return parsed.host || null;
+        return parsed.hostname.replace(/^www\./i, "") || null;
     } catch {
         return null;
     }
+}
+
+function normalizeAppLabel(input?: string | null): string | null {
+    const trimmed = String(input ?? "").trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed
+        .toLowerCase()
+        .replace(/[?.!]+$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (
+        normalized === "unknown" ||
+        normalized === "unknown app" ||
+        normalized === "app" ||
+        normalized === "untitled" ||
+        normalized === "n/a" ||
+        normalized === "na" ||
+        normalized === "none" ||
+        normalized === "null" ||
+        normalized === "undefined"
+    ) {
+        return null;
+    }
+
+    return trimmed;
 }
 
 function slugify(s?: string | null): string | null {
@@ -98,6 +125,23 @@ function deriveAppKey(identityUrl: string): string {
     return identityUrl;
 }
 
+function deriveInferredTitle(args: {
+    appName?: string | null;
+    appTitle?: string | null;
+    identityUrl: string;
+    normalizedAppId?: string | null;
+}): string {
+    const explicitTitle =
+        normalizeAppLabel(args.appName) ?? normalizeAppLabel(args.appTitle);
+    if (explicitTitle) return explicitTitle;
+
+    const hostTitle = hostFromUrl(args.identityUrl);
+    if (hostTitle) return hostTitle;
+
+    if (args.normalizedAppId) return `App ${args.normalizedAppId}`;
+    return "App";
+}
+
 /** Upsert (team_id, app_key) → api_apps.id, updating title/url/meta/last_seen */
 export async function ensureAppId(args: {
     teamId: string;
@@ -110,11 +154,12 @@ export async function ensureAppId(args: {
     const normalizedAppId = normalizeAppId(args.appId);
     const identityUrl = deriveIdentityUrl(args.appTitle, args.referer, args.appId, args.appName);
     const app_key = deriveAppKey(identityUrl);
-    const title =
-        args.appName ??
-        args.appTitle ??
-        hostFromUrl(identityUrl) ??
-        (normalizedAppId ? `App ${normalizedAppId}` : "Unknown");
+    const title = deriveInferredTitle({
+        appName: args.appName,
+        appTitle: args.appTitle,
+        identityUrl,
+        normalizedAppId,
+    });
     const nowIso = new Date().toISOString();
 
     const payload = {

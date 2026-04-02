@@ -10,7 +10,6 @@ import { formatDistanceToNow } from "date-fns";
 
 interface OAuthAppCardProps {
 	app: any;
-	currentUserId: string;
 }
 
 export default function OAuthAppCard({ app }: OAuthAppCardProps) {

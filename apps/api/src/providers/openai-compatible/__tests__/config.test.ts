@@ -3,7 +3,7 @@
 // How: Exposes provider-specific helpers for routing and execution.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openAICompatUrl, resolveOpenAICompatKey, resolveOpenAICompatRoute } from "../config";
+import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey, resolveOpenAICompatRoute } from "../config";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 
 beforeAll(() => {
@@ -35,15 +35,23 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
 
-		expect(resolveOpenAICompatRoute("arcee", "arcee-ai/coder-large")).toBe("chat");
-		expect(resolveOpenAICompatRoute("arcee-ai", "coder-large")).toBe("chat");
-		expect(resolveOpenAICompatRoute("baseten", "openai/gpt-oss-120b")).toBe("chat");
+			expect(resolveOpenAICompatRoute("arcee", "arcee-ai/coder-large")).toBe("chat");
+			expect(resolveOpenAICompatRoute("arcee-ai", "coder-large")).toBe("chat");
+			expect(resolveOpenAICompatRoute("akashml", "DeepSeek-V3.2")).toBe("chat");
+			expect(resolveOpenAICompatRoute("baseten", "openai/gpt-oss-120b")).toBe("chat");
+			expect(resolveOpenAICompatRoute("byteplus", "deepseek-v3.2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("chutes", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
 		expect(resolveOpenAICompatRoute("cohere", "command-a-03-2025")).toBe("chat");
-		expect(resolveOpenAICompatRoute("deepinfra", "meta-llama/Meta-Llama-3.1-8B-Instruct")).toBe("chat");
-		expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
-		expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
-		expect(resolveOpenAICompatRoute("minimax", "minimax-m2")).toBe("chat");
+			expect(resolveOpenAICompatRoute("deepinfra", "meta-llama/Meta-Llama-3.1-8B-Instruct")).toBe("chat");
+			expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
+			expect(resolveOpenAICompatRoute("gmicloud", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
+			expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
+				expect(resolveOpenAICompatRoute("ionrouter", "qwen3.5-122b-a10b")).toBe("chat");
+				expect(resolveOpenAICompatRoute("longcat", "LongCat-Flash-Chat")).toBe("chat");
+				expect(resolveOpenAICompatRoute("nebius-token-factory", "nvidia/nemotron-3-super-120b-a12b")).toBe("chat");
+				expect(resolveOpenAICompatRoute("nebius-token-factory-eu-north-1", "nvidia/nemotron-3-super-120b-a12b")).toBe("chat");
+				expect(resolveOpenAICompatRoute("nebius-token-factory-us-central-1", "nvidia/nemotron-3-super-120b-a12b")).toBe("chat");
+			expect(resolveOpenAICompatRoute("minimax", "minimax-m2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("alibaba-cloud", "qwen3.5-plus")).toBe("responses");
 		expect(resolveOpenAICompatRoute("z-ai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
@@ -151,6 +159,45 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds byteplus chat-completions endpoint with /api/v3 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			BYTEPLUS_API_KEY: "test-byteplus-key",
+		} as any);
+
+		expect(openAICompatUrl("byteplus", "/chat/completions")).toBe(
+			"https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
+		);
+		expect(openAICompatUrl("bytedance-seed", "/chat/completions")).toBe(
+			"https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
+		);
+	});
+
+	it("builds longcat chat-completions endpoint with /openai/v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			LONGCAT_API_KEY: "test-longcat-key",
+		} as any);
+
+		expect(openAICompatUrl("longcat", "/chat/completions")).toBe(
+			"https://api.longcat.chat/openai/v1/chat/completions",
+		);
+	});
+
+	it("uses Api-Key Authorization prefix for baseten", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			BASETEN_API_KEY: "test-baseten-key",
+		} as any);
+
+		expect(openAICompatHeaders("baseten", "test-baseten-key")).toEqual(
+			expect.objectContaining({
+				Authorization: "Api-Key test-baseten-key",
+				"Content-Type": "application/json",
+			}),
+		);
+	});
+
 	it("builds chutes chat-completions endpoint with /v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -170,6 +217,23 @@ describe("openAICompatUrl", () => {
 
 		expect(openAICompatUrl("cohere", "/chat/completions")).toBe(
 			"https://api.cohere.ai/compatibility/v1/chat/completions",
+		);
+	});
+
+	it("builds voyage chat and embeddings endpoints with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			VOYAGE_API_KEY: "test-voyage-key",
+		} as any);
+
+		expect(openAICompatUrl("voyage", "/chat/completions")).toBe(
+			"https://api.voyageai.com/v1/chat/completions",
+		);
+		expect(openAICompatUrl("voyage", "/embeddings")).toBe(
+			"https://api.voyageai.com/v1/embeddings",
+		);
+		expect(openAICompatUrl("voyageai", "/embeddings")).toBe(
+			"https://api.voyageai.com/v1/embeddings",
 		);
 	});
 
@@ -261,6 +325,17 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds gmicloud chat endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GMI_API_KEY: "test-gmi-key",
+		} as any);
+
+		expect(openAICompatUrl("gmicloud", "/chat/completions")).toBe(
+			"https://api.gmi-serving.com/v1/chat/completions",
+		);
+	});
+
 	it("builds novita chat endpoint with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -275,14 +350,17 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
-	it("builds perplexity chat endpoint without a path prefix", () => {
+	it("builds perplexity chat and embeddings endpoints with /v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
 			PERPLEXITY_API_KEY: "test-perplexity-key",
 		} as any);
 
 		expect(openAICompatUrl("perplexity", "/chat/completions")).toBe(
-			"https://api.perplexity.ai/chat/completions",
+			"https://api.perplexity.ai/v1/chat/completions",
+		);
+		expect(openAICompatUrl("perplexity", "/embeddings")).toBe(
+			"https://api.perplexity.ai/v1/embeddings",
 		);
 	});
 
@@ -297,6 +375,65 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds akashml chat endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			AKASHML_API_KEY: "test-akashml-key",
+		} as any);
+
+		expect(openAICompatUrl("akashml", "/chat/completions")).toBe(
+			"https://api.akashml.com/v1/chat/completions",
+		);
+	});
+
+	it("builds ionrouter chat endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			IONROUTER_API_KEY: "test-ionrouter-key",
+		} as any);
+
+		expect(openAICompatUrl("ionrouter", "/chat/completions")).toBe(
+			"https://api.ionrouter.io/v1/chat/completions",
+		);
+	});
+
+	it("builds nebius regional chat endpoints with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			NEBIUS_API_KEY: "test-nebius-key",
+		} as any);
+
+		expect(openAICompatUrl("nebius-token-factory", "/chat/completions")).toBe(
+			"https://api.tokenfactory.nebius.com/v1/chat/completions",
+		);
+		expect(openAICompatUrl("nebius-token-factory-eu-north-1", "/chat/completions")).toBe(
+			"https://api.tokenfactory.nebius.com/v1/chat/completions",
+		);
+		expect(openAICompatUrl("nebius-token-factory-us-central-1", "/chat/completions")).toBe(
+			"https://api.tokenfactory.nebius.com/v1/chat/completions",
+		);
+	});
+
+	it("uses regional Nebius base URL overrides with NEBIUS_BASE_URL fallback", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			NEBIUS_API_KEY: "test-nebius-key",
+			NEBIUS_BASE_URL: "https://global.api.nebius.example",
+			NEBIUS_EU_NORTH_1_BASE_URL: "https://eu-north-1.api.nebius.example",
+			NEBIUS_US_CENTRAL_1_BASE_URL: "https://us-central-1.api.nebius.example",
+		} as any);
+
+		expect(openAICompatUrl("nebius-token-factory", "/chat/completions")).toBe(
+			"https://global.api.nebius.example/v1/chat/completions",
+		);
+		expect(openAICompatUrl("nebius-token-factory-eu-north-1", "/chat/completions")).toBe(
+			"https://eu-north-1.api.nebius.example/v1/chat/completions",
+		);
+		expect(openAICompatUrl("nebius-token-factory-us-central-1", "/chat/completions")).toBe(
+			"https://us-central-1.api.nebius.example/v1/chat/completions",
+		);
+	});
+
 	it("builds venice chat and responses endpoints with /api/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -308,6 +445,18 @@ describe("openAICompatUrl", () => {
 		);
 		expect(openAICompatUrl("venice", "/responses")).toBe(
 			"https://api.venice.ai/api/v1/responses",
+		);
+	});
+
+	it("uses VENICE_BASE_URL override for venice endpoints", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			VENICE_API_KEY: "test-venice-key",
+			VENICE_BASE_URL: "https://api.venice.example",
+		} as any);
+
+		expect(openAICompatUrl("venice", "/chat/completions")).toBe(
+			"https://api.venice.example/api/v1/chat/completions",
 		);
 	});
 
@@ -339,18 +488,35 @@ describe("resolveOpenAICompatKey", () => {
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("does not accept WANDB_API_KEY for weights-and-biases", () => {
+	it("accepts WANDB_API_KEY fallback for weights-and-biases", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			WANDB_API_KEY: "test-legacy-wandb-key",
+			WANDB_API_KEY: "test-wandb-key-fallback",
 		} as any);
 
-		expect(() =>
-			resolveOpenAICompatKey({
-				providerId: "weights-and-biases",
-				byokMeta: [],
-			} as any),
-		).toThrowError("weights-and-biases_key_missing");
+		const resolved = resolveOpenAICompatKey({
+			providerId: "weights-and-biases",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-wandb-key-fallback");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers WEIGHTSANDBIASES_API_KEY over WANDB_API_KEY for weights-and-biases", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			WEIGHTSANDBIASES_API_KEY: "test-wandb-key-primary",
+			WANDB_API_KEY: "test-wandb-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "weights-and-biases",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-wandb-key-primary");
+		expect(resolved.source).toBe("gateway");
 	});
 
 	it("uses ALIBABA_CLOUD_API_KEY for alibaba-cloud", () => {
@@ -365,6 +531,165 @@ describe("resolveOpenAICompatKey", () => {
 		} as any);
 
 		expect(resolved.key).toBe("test-alibaba-cloud-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses VOYAGE_API_KEY for voyage and voyageai", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			VOYAGE_API_KEY: "test-voyage-key",
+		} as any);
+
+		const voyageResolved = resolveOpenAICompatKey({
+			providerId: "voyage",
+			byokMeta: [],
+		} as any);
+		const voyageAiResolved = resolveOpenAICompatKey({
+			providerId: "voyageai",
+			byokMeta: [],
+		} as any);
+
+		expect(voyageResolved.key).toBe("test-voyage-key");
+		expect(voyageResolved.source).toBe("gateway");
+		expect(voyageAiResolved.key).toBe("test-voyage-key");
+		expect(voyageAiResolved.source).toBe("gateway");
+	});
+
+	it("accepts ARCEE_AI_API_KEY for arcee-ai", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			ARCEE_AI_API_KEY: "test-arcee-ai-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "arcee-ai",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-arcee-ai-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers ARCEE_AI_API_KEY over ARCEE_API_KEY for arcee-ai", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			ARCEE_AI_API_KEY: "test-arcee-ai-key-primary",
+			ARCEE_API_KEY: "test-arcee-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "arcee-ai",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-arcee-ai-key-primary");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("accepts GMI_CLOUD_API_KEY fallback for gmicloud", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GMI_CLOUD_API_KEY: "test-gmi-cloud-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "gmicloud",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-gmi-cloud-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers GMI_API_KEY over GMI_CLOUD_API_KEY for gmicloud", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GMI_API_KEY: "test-gmi-key-primary",
+			GMI_CLOUD_API_KEY: "test-gmi-cloud-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "gmicloud",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-gmi-key-primary");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses AKASHML_API_KEY for akashml", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			AKASHML_API_KEY: "test-akashml-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "akashml",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-akashml-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses IONROUTER_API_KEY for ionrouter", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			IONROUTER_API_KEY: "test-ionrouter-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "ionrouter",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-ionrouter-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("accepts NEBIUS_TOKEN_FACTORY_API_KEY fallback for Nebius providers", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			NEBIUS_TOKEN_FACTORY_API_KEY: "test-nebius-token-factory-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "nebius-token-factory-eu-north-1",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-nebius-token-factory-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers NEBIUS_API_KEY over NEBIUS_TOKEN_FACTORY_API_KEY", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			NEBIUS_API_KEY: "test-nebius-key-primary",
+			NEBIUS_TOKEN_FACTORY_API_KEY: "test-nebius-token-factory-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "nebius-token-factory-us-central-1",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-nebius-key-primary");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses fallback BytePlus key env aliases", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			ARK_API_KEY: "test-ark-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "byteplus",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-ark-key");
 		expect(resolved.source).toBe("gateway");
 	});
 });

@@ -546,7 +546,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		const request = {
 			model: "google/gemini-2-5-flash-image",
 			input: "Generate image",
-			modalities: ["IMAGE"],
+			modalities: ["IMAGE", "AUDIO"],
 			reasoning: {
 				effort: "high",
 				max_tokens: 512,
@@ -561,7 +561,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
-		expect(ir.modalities).toEqual(["image"]);
+		expect(ir.modalities).toEqual(["image", "audio"]);
 		expect(ir.reasoning).toMatchObject({
 			effort: "high",
 			maxTokens: 512,

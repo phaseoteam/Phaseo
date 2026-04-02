@@ -30,6 +30,50 @@ import {
 
 const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
+const OPENAI_COMPAT_TRANSIENT_RETRY_PROVIDERS = new Set<string>([
+	"baseten",
+	"groq",
+	"fireworks",
+	"weights-and-biases",
+	"venice",
+	"akashml",
+	"ionrouter",
+	"gmicloud",
+	"nebius-token-factory",
+	"nebius-token-factory-eu-north-1",
+	"nebius-token-factory-us-central-1",
+]);
+const OPENAI_COMPAT_MAX_TRANSIENT_RETRIES = 1;
+const OPENAI_COMPAT_TRANSIENT_RETRY_BASE_DELAY_MS = 120;
+const OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS = 600;
+const OPENAI_COMPAT_MAX_RETRY_AFTER_MS = 10_000;
+
+function shouldRetryOpenAICompatStatus(status: number): boolean {
+	if (status === 408 || status === 409 || status === 429) return true;
+	return status >= 500;
+}
+
+function parseRetryAfterMs(value: string | null): number | null {
+	if (!value) return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+
+	const seconds = Number(trimmed);
+	if (Number.isFinite(seconds) && seconds >= 0) {
+		return Math.min(Math.round(seconds * 1000), OPENAI_COMPAT_MAX_RETRY_AFTER_MS);
+	}
+
+	const at = Date.parse(trimmed);
+	if (!Number.isFinite(at)) return null;
+	const delta = at - Date.now();
+	if (delta <= 0) return 0;
+	return Math.min(delta, OPENAI_COMPAT_MAX_RETRY_AFTER_MS);
+}
+
+async function sleep(ms: number): Promise<void> {
+	if (ms <= 0) return;
+	await new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)
@@ -104,7 +148,40 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		};
 	};
 
-	let attempt = await sendPayload(route, buildPayloadForRoute(route));
+	const maxTransientRetries = OPENAI_COMPAT_TRANSIENT_RETRY_PROVIDERS.has(args.providerId)
+		? OPENAI_COMPAT_MAX_TRANSIENT_RETRIES
+		: 0;
+
+	const sendPayloadWithRetry = async (
+		targetRoute: "responses" | "chat",
+		payload: Record<string, any>,
+	) => {
+		let delayMs = OPENAI_COMPAT_TRANSIENT_RETRY_BASE_DELAY_MS;
+		for (let transientAttempt = 0; transientAttempt <= maxTransientRetries; transientAttempt += 1) {
+			try {
+				const result = await sendPayload(targetRoute, payload);
+				const hasRetryLeft = transientAttempt < maxTransientRetries;
+				if (!hasRetryLeft || !shouldRetryOpenAICompatStatus(result.response.status)) {
+					return result;
+				}
+
+				const retryAfterMs = parseRetryAfterMs(result.response.headers.get("retry-after"));
+				await sleep(retryAfterMs ?? delayMs);
+				delayMs = Math.min(delayMs * 2, OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS);
+			} catch (error) {
+				const hasRetryLeft = transientAttempt < maxTransientRetries;
+				if (!hasRetryLeft) {
+					throw error;
+				}
+				await sleep(delayMs);
+				delayMs = Math.min(delayMs * 2, OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS);
+			}
+		}
+
+		return sendPayload(targetRoute, payload);
+	};
+
+	let attempt = await sendPayloadWithRetry(route, buildPayloadForRoute(route));
 	let res = attempt.response;
 	let requestBody = attempt.requestBody;
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
@@ -121,7 +198,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			!RESPONSES_CHAT_FALLBACK_BLOCKLIST.has(args.providerId)
 		) {
 			route = "chat";
-			attempt = await sendPayload(route, buildPayloadForRoute(route));
+			attempt = await sendPayloadWithRetry(route, buildPayloadForRoute(route));
 			res = attempt.response;
 			requestBody = attempt.requestBody;
 			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
@@ -149,7 +226,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			});
 		}
 
-		attempt = await sendPayload(route, adapted.request);
+		attempt = await sendPayloadWithRetry(route, adapted.request);
 		res = attempt.response;
 		requestBody = attempt.requestBody;
 		mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
@@ -201,7 +278,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		}
 
 		// Calculate pricing
-		const usageMeters = normalizeTextUsageForPricing(usage);
+		const usageMeters = normalizeTextUsageForPricing(ir?.usage ?? usage);
 		if (usageMeters) {
 			bill.usage = usageMeters;
 		}
@@ -1382,6 +1459,9 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 		output_tokens: usage.outputTokens,
 		total_tokens: usage.totalTokens,
 	};
+	if (usage.cachedReadTokensAreSubsetOfInput === true) {
+		out.cached_read_tokens_are_subset_of_input = true;
+	}
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
 	if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
 	return out;
@@ -1659,6 +1739,7 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : previousMessage.reasoning_content ? { reasoning_content: previousMessage.reasoning_content } : {}),
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
+				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1701,6 +1782,12 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				choice.message.images = [];
 			}
 			choice.message.images.push(...chunk.delta.images);
+		}
+		if (Array.isArray(chunk.delta?.audios) && chunk.delta.audios.length > 0) {
+			if (!Array.isArray(choice.message.audios)) {
+				choice.message.audios = [];
+			}
+			choice.message.audios.push(...chunk.delta.audios);
 		}
 		if (chunk.finish_reason) {
 			choice.finish_reason = chunk.finish_reason;

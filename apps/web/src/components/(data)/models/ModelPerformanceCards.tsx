@@ -1,133 +1,21 @@
-﻿"use client";
+"use client";
 
-import type { ComponentType, ReactNode } from "react";
-import { cn } from "@/lib/utils";
-import { Gauge, Timer, Hourglass } from "lucide-react";
-import {
-	LatencyChart,
-	ThroughputChart,
-	E2ELatencyChart,
-} from "@/components/(data)/api-providers/Gateway/PerformanceCharts";
+import { useState, type ReactNode } from "react";
 import type {
 	ModelPerformancePoint,
 	ModelPerformanceSummary,
+	ModelProviderDailyPoint,
 } from "@/lib/fetchers/models/getModelPerformance";
+import ModelProviderTrendChart from "./ModelProviderTrendChart";
 
-type Trend = "up" | "down" | "neutral";
-
-const ACCENTS = {
-	cyan: {
-		border: "border-b-cyan-400 dark:border-b-cyan-700",
-		icon: "bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-200",
-	},
-	orange: {
-		border: "border-b-amber-400 dark:border-b-amber-700",
-		icon: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-100",
-	},
-	violet: {
-		border: "border-b-violet-400 dark:border-b-violet-700",
-		icon: "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-200",
-	},
-} as const;
-
-function TrendBadge({
-	value,
-	trend,
-	invertColors = false,
-	className,
-}: {
-	value: string;
-	trend: Trend;
-	invertColors?: boolean;
-	className?: string;
-}) {
-	const isPositive = trend === "up";
-	const isNeutral = trend === "neutral";
-	const isGood = invertColors ? !isPositive : isPositive;
-
-	const styles = isNeutral
-		? "bg-gray-50 text-gray-700 dark:bg-gray-500/10 dark:text-gray-200"
-		: isGood
-		? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"
-		: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200";
-
-	return (
-		<span
-			className={cn(
-				"inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold",
-				"ring-1 ring-inset ring-black/5 dark:ring-white/5",
-				styles,
-				className
-			)}
-			aria-label={`Change ${value}`}
-		>
-			{value}
-		</span>
-	);
-}
-
-function PerformanceCard({
-	title,
-	value,
-	delta,
-	trend,
-	accent = "cyan",
-	invertDeltaColors = false,
-	icon,
+function MetricCard({
 	children,
 }: {
-	title: string;
-	value: string;
-	delta?: string;
-	trend?: Trend;
-	accent?: keyof typeof ACCENTS;
-	invertDeltaColors?: boolean;
-	icon: ComponentType<any>;
 	children: ReactNode;
 }) {
-	const accentConfig = ACCENTS[accent];
-	const isEmpty = value.trim().length === 0;
-	const IconComponent = icon;
-
 	return (
-		<div
-			className={cn(
-				"w-full min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 border-b-2 p-5 space-y-4",
-				accentConfig.border
-			)}
-		>
-			<div className="flex items-start justify-between gap-4">
-				<div className="space-y-1">
-					<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-						{title}
-					</p>
-					<div className="flex items-center gap-3">
-						<span className="text-3xl font-semibold tracking-tight text-foreground">
-							{isEmpty ? "—" : value}
-						</span>
-						{!isEmpty && delta && trend && (
-							<TrendBadge
-								value={delta}
-								trend={trend}
-								invertColors={invertDeltaColors}
-								className="whitespace-nowrap"
-							/>
-						)}
-					</div>
-				</div>
-				<div
-					className={cn(
-						"inline-flex h-10 w-10 items-center justify-center rounded-lg",
-						"ring-1 ring-inset ring-black/5 dark:ring-white/5",
-						accentConfig.icon
-					)}
-					aria-hidden
-				>
-					<IconComponent className="h-5 w-5" />
-				</div>
-			</div>
-
-			<div className="h-[200px] w-full">{children}</div>
+		<div className="w-full min-w-0 space-y-4 rounded-lg border border-border/70 bg-background px-5 py-5">
+			<div className="h-[220px]">{children}</div>
 		</div>
 	);
 }
@@ -136,93 +24,58 @@ interface ModelPerformanceCardsProps {
 	summary: ModelPerformanceSummary;
 	prevSummary?: ModelPerformanceSummary | null;
 	hourly: ModelPerformancePoint[];
-}
-
-function calculateDelta(
-	current: number | null,
-	previous: number | null
-): { value: string; trend: Trend } | null {
-	if (current == null || previous == null || previous === 0) return null;
-	const delta = ((current - previous) / previous) * 100;
-	return {
-		value: `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`,
-		trend: delta > 0 ? "up" : delta < 0 ? "down" : ("neutral" as Trend),
-	};
+	providerDaily7d: ModelProviderDailyPoint[];
 }
 
 export default function ModelPerformanceCards({
 	summary,
 	prevSummary,
 	hourly,
+	providerDaily7d,
 }: ModelPerformanceCardsProps) {
-	const recentHourly = hourly.slice(-24);
-	const hourlyWithTimestamp = recentHourly.map((point) => ({
-		...point,
-		timestamp: point.bucket,
-	}));
-
-	const throughputDelta = calculateDelta(
-		summary.avgThroughput,
-		prevSummary?.avgThroughput ?? null
-	);
-	const latencyDelta = calculateDelta(
-		summary.avgLatencyMs,
-		prevSummary?.avgLatencyMs ?? null
-	);
-	const e2eDelta = calculateDelta(
-		summary.avgGenerationMs,
-		prevSummary?.avgGenerationMs ?? null
-	);
-
-	const throughputValue =
-		summary.avgThroughput != null
-			? `${summary.avgThroughput.toFixed(2)} t/s`
-			: "—";
-	const latencyValue =
-		summary.avgLatencyMs != null
-			? `${Math.round(summary.avgLatencyMs)} ms`
-			: "—";
-	const e2eValue =
-		summary.avgGenerationMs != null
-			? `${Math.round(summary.avgGenerationMs)} ms`
-			: "—";
+	const [activeDay, setActiveDay] = useState<string | null>(null);
+	void summary;
+	void prevSummary;
+	const hasHourly = hourly.some((point) => point.requests > 0);
 
 	return (
-		<div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
-			<PerformanceCard
-				title="Throughput"
-				value={throughputValue}
-				delta={throughputDelta?.value}
-				trend={throughputDelta?.trend}
-				accent="cyan"
-				icon={Gauge}
-			>
-				<ThroughputChart data={hourlyWithTimestamp} />
-			</PerformanceCard>
+		<div className="grid gap-4 md:grid-cols-3">
+			<MetricCard>
+				<ModelProviderTrendChart
+					title="Throughput"
+					data={providerDaily7d}
+					metric="throughput"
+					activeDay={activeDay}
+					onActiveDayChange={setActiveDay}
+				/>
+			</MetricCard>
 
-			<PerformanceCard
-				title="Latency"
-				value={latencyValue}
-				delta={latencyDelta?.value}
-				trend={latencyDelta?.trend}
-				accent="orange"
-				invertDeltaColors
-				icon={Timer}
-			>
-				<LatencyChart data={hourlyWithTimestamp} />
-			</PerformanceCard>
+			<MetricCard>
+				<ModelProviderTrendChart
+					title="Latency"
+					data={providerDaily7d}
+					metric="latency"
+					activeDay={activeDay}
+					onActiveDayChange={setActiveDay}
+				/>
+			</MetricCard>
 
-			<PerformanceCard
-				title="E2E latency"
-				value={e2eValue}
-				delta={e2eDelta?.value}
-				trend={e2eDelta?.trend}
-				accent="violet"
-				invertDeltaColors
-				icon={Hourglass}
-			>
-				<E2ELatencyChart data={hourlyWithTimestamp} />
-			</PerformanceCard>
+			<MetricCard>
+				<ModelProviderTrendChart
+					title="E2E Latency"
+					data={providerDaily7d}
+					metric="generation"
+					activeDay={activeDay}
+					onActiveDayChange={setActiveDay}
+				/>
+			</MetricCard>
+
+			{!hasHourly ? (
+				<p className="md:col-span-3 text-xs text-muted-foreground">
+					Low sample volume in the last 24 hours. Trend lines reflect up to 3
+					active providers over the last 7 days.
+				</p>
+			) : null}
 		</div>
 	);
 }

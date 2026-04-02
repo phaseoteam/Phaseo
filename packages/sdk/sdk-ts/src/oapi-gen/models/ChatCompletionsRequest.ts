@@ -30,6 +30,14 @@ export interface ChatCompletionsRequest {
   max_tokens?: number;
   max_tool_calls?: number;
   messages: {
+    audios?: {
+      audio_url: {
+        url: string;
+      };
+      format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
+      mime_type?: string;
+      type: "audio_url";
+    }[];
     content?:
       | string
       | {
@@ -61,6 +69,13 @@ export interface ChatCompletionsRequest {
           id: string;
           type: "tool_call";
         }[];
+    images?: {
+      image_url: {
+        url: string;
+      };
+      mime_type?: string;
+      type: "image_url";
+    }[];
     name?: string;
     role: "system" | "developer" | "user" | "assistant" | "tool";
     tool_call_id?: string;
@@ -79,7 +94,7 @@ export interface ChatCompletionsRequest {
   metadata?: {
     [key: string]: string;
   };
-  modalities?: string[];
+  modalities?: "text" | "image" | "audio"[];
   model: string;
   parallel_tool_calls?: boolean;
   presence_penalty?: number;
@@ -137,10 +152,24 @@ export interface ChatCompletionsRequest {
   stream?: boolean;
   stream_options?: {};
   temperature?: number;
-  tool_choice?: string | {};
-  tools?: {
-    type?: "function";
-  }[];
+  tool_choice?: "auto" | "none" | "required" | "gateway:datetime" | {};
+  tools?:
+    | {
+        function: {
+          description?: string;
+          name: string;
+          parameters: {};
+        };
+        type: "function";
+        [key: string]: unknown;
+      }
+    | {
+        parameters?: {
+          timezone?: string;
+        };
+        timezone?: string;
+        type: "gateway:datetime";
+      }[];
   top_logprobs?: number;
   top_p?: number;
   usage?: boolean;
