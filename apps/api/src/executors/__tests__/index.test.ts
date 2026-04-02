@@ -5,8 +5,9 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 describe("resolveProviderExecutor", () => {
 	it("resolves text.generate executors for primary and alpha providers", () => {
 		const providers = [
-			"ai21",
-			"aion-labs",
+				"ai21",
+				"akashml",
+				"aion-labs",
 			"aionlabs",
 			"alibaba",
 			"amazon-bedrock",
@@ -16,6 +17,7 @@ describe("resolveProviderExecutor", () => {
 			"atlascloud",
 			"azure",
 			"baseten",
+			"byteplus",
 			"bytedance-seed",
 			"cerebras",
 			"chutes",
@@ -31,20 +33,24 @@ describe("resolveProviderExecutor", () => {
 			"google-vertex",
 			"groq",
 			"hyperbolic",
-			"inception",
-			"infermatic",
-			"inflection",
-			"liquid-ai",
+				"inception",
+				"infermatic",
+				"inflection",
+				"ionrouter",
+				"liquid-ai",
+			"longcat",
 			"mancer",
 			"minimax",
 			"minimax-lightning",
 			"mistral",
 			"moonshot-ai",
 			"moonshot-ai-turbo",
-			"morph",
-			"morpheus",
-			"nebius-token-factory",
-			"novitaai",
+				"morph",
+				"morpheus",
+				"nebius-token-factory",
+				"nebius-token-factory-eu-north-1",
+				"nebius-token-factory-us-central-1",
+				"novitaai",
 			"openai",
 			"parasail",
 			"perplexity",
@@ -56,6 +62,8 @@ describe("resolveProviderExecutor", () => {
 			"together",
 			"venice",
 			"weights-and-biases",
+			"voyage",
+			"voyageai",
 			"x-ai",
 			"xai",
 			"xiaomi",
@@ -81,6 +89,9 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("google-ai-studio", "embeddings")).toBeTruthy();
 		expect(resolveProviderExecutor("together", "embeddings")).toBeTruthy();
 		expect(resolveProviderExecutor("mistral", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("cohere", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("voyage", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("voyageai", "embeddings")).toBeTruthy();
 		expect(resolveProviderExecutor("anthropic", "embeddings")).toBeNull();
 	});
 
@@ -123,17 +134,30 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("google-vertex", "text.generate")).toBe(
 			EXECUTORS_BY_PROVIDER["google-vertex"]?.["text.generate"],
 		);
+		expect(resolveProviderExecutor("google-vertex", "video.generation")).toBe(
+			EXECUTORS_BY_PROVIDER["google-vertex"]?.["video.generate"],
+		);
 	});
 
 	it("maps video endpoint-style capabilities to video executors", () => {
 		expect(resolveProviderExecutor("openai", "video.generation")).toBeTruthy();
-		expect(resolveProviderExecutor("google-ai-studio", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("google-ai-studio", "video.generation")).toBeNull();
+		expect(resolveProviderExecutor("google", "video.generation")).toBeNull();
+		expect(resolveProviderExecutor("bytedance-seed", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("byteplus", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("alibaba", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("alibaba-cloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("qwen", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("runway", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("runwayml", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("x-ai", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("xai", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("minimax", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("minimax-lightning", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("novitaai", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("novita", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("fal", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("fal-ai", "video.generation")).toBeNull();
 	});
@@ -151,6 +175,12 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("xiaomi", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("xiaomi", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("xiaomi", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("novita", "images.generations")).toBeTruthy();
+		expect(resolveProviderExecutor("novita", "audio.transcription")).toBeTruthy();
+		expect(resolveProviderExecutor("novita", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("atlascloud", "images.generations")).toBeTruthy();
+		expect(resolveProviderExecutor("atlascloud", "audio.transcription")).toBeTruthy();
+		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("fireworks", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("arcee", "images.generations")).toBeNull();
 		expect(resolveProviderExecutor("arcee", "audio.transcription")).toBeNull();
@@ -165,6 +195,8 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("google-ai-studio", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "images.edits")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "audio.transcription")).toBeTruthy();
+		expect(resolveProviderExecutor("google-ai-studio", "music.generate")).toBeTruthy();
+		expect(resolveProviderExecutor("google-ai-studio", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("google-vertex", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("google-vertex", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("google-vertex", "video.generation")).toBeTruthy();
@@ -200,24 +232,25 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("openai", "audio.translations");
 		expectEnabled("openai", "video.generation");
 		expectDisabled("openai", "music.generate");
-		// Google AI Studio: full multimodal coverage.
-		expectEnabled("google-ai-studio", "video.generation");
+		// Google AI Studio: image/audio/music only (video disabled).
+		expectDisabled("google-ai-studio", "video.generation");
 		expectEnabled("google-ai-studio", "images.generations");
 		expectEnabled("google-ai-studio", "images.edits");
 		expectEnabled("google-ai-studio", "audio.speech");
 		expectEnabled("google-ai-studio", "audio.transcription");
 		expectEnabled("google-ai-studio", "audio.translations");
-		expectDisabled("google-ai-studio", "music.generate");
+		expectEnabled("google-ai-studio", "music.generate");
 
-		expectEnabled("google", "video.generation");
-		expectEnabled("google", "images.generations");
-		expectEnabled("google", "images.edits");
-		expectEnabled("google", "audio.speech");
-		expectEnabled("google", "audio.transcription");
-		expectEnabled("google", "audio.translations");
+		// Legacy "google" alias should be disabled across all capabilities.
+		expectDisabled("google", "video.generation");
+		expectDisabled("google", "images.generations");
+		expectDisabled("google", "images.edits");
+		expectDisabled("google", "audio.speech");
+		expectDisabled("google", "audio.transcription");
+		expectDisabled("google", "audio.translations");
 		expectDisabled("google", "music.generate");
 
-		// Google Vertex host: full multimodal coverage through adapter-backed endpoints.
+		// Google Vertex host: native video plus adapter-backed image/audio coverage.
 		expectEnabled("google-vertex", "text.generate");
 		expectEnabled("google-vertex", "images.generations");
 		expectEnabled("google-vertex", "images.edits");

@@ -366,9 +366,8 @@ export default function AccountSettingsClient({
 	} */
 
 	return (
-		<div className="rounded-lg border bg-background divide-y">
-			{/* Account Card */}
-			<section className="px-4 py-4 sm:px-5">
+		<div className="space-y-8">
+			<section className="space-y-3">
 				<div className="flex items-start justify-between gap-4">
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium flex items-center gap-2">
@@ -388,12 +387,12 @@ export default function AccountSettingsClient({
 				</div>
 
 				<form onSubmit={handleSave} className="mt-3">
-					<div className="grid gap-3">
-						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-							<Label htmlFor="displayName" className="sm:pt-2">
+					<div className="grid gap-4">
+						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+							<Label htmlFor="displayName" className="text-sm font-medium sm:pt-2">
 								Display name
 							</Label>
-							<div className="grid gap-1 max-w-lg">
+							<div className="grid max-w-2xl gap-1.5">
 								<Input
 									id="displayName"
 									value={displayName ?? ""}
@@ -410,9 +409,9 @@ export default function AccountSettingsClient({
 						</div>
 
 						{user.email ? (
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-								<Label className="sm:pt-2">Email</Label>
-								<div className="grid gap-1 max-w-lg">
+							<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+								<Label className="text-sm font-medium sm:pt-2">Email</Label>
+								<div className="grid max-w-2xl gap-1.5">
 									<Input value={user.email} readOnly data-pii="true" />
 									<p className="text-xs text-muted-foreground">
 										Contact support to change your sign-in email.
@@ -421,11 +420,11 @@ export default function AccountSettingsClient({
 							</div>
 						) : null}
 
-						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-							<Label htmlFor="defaultTeam" className="sm:pt-2">
+						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+							<Label htmlFor="defaultTeam" className="text-sm font-medium sm:pt-2">
 								Default team
 							</Label>
-							<div className="grid gap-1 max-w-lg">
+							<div className="grid max-w-2xl gap-1.5">
 								{teams && teams.length > 0 ? (
 									<Select
 										value={defaultTeamId ?? ""}
@@ -451,11 +450,11 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-							<Label htmlFor="chatAccent" className="sm:pt-2">
+						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+							<Label htmlFor="chatAccent" className="text-sm font-medium sm:pt-2">
 								Chatroom colour
 							</Label>
-							<div className="grid gap-1 max-w-lg">
+							<div className="grid max-w-2xl gap-1.5">
 								<Select
 									value={chatAccentColor}
 									onValueChange={(v) => {
@@ -493,9 +492,9 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-							<Label className="sm:pt-2">Chat notifications</Label>
-							<div className="flex items-center justify-between rounded-md border px-3 py-2 max-w-lg">
+						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+							<Label className="text-sm font-medium sm:pt-2">Chat notifications</Label>
+							<div className="flex max-w-2xl items-center justify-between gap-4 rounded-md bg-muted/25 px-3 py-2">
 								<p className="text-xs text-muted-foreground">
 									Notify when chat responses finish (only when this tab is
 									unfocused).
@@ -518,9 +517,9 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-							<Label className="sm:pt-2">Analytics cookies</Label>
-							<div className="flex items-center justify-between rounded-md border px-3 py-2 max-w-lg">
+						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+							<Label className="text-sm font-medium sm:pt-2">Analytics cookies</Label>
+							<div className="flex max-w-2xl items-center justify-between gap-4 rounded-md bg-muted/25 px-3 py-2">
 								<p className="text-xs text-muted-foreground">
 									Allow analytics cookies to improve the product.
 								</p>
@@ -538,9 +537,9 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
-							<Label className="sm:pt-2">Obfuscate info</Label>
-							<div className="flex items-center justify-between rounded-md border px-3 py-2 max-w-lg">
+						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+							<Label className="text-sm font-medium sm:pt-2">Obfuscate info</Label>
+							<div className="flex max-w-2xl items-center justify-between gap-4 rounded-md bg-muted/25 px-3 py-2">
 								<p className="text-xs text-muted-foreground">
 									Blur sensitive information across the website (emails, card
 									details, and payment info).
@@ -554,7 +553,7 @@ export default function AccountSettingsClient({
 						</div>
 					</div>
 
-					<div className="flex items-center justify-end gap-2 mt-3">
+					<div className="mt-4 flex items-center justify-end gap-2 border-t border-border/60 pt-4">
 						<Button
 							type="button"
 							variant="outline"
@@ -581,9 +580,8 @@ export default function AccountSettingsClient({
 				</form>
 			</section>
 
-			{/* Password Change Card - Only show for email/password users */}
 			{hasPassword && (
-				<section className="px-4 py-4 sm:px-5">
+				<section className="space-y-3 border-t border-border/60 pt-6">
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium flex items-center gap-2">
 							<Lock className="h-4 w-4" />
@@ -681,9 +679,8 @@ export default function AccountSettingsClient({
 				</section>
 			)}
 
-			{/* Email Change Card */}
 			{hasPassword && (
-				<section className="px-4 py-4 sm:px-5">
+				<section className="space-y-3 border-t border-border/60 pt-6">
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium flex items-center gap-2">
 							<Mail className="h-4 w-4" />

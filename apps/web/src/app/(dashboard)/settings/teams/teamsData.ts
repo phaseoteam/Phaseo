@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 export async function getTeamsSettingsData() {
 	const supabase = await createClient();
@@ -161,6 +162,33 @@ export async function getTeamsSettingsData() {
 		}
 	}
 
+	const teamSsoSettingsByTeam: Record<string, TeamSsoSettingsRow> = {};
+	if (teamsArray.length) {
+		const { data: settingsRows } = await supabase
+			.from("team_settings")
+			.select(
+				"team_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
+			)
+			.in(
+				"team_id",
+				teamsArray.map((team) => team.id),
+			);
+
+		for (const row of settingsRows ?? []) {
+			const teamId = row?.team_id;
+			if (!teamId) continue;
+			teamSsoSettingsByTeam[teamId] = {
+				sso_enabled: Boolean(row.sso_enabled),
+				sso_enforced: Boolean(row.sso_enforced),
+				sso_mode: String(row.sso_mode ?? "none"),
+				sso_provider_identifier: row.sso_provider_identifier ?? null,
+				sso_domains: Array.isArray(row.sso_domains)
+					? (row.sso_domains as string[])
+					: [],
+			};
+		}
+	}
+
 	return {
 		teams: teamsArray,
 		membersByTeam,
@@ -171,6 +199,7 @@ export async function getTeamsSettingsData() {
 		personalTeamId,
 		manageableTeamIds,
 		walletBalances,
+		teamSsoSettingsByTeam,
 	};
 }
 

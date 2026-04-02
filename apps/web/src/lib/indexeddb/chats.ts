@@ -50,6 +50,7 @@ export type ChatModelSettings = {
     reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
     endpoint?: UnifiedChatEndpoint;
     webSearchEnabled?: boolean;
+    apiServerToolsEnabled?: boolean;
     imageOutputEnabled?: boolean;
     enabled?: boolean;
     displayName?: string;

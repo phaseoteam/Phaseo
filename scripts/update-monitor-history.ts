@@ -2,7 +2,8 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-const HISTORY_FILE = "apps/web/src/data/monitor-history.json";
+const DATA_ROOT = "packages/data/catalog/src/data";
+const HISTORY_FILE = `${DATA_ROOT}/monitor-history.json`;
 
 type ChangeAction = "added" | "changed" | "removed";
 
@@ -43,7 +44,7 @@ const DATA_DIRS = new Set([
 ]);
 
 function isDataFile(filePath: string): boolean {
-  if (!filePath.startsWith("apps/web/src/data/")) return false;
+  if (!filePath.startsWith(`${DATA_ROOT}/`)) return false;
   if (!filePath.endsWith(".json")) return false;
 
   const parts = filePath.split("/");

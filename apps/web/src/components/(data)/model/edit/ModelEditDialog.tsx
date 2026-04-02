@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { toast } from "sonner"
 import { updateModel } from "@/app/(dashboard)/models/actions"
 import { createClient } from "@/utils/supabase/client"
 import BasicTab from "./tabs/BasicTab"
@@ -117,8 +118,7 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
     setSaving(true)
     setError(null)
 
-    try {
-      await updateModel({
+    const savePromise = updateModel({
         modelId,
           name: model.name ?? undefined,
           organisation_id: model.organisation_id,
@@ -147,6 +147,15 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
             : undefined,
       })
 
+    toast.promise(savePromise, {
+      loading: "Saving model...",
+      success: "Model saved",
+      error: (err) =>
+        err instanceof Error ? err.message : "Failed to save changes",
+    })
+
+    try {
+      await savePromise
       setOpen(false)
     } catch (err) {
       console.error("[ModelEditDialog] Error saving:", err)
@@ -229,7 +238,6 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
               {currentTab === "providers" && (
                 <ProvidersTab
                   modelId={modelId}
-                  model={model}
                   providers={providers}
                 />
               )}

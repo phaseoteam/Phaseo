@@ -1,0 +1,53 @@
+{
+  "model_id": "google/gemma-3-12b",
+  "organisation_id": "google",
+  "name": "Gemma 3 12B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-03-12T00:00:00",
+  "release_date": "2025-03-12T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Gemma",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "google/gemma-3-12b",
+  "family_id": "google/gemma-3",
+  "links": [
+    {
+      "platform": "paper",
+      "url": "https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://huggingface.co/blog/gemma3"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/google/gemma-3-12b-it"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-08-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    },
+    {
+      "name": "parameter_count",
+      "value": 12000000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 12000000000000
+    }
+  ],
+  "benchmarks": []
+}

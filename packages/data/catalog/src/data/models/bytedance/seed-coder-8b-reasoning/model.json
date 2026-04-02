@@ -1,0 +1,18 @@
+{
+  "model_id": "bytedance/seed-coder-8b-reasoning",
+  "organisation_id": "bytedance",
+  "name": "Seed Coder 8B Reasoning",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "bytedance/seed-coder-8b-reasoning",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

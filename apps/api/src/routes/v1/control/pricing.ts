@@ -52,7 +52,7 @@ async function handlePricingModels(req: Request) {
 
         const { data: providerModels, error: pmError } = await supabase
             .from("data_api_provider_models")
-            .select("provider_api_model_id, provider_id, api_model_id, model_id, internal_model_id, is_active_gateway, effective_from, effective_to")
+            .select("provider_api_model_id, provider_id, api_model_id, model_id, is_active_gateway, effective_from, effective_to")
             .eq("is_active_gateway", true)
             .lte("effective_from", nowIso)
             .or(`effective_to.is.null,effective_to.gt.${nowIso}`);
@@ -81,7 +81,7 @@ async function handlePricingModels(req: Request) {
         const modelIds = Array.from(
             new Set(
                 (providerModels ?? [])
-                    .map((pm) => pm.model_id ?? pm.api_model_id ?? pm.internal_model_id)
+                    .map((pm) => pm.model_id ?? pm.api_model_id)
                     .filter(Boolean)
             )
         );
@@ -132,7 +132,7 @@ async function handlePricingModels(req: Request) {
             if (!pm) continue;
             const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
             comboMap.set(comboKey, {
-                model_id: pm.model_id ?? pm.api_model_id ?? pm.internal_model_id ?? null,
+                model_id: pm.model_id ?? pm.api_model_id ?? null,
             });
         }
 

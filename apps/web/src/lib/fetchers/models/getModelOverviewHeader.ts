@@ -12,6 +12,16 @@ export interface ModelOverviewHeader {
 	hidden?: boolean;
 }
 
+function isMissingRelationError(error: unknown): boolean {
+	const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
+	return (
+		text.includes("does not exist") ||
+		text.includes("could not find table") ||
+		text.includes("relation") ||
+		text.includes("schema cache")
+	);
+}
+
 export async function fetchModelOverviewHeader(
 	modelId: string,
 	includeHidden: boolean
@@ -37,7 +47,74 @@ export async function fetchModelOverviewHeader(
 
 	if (error) throw error;
 	if (!data) {
-		throw new Error(`Model not found: ${modelId}`);
+		const { data: internalVisibility } = await supabase
+			.from("data_models")
+			.select("hidden")
+			.eq("model_id", modelId)
+			.maybeSingle();
+		if (!includeHidden && internalVisibility?.hidden) {
+			throw new Error(`Model not found: ${modelId}`);
+		}
+
+		const { data: apiModelRow, error: apiModelError } = await supabase
+			.from("data_api_models")
+			.select("api_model_id, display_name, organisation_id")
+			.eq("api_model_id", modelId)
+			.maybeSingle();
+
+		const { count: providerMappingCount, error: providerMappingError } =
+			await supabase
+				.from("data_api_provider_models")
+				.select("provider_api_model_id", { count: "exact", head: true })
+				.eq("api_model_id", modelId);
+
+		if (providerMappingError) {
+			throw new Error(`Model not found: ${modelId}`);
+		}
+
+		if (apiModelError && !isMissingRelationError(apiModelError)) {
+			throw new Error(`Model not found: ${modelId}`);
+		}
+
+		const hasApiModel = Boolean(apiModelRow?.api_model_id);
+		const hasProviderMapping = (providerMappingCount ?? 0) > 0;
+		if (!hasApiModel && !hasProviderMapping) {
+			throw new Error(`Model not found: ${modelId}`);
+		}
+
+		const fallbackOrganisationId = modelId.includes("/")
+			? modelId.split("/")[0].trim()
+			: "";
+		const resolvedApiModelId = apiModelRow?.api_model_id ?? modelId;
+		const resolvedOrganisationId =
+			apiModelRow?.organisation_id ?? fallbackOrganisationId;
+		if (!resolvedApiModelId || !resolvedOrganisationId) {
+			throw new Error(`Model not found: ${modelId}`);
+		}
+
+		let organisationName = resolvedOrganisationId;
+		let organisationCountryCode = "";
+		if (resolvedOrganisationId) {
+			const { data: organisationRow } = await supabase
+				.from("data_organisations")
+				.select("name, country_code")
+				.eq("organisation_id", resolvedOrganisationId)
+				.maybeSingle();
+			organisationName =
+				organisationRow?.name ?? resolvedOrganisationId;
+			organisationCountryCode = organisationRow?.country_code ?? "";
+		}
+
+		return {
+			model_id: resolvedApiModelId,
+			name: apiModelRow?.display_name ?? resolvedApiModelId,
+			organisation_id: resolvedOrganisationId,
+			organisation: {
+				name: organisationName ?? "Unknown",
+				country_code: organisationCountryCode,
+			},
+			hidden: false,
+		};
 	}
 
 	const rawOrg = Array.isArray((data as any).organisation)

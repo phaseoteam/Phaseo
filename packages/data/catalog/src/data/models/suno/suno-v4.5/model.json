@@ -1,0 +1,18 @@
+{
+  "model_id": "suno/suno-v4.5",
+  "organisation_id": "suno",
+  "name": "Suno V4.5",
+  "status": "Available",
+  "previous_model_id": "suno/suno-v4-2024-11-19",
+  "announced_date": "2025-05-01T00:00:00",
+  "release_date": "2025-05-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "suno/suno-v4.5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

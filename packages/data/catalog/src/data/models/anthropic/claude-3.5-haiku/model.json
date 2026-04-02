@@ -1,0 +1,49 @@
+{
+  "model_id": "anthropic/claude-3.5-haiku",
+  "organisation_id": "anthropic",
+  "name": "Claude 3.5 Haiku",
+  "status": "Retired",
+  "previous_model_id": "anthropic/claude-3-haiku-2024-03-13",
+  "announced_date": "2024-10-22T00:00:00",
+  "release_date": "2024-11-04T00:00:00",
+  "deprecation_date": "2025-12-19T00:00:00",
+  "retirement_date": "2026-02-19T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-3.5-haiku",
+  "family_id": "anthropic/claude-3-5",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table"
+    },
+    {
+      "platform": "playground",
+      "url": "https://console.anthropic.com/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://assets.anthropic.com/m/1cd9d098ac3e6467/original/Claude-3-Model-Card-October-Addendum.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/3-5-models-and-computer-use"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-07-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8192
+    }
+  ],
+  "benchmarks": []
+}

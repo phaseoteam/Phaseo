@@ -41,7 +41,7 @@ async function RoutingSettingsContent() {
 		supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle(),
 		supabase
 			.from("team_settings")
-			.select("routing_mode, beta_channel_enabled")
+			.select("routing_mode, beta_channel_enabled, alpha_channel_enabled")
 			.eq("team_id", teamId)
 			.maybeSingle(),
 	]);
@@ -50,6 +50,7 @@ async function RoutingSettingsContent() {
 		<RoutingSettingsClient
 			initialMode={(settingsRow?.routing_mode as any) ?? "balanced"}
 			initialBetaChannelEnabled={Boolean(settingsRow?.beta_channel_enabled)}
+			initialAlphaChannelEnabled={Boolean(settingsRow?.alpha_channel_enabled)}
 			teamName={teamRow?.name ?? null}
 		/>
 	);

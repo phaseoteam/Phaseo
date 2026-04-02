@@ -9,6 +9,7 @@ import { findVideoJobRecordByNativeId } from "@core/video-jobs";
 import { finalizeVideoJob } from "@core/video-finalization";
 import { insertProviderEvent, markProviderEventProcessed } from "@core/provider-events";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks";
 import { json, withRuntime } from "@/routes/utils";
 
 const OPENAI_PROVIDER_ID = "openai";
@@ -333,6 +334,11 @@ async function processOpenAiVideoWebhook(args: {
 			lastWebhookAt: new Date().toISOString(),
 		},
 	});
+	dispatchVideoWebhookEventInBackground({
+		teamId: job.teamId,
+		videoId: job.videoId,
+		eventType: isCompleted ? "video.completed" : "video.failed",
+	});
 
 	await markProviderEventProcessed({
 		provider: OPENAI_PROVIDER_ID,
@@ -387,6 +393,11 @@ async function processAlibabaVideoWebhook(args: {
 			webhookEventType: eventType,
 			lastWebhookAt: new Date().toISOString(),
 		},
+	});
+	dispatchVideoWebhookEventInBackground({
+		teamId: job.teamId,
+		videoId: job.videoId,
+		eventType: terminal === "completed" ? "video.completed" : "video.failed",
 	});
 
 	await markProviderEventProcessed({

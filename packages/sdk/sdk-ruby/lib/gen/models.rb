@@ -1,22 +1,31 @@
 module AiStats
   module Gen
-    # @!attribute [rw] cost_cents
-    #   @return [Float, nil]
-    # @!attribute [rw] endpoint
-    #   @return [String, nil]
-    # @!attribute [rw] latency_ms
-    #   @return [Integer, nil]
+    # @!attribute [rw] byok_usage_inference
+    #   @return [Float]
+    # @!attribute [rw] completion_tokens
+    #   @return [Integer]
+    # @!attribute [rw] date
+    #   @return [String]
+    # @!attribute [rw] endpoint_id
+    #   @return [String]
     # @!attribute [rw] model
-    #   @return [String, nil]
-    # @!attribute [rw] provider
-    #   @return [String, nil]
-    # @!attribute [rw] request_id
-    #   @return [String, nil]
-    # @!attribute [rw] timestamp
-    #   @return [String, nil]
+    #   @return [String]
+    # @!attribute [rw] model_permaslug
+    #   @return [String]
+    # @!attribute [rw] prompt_tokens
+    #   @return [Integer]
+    # @!attribute [rw] provider_name
+    #   @return [String]
+    # @!attribute [rw] reasoning_tokens
+    #   @return [Integer]
+    # @!attribute [rw] requests
+    #   @return [Integer]
     # @!attribute [rw] usage
-    #   @return [Hash{String => Object}, nil]
-    ActivityEntry = Struct.new(:cost_cents, :endpoint, :latency_ms, :model, :provider, :request_id, :timestamp, :usage, keyword_init: true)
+    #   @return [Float]
+    ActivityEntry = Struct.new(:byok_usage_inference, :completion_tokens, :date, :endpoint_id, :model, :model_permaslug, :prompt_tokens, :provider_name, :reasoning_tokens, :requests, :usage, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    ActivityResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] error
     #   @return [String]
     # @!attribute [rw] ok
@@ -238,6 +247,15 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String, nil]
     CacheControl = Struct.new(:scope, :ttl, :type, keyword_init: true)
+    # @!attribute [rw] audio_url
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] format
+    #   @return [String, nil]
+    # @!attribute [rw] mime_type
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ChatAudioOutputPart = Struct.new(:audio_url, :format, :mime_type, :type, keyword_init: true)
     # @!attribute [rw] finish_reason
     #   @return [String, nil]
     # @!attribute [rw] index
@@ -331,8 +349,19 @@ module AiStats
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     ChatCompletionsResponse = Struct.new(:choices, :created, :id, :model, :object, :usage, keyword_init: true)
+    # @!attribute [rw] image_url
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] mime_type
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ChatImageOutputPart = Struct.new(:image_url, :mime_type, :type, keyword_init: true)
+    # @!attribute [rw] audios
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] content
     #   @return [String, Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] images
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] role
@@ -341,7 +370,7 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] tool_calls
     #   @return [Array<Hash{String => Object}>, nil]
-    ChatMessage = Struct.new(:content, :name, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    ChatMessage = Struct.new(:audios, :content, :images, :name, :role, :tool_call_id, :tool_calls, keyword_init: true)
     # @!attribute [rw] deprecation_date
     #   @return [String, nil]
     # @!attribute [rw] hidden
@@ -444,6 +473,18 @@ module AiStats
     # @!attribute [rw] purpose
     #   @return [String]
     FileUploadRequest = Struct.new(:file, :purpose, keyword_init: true)
+    # @!attribute [rw] function
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] type
+    #   @return [String]
+    FunctionToolDefinition = Struct.new(:function, :type, keyword_init: true)
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] timezone
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayDatetimeToolDefinition = Struct.new(:parameters, :timezone, :type, keyword_init: true)
     # @!attribute [rw] limit
     #   @return [Integer]
     # @!attribute [rw] models
@@ -947,13 +988,47 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String, nil]
     ResponsesInputItem = Struct.new(:content, :role, :type, keyword_init: true)
+    # @!attribute [rw] audio_url
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] b64_json
+    #   @return [String, nil]
+    # @!attribute [rw] format
+    #   @return [String, nil]
+    # @!attribute [rw] mime_type
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ResponsesOutputAudioPart = Struct.new(:audio_url, :b64_json, :format, :mime_type, :type, keyword_init: true)
+    ResponsesOutputContentPart = Object
+    # @!attribute [rw] b64_json
+    #   @return [String, nil]
+    # @!attribute [rw] image_url
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] mime_type
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ResponsesOutputImagePart = Struct.new(:b64_json, :image_url, :mime_type, :type, keyword_init: true)
+    # @!attribute [rw] arguments
+    #   @return [String, nil]
+    # @!attribute [rw] call_id
+    #   @return [String, nil]
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
     # @!attribute [rw] role
     #   @return [String, nil]
     # @!attribute [rw] type
     #   @return [String, nil]
-    ResponsesOutputItem = Struct.new(:content, :role, :type, keyword_init: true)
+    ResponsesOutputItem = Struct.new(:arguments, :call_id, :content, :name, :role, :type, keyword_init: true)
+    # @!attribute [rw] annotations
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] text
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    ResponsesOutputTextPart = Struct.new(:annotations, :text, :type, keyword_init: true)
     # @!attribute [rw] background
     #   @return [Boolean, nil]
     # @!attribute [rw] debug
@@ -1065,16 +1140,21 @@ module AiStats
     # @!attribute [rw] error
     #   @return [Hash{String => Object}, nil]
     ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
+    # @!attribute [rw] datetime_requests
+    #   @return [Integer, nil]
+    ServerToolUsage = Struct.new(:datetime_requests, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type
     #   @return [String]
     TextContentPart = Struct.new(:text, :type, keyword_init: true)
+    TextGenerateTool = Object
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type
     #   @return [String]
     TextModerationInput = Struct.new(:text, :type, keyword_init: true)
+    TextToolChoice = Object
     # @!attribute [rw] function
     #   @return [Hash{String => Object}]
     # @!attribute [rw] id
@@ -1093,9 +1173,11 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] prompt_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] server_tool_use
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] total_tokens
     #   @return [Integer, nil]
-    Usage = Struct.new(:completion_tokens, :prompt_tokens, :total_tokens, keyword_init: true)
+    Usage = Struct.new(:completion_tokens, :prompt_tokens, :server_tool_use, :total_tokens, keyword_init: true)
     # @!attribute [rw] type
     #   @return [String]
     # @!attribute [rw] video_url
@@ -1110,69 +1192,118 @@ module AiStats
     VideoDeleteResponse = Struct.new(:deleted, :id, :object, keyword_init: true)
     # @!attribute [rw] aspect_ratio
     #   @return [String, nil]
-    # @!attribute [rw] duration
+    # @!attribute [rw] compression_quality
     #   @return [Integer, nil]
-    # @!attribute [rw] duration_seconds
+    # @!attribute [rw] duration
     #   @return [Integer, nil]
     # @!attribute [rw] enhance_prompt
     #   @return [Boolean, nil]
     # @!attribute [rw] generate_audio
     #   @return [Boolean, nil]
-    # @!attribute [rw] input
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] input_image
-    #   @return [String, Hash{String => Object}, nil]
-    # @!attribute [rw] input_last_frame
-    #   @return [String, Hash{String => Object}, nil]
-    # @!attribute [rw] input_reference
-    #   @return [String, nil]
-    # @!attribute [rw] input_reference_mime_type
-    #   @return [String, nil]
-    # @!attribute [rw] input_video
-    #   @return [String, Hash{String => Object}, nil]
-    # @!attribute [rw] last_frame
-    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] input_references
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] model
     #   @return [String]
     # @!attribute [rw] negative_prompt
     #   @return [String, nil]
-    # @!attribute [rw] number_of_videos
-    #   @return [Integer, nil]
-    # @!attribute [rw] output_storage_uri
-    #   @return [String, nil]
+    # @!attribute [rw] output
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] person_generation
     #   @return [String, nil]
     # @!attribute [rw] prompt
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] quality
+    # @!attribute [rw] provider_params
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] resize_mode
     #   @return [String, nil]
-    # @!attribute [rw] ratio
-    #   @return [String, nil]
-    # @!attribute [rw] reference_images
-    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] resolution
     #   @return [String, nil]
     # @!attribute [rw] sample_count
     #   @return [Integer, nil]
-    # @!attribute [rw] seconds
-    #   @return [Integer, String, nil]
     # @!attribute [rw] seed
     #   @return [Integer, nil]
-    VideoGenerationRequest = Struct.new(:aspect_ratio, :duration, :duration_seconds, :enhance_prompt, :generate_audio, :input, :input_image, :input_last_frame, :input_reference, :input_reference_mime_type, :input_video, :last_frame, :model, :negative_prompt, :number_of_videos, :output_storage_uri, :person_generation, :prompt, :provider, :quality, :ratio, :reference_images, :resolution, :sample_count, :seconds, :seed, keyword_init: true)
-    # @!attribute [rw] created
+    # @!attribute [rw] size
+    #   @return [String, nil]
+    # @!attribute [rw] webhook
+    #   @return [Hash{String => Object}, nil]
+    VideoGenerationRequest = Struct.new(:aspect_ratio, :compression_quality, :duration, :enhance_prompt, :generate_audio, :input_references, :model, :negative_prompt, :output, :person_generation, :prompt, :provider, :provider_params, :resize_mode, :resolution, :sample_count, :seed, :size, :webhook, keyword_init: true)
+    # @!attribute [rw] asset
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] audio
+    #   @return [Boolean, nil]
+    # @!attribute [rw] billing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] completed_at
+    #   @return [Integer, String, nil]
+    # @!attribute [rw] content_url
+    #   @return [String, nil]
+    # @!attribute [rw] created_at
+    #   @return [Integer, String, nil]
+    # @!attribute [rw] download_url
+    #   @return [String, nil]
+    # @!attribute [rw] error
+    #   @return [Object, nil]
+    # @!attribute [rw] expires_at
     #   @return [Integer, nil]
+    # @!attribute [rw] generation_id
+    #   @return [String, nil]
     # @!attribute [rw] id
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String, nil]
     # @!attribute [rw] object
     #   @return [String, nil]
-    # @!attribute [rw] output
+    # @!attribute [rw] output_access
+    #   @return [String, nil]
+    # @!attribute [rw] outputs
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] poll_after_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] polling_url
+    #   @return [String, nil]
+    # @!attribute [rw] progress
+    #   @return [Integer, nil]
+    # @!attribute [rw] progress_source
+    #   @return [String, nil]
+    # @!attribute [rw] provider
+    #   @return [String, nil]
+    # @!attribute [rw] seconds
+    #   @return [Float, nil]
+    # @!attribute [rw] size
+    #   @return [String, nil]
+    # @!attribute [rw] started_at
+    #   @return [Integer, String, nil]
     # @!attribute [rw] status
     #   @return [String, nil]
-    VideoGenerationResponse = Struct.new(:created, :id, :model, :object, :output, :status, keyword_init: true)
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    VideoGenerationResponse = Struct.new(:asset, :audio, :billing, :completed_at, :content_url, :created_at, :download_url, :error, :expires_at, :generation_id, :id, :model, :object, :output_access, :outputs, :poll_after_seconds, :polling_url, :progress, :progress_source, :provider, :seconds, :size, :started_at, :status, :usage, keyword_init: true)
+    # @!attribute [rw] image_url
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] reference_type
+    #   @return [String, nil]
+    # @!attribute [rw] role
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    VideoInputReference = Struct.new(:image_url, :reference_type, :role, :type, keyword_init: true)
+    # @!attribute [rw] bytes_available
+    #   @return [Boolean, nil]
+    # @!attribute [rw] content_url
+    #   @return [String, nil]
+    # @!attribute [rw] download_url
+    #   @return [String, nil]
+    # @!attribute [rw] expires_at
+    #   @return [Integer, nil]
+    # @!attribute [rw] index
+    #   @return [Integer, nil]
+    # @!attribute [rw] mime_type
+    #   @return [String, nil]
+    VideoOutput = Struct.new(:bytes_available, :content_url, :download_url, :expires_at, :index, :mime_type, keyword_init: true)
+    # @!attribute [rw] access
+    #   @return [String, nil]
+    VideoOutputConfig = Struct.new(:access, keyword_init: true)
   end
 end

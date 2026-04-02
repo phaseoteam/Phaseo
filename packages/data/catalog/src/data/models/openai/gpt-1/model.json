@@ -1,0 +1,19 @@
+{
+  "model_id": "openai/gpt-1",
+  "organisation_id": "openai",
+  "name": "GPT 1",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2018-06-11T00:00:00",
+  "release_date": "2018-06-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-1",
+  "family_id": "openai/gpt-1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

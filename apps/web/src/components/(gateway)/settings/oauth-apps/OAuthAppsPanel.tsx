@@ -1,31 +1,37 @@
 "use client";
 
 import React from "react";
-import { Card } from "@/components/ui/card";
 import OAuthAppCard from "./OAuthAppCard";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import { AppWindow } from "lucide-react";
 
 interface OAuthAppsPanelProps {
 	oauthApps: any[];
-	initialTeamId: string | null;
-	currentUserId: string;
 }
 
 export default function OAuthAppsPanel({
 	oauthApps,
-	initialTeamId,
-	currentUserId,
 }: OAuthAppsPanelProps) {
 	if (!oauthApps || oauthApps.length === 0) {
 		return (
-			<Card className="p-8 text-center">
-				<div className="text-muted-foreground">
-					<p className="text-lg font-medium mb-2">No OAuth apps yet</p>
-					<p className="text-sm">
-						Create your first OAuth app to enable third-party integrations
-						with your AI Stats account.
-					</p>
-				</div>
-			</Card>
+			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<AppWindow className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>No OAuth apps yet</EmptyTitle>
+					<EmptyDescription>
+						Create your first OAuth app to enable third-party integrations with
+						your AI Stats account.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 
@@ -35,7 +41,6 @@ export default function OAuthAppsPanel({
 				<OAuthAppCard
 					key={app.id}
 					app={app}
-					currentUserId={currentUserId}
 				/>
 			))}
 		</div>

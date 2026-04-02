@@ -77,6 +77,39 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Run your tool, then send the tool result back in the next request so the assistant can finish the answer.
 
+## Built-in server tool: datetime
+
+The gateway currently exposes one built-in server tool:
+
+- `gateway:datetime`
+
+Web-search tool types are temporarily disabled at the gateway request layer.
+
+This tool runs on the gateway side (no client-side executor required). The gateway rewrites it into an upstream tool/function call, executes it, and feeds the tool result back into the model loop.
+
+Supported request shape:
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezone": "Europe/London"
+      }
+    }
+  ]
+}
+```
+
+Notes:
+
+- `parameters.timezone` is optional and must be a valid IANA timezone.
+- `timezone` can also be provided as a top-level shortcut on the tool object.
+- The result contains ISO datetime plus the resolved timezone.
+- Usage includes `usage.server_tool_use.datetime_requests`.
+- Prefer `tool_choice: "auto"` so the model can decide when to call it.
+
 ## Current limitation
 
 At the gateway request-contract layer, `stream: true` with tools currently returns `400 invalid_request` with:

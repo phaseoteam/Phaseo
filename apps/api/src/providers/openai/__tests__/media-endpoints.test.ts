@@ -39,6 +39,34 @@ const PRICING_CARD = {
 	],
 } as any;
 
+const IMAGE_DIMENSION_PRICING_CARD = {
+	provider: "openai",
+	model: "openai/gpt-image-1-mini",
+	endpoint: "images.generations",
+	effective_from: null,
+	effective_to: null,
+	currency: "USD",
+	version: null,
+	rules: [
+		{
+			meter: "output_image",
+			unit: "image",
+			unit_size: 1,
+			price_per_unit: 0.036,
+			currency: "USD",
+			pricing_plan: "standard",
+			note: null,
+			match: [
+				{ path: "image_params.quality", op: "eq", value: "high", or_group: 1, and_index: 1 },
+				{ path: "image_params.resolution", op: "eq", value: "1024x1024", or_group: 1, and_index: 2 },
+			],
+			priority: 100,
+			effective_from: null,
+			effective_to: null,
+		},
+	],
+} as any;
+
 beforeAll(() => {
 	setupTestRuntime();
 });
@@ -98,6 +126,44 @@ describe("OpenAI media endpoints", () => {
 		expect(capturedBody.moderation).toBe("low");
 		expect(capturedBody.output_format).toBe("webp");
 		expect(capturedBody.output_compression).toBe(60);
+	});
+
+	it("prices image generations using output_image + image_params context", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/images/generations"),
+				response: jsonResponse({
+					created: 1700000000,
+					data: [{ b64_json: "abc" }],
+					usage: { input_tokens: 10, output_tokens: 20, total_tokens: 30 },
+				}),
+			},
+		]);
+
+		const result = await execImages({
+			endpoint: "images.generations",
+			model: "openai/gpt-image-1-mini",
+			body: {
+				model: "openai/gpt-image-1-mini",
+				prompt: "A stylized mountain scene",
+				size: "1024x1024",
+				quality: "high",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: IMAGE_DIMENSION_PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(result.bill.usage?.output_image).toBe(1);
+		expect(result.bill.usage?.pricing?.lines?.some((line: any) => line.dimension === "output_image")).toBe(true);
+		expect(result.bill.usage?.pricing?.total_nanos).toBe(36_000_000);
 	});
 
 	it("forwards GPT image edit parameters", async () => {

@@ -2,120 +2,77 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
+import { resolveAuthCallbackUrl } from '@/lib/auth/authOrigin'
 
 const cookieOpts = {
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    maxAge: 60 * 60 * 24 * 180, // 6 months
+	path: '/',
+	httpOnly: true,
+	secure: process.env.NODE_ENV === 'production',
+	sameSite: 'lax' as const,
+	maxAge: 60 * 60 * 24 * 180, // 6 months
 }
 
-function stripTrailingSlash(value: string): string {
-    return value.replace(/\/+$/, '')
-}
-
-function configuredAuthOrigins(): string[] {
-    const candidates = [
-        String(process.env.NEXT_PUBLIC_WEBSITE_URL ?? '').trim(),
-        String(process.env.WEBSITE_URL ?? '').trim(),
-    ]
-        .map((value) => stripTrailingSlash(value))
-        .filter(Boolean)
-    return [...new Set(candidates)]
-}
-
-async function resolveAuthOrigin(): Promise<string> {
-    const configuredOrigins = configuredAuthOrigins()
-    const isDev = process.env.NODE_ENV !== 'production'
-
-    if (!isDev) {
-        if (configuredOrigins.length > 0) return configuredOrigins[0]!
-        throw new Error(
-            'NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set for auth redirects in production.'
-        )
-    }
-
-    const headerStore = await headers()
-    const originHeader = headerStore.get('origin')?.trim()
-    const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
-    const fallbackProto = 'http'
-    const hostOrigin = host ? `${fallbackProto}://${host}` : null
-
-    if (
-        originHeader &&
-        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(originHeader)
-    ) {
-        return stripTrailingSlash(originHeader)
-    }
-    if (hostOrigin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostOrigin)) {
-        return stripTrailingSlash(hostOrigin)
-    }
-
-    return 'http://localhost:3000'
+async function setAuthProviderCookie(provider: string): Promise<void> {
+	await (await cookies()).set('auth_provider', provider, cookieOpts)
 }
 
 export async function handleOAuthRedirect(formData: FormData) {
-    const supabase = await createClient()
-    const provider = String(formData.get('provider') ?? 'google').toLowerCase()
-    const authOrigin = await resolveAuthOrigin()
-    const callbackBase = `${authOrigin}/auth/callback`;
-    const redirectTo = callbackBase;
+	const supabase = await createClient()
+	const provider = String(formData.get('provider') ?? 'google').toLowerCase()
+	const redirectTo = await resolveAuthCallbackUrl(formData.get('returnUrl'))
 
-    // Provisional hint; callback will overwrite with the authoritative provider if needed
-    await (await cookies()).set('auth_provider', provider, cookieOpts)
+	await setAuthProviderCookie(provider)
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider as any,
-        options: { redirectTo },
-    })
+	const { data, error } = await supabase.auth.signInWithOAuth({
+		provider: provider as any,
+		options: { redirectTo },
+	})
 
-    if (error || !data?.url) {
-        console.error('OAuth redirect initialization failed', {
-            provider,
-            message: error?.message ?? null,
-            status: (error as { status?: number } | null)?.status ?? null,
-            code: (error as { code?: string } | null)?.code ?? null,
-        })
-        redirect('/error?message=Authentication failed')
-    }
-    redirect(data.url as any)
+	if (error || !data?.url) {
+		console.error('OAuth redirect initialization failed', {
+			provider,
+			message: error?.message ?? null,
+			status: (error as { status?: number } | null)?.status ?? null,
+			code: (error as { code?: string } | null)?.code ?? null,
+		})
+		redirect('/error?message=Authentication failed')
+	}
+	redirect(data.url as any)
 }
 
 export async function handleEmailSignup(formData: FormData) {
-    const supabase = await createClient()
-    const email = String(formData.get('email') ?? '')
-    const password = String(formData.get('password') ?? '')
-    const authOrigin = await resolveAuthOrigin()
-    const callbackBase = `${authOrigin}/auth/callback`;
-    const callbackUrl = callbackBase;
+	const supabase = await createClient()
+	const email = String(formData.get('email') ?? '')
+	const password = String(formData.get('password') ?? '')
+	const callbackUrl = await resolveAuthCallbackUrl(formData.get('returnUrl'))
 
-    // Supabase signUp may return "User already registered" for duplicate emails.
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: callbackUrl },
-    })
-    if (error) {
-        console.error('Email signup failed', {
-            message: error.message,
-            status: (error as { status?: number }).status,
-            code: (error as { code?: string }).code,
-            emailDomain: email.includes('@') ? email.split('@')[1] : null,
-        })
-        const message = (error.message ?? '').toLowerCase()
-        if (message.includes('already registered') || message.includes('already exists')) {
-            redirect('/sign-in?signup=exists')
-        }
-        redirect(`/error?message=${encodeURIComponent(error.message || 'Authentication failed')}`)
-    }
+	// Supabase signUp may return "User already registered" for duplicate emails.
+	const { data, error } = await supabase.auth.signUp({
+		email,
+		password,
+		options: { emailRedirectTo: callbackUrl },
+	})
+	if (error) {
+		console.error('Email signup failed', {
+			message: error.message,
+			status: (error as { status?: number }).status,
+			code: (error as { code?: string }).code,
+			emailDomain: email.includes('@') ? email.split('@')[1] : null,
+		})
+		const message = (error.message ?? '').toLowerCase()
+		if (message.includes('already registered') || message.includes('already exists')) {
+			redirect('/sign-in?signup=exists')
+		}
+		redirect(`/error?message=${encodeURIComponent(error.message || 'Authentication failed')}`)
+	}
 
-    // Only remember the method, not the identifier
-    await (await cookies()).set('auth_provider', 'email', cookieOpts)
+	await setAuthProviderCookie('email')
 
-    if (data?.session) {
-        redirect(`${callbackUrl}?type=email`)
-    }
-    redirect('/sign-in?signup=check-email')
+	if (data?.session) {
+		const callback = new URL(callbackUrl)
+		callback.searchParams.set('type', 'email')
+		redirect(callback.toString())
+	}
+	redirect('/sign-in?signup=check-email')
 }

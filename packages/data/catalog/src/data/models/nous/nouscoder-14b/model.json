@@ -1,0 +1,23 @@
+{
+  "model_id": "nous/nouscoder-14b",
+  "organisation_id": "nous",
+  "name": "NousCoder 14B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-06T00:00:00",
+  "release_date": "2026-01-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "nous/nouscoder-14b",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/NousResearch/NousCoder-14B"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

@@ -11,13 +11,14 @@ import { createClient } from "@/utils/supabase/server";
  */
 
 interface ApproveAuthorizationInput {
-	client_id: string;
+	authorization_id?: string;
+	client_id?: string;
 	team_id: string;
-	scopes: string[];
-	redirect_uri: string;
+	scopes?: string[];
+	redirect_uri?: string;
 	state?: string;
-	code_challenge: string;
-	code_challenge_method: string;
+	code_challenge?: string;
+	code_challenge_method?: string;
 }
 
 interface ConsentResult {
@@ -42,6 +43,7 @@ export async function approveAuthorizationAction(
 ): Promise<ConsentResult> {
 	try {
 		const supabase = await createClient();
+		const oauthClient = supabase.auth.oauth as any;
 
 		// Get current user
 		const {
@@ -51,6 +53,54 @@ export async function approveAuthorizationAction(
 
 		if (userError || !user) {
 			return { error: "Unauthorized" };
+		}
+
+		let resolvedClientId = input.client_id?.trim() || null;
+		let scopes = (input.scopes ?? []).filter(
+			(scope): scope is string => typeof scope === "string" && scope.trim().length > 0
+		);
+
+		if (input.authorization_id) {
+			const { data: details, error: detailsError } =
+				await oauthClient.getAuthorizationDetails(input.authorization_id);
+
+			if (detailsError || !details) {
+				return {
+					error:
+						detailsError?.message ||
+						"OAuth authorization request not found or expired",
+				};
+			}
+
+			if ("redirect_url" in details && details.redirect_url) {
+				return {
+					data: {
+						redirect_url: details.redirect_url,
+						authorization_id: input.authorization_id,
+					},
+				};
+			}
+
+			if (!resolvedClientId && typeof details.client?.id === "string") {
+				resolvedClientId = details.client.id;
+			}
+			if (typeof details.scope === "string" && details.scope.trim().length > 0) {
+				scopes = details.scope
+					.split(" ")
+					.map((scope: string) => scope.trim())
+					.filter((scope: string) => scope.length > 0);
+			}
+		}
+
+		if (!resolvedClientId) {
+			return {
+				error:
+					"Missing client identifier for OAuth authorization. Please restart the OAuth flow.",
+			};
+		}
+
+		if (scopes.length === 0) {
+			scopes = ["openid", "email", "gateway:access"];
 		}
 
 		// Verify user is a member of the selected team
@@ -71,7 +121,7 @@ export async function approveAuthorizationAction(
 		const { data: oauthApp, error: appError } = await supabase
 			.from("oauth_app_metadata")
 			.select("id, status")
-			.eq("client_id", input.client_id)
+			.eq("client_id", resolvedClientId)
 			.eq("status", "active")
 			.single();
 
@@ -84,7 +134,7 @@ export async function approveAuthorizationAction(
 			.from("oauth_authorizations")
 			.select("id, revoked_at")
 			.eq("user_id", user.id)
-			.eq("client_id", input.client_id)
+			.eq("client_id", resolvedClientId)
 			.eq("team_id", input.team_id)
 			.maybeSingle();
 
@@ -94,7 +144,7 @@ export async function approveAuthorizationAction(
 				await supabase
 					.from("oauth_authorizations")
 					.update({
-						scopes: input.scopes,
+						scopes,
 						revoked_at: null,
 					})
 					.eq("id", existingAuth.id);
@@ -103,7 +153,7 @@ export async function approveAuthorizationAction(
 				await supabase
 					.from("oauth_authorizations")
 					.update({
-						scopes: input.scopes,
+						scopes,
 					})
 					.eq("id", existingAuth.id);
 			}
@@ -113,9 +163,9 @@ export async function approveAuthorizationAction(
 				.from("oauth_authorizations")
 				.insert({
 					user_id: user.id,
-					client_id: input.client_id,
+					client_id: resolvedClientId,
 					team_id: input.team_id,
-					scopes: input.scopes,
+					scopes,
 				});
 
 			if (authError) {
@@ -125,25 +175,45 @@ export async function approveAuthorizationAction(
 			}
 		}
 
-		// NOTE: In production, this would call Supabase OAuth to generate authorization code
-		// const { data: authCode, error: codeError } = await supabase.auth.oauth.approveAuthorization({
-		//   client_id: input.client_id,
-		//   redirect_uri: input.redirect_uri,
-		//   scope: input.scopes.join(' '),
-		//   code_challenge: input.code_challenge,
-		//   code_challenge_method: input.code_challenge_method,
-		// });
+		if (input.authorization_id) {
+			const { data: redirectData, error: approveError } =
+				await oauthClient.approveAuthorization(input.authorization_id, {
+					skipBrowserRedirect: true,
+				});
 
-		// TEMPORARY: Generate mock authorization code for development
-		const mockAuthCode = `auth_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+			if (approveError || !redirectData?.redirect_url) {
+				return {
+					error:
+						approveError?.message ||
+						"Failed to finalize OAuth authorization",
+				};
+			}
 
-		// Build redirect URL with authorization code
+			return {
+				data: {
+					redirect_url: redirectData.redirect_url,
+					authorization_id: input.authorization_id,
+				},
+			};
+		}
+
+		if (!input.redirect_uri) {
+			return {
+				error:
+					"Missing authorization_id. Please restart the OAuth flow from the client application.",
+			};
+		}
+
+		// Legacy fallback for older direct consent links.
 		const redirectUrl = new URL(input.redirect_uri);
-		redirectUrl.searchParams.set("code", mockAuthCode);
+		redirectUrl.searchParams.set("error", "invalid_request");
+		redirectUrl.searchParams.set(
+			"error_description",
+			"Missing authorization_id. Please restart the OAuth flow."
+		);
 		if (input.state) {
 			redirectUrl.searchParams.set("state", input.state);
 		}
-
 		return {
 			data: {
 				redirect_url: redirectUrl.toString(),
@@ -162,10 +232,41 @@ export async function approveAuthorizationAction(
  * the authorization was denied by the user.
  */
 export async function denyAuthorizationAction(input: {
-	redirect_uri: string;
+	authorization_id?: string;
+	redirect_uri?: string;
 	state?: string;
 }): Promise<ConsentResult> {
 	try {
+		if (input.authorization_id) {
+			const supabase = await createClient();
+			const oauthClient = supabase.auth.oauth as any;
+			const { data: redirectData, error } = await oauthClient.denyAuthorization(
+				input.authorization_id,
+				{ skipBrowserRedirect: true }
+			);
+
+			if (error || !redirectData?.redirect_url) {
+				return {
+					error:
+						error?.message || "Failed to deny authorization request",
+				};
+			}
+
+			return {
+				data: {
+					redirect_url: redirectData.redirect_url,
+					authorization_id: input.authorization_id,
+				},
+			};
+		}
+
+		if (!input.redirect_uri) {
+			return {
+				error:
+					"Missing authorization_id. Please restart the OAuth flow from the client application.",
+			};
+		}
+
 		// Build redirect URL with error
 		const redirectUrl = new URL(input.redirect_uri);
 		redirectUrl.searchParams.set("error", "access_denied");

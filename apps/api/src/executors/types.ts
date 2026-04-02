@@ -59,6 +59,13 @@ export type ExecutorExecuteArgs = {
 		requestedModel?: string;
 		forceGatewayKey?: boolean;
 		beta?: RequestBetaOptions;
+		appId?: string | null;
+		sessionId?: string | null;
+		requestUserId?: string | null;
+		trace?: Record<string, unknown> | null;
+		authMethod?: "api_key" | "oauth";
+		oauthClientId?: string | null;
+		oauthUserId?: string | null;
 	};
 };
 

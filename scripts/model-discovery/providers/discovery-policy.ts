@@ -26,6 +26,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         active: true,
     },
     {
+        platformId: "akashml",
+        platformName: "AkashML",
+        providerIds: ["akashml"],
+        modelsEndpoint: "https://api.akashml.com/v1/models",
+        active: true,
+    },
+    {
         platformId: "aionlabs",
         platformName: "AionLabs",
         providerIds: ["aion-labs"],
@@ -249,6 +256,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         reason: "No API models endpoint mapped yet.",
     },
     {
+        platformId: "ionrouter",
+        platformName: "IonRouter",
+        providerIds: ["ionrouter"],
+        modelsEndpoint: "https://api.ionrouter.io/v1/models",
+        active: true,
+    },
+    {
         platformId: "minimax",
         platformName: "MiniMax",
         providerIds: ["minimax", "minimax-lightning"],
@@ -281,7 +295,11 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
     {
         platformId: "nebius-token-factory",
         platformName: "Nebius Token Factory",
-        providerIds: ["nebius-token-factory"],
+        providerIds: [
+            "nebius-token-factory",
+            "nebius-token-factory-eu-north-1",
+            "nebius-token-factory-us-central-1",
+        ],
         modelsEndpoint: "https://api.tokenfactory.nebius.com/v1/models",
         active: true,
     },

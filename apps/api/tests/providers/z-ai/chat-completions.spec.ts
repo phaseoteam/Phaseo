@@ -183,7 +183,7 @@ describe("Z.AI - Chat Completions", () => {
 
 			expect(response.choices[0].message.content).toBeDefined();
 
-			// Verify reasoning_details format (OpenRouter-compatible)
+		// Verify reasoning_details format (gateway-compatible)
 			if (response.choices[0].message.reasoning_details) {
 				expect(Array.isArray(response.choices[0].message.reasoning_details)).toBe(true);
 				const detail = response.choices[0].message.reasoning_details[0];

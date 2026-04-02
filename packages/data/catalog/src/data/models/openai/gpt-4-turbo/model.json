@@ -1,0 +1,36 @@
+{
+  "model_id": "openai/gpt-4-turbo",
+  "organisation_id": "openai",
+  "name": "GPT 4 Turbo (2024-01-25)",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-4-turbo-2023-11-06",
+  "announced_date": null,
+  "release_date": "2024-01-25T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4-turbo",
+  "family_id": "openai/gpt-4",
+  "links": [],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1312,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1309,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 5
+    }
+  ]
+}

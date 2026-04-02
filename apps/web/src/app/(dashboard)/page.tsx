@@ -73,15 +73,15 @@ export default function Page() {
 								Access 200+ AI models through a unified API, with open benchmarks, pricing data, and reliability insights.
 							</p>
 						</div>
-						<div className="flex flex-wrap justify-center gap-3">
-							<Button asChild size="lg" variant="outline" className="h-11 rounded-xl px-6 text-sm font-semibold">
-								<Link href="/models" className="group inline-flex items-center gap-2 whitespace-nowrap">
+						<div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+							<Button asChild size="lg" variant="outline" className="h-11 w-full rounded-xl text-sm font-semibold">
+								<Link href="/models" className="group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap">
 									<span>Explore</span>
 									<ExploreModelsProviderTicker />
 									<span>Models</span>
 								</Link>
 							</Button>
-							<Button asChild size="lg" className="h-11 rounded-xl px-6 text-sm font-semibold">
+							<Button asChild size="lg" className="h-11 w-full rounded-xl text-sm font-semibold">
 								<Link href="/settings/keys">
 									Get API Key
 									<ArrowRight className="h-4 w-4" />
@@ -136,14 +136,14 @@ export default function Page() {
 							);
 						})}
 					</div>
-					<div className="flex flex-wrap justify-center gap-3">
-						<Button asChild size="lg" className="h-11 rounded-xl px-6 text-sm font-semibold">
+					<div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+						<Button asChild size="lg" className="h-11 w-full rounded-xl text-sm font-semibold">
 							<Link href="/pricing">
 								View pricing
 								<ArrowRight className="h-4 w-4" />
 							</Link>
 						</Button>
-						<Button asChild size="lg" variant="outline" className="h-11 rounded-xl px-6 text-sm font-semibold">
+						<Button asChild size="lg" variant="outline" className="h-11 w-full rounded-xl text-sm font-semibold">
 							<Link href="/tools/pricing-calculator">Use pricing calculator</Link>
 						</Button>
 					</div>

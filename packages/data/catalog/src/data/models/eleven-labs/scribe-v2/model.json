@@ -1,0 +1,18 @@
+{
+  "model_id": "eleven-labs/scribe-v2",
+  "organisation_id": "eleven-labs",
+  "name": "Scribe V2",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-09T00:00:00",
+  "release_date": "2026-01-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "text",
+  "api_model_id": "eleven-labs/scribe-v2",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

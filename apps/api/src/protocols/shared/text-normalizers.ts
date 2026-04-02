@@ -85,9 +85,13 @@ export function normalizeModalities(
 		.map((value) => {
 			if (value === "text") return "text";
 			if (value === "image" || value === "images") return "image";
+			if (value === "audio" || value === "audios") return "audio";
 			return "";
 		})
-		.filter((value): value is "text" | "image" => value === "text" || value === "image");
+		.filter(
+			(value): value is "text" | "image" | "audio" =>
+				value === "text" || value === "image" || value === "audio",
+		);
 
 	return mapped.length > 0 ? Array.from(new Set(mapped)) : undefined;
 }

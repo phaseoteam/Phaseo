@@ -1,64 +1,185 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import {
+	ArrowUpRight,
+	AudioLines,
+	Binary,
+	ImageIcon,
+	Shield,
+	Type,
+	Video,
+	type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import { Logo } from "@/components/Logo";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Props = {
 	api_provider: APIProviderCardType;
 };
 
+type ModalityMeta = {
+	key: keyof APIProviderCardType["modality_support"];
+	label: string;
+	Icon: LucideIcon;
+};
+
+const MODALITIES: ModalityMeta[] = [
+	{ key: "text", label: "Text", Icon: Type },
+	{ key: "image", label: "Image", Icon: ImageIcon },
+	{ key: "video", label: "Video", Icon: Video },
+	{ key: "audio", label: "Audio", Icon: AudioLines },
+	{ key: "moderation", label: "Moderation", Icon: Shield },
+	{ key: "embedding", label: "Embedding", Icon: Binary },
+];
+
+function formatTokens(value: number): string {
+	if (!Number.isFinite(value) || value <= 0) return "0";
+
+	const thresholds = [
+		{ value: 1_000_000_000_000_000, suffix: "Q" }, // Quadrillion
+		{ value: 1_000_000_000_000, suffix: "T" }, // Trillion
+		{ value: 1_000_000_000, suffix: "B" }, // Billion
+		{ value: 1_000_000, suffix: "M" }, // Million
+		{ value: 1_000, suffix: "K" }, // Thousand
+	] as const;
+
+	for (const threshold of thresholds) {
+		if (value >= threshold.value) {
+			const scaled = value / threshold.value;
+			const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+			const compact = scaled.toFixed(decimals).replace(/\.?0+$/, "");
+			return `${compact}${threshold.suffix}`;
+		}
+	}
+
+	return Math.round(value).toLocaleString("en-US");
+}
+
 export default function APIProviderCard({ api_provider }: Props) {
-	// normalize field names we'll use in the component
 	const id = api_provider.api_provider_id;
 	const name = api_provider.api_provider_name;
+	const totalModels = Number(api_provider.total_models ?? 0);
+	const freeModels = Number(api_provider.free_models ?? 0);
+	const dailyTokens = Number(api_provider.total_daily_tokens ?? 0);
+	const monthlyTokens = Number(api_provider.total_monthly_tokens ?? 0);
+	const modalitySupport = api_provider.modality_support;
+	const supportedModalities = MODALITIES.filter(({ key }) => {
+		const counts = modalitySupport[key];
+		return (counts?.input ?? 0) + (counts?.output ?? 0) > 0;
+	});
 
 	return (
-		<Card
-			className={cn(
-				"h-full flex flex-col shadow-lg relative dark:shadow-zinc-900/25 dark:bg-zinc-950 transition-transform transform hover:scale-105 duration-200 ease-in-out"
-			)}
-		>
-			<CardContent className="flex flex-row items-center gap-4 pt-6">
-				<Link href={`/api-providers/${id}`} prefetch={false} className="group">
-					<div className="w-12 h-12 relative flex items-center justify-center rounded-xl border">
-						<div className="w-9 h-9 relative">
-							<Logo
-								id={id}
-								alt={name}
-								className="object-contain group-hover:opacity-80 transition"
-								fill
-							/>
+		<div className="group px-3 py-3 transition-colors hover:bg-muted/20 md:px-4 md:py-4">
+			<div className="space-y-3">
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0">
+						<Link
+							href={`/api-providers/${id}`}
+							prefetch={false}
+							className="flex items-center gap-3"
+						>
+							<div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-background">
+								<div className="relative h-6 w-6">
+									<Logo
+										id={id}
+										alt={name}
+										className="object-contain"
+										fill
+									/>
+								</div>
+							</div>
+							<span className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:underline underline-offset-4">
+								{name}
+							</span>
+						</Link>
+					</div>
+
+					<div className="flex shrink-0 items-center gap-2 text-sm">
+						<div className="inline-flex items-center gap-1.5 rounded-md border border-border/70 px-2.5 py-1">
+							<span className="text-xs text-muted-foreground">Models</span>
+							<span className="font-semibold tabular-nums">{totalModels}</span>
+						</div>
+						{freeModels > 0 ? (
+							<div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/5 px-2.5 py-1">
+								<span className="text-xs text-muted-foreground">Free</span>
+								<span className="font-semibold tabular-nums">{freeModels}</span>
+							</div>
+						) : null}
+					</div>
+				</div>
+
+				{supportedModalities.length > 0 ? (
+					<div className="flex flex-wrap items-center gap-1.5">
+						{supportedModalities.map(({ key, label, Icon }) => {
+						const counts = modalitySupport[key];
+						const total = (counts?.input ?? 0) + (counts?.output ?? 0);
+						const hasSupport = total > 0;
+						return (
+							<Tooltip key={key}>
+								<TooltipTrigger asChild>
+									<span
+										className={cn(
+											"inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors",
+											hasSupport
+												? "border-border text-foreground"
+												: "border-border/50 text-muted-foreground/50"
+										)}
+									>
+										<Icon className="h-4 w-4" />
+									</span>
+								</TooltipTrigger>
+								<TooltipContent side="top">
+									<div className="text-xs">
+										<div className="font-bold">{label}</div>
+										<div>
+											Input: {counts?.input ?? 0}
+										</div>
+										<div>
+											Output: {counts?.output ?? 0}
+										</div>
+									</div>
+								</TooltipContent>
+							</Tooltip>
+						);
+					})}
+					</div>
+				) : null}
+
+				<div className="flex items-center justify-between gap-3">
+					<div className="grid flex-1 grid-cols-2 gap-3">
+						<div className="space-y-0.5">
+							<div className="text-[10px] tracking-wide text-muted-foreground/80">
+								Daily Tokens
+							</div>
+							<div className="text-sm font-medium tabular-nums text-foreground/80">
+								{formatTokens(dailyTokens)}
+							</div>
+						</div>
+						<div className="space-y-0.5">
+							<div className="text-[10px] tracking-wide text-muted-foreground/80">
+								Monthly Tokens
+							</div>
+							<div className="text-sm font-medium tabular-nums text-foreground/80">
+								{formatTokens(monthlyTokens)}
+							</div>
 						</div>
 					</div>
-				</Link>
-				<div className="flex flex-col flex-1 min-w-0">
 					<Link
 						href={`/api-providers/${id}`}
 						prefetch={false}
-						className="font-semibold truncate leading-tight text-left underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+						className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-background hover:text-foreground"
+						aria-label={`Open ${name} provider page`}
 					>
-						{name}
+						<ArrowUpRight className="h-4 w-4" />
 					</Link>
 				</div>
-				<Button asChild size="icon" variant="ghost" tabIndex={-1}>
-					<Link
-						href={`/api-providers/${id}`}
-						prefetch={false}
-						aria-label={`Go to ${name} details`}
-						tabIndex={-1}
-						className="group"
-					>
-						<ArrowRight
-							className={cn(
-								"w-5 h-5 transition-colors group-hover:text-[var(--provider-arrow-color)]"
-							)}
-						/>
-					</Link>
-				</Button>
-			</CardContent>
-		</Card>
+			</div>
+		</div>
 	);
 }
+

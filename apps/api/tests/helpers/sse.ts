@@ -66,3 +66,50 @@ export function parseSseJson(frames: string[]): any[] {
     }
     return out;
 }
+
+export type ParsedSseFrame = {
+	eventName: string | null;
+	data: string;
+	json: any | null;
+};
+
+export function parseSseFrames(frames: string[]): ParsedSseFrame[] {
+	const out: ParsedSseFrame[] = [];
+	for (const raw of frames) {
+		let eventName: string | null = null;
+		let data = "";
+		for (const line of raw.split("\n")) {
+			const trimmed = line.replace(/\r$/, "");
+			if (trimmed.startsWith("event:")) {
+				eventName = trimmed.slice(6).trim() || null;
+				continue;
+			}
+			if (trimmed.startsWith("data:")) {
+				data += trimmed.slice(5).trimStart();
+			}
+		}
+		if (!data) continue;
+		if (data === "[DONE]") {
+			out.push({
+				eventName,
+				data,
+				json: null,
+			});
+			continue;
+		}
+		try {
+			out.push({
+				eventName,
+				data,
+				json: JSON.parse(data),
+			});
+		} catch {
+			out.push({
+				eventName,
+				data,
+				json: null,
+			});
+		}
+	}
+	return out;
+}

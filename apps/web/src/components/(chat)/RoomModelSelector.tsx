@@ -579,8 +579,18 @@ export function RoomModelSelector({
 
 			<ModelSelector open={open} onOpenChange={handleOpenChange}>
 				<ModelSelectorTrigger asChild>
-					<Button variant="ghost" size="icon" className="h-8 w-8">
+					<Button
+						variant="ghost"
+						size="sm"
+						className={cn(
+							"h-8 gap-1.5",
+							selectedModelIds.length === 0 ? "px-2 text-xs" : "w-8 px-0",
+						)}
+					>
 						<Plus className="h-4 w-4" />
+						{selectedModelIds.length === 0 ? (
+							<span className="truncate text-xs">Add Model</span>
+						) : null}
 					</Button>
 				</ModelSelectorTrigger>
 				<ModelSelectorContent

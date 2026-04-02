@@ -56,7 +56,7 @@ Each provider should be tested across these dimensions:
 5. **Reasoning**
    - Reasoning effort levels
    - `reasoning_content` format
-   - `reasoning_details` format (OpenRouter-compatible)
+- `reasoning_details` format (gateway-compatible)
    - Reasoning in multi-turn conversations
 
 6. **Streaming**

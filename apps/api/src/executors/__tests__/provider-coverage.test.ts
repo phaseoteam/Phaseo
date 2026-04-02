@@ -10,7 +10,10 @@ const EXCLUDED_NON_TEXT_OR_NOT_YET_SUPPORTED = new Map<string, string>([
 ]);
 
 function readDataProviders(): string[] {
-	const root = resolve(process.cwd(), "../web/src/data/api_providers");
+	const root = resolve(
+		process.cwd(),
+		"../../packages/data/catalog/src/data/api_providers",
+	);
 	return readdirSync(root, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory())
 		.map((entry) => entry.name)

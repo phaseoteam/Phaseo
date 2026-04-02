@@ -20,6 +20,7 @@ export type ChatSendPayload = {
 	content: string;
 	attachments: File[];
 	webSearchEnabled: boolean;
+	apiServerToolsEnabled: boolean;
 };
 
 type ChatConversationProps = {
@@ -29,6 +30,8 @@ type ChatConversationProps = {
 	mode?: "classic" | "unified";
 	webSearchEnabled?: boolean;
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
+	apiServerToolsEnabled?: boolean;
+	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
 	reasoningEnabled?: boolean;
 	reasoningEffort?: ChatSettings["reasoningEffort"];
 	onReasoningEnabledChange?: (enabled: boolean) => void;
@@ -62,6 +65,8 @@ export function ChatConversation({
 	mode = "classic",
 	webSearchEnabled = false,
 	onWebSearchEnabledChange,
+	apiServerToolsEnabled = false,
+	onApiServerToolsEnabledChange,
 	reasoningEnabled = false,
 	reasoningEffort = "medium",
 	onReasoningEnabledChange,
@@ -405,6 +410,7 @@ export function ChatConversation({
 			content: text,
 			attachments,
 			webSearchEnabled: isUnified ? webSearchEnabled : false,
+			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
 		});
 		setComposer("");
 		setAttachments([]);
@@ -494,6 +500,8 @@ export function ChatConversation({
 				isUnified={isUnified}
 				webSearchEnabled={webSearchEnabled}
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
+				apiServerToolsEnabled={apiServerToolsEnabled}
+				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}

@@ -74,12 +74,14 @@ describe("video-jobs", () => {
 			provider: "openai",
 			model: "sora-2",
 			seconds: 2,
-		});
+			providerTaskId: "native_vid_5",
+		}, "native_vid_5");
 
 		expect(upsertAsyncOperationMock).toHaveBeenCalledWith(expect.objectContaining({
 			teamId: "team_5",
 			kind: "video",
 			internalId: "vid_5",
+			nativeId: "native_vid_5",
 			provider: "openai",
 			model: "sora-2",
 		}));

@@ -77,6 +77,11 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 		parse: (value) => value || "",
 		serialize: (value) => value,
 	});
+	const [filterPricingGap] = useQueryState("pricingGap", {
+		defaultValue: "",
+		parse: (value) => value || "",
+		serialize: (value) => value,
+	});
 	const [filterProvider] = useQueryState("provider", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -116,12 +121,26 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 				if (!matchesSearch) return false;
 			}
 
+			const providerRecord = filterProvider
+				? item.providers.find(
+					(provider) => provider.providerId === filterProvider
+				)
+				: null;
+			const isGatewayActiveForFilter = filterProvider
+				? Boolean(providerRecord?.isActiveGateway)
+				: item.isActiveOnGateway;
+			const hasActivePricingGapForFilter = filterProvider
+				? Boolean(providerRecord?.isActiveGateway) && !Boolean(providerRecord?.hasPricing)
+				: item.providers.some(
+					(provider) => provider.isActiveGateway && !provider.hasPricing
+				);
+
 			// Gateway status filter
 			if (filterGatewayStatus) {
-				if (filterGatewayStatus === "active" && !item.isActiveOnGateway) {
+				if (filterGatewayStatus === "active" && !isGatewayActiveForFilter) {
 					return false;
 				}
-				if (filterGatewayStatus === "inactive" && item.isActiveOnGateway) {
+				if (filterGatewayStatus === "inactive" && isGatewayActiveForFilter) {
 					return false;
 				}
 			}
@@ -148,11 +167,6 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 
 			// Has pricing filter
 			if (filterHasPricing) {
-				const providerRecord = filterProvider
-					? item.providers.find(
-						(provider) => provider.providerId === filterProvider
-					)
-					: null;
 				const hasPricingForFilter = filterProvider
 					? Boolean(providerRecord?.hasPricing)
 					: item.pricingRulesCount > 0;
@@ -163,6 +177,9 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 				if (filterHasPricing === "false" && hasPricingForFilter) {
 					return false;
 				}
+			}
+			if (filterPricingGap === "activeMissing" && !hasActivePricingGapForFilter) {
+				return false;
 			}
 
 			if (filterProvider) {
@@ -244,6 +261,7 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 		filterHasBenchmarks,
 		filterHidden,
 		filterHasPricing,
+		filterPricingGap,
 		filterProvider,
 		filterReleaseDateOp,
 		filterReleaseDateValue,

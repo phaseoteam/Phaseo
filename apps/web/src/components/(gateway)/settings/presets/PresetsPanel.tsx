@@ -14,6 +14,13 @@ import EditPresetItem from "./EditPresetItem";
 import DeletePresetItem from "./DeletePresetItem";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 
 interface APIProviderCard {
 	api_provider_id: string;
@@ -97,9 +104,17 @@ export default function PresetsPanel({
 
 	if (!sortedTeams || sortedTeams.length === 0) {
 		return (
-			<div className="mt-6 text-sm text-muted-foreground">
-				No teams or presets to manage.
-			</div>
+			<Empty className="mt-6 rounded-xl border border-dashed border-border/80 p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<AtSign className="h-5 w-5" />
+					</EmptyMedia>
+					<EmptyTitle>No presets yet</EmptyTitle>
+					<EmptyDescription>
+						Create a preset to reuse model, provider, and prompt configuration.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		);
 	}
 
@@ -109,9 +124,20 @@ export default function PresetsPanel({
 				<div key={team.id ?? "personal"}>
 					<div className="font-medium mb-2">{team.name}</div>
 					{!team.presets || team.presets.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No presets for this team.
-						</div>
+						<Empty
+							size="compact"
+							className="rounded-lg border border-dashed border-border/80 p-6"
+						>
+							<EmptyHeader>
+								<EmptyMedia variant="icon">
+									<AtSign className="h-5 w-5" />
+								</EmptyMedia>
+								<EmptyTitle className="text-base">No presets for this team</EmptyTitle>
+								<EmptyDescription>
+									Create one to standardize request settings across apps.
+								</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
 					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 							{team.presets.map((p: any) => (

@@ -1,8 +1,0 @@
-{
-  "benchmark_id": "graphwalks-parents-lt-128k",
-  "benchmark_name": "Graphwalks parents <128k",
-  "category": null,
-  "ascending_order": null,
-  "link": null,
-  "total_models": 8
-}

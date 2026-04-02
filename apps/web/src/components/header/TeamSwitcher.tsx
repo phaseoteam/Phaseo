@@ -160,6 +160,7 @@ export default function TeamSwitcher({
 									key={t.id}
 									className={cn(
 										"rounded-md text-sm cursor-pointer",
+										"hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70",
 										"focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground",
 										"py-1.5"
 									)}
@@ -232,7 +233,7 @@ export default function TeamSwitcher({
 						) : null}
 						<DropdownMenuItem
 							asChild
-							className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+							className="rounded-md py-1.5 text-sm cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70 focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						>
 							<Link
 								href="/settings/teams"
@@ -342,7 +343,7 @@ export default function TeamSwitcher({
 							}}
 						>
 							<FlaskConical className="h-4 w-4" />
-							<span className="text-sm font-medium">Experiments</span>
+							<span>Experiments</span>
 						</Link>
 					</DropdownMenuItem>
 

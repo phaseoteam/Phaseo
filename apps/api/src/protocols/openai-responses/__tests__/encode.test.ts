@@ -434,5 +434,77 @@ describe("encodeOpenAIResponsesResponse", () => {
 		expect(response.output).toHaveLength(1);
 		expect(response.output[0].type).toBe("message");
 	});
+
+	it("should encode audio parts as output_audio content blocks", () => {
+		const ir: IRChatResponse = {
+			id: "req-audio-123",
+			nativeId: "resp-audio-123",
+			model: "google/lyria-3-pro",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "text", text: "Hook ready" },
+							{
+								type: "audio",
+								source: "data",
+								data: "UklGRlIAAABXQVZFZm10",
+								format: "wav",
+							},
+						],
+					},
+					finishReason: "stop",
+				},
+			],
+		};
+
+		const response = encodeOpenAIResponsesResponse(ir, "req-audio-123");
+		expect(response.output).toHaveLength(1);
+		expect(response.output[0].type).toBe("message");
+		if (response.output[0].type === "message") {
+			const audioPart = response.output[0].content.find((item: any) => item.type === "output_audio");
+			expect(audioPart).toEqual({
+				type: "output_audio",
+				b64_json: "UklGRlIAAABXQVZFZm10",
+				mime_type: "audio/wav",
+				format: "wav",
+			});
+		}
+	});
+
+	it("should include server tool usage in responses usage when present", () => {
+		const ir: IRChatResponse = {
+			id: "req-server-tools",
+			nativeId: "resp-server-tools",
+			model: "openai/gpt-4.1",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [{ type: "text", text: "Current time is 12:00." }],
+					},
+					finishReason: "stop",
+				},
+			],
+			usage: {
+				inputTokens: 21,
+				outputTokens: 7,
+				totalTokens: 28,
+				_ext: {
+					serverToolUse: {
+						datetime_requests: 1,
+					},
+				},
+			},
+		};
+
+		const response = encodeOpenAIResponsesResponse(ir, "req-server-tools");
+		expect(response.usage?.server_tool_use).toEqual({
+			datetime_requests: 1,
+		});
+	});
 });
 

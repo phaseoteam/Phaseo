@@ -42,50 +42,50 @@ AI-Stats/
 
 ## Data folders
 
-AI Stats stores its structured data in **JSON files** under the `/apps/web/src/data` directory.  
+AI Stats stores its structured data in **JSON files** under the `/packages/data/catalog/src/data` directory.  
 These files act as the source of truth for models, benchmarks, and pricing.
 
-### `/apps/web/src/data/models`
+### `/packages/data/catalog/src/data/models`
 
 Contains one JSON file per model.  
 Each file describes the model's metadata, pricing, benchmarks, and capabilities.
 
 Example:  
-`/apps/web/src/data/models/openai/gpt-5-2025-08-07/model.json`
+`/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
 
 ---
 
-### `/apps/web/src/data/organisations`
+### `/packages/data/catalog/src/data/organisations`
 
 Describes companies or research groups behind models.  
 Each JSON file includes name, description, founding date, website, and country.
 
 Example:  
-`/apps/web/src/data/organisations/openai.json`
+`/packages/data/catalog/src/data/organisations/openai.json`
 
 ---
 
-### `/apps/web/src/data/benchmarks`
+### `/packages/data/catalog/src/data/benchmarks`
 
 Contains benchmark metadata and aggregated results across models.  
 Each benchmark has an ID, name, description, category, and metrics.
 
 Example:  
-`/apps/web/src/data/benchmarks/mmlu.json`
+`/packages/data/catalog/src/data/benchmarks/mmlu.json`
 
 ---
 
-### `/apps/web/src/data/api_providers`
+### `/packages/data/catalog/src/data/api_providers`
 
 Lists all supported API providers with their supported models.  
 This links to both models and organisations.
 
 Example:  
-`/apps/web/src/data/api_providers/openai.json`
+`/packages/data/catalog/src/data/api_providers/openai.json`
 
 ---
 
-### `/apps/web/src/data/pricing`
+### `/packages/data/catalog/src/data/pricing`
 
 Tracks historical pricing data over time for trend analysis.  
 Files are timestamped and often aggregated by provider.
@@ -111,7 +111,7 @@ Each folder maps directly to a group in the Mintlify configuration.
 
 | Path         | Description                                                                                       |
 | ------------ | ------------------------------------------------------------------------------------------------- |
-| `/apps/web`  | Main AI Stats website, built with Next.js 15 and TailwindCSS. Contains the data under `src/data`. |
+| `/apps/web`  | Main AI Stats website, built with Next.js 15 and TailwindCSS. Reads canonical data from `packages/data/catalog/src/data`. |
 | `/apps/api`  | The API Gateway - routes, caching, and model proxy logic.                                         |
 | `/apps/docs` | The Mintlify documentation project you're reading now.                                           |
 
@@ -154,7 +154,7 @@ You can explore these under `/scripts/`.
 
 If you're contributing:
 
--   **Data:** Look in `/apps/web/src/data/` for JSON files.
+-   **Data:** Look in `/packages/data/catalog/src/data/` for JSON files.
 -   **Documentation:** Look in `/apps/docs/v1/` for MDX files.
 -   **Code:** Explore `/apps/web` or `/apps/api`.
 -   **Automation:** Modify or inspect `/scripts/`.

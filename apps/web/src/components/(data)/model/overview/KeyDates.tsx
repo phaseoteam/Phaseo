@@ -1,5 +1,4 @@
 import { Megaphone, Rocket, Archive, Ban } from "lucide-react";
-import { ExtendedModel } from "@/data/types";
 
 interface KeyDatesProps {
 	announced?: string;
@@ -7,6 +6,7 @@ interface KeyDatesProps {
 	deprecated?: string;
 	retired?: string;
 	formatDate: (dateStr?: string) => string;
+	showHeading?: boolean;
 }
 
 export default function KeyDates({
@@ -15,51 +15,61 @@ export default function KeyDates({
 	deprecated,
 	retired,
 	formatDate,
+	showHeading = true,
 }: KeyDatesProps) {
+	const entries = [
+		{
+			key: "announced",
+			label: "Announcement",
+			value: announced,
+			Icon: Megaphone,
+			className:
+				"border-blue-200/80 bg-blue-50/50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300",
+		},
+		{
+			key: "released",
+			label: "Release",
+			value: released,
+			Icon: Rocket,
+			className:
+				"border-emerald-200/80 bg-emerald-50/50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300",
+		},
+		{
+			key: "deprecated",
+			label: "Deprecation",
+			value: deprecated,
+			Icon: Ban,
+			className:
+				"border-amber-200/80 bg-amber-50/50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300",
+		},
+		{
+			key: "retired",
+			label: "Retirement",
+			value: retired,
+			Icon: Archive,
+			className:
+				"border-zinc-200/80 bg-zinc-50/60 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300",
+		},
+	].filter((entry) => Boolean(entry.value));
+
+	if (entries.length === 0) return null;
+
 	return (
-		<div className="flex flex-col">
-			<h2 className="text-xl font-semibold mb-4">Key Dates</h2>
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 h-full">
-				{/* Announced Card */}
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-blue-400 dark:border-b-blue-700 rounded-lg h-full">
-					<span className="text-xl font-bold text-blue-800 dark:text-blue-300">
-						{formatDate(announced)}
-					</span>
-					<span className="text-xs font-semibold flex items-center gap-1 mt-1 text-blue-800 dark:text-blue-300">
-						<Megaphone size={14} className="mr-1" />
-						Announcement
-					</span>
-				</div>
-				{/* Released Card */}
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-green-400 dark:border-b-green-700 rounded-lg h-full">
-					<span className="text-xl font-bold text-green-800 dark:text-green-300">
-						{formatDate(released)}
-					</span>
-					<span className="text-xs font-semibold flex items-center gap-1 mt-1 text-green-800 dark:text-green-300">
-						<Rocket size={14} className="mr-1" />
-						Release
-					</span>
-				</div>
-				{/* Deprecated Card */}
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-red-400 dark:border-b-red-700 rounded-lg h-full">
-					<span className="text-xl font-bold text-red-800 dark:text-red-300">
-						{formatDate(deprecated)}
-					</span>
-					<span className="text-xs font-semibold flex items-center gap-1 mt-1 text-red-800 dark:text-red-300">
-						<Ban size={14} className="mr-1" />
-						Deprecation
-					</span>
-				</div>
-				{/* Retired Card */}
-				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-zinc-500 dark:border-b-zinc-600 rounded-lg h-full">
-					<span className="text-xl font-bold text-zinc-800 dark:text-zinc-300">
-						{formatDate(retired)}
-					</span>
-					<span className="text-xs font-semibold flex items-center gap-1 mt-1 text-zinc-800 dark:text-zinc-300">
-						<Archive size={14} className="mr-1" />
-						Retirement
-					</span>
-				</div>
+		<div className="space-y-2">
+			{showHeading ? <h3 className="text-base font-semibold">Key Dates</h3> : null}
+			<div className="flex flex-wrap gap-2">
+				{entries.map(({ key, label, value, Icon, className }) => (
+					<div
+						key={key}
+						className={`min-w-[12rem] flex-1 rounded-md border px-3 py-2 ${className}`}
+					>
+						<div className="flex items-center gap-1.5 text-xs font-medium">
+							<Icon className="h-3.5 w-3.5" />
+							<span>{label}</span>
+						</div>
+						<p className="mt-1 text-sm font-semibold">{formatDate(value)}</p>
+					</div>
+				))}
 			</div>
 		</div>
 	);

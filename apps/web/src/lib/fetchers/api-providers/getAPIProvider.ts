@@ -178,7 +178,7 @@ export async function getAPIProviderModels(
             provider_id,
             api_model_id,
             provider_model_slug,
-            internal_model_id,
+            model_id,
             is_active_gateway,
             input_modalities,
             output_modalities
@@ -206,15 +206,15 @@ export async function getAPIProviderModels(
 		throw capsResponse.error;
 	}
 
-	const internalIds = Array.from(
-		new Set(providerModels.map((row) => row.internal_model_id).filter(Boolean)),
+	const modelIds = Array.from(
+		new Set(providerModels.map((row) => row.model_id).filter(Boolean)),
 	);
-	const modelsResponse = internalIds.length
+	const modelsResponse = modelIds.length
 		? await applyHiddenFilter(
 				supabase
 					.from("data_models")
 					.select("model_id, name, release_date, hidden")
-					.in("model_id", internalIds),
+					.in("model_id", modelIds),
 				includeHidden,
 			)
 		: { data: [] as any[] };
@@ -223,10 +223,10 @@ export async function getAPIProviderModels(
 		string,
 		{ name: string | null; release_date: string | null }
 	>();
-	const visibleInternalIds = new Set<string>();
+	const visibleModelIds = new Set<string>();
 	for (const model of modelsResponse.data ?? []) {
 		if (!model.model_id) continue;
-		visibleInternalIds.add(model.model_id);
+		visibleModelIds.add(model.model_id);
 		modelMapById.set(model.model_id, {
 			name: model.name ?? null,
 			release_date: model.release_date ?? null,
@@ -252,12 +252,12 @@ export async function getAPIProviderModels(
 	const modelsData = providerModels
 		.filter((row: any) => {
 			if (includeHidden) return true;
-			if (!row.internal_model_id) return true;
-			return visibleInternalIds.has(row.internal_model_id);
+			if (!row.model_id) return true;
+			return visibleModelIds.has(row.model_id);
 		})
 		.map((row: any) => {
-			const modelInfo = row.internal_model_id
-				? modelMapById.get(row.internal_model_id)
+			const modelInfo = row.model_id
+				? modelMapById.get(row.model_id)
 				: null;
 			return {
 				...row,
@@ -273,7 +273,7 @@ export async function getAPIProviderModels(
 
 	const modelMap: Map<string, APIProviderModels> = new Map();
 	for (const r of filteredModels) {
-		const model_id = r.internal_model_id;
+		const model_id = r.model_id ?? r.api_model_id;
 		if (!model_id) continue;
 		const endpoints = Array.isArray(r.endpoints) ? r.endpoints : [];
 		if (!modelMap.has(model_id)) {
@@ -393,7 +393,7 @@ export async function getAPIProviderModelsListByAdded(
             provider_id,
             api_model_id,
             provider_model_slug,
-            internal_model_id,
+            model_id,
             is_active_gateway,
             input_modalities,
             output_modalities,
@@ -423,24 +423,24 @@ export async function getAPIProviderModelsListByAdded(
 		throw capsResponse.error;
 	}
 
-	const internalIds = Array.from(
-		new Set(providerModels.map((row) => row.internal_model_id).filter(Boolean)),
+	const modelIds = Array.from(
+		new Set(providerModels.map((row) => row.model_id).filter(Boolean)),
 	);
-	const modelsResponse = internalIds.length
+	const modelsResponse = modelIds.length
 		? await applyHiddenFilter(
 				supabase
 					.from("data_models")
 					.select("model_id, name, hidden")
-					.in("model_id", internalIds),
+					.in("model_id", modelIds),
 				includeHidden,
 			)
 		: { data: [] as any[] };
 
 	const modelMapById = new Map<string, { name: string | null }>();
-	const visibleInternalIds = new Set<string>();
+	const visibleModelIds = new Set<string>();
 	for (const model of modelsResponse.data ?? []) {
 		if (!model.model_id) continue;
-		visibleInternalIds.add(model.model_id);
+		visibleModelIds.add(model.model_id);
 		modelMapById.set(model.model_id, {
 			name: model.name ?? null,
 		});
@@ -468,13 +468,13 @@ export async function getAPIProviderModelsListByAdded(
 	for (const row of providerModels as any[]) {
 		if (
 			!includeHidden &&
-			row.internal_model_id &&
-			!visibleInternalIds.has(row.internal_model_id)
+			row.model_id &&
+			!visibleModelIds.has(row.model_id)
 		) {
 			continue;
 		}
 
-		const modelId = row.internal_model_id || row.api_model_id;
+		const modelId = row.model_id || row.api_model_id;
 		if (!modelId) continue;
 		const apiModelId = String(row.api_model_id ?? "").trim();
 		if (apiModelId) {
@@ -495,7 +495,7 @@ export async function getAPIProviderModelsListByAdded(
 				model_id: modelId,
 				api_model_id: row.api_model_id ?? modelId,
 				model_name:
-					modelMapById.get(row.internal_model_id ?? "")?.name ??
+					modelMapById.get(row.model_id ?? "")?.name ??
 					row.provider_model_slug ??
 					row.api_model_id ??
 					modelId,

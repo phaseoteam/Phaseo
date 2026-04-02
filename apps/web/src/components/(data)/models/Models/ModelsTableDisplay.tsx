@@ -62,6 +62,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"image",
 	"video",
 	"audio",
+	"music",
 	"file",
 	"moderations",
 	"embeddings",
@@ -84,6 +85,7 @@ interface ModelsTableDisplayProps {
 	allStatuses: string[];
 	allTiers: string[];
 	weeklyTokensByModel: Record<string, number>;
+	weeklyTokensByModelProvider: Record<string, number>;
 }
 
 function parseCsvParam(value: string | null): string[] {
@@ -103,6 +105,7 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
+	if (normalized.includes("music")) return "music";
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("moderat")) return "moderations";
@@ -196,6 +199,7 @@ function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
+	if (normalized.includes("music")) return AudioLines;
 	if (normalized.includes("audio")) return AudioLines;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;
@@ -333,6 +337,7 @@ export default function ModelsTableDisplay({
 	allStatuses,
 	allTiers,
 	weeklyTokensByModel,
+	weeklyTokensByModelProvider,
 }: ModelsTableDisplayProps) {
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -996,6 +1001,7 @@ export default function ModelsTableDisplay({
 					<MonitorTableClient
 						initialModelData={initialModelData}
 						weeklyTokensByModel={weeklyTokensByModel}
+						weeklyTokensByModelProvider={weeklyTokensByModelProvider}
 					/>
 				</div>
 			</section>

@@ -1,0 +1,44 @@
+{
+  "model_id": "openai/codex-mini",
+  "organisation_id": "openai",
+  "name": "Codex Mini",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2025-05-16T00:00:00",
+  "release_date": "2025-05-16T00:00:00",
+  "deprecation_date": "2025-11-17T00:00:00",
+  "retirement_date": "2026-01-16T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/codex-mini",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/codex-mini-latest"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/playground/prompts?models=codex-mini"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-codex/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-06-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 100000
+    }
+  ],
+  "benchmarks": []
+}

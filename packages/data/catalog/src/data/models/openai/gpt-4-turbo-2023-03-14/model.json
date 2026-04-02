@@ -1,0 +1,66 @@
+{
+  "model_id": "openai/gpt-4-turbo-2023-03-14",
+  "organisation_id": "openai",
+  "name": "GPT 4 Turbo (2023-03-14)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2023-03-14T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-4-turbo-2023-03-14",
+  "family_id": "openai/gpt-4",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-4-turbo"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/playground/prompts?models=gpt-4-turbo"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2303.08774"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/research/gpt-4"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2023-12-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 4096
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1320,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 0.251,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 3
+    }
+  ]
+}

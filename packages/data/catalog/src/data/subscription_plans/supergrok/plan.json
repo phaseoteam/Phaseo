@@ -1,0 +1,35 @@
+{
+  "plan_id": "supergrok",
+  "name": "SuperGrok",
+  "organisation_id": "x-ai",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 30.0,
+      "link": "https://grok.com/#subscribe",
+      "other_info": null
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 300.0,
+      "link": "https://grok.com/#subscribe",
+      "other_info": null
+    }
+  ],
+  "features": [],
+  "models": [
+    {
+      "model_id": "x-ai/grok-3",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "x-ai/grok-4",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

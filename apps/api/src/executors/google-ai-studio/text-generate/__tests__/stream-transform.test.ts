@@ -180,4 +180,39 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"output_tokens_details\"");
 		expect(output).toContain("\"output_images\":1120");
 	});
+
+	it("emits audio deltas when Gemini stream returns inlineData audio parts", async () => {
+		const upstream = makeGeminiSseStream([
+			{
+				candidates: [{
+					index: 0,
+					content: {
+						parts: [{
+							inlineData: {
+								mimeType: "audio/wav",
+								data: "UklGRlIAAABXQVZFZm10",
+							},
+						}],
+					},
+					finishReason: "STOP",
+				}],
+				usageMetadata: {
+					promptTokenCount: 11,
+					candidatesTokenCount: 22,
+					totalTokenCount: 33,
+					candidatesTokensDetails: [
+						{ modality: "AUDIO", tokenCount: 22 },
+					],
+				},
+			},
+		]);
+
+		const stream = transformStream(upstream, baseArgs());
+		const output = await readStreamText(stream);
+		expect(output).toContain("\"audios\"");
+		expect(output).toContain("\"audio_url\"");
+		expect(output).toContain("data:audio/wav;base64,UklGRlIAAABXQVZFZm10");
+		expect(output).toContain("\"output_tokens_details\"");
+		expect(output).toContain("\"output_audio\":22");
+	});
 });

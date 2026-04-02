@@ -10,9 +10,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import {
     Tooltip,
     TooltipContent,
@@ -26,6 +27,7 @@ import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelPro
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
 import ProviderCard from "@/components/(data)/model/pricing/ProviderCard";
 import { cn } from "@/lib/utils";
+import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 const PLAN_ORDER = ["free", "standard", "batch", "flex", "priority"] as const;
 const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
@@ -63,6 +65,7 @@ const PRICING_METER_PREFERENCE = [
     "input_audio_tokens",
     "output_audio_tokens",
 ] as const;
+const DEFAULT_VISIBLE_PROVIDER_COUNT = 4;
 
 function normalizedRulePrice(
     rule: ProviderPricing["pricing_rules"][number]
@@ -121,9 +124,8 @@ function isProviderModelActiveForPlan(
 }
 
 function getQuantizationFilterFromUrl(value: string | null): string {
-    if (!value) return "all";
-    const next = value.trim();
-    return next.length ? next : "all";
+    const normalized = normalizeQuantizationScheme(value);
+    return normalized ?? "all";
 }
 
 export default function ModelPricingClient({
@@ -132,12 +134,14 @@ export default function ModelPricingClient({
     creatorOrgId,
     runtimeStats = {},
     routingHealth = {},
+    showHeader = true,
 }: {
     providers: ProviderPricing[];
     subscriptionPlans: SubscriptionPlan[];
     creatorOrgId?: string | null;
     runtimeStats?: ProviderRuntimeStatsMap;
     routingHealth?: ProviderRoutingStatusMap;
+    showHeader?: boolean;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -175,6 +179,7 @@ export default function ModelPricingClient({
     const [quantizationFilter, setQuantizationFilter] = useState<string>(() =>
         getQuantizationFilterFromUrl(searchParams.get(QUANT_QUERY_KEY))
     );
+    const [showAllProviders, setShowAllProviders] = useState(false);
 
     const sortLabel = SORT_LABELS[sort];
 
@@ -192,7 +197,7 @@ export default function ModelPricingClient({
         for (const provider of providers) {
             const scope = getProviderModelScopeForPlan(provider, plan);
             for (const model of scope) {
-                const quant = model.quantization_scheme?.trim();
+                const quant = normalizeQuantizationScheme(model.quantization_scheme);
                 if (quant) values.add(quant);
             }
         }
@@ -334,25 +339,23 @@ export default function ModelPricingClient({
         return sortedProviders.filter((provider) => {
             const scope = getProviderModelScopeForPlan(provider, plan);
             return scope.some(
-                (pm) => (pm.quantization_scheme?.trim() ?? "") === quantizationFilter
+                (pm) =>
+                    normalizeQuantizationScheme(pm.quantization_scheme) ===
+                    quantizationFilter
             );
         });
     }, [sortedProviders, quantizationFilter, plan]);
-    const [activeProviders, inactiveProviders] = useMemo(() => {
-        const active: ProviderPricing[] = [];
-        const inactive: ProviderPricing[] = [];
-
-        for (const provider of filteredProviders) {
-            const scope = getProviderModelScopeForPlan(provider, plan);
-            if (scope.some((pm) => isProviderModelActiveForPlan(pm))) {
-                active.push(provider);
-            } else {
-                inactive.push(provider);
-            }
-        }
-
-        return [active, inactive];
-    }, [filteredProviders, plan]);
+    const hasProviderOverflow =
+        filteredProviders.length > DEFAULT_VISIBLE_PROVIDER_COUNT;
+    const alwaysVisibleProviders = hasProviderOverflow
+        ? filteredProviders.slice(0, DEFAULT_VISIBLE_PROVIDER_COUNT)
+        : filteredProviders;
+    const extraProviders = hasProviderOverflow
+        ? filteredProviders.slice(DEFAULT_VISIBLE_PROVIDER_COUNT)
+        : [];
+    const hiddenProviderCount = hasProviderOverflow
+        ? filteredProviders.length - DEFAULT_VISIBLE_PROVIDER_COUNT
+        : 0;
 
     const updateUrlState = useCallback(
         (updates: Record<string, string | null>) => {
@@ -406,6 +409,10 @@ export default function ModelPricingClient({
             [QUANT_QUERY_KEY]: null,
         });
     }, [quantizationFilter, quantizationOptions, updateUrlState]);
+
+    useEffect(() => {
+        setShowAllProviders(false);
+    }, [plan, quantizationFilter, sort, sortDirection]);
 
     useEffect(() => {
         try {
@@ -472,7 +479,8 @@ export default function ModelPricingClient({
 
     const onQuantizationFilterChange = useCallback(
         (value: string) => {
-            const nextValue = value || "all";
+            const nextValue =
+                value === "all" ? "all" : normalizeQuantizationScheme(value) ?? "all";
             setQuantizationFilter(nextValue);
             updateUrlState({
                 [QUANT_QUERY_KEY]: nextValue === "all" ? null : nextValue,
@@ -484,40 +492,48 @@ export default function ModelPricingClient({
     const headerTitle =
         pricingView === "subscription" ? "Subscription Plans" : "Providers";
 
+    const pricingViewToggle = (
+        <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-background px-3 py-1.5 dark:border-zinc-800">
+            <span
+                className={cn(
+                    "text-xs font-medium transition-colors sm:text-sm",
+                    pricingView === "api"
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                )}
+            >
+                API
+            </span>
+            <Switch
+                aria-label="Toggle pricing view"
+                checked={pricingView === "subscription"}
+                onCheckedChange={onPricingViewChange}
+            />
+            <span
+                className={cn(
+                    "text-xs font-medium transition-colors sm:text-sm",
+                    pricingView === "subscription"
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                )}
+            >
+                Subscriptions
+            </span>
+        </div>
+    );
+
     return (
         <div className="space-y-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                    {headerTitle}
-                </h2>
-                <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-background px-3 py-1.5 dark:border-zinc-800">
-                    <span
-                        className={cn(
-                            "text-xs font-medium transition-colors sm:text-sm",
-                            pricingView === "api"
-                                ? "text-foreground"
-                                : "text-muted-foreground"
-                        )}
-                    >
-                        API
-                    </span>
-                    <Switch
-                        aria-label="Toggle pricing view"
-                        checked={pricingView === "subscription"}
-                        onCheckedChange={onPricingViewChange}
-                    />
-                    <span
-                        className={cn(
-                            "text-xs font-medium transition-colors sm:text-sm",
-                            pricingView === "subscription"
-                                ? "text-foreground"
-                                : "text-muted-foreground"
-                        )}
-                    >
-                        Subscriptions
-                    </span>
+            {showHeader ? (
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                        {headerTitle}
+                    </h2>
+                    {pricingViewToggle}
                 </div>
-            </div>
+            ) : (
+                <div className="flex justify-end">{pricingViewToggle}</div>
+            )}
 
             {pricingView === "api" ? (
                 <section className="space-y-4">
@@ -602,41 +618,83 @@ export default function ModelPricingClient({
                         </div>
                     </div>
                     {filteredProviders.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-3">
-                            {activeProviders.map((prov) => (
-                                <ProviderCard
-                                    key={prov.provider.api_provider_id}
-                                    provider={prov}
-                                    plan={plan}
-                                    runtimeStats={
-                                        runtimeStats[prov.provider.api_provider_id] ?? null
-                                    }
-                                    routingStatus={
-                                        routingHealth[prov.provider.api_provider_id] ?? null
-                                    }
-                                />
-                            ))}
-                            {activeProviders.length > 0 && inactiveProviders.length > 0 ? (
-                                <div className="pt-1">
-                                    <div className="border-t border-zinc-200/80 dark:border-zinc-800" />
-                                    <p className="pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        Inactive Providers
-                                    </p>
-                                </div>
+                        <div className="space-y-3">
+							<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                {alwaysVisibleProviders.map((prov) => (
+                                    <ProviderCard
+                                        key={prov.provider.api_provider_id}
+                                        provider={prov}
+                                        plan={plan}
+                                        runtimeStats={
+                                            runtimeStats[prov.provider.api_provider_id] ?? null
+                                        }
+                                        routingStatus={
+                                            routingHealth[prov.provider.api_provider_id] ?? null
+                                        }
+                                    />
+                                ))}
+                            </div>
+                            {hasProviderOverflow ? (
+                                <>
+                                    <div
+                                        className={cn(
+                                            "grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
+                                            showAllProviders
+                                                ? "grid-rows-[1fr] opacity-100"
+                                                : "grid-rows-[0fr] opacity-0"
+                                        )}
+                                    >
+                                        <div className="overflow-hidden">
+                                            <div className="pt-3">
+												<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                                    {extraProviders.map((prov) => (
+                                                        <ProviderCard
+                                                            key={prov.provider.api_provider_id}
+                                                            provider={prov}
+                                                            plan={plan}
+                                                            runtimeStats={
+                                                                runtimeStats[
+                                                                    prov.provider.api_provider_id
+                                                                ] ?? null
+                                                            }
+                                                            routingStatus={
+                                                                routingHealth[
+                                                                    prov.provider.api_provider_id
+                                                                ] ?? null
+                                                            }
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1.5"
+                                            onClick={() =>
+                                                setShowAllProviders((current) => !current)
+                                            }
+                                        >
+                                            <span>
+                                                {showAllProviders
+                                                    ? "Show fewer providers"
+                                                    : `Show ${hiddenProviderCount.toLocaleString()} more provider${
+                                                          hiddenProviderCount === 1 ? "" : "s"
+                                                      }`}
+                                            </span>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-4 w-4 transition-transform duration-200",
+                                                    showAllProviders ? "rotate-180" : "rotate-0"
+                                                )}
+                                            />
+                                        </Button>
+                                    </div>
+                                </>
                             ) : null}
-                            {inactiveProviders.map((prov) => (
-                                <ProviderCard
-                                    key={prov.provider.api_provider_id}
-                                    provider={prov}
-                                    plan={plan}
-                                    runtimeStats={
-                                        runtimeStats[prov.provider.api_provider_id] ?? null
-                                    }
-                                    routingStatus={
-                                        routingHealth[prov.provider.api_provider_id] ?? null
-                                    }
-                                />
-                            ))}
                         </div>
                     ) : sortedProviders.length > 0 ? (
                         <Card className="p-6">
@@ -686,7 +744,7 @@ export default function ModelPricingClient({
                                             return (
                                                 <div
                                                     key={`${price.frequency}:${price.currency}:${price.price}`}
-                                                    className="text-sm font-medium tabular-nums"
+                                                    className="text-xs font-semibold text-foreground tabular-nums"
                                                 >
                                                     {formatted}
                                                     {suffix}

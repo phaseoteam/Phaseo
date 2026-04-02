@@ -50,8 +50,6 @@ describe("provider capability profiles", () => {
 	it("enables full multimodal adapter capabilities for priority providers", () => {
 		const providers = [
 			"openai",
-			"google-ai-studio",
-			"google-vertex",
 			"amazon-bedrock",
 			"x-ai",
 			"xai",
@@ -61,6 +59,9 @@ describe("provider capability profiles", () => {
 			"mistral",
 			"moonshot-ai",
 			"novitaai",
+			"novita",
+			"atlas-cloud",
+			"atlascloud",
 			"alibaba",
 			"qwen",
 			"xiaomi",
@@ -76,6 +77,18 @@ describe("provider capability profiles", () => {
 			expect(supportsAdapterBackedCapability(provider, "audio.translations")).toBe(true);
 			expect(supportsAdapterBackedCapability(provider, "video.generate")).toBe(true);
 		}
+		expect(supportsAdapterBackedCapability("google-ai-studio", "image.generate")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-ai-studio", "image.edit")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.speech")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.transcription")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.translations")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-ai-studio", "video.generate")).toBe(false);
+		expect(supportsAdapterBackedCapability("google-vertex", "image.generate")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-vertex", "image.edit")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-vertex", "audio.speech")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-vertex", "audio.transcription")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-vertex", "audio.translations")).toBe(true);
+		expect(supportsAdapterBackedCapability("google-vertex", "video.generate")).toBe(false);
 	});
 
 	it("keeps known positive capabilities enabled", () => {

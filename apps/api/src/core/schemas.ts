@@ -12,7 +12,7 @@ const ProviderRoutingSchema = z.object({
     ignore: z.array(z.string()).optional(),
     include_alpha: z.boolean().optional(),
     includeAlpha: z.boolean().optional(),
-    // OpenRouter-compatible provider routing fields
+    // Additional provider routing fields
     allow_fallbacks: z.boolean().nullable().optional(),
     allowFallbacks: z.boolean().nullable().optional(),
     require_parameters: z.boolean().nullable().optional(),
@@ -343,7 +343,7 @@ const EmbeddingsProviderOptionsSchema = z.object({
 export const EmbeddingsSchema = z.object({
     model: z.string().min(1),
     input: EmbeddingsInputSchema,
-    encoding_format: z.enum(["float", "base64"]).optional(),
+    encoding_format: z.enum(["float", "base64", "base64_int8", "base64_binary"]).optional(),
     dimensions: z.number().int().positive().optional(),
     provider_options: EmbeddingsProviderOptionsSchema,
     // Back-compat alias; normalized to provider_options below.
@@ -436,6 +436,23 @@ const ToolCallSchema = z.object({
     }),
 });
 
+const FunctionToolSchema = z.object({
+	type: z.literal("function"),
+	function: z.object({
+		name: z.string(),
+		description: z.string().optional(),
+		parameters: z.any(),
+	}),
+});
+
+const GatewayDatetimeToolSchema = z.object({
+	type: z.literal("gateway:datetime"),
+	parameters: z.object({
+		timezone: z.string().min(1).optional(),
+	}).optional(),
+	timezone: z.string().min(1).optional(),
+});
+
 export const ChatCompletionsSchema = z.object({
     model: z.string().min(1),
     messages: z.array(
@@ -497,14 +514,7 @@ export const ChatCompletionsSchema = z.object({
     temperature: z.number().min(0).max(2).optional().default(1),
 
     // Tools
-    tools: z.array(z.object({
-        type: z.literal("function"),
-        function: z.object({
-            name: z.string(),
-            description: z.string().optional(),
-            parameters: z.any(),
-        }),
-    })).optional(),
+    tools: z.array(z.union([FunctionToolSchema, GatewayDatetimeToolSchema])).optional(),
 
     max_tool_calls: z.number().int().positive().optional(),
     parallel_tool_calls: z.boolean().optional().default(true),
@@ -601,7 +611,7 @@ export const AnthropicMessagesSchema = z.object({
     top_p: z.number().min(0).max(1).optional(),
     top_k: z.number().int().positive().optional(),
     stream: z.boolean().optional().default(false),
-    tools: z.array(AnthropicToolSchema).optional(),
+    tools: z.array(z.union([AnthropicToolSchema, GatewayDatetimeToolSchema])).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),
     metadata: z.object({
         user_id: z.string().optional(),
@@ -788,105 +798,62 @@ export const AudioTranslationSchema = z.object({
 });
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
-const VideoInputSourceSchema = z.union([
-    z.string().min(1),
-    z.record(z.string(), z.any()),
-]);
+const VideoReferenceTypeSchema = z.enum(["asset", "style", "character", "location", "generic"]).or(z.string());
+const VideoInputReferenceRoleSchema = z.enum(["first_frame", "last_frame", "reference", "source", "mask"]);
 
-const VideoReferenceImageSchema = z.object({
-    reference_type: z.string().optional(),
-    referenceType: z.string().optional(),
-    image: VideoInputSourceSchema.optional(),
-    uri: z.string().min(1).optional(),
-    url: z.string().min(1).optional(),
-    mime_type: z.string().optional(),
-    mimeType: z.string().optional(),
-}).passthrough();
+const VideoInputReferenceContentPartSchema = z.object({
+	type: z.literal("image_url"),
+	role: VideoInputReferenceRoleSchema.optional(),
+	reference_type: VideoReferenceTypeSchema.optional(),
+	image_url: z.object({
+		url: z.string().min(1),
+	}),
+}).strict();
 
-const VideoGoogleConfigSchema = z.object({
-	aspect_ratio: z.string().optional(),
-	aspectRatio: z.string().optional(),
-	compression_quality: z.number().int().min(0).max(100).optional(),
-	compressionQuality: z.number().int().min(0).max(100).optional(),
-	duration_seconds: z.number().int().positive().optional(),
-	durationSeconds: z.number().int().positive().optional(),
-	generate_audio: z.boolean().optional(),
-	generateAudio: z.boolean().optional(),
-	negative_prompt: z.string().optional(),
-	negativePrompt: z.string().optional(),
-	size: z.string().optional(),
-	resolution: z.string().optional(),
-	person_generation: z.string().optional(),
-	personGeneration: z.string().optional(),
-	number_of_videos: z.number().int().positive().optional(),
-	numberOfVideos: z.number().int().positive().optional(),
-	sample_count: z.number().int().positive().optional(),
-	sampleCount: z.number().int().positive().optional(),
-	seed: z.number().int().optional(),
-	enhance_prompt: z.boolean().optional(),
-	enhancePrompt: z.boolean().optional(),
-	output_storage_uri: z.string().optional(),
-	outputStorageUri: z.string().optional(),
-}).passthrough();
+const VideoInputReferenceSchema = VideoInputReferenceContentPartSchema;
+
+const VideoOutputConfigSchema = z.object({
+	access: z.enum(["bytes", "signed_url", "both"]).default("both"),
+}).default({ access: "both" });
+
+const VideoWebhookSchema = z.object({
+	url: z.string().url(),
+	secret: z.string().min(1).optional(),
+	events: z.array(z.string().min(1)).default(["completed", "failed", "cancelled"]),
+});
 
 // Video Generation schema
 export const VideoGenerationSchema = z.object({
-    model: z.string().min(1),
-    prompt: z.string().min(1),
-    // OpenAI Sora fields
-    seconds: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
-    size: z.string().optional(),
-    quality: z.string().optional(),
-    input_reference: z.string().optional(),
-    input_reference_mime_type: z.string().optional(),
-    input: z.object({
-        image: VideoInputSourceSchema.optional(),
-        video: VideoInputSourceSchema.optional(),
-        last_frame: VideoInputSourceSchema.optional(),
-        reference_images: z.array(VideoReferenceImageSchema).optional(),
-    }).passthrough().optional(),
-    input_image: VideoInputSourceSchema.optional(),
-    input_video: VideoInputSourceSchema.optional(),
-    last_frame: VideoInputSourceSchema.optional(),
-    input_last_frame: VideoInputSourceSchema.optional(),
-    reference_images: z.array(VideoReferenceImageSchema).optional(),
-
-    // Gateway-friendly aliases (mapped in adapters)
-    duration: z.number().int().min(1).max(120).optional(),
-    duration_seconds: z.number().int().positive().optional(),
-    ratio: z.string().optional(),
-    aspect_ratio: z.string().optional(),
-
-    // Veo/Gemini options
-    resolution: z.string().optional(),
-    compression_quality: z.number().int().min(0).max(100).optional(),
-    negative_prompt: z.string().optional(),
-    sample_count: z.number().int().positive().optional(),
-    number_of_videos: z.number().int().positive().optional(),
-    seed: z.number().int().optional(),
-    person_generation: z.string().optional(),
-    generate_audio: z.boolean().optional(),
-    enhance_prompt: z.boolean().optional(),
-    output_storage_uri: z.string().optional(),
-    config: z.object({
-        google: VideoGoogleConfigSchema.optional(),
-    }).passthrough().optional(),
-    echo_upstream_request: z.boolean().optional(),
-    debug: DebugOptionsSchema,
-    beta: BetaOptionsSchema,
-    provider: ProviderRoutingSchema,
-}).transform((obj) => {
-	const size =
-		obj.size ??
-		obj.resolution ??
-		obj.config?.google?.size ??
-		obj.config?.google?.resolution;
-	return {
-		...obj,
-		size,
-		// Keep alias in sync for existing internal call-sites while migrating to size.
-		resolution: size,
-	};
+	model: z.string().min(1),
+	prompt: z.string().min(1),
+	duration: z.number().int().positive().max(120).optional(),
+	size: z.string().min(1).optional(),
+	resolution: z.string().min(1).optional(),
+	aspect_ratio: z.string().min(1).optional(),
+	seed: z.number().int().optional(),
+	sample_count: z.number().int().positive().optional(),
+	negative_prompt: z.string().optional(),
+	generate_audio: z.boolean().optional(),
+	enhance_prompt: z.boolean().optional(),
+	compression_quality: z.number().int().min(0).max(100).optional(),
+	person_generation: z.string().optional(),
+	resize_mode: z.string().optional(),
+	input_references: z.array(VideoInputReferenceSchema).optional(),
+	provider_params: z.record(z.string(), z.any()).optional(),
+	output: VideoOutputConfigSchema.optional(),
+	webhook: VideoWebhookSchema.optional(),
+	echo_upstream_request: z.boolean().optional(),
+	debug: DebugOptionsSchema,
+	beta: BetaOptionsSchema,
+	provider: ProviderRoutingSchema,
+}).strict().superRefine((obj, ctx) => {
+	if (obj.size && (obj.resolution || obj.aspect_ratio)) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			message: "size cannot be combined with resolution or aspect_ratio",
+			path: ["size"],
+		});
+	}
 });
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
 

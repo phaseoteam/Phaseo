@@ -324,7 +324,9 @@ export type RoutingDiagnostics = {
     strictPriority: boolean;
     testingMode: boolean;
     includeAlpha: boolean;
+    includeAlphaHint: boolean;
     betaChannelEnabled: boolean;
+    alphaChannelEnabled: boolean;
     providerCapabilitiesBeta: boolean;
     stickyRouting: {
         enabled: boolean;
@@ -393,6 +395,7 @@ export async function routeProviders(
         body?: any;
         routingMode?: string | null;
         betaChannelEnabled?: boolean;
+        alphaChannelEnabled?: boolean;
         providerCapabilitiesBeta?: boolean;
         testingMode?: boolean;
         requestId?: string | null;
@@ -415,15 +418,17 @@ export async function routeProviders(
         include_alpha?: boolean;
         includeAlpha?: boolean;
     };
-    const includeAlpha = Boolean(hints.include_alpha ?? hints.includeAlpha);
+    const includeAlphaHint = Boolean(hints.include_alpha ?? hints.includeAlpha);
     const onlyHints = normalizeProviderList(hints.only ?? []);
     const ignoreHints = normalizeProviderList(hints.ignore ?? []);
     const orderedHints = normalizeProviderList(hints.order ?? []);
     const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
+    const alphaChannelEnabled = Boolean(ctx.alphaChannelEnabled);
     const providerCapabilitiesBeta = Boolean(ctx.providerCapabilitiesBeta);
     const testingMode = Boolean(ctx.testingMode);
     const cacheAwareRoutingEnabled = ctx.cacheAwareRouting !== false;
     const allowBetaProviders = betaChannelEnabled || providerCapabilitiesBeta;
+    const includeAlpha = allowBetaProviders && alphaChannelEnabled;
     const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
     const filterStages: RoutingFilterStageDiagnostics[] = [];
 
@@ -474,7 +479,9 @@ export async function routeProviders(
         strictPriority: strict,
         testingMode,
         includeAlpha,
+        includeAlphaHint,
         betaChannelEnabled,
+        alphaChannelEnabled,
         providerCapabilitiesBeta,
         stickyRouting: buildStickyDiagnostics(),
         filterStages,
@@ -530,7 +537,7 @@ export async function routeProviders(
     pushStage("status_gate", beforeStatusGate, poolCandidates, (candidate) => {
         const status = normalizeProviderStatus(candidate.providerStatus);
         if (status === "beta") return "beta_requires_team_beta_channel";
-        if (status === "alpha") return "alpha_requires_provider.include_alpha";
+        if (status === "alpha") return "alpha_requires_beta_and_alpha_channels";
         if (status === "not_ready") return "provider_status_not_ready";
         return `provider_status_${status}`;
     });

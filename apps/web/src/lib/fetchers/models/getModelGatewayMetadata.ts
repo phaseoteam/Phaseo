@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/utils/supabase/client";
+import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 export interface GatewayProviderDetails {
     api_provider_id: string;
@@ -102,32 +103,41 @@ export default async function getModelGatewayMetadata(
     if (modelError) {
         throw new Error(modelError.message ?? "Failed to load model metadata");
     }
-    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+    if (modelRow && !includeHidden && modelRow.hidden) {
         throw new Error("Model not found");
     }
 
 	let providerModels: ProviderModelRow[] | null = null;
 	let providerError: { message?: string } | null = null;
 	{
-		const res = await supabase
-			.from("data_api_provider_models")
-			.select(
-				"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
-			)
-			.eq("model_id", modelId);
-		providerModels = res.data ?? null;
-		providerError = res.error;
-	}
+		const [byInternalRes, byApiRes] = await Promise.all([
+			supabase
+				.from("data_api_provider_models")
+				.select(
+					"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+				)
+				.eq("model_id", modelId),
+			supabase
+				.from("data_api_provider_models")
+				.select(
+					"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+				)
+				.eq("api_model_id", modelId),
+		]);
 
-	if (!providerError && (!providerModels || providerModels.length === 0)) {
-		const res = await supabase
-			.from("data_api_provider_models")
-			.select(
-				"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
-			)
-			.eq("internal_model_id", modelId);
-		providerModels = res.data ?? null;
-		providerError = res.error;
+		if (byInternalRes.error && byApiRes.error) {
+			providerError = byInternalRes.error;
+			providerModels = null;
+		} else {
+			const byProviderApiModelId = new Map<string, ProviderModelRow>();
+			for (const row of [...(byInternalRes.data ?? []), ...(byApiRes.data ?? [])]) {
+				const key = String(row?.provider_api_model_id ?? "").trim();
+				if (!key) continue;
+				byProviderApiModelId.set(key, row);
+			}
+			providerModels = Array.from(byProviderApiModelId.values());
+			providerError = byInternalRes.error ?? byApiRes.error ?? null;
+		}
 	}
 
     if (providerError) {
@@ -215,7 +225,9 @@ export default async function getModelGatewayMetadata(
 			id: pm.provider_api_model_id,
 			api_provider_id: pm.provider_id,
 			provider_model_slug: pm.provider_model_slug,
-			quantization_scheme: pm.quantization_scheme ?? null,
+			quantization_scheme: normalizeQuantizationScheme(
+				pm.quantization_scheme ?? null
+			),
 			context_length: pm.context_length ?? null,
 			model_id: pm.api_model_id,
 			endpoint: cap.capability_id,

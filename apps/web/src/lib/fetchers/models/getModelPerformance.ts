@@ -50,12 +50,24 @@ export type ModelProviderUptimeBucket = {
 export type ModelProviderPerformance = {
 	provider: string;
 	providerName: string;
+	providerColor?: string | null;
 	avgThroughput: number | null;
 	avgLatencyMs: number | null;
 	avgGenerationMs: number | null;
 	requests: number;
 	uptimePct: number | null;
 	uptimeBuckets: ModelProviderUptimeBucket[];
+};
+
+export type ModelProviderDailyPoint = {
+	day: string;
+	provider: string;
+	providerName: string;
+	providerColor: string | null;
+	avgThroughput: number | null;
+	avgLatencyMs: number | null;
+	avgGenerationMs: number | null;
+	requests: number;
 };
 
 export interface ModelPerformanceSummary {
@@ -79,6 +91,7 @@ export interface ModelPerformanceMetrics {
 	successSeries: ModelSuccessPoint[];
 	timeOfDay: ModelTimeOfDayPoint[];
 	providerPerformance: ModelProviderPerformance[];
+	providerDaily7d: ModelProviderDailyPoint[];
 	dataRange: ModelPerformanceRange;
 	cumulativeTokens?: number | null;
 	releaseDate?: string | null;
@@ -91,19 +104,7 @@ export async function getModelPerformanceMetrics(
 ): Promise<ModelPerformanceMetrics> {
 	const t0 = Date.now();
 	const client = createAdminClient();
-
-	const { data: modelRow, error: modelError } = await client
-		.from("data_models")
-		.select("hidden")
-		.eq("model_id", modelId)
-		.maybeSingle();
-
-	if (modelError) {
-		throw new Error(modelError.message ?? "Failed to load model metadata");
-	}
-	if (!modelRow || (!includeHidden && modelRow.hidden)) {
-		throw new Error("Model not found");
-	}
+	void includeHidden;
 
 	console.log(`[perf] querying model_id="${modelId}"`);
 
@@ -136,6 +137,15 @@ export async function getModelPerformanceMetrics(
 	const providerPerformance = (payload.provider_uptime_24h ?? []).map(
 		mapProviderPerformance
 	);
+	const preferredProviders = providerPerformance
+		.map((provider) => provider.provider)
+		.filter((provider): provider is string => Boolean(provider))
+		.slice(0, 3);
+	const providerDaily7d = await getProviderDailySeries7d(
+		client,
+		modelId,
+		preferredProviders,
+	);
 	const dataRange = mapDataRange(payload.hourly_24h);
 	const cumulativeTokens = toNumber(payload.cumulative_tokens?.total_tokens);
 	const releaseDate = payload.cumulative_tokens?.release_date ?? null;
@@ -150,6 +160,7 @@ export async function getModelPerformanceMetrics(
 		successSeries,
 		timeOfDay,
 		providerPerformance,
+		providerDaily7d,
 		dataRange,
 		cumulativeTokens,
 		releaseDate,
@@ -164,7 +175,8 @@ export async function getModelPerformanceMetricsCached(
 	"use cache";
 
 	cacheLife("days");
-	cacheTag("data:gateway_requests");
+	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
 
 	return getModelPerformanceMetrics(modelId, includeHidden, hours);
 }
@@ -228,6 +240,7 @@ function mapProviderPerformance(value: any): ModelProviderPerformance {
 	return {
 		provider: value?.provider ?? "",
 		providerName: value?.provider_name ?? value?.provider ?? "",
+		providerColor: null,
 		avgThroughput: toNumber(value?.avg_throughput),
 		avgLatencyMs: toNumber(value?.avg_latency_ms),
 		avgGenerationMs: toNumber(value?.avg_generation_ms),
@@ -245,4 +258,217 @@ function mapDataRange(hourly: any[] | undefined): ModelPerformanceRange {
 		start: hourly[0]?.bucket ?? "",
 		end: hourly[hourly.length - 1]?.bucket ?? "",
 	};
+}
+
+function toUtcDayKey(input: Date | string): string {
+	const date = typeof input === "string" ? new Date(input) : input;
+	if (!Number.isFinite(date.getTime())) return "";
+	const year = date.getUTCFullYear();
+	const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+	const day = String(date.getUTCDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+}
+
+function buildLast7DayKeysUtc(now = new Date()): string[] {
+	const keys: string[] = [];
+	const cursor = new Date(
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+	);
+	for (let i = 6; i >= 0; i -= 1) {
+		const day = new Date(cursor);
+		day.setUTCDate(cursor.getUTCDate() - i);
+		keys.push(toUtcDayKey(day));
+	}
+	return keys;
+}
+
+async function getModelAliases(client: any, modelId: string): Promise<string[]> {
+	const aliases = new Set<string>([modelId]);
+
+	const [byModelId, byApiModelId] = await Promise.all([
+		client
+			.from("data_api_provider_models")
+			.select("model_id, api_model_id")
+			.eq("model_id", modelId),
+		client
+			.from("data_api_provider_models")
+			.select("model_id, api_model_id")
+			.eq("api_model_id", modelId),
+	]);
+
+	const queries = [byModelId, byApiModelId];
+	for (const query of queries) {
+		if (query.error) {
+			console.warn("[perf] failed to load model aliases", {
+				modelId,
+				error: query.error,
+			});
+			continue;
+		}
+		for (const row of query.data ?? []) {
+			const modelKey = String(row?.model_id ?? "").trim();
+			const apiModelKey = String(row?.api_model_id ?? "").trim();
+			if (modelKey) aliases.add(modelKey);
+			if (apiModelKey) aliases.add(apiModelKey);
+		}
+	}
+
+	return Array.from(aliases);
+}
+
+async function getProviderDailySeries7d(
+	client: any,
+	modelId: string,
+	preferredProviders: string[] = [],
+): Promise<ModelProviderDailyPoint[]> {
+	const aliases = await getModelAliases(client, modelId);
+	const now = new Date();
+	const start = new Date(
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+	);
+	start.setUTCDate(start.getUTCDate() - 6);
+
+	const sanitizedPreferredProviders = preferredProviders
+		.map((provider) => provider.trim())
+		.filter(Boolean);
+
+	try {
+		let rollupQuery = client
+			.from("gateway_usage_rollup_15m_model_provider")
+			.select(
+				"bucket_15m, provider, requests, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
+			)
+			.in("canonical_model_id", aliases)
+			.gte("bucket_15m", start.toISOString())
+			.lte("bucket_15m", now.toISOString())
+			.order("bucket_15m", { ascending: true });
+
+		if (sanitizedPreferredProviders.length > 0) {
+			rollupQuery = rollupQuery.in("provider", sanitizedPreferredProviders);
+		}
+
+		const { data, error } = await rollupQuery;
+		if (error) {
+			throw error;
+		}
+
+		type Aggregate = {
+			requests: number;
+			throughputSum: number;
+			throughputSamples: number;
+			latencySum: number;
+			latencySamples: number;
+		};
+
+		const aggregateByProviderDay = new Map<string, Aggregate>();
+		const requestCountByProvider = new Map<string, number>();
+
+		for (const row of data ?? []) {
+			const provider = String(row?.provider ?? "").trim();
+			if (!provider) continue;
+			const day = toUtcDayKey(String(row?.bucket_15m ?? ""));
+			if (!day) continue;
+
+			const requests = Number(row?.requests ?? 0);
+			const throughputSum = Number(row?.throughput_sum ?? 0);
+			const throughputSamples = Number(row?.throughput_samples ?? 0);
+			const latencySum = Number(row?.latency_sum_ms ?? 0);
+			const latencySamples = Number(row?.latency_samples ?? 0);
+			if (!Number.isFinite(requests) || requests <= 0) continue;
+
+			const key = `${provider}::${day}`;
+			const current = aggregateByProviderDay.get(key) ?? {
+				requests: 0,
+				throughputSum: 0,
+				throughputSamples: 0,
+				latencySum: 0,
+				latencySamples: 0,
+			};
+
+			current.requests += requests;
+			if (Number.isFinite(throughputSum) && Number.isFinite(throughputSamples)) {
+				current.throughputSum += throughputSum;
+				current.throughputSamples += Math.max(0, throughputSamples);
+			}
+			if (Number.isFinite(latencySum) && Number.isFinite(latencySamples)) {
+				current.latencySum += latencySum;
+				current.latencySamples += Math.max(0, latencySamples);
+			}
+
+			aggregateByProviderDay.set(key, current);
+			requestCountByProvider.set(
+				provider,
+				(requestCountByProvider.get(provider) ?? 0) + requests,
+			);
+		}
+
+		const topProviders =
+			sanitizedPreferredProviders.length > 0
+				? sanitizedPreferredProviders
+				: Array.from(requestCountByProvider.entries())
+						.sort((a, b) => b[1] - a[1])
+						.slice(0, 3)
+						.map(([provider]) => provider);
+
+		if (topProviders.length === 0) return [];
+
+		const { data: providerRows } = await client
+			.from("data_api_providers")
+			.select("api_provider_id, api_provider_name, colour")
+			.in("api_provider_id", topProviders);
+		const providerMetaMap = new Map<
+			string,
+			{ name: string; color: string | null }
+		>();
+		for (const row of providerRows ?? []) {
+			const id = String(row?.api_provider_id ?? "").trim();
+			if (!id) continue;
+			providerMetaMap.set(id, {
+				name: String(row?.api_provider_name ?? id).trim() || id,
+				color:
+					typeof row?.colour === "string" && row.colour.trim().length > 0
+						? row.colour.trim()
+						: null,
+			});
+		}
+
+		const dayKeys = buildLast7DayKeysUtc(now);
+		const points: ModelProviderDailyPoint[] = [];
+		for (const provider of topProviders) {
+			const providerMeta = providerMetaMap.get(provider);
+			const providerName = providerMeta?.name ?? provider;
+			const providerColor = providerMeta?.color ?? null;
+			for (const day of dayKeys) {
+				const aggregate = aggregateByProviderDay.get(`${provider}::${day}`);
+				if (!aggregate || aggregate.requests <= 0) {
+					continue;
+				}
+				points.push({
+					day,
+					provider,
+					providerName,
+					providerColor,
+					avgThroughput:
+						aggregate.throughputSamples > 0
+							? aggregate.throughputSum / aggregate.throughputSamples
+							: null,
+					avgLatencyMs:
+						aggregate.latencySamples > 0
+							? aggregate.latencySum / aggregate.latencySamples
+							: null,
+					// Not currently tracked in 15m rollup table.
+					avgGenerationMs: null,
+					requests: aggregate.requests,
+				});
+			}
+		}
+
+		return points;
+	} catch (error) {
+		console.warn("[perf] rollup provider daily series failed", {
+			modelId,
+			error,
+		});
+		return [];
+	}
 }

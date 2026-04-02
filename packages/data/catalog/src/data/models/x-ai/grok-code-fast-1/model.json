@@ -1,0 +1,36 @@
+{
+  "model_id": "x-ai/grok-code-fast-1",
+  "organisation_id": "x-ai",
+  "name": "Grok Code Fast 1",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-08-28T00:00:00",
+  "release_date": "2025-08-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "x-ai/grok-code-fast-1",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok-code-fast-1"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://docs.x.ai/docs/models/grok-code-fast-1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    },
+    {
+      "name": "output_context_length",
+      "value": 256000
+    }
+  ],
+  "benchmarks": []
+}

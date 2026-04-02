@@ -535,9 +535,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMetersBase = normalizeTextUsageForPricing((rawResponse as any)?.usage ?? usage, {
-		cachedReadTokensAreSubsetOfInput: true,
-	});
+	const usageMetersBase = normalizeTextUsageForPricing(ir?.usage ?? (rawResponse as any)?.usage ?? usage);
 	const usageMeters = usageMetersBase
 		? { ...usageMetersBase, requests: usageMetersBase.requests ?? 1 }
 		: {

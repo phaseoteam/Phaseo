@@ -200,9 +200,7 @@ async function createOpenAIResponsesWebSocketStream(args: {
 			finish_reason: finishReason ?? args.initialBill.finish_reason ?? null,
 		};
 
-		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage, {
-			cachedReadTokensAreSubsetOfInput: true,
-		});
+		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage);
 		if (usageMeters) {
 			bill.usage = usageMeters;
 		}
@@ -777,9 +775,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage, {
-		cachedReadTokensAreSubsetOfInput: true,
-	});
+	const usageMeters = normalizeTextUsageForPricing(ir?.usage ?? usage);
 	if (usageMeters) {
 		bill.usage = usageMeters;
 	}

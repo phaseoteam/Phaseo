@@ -63,7 +63,7 @@ jobs:
               run: |
                   HEAD="$(git rev-parse HEAD)"
                   BASE=""
-                  HISTORY_FILE="apps/web/src/data/monitor-history.json"
+                  HISTORY_FILE="packages/data/catalog/src/data/monitor-history.json"
 
                   if [ -f "$HISTORY_FILE" ]; then
                     BASE="$(node -e "try{const fs=require('fs');const data=JSON.parse(fs.readFileSync('${HISTORY_FILE}','utf8'));process.stdout.write(data?.meta?.lastSha ?? '')}catch{process.stdout.write('')}")"
@@ -85,7 +85,7 @@ jobs:
               run: |
                   BASE="${{ steps.range.outputs.base }}"
                   HEAD="${{ steps.range.outputs.head }}"
-                  if git diff --name-only "$BASE" "$HEAD" | grep -q '^apps/web/src/data/'; then
+                  if git diff --name-only "$BASE" "$HEAD" | grep -q '^packages/data/catalog/src/data/'; then
                     echo "changes=true" >> "$GITHUB_OUTPUT"
                   else
                     echo "changes=false" >> "$GITHUB_OUTPUT"

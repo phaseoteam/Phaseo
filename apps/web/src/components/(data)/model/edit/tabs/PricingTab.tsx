@@ -326,8 +326,11 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
       const { data: providerModelRows } = await supabase
         .from("data_api_provider_models")
         .select("provider_api_model_id, provider_id, api_model_id")
-        .eq("internal_model_id", modelId)
-      const providerModelData = (providerModelRows ?? []) as ProviderModelRef[]
+        .eq("model_id", modelId)
+      const providerModelData = ((providerModelRows ?? []) as ProviderModelRef[]).map((row) => ({
+        ...row,
+        api_model_id: modelId,
+      }))
       setProviderModels(providerModelData)
 
       const providerIds = Array.from(new Set(providerModelData.map((row) => row.provider_id)))
