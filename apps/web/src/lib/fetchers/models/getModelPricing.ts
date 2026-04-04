@@ -19,6 +19,41 @@ export interface PricingRule {
     effective_to: string | null;
 }
 
+function extractModelIdFromModelKey(modelKey: string): string {
+    const firstColon = modelKey.indexOf(":");
+    const lastColon = modelKey.lastIndexOf(":");
+    if (firstColon < 0 || lastColon <= firstColon) return "";
+    return modelKey.slice(firstColon + 1, lastColon).trim();
+}
+
+function shouldTreatRuleAsFree(modelKey: string, note: string | null | undefined): boolean {
+    const normalizedModelId = extractModelIdFromModelKey(modelKey).toLowerCase();
+    const normalizedNote = String(note ?? "").trim().toLowerCase();
+    return (
+        normalizedModelId.endsWith(":free") ||
+        normalizedModelId.endsWith("-free") ||
+        normalizedNote === "free" ||
+        normalizedNote.startsWith("free ")
+    );
+}
+
+function normalizePricingPlanForRule(
+    pricingPlan: string | null | undefined,
+    modelKey: string,
+    note: string | null | undefined
+): string {
+    const normalizedPlan = String(pricingPlan ?? "").trim().toLowerCase();
+    const inferredFree = shouldTreatRuleAsFree(modelKey, note);
+
+    if (!normalizedPlan) {
+        return inferredFree ? "free" : "standard";
+    }
+    if (normalizedPlan === "standard" && inferredFree) {
+        return "free";
+    }
+    return normalizedPlan;
+}
+
 export interface ProviderModel {
     id: string;                 // provider_api_model_id
     api_provider_id: string;
@@ -334,7 +369,11 @@ export default async function getModelPricing(
     const mapRule = (x: any): PricingRule => ({
         id: x.rule_id,
         model_key: x.model_key,
-        pricing_plan: x.pricing_plan ?? "standard",
+        pricing_plan: normalizePricingPlanForRule(
+            x.pricing_plan,
+            String(x.model_key ?? ""),
+            x.note ?? null
+        ),
         meter: x.meter,
         unit: x.unit ?? "token",
         unit_size: Number(x.unit_size ?? 1),

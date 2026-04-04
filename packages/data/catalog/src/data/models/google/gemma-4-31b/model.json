@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemma-4-31b",
+  "organisation_id": "google",
+  "name": "Gemma 4 31B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-02T00:00:00",
+  "release_date": "2026-04-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "google/gemma-4-31b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

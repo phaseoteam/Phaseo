@@ -346,8 +346,8 @@ export function MonitorDataTable({
 	});
 
 	const [selectedTiers] = useQueryState("tiers", {
-		defaultValue: ["standard"],
-		parse: (value) => (value ? value.split(",") : ["standard"]),
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
 		serialize: (value) => value.join(","),
 	});
 

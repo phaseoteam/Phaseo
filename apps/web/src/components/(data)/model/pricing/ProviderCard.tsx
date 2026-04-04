@@ -87,6 +87,48 @@ function formatLeavingDate(value: string, now: Date): string {
 	});
 }
 
+function parseRuleConditionValues(value: unknown): string[] {
+	if (Array.isArray(value)) return value.map((v) => String(v));
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+			try {
+				const parsed = JSON.parse(trimmed.replace(/''/g, '"'));
+				if (Array.isArray(parsed)) return parsed.map((v) => String(v));
+			} catch {
+				return trimmed
+					.slice(1, -1)
+					.split(",")
+					.map((v) => v.replace(/['"]/g, "").trim())
+					.filter(Boolean);
+			}
+		}
+		return [trimmed.replace(/['"]/g, "")];
+	}
+	if (typeof value === "number" || typeof value === "boolean") {
+		return [String(value)];
+	}
+	return [];
+}
+
+function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | null {
+	const values = parseRuleConditionValues(value);
+	const parsed = values
+		.map((raw) => raw.trim().toLowerCase())
+		.map((v) => {
+			if (["true", "1", "yes", "enabled", "t", "on"].includes(v)) return true;
+			if (["false", "0", "no", "disabled", "f", "off"].includes(v)) return false;
+			return null;
+		})
+		.filter((v): v is boolean => v !== null);
+	if (!parsed.length) return null;
+	const hasTrue = parsed.includes(true);
+	const hasFalse = parsed.includes(false);
+	if (hasTrue && !hasFalse) return "with-audio";
+	if (hasFalse && !hasTrue) return "without-audio";
+	return null;
+}
+
 const PROVIDER_STATUS_PRIORITY_ORDER = [
 	"active",
 	"deranked_lvl1",
@@ -323,6 +365,78 @@ export default function ProviderCard({
 		);
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
+	const videoAudioRuleHints = planRules.flatMap((rule) => {
+		const meter = String(rule.meter ?? "").toLowerCase();
+		const isVideoMeter =
+			meter.includes("output_video") ||
+			meter.includes("video_output") ||
+			(meter.includes("video") &&
+				(meter.includes("second") || meter.includes("minute") || meter.includes("video")));
+		if (!isVideoMeter) return [];
+		const fromMs = rule.effective_from ? new Date(rule.effective_from).getTime() : null;
+		const toMs = rule.effective_to ? new Date(rule.effective_to).getTime() : null;
+		const nowMs = now.getTime();
+		if (fromMs != null && Number.isFinite(fromMs) && fromMs > nowMs) return [];
+		if (toMs != null && Number.isFinite(toMs) && toMs <= nowMs) return [];
+		const conditions = Array.isArray(rule.match) ? rule.match : [];
+		const audioCondition = conditions.find(
+			(cond: any) =>
+				String(cond?.path ?? "").trim().toLowerCase() === "video_params.audio",
+		);
+		const audioMode = audioCondition
+			? parseRuleAudioMode(audioCondition.value)
+			: null;
+		if (!audioMode) return [];
+		const resolutionCondition = conditions.find((cond: any) =>
+			String(cond?.path ?? "").trim().toLowerCase().includes("resolution"),
+		);
+		const resolutions = resolutionCondition
+			? parseRuleConditionValues(resolutionCondition.value)
+			: ["Any resolution"];
+		const price = Number(rule.price_per_unit ?? Number.NaN);
+		if (!Number.isFinite(price)) return [];
+		return resolutions.map((resolution) => ({
+			resolution,
+			price,
+			audioMode,
+		}));
+	});
+	const hasExplicitVideoAudioRules = planRules.some((rule) => {
+		const meter = String(rule.meter ?? "").toLowerCase();
+		const isVideoMeter =
+			meter.includes("output_video") ||
+			meter.includes("video_output") ||
+			(meter.includes("video") && (meter.includes("second") || meter.includes("minute")));
+		if (!isVideoMeter) return false;
+		const match = Array.isArray(rule.match) ? rule.match : [];
+		const audioCond = match.find(
+			(cond: any) =>
+				String(cond?.path ?? "").trim().toLowerCase() === "video_params.audio",
+		);
+		if (!audioCond) return false;
+		const values = Array.isArray(audioCond.value) ? audioCond.value : [audioCond.value];
+		return values.some((v: unknown) => {
+			if (typeof v === "boolean") return true;
+			const normalized = String(v ?? "").trim().toLowerCase();
+			return [
+				"true",
+				"false",
+				"1",
+				"0",
+				"yes",
+				"no",
+				"enabled",
+				"disabled",
+				"t",
+				"f",
+				"on",
+				"off",
+			].includes(normalized);
+		});
+	});
+	const hasVideoAudioSplitData = Boolean(
+		sec.videoGen?.some((row) => row.audioMode === "with-audio" || row.audioMode === "without-audio")
+	);
 	const quantizationScheme =
 		infoScope
 			.find(
@@ -554,7 +668,7 @@ export default function ProviderCard({
 							triple={textTripleForDisplay}
 							hideHeader={false}
 							leadingTiles={capacityMetrics}
-							minimumSegments={["Input", "Cache Reads", "Output"]}
+							minimumSegments={["Input", "Output"]}
 							compact
 						/>
 					)}
@@ -601,7 +715,17 @@ export default function ProviderCard({
 					{!isFreePlan && upcomingFor("videoTokens").length > 0 && (
 						<UpcomingPricingSection rows={upcomingFor("videoTokens")} title="Upcoming" compact />
 					)}
-					{!isFreePlan && sec.videoGen && <VideoGenSection rows={sec.videoGen} />}
+					{!isFreePlan && sec.videoGen && (
+						<VideoGenSection
+							rows={sec.videoGen}
+							showAudioVariants={
+								hasExplicitVideoAudioRules ||
+								hasVideoAudioSplitData ||
+								videoAudioRuleHints.length > 0
+							}
+							audioHints={videoAudioRuleHints}
+						/>
+					)}
 					{!isFreePlan && upcomingFor("videoGen").length > 0 && (
 						<UpcomingPricingSection rows={upcomingFor("videoGen")} title="Upcoming" compact />
 					)}

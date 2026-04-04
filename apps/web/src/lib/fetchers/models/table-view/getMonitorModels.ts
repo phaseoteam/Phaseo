@@ -365,14 +365,6 @@ export async function getMonitorModels(
 		});
 	}
 
-	const allTiers = [
-		...new Set(
-			(pricingData ?? [])
-				.map((r) => r.pricing_plan)
-				.filter((tier): tier is string => Boolean(tier))
-		),
-	].sort();
-
 	const pricingByKey = new Map<
 		string,
 		{ inputPrice: number; outputPrice: number; tier: string }
@@ -505,7 +497,7 @@ export async function getMonitorModels(
 			quantization,
 			supportedParameters,
 			effectiveFrom: pm?.effective_from ?? undefined,
-			tier: prices.tier || "standard",
+			tier: isFreeVariant ? "free" : prices.tier || "standard",
 			added: modelRow?.release_date || undefined,
 			retired: modelRow?.retirement_date
 				? new Date(modelRow.retirement_date).toISOString().split("T")[0]
@@ -531,6 +523,13 @@ export async function getMonitorModels(
 
 	const allEndpoints = Array.from(endpointsSet).sort();
 	const allModalities = Array.from(modalitiesSet).sort();
+	const allTiers = Array.from(
+		new Set(
+			allModels
+				.map((item) => String(item.tier ?? "").trim().toLowerCase())
+				.filter(Boolean),
+		),
+	).sort();
 	const featureOrderIndex = new Map(
 		featureOrder.map((feature, index) => [feature, index])
 	);

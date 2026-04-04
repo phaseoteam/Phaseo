@@ -20,6 +20,9 @@ On subsequent runs, the runner computes per-provider:
 Discord alerts are filtered to models from the database table `data_api_provider_models` (`provider_model_slug` and `api_model_id` tail). This includes entries regardless of `is_active_gateway` status.
 If any filtered diff exists, the runner sends a Discord webhook notification.
 
+Internal model file checks read from `packages/data/catalog/src/data/models`.
+Internal Discord alerts are sent when new internal models are added to the repository.
+
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.
 

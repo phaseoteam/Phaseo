@@ -4993,6 +4993,8 @@ components:
         - google/gemma-3-4b
         - google/gemma-3n-e2b
         - google/gemma-3n-e4b
+        - google/gemma-4-26b-a4b
+        - google/gemma-4-31b
         - google/image-generation-002
         - google/image-generation-005
         - google/image-generation-006
@@ -5548,6 +5550,7 @@ components:
         - qwen/qwen3.5-9b
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
+        - qwen/qwen3.6-plus
         - qwen/qwq-32b
         - qwen/qwq-32b-preview
         - qwen/worldpm-72b

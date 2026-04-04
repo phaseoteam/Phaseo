@@ -638,7 +638,7 @@ export async function ModelCreatorModelsSection({
 										className="block h-full rounded-md border border-border/70 bg-muted/10 px-3 py-3 transition-colors hover:bg-muted/30"
 									>
 										<div className="space-y-1">
-											<p className="line-clamp-2 text-sm font-semibold">
+											<p className="line-clamp-1 text-sm font-semibold">
 												{creatorModel.name}
 											</p>
 											<p className="truncate text-xs text-muted-foreground">
@@ -659,8 +659,8 @@ export async function ModelCreatorModelsSection({
 								</CarouselItem>
 							))}
 						</CarouselContent>
-						<CarouselPrevious className="left-0 z-10 -translate-x-[calc(100%+0.5rem)] bg-background shadow-sm" />
-						<CarouselNext className="right-0 z-10 translate-x-[calc(100%+0.5rem)] bg-background shadow-sm" />
+						<CarouselPrevious className="left-0 z-10 hidden -translate-x-[calc(100%+0.5rem)] bg-background shadow-sm sm:flex" />
+						<CarouselNext className="right-0 z-10 hidden translate-x-[calc(100%+0.5rem)] bg-background shadow-sm sm:flex" />
 					</Carousel>
 				</div>
 			) : (
