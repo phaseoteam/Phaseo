@@ -39,43 +39,36 @@ function summarizeUsage(usage: unknown): string {
 	return `present (prompt/input=${String(prompt)}, completion/output=${String(completion)}, total=${String(total)})`;
 }
 
-async function runNonStream(baseUrl: string, apiKey: string, model: string) {
-	const body = {
-		model,
-		messages: [{ role: "user", content: "Reply with exactly: hi" }],
-		stream: false,
-	};
-
-	const res = await fetch(`${baseUrl}/chat/completions`, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${apiKey}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(body),
-	});
-
-	const text = await res.text();
-	const json = parseJson(text);
-	const usage = json?.usage;
-
-	console.log("\n[non-stream]");
-	console.log(`status: ${res.status}`);
-	console.log(`usage: ${summarizeUsage(usage)}`);
-	if (!json) {
-		console.log(`body (first 500 chars): ${text.slice(0, 500)}`);
-	}
+function parseBillingBalance(payload: JsonRecord | null): number | null {
+	const data = payload?.data;
+	if (!data || typeof data !== "object") return null;
+	const balance = (data as JsonRecord).balance;
+	if (!balance || typeof balance !== "object") return null;
+	const remaining = (balance as JsonRecord).remaining;
+	return typeof remaining === "number" ? remaining : null;
 }
 
-async function runStream(baseUrl: string, apiKey: string, model: string) {
-	const body = {
-		model,
-		messages: [{ role: "user", content: "Reply with exactly: hi" }],
-		stream: true,
-		stream_options: { include_usage: true },
+async function getBilling(baseUrl: string, apiKey: string): Promise<{ status: number; balanceRemaining: number | null }> {
+	const res = await fetch(`${baseUrl}/v1/user/billing`, {
+		headers: { Authorization: `Bearer ${apiKey}` },
+	});
+	const text = await res.text();
+	const json = parseJson(text);
+	return {
+		status: res.status,
+		balanceRemaining: parseBillingBalance(json),
 	};
+}
 
-	const res = await fetch(`${baseUrl}/chat/completions`, {
+async function runSyncChat(baseUrl: string, apiKey: string, modelId: string | null) {
+	const body: JsonRecord = {
+		message: "Reply with exactly hi",
+		modelConfiguration: {
+			responseMode: "sync",
+			...(modelId ? { modelId } : {}),
+		},
+	};
+	const createRes = await fetch(`${baseUrl}/v1/chats`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${apiKey}`,
@@ -83,43 +76,51 @@ async function runStream(baseUrl: string, apiKey: string, model: string) {
 		},
 		body: JSON.stringify(body),
 	});
+	const createText = await createRes.text();
+	const createJson = parseJson(createText);
 
-	console.log("\n[stream]");
-	console.log(`status: ${res.status}`);
+	console.log("\n[platform chat create sync]");
+	console.log(`status: ${createRes.status}`);
+	console.log(`usage on create payload: ${summarizeUsage(createJson?.usage)}`);
 
-	if (!res.body) {
-		console.log("stream body missing");
+	const chatId = typeof createJson?.id === "string" ? createJson.id : null;
+	const messages = Array.isArray(createJson?.messages) ? (createJson.messages as JsonRecord[]) : [];
+	const assistantMessage = messages.find((m) => m.role === "assistant");
+	const assistantMessageId = typeof assistantMessage?.id === "string" ? assistantMessage.id : null;
+
+	if (!chatId) {
+		console.log(`create body (first 600 chars): ${createText.slice(0, 600)}`);
 		return;
 	}
 
-	const reader = res.body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
-	let usage: unknown;
+	const chatRes = await fetch(`${baseUrl}/v1/chats/${chatId}`, {
+		headers: { Authorization: `Bearer ${apiKey}` },
+	});
+	const chatText = await chatRes.text();
+	const chatJson = parseJson(chatText);
+	console.log(`chat.get status: ${chatRes.status}`);
+	console.log(`usage on chat.get payload: ${summarizeUsage(chatJson?.usage)}`);
 
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		buffer += decoder.decode(value, { stream: true });
-		const frames = buffer.split("\n\n");
-		buffer = frames.pop() ?? "";
-
-		for (const frame of frames) {
-			const lines = frame.split("\n");
-			for (const line of lines) {
-				const trimmed = line.trim();
-				if (!trimmed.startsWith("data:")) continue;
-				const data = trimmed.slice(5).trim();
-				if (!data || data === "[DONE]") continue;
-				const payload = parseJson(data);
-				if (payload?.usage) {
-					usage = payload.usage;
-				}
-			}
+	if (assistantMessageId) {
+		const msgRes = await fetch(`${baseUrl}/v1/chats/${chatId}/messages/${assistantMessageId}`, {
+			headers: { Authorization: `Bearer ${apiKey}` },
+		});
+		const msgText = await msgRes.text();
+		const msgJson = parseJson(msgText);
+		console.log(`message.get status: ${msgRes.status}`);
+		console.log(`usage on message.get payload: ${summarizeUsage(msgJson?.usage)}`);
+		if (!msgJson) {
+			console.log(`message.get body (first 600 chars): ${msgText.slice(0, 600)}`);
 		}
 	}
 
-	console.log(`usage: ${summarizeUsage(usage)}`);
+	const assistantContent =
+		typeof assistantMessage?.content === "string"
+			? assistantMessage.content
+			: typeof createJson?.text === "string"
+				? createJson.text
+				: "";
+	console.log(`assistant text: ${assistantContent.slice(0, 120)}`);
 }
 
 async function main() {
@@ -132,24 +133,33 @@ async function main() {
 		trimQuotes(process.env.AI_GATEWAY_API_KEY) ||
 		trimQuotes(process.env.GATEWAY_API_KEY);
 	if (!apiKey) {
-		console.error("Missing API key. Set VERCEL_API_KEY (or AI_GATEWAY_API_KEY/GATEWAY_API_KEY for gateway testing).");
+		console.error("Missing API key. Set VERCEL_API_KEY (or AI_GATEWAY_API_KEY/GATEWAY_API_KEY).");
 		process.exitCode = 1;
 		return;
 	}
 
-	const baseUrl = trimQuotes(process.env.V0_BASE_URL) || "https://api.v0.dev/v1";
-	const model = trimQuotes(process.env.V0_MODEL) || "v0-1.5-md";
+	const baseUrl = trimQuotes(process.env.V0_BASE_URL) || "https://api.v0.dev";
+	const modelId = trimQuotes(process.env.V0_MODEL_ID) || "";
 
 	console.log("[vercel-v0-usage-smoke]");
 	console.log(`baseUrl: ${baseUrl}`);
-	console.log(`model: ${model}`);
+	console.log(`modelId: ${modelId || "(default)"}`);
 
-	await runNonStream(baseUrl, apiKey, model);
-	await runStream(baseUrl, apiKey, model);
+	const before = await getBilling(baseUrl, apiKey);
+	console.log(`billing before: status=${before.status}, remaining=${before.balanceRemaining ?? "n/a"}`);
+
+	await runSyncChat(baseUrl, apiKey, modelId || null);
+
+	const after = await getBilling(baseUrl, apiKey);
+	console.log(`billing after: status=${after.status}, remaining=${after.balanceRemaining ?? "n/a"}`);
+
+	if (before.balanceRemaining !== null && after.balanceRemaining !== null) {
+		const delta = before.balanceRemaining - after.balanceRemaining;
+		console.log(`billing remaining delta: ${delta.toFixed(8)}`);
+	}
 }
 
 main().catch((err) => {
 	console.error(err);
 	process.exitCode = 1;
 });
-
