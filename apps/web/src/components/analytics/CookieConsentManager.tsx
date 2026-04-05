@@ -115,7 +115,8 @@ export function CookieConsentManager({
             function gtag(){window.dataLayer.push(arguments);}
             window.gtag = window.gtag || gtag;
             gtag('js', new Date());
-            gtag('consent', 'default', ${JSON.stringify(GA_GRANTED_CONSENT)});
+            gtag('consent', 'default', ${JSON.stringify(GA_DENIED_CONSENT)});
+            gtag('consent', 'update', ${JSON.stringify(GA_GRANTED_CONSENT)});
             gtag('config', '${gaMeasurementId}', { anonymize_ip: true });
           `}</Script>
         </>

@@ -1,5 +1,9 @@
 import posthog from "posthog-js";
-import { POSTHOG_API_HOST, POSTHOG_KEY, POSTHOG_UI_HOST } from "@/lib/analytics";
+import {
+	POSTHOG_API_HOST,
+	POSTHOG_KEY,
+	POSTHOG_UI_HOST,
+} from "@/lib/analytics";
 import {
 	ANALYTICS_CONSENT_EVENT,
 	ANALYTICS_CONSENT_STORAGE_KEY,
@@ -15,7 +19,6 @@ import {
 
 let posthogInitialized = false;
 let listenersBound = false;
-let posthogEnabled = false;
 
 const RECENT_ERROR_WINDOW_MS = 15000;
 const RECENT_ERROR_MAX = 100;
@@ -191,65 +194,6 @@ function bindGlobalErrorListeners() {
 	});
 }
 
-function enablePosthog() {
-	if (typeof window === "undefined" || !POSTHOG_KEY) {
-		return;
-	}
-
-	initializePosthog();
-
-	if (posthogEnabled) {
-		return;
-	}
-
-	posthogEnabled = true;
-	// ENHANCED TRACKING WITH CONSENT
-	posthog.set_config({
-		autocapture: true, // Enable click/form tracking
-		capture_pageview: true,
-		capture_pageleave: true,
-		session_recording: {
-			recordCrossOriginIframes: false,
-		},
-		disable_session_recording: false, // Enable session recordings
-	});
-	posthog.opt_in_capturing({ captureEventName: false });
-	posthog.capture("$pageview");
-}
-
-function disablePosthog() {
-	if (!posthogInitialized) {
-		return;
-	}
-
-	if (!posthogEnabled) {
-		// Already in basic anonymous mode - nothing to do
-		return;
-	}
-
-	posthogEnabled = false;
-	// REVERT TO BASIC ANONYMOUS TRACKING (keep pageviews)
-	posthog.set_config({
-		autocapture: false,
-		capture_pageview: true, // Keep anonymous pageviews
-		capture_pageleave: false,
-		disable_session_recording: true,
-	});
-	// Don't call opt_out_capturing() - we want to keep basic tracking
-	posthog.reset(); // Clear user identity but keep anonymous session
-}
-
-function applyPosthogConsent(consent: AnalyticsConsent | null) {
-	if (consent === "accepted") {
-		// User accepted: enable full enhanced tracking
-		enablePosthog();
-		return;
-	}
-
-	// null (no choice) or "denied": keep basic anonymous tracking only
-	disablePosthog();
-}
-
 function initializePosthog() {
 	if (typeof window === "undefined" || !POSTHOG_KEY || posthogInitialized) {
 		return;
@@ -259,38 +203,76 @@ function initializePosthog() {
 		api_host: POSTHOG_API_HOST,
 		ui_host: POSTHOG_UI_HOST,
 		defaults: "2025-05-24",
-		// HYBRID APPROACH: Enable basic anonymous tracking by default
-		autocapture: false, // No autocapture without consent (privacy)
-		capture_pageview: true, // Basic pageviews OK (anonymous, no PII)
+		autocapture: false,
+		capture_pageview: false,
 		capture_pageleave: false,
-		// Only create person profiles when explicitly identified (GDPR-compliant)
 		person_profiles: "identified_only",
-		// No session recording without consent
 		disable_session_recording: true,
+		opt_out_capturing_by_default: true,
+		cookieless_mode: "on_reject",
 		debug: process.env.NODE_ENV === "development",
 	});
+
 	posthogInitialized = true;
-
-	// Capture initial anonymous pageview (no personal data)
-	posthog.capture("$pageview");
 }
 
-if (typeof window !== "undefined" && POSTHOG_KEY) {
-	bindGlobalErrorListeners();
+function enablePosthog() {
+	if (typeof window === "undefined" || !POSTHOG_KEY) {
+		return;
+	}
+
 	initializePosthog();
-	applyPosthogConsent(readAnalyticsConsent());
 
-	window.addEventListener(ANALYTICS_CONSENT_EVENT, (event) => {
-		const customEvent = event as CustomEvent<AnalyticsConsent>;
-		applyPosthogConsent(customEvent.detail ?? null);
+	posthog.set_config({
+		autocapture: true,
+		capture_pageview: true,
+		capture_pageleave: true,
+		session_recording: {
+			recordCrossOriginIframes: false,
+		},
+		disable_session_recording: false,
 	});
-
-	window.addEventListener("storage", (event) => {
-		if (event.key !== ANALYTICS_CONSENT_STORAGE_KEY) return;
-		applyPosthogConsent(parseAnalyticsConsent(event.newValue));
-	});
+	posthog.opt_in_capturing({ captureEventName: false });
 }
 
-if (typeof window !== "undefined" && !POSTHOG_KEY) {
+function disablePosthog() {
+	if (!posthogInitialized) {
+		return;
+	}
+
+	posthog.set_config({
+		autocapture: false,
+		capture_pageview: false,
+		capture_pageleave: false,
+		disable_session_recording: true,
+	});
+	posthog.opt_out_capturing();
+	posthog.reset();
+}
+
+function applyPosthogConsent(consent: AnalyticsConsent | null) {
+	if (consent === "accepted") {
+		enablePosthog();
+		return;
+	}
+
+	disablePosthog();
+}
+
+if (typeof window !== "undefined") {
 	bindGlobalErrorListeners();
+
+	if (POSTHOG_KEY) {
+		applyPosthogConsent(readAnalyticsConsent());
+
+		window.addEventListener(ANALYTICS_CONSENT_EVENT, (event) => {
+			const customEvent = event as CustomEvent<AnalyticsConsent>;
+			applyPosthogConsent(parseAnalyticsConsent(customEvent.detail));
+		});
+
+		window.addEventListener("storage", (event) => {
+			if (event.key !== ANALYTICS_CONSENT_STORAGE_KEY) return;
+			applyPosthogConsent(parseAnalyticsConsent(event.newValue));
+		});
+	}
 }
