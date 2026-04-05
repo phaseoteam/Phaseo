@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 type ManifestType = "npm" | "pyproject";
 
@@ -122,7 +122,7 @@ function getCurrentVersion(pkg: PackageConfig): string | null {
 
 function getPreviousVersion(pkg: PackageConfig): string | null {
     try {
-        const content = execSync(`git show HEAD^:${pkg.manifestPath}`, {
+        const content = execFileSync("git", ["show", `HEAD^:${pkg.manifestPath}`], {
             encoding: "utf8",
         });
         return getVersionFromManifest(content, pkg.manifestType);
@@ -324,7 +324,7 @@ function isMarkedNotable(changelogBody: string | null): boolean {
 
 function releaseExists(tag: string): boolean {
     try {
-        execSync(`gh release view "${tag}"`, { stdio: "ignore" });
+        execFileSync("gh", ["release", "view", tag], { stdio: "ignore" });
         return true;
     } catch {
         return false;
@@ -395,8 +395,9 @@ function main() {
         fs.writeFileSync(tmpPath, body, "utf8");
 
         console.log(`[${pkg.name}] Creating GitHub release ${tag}`);
-        execSync(
-            `gh release create "${tag}" --title "${title}" --notes-file "${tmpPath}"`,
+        execFileSync(
+            "gh",
+            ["release", "create", tag, "--title", title, "--notes-file", tmpPath],
             { stdio: "inherit" },
         );
         fs.unlinkSync(tmpPath);

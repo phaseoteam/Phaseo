@@ -23,7 +23,7 @@ export default async function Page({ searchParams }: SignInPageProps) {
 	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
 	const signupNotice = signup === "exists" || signup === "check-email" ? signup : null;
 	const authErrorParam = Array.isArray(params.error) ? params.error[0] : params.error;
-	const authError = typeof authErrorParam === "string" ? authErrorParam : null;
+	const authError = authErrorParam === "auth-failed" ? "auth-failed" : null;
 	const returnUrlParam = Array.isArray(params.returnUrl)
 		? params.returnUrl[0]
 		: params.returnUrl;
