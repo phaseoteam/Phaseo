@@ -18,12 +18,12 @@ import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 export const metadata: Metadata = buildMetadata({
 	title: "AI Stats Pricing",
 	description:
-		"AI Stats Gateway pricing matrix for Free, Pay As You Go, and Enterprise plans, including capabilities, controls, and support.",
+		"AI Stats Gateway pricing matrix for Free and Pay As You Go plans, including capabilities, controls, and support.",
 	path: "/pricing",
 	keywords: [
 		"AI Stats pricing",
 		"gateway pricing",
-		"free pay as you go enterprise",
+		"free pay as you go",
 		"pricing matrix",
 		"api gateway plans",
 	],
@@ -127,6 +127,8 @@ function PlanCell({ cell }: { cell: Cell }) {
 
 const basicTier = getTierByKey("basic");
 const enterpriseTier = getTierByKey("enterprise");
+const HIDE_ENTERPRISE_REFERENCES = true;
+const SHOW_ENTERPRISE_PLAN = !HIDE_ENTERPRISE_REFERENCES;
 const SHOW_ENTERPRISE_PREVIEW_ROWS = false;
 const ENTERPRISE_PREVIEW_ROWS: MatrixRow[] = [
 	{
@@ -531,19 +533,21 @@ export default function PricingPage() {
 
 				<section className="space-y-6">
 					<div className="overflow-x-auto rounded-xl border border-zinc-200/70 bg-white/75 dark:border-zinc-800/70 dark:bg-zinc-950/60">
-						<table className="w-full min-w-[1160px] table-fixed text-left text-sm">
+						<table className={`w-full table-fixed text-left text-sm ${SHOW_ENTERPRISE_PLAN ? "min-w-[1160px]" : "min-w-[920px]"}`}>
 							<colgroup>
 								<col className="w-[40%]" />
-								<col className="w-[20%]" />
-								<col className="w-[20%]" />
-								<col className="w-[20%]" />
+								<col className={SHOW_ENTERPRISE_PLAN ? "w-[20%]" : "w-[30%]"} />
+								<col className={SHOW_ENTERPRISE_PLAN ? "w-[20%]" : "w-[30%]"} />
+								{SHOW_ENTERPRISE_PLAN ? <col className="w-[20%]" /> : null}
 							</colgroup>
 							<thead className="border-b border-zinc-200/70 bg-zinc-50/80 dark:border-zinc-800/70 dark:bg-zinc-900/60">
 								<tr>
 									<th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">Feature</th>
 									<th className="px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">Free</th>
 									<th className="px-4 py-3 text-center font-bold text-foreground">Pay As You Go</th>
-									<th className="px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">Enterprise</th>
+									{SHOW_ENTERPRISE_PLAN ? (
+										<th className="px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">Enterprise</th>
+									) : null}
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
@@ -553,7 +557,7 @@ export default function PricingPage() {
 											className="bg-zinc-50/70 dark:bg-zinc-900/40"
 										>
 											<td
-												colSpan={4}
+												colSpan={SHOW_ENTERPRISE_PLAN ? 4 : 3}
 												className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300"
 											>
 												{section.title}
@@ -575,7 +579,9 @@ export default function PricingPage() {
 												</td>
 												<td className="px-4 py-3 align-top text-center"><PlanCell cell={row.free} /></td>
 												<td className="px-4 py-3 align-top text-center"><PlanCell cell={row.payg} /></td>
-												<td className="px-4 py-3 align-top text-center"><PlanCell cell={row.enterprise} /></td>
+												{SHOW_ENTERPRISE_PLAN ? (
+													<td className="px-4 py-3 align-top text-center"><PlanCell cell={row.enterprise} /></td>
+												) : null}
 											</tr>
 										))}
 									</Fragment>
@@ -592,13 +598,18 @@ export default function PricingPage() {
 						</h2>
 					</div>
 					<div className="space-y-8">
-						{FAQ_SECTIONS.map((section) => (
+						{FAQ_SECTIONS.map((section) => {
+							const visibleItems = SHOW_ENTERPRISE_PLAN
+								? section.items
+								: section.items.filter((item) => !/enterprise/i.test(`${item.question} ${item.answer}`));
+							if (visibleItems.length === 0) return null;
+							return (
 							<div key={section.id} className="space-y-2">
 								<h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">
 									{section.title}
 								</h3>
 								<Accordion type="single" collapsible>
-									{section.items.map((item) => (
+									{visibleItems.map((item) => (
 										<AccordionItem key={item.id} value={`${section.id}-${item.id}`}>
 											<AccordionTrigger>{item.question}</AccordionTrigger>
 											<AccordionContent className="text-muted-foreground leading-6">
@@ -608,7 +619,8 @@ export default function PricingPage() {
 									))}
 								</Accordion>
 							</div>
-						))}
+							);
+						})}
 					</div>
 				</section>
 

@@ -19,6 +19,53 @@ export interface PricingRule {
     effective_to: string | null;
 }
 
+function extractModelIdFromModelKey(modelKey: string): string {
+    const firstColon = modelKey.indexOf(":");
+    const lastColon = modelKey.lastIndexOf(":");
+    if (firstColon < 0 || lastColon <= firstColon) return "";
+    return modelKey.slice(firstColon + 1, lastColon).trim();
+}
+
+function shouldTreatRuleAsFree(modelKey: string, note: string | null | undefined): boolean {
+    const normalizedModelId = extractModelIdFromModelKey(modelKey).toLowerCase();
+    const normalizedNote = String(note ?? "").trim().toLowerCase();
+    return (
+        normalizedModelId.endsWith(":free") ||
+        normalizedModelId.endsWith("-free") ||
+        normalizedNote === "free" ||
+        normalizedNote.startsWith("free ")
+    );
+}
+
+function normalizePricingPlanForRule(
+    pricingPlan: string | null | undefined,
+    modelKey: string,
+    note: string | null | undefined
+): string {
+    const normalizedPlan = String(pricingPlan ?? "").trim().toLowerCase();
+    const inferredFree = shouldTreatRuleAsFree(modelKey, note);
+
+    if (!normalizedPlan) {
+        return inferredFree ? "free" : "standard";
+    }
+    if (normalizedPlan === "standard" && inferredFree) {
+        return "free";
+    }
+    return normalizedPlan;
+}
+
+function isWithinActivePricingWindow(
+    effectiveFrom: string | null | undefined,
+    effectiveTo: string | null | undefined,
+    nowMs: number
+): boolean {
+    const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
+    const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
+    const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
+    const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
+    return nowMs >= fromMs && nowMs < toMs;
+}
+
 export interface ProviderModel {
     id: string;                 // provider_api_model_id
     api_provider_id: string;
@@ -334,7 +381,11 @@ export default async function getModelPricing(
     const mapRule = (x: any): PricingRule => ({
         id: x.rule_id,
         model_key: x.model_key,
-        pricing_plan: x.pricing_plan ?? "standard",
+        pricing_plan: normalizePricingPlanForRule(
+            x.pricing_plan,
+            String(x.model_key ?? ""),
+            x.note ?? null
+        ),
         meter: x.meter,
         unit: x.unit ?? "token",
         unit_size: Number(x.unit_size ?? 1),
@@ -346,6 +397,8 @@ export default async function getModelPricing(
         effective_from: x.effective_from,
         effective_to: x.effective_to ?? null,
     });
+
+    const nowMs = Date.now();
 
     if (modelKeys.length) {
         const { data: r, error: prErr } = await supabase
@@ -359,7 +412,15 @@ export default async function getModelPricing(
 
         if (prErr) throw new Error(prErr.message || "Failed to fetch pricing rules");
 
-        rules = (r || []).map(mapRule);
+        rules = (r || [])
+            .filter((row) =>
+                isWithinActivePricingWindow(
+                    row.effective_from ?? null,
+                    row.effective_to ?? null,
+                    nowMs
+                )
+            )
+            .map(mapRule);
 
         // console.log(`[getModelPricing] Fetched ${rules.length} pricing rules: ${rules.slice(0, 5).map(r => `${r.id} (${r.meter})`).join(', ')}${rules.length > 5 ? '...' : ''}`);
     }
@@ -398,6 +459,15 @@ export default async function getModelPricing(
             }
 
             for (const row of fallbackRows ?? []) {
+                if (
+                    !isWithinActivePricingWindow(
+                        row.effective_from ?? null,
+                        row.effective_to ?? null,
+                        nowMs
+                    )
+                ) {
+                    continue;
+                }
                 rules.push(mapRule(row));
             }
         }

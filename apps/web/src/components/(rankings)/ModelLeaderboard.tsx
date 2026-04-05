@@ -48,7 +48,7 @@ type ModelLeaderboardProps = {
 const RANGE_OPTIONS: Array<{ key: LeaderboardRange; label: string }> = [
 	{ key: "today", label: "Today" },
 	{ key: "week", label: "Last 7d" },
-	{ key: "month", label: "Last month" },
+	{ key: "month", label: "Last 30d" },
 	{ key: "trending", label: "Trending" },
 ];
 

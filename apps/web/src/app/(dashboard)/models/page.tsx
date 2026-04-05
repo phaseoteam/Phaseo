@@ -312,6 +312,8 @@ type GatewaySignals = {
 	latestApiTimestamp: number | null;
 	lowestInputPrice: number | null;
 	lowestOutputPrice: number | null;
+	lowestFromPrice: number | null;
+	lowestFromPriceUnit: string | null;
 };
 
 function createEmptyGatewaySignals(): GatewaySignals {
@@ -336,6 +338,8 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		latestApiTimestamp: null,
 		lowestInputPrice: null,
 		lowestOutputPrice: null,
+		lowestFromPrice: null,
+		lowestFromPriceUnit: null,
 	};
 }
 
@@ -414,18 +418,35 @@ function aggregateGatewaySignals(
 			if (value) existing.supportedParameters.add(value);
 		}
 		const inputPrice = Number(row.provider.inputPrice);
-		if (Number.isFinite(inputPrice) && inputPrice >= 0) {
+		if (Number.isFinite(inputPrice) && inputPrice > 0) {
 			existing.lowestInputPrice =
 				existing.lowestInputPrice === null
 					? inputPrice
 					: Math.min(existing.lowestInputPrice, inputPrice);
 		}
 		const outputPrice = Number(row.provider.outputPrice);
-		if (Number.isFinite(outputPrice) && outputPrice >= 0) {
+		if (Number.isFinite(outputPrice) && outputPrice > 0) {
 			existing.lowestOutputPrice =
 				existing.lowestOutputPrice === null
 					? outputPrice
 					: Math.min(existing.lowestOutputPrice, outputPrice);
+		}
+		const fromPrice = Number(row.provider.fromPrice);
+		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
+		if (Number.isFinite(fromPrice) && fromPrice > 0) {
+			if (
+				existing.lowestFromPrice === null ||
+				fromPrice < existing.lowestFromPrice
+			) {
+				existing.lowestFromPrice = fromPrice;
+				existing.lowestFromPriceUnit = fromPriceUnit;
+			} else if (
+				fromPrice === existing.lowestFromPrice &&
+				!existing.lowestFromPriceUnit &&
+				fromPriceUnit
+			) {
+				existing.lowestFromPriceUnit = fromPriceUnit;
+			}
 		}
 		const apiDateCandidate = String(row.effectiveFrom ?? "").trim();
 		if (apiDateCandidate) {
@@ -731,6 +752,8 @@ function withGatewayMetadata(
 			).sort(),
 			lowest_input_price: signals?.lowestInputPrice ?? null,
 			lowest_output_price: signals?.lowestOutputPrice ?? null,
+			lowest_from_price: signals?.lowestFromPrice ?? null,
+			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
 			throughput_week: weeklyMetrics.throughputWeek,
 			latency_week: weeklyMetrics.latencyWeek,
@@ -812,6 +835,8 @@ function withGatewayMetadata(
 				supported_parameters: [],
 				lowest_input_price: null,
 				lowest_output_price: null,
+				lowest_from_price: null,
+				lowest_from_price_unit: null,
 				popularity_tokens_week: weeklyMetrics.tokensWeek,
 				throughput_week: weeklyMetrics.throughputWeek,
 				latency_week: weeklyMetrics.latencyWeek,

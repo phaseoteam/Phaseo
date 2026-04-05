@@ -31,11 +31,15 @@ import type { DevToolsConfig } from "./devtools/core.js";
 
 export type KnownModelId = OapiModelId;
 export type ModelIdLiteral = KnownModelId;
+/**
+ * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
+ *
+ * Model page URL pattern:
+ * `https://ai-stats.phaseo.app/models/{provider/model}`
+ */
 // Allow new server-side models before a package release while preserving known-ID autocomplete.
 export type ModelId = KnownModelId | (string & {});
 export type OpenApiModelId = OapiModelId;
-export const MODEL_IDS: KnownModelId[] = [];
-export const MODEL_ID_SET = new Set<KnownModelId>(MODEL_IDS);
 
 type Options = {
   apiKey?: string;
@@ -179,6 +183,7 @@ export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
 export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
 export type Healthz200Response = Awaited<ReturnType<typeof ops.healthz>>;
 export { ops as operations };
+export { ModelIds, MODEL_IDS, MODEL_ID_SET } from "./modelIds.js";
 export type AIStatsOptions = Options;
 
 export class AIStats {

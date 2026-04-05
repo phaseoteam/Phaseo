@@ -2,7 +2,7 @@
 
 ## Overview
 
-This package provides a Vercel AI SDK v6 compatible provider for the AI Stats Gateway, enabling developers to access 55+ AI providers through a standardized interface.
+This package provides a Vercel AI SDK v6 compatible provider for the AI Stats Gateway, enabling developers to access 30+ AI providers through a standardized interface.
 
 ## Implemented Features
 
@@ -163,7 +163,7 @@ await embed({
 
 ## Supported Models
 
-### Language Models (55+ providers)
+### Language Models (30+ providers)
 
 **Major Providers:**
 - OpenAI: gpt-4o, gpt-4-turbo, gpt-3.5-turbo

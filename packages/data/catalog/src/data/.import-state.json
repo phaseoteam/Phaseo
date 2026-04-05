@@ -8373,7 +8373,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "b05b33022c0f05105aa0303948eb6f72",
+      "hash": "46eecae0b7618d152831740c5e88b91b",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -8611,7 +8611,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "fd9ec2bf13c2d9ab817c8169a7e39cb1",
+      "hash": "9cc46314085e793c76ec431fa2c479dc",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -8809,7 +8809,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/models.json": {
-      "hash": "c7f12291dc1488613d446f012f964660",
+      "hash": "88021a2e8377fd31316900c96851192f",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -11391,7 +11391,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-3-12b-free/text.generate/pricing.json": {
-      "hash": "6d5b5872ee4d0622dd352c48d9641e8b",
+      "hash": "325262407ff1b45752520065c48d9530",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
@@ -11400,7 +11400,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-3-1b-free/text.generate/pricing.json": {
-      "hash": "3e46a2a538d6bd7303d8ab3e1ca094da",
+      "hash": "9282fcf096d06287edc591ecd229f925",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
@@ -11409,7 +11409,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-3-27b-free/text.generate/pricing.json": {
-      "hash": "1d6beb1821689b7192b3a69a0dfaca8d",
+      "hash": "1ae7854e995e693e237c580f0788e110",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
@@ -11418,7 +11418,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-3-4b-free/text.generate/pricing.json": {
-      "hash": "83e784ba2c78574a3d656b02907e4335",
+      "hash": "bcb26c278ca8ed2e9ea7380221957cd4",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
@@ -11427,7 +11427,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-3n-e2b-free/text.generate/pricing.json": {
-      "hash": "cc05b7e581426842959b008af5960c17",
+      "hash": "c5f8b14c13c27e4874260b0717caec09",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
@@ -11436,7 +11436,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-3n-e4b-free/text.generate/pricing.json": {
-      "hash": "75d82cd024fa62620a6c6bfd79e1a240",
+      "hash": "87ab0e30ad4d4f876521e74c730d5d84",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
@@ -11490,7 +11490,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-vertex/google-veo-3.1-fast-preview/video.generate/pricing.json": {
-      "hash": "bc3dd13820ad115d1922115ea15f490e",
+      "hash": "00696da80b96d80500ddf89281708eb6",
       "meta": {
         "api_provider_id": "google-vertex",
         "capability_id": "video.generate",
@@ -11499,7 +11499,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-vertex/google-veo-3.1-preview/video.generate/pricing.json": {
-      "hash": "8579b7bf4f518e7d590b2c33699de4c9",
+      "hash": "d064b8800844c790b10f71bb5457f29b",
       "meta": {
         "api_provider_id": "google-vertex",
         "capability_id": "video.generate",
@@ -11787,7 +11787,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/mistral/mistral-devstral-small-2-free/text.generate/pricing.json": {
-      "hash": "1f4fee2c2de5d74e1483a989c0154e58",
+      "hash": "7d7e2b09c780dac3f06c7f5b75c913f6",
       "meta": {
         "api_provider_id": "mistral",
         "capability_id": "text.generate",
@@ -11796,7 +11796,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/mistral/mistral-leanstral-free/text.generate/pricing.json": {
-      "hash": "259f0841fe883be7ffa89f6068250cf0",
+      "hash": "edbf241b09635d841d54936a0bdfc10c",
       "meta": {
         "api_provider_id": "mistral",
         "capability_id": "text.generate",
@@ -14550,7 +14550,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2-tts-free/audio.speech/pricing.json": {
-      "hash": "179ffddf7585851670a136f8ef84a2ef",
+      "hash": "9f5d5db361a83b5b8a449a8a4fe8b854",
       "meta": {
         "api_provider_id": "xiaomi",
         "capability_id": "audio.speech",
@@ -15000,7 +15000,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-vertex/google-veo-3.1-lite-generate-preview/video.generate/pricing.json": {
-      "hash": "5eb46019cb0973c88b2c8d123fdc7afc",
+      "hash": "051c4838a1abfa08f5f09ac9cf53ade0",
       "meta": {
         "api_provider_id": "google-vertex",
         "capability_id": "video.generate",
@@ -15048,6 +15048,75 @@
         "capability_id": "text.generate",
         "model_id": "z-ai/glm-5v-turbo",
         "model_key": "z-ai:z-ai/glm-5v-turbo:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3.6-plus/text.generate/pricing.json": {
+      "hash": "82b9979574813d626b1cdec36f659cca",
+      "meta": {
+        "api_provider_id": "alibaba-cloud",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3.6-plus",
+        "model_key": "alibaba-cloud:qwen/qwen3.6-plus:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/qwen/qwen3.6-plus/model.json": {
+      "hash": "2b6499e36480c73b0386591b8e93ef89",
+      "meta": {
+        "model_id": "qwen/qwen3.6-plus",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/google/gemma-4-31b/model.json": {
+      "hash": "ffd5b21c8a14ac0267f4d7df9bd443ea",
+      "meta": {
+        "model_id": "google/gemma-4-31b",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-4-26b-a4b-free/text.generate/pricing.json": {
+      "hash": "3209a93c167efd9813fc252627516fdf",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "text.generate",
+        "model_id": "google/gemma-4-26b-a4b:free",
+        "model_key": "google-ai-studio:google/gemma-4-26b-a4b:free:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/google-ai-studio/google-gemma-4-31b-free/text.generate/pricing.json": {
+      "hash": "9d18fe0f6629b89b2399bca12a23ecdc",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "text.generate",
+        "model_id": "google/gemma-4-31b:free",
+        "model_key": "google-ai-studio:google/gemma-4-31b:free:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/google-gemma-4-26b-a4b/text.generate/pricing.json": {
+      "hash": "026d92addc27aadbb6ce8805765f8659",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "google/gemma-4-26b-a4b",
+        "model_key": "novita:google/gemma-4-26b-a4b:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/google-gemma-4-31b/text.generate/pricing.json": {
+      "hash": "50e507fc482fa90ad6876852a73955cc",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "google/gemma-4-31b",
+        "model_key": "novita:google/gemma-4-31b:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/google/gemma-4-26b-a4b/model.json": {
+      "hash": "5d4f99b78171530e07f662cdfa4db58e",
+      "meta": {
+        "model_id": "google/gemma-4-26b-a4b",
+        "organisation_id": "google",
+        "previous_model_id": null
       }
     }
   }

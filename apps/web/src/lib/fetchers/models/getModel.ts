@@ -189,6 +189,17 @@ export default async function getModel(
         }
 
         const modelKeys = [...modelKeySet];
+        const nowMs = Date.now();
+        const isActivePricingWindow = (
+            effectiveFrom: string | null | undefined,
+            effectiveTo: string | null | undefined
+        ): boolean => {
+            const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
+            const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
+            const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
+            const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
+            return nowMs >= fromMs && nowMs < toMs;
+        };
         const { data: pricing, error: pricingError } = modelKeys.length
             ? await supabase
                 .from("data_api_pricing_rules")
@@ -224,23 +235,27 @@ export default async function getModel(
                 modelId,
                 count: pricing?.length ?? 0,
             });
-            model.pricing = (pricing ?? []).map((row: any) => ({
-                rule_id: row.rule_id,
-                model_key: row.model_key,
-                provider_id: parseModelKey(row.model_key)?.provider_id ?? "",
-                api_model_id: parseModelKey(row.model_key)?.api_model_id ?? "",
-                capability_id: row.capability_id ?? parseModelKey(row.model_key)?.capability_id ?? "",
-                pricing_plan: row.pricing_plan ?? "standard",
-                meter: row.meter,
-                unit: row.unit ?? "token",
-                unit_size: Number(row.unit_size ?? 1),
-                price_per_unit: row.price_per_unit,
-                currency: row.currency ?? "USD",
-                priority: Number(row.priority ?? 100),
-                effective_from: row.effective_from,
-                effective_to: row.effective_to ?? null,
-                match: row.match ?? [],
-            })) as PricingRule[];
+            model.pricing = (pricing ?? [])
+                .filter((row: any) =>
+                    isActivePricingWindow(row.effective_from ?? null, row.effective_to ?? null)
+                )
+                .map((row: any) => ({
+                    rule_id: row.rule_id,
+                    model_key: row.model_key,
+                    provider_id: parseModelKey(row.model_key)?.provider_id ?? "",
+                    api_model_id: parseModelKey(row.model_key)?.api_model_id ?? "",
+                    capability_id: row.capability_id ?? parseModelKey(row.model_key)?.capability_id ?? "",
+                    pricing_plan: row.pricing_plan ?? "standard",
+                    meter: row.meter,
+                    unit: row.unit ?? "token",
+                    unit_size: Number(row.unit_size ?? 1),
+                    price_per_unit: row.price_per_unit,
+                    currency: row.currency ?? "USD",
+                    priority: Number(row.priority ?? 100),
+                    effective_from: row.effective_from,
+                    effective_to: row.effective_to ?? null,
+                    match: row.match ?? [],
+                })) as PricingRule[];
         }
     } catch (err) {
         console.warn(

@@ -6,6 +6,8 @@ import { createClient } from "@/utils/supabase/server";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+const HIDE_ENTERPRISE_REFERENCES = true;
+
 function money(amount: number, currency: string = "USD") {
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",
@@ -56,9 +58,13 @@ export default async function TierOverview({ teamId }: Props) {
 	// Tier calculation
 	const enterpriseThreshold = 10000;
 	const isEnterprise = teamTier === "enterprise";
-	const currentTier = isEnterprise ? "Enterprise" : "Basic";
-	const currentFee = isEnterprise ? 5.0 : 7.0;
-	const savingsRate = isEnterprise ? 2.0 : 0;
+	const currentTier = HIDE_ENTERPRISE_REFERENCES
+		? "Standard"
+		: isEnterprise
+			? "Enterprise"
+			: "Basic";
+	const currentFee = 5.0;
+	const savingsRate = 0;
 
 	// Progress toward Enterprise (for Basic users)
 	const progressPct = isEnterprise
@@ -66,8 +72,8 @@ export default async function TierOverview({ teamId }: Props) {
 		: Math.min(100, (mtd / enterpriseThreshold) * 100);
 	const remainingToEnterprise = Math.max(0, enterpriseThreshold - mtd);
 
-	// Estimated savings this month
-	const estimatedSavings = isEnterprise ? mtd * 0.02 : 0; // 2% savings
+	// No delta between Basic and Enterprise top-up fees with current pricing.
+	const estimatedSavings = 0;
 
 	return (
 		<div className="grid gap-6 md:grid-cols-2">
@@ -115,19 +121,26 @@ export default async function TierOverview({ teamId }: Props) {
 						<div className="space-y-2">
 							<div className="flex items-baseline justify-between text-sm">
 								<span className="text-muted-foreground">
-									Progress to Enterprise
+									{HIDE_ENTERPRISE_REFERENCES ? "Progress this month" : "Progress to Enterprise"}
 								</span>
 								<span className="font-medium">{progressPct.toFixed(0)}%</span>
 							</div>
 							<Progress value={progressPct} className="h-2" />
 							<p className="text-xs text-muted-foreground">
 								{remainingToEnterprise > 0 ? (
-									<>
-										Spend {money(remainingToEnterprise)} more this month to
-										unlock Enterprise tier (5% top-up fee)
-									</>
+									HIDE_ENTERPRISE_REFERENCES ? (
+										<>
+											Spend {money(remainingToEnterprise)} more this month to
+											reach the next threshold
+										</>
+									) : (
+										<>
+											Spend {money(remainingToEnterprise)} more this month to
+											unlock Enterprise tier
+										</>
+									)
 								) : (
-									<>Eligible for Enterprise tier now.</>
+									<>{HIDE_ENTERPRISE_REFERENCES ? "Threshold reached for this month." : "Eligible for Enterprise tier now."}</>
 								)}
 							</p>
 						</div>
@@ -150,7 +163,7 @@ export default async function TierOverview({ teamId }: Props) {
 						href="https://docs.ai-stats.phaseo.app"
 						className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 					>
-						<span>Learn about tiers and pricing</span>
+						<span>Learn about pricing</span>
 						<ExternalLink className="h-3 w-3" />
 					</Link>
 				</CardContent>
@@ -206,19 +219,17 @@ export default async function TierOverview({ teamId }: Props) {
 					{/* Tier Explanation */}
 					<div className="rounded-lg border bg-muted/50 p-3">
 						<p className="text-sm text-muted-foreground">
-							<strong>How tiers work:</strong> Reach $10k in a calendar month
-							to unlock Enterprise top-up fee pricing for that month and the following
-							month. After that, a 3-month low-spend streak can move teams
-							back to Basic.
+							<strong>How pricing works:</strong> Your usage updates monthly and
+							the displayed fee is applied when purchasing credits.
 						</p>
 					</div>
 
 					{/* Grace Period Notice (for Enterprise users at risk) */}
-					{isEnterprise && mtd < enterpriseThreshold && (
+					{!HIDE_ENTERPRISE_REFERENCES && isEnterprise && mtd < enterpriseThreshold && (
 						<div className="rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900 dark:bg-orange-950/30">
 							<p className="text-sm text-orange-900 dark:text-orange-100">
 								<strong>Heads up:</strong> Your spending is below $10k this
-								month. You'll keep Enterprise top-up fee pricing with a 3-month grace
+								month. You'll keep Enterprise tier status with a 3-month grace
 								period.
 							</p>
 						</div>

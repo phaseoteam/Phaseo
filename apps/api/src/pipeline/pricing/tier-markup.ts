@@ -1,16 +1,16 @@
 // Purpose: Apply tier-based markup to pricing calculations
-// Why: Simplified two-tier pricing (Basic 7%, Enterprise 5%)
+// Why: Simplified two-tier pricing (Basic 5%, Enterprise 5%)
 // How: Applies markup multiplier after base cost calculation
 
 import type { PricingResult } from "./types";
 
 /**
  * Tier-based markup rates
- * Basic: 7% markup (1.07x)
+ * Basic: 5% markup (1.05x)
  * Enterprise: 5% markup (1.05x)
  */
 const TIER_MARKUP = {
-    basic: 1.07,      // 7% markup
+    basic: 1.05,      // 5% markup
     enterprise: 1.05, // 5% markup
 } as const;
 
@@ -37,7 +37,7 @@ export function getTierMarkupPercentage(tier: string | null | undefined): number
  *
  * Example:
  * - Base cost: $1.00
- * - Basic tier (7%): $1.07
+ * - Basic tier (5%): $1.05
  * - Enterprise tier (5%): $1.05
  *
  * @param pricingResult - Base pricing calculation (before markup)

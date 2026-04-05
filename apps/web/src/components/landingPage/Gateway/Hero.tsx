@@ -172,7 +172,7 @@ export function Hero({
 					</h1>
 
 					<p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Unify 50+ AI providers behind one API. Route intelligently by
+						Unify 30+ AI providers behind one API. Route intelligently by
 						latency, cost, and availability. Ship production workloads with
 						confidence.
 					</p>

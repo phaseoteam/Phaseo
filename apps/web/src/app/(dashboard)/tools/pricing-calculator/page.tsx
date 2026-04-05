@@ -7,9 +7,9 @@ import { loadPricingCalculatorSearchParams } from "./search-params";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Pricing Calculator 2026 - Compare 500+ Models | OpenAI, Anthropic, Google, Meta",
+	title: "AI Pricing Calculator 2026 - Compare 300+ Models | OpenAI, Anthropic, Google, Meta",
 	description:
-		"Free AI pricing calculator for 500+ models. Compare costs for GPT-5, Claude 4.5, Gemini 3, DeepSeek & more. Calculate token costs, API pricing, and budget estimates across OpenAI, Anthropic, Google, AWS, Azure. Real-time pricing data updated daily.",
+		"Free AI pricing calculator for 300+ models. Compare costs for GPT-5, Claude 4.5, Gemini 3, DeepSeek & more. Calculate token costs, API pricing, and budget estimates across OpenAI, Anthropic, Google, AWS, Azure. Real-time pricing data updated daily.",
 	path: "/tools/pricing-calculator",
 	keywords: [
 		// Primary keywords

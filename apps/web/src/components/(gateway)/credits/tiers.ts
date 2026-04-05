@@ -1,4 +1,4 @@
-// Two-tier pricing system: Basic (7%) and Enterprise (5%)
+// Two-tier pricing system: Basic (5%) and Enterprise (5%)
 // Backend team tier is the source-of-truth.
 // Spend values are used for progress/projection in UI.
 
@@ -15,7 +15,7 @@ export const GATEWAY_TIERS: readonly GatewayTier[] = [
 		key: "basic",
 		name: "Basic",
 		threshold: 0,
-		feePct: 7.0,
+		feePct: 5.0,
 		description:
 			"Standard pricing for all teams. Automatic Enterprise qualification after $10k in a calendar month.",
 	},

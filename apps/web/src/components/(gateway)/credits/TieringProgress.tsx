@@ -11,6 +11,8 @@ import {
 	type GatewayTier,
 } from "@/components/(gateway)/credits/tiers";
 
+const HIDE_ENTERPRISE_REFERENCES = true;
+
 function money(amount: number, currency: string) {
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",
@@ -85,6 +87,42 @@ export default async function TieringProgress({
 	// Calculate progress percentage for Basic users
 	const progressPct = isEnterprise ? 100 : Math.min(100, (mtd / enterpriseThreshold) * 100);
 
+	if (HIDE_ENTERPRISE_REFERENCES) {
+		return (
+			<Card>
+				<CardHeader className="pb-2">
+					<div className="flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
+						<CardTitle className="m-0">Pricing</CardTitle>
+						<div className="text-sm text-muted-foreground md:text-right">
+							Last month: {money(lastMonth, currency)}
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="flex items-center justify-between">
+						<span className="text-sm text-muted-foreground">Current top-up fee</span>
+						<span className="text-xl font-semibold">{currentFee.toFixed(1)}%</span>
+					</div>
+					<div className="space-y-2">
+						<div className="flex items-center justify-between">
+							<span className="text-sm text-muted-foreground">This month</span>
+							<span className="text-sm font-medium">{money(mtd, currency)}</span>
+						</div>
+						<div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+							<div
+								className="h-full bg-indigo-600 transition-all duration-300"
+								style={{ width: `${progressPct}%` }}
+							/>
+						</div>
+						<p className="text-xs text-muted-foreground">
+							Spend {money(Math.max(enterpriseThreshold - mtd, 0), currency)} more this month to reach the next threshold.
+						</p>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
+
 	return (
 		<Card>
 			<CardHeader className="pb-2">
@@ -130,7 +168,7 @@ export default async function TieringProgress({
 						<div className="flex items-center justify-start gap-2 text-lg font-semibold md:justify-end md:text-xl">
 							<span>{currentFee.toFixed(1)}%</span>
 
-							{willUpgradeNextMonth && (
+							{willUpgradeNextMonth && projected.feePct !== currentFee && (
 								<>
 									<ArrowRight className="h-4 w-4 text-orange-500" />
 									<span className="text-orange-600 dark:text-orange-400">
@@ -160,7 +198,7 @@ export default async function TieringProgress({
 						<TrendingUp className="h-4 w-4" />
 						<AlertDescription>
 							Only {money(remainingToNext, currency)} away from Enterprise tier!
-							Spend {money(enterpriseThreshold, currency)}+ this month to unlock the 5% top-up fee next month.
+							Spend {money(enterpriseThreshold, currency)}+ this month to qualify for Enterprise tier next month.
 						</AlertDescription>
 					</Alert>
 				)}
@@ -264,7 +302,7 @@ export default async function TieringProgress({
 					<div className="mb-2 text-sm font-medium">How it works</div>
 					<div className="space-y-3 rounded-lg border p-4 text-sm">
 						<div>
-							<div className="font-medium">Basic Tier (7%)</div>
+							<div className="font-medium">Basic Tier (5%)</div>
 							<p className="text-xs text-muted-foreground">
 								All teams start here. Automatic upgrade after spending {money(enterpriseThreshold, currency)}+ in any month.
 							</p>
@@ -272,7 +310,7 @@ export default async function TieringProgress({
 						<div>
 							<div className="font-medium">Enterprise Tier (5%)</div>
 							<p className="text-xs text-muted-foreground">
-								High-volume teams save 2% on credit purchase fees. Maintained while spending {money(enterpriseThreshold, currency)}+ monthly.
+								Enterprise qualification is maintained while spending {money(enterpriseThreshold, currency)}+ monthly.
 								Downgrade to Basic after 3 consecutive months below threshold.
 							</p>
 						</div>

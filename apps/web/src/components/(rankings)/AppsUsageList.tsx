@@ -21,7 +21,7 @@ type AppRange = "today" | "week" | "month";
 const RANGE_OPTIONS: Array<{ key: AppRange; label: string }> = [
 	{ key: "today", label: "Today" },
 	{ key: "week", label: "Last 7d" },
-	{ key: "month", label: "Last month" },
+	{ key: "month", label: "Last 30d" },
 ];
 
 type AppsUsageListProps = {

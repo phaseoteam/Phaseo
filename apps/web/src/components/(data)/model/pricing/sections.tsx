@@ -88,6 +88,73 @@ function compareResolutionLabels(a: string, b: string): number {
 	return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 }
 
+function normalizeResolutionKey(value: string): string {
+	const label = String(value ?? "").trim().toLowerCase();
+	if (!label) return "any resolution";
+	const [resolutionPart, ...rest] = label.split(" - ");
+	const suffix = rest.join(" - ").trim();
+	const dimMatch = resolutionPart.match(/^(\d+)\s*x\s*(\d+)$/i);
+	const canonicalResolution = dimMatch
+		? `${Math.min(Number(dimMatch[1]), Number(dimMatch[2]))}x${Math.max(
+				Number(dimMatch[1]),
+				Number(dimMatch[2]),
+		  )}`
+		: resolutionPart.trim();
+	return suffix ? `${canonicalResolution} - ${suffix}` : canonicalResolution;
+}
+
+function makeResolutionPriceKey(resolution: string, price: number): string {
+	const normalizedPrice = Number.isFinite(price) ? price.toFixed(8) : "nan";
+	return `${normalizeResolutionKey(resolution)}|${normalizedPrice}`;
+}
+
+function parseAudioBool(value: string): boolean | null {
+	const normalized = value.trim().toLowerCase();
+	if (["true", "1", "yes", "enabled", "t", "on"].includes(normalized)) return true;
+	if (["false", "0", "no", "disabled", "f", "off"].includes(normalized)) return false;
+	return null;
+}
+
+function inferAudioModeFromLabel(rawLabel: string): {
+	mode: ResolutionRow["audioMode"];
+	cleanedLabel: string;
+} {
+	const trimLabel = (value: string) =>
+		value
+			.replace(/\s*[-:,|]\s*$/g, "")
+			.replace(/^\s*[-:,|]\s*/g, "")
+			.replace(/\s{2,}/g, " ")
+			.trim();
+	const label = String(rawLabel ?? "").trim();
+	if (!label) {
+		return { mode: null, cleanedLabel: "Any resolution" };
+	}
+
+	const boolMatch = label.match(
+		/\baudio\b[^a-z0-9]*(?:=|:|eq)?[^a-z0-9]*(true|false|1|0|yes|no|enabled|disabled)\b/i,
+	);
+	if (boolMatch?.[1]) {
+		const boolValue = parseAudioBool(boolMatch[1]);
+		const cleaned = trimLabel(label.replace(boolMatch[0], ""));
+		return {
+			mode: boolValue == null ? null : boolValue ? "with-audio" : "without-audio",
+			cleanedLabel: cleaned || "Any resolution",
+		};
+	}
+
+	if (/\b(without|no)\s+audio\b/i.test(label)) {
+		const cleaned = trimLabel(label.replace(/\b(without|no)\s+audio\b/gi, ""));
+		return { mode: "without-audio", cleanedLabel: cleaned || "Any resolution" };
+	}
+
+	if (/\bwith\s+audio\b/i.test(label)) {
+		const cleaned = trimLabel(label.replace(/\bwith\s+audio\b/gi, ""));
+		return { mode: "with-audio", cleanedLabel: cleaned || "Any resolution" };
+	}
+
+	return { mode: null, cleanedLabel: label };
+}
+
 function formatPercentDelta(nextPrice: number, currentPrice?: number | null): string | null {
 	if (currentPrice == null || !Number.isFinite(currentPrice) || currentPrice <= 0) return null;
 	if (!Number.isFinite(nextPrice)) return null;
@@ -100,55 +167,15 @@ function formatPercentDelta(nextPrice: number, currentPrice?: number | null): st
 	return "0%";
 }
 
-type DividerColumn = {
-	id: string;
-	title?: React.ReactNode;
-	subtitle?: React.ReactNode;
-	value: React.ReactNode;
-	footer?: React.ReactNode;
-};
+function countUsdDecimals(value: number): number {
+	const formatted = fmtUSD(value);
+	const dotIndex = formatted.indexOf(".");
+	return dotIndex === -1 ? 0 : formatted.length - dotIndex - 1;
+}
 
-function DividerColumns({
-	columns,
-	minColumnPx = 150,
-}: {
-	columns: DividerColumn[];
-	minColumnPx?: number;
-}) {
-	if (!columns.length) return null;
-
-	return (
-		<div className="w-full overflow-x-auto">
-			<div className="flex w-full min-w-max divide-x divide-zinc-200/70 dark:divide-zinc-800">
-				{columns.map((column) => (
-					<div
-						key={column.id}
-						className="min-w-0 flex-1 px-3 py-2"
-						style={{ minWidth: minColumnPx }}
-					>
-						{column.title ? (
-							<div className="mb-0.5 text-xs text-muted-foreground">
-								{column.title}
-							</div>
-						) : null}
-						{column.subtitle ? (
-							<div className="mb-0.5 text-xs text-muted-foreground/80">
-								{column.subtitle}
-							</div>
-						) : null}
-						<div className="text-xs font-semibold text-foreground tabular-nums">
-							{column.value}
-						</div>
-						{column.footer ? (
-							<div className="mt-0.5 text-xs text-muted-foreground">
-								{column.footer}
-							</div>
-						) : null}
-					</div>
-				))}
-			</div>
-		</div>
-	);
+function formatUsdAligned(value: number, decimals: number): string {
+	if (!Number.isFinite(value)) return fmtUSD(value);
+	return `$${value.toFixed(decimals)}`;
 }
 
 export function TierTiles({
@@ -161,40 +188,34 @@ export function TierTiles({
 	if (!tiers?.length) {
 		return <div className="text-sm text-muted-foreground">--</div>;
 	}
+	const sharedDecimals = tiers.reduce(
+		(max, tier) => Math.max(max, countUsdDecimals(tier.per1M)),
+		0,
+	);
 
 	return (
 		<div className={dense ? "space-y-1" : "space-y-1.5"}>
 			{tiers.map((t, i) => (
-				<div key={i}>
-					<div className="space-y-0.5">
-						<div
+				<div key={i} className="space-y-0.5">
+					<div className="flex items-baseline gap-1">
+						<span
 							className={
 								t.basePer1M != null
 									? "text-xs font-semibold text-emerald-600 tabular-nums"
 									: "text-xs font-semibold text-foreground tabular-nums"
 							}
 						>
-							{fmtUSD(t.per1M)}
-						</div>
+							{formatUsdAligned(t.per1M, sharedDecimals)}
+						</span>
 						{t.label !== "All usage" ? (
-							<div className="text-xs text-muted-foreground">{t.label}</div>
-						) : null}
-						{t.basePer1M != null ? (
-							<div className="flex items-center justify-between text-xs text-muted-foreground">
-								<span className="line-through tabular-nums">
-									{fmtUSD(t.basePer1M)}
-								</span>
-									{formatCountdown(t.discountEndsAt) ? (
-										<Badge
-											variant="secondary"
-											className="text-[0.6rem] tracking-wide"
-										>
-											{formatCountdown(t.discountEndsAt)}
-										</Badge>
-								) : null}
-							</div>
+							<span className="text-xs text-muted-foreground">{t.label}</span>
 						) : null}
 					</div>
+					{t.basePer1M != null ? (
+						<div className="text-xs text-muted-foreground">
+							{renderDiscountFooter(t.basePer1M, t.discountEndsAt)}
+						</div>
+					) : null}
 				</div>
 			))}
 		</div>
@@ -229,88 +250,46 @@ export function TokenTripleSection({
 	const segments = baseSegments.filter(
 		(segment) => segment.tiers.length > 0 || minimum.has(segment.label),
 	);
-	const totalTiles = segments.length + leadingTiles.length;
-	if (!totalTiles) return null;
+	if (segments.length + leadingTiles.length === 0) return null;
 
-	const gridClass =
-		totalTiles === 1
-			? "grid-cols-1"
-			: totalTiles === 2
-			? "grid-cols-2"
-			: totalTiles === 3
-			? "grid-cols-1 sm:grid-cols-3"
-			: totalTiles === 4
-			? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-			: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5";
 	const showSegmentLabels = segments.length > 1;
+	const columns = [
+		...leadingTiles.map((tile) => ({
+			key: `leading-${tile.label}`,
+			title: tile.label,
+			content: (
+				<div className="text-xs font-semibold text-foreground tabular-nums">{tile.value}</div>
+			),
+		})),
+		...segments.map((s, idx) => ({
+			key: `segment-${idx}`,
+			title: showSegmentLabels ? s.label : null,
+			content: <TierTiles tiers={s.tiers} dense={compact} />,
+		})),
+	];
 
 	return (
 		<div className="space-y-1.5">
-				{!hideHeader ? (
-					<div className="flex items-center justify-between">
-						<h4 className="text-xs font-semibold tracking-wide text-foreground">
-							{title}
-						</h4>
-						<span className="text-xs text-muted-foreground">{headerRight ?? "Per 1M tokens"}</span>
+			{!hideHeader ? (
+				<div className="flex items-center justify-between">
+					<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
+					<span className="text-xs text-muted-foreground">{headerRight ?? "Per 1M tokens"}</span>
 				</div>
 			) : null}
-			{compact ? (
-				<div className="w-full overflow-x-auto">
-					<div className="flex w-full min-w-[540px] divide-x divide-zinc-200/70 dark:divide-zinc-800">
-						{leadingTiles.map((tile) => (
-							<div key={tile.label} className="min-w-0 flex-1 px-3 py-2">
-								<div className="mb-0.5 text-xs text-muted-foreground">
-									{tile.label}
-								</div>
-								<div className="text-xs font-semibold text-foreground tabular-nums">
-									{tile.value}
-								</div>
-							</div>
-						))}
-						{segments.map((s, idx) => (
-							<div key={idx} className="min-w-0 flex-1 px-3 py-2">
-								{showSegmentLabels ? (
-									<div className="mb-0.5 text-xs text-muted-foreground">
-										{s.label}
-									</div>
-								) : null}
-								<TierTiles tiers={s.tiers} dense />
+				<div className="w-full overflow-visible sm:overflow-x-auto">
+					<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+							{columns.map((column) => (
+								<div key={column.key} className="min-w-0 px-1 py-1 sm:min-w-[140px] sm:flex-1 sm:px-3 sm:py-2">
+									{column.title ? (
+										<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
+									) : null}
+								<div className="space-y-0.5">{column.content}</div>
 							</div>
 						))}
 					</div>
 				</div>
-			) : (
-				<div className={`grid gap-2 ${gridClass}`}>
-					{leadingTiles.map((tile) => (
-						<div
-							key={tile.label}
-							className="rounded-lg border border-zinc-200/70 bg-background px-3 py-2 dark:border-zinc-800"
-						>
-							<div className="mb-0.5 text-xs text-muted-foreground">
-								{tile.label}
-							</div>
-							<div className="text-xs font-semibold text-foreground tabular-nums">
-								{tile.value}
-							</div>
-						</div>
-					))}
-					{segments.map((s, idx) => (
-						<div
-							key={idx}
-							className="rounded-lg border border-zinc-200/70 bg-background px-3 py-2 dark:border-zinc-800"
-						>
-							{showSegmentLabels ? (
-								<div className="mb-0.5 text-xs text-muted-foreground">
-									{s.label}
-								</div>
-							) : null}
-							<TierTiles tiers={s.tiers} />
-						</div>
-					))}
-				</div>
-			)}
-		</div>
-	);
+			</div>
+		);
 }
 
 export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
@@ -320,54 +299,69 @@ export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
 		quality: row.quality.charAt(0).toUpperCase() + row.quality.slice(1),
 		items: row.items,
 	}));
+	const sharedDecimals = qualityRows.reduce(
+		(max, row) => Math.max(max, ...row.items.map((item) => countUsdDecimals(item.price))),
+		0,
+	);
 
-		return (
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold tracking-wide text-foreground">
-						Image Generation
-					</h4>
-					<span className="text-xs text-muted-foreground">Per image</span>
-				</div>
-			<div className="space-y-1.5">
-				{qualityRows.map((row, rowIndex) => (
-					<div
-						key={`${row.quality}-${rowIndex}`}
-						className="w-full overflow-x-auto"
-					>
-						<div className="flex w-full min-w-max divide-x divide-zinc-200/70 dark:divide-zinc-800">
-								<div className="min-w-[140px] px-3 py-2">
-									<div className="text-xs text-muted-foreground">Quality</div>
-										<div className="text-xs font-semibold tracking-wide text-foreground">
-											{row.quality}
+	return (
+		<div className="space-y-1.5">
+			<div className="flex items-center justify-between">
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image Generation</h4>
+				<span className="text-xs text-muted-foreground">Per image</span>
+			</div>
+				<div className="w-full overflow-visible sm:overflow-x-auto">
+					<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+						{qualityRows.map((row, rowIndex) => (
+							<div key={`${row.quality}-${rowIndex}`} className="min-w-0 space-y-0.5 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2">
+								<div className="text-xs text-muted-foreground">{row.quality}</div>
+								<div className="space-y-1">
+									{row.items.map((item, itemIndex) => {
+									const label = item.label || "Any resolution";
+									return (
+										<div key={`${row.quality}-${label}-${itemIndex}`} className="space-y-0.5">
+											<div className="flex items-baseline gap-1">
+												<span
+													className={
+														item.basePrice != null
+															? "text-xs font-semibold text-emerald-600 tabular-nums"
+															: "text-xs font-semibold text-foreground tabular-nums"
+													}
+												>
+													{formatUsdAligned(item.price, sharedDecimals)}
+												</span>
+												<span className="text-xs text-muted-foreground">{label}</span>
+											</div>
+											{item.basePrice != null ? (
+												<div className="text-xs text-muted-foreground">
+													{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+												</div>
+											) : null}
 										</div>
-								</div>
-							{row.items.map((item, itemIndex) => (
-								<div
-									key={`${row.quality}-${item.label}-${itemIndex}`}
-									className="min-w-[170px] flex-1 px-3 py-2"
-								>
-									<div className="mb-0.5 text-xs text-muted-foreground">
-										{item.label || "Any resolution"}
-									</div>
-									<div className="text-xs font-semibold text-foreground tabular-nums">
-										{fmtUSD(item.price)}
-									</div>
-									{item.basePrice != null ? (
-										<div className="mt-0.5 text-xs text-muted-foreground">
-											{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-										</div>
-									) : null}
-								</div>
-							))}
+									);
+								})}
+							</div>
 						</div>
-					</div>
-				))}
+					))}
+				</div>
 			</div>
 		</div>
 	);
 }
-export function VideoGenSection({ rows }: { rows?: ResolutionRow[] }) {
+
+export function VideoGenSection({
+	rows,
+	showAudioVariants = false,
+	audioHints = [],
+}: {
+	rows?: ResolutionRow[];
+	showAudioVariants?: boolean;
+	audioHints?: Array<{
+		resolution: string;
+		price: number;
+		audioMode: "with-audio" | "without-audio";
+	}>;
+}) {
 	if (!rows || !rows.length) return null;
 
 	const byUnit: Record<string, ResolutionRow[]> = {};
@@ -376,82 +370,252 @@ export function VideoGenSection({ rows }: { rows?: ResolutionRow[] }) {
 	}
 	const unitEntries = Object.entries(byUnit);
 	const hasSingleUnit = unitEntries.length === 1;
+	const audioHintMap = new Map<string, "with-audio" | "without-audio">();
+	for (const hint of audioHints) {
+		audioHintMap.set(
+			makeResolutionPriceKey(hint.resolution, hint.price),
+			hint.audioMode,
+		);
+	}
+	const audioModeRank = (mode?: ResolutionRow["audioMode"]) => {
+		if (mode === "with-audio") return 0;
+		if (mode === "without-audio") return 1;
+		return 2;
+	};
 	const items = unitEntries.flatMap(([unit, list]) => {
-		const groupedByPrice = new Map<number, ResolutionRow[]>();
-		for (const row of list) {
-			const existing = groupedByPrice.get(row.price) ?? [];
-			existing.push(row);
-			groupedByPrice.set(row.price, existing);
-		}
-
-		return Array.from(groupedByPrice.entries()).map(([price, groupedRows]) => {
-			const byCanonicalLabel = new Map<string, Set<string>>();
-			for (const row of groupedRows) {
-				const raw = String(row.resolution ?? "").trim() || "Any resolution";
-				const [resolutionPart, ...rest] = raw.split(" - ");
-				const suffix = rest.join(" - ");
-				const match = resolutionPart.match(/^(\d+)\s*x\s*(\d+)$/i);
-				const canonicalResolution = match
-					? `${Math.min(Number(match[1]), Number(match[2]))}x${Math.max(Number(match[1]), Number(match[2]))}`
-					: resolutionPart;
-				const canonicalLabel = suffix
-					? `${canonicalResolution} - ${suffix}`
-					: canonicalResolution;
-				const variants = byCanonicalLabel.get(canonicalLabel) ?? new Set<string>();
-				variants.add(raw);
-				byCanonicalLabel.set(canonicalLabel, variants);
+		const grouped = new Map<
+			string,
+			{
+				unit: string;
+				resolution: string;
+				price: number;
+				audioMode: ResolutionRow["audioMode"];
+				basePrice: number | null;
+				discountEndsAt: string | null;
 			}
-
-			const combinedResolution = Array.from(byCanonicalLabel.values())
-				.map((variants) => {
-					const labels = Array.from(variants).sort(compareResolutionLabels);
-					return labels.join(" / ");
-				})
-				.sort(compareResolutionLabels)
-				.join(", ");
-			const discountRow = groupedRows
-				.filter((row) => row.basePrice != null && row.discountEndsAt)
-				.sort((a, b) => (b.basePrice ?? 0) - (a.basePrice ?? 0))[0];
-
-			return {
+		>();
+		for (const row of list) {
+			const raw = String(row.resolution ?? "").trim() || "Any resolution";
+			const { mode: inferredAudioMode, cleanedLabel } = inferAudioModeFromLabel(raw);
+			const [resolutionPart, ...rest] = cleanedLabel.split(" - ");
+			const suffix = rest.join(" - ");
+			const match = resolutionPart.match(/^(\d+)\s*x\s*(\d+)$/i);
+			const canonicalResolution = match
+				? `${Math.min(Number(match[1]), Number(match[2]))}x${Math.max(Number(match[1]), Number(match[2]))}`
+				: resolutionPart;
+			const canonicalLabel = suffix
+				? `${canonicalResolution} - ${suffix}`
+				: canonicalResolution;
+			const hintAudioMode =
+				audioHintMap.get(makeResolutionPriceKey(canonicalLabel, row.price)) ??
+				audioHintMap.get(makeResolutionPriceKey(canonicalResolution, row.price)) ??
+				null;
+			const audioMode = showAudioVariants
+				? (row.audioMode ?? inferredAudioMode ?? hintAudioMode ?? null)
+				: null;
+			const key = `${unit}|${canonicalLabel}|${audioMode ?? "none"}|${row.price}`;
+			const existing = grouped.get(key) ?? {
 				unit,
-				resolution: combinedResolution || "Any resolution",
-				price,
-				basePrice: discountRow?.basePrice ?? null,
-				discountEndsAt: discountRow?.discountEndsAt ?? null,
+				resolution: canonicalLabel || "Any resolution",
+				price: row.price,
+				audioMode,
+				basePrice: null,
+				discountEndsAt: null,
 			};
+			const hasDiscountWindow = row.basePrice != null && Boolean(row.discountEndsAt);
+			if (hasDiscountWindow) {
+				const candidateBase = row.basePrice ?? null;
+				const currentBase = existing.basePrice ?? null;
+				if (candidateBase != null && (currentBase == null || candidateBase > currentBase)) {
+					existing.basePrice = candidateBase;
+					existing.discountEndsAt = row.discountEndsAt ?? null;
+				}
+			}
+			grouped.set(key, existing);
+		}
+		return Array.from(grouped.values());
+	});
+
+	items.sort((a, b) => {
+		const byResolution = compareResolutionLabels(a.resolution, b.resolution);
+		if (byResolution !== 0) return byResolution;
+		if (showAudioVariants) {
+			const byAudioMode = audioModeRank(a.audioMode) - audioModeRank(b.audioMode);
+			if (byAudioMode !== 0) return byAudioMode;
+		}
+		if (a.price !== b.price) return a.price - b.price;
+		return a.resolution.localeCompare(b.resolution, undefined, {
+			numeric: true,
+			sensitivity: "base",
 		});
 	});
-		return (
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold tracking-wide text-foreground">
-						Video Generation
-					</h4>
-				{hasSingleUnit ? (
-					<span className="text-xs text-muted-foreground">
-						{unitEntries[0][0]}
-					</span>
-				) : null}
+	const sharedDecimals = items.reduce(
+		(max, item) => Math.max(max, countUsdDecimals(item.price)),
+		0,
+	);
+
+	return (
+		<div className="space-y-1.5">
+			<div className="flex items-center justify-between">
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">Video Generation</h4>
+				{hasSingleUnit ? <span className="text-xs text-muted-foreground">{unitEntries[0][0]}</span> : null}
 			</div>
-			<DividerColumns
-				columns={items
-					.sort((a, b) => {
-						if (a.price !== b.price) return a.price - b.price;
-						return compareResolutionLabels(a.resolution, b.resolution);
-					})
-					.map((item, i) => ({
-						id: `${item.unit}-${item.resolution}-${i}`,
-						title: item.resolution,
-						subtitle: hasSingleUnit ? undefined : item.unit,
-						value: fmtUSD(item.price),
-						footer: renderDiscountFooter(item.basePrice, item.discountEndsAt),
-					}))}
-				minColumnPx={170}
-			/>
+			{showAudioVariants ? (
+					<div className="w-full overflow-visible sm:overflow-x-auto">
+						{(() => {
+						const withAudioItems = items.filter((item) => item.audioMode === "with-audio");
+						const withoutAudioItems = items.filter((item) => item.audioMode === "without-audio");
+						const hasExplicitSplit = withAudioItems.length > 0 || withoutAudioItems.length > 0;
+						if (!hasExplicitSplit) {
+							return (
+									<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+										{Array.from(
+										items.reduce((acc, item) => {
+											const list = acc.get(item.resolution) ?? [];
+											list.push(item);
+											acc.set(item.resolution, list);
+											return acc;
+										}, new Map<string, typeof items>()),
+									)
+										.sort(([a], [b]) => compareResolutionLabels(a, b))
+										.map(([resolution, resolutionItems]) => (
+												<div key={resolution} className="min-w-0 px-1 py-1 sm:min-w-[180px] sm:flex-1 sm:px-3 sm:py-2">
+													<div className="mb-0.5 text-xs text-muted-foreground">{resolution}</div>
+												<div className="space-y-1">
+													{resolutionItems
+														.sort((a, b) => a.price - b.price)
+														.map((item, index) => (
+															<div key={`${item.unit}-${item.price}-${index}`} className="space-y-0.5">
+																<div className="flex items-baseline gap-1">
+																	<span
+																		className={
+																			item.basePrice != null
+																				? "text-xs font-semibold text-emerald-600 tabular-nums"
+																				: "text-xs font-semibold text-foreground tabular-nums"
+																		}
+																	>
+																		{formatUsdAligned(item.price, sharedDecimals)}
+																	</span>
+																	{hasSingleUnit ? null : (
+																		<span className="text-xs text-muted-foreground/80">({item.unit})</span>
+																	)}
+																</div>
+																{item.basePrice != null ? (
+																	<div className="text-xs text-muted-foreground">
+																		{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+																	</div>
+																) : null}
+															</div>
+														))}
+												</div>
+											</div>
+										))}
+								</div>
+							);
+						}
+						return (
+								<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+									{[
+									{
+										key: "with-audio",
+										title: "With Audio",
+										items: withAudioItems,
+									},
+									{
+										key: "without-audio",
+										title: "No Audio",
+										items: withoutAudioItems,
+									},
+								].map((column) => (
+								<div key={column.key} className="min-w-0 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2">
+									<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
+								{column.items.length ? (
+									<div className="space-y-1">
+										{column.items.map((item, index) => (
+											<div key={`${column.key}-${item.unit}-${item.resolution}-${index}`} className="space-y-0.5">
+												<div className="flex items-baseline gap-1">
+													<span
+														className={
+															item.basePrice != null
+																? "text-xs font-semibold text-emerald-600 tabular-nums"
+																: "text-xs font-semibold text-foreground tabular-nums"
+														}
+													>
+														{formatUsdAligned(item.price, sharedDecimals)}
+													</span>
+													<span className="text-xs text-muted-foreground">{item.resolution}</span>
+													{hasSingleUnit ? null : (
+														<span className="text-xs text-muted-foreground/80">({item.unit})</span>
+													)}
+												</div>
+												{item.basePrice != null ? (
+													<div className="text-xs text-muted-foreground">
+														{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+													</div>
+												) : null}
+											</div>
+										))}
+									</div>
+								) : (
+									<div className="text-xs text-muted-foreground">--</div>
+								)}
+							</div>
+						))}
+							</div>
+						);
+						})()}
+						</div>
+				) : (
+					<div className="w-full overflow-visible sm:overflow-x-auto">
+						<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+							{Array.from(
+							items.reduce((acc, item) => {
+								const list = acc.get(item.resolution) ?? [];
+								list.push(item);
+								acc.set(item.resolution, list);
+								return acc;
+							}, new Map<string, typeof items>()),
+						)
+							.sort(([a], [b]) => compareResolutionLabels(a, b))
+							.map(([resolution, resolutionItems]) => (
+									<div key={resolution} className="min-w-0 px-1 py-1 sm:min-w-[180px] sm:flex-1 sm:px-3 sm:py-2">
+										<div className="mb-0.5 text-xs text-muted-foreground">{resolution}</div>
+									<div className="space-y-1">
+										{resolutionItems
+											.sort((a, b) => a.price - b.price)
+											.map((item, index) => (
+												<div key={`${item.unit}-${item.price}-${index}`} className="space-y-0.5">
+													<div className="flex items-baseline gap-1">
+														<span
+															className={
+																item.basePrice != null
+																	? "text-xs font-semibold text-emerald-600 tabular-nums"
+																	: "text-xs font-semibold text-foreground tabular-nums"
+															}
+														>
+															{formatUsdAligned(item.price, sharedDecimals)}
+														</span>
+														{hasSingleUnit ? null : (
+															<span className="text-xs text-muted-foreground/80">({item.unit})</span>
+														)}
+													</div>
+													{item.basePrice != null ? (
+														<div className="text-xs text-muted-foreground">
+															{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+														</div>
+													) : null}
+												</div>
+											))}
+									</div>
+								</div>
+							))}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
+
 export function InputsSection({
 	rows,
 	title,
@@ -474,80 +638,126 @@ export function InputsSection({
 			price: r.price,
 			basePrice: r.basePrice,
 			discountEndsAt: r.discountEndsAt,
-		}))
+		})),
 	);
-		return (
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold tracking-wide text-foreground">
-						{title}
-					</h4>
-				{hasSingleUnit ? (
-					<span className="text-xs text-muted-foreground">
-						{unitEntries[0][0]}
-					</span>
-				) : null}
+	const sharedDecimals = items.reduce(
+		(max, item) => Math.max(max, countUsdDecimals(item.price)),
+		0,
+	);
+
+	return (
+		<div className="space-y-1.5">
+			<div className="flex items-center justify-between">
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
+				{hasSingleUnit ? <span className="text-xs text-muted-foreground">{unitEntries[0][0]}</span> : null}
 			</div>
-			<DividerColumns
-				columns={items.map((item, index) => ({
-					id: `${item.unit}-${item.label}-${index}`,
-					title:
-						item.label && item.label !== "All usage" ? item.label : undefined,
-					subtitle: hasSingleUnit ? undefined : item.unit,
-					value: fmtUSD(item.price),
-					footer: renderDiscountFooter(item.basePrice, item.discountEndsAt),
-				}))}
-				minColumnPx={170}
-			/>
+			<div className="space-y-1">
+				{items.map((item, index) => {
+					const label = item.label && item.label !== "All usage" ? item.label : "All usage";
+					return (
+						<div key={`${item.unit}-${label}-${index}`} className="space-y-0.5">
+							<div className="flex items-baseline gap-1">
+								<span
+									className={
+										item.basePrice != null
+											? "text-xs font-semibold text-emerald-600 tabular-nums"
+											: "text-xs font-semibold text-foreground tabular-nums"
+									}
+								>
+									{formatUsdAligned(item.price, sharedDecimals)}
+								</span>
+								<span className="text-xs text-muted-foreground">{label}</span>
+								{hasSingleUnit ? null : <span className="text-xs text-muted-foreground/80">({item.unit})</span>}
+							</div>
+							{item.basePrice != null ? (
+								<div className="text-xs text-muted-foreground">
+									{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+								</div>
+							) : null}
+						</div>
+					);
+				})}
+			</div>
 		</div>
 	);
 }
+
 export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 	if (!rows?.length) return null;
+	const sharedDecimals = rows.reduce(
+		(max, tier) => Math.max(max, countUsdDecimals(tier.per1M)),
+		0,
+	);
 
-		return (
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold tracking-wide text-foreground">
-						Cache Writes
-					</h4>
-				<span className="text-xs text-muted-foreground">
-					Per 1M tokens
-				</span>
+	return (
+		<div className="space-y-1.5">
+			<div className="flex items-center justify-between">
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">Cache Writes</h4>
+				<span className="text-xs text-muted-foreground">Per 1M tokens</span>
 			</div>
-			<DividerColumns
-				columns={rows.map((t, i) => ({
-					id: `cache-write-${i}`,
-					title: t.label || "All usage",
-					value: fmtUSD(t.per1M),
-					footer: renderDiscountFooter(t.basePer1M, t.discountEndsAt),
-				}))}
-				minColumnPx={170}
-			/>
+			<div className="space-y-1">
+				{rows.map((t, i) => (
+					<div key={`cache-write-${i}`} className="space-y-0.5">
+						<div className="flex items-baseline gap-1">
+							<span
+								className={
+									t.basePer1M != null
+										? "text-xs font-semibold text-emerald-600 tabular-nums"
+										: "text-xs font-semibold text-foreground tabular-nums"
+								}
+							>
+								{formatUsdAligned(t.per1M, sharedDecimals)}
+							</span>
+							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
+						</div>
+						{t.basePer1M != null ? (
+							<div className="text-xs text-muted-foreground">
+								{renderDiscountFooter(t.basePer1M, t.discountEndsAt)}
+							</div>
+						) : null}
+					</div>
+				))}
+			</div>
 		</div>
 	);
 }
 
 export function RequestsSection({ rows }: { rows?: TokenTier[] }) {
 	if (!rows?.length) return null;
+	const sharedDecimals = rows.reduce(
+		(max, tier) => Math.max(max, countUsdDecimals(tier.price)),
+		0,
+	);
 
-		return (
-			<div className="space-y-1.5">
-				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold tracking-wide text-foreground">
-						Requests
-					</h4>
+	return (
+		<div className="space-y-1.5">
+			<div className="flex items-center justify-between">
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">Requests</h4>
 				<span className="text-xs text-muted-foreground">Per request</span>
 			</div>
-			<DividerColumns
-				columns={rows.map((t, i) => ({
-					id: `request-${i}`,
-					title: t.label || "All usage",
-					value: fmtUSD(t.price),
-					footer: renderDiscountFooter(t.basePrice ?? t.basePer1M, t.discountEndsAt),
-				}))}
-				minColumnPx={170}
-			/>
+			<div className="space-y-1">
+				{rows.map((t, i) => (
+					<div key={`request-${i}`} className="space-y-0.5">
+						<div className="flex items-baseline gap-1">
+							<span
+								className={
+									t.basePrice != null || t.basePer1M != null
+										? "text-xs font-semibold text-emerald-600 tabular-nums"
+										: "text-xs font-semibold text-foreground tabular-nums"
+								}
+							>
+								{formatUsdAligned(t.price, sharedDecimals)}
+							</span>
+							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
+						</div>
+						{t.basePrice != null || t.basePer1M != null ? (
+							<div className="text-xs text-muted-foreground">
+								{renderDiscountFooter(t.basePrice ?? t.basePer1M, t.discountEndsAt)}
+							</div>
+						) : null}
+					</div>
+				))}
+			</div>
 		</div>
 	);
 }
@@ -575,8 +785,16 @@ export function UpcomingPricingSection({
 	const hasSingleTitle = new Set(visibleRows.map((row) => row.title)).size === 1;
 	const sharedTitle = hasSingleTitle ? visibleRows[0]?.title : null;
 	const sectionClass = compact
-		? "space-y-0.5 rounded-md border border-zinc-200/70 bg-zinc-50/70 px-2 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/25"
-		: "space-y-1 rounded-md border border-zinc-200/70 bg-zinc-50/70 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/25";
+		? "space-y-1 rounded-md border border-zinc-200/70 bg-zinc-50/70 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/25"
+		: "space-y-1.5 rounded-md border border-zinc-200/70 bg-zinc-50/70 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/25";
+	const gridClass =
+		visibleRows.length <= 1
+			? "grid-cols-1"
+			: visibleRows.length === 2
+			? "grid-cols-1 sm:grid-cols-2"
+			: visibleRows.length === 3
+			? "grid-cols-1 sm:grid-cols-3"
+			: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
 
 	return (
 		<div className={sectionClass}>
@@ -586,11 +804,11 @@ export function UpcomingPricingSection({
 					<h4 className="text-xs font-semibold text-foreground">{title}</h4>
 				</div>
 				<span className="text-xs text-muted-foreground">
-					{sharedTitle ? `${sharedTitle} · Scheduled` : "Scheduled"}
+					{sharedTitle ? `${sharedTitle} - Scheduled` : "Scheduled"}
 				</span>
 			</div>
-			<DividerColumns
-				columns={visibleRows.map((row, i) => {
+			<div className={`grid gap-2 ${gridClass}`}>
+				{visibleRows.map((row, i) => {
 					const effectiveDate = formatEffectiveDate(row.effectiveFrom);
 					const deltaPct = formatPercentDelta(row.price, row.currentPrice);
 					const trendClass =
@@ -599,41 +817,41 @@ export function UpcomingPricingSection({
 							: row.trend === "up"
 							? "text-amber-600"
 							: "text-foreground";
-					return {
-						id: `upcoming-${row.title}-${row.effectiveFrom}-${i}`,
-						title: hasSingleTitle ? row.subtitle ?? row.unitLabel : row.title,
-						subtitle: hasSingleTitle ? undefined : row.subtitle ?? row.unitLabel,
-						value: (
-							<span className={cn("inline-flex items-center gap-1 tabular-nums", trendClass)}>
-								{row.trend === "down" ? (
-									<ArrowDownRight className="h-3.5 w-3.5" />
-								) : row.trend === "up" ? (
-									<ArrowUpRight className="h-3.5 w-3.5" />
-								) : row.trend === "flat" ? (
-									<Minus className="h-3.5 w-3.5" />
-								) : null}
-								{fmtUSD(row.price)}
-								{deltaPct ? (
-									<span className="text-[10px] font-medium text-muted-foreground">
-										{deltaPct}
-									</span>
-								) : null}
-							</span>
-						),
-						footer: (
-							<span className="inline-flex items-center gap-1">
+					const label = hasSingleTitle
+						? row.subtitle ?? row.unitLabel
+						: [row.title, row.subtitle ?? row.unitLabel].filter(Boolean).join(" - ");
+
+					return (
+						<div
+							key={`upcoming-${row.title}-${row.effectiveFrom}-${i}`}
+							className="space-y-1 rounded-md border border-zinc-200/70 bg-background/70 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/30"
+						>
+							<div className="flex items-baseline gap-1.5">
+								<span className={cn("inline-flex items-center gap-1 tabular-nums", trendClass)}>
+									{row.trend === "down" ? (
+										<ArrowDownRight className="h-3.5 w-3.5" />
+									) : row.trend === "up" ? (
+										<ArrowUpRight className="h-3.5 w-3.5" />
+									) : row.trend === "flat" ? (
+										<Minus className="h-3.5 w-3.5" />
+									) : null}
+									{fmtUSD(row.price)}
+									{deltaPct ? (
+										<span className="text-[10px] font-medium text-muted-foreground">{deltaPct}</span>
+									) : null}
+								</span>
+								<span className="truncate text-xs text-muted-foreground">{label}</span>
+							</div>
+							<div className="text-xs text-muted-foreground/90">
 								<span>{effectiveDate ?? "--"}</span>
 								{row.currentPrice != null ? (
-									<span className="text-muted-foreground/80">
-										· was {fmtUSD(row.currentPrice)}
-									</span>
+									<span className="text-muted-foreground/80"> - was {fmtUSD(row.currentPrice)}</span>
 								) : null}
-							</span>
-						),
-					};
+							</div>
+						</div>
+					);
 				})}
-				minColumnPx={compact ? 130 : 150}
-			/>
+			</div>
 			{remaining > 0 ? (
 				<p className="text-xs text-muted-foreground">
 					+{remaining} more scheduled change{remaining > 1 ? "s" : ""}
@@ -652,13 +870,13 @@ export function AdvancedTable({
 
 	return (
 		<div className="space-y-1.5">
-				<details className="rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800">
-					<summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5">
-						<span className="text-xs font-semibold tracking-wide text-foreground">
-							Advanced & Conditional Pricing
-						</span>
-						<span className="text-xs text-muted-foreground">Show/Hide</span>
-					</summary>
+			<details className="rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800">
+				<summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5">
+					<span className="text-xs font-semibold tracking-wide text-foreground">
+						Advanced & Conditional Pricing
+					</span>
+					<span className="text-xs text-muted-foreground">Show/Hide</span>
+				</summary>
 				<div className="px-3 pb-3">
 					<div className="overflow-x-auto rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
 						<Table>
@@ -680,13 +898,8 @@ export function AdvancedTable({
 										<TableCell className="text-xs text-muted-foreground">
 											{r.conditions?.length
 												? r.conditions.map((c, j) => (
-														<span
-															key={j}
-															className="mr-2 inline-block"
-														>
-															{`${c.path} ${
-																c.op
-															} ${
+														<span key={j} className="mr-2 inline-block">
+															{`${c.path} ${c.op} ${
 																Array.isArray(c.value)
 																	? JSON.stringify(c.value)
 																	: String(c.value)
@@ -695,9 +908,7 @@ export function AdvancedTable({
 												  ))
 												: "--"}
 										</TableCell>
-										<TableCell className="text-xs text-muted-foreground">
-											{r.ruleId || "--"}
-										</TableCell>
+										<TableCell className="text-xs text-muted-foreground">{r.ruleId || "--"}</TableCell>
 									</TableRow>
 								))}
 							</TableBody>
@@ -708,6 +919,3 @@ export function AdvancedTable({
 		</div>
 	);
 }
-
-
-

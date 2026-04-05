@@ -1,11 +1,11 @@
 # SDK Compatibility Guide 🔄
 
-The AI Stats SDK provides **drop-in replacement** compatibility layers for both OpenAI and Anthropic SDKs, allowing you to switch providers with minimal code changes while accessing 400+ AI models.
+The AI Stats SDK provides **drop-in replacement** compatibility layers for both OpenAI and Anthropic SDKs, allowing you to switch providers with minimal code changes while accessing 300+ AI models.
 
 ## Why Use AI Stats SDK?
 
 ✅ **Drop-in replacement** - Use the same API as OpenAI/Anthropic SDKs
-✅ **400+ models** - Access models from OpenAI, Anthropic, Google, Meta, and more
+✅ **300+ models** - Access models from OpenAI, Anthropic, Google, Meta, and more
 ✅ **Unified pricing** - One billing system across all providers
 ✅ **Built-in telemetry** - Track usage and performance automatically
 ✅ **Native features** - Access AI Stats-specific features via `.native` property
@@ -261,7 +261,7 @@ AI Stats uses a provider-prefixed naming convention:
 | `gemini-2.0-flash` | `google-ai-studio/gemini-2.0-flash` |
 | `llama-3.3-70b` | `meta/llama-3.3-70b` |
 
-Browse all 400+ models at [ai-stats.app/models](https://ai-stats.app/models)
+Browse all 300+ models at [ai-stats.app/models](https://ai-stats.app/models)
 
 ---
 

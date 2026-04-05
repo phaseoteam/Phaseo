@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  100+ models across 10+ providers on the API today.
+  300+ models across 30+ providers on the API today.
 </p>
 
 <p align="center">

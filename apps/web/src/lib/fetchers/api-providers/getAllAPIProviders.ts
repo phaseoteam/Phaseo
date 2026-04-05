@@ -48,6 +48,8 @@ type PricingRuleRow = {
     model_key?: string | null;
     pricing_plan?: string | null;
     price_per_unit?: number | string | null;
+    effective_from?: string | null;
+    effective_to?: string | null;
 };
 
 type MarketShareRow = {
@@ -171,7 +173,7 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             ),
         supabase
             .from("data_api_pricing_rules")
-            .select("model_key, pricing_plan, price_per_unit"),
+            .select("model_key, pricing_plan, price_per_unit, effective_from, effective_to"),
         supabase.rpc("get_public_market_share", {
             p_dimension: "provider",
             p_time_range: "today",
@@ -264,6 +266,15 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     }
 
     for (const pricingRow of pricingRulesData) {
+        const fromMsRaw = pricingRow.effective_from
+            ? new Date(pricingRow.effective_from).getTime()
+            : Number.NEGATIVE_INFINITY;
+        const toMsRaw = pricingRow.effective_to
+            ? new Date(pricingRow.effective_to).getTime()
+            : Number.POSITIVE_INFINITY;
+        const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
+        const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
+        if (!(now >= fromMs && now < toMs)) continue;
         if (!isFreePricingRule(pricingRow)) continue;
         const parsed = parseModelKey(pricingRow.model_key ?? null);
         if (!parsed) continue;

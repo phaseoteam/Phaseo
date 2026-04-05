@@ -44,6 +44,8 @@ export type ModelsPageModel = Pick<
 	| "supported_parameters"
 	| "lowest_input_price"
 	| "lowest_output_price"
+	| "lowest_from_price"
+	| "lowest_from_price_unit"
 	| "popularity_tokens_week"
 	| "throughput_week"
 	| "latency_week"
