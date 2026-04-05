@@ -7,7 +7,7 @@ export const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
 // Do NOT fall back to POSTHOG_HOST here.
 export const POSTHOG_API_HOST =
-	process.env.NEXT_PUBLIC_POSTHOG_API_HOST ?? "https://eu.i.posthog.com";
+	process.env.NEXT_PUBLIC_POSTHOG_API_HOST ?? "/ingest";
 
 export const POSTHOG_UI_HOST =
 	process.env.NEXT_PUBLIC_POSTHOG_UI_HOST ?? "https://eu.posthog.com";
