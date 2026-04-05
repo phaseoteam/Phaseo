@@ -61,8 +61,6 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("perplexity", "sonar")).toBe("chat");
 		expect(resolveOpenAICompatRoute("together", "meta-llama/Llama-3.3-70B-Instruct-Turbo")).toBe("chat");
-		expect(resolveOpenAICompatRoute("vercel", "v0-1.5-md")).toBe("chat");
-		expect(resolveOpenAICompatRoute("v0", "v0-1.5-md")).toBe("chat");
 		expect(resolveOpenAICompatRoute("venice", "venice-uncensored")).toBe("responses");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
 		expect(resolveOpenAICompatRoute("fireworks", "accounts/fireworks/models/llama-v3p3-70b-instruct")).toBe("responses");
@@ -377,20 +375,6 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
-	it("builds vercel v0 chat endpoint with /v1 prefix for both aliases", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			VERCEL_API_KEY: "test-vercel-key",
-		} as any);
-
-		expect(openAICompatUrl("vercel", "/chat/completions")).toBe(
-			"https://api.v0.dev/v1/chat/completions",
-		);
-		expect(openAICompatUrl("v0", "/chat/completions")).toBe(
-			"https://api.v0.dev/v1/chat/completions",
-		);
-	});
-
 	it("builds akashml chat endpoint with /v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -645,36 +629,6 @@ describe("resolveOpenAICompatKey", () => {
 		} as any);
 
 		expect(resolved.key).toBe("test-akashml-key");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("uses VERCEL_API_KEY for vercel", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			VERCEL_API_KEY: "test-vercel-key",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "vercel",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-vercel-key");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("accepts V0_API_KEY fallback for v0 alias", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			V0_API_KEY: "test-v0-key",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "v0",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-v0-key");
 		expect(resolved.source).toBe("gateway");
 	});
 

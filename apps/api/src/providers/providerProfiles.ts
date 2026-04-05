@@ -124,11 +124,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "friendli",
 		textOnly: true,
 	},
-	{
-		id: "vercel",
-		aliases: ["v0"],
-		textOnly: true,
-	},
 ];
 
 const PROFILE_INDEX = new Map<string, ProviderProfile>();

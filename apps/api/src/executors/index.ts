@@ -45,7 +45,6 @@ import { executor as googleVertexText } from "./google-vertex/text-generate";
 import { executor as googleVertexVideo } from "./google-vertex/video-generate";
 import { executor as deepinfraText } from "./deepinfra/text-generate";
 import { executor as togetherText } from "./together/text-generate";
-import { executor as vercelText } from "./vercel/text-generate";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
@@ -111,14 +110,8 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 
 const OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST = new Set<string>([
 ]);
-const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([
-	"vercel",
-	"v0",
-]);
-const OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST = new Set<string>([
-	"vercel",
-	"v0",
-]);
+const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([]);
+const OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST = new Set<string>([]);
 
 function supportsOpenAICompatEmbeddings(providerId: string): boolean {
 	if (!isOpenAICompatProvider(providerId)) return false;
@@ -182,8 +175,6 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"google-vertex": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
 	deepinfra: { "text.generate": deepinfraText },
 	together: { "text.generate": togetherText },
-	vercel: { "text.generate": vercelText },
-	v0: { "text.generate": vercelText },
 	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },
 };
 
