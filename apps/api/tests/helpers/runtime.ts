@@ -117,7 +117,6 @@ export function setupTestRuntime() {
         TOGETHER_API_KEY: "test-together-key",
         TOGETHER_BASE_URL: "https://api.together.example",
         VERCEL_API_KEY: "test-vercel-key",
-        V0_API_KEY: "test-v0-key",
         V0_BASE_URL: "https://api.v0.dev",
         VENICE_API_KEY: "test-venice-key",
         VENICE_BASE_URL: "https://api.venice.example",
