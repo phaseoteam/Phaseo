@@ -229,7 +229,7 @@ describe("openAIChatToIR", () => {
 				id: "chatcmpl_usage_alias",
 				object: "chat.completion",
 				created: 1234567890,
-				model: "v0-1.5-md",
+				model: "gpt-4o-mini",
 				choices: [
 					{
 						index: 0,
@@ -247,7 +247,7 @@ describe("openAIChatToIR", () => {
 				},
 			};
 
-			const ir = openAIChatToIR(response, "req_usage_alias", "v0-1.5-md", "vercel");
+			const ir = openAIChatToIR(response, "req_usage_alias", "gpt-4o-mini", "openai");
 			expect(ir.usage?.inputTokens).toBe(42);
 			expect(ir.usage?.outputTokens).toBe(8);
 			expect(ir.usage?.totalTokens).toBe(50);
