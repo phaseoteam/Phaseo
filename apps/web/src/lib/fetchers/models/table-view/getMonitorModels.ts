@@ -76,6 +76,20 @@ function toDisplayPrice(
 		};
 	}
 
+	// Normalize all time-based pricing to per-second so comparisons are valid.
+	if (normalizedUnit === "minute") {
+		return {
+			value: pricePerUnit / unitSize / 60,
+			unit: "second",
+		};
+	}
+	if (normalizedUnit === "hour") {
+		return {
+			value: pricePerUnit / unitSize / 3600,
+			unit: "second",
+		};
+	}
+
 	return {
 		value: pricePerUnit / unitSize,
 		unit: normalizedUnit,
@@ -492,9 +506,16 @@ export async function getMonitorModels(
 			p.meter,
 			p.unit,
 		);
+		if (!displayPrice) continue;
+		if (prices.fromPrice === null || !prices.fromPriceUnit) {
+			prices.fromPrice = displayPrice.value;
+			prices.fromPriceUnit = displayPrice.unit;
+			continue;
+		}
+		// Only compare numeric values within the same display unit.
 		if (
-			displayPrice &&
-			(prices.fromPrice === null || displayPrice.value < prices.fromPrice)
+			prices.fromPriceUnit === displayPrice.unit &&
+			displayPrice.value < prices.fromPrice
 		) {
 			prices.fromPrice = displayPrice.value;
 			prices.fromPriceUnit = displayPrice.unit;

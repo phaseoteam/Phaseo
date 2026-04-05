@@ -314,6 +314,7 @@ type GatewaySignals = {
 	lowestOutputPrice: number | null;
 	lowestFromPrice: number | null;
 	lowestFromPriceUnit: string | null;
+	fromPriceByUnit: Map<string, number>;
 };
 
 function createEmptyGatewaySignals(): GatewaySignals {
@@ -340,6 +341,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		lowestOutputPrice: null,
 		lowestFromPrice: null,
 		lowestFromPriceUnit: null,
+		fromPriceByUnit: new Map<string, number>(),
 	};
 }
 
@@ -433,19 +435,19 @@ function aggregateGatewaySignals(
 		}
 		const fromPrice = Number(row.provider.fromPrice);
 		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
-		if (Number.isFinite(fromPrice) && fromPrice > 0) {
-			if (
-				existing.lowestFromPrice === null ||
-				fromPrice < existing.lowestFromPrice
-			) {
-				existing.lowestFromPrice = fromPrice;
-				existing.lowestFromPriceUnit = fromPriceUnit;
-			} else if (
-				fromPrice === existing.lowestFromPrice &&
-				!existing.lowestFromPriceUnit &&
-				fromPriceUnit
-			) {
-				existing.lowestFromPriceUnit = fromPriceUnit;
+		if (Number.isFinite(fromPrice) && fromPrice > 0 && fromPriceUnit) {
+			const current = existing.fromPriceByUnit.get(fromPriceUnit);
+			if (current === undefined || fromPrice < current) {
+				existing.fromPriceByUnit.set(fromPriceUnit, fromPrice);
+			}
+			// Only surface a model-level "from" price when all rows agree on one unit.
+			if (existing.fromPriceByUnit.size === 1) {
+				const [unit, value] = Array.from(existing.fromPriceByUnit.entries())[0];
+				existing.lowestFromPrice = value;
+				existing.lowestFromPriceUnit = unit;
+			} else {
+				existing.lowestFromPrice = null;
+				existing.lowestFromPriceUnit = null;
 			}
 		}
 		const apiDateCandidate = String(row.effectiveFrom ?? "").trim();
