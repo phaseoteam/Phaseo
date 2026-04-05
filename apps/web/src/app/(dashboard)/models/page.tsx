@@ -312,6 +312,9 @@ type GatewaySignals = {
 	latestApiTimestamp: number | null;
 	lowestInputPrice: number | null;
 	lowestOutputPrice: number | null;
+	lowestFromPrice: number | null;
+	lowestFromPriceUnit: string | null;
+	fromPriceByUnit: Map<string, number>;
 };
 
 function createEmptyGatewaySignals(): GatewaySignals {
@@ -336,6 +339,9 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		latestApiTimestamp: null,
 		lowestInputPrice: null,
 		lowestOutputPrice: null,
+		lowestFromPrice: null,
+		lowestFromPriceUnit: null,
+		fromPriceByUnit: new Map<string, number>(),
 	};
 }
 
@@ -414,18 +420,35 @@ function aggregateGatewaySignals(
 			if (value) existing.supportedParameters.add(value);
 		}
 		const inputPrice = Number(row.provider.inputPrice);
-		if (Number.isFinite(inputPrice) && inputPrice >= 0) {
+		if (Number.isFinite(inputPrice) && inputPrice > 0) {
 			existing.lowestInputPrice =
 				existing.lowestInputPrice === null
 					? inputPrice
 					: Math.min(existing.lowestInputPrice, inputPrice);
 		}
 		const outputPrice = Number(row.provider.outputPrice);
-		if (Number.isFinite(outputPrice) && outputPrice >= 0) {
+		if (Number.isFinite(outputPrice) && outputPrice > 0) {
 			existing.lowestOutputPrice =
 				existing.lowestOutputPrice === null
 					? outputPrice
 					: Math.min(existing.lowestOutputPrice, outputPrice);
+		}
+		const fromPrice = Number(row.provider.fromPrice);
+		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
+		if (Number.isFinite(fromPrice) && fromPrice > 0 && fromPriceUnit) {
+			const current = existing.fromPriceByUnit.get(fromPriceUnit);
+			if (current === undefined || fromPrice < current) {
+				existing.fromPriceByUnit.set(fromPriceUnit, fromPrice);
+			}
+			// Only surface a model-level "from" price when all rows agree on one unit.
+			if (existing.fromPriceByUnit.size === 1) {
+				const [unit, value] = Array.from(existing.fromPriceByUnit.entries())[0];
+				existing.lowestFromPrice = value;
+				existing.lowestFromPriceUnit = unit;
+			} else {
+				existing.lowestFromPrice = null;
+				existing.lowestFromPriceUnit = null;
+			}
 		}
 		const apiDateCandidate = String(row.effectiveFrom ?? "").trim();
 		if (apiDateCandidate) {
@@ -731,6 +754,8 @@ function withGatewayMetadata(
 			).sort(),
 			lowest_input_price: signals?.lowestInputPrice ?? null,
 			lowest_output_price: signals?.lowestOutputPrice ?? null,
+			lowest_from_price: signals?.lowestFromPrice ?? null,
+			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
 			throughput_week: weeklyMetrics.throughputWeek,
 			latency_week: weeklyMetrics.latencyWeek,
@@ -812,6 +837,8 @@ function withGatewayMetadata(
 				supported_parameters: [],
 				lowest_input_price: null,
 				lowest_output_price: null,
+				lowest_from_price: null,
+				lowest_from_price_unit: null,
 				popularity_tokens_week: weeklyMetrics.tokensWeek,
 				throughput_week: weeklyMetrics.throughputWeek,
 				latency_week: weeklyMetrics.latencyWeek,

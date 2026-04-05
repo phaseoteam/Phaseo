@@ -211,13 +211,49 @@ function formatTokenCount(value: number): string {
 }
 
 function formatPrice(value: number | null | undefined): string | null {
-	if (!Number.isFinite(value) || value === null || value === undefined || value <= 0) {
+	if (
+		!Number.isFinite(value) ||
+		value === null ||
+		value === undefined ||
+		value <= 0
+	) {
 		return null;
 	}
 	if (value < 0.001) return `$${value.toFixed(4)}`;
 	if (value < 0.01) return `$${value.toFixed(3)}`;
 	if (value < 1) return `$${value.toFixed(2)}`;
 	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function normalizeFromPriceUnit(value: string | null | undefined): string | null {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
+	if (!normalized) return null;
+	if (normalized === "token" || normalized === "tokens") return "1M tokens";
+	if (normalized === "sec" || normalized === "secs" || normalized === "seconds") {
+		return "second";
+	}
+	if (normalized === "min" || normalized === "mins" || normalized === "minutes") {
+		return "minute";
+	}
+	if (normalized === "hr" || normalized === "hrs" || normalized === "hours") {
+		return "hour";
+	}
+	if (normalized === "images") return "image";
+	if (normalized === "videos") return "video";
+	if (normalized === "characters") return "character";
+	return normalized;
+}
+
+function formatFromPrice(
+	value: number | null | undefined,
+	unit: string | null | undefined,
+): string | null {
+	const amount = formatPrice(value);
+	if (!amount) return null;
+	const normalizedUnit = normalizeFromPriceUnit(unit);
+	return normalizedUnit ? `${amount} per ${normalizedUnit}` : amount;
 }
 
 function getModalityIcon(value: string): LucideIcon {
@@ -305,9 +341,15 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 	);
 	const maxContextLength =
 		contextLengths.length > 0 ? Math.max(...contextLengths) : null;
+	const modalitySet = new Set(
+		[...inputModalities, ...outputModalities].map((value) =>
+			normalizeModalityOrderKey(String(value ?? "")),
+		),
+	);
+	const isTextModel = modalitySet.has("text");
 	const inputPrice = formatPrice(model.lowest_input_price);
 	const outputPrice = formatPrice(model.lowest_output_price);
-	const priceSummary =
+	const ioPriceSummary =
 		inputPrice && outputPrice
 			? `${inputPrice} in / ${outputPrice} out`
 			: inputPrice
@@ -315,6 +357,20 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 				: outputPrice
 					? `${outputPrice} out`
 					: null;
+	const explicitFromPrice = formatFromPrice(
+		model.lowest_from_price,
+		model.lowest_from_price_unit,
+	);
+	const tokenPriceCandidates = [model.lowest_input_price, model.lowest_output_price]
+		.map((value) => Number(value))
+		.filter((value) => Number.isFinite(value) && value > 0);
+	const fallbackFromPrice =
+		tokenPriceCandidates.length > 0
+			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
+			: null;
+	const fromPriceSummary = explicitFromPrice ?? fallbackFromPrice;
+	const priceSummary = isTextModel && ioPriceSummary ? ioPriceSummary : fromPriceSummary;
+	const priceLabel = isTextModel && ioPriceSummary ? "Lowest Price" : "From:";
 	const formatModalities = (values: string[]) => {
 		const unique = sortModalitiesForDisplay(Array.from(
 			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
@@ -540,7 +596,7 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 						) : null}
 						{priceSummary ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Lowest Price</span>
+								<span className="text-muted-foreground">{priceLabel}</span>
 								<span className="font-medium text-foreground">{priceSummary}</span>
 							</div>
 						) : null}

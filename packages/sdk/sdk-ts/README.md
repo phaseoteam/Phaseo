@@ -1,6 +1,6 @@
 # @ai-stats/sdk
 
-TypeScript/JavaScript SDK for the AI Stats Gateway - Access 400+ AI models from OpenAI, Anthropic, Google, Meta, and more through a unified API.
+TypeScript/JavaScript SDK for the AI Stats Gateway - Access 300+ AI models from OpenAI, Anthropic, Google, Meta, and more through a unified API.
 
 ## ✨ Drop-in Replacement for OpenAI & Anthropic SDKs
 
@@ -13,7 +13,7 @@ import { OpenAI } from '@ai-stats/sdk/compat/openai';
 // Instead of: import Anthropic from '@anthropic-ai/sdk';
 import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
 
-// Use the exact same API, but with access to 400+ models!
+// Use the exact same API, but with access to 300+ models!
 const openai = new OpenAI({ apiKey: process.env.AI_STATS_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.AI_STATS_API_KEY });
 ```

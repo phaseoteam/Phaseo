@@ -251,6 +251,17 @@ async function getFreeModels(args: {
 	includeHidden: boolean;
 }): Promise<ModelCard[]> {
 	const supabase = createAdminClient();
+	const nowMs = Date.now();
+	const isActivePricingWindow = (
+		effectiveFrom: string | null | undefined,
+		effectiveTo: string | null | undefined,
+	): boolean => {
+		const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
+		const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
+		const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
+		const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
+		return nowMs >= fromMs && nowMs < toMs;
+	};
 	const [providerModelsRes, pricingRes] = await Promise.all([
 		supabase
 			.from("data_api_provider_models")
@@ -279,7 +290,7 @@ async function getFreeModels(args: {
 			.eq("is_active_gateway", true),
 		supabase
 			.from("data_api_pricing_rules")
-			.select("model_key, price_per_unit, pricing_plan")
+			.select("model_key, price_per_unit, pricing_plan, effective_from, effective_to")
 			.or("price_per_unit.eq.0,pricing_plan.ilike.%free%"),
 	]);
 
@@ -290,7 +301,9 @@ async function getFreeModels(args: {
 	}
 
 	const providerModels = providerModelsRes.data ?? [];
-	const pricingRows = pricingRes.data ?? [];
+	const pricingRows = (pricingRes.data ?? []).filter((row: any) =>
+		isActivePricingWindow(row.effective_from ?? null, row.effective_to ?? null),
+	);
 	const providerByKey = new Map<string, ModelRow>();
 
 	for (const row of providerModels) {

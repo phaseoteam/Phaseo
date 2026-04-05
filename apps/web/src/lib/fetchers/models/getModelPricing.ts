@@ -54,6 +54,17 @@ function normalizePricingPlanForRule(
     return normalizedPlan;
 }
 
+function isWithinActivePricingWindow(
+    effectiveFrom: string | null | undefined,
+    effectiveTo: string | null | undefined,
+    nowMs: number
+): boolean {
+    const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
+    const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
+    const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
+    const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
+    return nowMs >= fromMs && nowMs < toMs;
+}
 export interface ProviderModel {
     id: string;                 // provider_api_model_id
     api_provider_id: string;
@@ -386,6 +397,8 @@ export default async function getModelPricing(
         effective_to: x.effective_to ?? null,
     });
 
+    const nowMs = Date.now();
+
     if (modelKeys.length) {
         const { data: r, error: prErr } = await supabase
             .from("data_api_pricing_rules")
@@ -398,7 +411,15 @@ export default async function getModelPricing(
 
         if (prErr) throw new Error(prErr.message || "Failed to fetch pricing rules");
 
-        rules = (r || []).map(mapRule);
+        rules = (r || [])
+            .filter((row) =>
+                isWithinActivePricingWindow(
+                    row.effective_from ?? null,
+                    row.effective_to ?? null,
+                    nowMs
+                )
+            )
+            .map(mapRule);
 
         // console.log(`[getModelPricing] Fetched ${rules.length} pricing rules: ${rules.slice(0, 5).map(r => `${r.id} (${r.meter})`).join(', ')}${rules.length > 5 ? '...' : ''}`);
     }
@@ -437,6 +458,15 @@ export default async function getModelPricing(
             }
 
             for (const row of fallbackRows ?? []) {
+                if (
+                    !isWithinActivePricingWindow(
+                        row.effective_from ?? null,
+                        row.effective_to ?? null,
+                        nowMs
+                    )
+                ) {
+                    continue;
+                }
                 rules.push(mapRule(row));
             }
         }

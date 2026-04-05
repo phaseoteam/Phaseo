@@ -11,6 +11,8 @@ export interface MonitorModelData {
         id: string; // Add provider ID for logo lookup
         inputPrice: number;
         outputPrice: number;
+        fromPrice?: number | null;
+        fromPriceUnit?: string | null;
         features: string[];
     };
     endpoint: string; // The specific endpoint/key

@@ -1,5 +1,6 @@
 #[path = "gen/lib.rs"]
 pub mod gen;
+pub mod model_ids;
 
 pub mod client {
     pub use crate::gen::client::*;

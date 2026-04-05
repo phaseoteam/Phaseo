@@ -127,12 +127,18 @@ async function fetchActivePricingRows({
 		unit_size: number | null;
 	}> = [];
 	const nowIso = new Date().toISOString();
+	const activePricingWindowClause = [
+		"and(effective_from.is.null,effective_to.is.null)",
+		`and(effective_from.is.null,effective_to.gt.${nowIso})`,
+		`and(effective_from.lte.${nowIso},effective_to.is.null)`,
+		`and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
+	].join(",");
 	for (let from = 0; ; from += pageSize) {
 		const to = from + pageSize - 1;
 		const { data, error } = await supabase
 			.from("data_api_pricing_rules")
 			.select("model_key, meter, price_per_unit, unit_size")
-			.or(`effective_to.is.null,effective_to.gt.${nowIso}`)
+			.or(activePricingWindowClause)
 			.range(from, to);
 		if (error) {
 			throw new Error(

@@ -435,9 +435,9 @@ export async function POST(req: Request) {
                     console.error(`[stripe-webhook] Failed to fetch team tier:`, teamErr);
                 }
 
-                // Determine fee percentage based on tier (with fallback)
+                // PAYG top-up fee is now a flat 5% across tiers.
                 const tier = teamData?.tier ?? 'basic';
-                const feePct = tier === 'enterprise' ? 5.0 : 7.0;
+                const feePct = 5.0;
 
                 console.log(`[stripe-webhook] Team ${wallet.team_id} tier: ${tier}, fee: ${feePct}%`);
 

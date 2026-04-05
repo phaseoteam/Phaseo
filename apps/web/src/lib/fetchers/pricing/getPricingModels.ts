@@ -64,6 +64,12 @@ export default async function getPricingModels(
     try {
         const supabase = await createClient();
         const nowIso = new Date().toISOString();
+        const activeWindowClause = [
+            "and(effective_from.is.null,effective_to.is.null)",
+            `and(effective_from.is.null,effective_to.gt.${nowIso})`,
+            `and(effective_from.lte.${nowIso},effective_to.is.null)`,
+            `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
+        ].join(",");
 
         const { data: providerModels, error: pmError } = await supabase
             .from("data_api_provider_models")
@@ -71,8 +77,7 @@ export default async function getPricingModels(
                 "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, effective_from, effective_to"
             )
             .eq("is_active_gateway", true)
-            .lte("effective_from", nowIso)
-            .or(`effective_to.is.null,effective_to.gt.${nowIso}`);
+            .or(activeWindowClause);
 
         if (pmError) {
             console.error("[pricing-models] failed to load provider models", pmError);
@@ -102,8 +107,7 @@ export default async function getPricingModels(
             .select(
                 "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
             )
-            .lte("effective_from", nowIso)
-            .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
+            .or(activeWindowClause)
             .order("priority", { ascending: false });
 
         if (prError) {

@@ -43,6 +43,8 @@ export interface ModelCard {
     supported_parameters?: string[];
     lowest_input_price?: number | null;
     lowest_output_price?: number | null;
+    lowest_from_price?: number | null;
+    lowest_from_price_unit?: string | null;
     popularity_tokens_week?: number | null;
     throughput_week?: number | null;
     latency_week?: number | null;

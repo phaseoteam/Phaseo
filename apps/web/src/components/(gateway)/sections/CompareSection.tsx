@@ -9,12 +9,12 @@ const COMPARISON_DATA = [
 		capability: "Model Coverage",
 		description: "Number of models and providers supported",
 		gateway: {
-			value: "500+ models, 50+ providers",
+			value: "300+ models, 30+ providers",
 			highlight: true,
 			details: "Largest verified catalogue updated nightly",
 		},
 		openRouter: {
-			value: "200+ models",
+			value: "300+ models",
 			highlight: false,
 			details: "Varies by provider availability",
 		},
@@ -85,7 +85,7 @@ const COMPARISON_DATA = [
 		capability: "Pricing Model",
 		description: "Credit purchase fee structure",
 		gateway: {
-			value: "7% basic, 5% enterprise top-up fee",
+			value: "5% top-up fee",
 			highlight: true,
 			details: "Applied on credit purchases, not token requests",
 		},

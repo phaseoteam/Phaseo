@@ -9,6 +9,7 @@ namespace AIStats\Sdk;
 require_once __DIR__ . "/gen/Client.php";
 require_once __DIR__ . "/gen/Models.php";
 require_once __DIR__ . "/gen/Operations.php";
+require_once __DIR__ . "/ModelIds.php";
 
 use AIStats\Gen\Client as GenClient;
 use RuntimeException;

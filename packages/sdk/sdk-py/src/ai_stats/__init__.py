@@ -13,6 +13,7 @@ from gen.client import Client
 from gen import models
 from gen import operations as ops
 from ai_stats_devtools import TelemetryRecorder, create_ai_stats_devtools
+from .model_ids import MODEL_IDS, ModelIds
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "ai-stats-python"
@@ -910,7 +911,9 @@ __all__ = [
     "AIStatsLogger",
     "ChatCompletionsParams",
     "KnownModelId",
+    "MODEL_IDS",
     "ModelLifecycleInfo",
+    "ModelIds",
     "ModelId",
     "create_ai_stats_devtools",
     "models",

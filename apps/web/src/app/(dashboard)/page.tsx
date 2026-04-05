@@ -70,7 +70,7 @@ export default function Page() {
 								<span className="mt-2 block">One Open Model Database</span>
 							</h1>
 							<p className="mx-auto max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-								Access 200+ AI models through a unified API, with open benchmarks, pricing data, and reliability insights.
+								Access 300+ AI models through a unified API, with open benchmarks, pricing data, and reliability insights.
 							</p>
 						</div>
 						<div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
@@ -100,7 +100,7 @@ export default function Page() {
 						</h2>
 						<p className="mx-auto max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300 md:text-lg">
 							Track broad ecosystem coverage in the database, then ship through one
-							OpenAI-compatible gateway with 200+ production-ready models today.
+							OpenAI-compatible gateway with 300+ production-ready models today.
 						</p>
 					</div>
 					<PartnerLogos />

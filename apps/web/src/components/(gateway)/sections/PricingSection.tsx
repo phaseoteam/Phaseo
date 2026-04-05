@@ -15,11 +15,7 @@ const PRICING_EXAMPLES = [
 		gateway: "No credit purchase fee",
 	},
 	{
-		scenario: "Basic tier top-up",
-		gateway: "7.0% fee on credit purchases",
-	},
-	{
-		scenario: "Enterprise tier top-up",
+		scenario: "Paid top-up",
 		gateway: "5.0% fee on credit purchases",
 	},
 ];
@@ -35,8 +31,7 @@ export function PricingSection() {
 					<p className="text-sm text-slate-600 dark:text-slate-400">
 						All model usage consumes credits using the prices shown in our
 						model catalog. Top-up fees are only applied when you purchase
-						credits (top-up), with tier-based rates for Basic and Enterprise
-						teams.
+						credits (top-up).
 					</p>
 				</div>
 				<Card className="border-slate-200">
@@ -75,9 +70,9 @@ export function PricingSection() {
 					</table>
 				</div>
 				<p className="text-xs text-slate-500 dark:text-slate-300">
-					Review your live tier and top-up fee at{" "}
-					<Link className="underline" href="/settings/tiers">
-						/settings/tiers
+					Review your live top-up fee at{" "}
+					<Link className="underline" href="/settings/credits">
+						/settings/credits
 					</Link>{" "}
 					based on this month&apos;s spend.
 				</p>

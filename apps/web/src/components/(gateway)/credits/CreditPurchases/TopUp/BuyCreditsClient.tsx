@@ -78,7 +78,7 @@ export default function BuyCreditsClient({
 						)
 					) : (
 						<>
-							Invoiced billing is currently invite-only for Enterprise teams.
+							Invoiced billing is currently invite-only.
 						</>
 					)}
 				</div>

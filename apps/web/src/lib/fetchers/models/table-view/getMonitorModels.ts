@@ -15,6 +15,87 @@ import {
 
 export type { MonitorModelData } from "./types";
 
+function normalizePricingDisplayUnit(
+	meterRaw: unknown,
+	unitRaw: unknown,
+): string | null {
+	const meter = String(meterRaw ?? "")
+		.trim()
+		.toLowerCase();
+	const unit = String(unitRaw ?? "")
+		.trim()
+		.toLowerCase();
+
+	if (
+		meter.includes("token") ||
+		unit === "token" ||
+		unit === "tokens"
+	) {
+		return "1M tokens";
+	}
+	if (["second", "seconds", "sec", "secs", "s"].includes(unit)) {
+		return "second";
+	}
+	if (["minute", "minutes", "min", "mins", "m"].includes(unit)) {
+		return "minute";
+	}
+	if (["hour", "hours", "hr", "hrs", "h"].includes(unit)) {
+		return "hour";
+	}
+	if (["image", "images"].includes(unit)) {
+		return "image";
+	}
+	if (["video", "videos"].includes(unit)) {
+		return "video";
+	}
+	if (["character", "characters", "char", "chars"].includes(unit)) {
+		return "character";
+	}
+
+	return unit || null;
+}
+
+function toDisplayPrice(
+	pricePerUnitRaw: unknown,
+	unitSizeRaw: unknown,
+	meterRaw: unknown,
+	unitRaw: unknown,
+): { value: number; unit: string } | null {
+	const pricePerUnit = Number(pricePerUnitRaw ?? Number.NaN);
+	const unitSize = Number(unitSizeRaw ?? Number.NaN);
+	if (!Number.isFinite(pricePerUnit) || pricePerUnit < 0) return null;
+	if (!Number.isFinite(unitSize) || unitSize <= 0) return null;
+
+	const normalizedUnit = normalizePricingDisplayUnit(meterRaw, unitRaw);
+	if (!normalizedUnit) return null;
+
+	if (normalizedUnit === "1M tokens") {
+		return {
+			value: toUsdPerMillion(pricePerUnit, unitSize),
+			unit: normalizedUnit,
+		};
+	}
+
+	// Normalize all time-based pricing to per-second so comparisons are valid.
+	if (normalizedUnit === "minute") {
+		return {
+			value: pricePerUnit / unitSize / 60,
+			unit: "second",
+		};
+	}
+	if (normalizedUnit === "hour") {
+		return {
+			value: pricePerUnit / unitSize / 3600,
+			unit: "second",
+		};
+	}
+
+	return {
+		value: pricePerUnit / unitSize,
+		unit: normalizedUnit,
+	};
+}
+
 async function fetchProviderModelsPaginated({
 	supabase,
 	selectClause,
@@ -63,6 +144,7 @@ async function fetchPricingRulesByModelKeysInBatches({
 	Array<{
 		model_key: string;
 		meter: string;
+		unit: string | null;
 		unit_size: number;
 		price_per_unit: number;
 		pricing_plan: string | null;
@@ -73,6 +155,7 @@ async function fetchPricingRulesByModelKeysInBatches({
 	const rows: Array<{
 		model_key: string;
 		meter: string;
+		unit: string | null;
 		unit_size: number;
 		price_per_unit: number;
 		pricing_plan: string | null;
@@ -80,6 +163,12 @@ async function fetchPricingRulesByModelKeysInBatches({
 		effective_to: string | null;
 	}> = [];
 	const nowIso = new Date().toISOString();
+	const activePricingWindowClause = [
+		"and(effective_from.is.null,effective_to.is.null)",
+		`and(effective_from.is.null,effective_to.gt.${nowIso})`,
+		`and(effective_from.lte.${nowIso},effective_to.is.null)`,
+		`and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
+	].join(",");
 
 	for (let i = 0; i < modelKeys.length; i += batchSize) {
 		const batch = modelKeys.slice(i, i + batchSize);
@@ -90,6 +179,7 @@ async function fetchPricingRulesByModelKeysInBatches({
 			.select(`
         model_key,
         meter,
+        unit,
         unit_size,
         price_per_unit,
         pricing_plan,
@@ -97,7 +187,7 @@ async function fetchPricingRulesByModelKeysInBatches({
         effective_to
       `)
 			.in("model_key", batch)
-			.or(`effective_to.is.null,effective_to.gt.${nowIso}`)
+			.or(activePricingWindowClause)
 			.order("effective_from", { ascending: false });
 
 		if (error) {
@@ -349,6 +439,7 @@ export async function getMonitorModels(
 		| Array<{
 			model_key: string;
 			meter: string;
+			unit: string | null;
 			unit_size: number;
 			price_per_unit: number;
 			pricing_plan: string | null;
@@ -367,7 +458,13 @@ export async function getMonitorModels(
 
 	const pricingByKey = new Map<
 		string,
-		{ inputPrice: number; outputPrice: number; tier: string }
+		{
+			inputPrice: number;
+			outputPrice: number;
+			tier: string;
+			fromPrice: number | null;
+			fromPriceUnit: string | null;
+		}
 	>();
 	const freeByKey = new Map<string, boolean>();
 	for (const p of pricingData ?? []) {
@@ -381,6 +478,8 @@ export async function getMonitorModels(
 				inputPrice: 0,
 				outputPrice: 0,
 				tier: "standard",
+				fromPrice: null,
+				fromPriceUnit: null,
 			});
 		}
 		const prices = pricingByKey.get(p.model_key)!;
@@ -399,6 +498,27 @@ export async function getMonitorModels(
 			if (prices.tier === "standard") {
 				prices.tier = p.pricing_plan || "standard";
 			}
+		}
+
+		const displayPrice = toDisplayPrice(
+			p.price_per_unit,
+			p.unit_size,
+			p.meter,
+			p.unit,
+		);
+		if (!displayPrice) continue;
+		if (prices.fromPrice === null || !prices.fromPriceUnit) {
+			prices.fromPrice = displayPrice.value;
+			prices.fromPriceUnit = displayPrice.unit;
+			continue;
+		}
+		// Only compare numeric values within the same display unit.
+		if (
+			prices.fromPriceUnit === displayPrice.unit &&
+			displayPrice.value < prices.fromPrice
+		) {
+			prices.fromPrice = displayPrice.value;
+			prices.fromPriceUnit = displayPrice.unit;
 		}
 	}
 
@@ -433,6 +553,8 @@ export async function getMonitorModels(
 				inputPrice: 0,
 				outputPrice: 0,
 				tier: "standard",
+				fromPrice: null,
+				fromPriceUnit: null,
 			};
 
 		const extractedFeatures = extractFeatureKeys(gatewayModel?.params);
@@ -477,6 +599,8 @@ export async function getMonitorModels(
 				id: gatewayModel.api_provider_id,
 				inputPrice: prices.inputPrice,
 				outputPrice: prices.outputPrice,
+				fromPrice: prices.fromPrice,
+				fromPriceUnit: prices.fromPriceUnit,
 				features: sortedFeatures,
 			},
 			endpoint: normalizeEndpoint(rawEndpoint),

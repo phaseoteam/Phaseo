@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 		type: "website",
 		title: "AI Stats Gateway — Single API for Every Model",
 		description:
-			"Unify 50+ AI providers behind one API. Route intelligently by latency, cost, and availability. Ship production workloads with confidence.",
+			"Unify 30+ AI providers behind one API. Route intelligently by latency, cost, and availability. Ship production workloads with confidence.",
 	},
 };
 

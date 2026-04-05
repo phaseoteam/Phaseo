@@ -91,7 +91,7 @@ export default function CreditsPurchaseDialog({
 	const STEP = 0.01;
 	const FEE_RATE = tierInfo?.current?.feePct
 		? tierInfo.current.feePct / 100
-		: 0.1;
+		: 0.05;
 
 	// Default to saving the card for faster future top-ups. Encourage
 	// Save & Pay by making it the default and hiding the one-off option
@@ -114,7 +114,7 @@ export default function CreditsPurchaseDialog({
 	// When the input is empty or invalid, show $0 as the credits amount
 	const displayAmount = Number.isNaN(parsed) ? 0 : parsed;
 
-	// Fee = max($1, 10% of amount)
+	// Fee = max($1, 5% of amount)
 	const fee = useMemo(() => {
 		if (Number.isNaN(parsed)) return 0;
 		const calc = Math.max(parsed * FEE_RATE, 1);

@@ -1,10 +1,10 @@
 # AI Stats Gateway Provider for Vercel AI SDK
 
-Official [Vercel AI SDK](https://sdk.vercel.ai/docs) provider for [AI Stats Gateway](https://ai-stats.phaseo.app/), enabling access to 55+ AI providers through a unified interface.
+Official [Vercel AI SDK](https://sdk.vercel.ai/docs) provider for [AI Stats Gateway](https://ai-stats.phaseo.app/), enabling access to 30+ AI providers through a unified interface.
 
 ## Features
 
-✨ **Unified Access** - Use 55+ AI providers (OpenAI, Anthropic, Google, Mistral, DeepSeek, and more) through a single SDK
+✨ **Unified Access** - Use 30+ AI providers (OpenAI, Anthropic, Google, Mistral, DeepSeek, and more) through a single SDK
 🔄 **Full AI SDK v6 Support** - Works with all Vercel AI SDK primitives:
 
 -   Text: `generateText`, `streamText`, `generateObject`, `streamObject`
@@ -224,7 +224,7 @@ const result = await generateText({
 
 ## Supported Providers
 
-Access 55+ AI providers through the gateway:
+Access 30+ AI providers through the gateway:
 
 ### Major Providers
 
