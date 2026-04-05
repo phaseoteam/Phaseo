@@ -41,6 +41,8 @@ const NEBIUS_EU_NORTH_1_BASE_URL_ENVS = ["NEBIUS_EU_NORTH_1_BASE_URL", "NEBIUS_B
 const NEBIUS_US_CENTRAL_1_BASE_URL_ENVS = ["NEBIUS_US_CENTRAL_1_BASE_URL", "NEBIUS_BASE_URL"] as const;
 const BYTEPLUS_API_KEY_ENVS = ["BYTEPLUS_API_KEY", "BYTEDANCE_SEED_API_KEY", "ARK_API_KEY"] as const;
 const BYTEPLUS_BASE_URL_ENVS = ["BYTEPLUS_BASE_URL", "BYTEDANCE_SEED_BASE_URL"] as const;
+const VERCEL_API_KEY_ENVS = ["VERCEL_API_KEY", "V0_API_KEY"] as const;
+const VERCEL_BASE_URL_ENVS = ["V0_BASE_URL", "VERCEL_BASE_URL"] as const;
 
 export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     openai: {
@@ -461,6 +463,22 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "TOGETHER_BASE_URL",
         supportsResponses: false,
     },
+    vercel: {
+        providerId: "vercel",
+        baseUrl: "https://api.v0.dev",
+        pathPrefix: "/v1",
+        apiKeyEnv: "VERCEL_API_KEY",
+        baseUrlEnv: "V0_BASE_URL",
+        supportsResponses: false,
+    },
+    v0: {
+        providerId: "v0",
+        baseUrl: "https://api.v0.dev",
+        pathPrefix: "/v1",
+        apiKeyEnv: "VERCEL_API_KEY",
+        baseUrlEnv: "V0_BASE_URL",
+        supportsResponses: false,
+    },
     xiaomi: {
         providerId: "xiaomi",
         pathPrefix: "/v1",
@@ -673,6 +691,9 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
         ((providerId === "byteplus" || providerId === "bytedance-seed")
             ? readFirstBinding(BYTEPLUS_BASE_URL_ENVS)
             : undefined) ||
+        ((providerId === "vercel" || providerId === "v0")
+            ? readFirstBinding(VERCEL_BASE_URL_ENVS)
+            : undefined) ||
         resolveNebiusBaseUrl(providerId) ||
         (config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
         config.baseUrl;
@@ -783,6 +804,10 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
 
     if (args.providerId === "byteplus" || args.providerId === "bytedance-seed") {
         return resolveProviderKey(args, () => readFirstBinding(BYTEPLUS_API_KEY_ENVS));
+    }
+
+    if (args.providerId === "vercel" || args.providerId === "v0") {
+        return resolveProviderKey(args, () => readFirstBinding(VERCEL_API_KEY_ENVS));
     }
 
     const config = resolveOpenAICompatConfig(args.providerId);

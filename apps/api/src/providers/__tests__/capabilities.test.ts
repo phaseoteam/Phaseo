@@ -17,11 +17,13 @@ const NON_TEXT_CAPABILITIES: AdapterBackedCapability[] = [
 ];
 
 describe("provider capability profiles", () => {
-	it("marks AI21, Arcee, and Friendli as text-only", () => {
+	it("marks AI21, Arcee, Friendli, and Vercel v0 as text-only", () => {
 		expect(getProviderCapabilityProfile("ai21").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("arcee").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("arcee-ai").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("friendli").textOnly).toBe(true);
+		expect(getProviderCapabilityProfile("vercel").textOnly).toBe(true);
+		expect(getProviderCapabilityProfile("v0").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("google-vertex").textOnly).not.toBe(true);
 		expect(getProviderCapabilityProfile("xiaomi").textOnly).not.toBe(true);
 	});
@@ -43,6 +45,14 @@ describe("provider capability profiles", () => {
 			expect(
 				supportsAdapterBackedCapability("friendli", capability),
 				`friendli should not support ${capability}`,
+			).toBe(false);
+			expect(
+				supportsAdapterBackedCapability("vercel", capability),
+				`vercel should not support ${capability}`,
+			).toBe(false);
+			expect(
+				supportsAdapterBackedCapability("v0", capability),
+				`v0 should not support ${capability}`,
 			).toBe(false);
 		}
 	});

@@ -211,6 +211,8 @@ function supportedEndpointsFor(providerId: string): Set<Endpoint> {
     switch (providerId) {
         case "openai":
         case "cerebras":
+        case "vercel":
+        case "v0":
             return OPENAI_COMPAT_ENDPOINTS;
         case "google-ai-studio":
             return GOOGLE_ENDPOINTS;

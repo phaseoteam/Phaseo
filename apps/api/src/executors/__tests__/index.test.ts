@@ -61,6 +61,8 @@ describe("resolveProviderExecutor", () => {
 			"sourceful",
 			"together",
 			"venice",
+			"vercel",
+			"v0",
 			"weights-and-biases",
 			"voyage",
 			"voyageai",
@@ -92,6 +94,8 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("cohere", "embeddings")).toBeTruthy();
 		expect(resolveProviderExecutor("voyage", "embeddings")).toBeTruthy();
 		expect(resolveProviderExecutor("voyageai", "embeddings")).toBeTruthy();
+		expect(resolveProviderExecutor("vercel", "embeddings")).toBeNull();
+		expect(resolveProviderExecutor("v0", "embeddings")).toBeNull();
 		expect(resolveProviderExecutor("anthropic", "embeddings")).toBeNull();
 	});
 
@@ -101,6 +105,8 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("google-ai-studio", "moderations")).toBeTruthy();
 		expect(resolveProviderExecutor("together", "moderations")).toBeTruthy();
 		expect(resolveProviderExecutor("mistral", "moderations")).toBeTruthy();
+		expect(resolveProviderExecutor("vercel", "moderations")).toBeNull();
+		expect(resolveProviderExecutor("v0", "moderations")).toBeNull();
 		expect(resolveProviderExecutor("anthropic", "moderations")).toBeNull();
 	});
 
