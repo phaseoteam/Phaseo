@@ -663,10 +663,10 @@ describe("resolveOpenAICompatKey", () => {
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("uses VERCEL_API_KEY for v0 alias", () => {
+	it("accepts V0_API_KEY fallback for v0 alias", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			VERCEL_API_KEY: "test-vercel-key",
+			V0_API_KEY: "test-v0-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -674,7 +674,7 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-vercel-key");
+		expect(resolved.key).toBe("test-v0-key");
 		expect(resolved.source).toBe("gateway");
 	});
 

@@ -165,6 +165,7 @@ export type GatewayBindings = {
     TOGETHER_API_KEY?: string;
     TOGETHER_BASE_URL?: string;
     VERCEL_API_KEY?: string;
+    V0_API_KEY?: string;
     V0_BASE_URL?: string;
     VERCEL_BASE_URL?: string;
     WANDB_BASE_URL?: string;
@@ -375,6 +376,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "TOGETHER_API_KEY",
     "TOGETHER_BASE_URL",
     "VERCEL_API_KEY",
+    "V0_API_KEY",
     "V0_BASE_URL",
     "VERCEL_BASE_URL",
     "WANDB_BASE_URL",
