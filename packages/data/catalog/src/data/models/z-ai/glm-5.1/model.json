@@ -2,17 +2,31 @@
   "model_id": "z-ai/glm-5.1",
   "organisation_id": "z-ai",
   "name": "GLM 5.1",
-  "status": "Rumoured",
-  "previous_model_id": "z-ai/glm-5-2026-02-11",
-  "announced_date": null,
-  "release_date": null,
+  "status": "Available",
+  "previous_model_id": "z-ai/glm-5",
+  "announced_date": "2026-04-07T00:00:00",
+  "release_date": "2026-04-07T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
-  "input_types": null,
-  "output_types": null,
+  "input_types": "text",
+  "output_types": "text",
   "api_model_id": "z-ai/glm-5.1",
-  "links": [],
-  "details": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.z.ai/guides/llm/glm-5.1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    }
+  ],
   "benchmarks": []
 }
