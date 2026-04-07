@@ -1759,6 +1759,7 @@
     "novita:text.generate:z-ai-glm-4.7",
     "novita:text.generate:z-ai-glm-4.7-flash",
     "novita:text.generate:z-ai-glm-5",
+    "novita:text.generate:z-ai-glm-5.1",
     "openai:text.generate:openai-ada",
     "openai:text.generate:openai-babbage",
     "openai:text.generate:openai-babbage-002",
