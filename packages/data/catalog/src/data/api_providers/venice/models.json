@@ -1077,5 +1077,26 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "venice:z-ai/glm-5.1",
+    "provider_model_slug": "zai-org-glm-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 198000,
+    "max_output_tokens": 32000,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "deranked_lvl1",
+        "params": []
+      }
+    ]
   }
 ]
