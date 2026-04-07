@@ -1759,6 +1759,7 @@
     "novita:text.generate:z-ai-glm-4.7",
     "novita:text.generate:z-ai-glm-4.7-flash",
     "novita:text.generate:z-ai-glm-5",
+    "novita:text.generate:z-ai-glm-5.1",
     "openai:text.generate:openai-ada",
     "openai:text.generate:openai-babbage",
     "openai:text.generate:openai-babbage-002",
@@ -1950,6 +1951,7 @@
     "z-ai:text.generate:z-ai-glm-5",
     "z-ai:text.generate:z-ai-glm-5-code",
     "z-ai:text.generate:z-ai-glm-5-turbo",
+    "z-ai:text.generate:z-ai-glm-5.1",
     "z-ai:text.generate:z-ai-glm-5v-turbo"
   ]
 }
