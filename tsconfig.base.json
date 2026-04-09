@@ -1,13 +1,1 @@
-{
-	"compilerOptions": {
-		"target": "ES2022",
-		"lib": ["ES2022", "DOM"],
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"resolveJsonModule": true,
-		"baseUrl": ".",
-		"paths": {
-			"@ui/*": ["packages/ui/src/*"]
-		}
-	}
-}
+{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents#get-repository-content","status":"404"}
