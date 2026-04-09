@@ -49,6 +49,9 @@ function FieldRow({
 export default function BenchmarksTab({ modelId, onBenchmarksChange }: BenchmarksTabProps) {
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([])
   const [availableBenchmarks, setAvailableBenchmarks] = useState<Array<{ id: string; name: string }>>([])
+  const [newBenchmarkId, setNewBenchmarkId] = useState("")
+  const [newBenchmarkName, setNewBenchmarkName] = useState("")
+  const [creatingBenchmark, setCreatingBenchmark] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,7 +80,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
             id: b.id,
             benchmark_id: b.benchmark_id,
             score: b.score?.toString() ?? "",
-            is_self_reported: b.is_self_reported ?? false,
+            is_self_reported: b.is_self_reported ?? true,
             other_info: b.other_info,
             source_link: b.source_link,
             variant: b.variant,
@@ -100,6 +103,48 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
     setBenchmarks(benchmarks.filter((b) => b.id !== id))
   }
 
+  const handleCreateBenchmark = async () => {
+    const id = newBenchmarkId.trim()
+    const name = newBenchmarkName.trim()
+    if (!id || !name) return
+
+    setCreatingBenchmark(true)
+    const supabase = createClient()
+    const { error } = await supabase.from("data_benchmarks").upsert(
+      {
+        id,
+        name,
+        category: null,
+        link: null,
+        ascending_order: null,
+      },
+      { onConflict: "id" }
+    )
+
+    if (!error) {
+      setAvailableBenchmarks((prev) =>
+        [...prev.filter((row) => row.id !== id), { id, name }].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        )
+      )
+      setBenchmarks((prev) => [
+        ...prev,
+        {
+          id: `new-${Date.now()}`,
+          benchmark_id: id,
+          score: "",
+          is_self_reported: true,
+          other_info: null,
+          source_link: null,
+          variant: null,
+        },
+      ])
+      setNewBenchmarkId("")
+      setNewBenchmarkName("")
+    }
+    setCreatingBenchmark(false)
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -115,12 +160,39 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
           onClick={() =>
             setBenchmarks([
               ...benchmarks,
-              { id: `new-${Date.now()}`, benchmark_id: "", score: "", is_self_reported: false, other_info: null, source_link: null, variant: null },
+              { id: `new-${Date.now()}`, benchmark_id: "", score: "", is_self_reported: true, other_info: null, source_link: null, variant: null },
             ])
           }
         >
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>
+      </div>
+
+      <div className="rounded-lg border p-3 space-y-2">
+        <Label className="text-sm font-semibold">Create and Attach Benchmark</Label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Input
+            value={newBenchmarkId}
+            onChange={(event) => setNewBenchmarkId(event.target.value)}
+            placeholder="benchmark_id"
+          />
+          <Input
+            value={newBenchmarkName}
+            onChange={(event) => setNewBenchmarkName(event.target.value)}
+            placeholder="Benchmark name"
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCreateBenchmark}
+            disabled={creatingBenchmark || !newBenchmarkId.trim() || !newBenchmarkName.trim()}
+          >
+            {creatingBenchmark ? "Creating..." : "Create and attach"}
+          </Button>
+        </div>
       </div>
 
       {benchmarks.length === 0 ? (

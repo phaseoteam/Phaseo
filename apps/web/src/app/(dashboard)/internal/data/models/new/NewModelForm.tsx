@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -10,6 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	CAPABILITY_STATUS_OPTIONS,
+	MODEL_CAPABILITY_OPTIONS,
+	MODEL_MODALITY_OPTIONS,
+	MODEL_STATUS_OPTIONS,
+} from "@/lib/models/editorOptions";
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -42,10 +48,7 @@ type PreviousModelOption = {
 type CapabilityDraft = {
 	id: string;
 	capability_id: string;
-	status: "active" | "deranked" | "disabled";
-	max_input_tokens: string;
-	max_output_tokens: string;
-	notes: string;
+	status: (typeof CAPABILITY_STATUS_OPTIONS)[number];
 	params: Record<string, boolean>;
 };
 
@@ -58,6 +61,8 @@ type ProviderDraft = {
 	input_modalities: string[];
 	output_modalities: string[];
 	quantization_scheme: string;
+	context_length: string;
+	max_output_tokens: string;
 	effective_from: string;
 	effective_to: string;
 	capabilities: CapabilityDraft[];
@@ -94,19 +99,26 @@ type PricingRuleDraft = {
 	currency: string;
 };
 
-const STATUS_OPTIONS = ["active", "beta", "deprecated", "retired", "preview"];
-const MODALITY_OPTIONS = ["text", "image", "audio", "video"];
-const COMMON_CAPABILITIES = [
-	"text.generate",
-	"text.embed",
-	"text.moderate",
-	"image.generate",
-	"image.edit",
-	"audio.transcribe",
-	"ocr",
-	"video.edit",
-	"video.generate",
-];
+type SubscriptionPlanOption = {
+	plan_uuid: string;
+	plan_id: string | null;
+	name: string | null;
+	frequency: string | null;
+	price: number | null;
+	currency: string | null;
+};
+
+type NewSubscriptionPlanDraft = {
+	plan_id: string;
+	name: string;
+	frequency: string;
+	price: string;
+	currency: string;
+};
+
+const STATUS_OPTIONS = MODEL_STATUS_OPTIONS;
+const MODALITY_OPTIONS = MODEL_MODALITY_OPTIONS;
+const COMMON_CAPABILITIES = MODEL_CAPABILITY_OPTIONS;
 const PARAMETER_FLAGS = [
 	"temperature",
 	"top_p",
@@ -127,6 +139,8 @@ const PARAMETER_FLAGS = [
 const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
 	input_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	output_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	image_pixels: { unit: "pixel", unit_size: 1_000_000 },
+	video_pixels: { unit: "pixel", unit_size: 1_000_000 },
 	cached_read_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	cached_write_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	input_image_tokens: { unit: "token", unit_size: 1_000_000 },
@@ -213,9 +227,6 @@ function defaultCapability(): CapabilityDraft {
 		id: `cap-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
 		capability_id: "text.generate",
 		status: "active",
-		max_input_tokens: "",
-		max_output_tokens: "",
-		notes: "",
 		params: {},
 	};
 }
@@ -230,10 +241,23 @@ function defaultProvider(providerId: string, modelId: string): ProviderDraft {
 		input_modalities: ["text"],
 		output_modalities: ["text"],
 		quantization_scheme: "",
+		context_length: "",
+		max_output_tokens: "",
 		effective_from: "",
 		effective_to: "",
 		capabilities: [defaultCapability()],
 	};
+}
+
+function formatSubscriptionPlanOption(plan: SubscriptionPlanOption): string {
+	const name = plan.name?.trim() || plan.plan_id?.trim() || plan.plan_uuid;
+	const frequency = plan.frequency?.trim();
+	const price =
+		typeof plan.price === "number" && Number.isFinite(plan.price)
+			? `${plan.price}${plan.currency ? ` ${plan.currency}` : ""}`
+			: null;
+	const detail = [frequency, price].filter(Boolean).join(" | ");
+	return detail ? `${name} (${detail})` : name;
 }
 
 export default function NewModelForm({
@@ -242,6 +266,7 @@ export default function NewModelForm({
 	families,
 	benchmarks,
 	previousModels,
+	subscriptionPlans,
 	createAction,
 }: {
 	organisations: OrganisationOption[];
@@ -249,6 +274,7 @@ export default function NewModelForm({
 	families: FamilyOption[];
 	benchmarks: BenchmarkOption[];
 	previousModels: PreviousModelOption[];
+	subscriptionPlans: SubscriptionPlanOption[];
 	createAction: (formData: FormData) => void | Promise<void>;
 }) {
 	const router = useRouter();
@@ -267,6 +293,8 @@ export default function NewModelForm({
 	const [providerRows, setProviderRows] = useState<ProviderDraft[]>([]);
 	const [benchmarkRows, setBenchmarkRows] = useState<BenchmarkResultDraft[]>([]);
 	const [newBenchmarkRows, setNewBenchmarkRows] = useState<NewBenchmarkDraft[]>([]);
+	const [selectedPlanUuids, setSelectedPlanUuids] = useState<string[]>([]);
+	const [newSubscriptionPlanRows, setNewSubscriptionPlanRows] = useState<NewSubscriptionPlanDraft[]>([]);
 	const [pricingRows, setPricingRows] = useState<PricingRuleDraft[]>([]);
 	const [detailValues, setDetailValues] = useState<Record<DetailFieldKey, string>>({
 		input_context_length: "",
@@ -297,6 +325,17 @@ export default function NewModelForm({
 		}
 		return Array.from(merged.entries()).map(([id, name]) => ({ id, name }));
 	}, [benchmarks, newBenchmarkRows]);
+
+	const modelIdOptions = useMemo(() => {
+		const set = new Set(previousModels.map((row) => row.model_id).filter(Boolean));
+		if (modelId.trim()) set.add(modelId.trim());
+		for (const row of providerRows) {
+			if (row.api_model_id.trim()) set.add(row.api_model_id.trim());
+		}
+		return Array.from(set).sort((a, b) =>
+			a.localeCompare(b, undefined, { sensitivity: "base" })
+		);
+	}, [modelId, previousModels, providerRows]);
 
 	const sortedProviders = useMemo(
 		() =>
@@ -372,12 +411,14 @@ export default function NewModelForm({
 			JSON.stringify(
 				providerRows.map((row) => ({
 					provider_id: row.provider_id,
-					api_model_id: modelId.trim(),
+					api_model_id: row.api_model_id.trim() || modelId.trim(),
 					provider_model_slug: row.provider_model_slug.trim() || null,
 					is_active_gateway: row.is_active_gateway,
 					input_modalities: row.input_modalities,
 					output_modalities: row.output_modalities,
 					quantization_scheme: row.quantization_scheme.trim() || null,
+					context_length: row.context_length ? Number(row.context_length) : null,
+					max_output_tokens: row.max_output_tokens ? Number(row.max_output_tokens) : null,
 					effective_from: row.effective_from || null,
 					effective_to: row.effective_to || null,
 				}))
@@ -391,12 +432,9 @@ export default function NewModelForm({
 				providerRows.flatMap((provider) =>
 					provider.capabilities.map((capability) => ({
 						provider_id: provider.provider_id,
-						api_model_id: modelId.trim(),
+						api_model_id: provider.api_model_id.trim() || modelId.trim(),
 						capability_id: capability.capability_id.trim(),
 						status: capability.status,
-						max_input_tokens: capability.max_input_tokens ? Number(capability.max_input_tokens) : null,
-						max_output_tokens: capability.max_output_tokens ? Number(capability.max_output_tokens) : null,
-						notes: capability.notes.trim() || null,
 						params: Object.fromEntries(
 							Object.entries(capability.params).filter(([, enabled]) => enabled === true)
 						),
@@ -440,7 +478,7 @@ export default function NewModelForm({
 			JSON.stringify(
 				pricingRows.map((row) => ({
 					provider_id: row.provider_id,
-					api_model_id: modelId.trim(),
+					api_model_id: row.api_model_id.trim() || modelId.trim(),
 					capability_id: row.capability_id,
 					pricing_plan: row.pricing_plan,
 					meter: row.meter,
@@ -451,6 +489,33 @@ export default function NewModelForm({
 				}))
 			),
 		[pricingRows, modelId]
+	);
+
+	const subscriptionPlanModelsPayload = useMemo(
+		() =>
+			JSON.stringify(
+				selectedPlanUuids.map((planUuid) => ({
+					plan_uuid: planUuid,
+					model_info: {},
+					rate_limit: {},
+					other_info: {},
+				}))
+			),
+		[selectedPlanUuids]
+	);
+
+	const newSubscriptionPlansPayload = useMemo(
+		() =>
+			JSON.stringify(
+				newSubscriptionPlanRows.map((row) => ({
+					plan_id: row.plan_id.trim(),
+					name: row.name.trim(),
+					frequency: row.frequency.trim() || "monthly",
+					price: Number(row.price || "0"),
+					currency: (row.currency.trim() || "USD").toUpperCase(),
+				}))
+			),
+		[newSubscriptionPlanRows]
 	);
 
 	const familyPayload = useMemo(
@@ -532,16 +597,6 @@ export default function NewModelForm({
 		});
 	};
 
-	useEffect(() => {
-		const canonicalModelId = modelId.trim();
-		setProviderRows((prev) =>
-			prev.map((row) => ({ ...row, api_model_id: canonicalModelId }))
-		);
-		setPricingRows((prev) =>
-			prev.map((row) => ({ ...row, api_model_id: canonicalModelId }))
-		);
-	}, [modelId]);
-
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.currentTarget);
@@ -570,6 +625,8 @@ export default function NewModelForm({
 			<input type="hidden" name="benchmark_results_payload" value={benchmarkResultsPayload} />
 			<input type="hidden" name="new_benchmarks_payload" value={newBenchmarksPayload} />
 			<input type="hidden" name="pricing_rules_payload" value={pricingPayload} />
+			<input type="hidden" name="subscription_plan_models_payload" value={subscriptionPlanModelsPayload} />
+			<input type="hidden" name="new_subscription_plans_payload" value={newSubscriptionPlansPayload} />
 			<input type="hidden" name="model_details_payload" value={modelDetailsPayload} />
 			<input type="hidden" name="model_links_payload" value={modelLinksPayload} />
 			<input type="hidden" name="input_types" value={inputTypes.join(",")} />
@@ -606,7 +663,7 @@ export default function NewModelForm({
 					</label>
 					<label className="text-sm">
 						<div className="mb-1 text-muted-foreground">Status</div>
-						<select name="status" defaultValue="active" className="w-full rounded-md border px-3 py-2 text-sm">
+						<select name="status" defaultValue="Released" className="w-full rounded-md border px-3 py-2 text-sm">
 							{STATUS_OPTIONS.map((status) => (
 								<option key={status} value={status}>
 									{status}
@@ -709,6 +766,168 @@ export default function NewModelForm({
 							})}
 						</div>
 					</label>
+				</div>
+			</section>
+
+			<section className="space-y-3 rounded-lg border p-3">
+				<div className="flex items-center justify-between">
+					<h2 className="text-sm font-medium">Subscription plans</h2>
+				</div>
+				<p className="text-xs text-muted-foreground">
+					Attach existing plans, or create new ones and attach them on save.
+				</p>
+
+				<div className="space-y-2 rounded-md border p-2">
+					{subscriptionPlans.length === 0 ? (
+						<p className="text-xs text-muted-foreground">No existing plans available.</p>
+					) : null}
+					{subscriptionPlans.map((plan) => {
+						const checked = selectedPlanUuids.includes(plan.plan_uuid);
+						return (
+							<label
+								key={plan.plan_uuid}
+								className="flex items-center justify-between gap-3 rounded-md border px-2 py-1.5 text-xs"
+							>
+								<span className="truncate">{formatSubscriptionPlanOption(plan)}</span>
+								<Checkbox
+									checked={checked}
+									onCheckedChange={(value) =>
+										setSelectedPlanUuids((prev) => {
+											if (value !== true) {
+												return prev.filter((planUuid) => planUuid !== plan.plan_uuid);
+											}
+											return prev.includes(plan.plan_uuid)
+												? prev
+												: [...prev, plan.plan_uuid];
+										})
+									}
+								/>
+							</label>
+						);
+					})}
+				</div>
+
+				<div className="space-y-2 rounded-md border p-2">
+					<div className="flex items-center justify-between">
+						<h3 className="text-xs font-medium">Create plan inline</h3>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() =>
+								setNewSubscriptionPlanRows((prev) => [
+									...prev,
+									{
+										plan_id: "",
+										name: "",
+										frequency: "monthly",
+										price: "0",
+										currency: "USD",
+									},
+								])
+							}
+						>
+							<Plus className="mr-1 h-3 w-3" />
+							New plan
+						</Button>
+					</div>
+					{newSubscriptionPlanRows.map((row, index) => (
+						<div key={`new-plan-${index}`} className="grid gap-2 rounded-md border p-2 lg:grid-cols-12">
+							<label className="text-xs lg:col-span-3">
+								<div className="mb-1 text-muted-foreground">Plan ID</div>
+								<Input
+									value={row.plan_id}
+									onChange={(event) =>
+										setNewSubscriptionPlanRows((prev) =>
+											prev.map((inner, innerIndex) =>
+												innerIndex === index ? { ...inner, plan_id: event.target.value } : inner
+											)
+										)
+									}
+									className="h-8 text-xs"
+									placeholder="starter-monthly"
+								/>
+							</label>
+							<label className="text-xs lg:col-span-3">
+								<div className="mb-1 text-muted-foreground">Name</div>
+								<Input
+									value={row.name}
+									onChange={(event) =>
+										setNewSubscriptionPlanRows((prev) =>
+											prev.map((inner, innerIndex) =>
+												innerIndex === index ? { ...inner, name: event.target.value } : inner
+											)
+										)
+									}
+									className="h-8 text-xs"
+									placeholder="Starter"
+								/>
+							</label>
+							<label className="text-xs lg:col-span-2">
+								<div className="mb-1 text-muted-foreground">Frequency</div>
+								<Input
+									value={row.frequency}
+									onChange={(event) =>
+										setNewSubscriptionPlanRows((prev) =>
+											prev.map((inner, innerIndex) =>
+												innerIndex === index ? { ...inner, frequency: event.target.value } : inner
+											)
+										)
+									}
+									className="h-8 text-xs"
+									placeholder="monthly"
+								/>
+							</label>
+							<label className="text-xs lg:col-span-2">
+								<div className="mb-1 text-muted-foreground">Price</div>
+								<Input
+									type="number"
+									step="0.01"
+									value={row.price}
+									onChange={(event) =>
+										setNewSubscriptionPlanRows((prev) =>
+											prev.map((inner, innerIndex) =>
+												innerIndex === index ? { ...inner, price: event.target.value } : inner
+											)
+										)
+									}
+									className="h-8 text-xs"
+									placeholder="0"
+								/>
+							</label>
+							<div className="flex items-end gap-2 lg:col-span-2">
+								<label className="w-full text-xs">
+									<div className="mb-1 text-muted-foreground">Currency</div>
+									<Input
+										value={row.currency}
+										onChange={(event) =>
+											setNewSubscriptionPlanRows((prev) =>
+												prev.map((inner, innerIndex) =>
+													innerIndex === index
+														? { ...inner, currency: event.target.value.toUpperCase() }
+														: inner
+												)
+											)
+										}
+										className="h-8 text-xs"
+										placeholder="USD"
+									/>
+								</label>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									onClick={() =>
+										setNewSubscriptionPlanRows((prev) =>
+											prev.filter((_, innerIndex) => innerIndex !== index)
+										)
+									}
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					))}
 				</div>
 			</section>
 
@@ -883,7 +1102,7 @@ export default function NewModelForm({
 				<div className="space-y-3">
 					{providerRows.map((providerRow) => (
 						<div key={providerRow.id} className="space-y-3 rounded-md border p-3">
-							<div className="grid gap-2 lg:grid-cols-4">
+							<div className="grid gap-2 lg:grid-cols-5">
 								<label className="text-xs">
 									<div className="mb-1 text-muted-foreground">Provider</div>
 									<select
@@ -905,16 +1124,32 @@ export default function NewModelForm({
 									</select>
 								</label>
 								<label className="text-xs">
-									<div className="mb-1 text-muted-foreground">API model ID</div>
-									<Input
-										value={modelId}
-										readOnly
-										disabled
-										className="h-8 text-xs"
-									/>
+									<div className="mb-1 text-muted-foreground">Public model ID</div>
+									<>
+										<Input
+											list={`provider-model-ids-${providerRow.id}`}
+											value={providerRow.api_model_id}
+											onChange={(event) =>
+												setProviderRows((prev) =>
+													prev.map((row) =>
+														row.id === providerRow.id
+															? { ...row, api_model_id: event.target.value }
+															: row
+													)
+												)
+											}
+											className="h-8 text-xs"
+											placeholder="organisation/model-id"
+										/>
+										<datalist id={`provider-model-ids-${providerRow.id}`}>
+											{modelIdOptions.map((option) => (
+												<option key={`${providerRow.id}-${option}`} value={option} />
+											))}
+										</datalist>
+									</>
 								</label>
 								<label className="text-xs">
-									<div className="mb-1 text-muted-foreground">Provider slug</div>
+									<div className="mb-1 text-muted-foreground">Provider model ID</div>
 									<Input
 										value={providerRow.provider_model_slug}
 										onChange={(event) =>
@@ -926,6 +1161,10 @@ export default function NewModelForm({
 										}
 										className="h-8 text-xs"
 									/>
+								</label>
+								<label className="text-xs">
+									<div className="mb-1 text-muted-foreground">Internal model ID</div>
+									<Input value={modelId} readOnly disabled className="h-8 text-xs" />
 								</label>
 								<div className="flex items-end justify-between gap-2">
 									<label className="flex items-center gap-2 text-xs">
@@ -952,6 +1191,62 @@ export default function NewModelForm({
 										<Trash2 className="h-4 w-4" />
 									</Button>
 								</div>
+							</div>
+
+							<div className="grid gap-2 lg:grid-cols-3">
+								<label className="text-xs">
+									<div className="mb-1 text-muted-foreground">Quantisation</div>
+									<Input
+										value={providerRow.quantization_scheme}
+										onChange={(event) =>
+											setProviderRows((prev) =>
+												prev.map((row) =>
+													row.id === providerRow.id
+														? { ...row, quantization_scheme: event.target.value }
+														: row
+												)
+											)
+										}
+										className="h-8 text-xs"
+										placeholder="FP16, INT8, etc."
+									/>
+								</label>
+								<label className="text-xs">
+									<div className="mb-1 text-muted-foreground">Input context</div>
+									<Input
+										type="number"
+										value={providerRow.context_length}
+										onChange={(event) =>
+											setProviderRows((prev) =>
+												prev.map((row) =>
+													row.id === providerRow.id
+														? { ...row, context_length: event.target.value }
+														: row
+												)
+											)
+										}
+										className="h-8 text-xs"
+										placeholder="e.g. 200000"
+									/>
+								</label>
+								<label className="text-xs">
+									<div className="mb-1 text-muted-foreground">Max output</div>
+									<Input
+										type="number"
+										value={providerRow.max_output_tokens}
+										onChange={(event) =>
+											setProviderRows((prev) =>
+												prev.map((row) =>
+													row.id === providerRow.id
+														? { ...row, max_output_tokens: event.target.value }
+														: row
+												)
+											)
+										}
+										className="h-8 text-xs"
+										placeholder="e.g. 32000"
+									/>
+								</label>
 							</div>
 
 							<div className="grid gap-2 lg:grid-cols-2">
@@ -1068,60 +1363,14 @@ export default function NewModelForm({
 													}
 													className="w-full rounded-md border px-2 py-1.5 text-xs"
 												>
-													<option value="active">active</option>
-													<option value="deranked">deranked</option>
-													<option value="disabled">disabled</option>
+													{CAPABILITY_STATUS_OPTIONS.map((status) => (
+														<option key={status} value={status}>
+															{status}
+														</option>
+													))}
 												</select>
 											</label>
-											<label className="text-xs">
-												<div className="mb-1 text-muted-foreground">Max input tokens</div>
-												<Input
-													type="number"
-													value={capability.max_input_tokens}
-													onChange={(event) =>
-														setProviderRows((prev) =>
-															prev.map((row) =>
-																row.id === providerRow.id
-																	? {
-																			...row,
-																			capabilities: row.capabilities.map((innerCapability) =>
-																				innerCapability.id === capability.id
-																					? { ...innerCapability, max_input_tokens: event.target.value }
-																					: innerCapability
-																			),
-																		}
-																	: row
-															)
-														)
-													}
-													className="h-8 text-xs"
-												/>
-											</label>
 											<div className="flex items-end justify-between gap-2">
-												<label className="w-full text-xs">
-													<div className="mb-1 text-muted-foreground">Max output tokens</div>
-													<Input
-														type="number"
-														value={capability.max_output_tokens}
-														onChange={(event) =>
-															setProviderRows((prev) =>
-																prev.map((row) =>
-																	row.id === providerRow.id
-																		? {
-																				...row,
-																				capabilities: row.capabilities.map((innerCapability) =>
-																					innerCapability.id === capability.id
-																						? { ...innerCapability, max_output_tokens: event.target.value }
-																						: innerCapability
-																				),
-																			}
-																		: row
-																)
-															)
-														}
-														className="h-8 text-xs"
-													/>
-												</label>
 												<Button
 													type="button"
 													variant="ghost"
@@ -1180,29 +1429,6 @@ export default function NewModelForm({
 												))}
 											</div>
 										</div>
-										<label className="text-xs">
-											<div className="mb-1 text-muted-foreground">Notes</div>
-											<Input
-												value={capability.notes}
-												onChange={(event) =>
-													setProviderRows((prev) =>
-														prev.map((row) =>
-															row.id === providerRow.id
-																? {
-																		...row,
-																		capabilities: row.capabilities.map((innerCapability) =>
-																			innerCapability.id === capability.id
-																				? { ...innerCapability, notes: event.target.value }
-																				: innerCapability
-																		),
-																	}
-																: row
-														)
-													)
-												}
-												className="h-8 text-xs"
-											/>
-										</label>
 									</div>
 								))}
 							</div>
@@ -1228,7 +1454,7 @@ export default function NewModelForm({
 									source_link: "",
 									variant: "",
 									other_info: "",
-									is_self_reported: false,
+									is_self_reported: true,
 								},
 							])
 						}
@@ -1496,12 +1722,17 @@ export default function NewModelForm({
 							))}
 						</select>
 						<Input
-							value={modelId}
-							readOnly
-							disabled
+							list={`pricing-model-ids-${row.id}`}
+							value={row.api_model_id}
+							onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
 							placeholder="api_model_id"
 							className="h-8 text-xs"
 						/>
+						<datalist id={`pricing-model-ids-${row.id}`}>
+							{modelIdOptions.map((option) => (
+								<option key={`pricing-${row.id}-${option}`} value={option} />
+							))}
+						</datalist>
 						<select
 							value={row.capability_id}
 							onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
