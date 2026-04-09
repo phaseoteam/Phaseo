@@ -3,6 +3,9 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 export type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 const PAGE_SIZE = 5000;
+const MAX_SHORT_RANGE_PAGES = 8;
+const MAX_LONG_RANGE_PAGES = 6;
+const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
 function fromForRange(key: RangeKey): Date {
 	const now = new Date();
@@ -27,6 +30,15 @@ export type AppUsageRow = {
 	successful_requests?: number;
 };
 
+function logUsageFetch(stage: string, payload: Record<string, unknown>): void {
+	if (!USAGE_FETCH_DEBUG_ENABLED) return;
+	console.info(`[gateway-usage-fetchers] ${stage}`, payload);
+}
+
+function usesDailyRollup(range: RangeKey): boolean {
+	return range === "1w" || range === "4w" || range === "1m" || range === "1y";
+}
+
 export async function getAppUsageOverTime(
 	appId: string,
 	range: RangeKey = "4w"
@@ -40,31 +52,68 @@ export async function getAppUsageOverTime(
 
 	const supabase = await createAdminClient();
 
-	const from = fromForRange(range).toISOString();
+	const fromDate = fromForRange(range);
+	const from = fromDate.toISOString();
 	const nowIso = new Date().toISOString();
+	const nowDay = nowIso.slice(0, 10);
 	const rows: AppUsageRow[] = [];
+	const useDaily = usesDailyRollup(range);
+	const fromDay = new Date(fromDate);
+	fromDay.setUTCHours(0, 0, 0, 0);
+	const fromDayIso = fromDay.toISOString().slice(0, 10);
+	let hitPageCap = true;
+	let pagesFetched = 0;
+	let hadError = false;
+	const maxPages = useDaily ? MAX_LONG_RANGE_PAGES : MAX_SHORT_RANGE_PAGES;
 
-	for (let offset = 0; ; offset += PAGE_SIZE) {
+	for (
+		let page = 0, offset = 0;
+		page < maxPages;
+		page += 1, offset += PAGE_SIZE
+	) {
+		pagesFetched += 1;
 		const to = offset + PAGE_SIZE - 1;
-		const { data, error } = await supabase
-			.from("gateway_usage_rollup_15m_app_model")
-			.select(
-				"bucket_15m, canonical_model_id, requests, success_requests, total_tokens, total_cost_nanos",
-			)
-			.eq("app_id", appId)
-			.gte("bucket_15m", from)
-			.lte("bucket_15m", nowIso)
-			.order("bucket_15m", { ascending: true })
-			.range(offset, to);
+		const query = useDaily
+			? supabase
+					.from("gateway_usage_rollup_daily_app_model")
+					.select(
+						"day_bucket, canonical_model_id, requests, success_requests, total_tokens, total_cost_nanos",
+					)
+					.eq("app_id", appId)
+					.gte("day_bucket", fromDayIso)
+					.lte("day_bucket", nowDay)
+					.order("day_bucket", { ascending: true })
+					.range(offset, to)
+			: supabase
+					.from("gateway_usage_rollup_15m_app_model")
+					.select(
+						"bucket_15m, canonical_model_id, requests, success_requests, total_tokens, total_cost_nanos",
+					)
+					.eq("app_id", appId)
+					.gte("bucket_15m", from)
+					.lte("bucket_15m", nowIso)
+					.order("bucket_15m", { ascending: true })
+					.range(offset, to);
+		const { data, error } = await query;
 
 		if (error) {
-			console.error("Error fetching app usage rollups:", error);
+			hadError = true;
+			hitPageCap = false;
+			console.error(
+				`Error fetching app usage ${useDaily ? "daily" : "15m"} rollups:`,
+				error,
+			);
 			return [];
 		}
-		if (!Array.isArray(data) || data.length === 0) break;
+		if (!Array.isArray(data) || data.length === 0) {
+			hitPageCap = false;
+			break;
+		}
 
 		for (const row of data) {
-			const createdAt = String((row as any)?.bucket_15m ?? "").trim();
+			const createdAt = String(
+				useDaily ? (row as any)?.day_bucket ?? "" : (row as any)?.bucket_15m ?? "",
+			).trim();
 			const modelId = String((row as any)?.canonical_model_id ?? "").trim();
 			const requests = Number((row as any)?.requests ?? 0);
 			const successRequests = Number((row as any)?.success_requests ?? 0);
@@ -87,8 +136,30 @@ export async function getAppUsageOverTime(
 			});
 		}
 
-		if (data.length < PAGE_SIZE) break;
+		if (data.length < PAGE_SIZE) {
+			hitPageCap = false;
+			break;
+		}
 	}
+
+	if (rows.length > 0 && hitPageCap) {
+		console.warn(
+			`App usage rows may be truncated for app=${appId} range=${range} mode=${useDaily ? "daily" : "15m"}`,
+		);
+	}
+	logUsageFetch("app_usage_over_time_query", {
+		appId,
+		range,
+		mode: useDaily ? "daily" : "15m",
+		pagesFetched,
+		rows: rows.length,
+		hitPageCap,
+		hadError,
+		maxPages,
+		pageSize: PAGE_SIZE,
+		fromIso: useDaily ? fromDayIso : from,
+		toIso: useDaily ? nowDay : nowIso,
+	});
 
 	return rows;
 }

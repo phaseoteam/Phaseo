@@ -2,10 +2,14 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getTopModels } from "./top-models";
 
 const DEFAULT_DAYS = 30;
 const DEFAULT_TOP_MODELS = 8;
 const PAGE_SIZE = 5000;
+const MAX_FILTERED_PAGES = 8;
+const MAX_FALLBACK_PAGES = 4;
+const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
 type ProviderModelRollupRow = {
 	bucket_15m: string;
@@ -30,6 +34,11 @@ export type ProviderTokenTimeseries = {
 	points: ProviderTokenSeriesPoint[];
 };
 
+function logUsageFetch(stage: string, payload: Record<string, unknown>): void {
+	if (!USAGE_FETCH_DEBUG_ENABLED) return;
+	console.info(`[gateway-usage-fetchers] ${stage}`, payload);
+}
+
 function toIsoDate(value: Date): string {
 	return value.toISOString().slice(0, 10);
 }
@@ -48,13 +57,31 @@ async function fetchProviderModelRollupRows(
 	apiProviderId: string,
 	sinceIso: string,
 	nowIso: string,
+	modelIds?: string[],
+	maxPages = MAX_FILTERED_PAGES,
 ): Promise<ProviderModelRollupRow[]> {
 	const supabase = createAdminClient();
 	const rows: ProviderModelRollupRow[] = [];
+	let hitPageCap = true;
+	let pagesFetched = 0;
+	let hadError = false;
 
-	for (let from = 0; ; from += PAGE_SIZE) {
+	if (Array.isArray(modelIds) && modelIds.length === 0) {
+		logUsageFetch("provider_model_rollup_query", {
+			providerId: apiProviderId,
+			filteredModelIds: 0,
+			pagesFetched: 0,
+			rows: 0,
+			hitPageCap: false,
+			hadError: false,
+		});
+		return rows;
+	}
+
+	for (let page = 0, from = 0; page < Math.max(1, maxPages); page += 1, from += PAGE_SIZE) {
+		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
-		const { data, error } = await supabase
+		let query = supabase
 			.from("gateway_usage_rollup_15m_model_provider")
 			.select("bucket_15m, canonical_model_id, total_tokens")
 			.eq("provider", apiProviderId)
@@ -62,18 +89,75 @@ async function fetchProviderModelRollupRows(
 			.lte("bucket_15m", nowIso)
 			.order("bucket_15m", { ascending: true })
 			.range(from, to);
+		if (Array.isArray(modelIds) && modelIds.length > 0) {
+			query = query.in("canonical_model_id", modelIds);
+		}
+		const { data, error } = await query;
 
 		if (error) {
+			hadError = true;
+			hitPageCap = false;
 			console.error("Error loading provider rollup rows for chart:", error);
 			break;
 		}
-		if (!Array.isArray(data) || data.length === 0) break;
+		if (!Array.isArray(data) || data.length === 0) {
+			hitPageCap = false;
+			break;
+		}
 
 		rows.push(...(data as ProviderModelRollupRow[]));
-		if (data.length < PAGE_SIZE) break;
+		if (data.length < PAGE_SIZE) {
+			hitPageCap = false;
+			break;
+		}
 	}
 
+	if (rows.length > 0 && hitPageCap) {
+		console.warn(
+			`Provider model token rows may be truncated for provider=${apiProviderId} pages=${maxPages}`,
+		);
+	}
+	logUsageFetch("provider_model_rollup_query", {
+		providerId: apiProviderId,
+		filteredModelIds: Array.isArray(modelIds) ? modelIds.length : null,
+		pagesFetched,
+		rows: rows.length,
+		hitPageCap,
+		hadError,
+		maxPages,
+		pageSize: PAGE_SIZE,
+	});
+
 	return rows;
+}
+
+async function fetchTopProviderModelIds(
+	apiProviderId: string,
+	sinceIso: string,
+	topModelsLimit: number,
+): Promise<string[]> {
+	if (!apiProviderId) return [];
+	const supabase = createAdminClient();
+	const { data, error } = await supabase.rpc("get_top_models_stats_tokens", {
+		p_provider: apiProviderId,
+		p_since: sinceIso,
+		p_limit: Math.max(1, Math.min(100, topModelsLimit)),
+	});
+	if (error) {
+		console.error("Error loading top provider models:", error);
+		return [];
+	}
+	const ids = (data ?? [])
+		.map((row: any) => String(row?.model_id ?? "").trim())
+		.filter(Boolean);
+	logUsageFetch("provider_model_top_ids", {
+		providerId: apiProviderId,
+		sinceIso,
+		limit: topModelsLimit,
+		count: ids.length,
+		source: "rpc:get_top_models_stats_tokens",
+	});
+	return ids;
 }
 
 async function fetchModelNames(modelIds: string[]): Promise<Map<string, string>> {
@@ -129,19 +213,50 @@ export async function getProviderModelTokenTimeseries(
 	const dayBuckets = buildDayBuckets(since, days);
 	const dayBucketSet = new Set(dayBuckets);
 
+	let preferredModelIds = await fetchTopProviderModelIds(
+		apiProviderId,
+		sinceIso,
+		Math.max(topModelsLimit * 5, topModelsLimit),
+	);
+	if (!preferredModelIds.length) {
+		const fallbackTop = await getTopModels(apiProviderId, true, Math.max(topModelsLimit * 5, topModelsLimit));
+		preferredModelIds = fallbackTop
+			.map((row) => String(row?.model_id ?? "").trim())
+			.filter(Boolean);
+		logUsageFetch("provider_model_top_ids", {
+			providerId: apiProviderId,
+			sinceIso,
+			limit: Math.max(topModelsLimit * 5, topModelsLimit),
+			count: preferredModelIds.length,
+			source: "fallback:getTopModels",
+		});
+	}
+
 	const rollupRows = await fetchProviderModelRollupRows(
 		apiProviderId,
 		sinceIso,
 		nowIso,
+		preferredModelIds,
+		MAX_FILTERED_PAGES,
 	);
-	if (!rollupRows.length) {
+	const fallbackRows = !rollupRows.length
+		? await fetchProviderModelRollupRows(
+			apiProviderId,
+			sinceIso,
+			nowIso,
+			undefined,
+			MAX_FALLBACK_PAGES,
+		)
+		: [];
+	const sourceRows = rollupRows.length > 0 ? rollupRows : fallbackRows;
+	if (!sourceRows.length) {
 		return { models: [], points: [] };
 	}
 
 	const totalByModel = new Map<string, number>();
 	const tokensByDayAndModel = new Map<string, Map<string, number>>();
 
-	for (const row of rollupRows) {
+	for (const row of sourceRows) {
 		const modelId = String(row?.canonical_model_id ?? "").trim();
 		if (!modelId) continue;
 
@@ -184,6 +299,17 @@ export async function getProviderModelTokenTimeseries(
 			});
 		}
 	}
+	logUsageFetch("provider_model_token_timeseries", {
+		providerId: apiProviderId,
+		days,
+		topModelsLimit,
+		preferredModelIds: preferredModelIds.length,
+		rollupRows: rollupRows.length,
+		fallbackRows: fallbackRows.length,
+		sourceRows: sourceRows.length,
+		models: models.length,
+		points: points.length,
+	});
 
 	return { models, points };
 }
