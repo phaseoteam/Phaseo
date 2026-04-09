@@ -65,6 +65,7 @@ import { executor as minimaxVideo } from "./minimax/video-generate";
 import { executor as bytedanceSeedVideo } from "./bytedance-seed/video-generate";
 import { executor as runwayVideo } from "./runway/video-generate";
 import { executor as minimaxMusic } from "./minimax/music-generate";
+import { executor as atlasCloudVideo } from "./atlascloud/video-generate";
 
 type Capability =
 	| "text.generate"
@@ -176,6 +177,8 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	qwen: { "text.generate": qwenText, "video.generate": alibabaVideo },
 	runway: { "video.generate": runwayVideo },
 	runwayml: { "video.generate": runwayVideo },
+	atlascloud: { "video.generate": atlasCloudVideo },
+	"atlas-cloud": { "video.generate": atlasCloudVideo },
 	"z-ai": { "text.generate": zAiText },
 	zai: { "text.generate": zaiText },
 	xiaomi: { "text.generate": xiaomiText },

@@ -9,6 +9,10 @@ import { decodeOpenAIEmbeddingsResponse } from "@protocols/openai-embeddings/dec
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import type { ProviderExecutor } from "../../types";
 
+function isVoyageProvider(providerId: string): boolean {
+	return providerId === "voyage" || providerId === "voyageai";
+}
+
 function normalizeModelName(model?: string | null): string {
 	if (!model) return "";
 	const trimmed = model.trim();
@@ -18,6 +22,95 @@ function normalizeModelName(model?: string | null): string {
 		return parts[parts.length - 1] || trimmed;
 	}
 	return trimmed;
+}
+
+function isVoyageMultimodalModel(model?: string | null): boolean {
+	return normalizeModelName(model).toLowerCase().startsWith("voyage-multimodal-");
+}
+
+function asString(value: unknown): string {
+	if (typeof value === "string") return value;
+	if (value == null) return "";
+	return String(value);
+}
+
+function isDataUrl(value: string): boolean {
+	return value.startsWith("data:");
+}
+
+function extractBase64Payload(value: string): string {
+	const trimmed = value.trim();
+	const match = /^data:[^,]*;base64,(.*)$/i.exec(trimmed);
+	if (match && match[1]) return match[1];
+	return trimmed;
+}
+
+function extractUrlString(value: unknown): string | undefined {
+	if (typeof value === "string") return value;
+	if (value && typeof value === "object" && typeof (value as any).url === "string") {
+		return (value as any).url;
+	}
+	return undefined;
+}
+
+function toVoyageMultimodalPart(part: any): Record<string, string> | null {
+	const type = typeof part?.type === "string" ? part.type : "";
+	if (type === "input_text" || type === "text") {
+		return { type: "text", text: asString(part?.text) };
+	}
+	if (type === "input_image" || type === "image_url" || type === "image") {
+		const imageValue = extractUrlString(part?.image_url ?? part?.url);
+		if (!imageValue) return null;
+		return isDataUrl(imageValue)
+			? { type: "image_base64", image_base64: extractBase64Payload(imageValue) }
+			: { type: "image_url", image_url: imageValue };
+	}
+	if (type === "input_video" || type === "video_url") {
+		const videoValue = extractUrlString(part?.video_url ?? part?.url);
+		if (!videoValue) return null;
+		return isDataUrl(videoValue)
+			? { type: "video_base64", video_base64: extractBase64Payload(videoValue) }
+			: { type: "video_url", video_url: videoValue };
+	}
+	if (typeof part === "string") {
+		return { type: "text", text: part };
+	}
+	return null;
+}
+
+function toVoyageMultimodalContent(item: unknown): Record<string, string>[] {
+	if (typeof item === "string") {
+		return [{ type: "text", text: item }];
+	}
+	if (Array.isArray(item) && item.every((entry) => typeof entry === "number")) {
+		return [{ type: "text", text: item.join(" ") }];
+	}
+	if (Array.isArray(item)) {
+		const content = item
+			.map((entry) => toVoyageMultimodalPart(entry))
+			.filter((entry): entry is Record<string, string> => entry != null);
+		if (content.length > 0) return content;
+		return [{ type: "text", text: asString(item) }];
+	}
+	if (item && typeof item === "object" && Array.isArray((item as any).content)) {
+		return toVoyageMultimodalContent((item as any).content);
+	}
+	const part = toVoyageMultimodalPart(item);
+	if (part) return [part];
+	return [{ type: "text", text: asString(item) }];
+}
+
+function toVoyageMultimodalInputs(input: unknown): Array<{ content: Record<string, string>[] }> {
+	if (Array.isArray(input)) {
+		const looksLikeSingleContentArray = input.some((entry) =>
+			Boolean(entry && typeof entry === "object" && typeof (entry as any).type === "string"),
+		);
+		if (looksLikeSingleContentArray) {
+			return [{ content: toVoyageMultimodalContent(input) }];
+		}
+		return input.map((item) => ({ content: toVoyageMultimodalContent(item) }));
+	}
+	return [{ content: toVoyageMultimodalContent(input) }];
 }
 
 function resolveTargetModel(ir: IREmbeddingsRequest, args: ExecutorExecuteArgs): string {
@@ -55,13 +148,47 @@ function buildRequestBody(ir: IREmbeddingsRequest, args: ExecutorExecuteArgs): R
 		delete encoded.user;
 	}
 
-	if (args.providerId === "voyage" || args.providerId === "voyageai") {
+	if (isVoyageProvider(args.providerId)) {
+		const voyageOptions = ir.providerOptions?.voyage;
 		// Voyage uses output_dimension instead of dimensions.
 		if (typeof ir.dimensions === "number") {
 			encoded.output_dimension = ir.dimensions;
 			delete encoded.dimensions;
 		}
+		if (
+			typeof encoded.output_dimension !== "number" &&
+			typeof voyageOptions?.outputDimension === "number"
+		) {
+			encoded.output_dimension = voyageOptions.outputDimension;
+		}
+		if (voyageOptions?.inputType) {
+			encoded.input_type = voyageOptions.inputType;
+		}
+		if (typeof voyageOptions?.truncation === "boolean") {
+			encoded.truncation = voyageOptions.truncation;
+		}
+		if (voyageOptions?.outputDtype) {
+			encoded.output_dtype = voyageOptions.outputDtype;
+		}
 		delete encoded.user;
+	}
+
+	if (isVoyageProvider(args.providerId) && isVoyageMultimodalModel(encoded.model)) {
+		encoded.inputs = toVoyageMultimodalInputs(encoded.input);
+		delete encoded.input;
+
+		const outputEncoding = typeof encoded.encoding_format === "string"
+			? (encoded.encoding_format.startsWith("base64") ? "base64" : undefined)
+			: undefined;
+		if (outputEncoding) {
+			encoded.output_encoding = outputEncoding;
+		}
+
+		// Multimodal endpoint only accepts a subset of fields.
+		delete encoded.encoding_format;
+		delete encoded.dimensions;
+		delete encoded.output_dimension;
+		delete encoded.output_dtype;
 	}
 
 	return encoded;
@@ -73,7 +200,7 @@ function usageToMeters(usage?: IREmbeddingsResponse["usage"]): Record<string, nu
 	};
 	if (!usage) return meters;
 
-	const inputTokens = usage.inputTokens ?? usage.embeddingTokens ?? 0;
+	const inputTokens = usage.inputTokens ?? usage.embeddingTokens ?? usage.totalTokens ?? 0;
 	const totalTokens = usage.totalTokens ?? inputTokens;
 	const embeddingTokens = usage.embeddingTokens ?? inputTokens;
 	meters.input_tokens = inputTokens;
@@ -92,6 +219,12 @@ function usageToMeters(usage?: IREmbeddingsResponse["usage"]): Record<string, nu
 	if (typeof usage._ext?.inputVideoTokens === "number") {
 		meters.input_video_tokens = usage._ext.inputVideoTokens;
 	}
+	if (typeof usage._ext?.imagePixels === "number") {
+		meters.image_pixels = usage._ext.imagePixels;
+	}
+	if (typeof usage._ext?.videoPixels === "number") {
+		meters.video_pixels = usage._ext.videoPixels;
+	}
 	return meters;
 }
 
@@ -105,7 +238,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(requestBody) : undefined;
 
-	const res = await fetch(openAICompatUrl(args.providerId, "/embeddings"), {
+	const endpointPath =
+		isVoyageProvider(args.providerId) && isVoyageMultimodalModel(resolveTargetModel(ir, args))
+			? "/multimodalembeddings"
+			: "/embeddings";
+	const res = await fetch(openAICompatUrl(args.providerId, endpointPath), {
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, key, {
 			"Idempotency-Key": args.requestId,

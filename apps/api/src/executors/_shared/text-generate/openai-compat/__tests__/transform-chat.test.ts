@@ -224,35 +224,6 @@ describe("openAIChatToIR", () => {
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
 		});
 
-		it("maps input_tokens/output_tokens usage aliases into IR usage", () => {
-			const response = {
-				id: "chatcmpl_usage_alias",
-				object: "chat.completion",
-				created: 1234567890,
-				model: "gpt-4o-mini",
-				choices: [
-					{
-						index: 0,
-						message: {
-							role: "assistant",
-							content: "ok",
-						},
-						finish_reason: "stop",
-					},
-				],
-				usage: {
-					input_tokens: 42,
-					output_tokens: 8,
-					total_tokens: 50,
-				},
-			};
-
-			const ir = openAIChatToIR(response, "req_usage_alias", "gpt-4o-mini", "openai");
-			expect(ir.usage?.inputTokens).toBe(42);
-			expect(ir.usage?.outputTokens).toBe(8);
-			expect(ir.usage?.totalTokens).toBe(50);
-		});
-
 		it("parses output_image blocks from structured message content", () => {
 			const response = {
 				id: "chatcmpl_img_1",

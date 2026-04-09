@@ -10,7 +10,6 @@ function main() {
 		render(<App options={options} />);
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(String(err));
-		// eslint-disable-next-line no-console
 		console.error(error.message);
 		process.exit(1);
 	}

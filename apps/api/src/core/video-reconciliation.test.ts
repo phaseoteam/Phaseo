@@ -362,4 +362,62 @@ describe("video-reconciliation provider polling", () => {
 			}),
 		);
 	});
+
+	it("polls atlascloud prediction endpoint with result fallback support", async () => {
+		const predictionId = "atlas-pred-321";
+		const job = makeBaseJob({
+			videoId: predictionId,
+			nativeId: null,
+			provider: "atlascloud",
+			model: "bytedance/seedance-2.0-pro",
+			meta: {
+				provider: "atlascloud",
+				providerTaskId: predictionId,
+				keySource: "gateway",
+				resolution: "720p",
+				quality: "standard",
+			},
+		});
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					data: {
+						id: predictionId,
+						status: "completed",
+						model: "bytedance/seedance-2.0-pro",
+						outputs: ["https://cdn.atlascloud.ai/video/out.mp4"],
+						duration: 8,
+						size: "720p",
+					},
+				}),
+			}),
+		);
+
+		const result = await fetchVideoProviderStatus(job);
+
+		expect(globalThis.fetch).toHaveBeenCalledWith(
+			`https://api.atlascloud.ai/api/v1/model/prediction/${encodeURIComponent(predictionId)}`,
+			expect.objectContaining({
+				method: "GET",
+				headers: expect.objectContaining({
+					Authorization: "Bearer gateway-atlas-key",
+				}),
+			}),
+		);
+		expect(result).toEqual(
+			expect.objectContaining({
+				status: "completed",
+				providerId: "atlascloud",
+				model: "bytedance/seedance-2.0-pro",
+				seconds: 8,
+				metaPatch: expect.objectContaining({
+					providerTaskId: predictionId,
+					atlasOutputUrl: "https://cdn.atlascloud.ai/video/out.mp4",
+				}),
+			}),
+		);
+	});
 });

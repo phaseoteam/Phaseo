@@ -12,6 +12,15 @@ import type {
 } from "@core/ir";
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
 
+function toNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim() !== "") {
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : undefined;
+	}
+	return undefined;
+}
+
 function isRecord(value: unknown): value is Record<string, any> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -79,13 +88,14 @@ export function decodeOpenAIEmbeddingsRequest(req: EmbeddingsRequest): IREmbeddi
 		(req as any)?.embedding_options;
 	const googleOptions = providerOptions?.google;
 	const mistralOptions = providerOptions?.mistral;
+	const voyageOptions = providerOptions?.voyage;
 	return {
 		model: req.model,
 		input: normalizeEmbeddingsInput(req.input),
 		encodingFormat: req.encoding_format,
 		dimensions: req.dimensions,
 		providerOptions:
-			googleOptions || mistralOptions
+			googleOptions || mistralOptions || voyageOptions
 				? {
 						google: googleOptions
 							? {
@@ -98,6 +108,20 @@ export function decodeOpenAIEmbeddingsRequest(req: EmbeddingsRequest): IREmbeddi
 									outputDtype: mistralOptions.output_dtype,
 								}
 							: undefined,
+						voyage: voyageOptions
+							? {
+									inputType: voyageOptions.input_type,
+									truncation:
+										typeof voyageOptions.truncation === "boolean"
+											? voyageOptions.truncation
+											: undefined,
+									outputDtype: voyageOptions.output_dtype,
+									outputDimension:
+										typeof voyageOptions.output_dimension === "number"
+											? voyageOptions.output_dimension
+											: undefined,
+								}
+							: undefined,
 					}
 				: undefined,
 		userId: req.user,
@@ -105,29 +129,71 @@ export function decodeOpenAIEmbeddingsRequest(req: EmbeddingsRequest): IREmbeddi
 }
 
 export function decodeOpenAIEmbeddingsResponse(payload: any): IREmbeddingsResponse {
-	const data = Array.isArray(payload?.data)
-		? payload.data.map((entry: any, index: number) => ({
-				index: typeof entry?.index === "number" ? entry.index : index,
-				embedding: Array.isArray(entry?.embedding) ? entry.embedding : [],
-			}))
-		: [];
+	const dataSource = Array.isArray(payload?.data)
+		? payload.data
+		: (Array.isArray(payload?.embeddings)
+				? payload.embeddings.map((entry: any, index: number) => {
+					if (Array.isArray(entry)) {
+						return { index, embedding: entry };
+					}
+					return {
+						index: typeof entry?.index === "number" ? entry.index : index,
+						embedding: Array.isArray(entry?.embedding) ? entry.embedding : [],
+					};
+				})
+				: []);
+	const data = dataSource.map((entry: any, index: number) => ({
+		index: typeof entry?.index === "number" ? entry.index : index,
+		embedding: Array.isArray(entry?.embedding) ? entry.embedding : [],
+	}));
 
-	const usage = payload?.usage
+	const usageRaw = payload?.usage && typeof payload.usage === "object"
+		? payload.usage
+		: undefined;
+	const inputTokens = toNumber(
+		usageRaw?.input_tokens ??
+		usageRaw?.prompt_tokens ??
+		usageRaw?.input_text_tokens ??
+		usageRaw?.text_tokens ??
+		payload?.text_tokens,
+	);
+	const totalTokens = toNumber(usageRaw?.total_tokens ?? payload?.total_tokens);
+	const embeddingTokens = toNumber(usageRaw?.embedding_tokens);
+	const inputImageTokens = toNumber(
+		usageRaw?.input_image_tokens ?? usageRaw?.input_tokens_details?.input_images,
+	);
+	const inputAudioTokens = toNumber(
+		usageRaw?.input_audio_tokens ?? usageRaw?.input_tokens_details?.input_audio,
+	);
+	const inputVideoTokens = toNumber(
+		usageRaw?.input_video_tokens ?? usageRaw?.input_tokens_details?.input_videos,
+	);
+	const imagePixels = toNumber(usageRaw?.image_pixels ?? payload?.image_pixels);
+	const videoPixels = toNumber(usageRaw?.video_pixels ?? payload?.video_pixels);
+	const hasUsage =
+		inputTokens != null ||
+		totalTokens != null ||
+		embeddingTokens != null ||
+		inputImageTokens != null ||
+		inputAudioTokens != null ||
+		inputVideoTokens != null ||
+		imagePixels != null ||
+		videoPixels != null;
+	const usage = hasUsage
 		? {
-				inputTokens: payload.usage.input_tokens ?? payload.usage.prompt_tokens ?? payload.usage.input_text_tokens,
-				totalTokens: payload.usage.total_tokens,
-				embeddingTokens: payload.usage.embedding_tokens,
-				_ext: (() => {
-					const inputImageTokens = payload.usage.input_image_tokens ?? payload.usage.input_tokens_details?.input_images;
-					const inputAudioTokens = payload.usage.input_audio_tokens ?? payload.usage.input_tokens_details?.input_audio;
-					const inputVideoTokens = payload.usage.input_video_tokens ?? payload.usage.input_tokens_details?.input_videos;
-					const ext: NonNullable<IREmbeddingsResponse["usage"]>["_ext"] = {};
-					if (typeof inputImageTokens === "number") ext.inputImageTokens = inputImageTokens;
-					if (typeof inputAudioTokens === "number") ext.inputAudioTokens = inputAudioTokens;
-					if (typeof inputVideoTokens === "number") ext.inputVideoTokens = inputVideoTokens;
-					return Object.keys(ext).length > 0 ? ext : undefined;
-				})(),
-			}
+			inputTokens,
+			totalTokens,
+			embeddingTokens,
+			_ext: (() => {
+				const ext: NonNullable<IREmbeddingsResponse["usage"]>["_ext"] = {};
+				if (inputImageTokens != null) ext.inputImageTokens = inputImageTokens;
+				if (inputAudioTokens != null) ext.inputAudioTokens = inputAudioTokens;
+				if (inputVideoTokens != null) ext.inputVideoTokens = inputVideoTokens;
+				if (imagePixels != null) ext.imagePixels = imagePixels;
+				if (videoPixels != null) ext.videoPixels = videoPixels;
+				return Object.keys(ext).length > 0 ? ext : undefined;
+			})(),
+		}
 		: undefined;
 
 	return {

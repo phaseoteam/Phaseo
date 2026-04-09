@@ -480,14 +480,11 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 	const cachedInputTokens = inputDetails?.cached_tokens;
 	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
-	const inputTokens = usage.prompt_tokens ?? usage.input_tokens ?? usage.input_text_tokens ?? 0;
-	const outputTokens = usage.completion_tokens ?? usage.output_tokens ?? usage.output_text_tokens ?? 0;
-	const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
 
 	return {
-		inputTokens,
-		outputTokens,
-		totalTokens,
+		inputTokens: usage.prompt_tokens || 0,
+		outputTokens: usage.completion_tokens || 0,
+		totalTokens: usage.total_tokens ?? ((usage.prompt_tokens || 0) + (usage.completion_tokens || 0)),
 		cachedInputTokens,
 		cachedReadTokensAreSubsetOfInput,
 		reasoningTokens,

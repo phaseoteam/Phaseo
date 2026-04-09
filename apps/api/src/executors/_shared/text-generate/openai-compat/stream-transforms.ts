@@ -1,0 +1,1047 @@
+import type { ExecutorExecuteArgs } from "@executors/types";
+import type { IRChatResponse } from "@core/ir";
+import { openAIResponsesToIR } from "./transform";
+import { openAIChatToIR } from "./transform-chat";
+import { getProviderQuirks } from "./quirks";
+import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
+import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
+
+export type StreamAdapterState = {
+	requestId: string;
+	providerId: string;
+	choiceStates: Map<number, { reasoningChunks: string[] }>;
+	aionStates?: Map<number, any>;
+};
+
+function applyStreamQuirks(chunk: any, state: StreamAdapterState, providerId: string) {
+	const quirks = getProviderQuirks(providerId);
+	if (quirks.transformStreamChunk) {
+		try {
+			quirks.transformStreamChunk({ chunk, accumulated: state });
+		} catch {
+			// ignore quirk errors to avoid breaking stream
+		}
+	}
+}
+
+function parseSseBlock(block: string): { event: string | null; data: string } {
+	const lines = block.split("\n");
+	let event: string | null = null;
+	let data = "";
+	for (const rawLine of lines) {
+		const line = rawLine.replace(/\r$/, "");
+		if (line.startsWith("event:")) {
+			event = line.slice(6).trim();
+		} else if (line.startsWith("data:")) {
+			data += line.slice(5).trimStart();
+		}
+	}
+	return { event, data };
+}
+
+function normalizeResponsesEvent(event: string | null): string | null {
+	if (!event) return event;
+	if (event === "response.reasoning.delta") return "response.reasoning_text.delta";
+	if (event === "response.reasoning_summary_text.delta") return "response.reasoning_text.delta";
+	if (event === "response.reasoning_summary.delta") return "response.reasoning_text.delta";
+	if (event === "response.output.delta") return "response.output_text.delta";
+	if (event === "response.text.delta") return "response.output_text.delta";
+	return event;
+}
+export function transformChatStream(
+	stream: ReadableStream<Uint8Array>,
+	args: ExecutorExecuteArgs,
+	state: StreamAdapterState,
+): ReadableStream<Uint8Array> {
+	const reader = stream.getReader();
+	const decoder = new TextDecoder();
+	const encoder = new TextEncoder();
+	let buf = "";
+
+	return new ReadableStream<Uint8Array>({
+		async start(controller) {
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buf += decoder.decode(value, { stream: true });
+					const frames = buf.split(/\n\n/);
+					buf = frames.pop() ?? "";
+
+					for (const raw of frames) {
+						const { data } = parseSseBlock(raw);
+						if (!data || data === "[DONE]") continue;
+						let payload: any;
+						try {
+							payload = JSON.parse(data);
+						} catch {
+							continue;
+						}
+
+						applyStreamQuirks(payload, state, args.providerId);
+						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+					}
+				}
+			} catch (err) {
+				console.error("openai compat chat stream transform failed:", err);
+			} finally {
+				controller.close();
+			}
+		},
+	});
+}
+
+export function transformResponsesStreamToChat(
+	stream: ReadableStream<Uint8Array>,
+	args: ExecutorExecuteArgs,
+	state: StreamAdapterState,
+): ReadableStream<Uint8Array> {
+	const reader = stream.getReader();
+	const decoder = new TextDecoder();
+	const encoder = new TextEncoder();
+	let buf = "";
+
+	// State tracking for the response
+	let nativeResponseId: string | null = null;
+	let created = Math.floor(Date.now() / 1000);
+	let finalResponse: any = null;
+	// Buffer tool calls across deltas (Responses API sends tool calls incrementally).
+	// OpenAI often uses item_id (fc_*) in argument-delta events and call_id (call_*) in output-item events.
+	// We alias both to a canonical tool id (prefer call_id) so chat deltas stay consistent.
+	const toolBuffer = new Map<string, { arguments: string; name?: string; output_index: number; tool_index: number }>();
+	const toolAlias = new Map<string, string>();
+	const toolIndexById = new Map<string, number>();
+	let nextToolIndex = 0;
+
+	const ensureToolIndex = (id: string): number => {
+		const existing = toolIndexById.get(id);
+		if (typeof existing === "number") return existing;
+		const idx = nextToolIndex++;
+		toolIndexById.set(id, idx);
+		return idx;
+	};
+
+	const aliasToolId = (rawId: unknown, canonicalId: string) => {
+		if (typeof rawId !== "string" || !rawId) return;
+		toolAlias.set(rawId, canonicalId);
+	};
+
+	const canonicalToolId = (rawId: unknown): string | null => {
+		if (typeof rawId !== "string" || !rawId) return null;
+		return toolAlias.get(rawId) ?? rawId;
+	};
+
+	const emit = async (payload: any, controller: ReadableStreamDefaultController<Uint8Array>) => {
+		applyStreamQuirks(payload, state, args.providerId);
+		controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+	};
+
+	const emitDelta = async (
+		delta: Record<string, unknown>,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+		index = 0,
+		extra?: Record<string, unknown>,
+	) => {
+		const chunk = {
+			object: "chat.completion.chunk",
+			nativeResponseId,
+			created,
+			model: args.providerModelSlug ?? args.ir.model,
+			provider: args.providerId,
+			choices: [{
+				index,
+				delta,
+				finish_reason: null,
+				...(extra ?? {}),
+			}],
+		};
+		await emit(chunk, controller);
+	};
+
+	return new ReadableStream<Uint8Array>({
+		async start(controller) {
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buf += decoder.decode(value, { stream: true });
+					const frames = buf.split(/\n\n/);
+					buf = frames.pop() ?? "";
+
+					for (const raw of frames) {
+						const { event, data } = parseSseBlock(raw);
+						if (!data || data === "[DONE]") continue;
+						let payload: any;
+						try {
+							payload = JSON.parse(data);
+						} catch {
+							continue;
+						}
+
+						// Some providers stream chat chunks even on /responses
+						if (payload?.object === "chat.completion.chunk" || payload?.object === "chat.completion") {
+							await emit(payload, controller);
+							continue;
+						}
+
+						switch (normalizeResponsesEvent(event)) {
+							case "response.created":
+								nativeResponseId = payload?.response?.id ?? payload?.id ?? nativeResponseId;
+								created = payload?.response?.created_at ?? payload?.created_at ?? created;
+								break;
+							case "response.output_text.delta":
+								if (typeof payload?.delta === "string") {
+									await emitDelta({ role: "assistant", content: payload.delta }, controller, payload?.output_index ?? 0, payload?.logprobs ? { logprobs: payload.logprobs } : undefined);
+								}
+								break;
+							case "response.reasoning_text.delta":
+								if (typeof payload?.delta === "string") {
+									await emitDelta({ role: "assistant", reasoning_content: payload.delta }, controller, payload?.output_index ?? 0);
+								}
+								break;
+							case "response.function_call_arguments.delta": {
+								const resolvedId = canonicalToolId(payload?.item_id);
+								if (!resolvedId) break;
+								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
+									toolBuffer.get(resolvedId) ?? {
+									arguments: "",
+									output_index: payload?.output_index ?? 0,
+									tool_index: ensureToolIndex(resolvedId),
+								};
+								if (typeof payload?.delta === "string") {
+									entry.arguments += payload.delta;
+								}
+								toolBuffer.set(resolvedId, entry);
+								await emitDelta({
+									role: "assistant",
+									tool_calls: [{
+										index: entry.tool_index,
+										id: resolvedId,
+										type: "function",
+										function: {
+											name: entry.name ?? "",
+											arguments: entry.arguments ?? "",
+										},
+									}],
+								}, controller, entry.output_index ?? 0);
+								break;
+							}
+							case "response.output_item.added":
+							case "response.output_item.done": {
+								const item = payload?.item;
+								const itemType = String(item?.type ?? "").toLowerCase();
+								if (itemType !== "function_call" && itemType !== "tool_call") break;
+								const canonicalId =
+									canonicalToolId(item?.call_id) ??
+									canonicalToolId(item?.id) ??
+									canonicalToolId(payload?.item_id);
+								if (!canonicalId) break;
+								aliasToolId(item?.call_id, canonicalId);
+								aliasToolId(item?.id, canonicalId);
+								aliasToolId(payload?.item_id, canonicalId);
+								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
+									toolBuffer.get(canonicalId) ?? {
+									arguments: "",
+									output_index: payload?.output_index ?? 0,
+									tool_index: ensureToolIndex(canonicalId),
+								};
+								if (typeof item?.name === "string") {
+									entry.name = item.name;
+								}
+								if (typeof item?.arguments === "string") {
+									entry.arguments = item.arguments;
+								}
+								toolBuffer.set(canonicalId, entry);
+								await emitDelta({
+									role: "assistant",
+									tool_calls: [{
+										index: entry.tool_index,
+										id: canonicalId,
+										type: "function",
+										function: {
+											name: entry.name ?? "",
+											arguments: entry.arguments ?? "",
+										},
+									}],
+								}, controller, entry.output_index ?? 0);
+								break;
+							}
+							case "response.function_call_arguments.done": {
+								const resolvedId = canonicalToolId(payload?.item_id);
+								if (!resolvedId) break;
+								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
+									toolBuffer.get(resolvedId) ?? {
+									arguments: "",
+									output_index: payload?.output_index ?? 0,
+									tool_index: ensureToolIndex(resolvedId),
+								};
+								if (typeof payload?.arguments === "string") {
+									entry.arguments = payload.arguments;
+								}
+								if (typeof payload?.name === "string") {
+									entry.name = payload.name;
+								}
+								toolBuffer.set(resolvedId, entry);
+								await emitDelta({
+									role: "assistant",
+									tool_calls: [{
+										index: entry.tool_index,
+										id: resolvedId,
+										type: "function",
+										function: {
+											name: entry.name ?? "",
+											arguments: entry.arguments ?? "",
+										},
+									}],
+								}, controller, entry.output_index ?? 0);
+								break;
+							}
+							case "response.completed":
+								finalResponse = payload?.response ?? finalResponse;
+								break;
+							case "response.failed":
+							case "error":
+								await emit({ object: "error", message: payload?.error?.message ?? "stream_error" }, controller);
+								break;
+							default:
+								break;
+						}
+					}
+				}
+
+				if (finalResponse) {
+					const ir = openAIResponsesToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
+					const finalChunk = encodeOpenAIChatResponse(ir, args.requestId);
+					await emit(finalChunk, controller);
+				}
+			} catch (err) {
+				console.error("openai compat responses->chat stream transform failed:", err);
+			} finally {
+				controller.close();
+			}
+		},
+	});
+}
+
+type ResponsesStreamChoiceState = {
+	text: string;
+	reasoning: string;
+	finishReason?: string | null;
+	messageOutputIndex?: number;
+	reasoningOutputIndex?: number;
+	messageItemId?: string;
+	reasoningItemId?: string;
+	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number; emittedAdded?: boolean }>;
+	emittedText?: boolean;
+	emittedReasoning?: boolean;
+};
+
+export function transformChatStreamToResponses(
+	stream: ReadableStream<Uint8Array>,
+	args: ExecutorExecuteArgs,
+	state: StreamAdapterState,
+): ReadableStream<Uint8Array> {
+	const reader = stream.getReader();
+	const decoder = new TextDecoder();
+	const encoder = new TextEncoder();
+	let buf = "";
+
+	let mode: "unknown" | "responses" | "chat" = "unknown";
+	let createdAt = Math.floor(Date.now() / 1000);
+	let responseId: string | null = args.requestId ?? null;
+	let nativeResponseId: string | null = null;
+	let model = args.providerModelSlug ?? args.ir.model;
+	let finalResponse: any = null;
+	let nextOutputIndex = 0;
+	const isMiniMaxToolInterop =
+		(args.providerId === "minimax" || args.providerId === "minimax-lightning") &&
+		((Array.isArray(args.ir.tools) && args.ir.tools.length > 0) ||
+			typeof args.ir.toolChoice === "object" ||
+			args.ir.toolChoice === "required");
+
+	const choiceStates = new Map<number, ResponsesStreamChoiceState>();
+
+	const getChoiceState = (index: number): ResponsesStreamChoiceState => {
+		let entry = choiceStates.get(index);
+		if (!entry) {
+			entry = {
+				text: "",
+				reasoning: "",
+				toolCalls: new Map(),
+			};
+			choiceStates.set(index, entry);
+		}
+		return entry;
+	};
+
+	const ensureMessageIndex = (choiceIndex: number, entry: ResponsesStreamChoiceState) => {
+		if (entry.messageOutputIndex == null) {
+			entry.messageOutputIndex = nextOutputIndex++;
+			entry.messageItemId = `msg_${args.requestId}_${choiceIndex}`;
+		}
+		return { outputIndex: entry.messageOutputIndex, itemId: entry.messageItemId! };
+	};
+
+	const ensureReasoningIndex = (choiceIndex: number, entry: ResponsesStreamChoiceState) => {
+		if (entry.reasoningOutputIndex == null) {
+			entry.reasoningOutputIndex = nextOutputIndex++;
+			entry.reasoningItemId = `reasoning_${args.requestId}_${choiceIndex}`;
+		}
+		return { outputIndex: entry.reasoningOutputIndex, itemId: entry.reasoningItemId! };
+	};
+
+	const ensureToolCallState = (
+		choiceIndex: number,
+		toolIndex: number,
+		entry: ResponsesStreamChoiceState,
+		toolId?: string,
+	) => {
+		let tool = entry.toolCalls.get(toolIndex);
+		if (!tool) {
+			tool = {
+				id: toolId ?? `call_${args.requestId}_${choiceIndex}_${toolIndex}`,
+				name: "",
+				arguments: "",
+				outputIndex: nextOutputIndex++,
+				emittedAdded: false,
+			};
+			entry.toolCalls.set(toolIndex, tool);
+		}
+		return tool;
+	};
+
+	const emitEvent = async (
+		eventName: string,
+		payload: any,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+	};
+
+	const emitCreated = async (controller: ReadableStreamDefaultController<Uint8Array>) => {
+		await emitEvent("response.created", {
+			response: {
+				id: responseId ?? args.requestId,
+				created_at: createdAt,
+				model,
+			},
+		}, controller);
+	};
+
+	return new ReadableStream<Uint8Array>({
+		async start(controller) {
+			let createdEmitted = false;
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buf += decoder.decode(value, { stream: true });
+					const frames = buf.split(/\n\n/);
+					buf = frames.pop() ?? "";
+
+					for (const raw of frames) {
+						const { event, data } = parseSseBlock(raw);
+						if (!data || data === "[DONE]") continue;
+						let payload: any;
+						try {
+							payload = JSON.parse(data);
+						} catch {
+							continue;
+						}
+
+						const isChatPayload =
+							payload?.object === "chat.completion.chunk" ||
+							payload?.object === "chat.completion" ||
+							Array.isArray(payload?.choices);
+						const isResponsesPayload =
+							(event && event.startsWith("response.")) ||
+							payload?.object === "response" ||
+							payload?.response;
+
+						if (mode === "unknown") {
+							if (isResponsesPayload && !isChatPayload) mode = "responses";
+							else if (isChatPayload) mode = "chat";
+						}
+
+						if (mode === "responses" && !isChatPayload) {
+							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							controller.enqueue(
+								encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`)
+							);
+							continue;
+						}
+
+						if (!isChatPayload) continue;
+
+						mode = "chat";
+						applyStreamQuirks(payload, state, args.providerId);
+
+						if (!createdEmitted) {
+							if (payload?.id) responseId = payload.id;
+							if (payload?.created) createdAt = payload.created;
+							if (payload?.model) model = payload.model;
+							await emitCreated(controller);
+							createdEmitted = true;
+						}
+
+						if (payload?.id) nativeResponseId = payload.id;
+						if (payload?.created) createdAt = payload.created;
+						if (payload?.model) model = payload.model;
+
+						finalResponse = accumulateChatCompletion(finalResponse, payload);
+
+						if (Array.isArray(payload?.choices)) {
+							for (const choice of payload.choices) {
+								const choiceIndex = Number(choice.index ?? 0);
+								const entry = getChoiceState(choiceIndex);
+								if (choice?.finish_reason) {
+									entry.finishReason = choice.finish_reason;
+								}
+
+								const deltaContent = choice?.delta?.content;
+								if (typeof deltaContent === "string" && deltaContent.length > 0) {
+									entry.text += deltaContent;
+									if (!isMiniMaxToolInterop) {
+										entry.emittedText = true;
+										const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+										await emitEvent("response.output_text.delta", {
+											delta: deltaContent,
+											output_index: outputIndex,
+											item_id: itemId,
+										}, controller);
+									}
+								}
+
+								const deltaReasoning = choice?.delta?.reasoning_content;
+								if (typeof deltaReasoning === "string" && deltaReasoning.length > 0) {
+									entry.reasoning += deltaReasoning;
+									entry.emittedReasoning = true;
+									const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+									await emitEvent("response.reasoning_text.delta", {
+										delta: deltaReasoning,
+										output_index: outputIndex,
+										item_id: itemId,
+									}, controller);
+								}
+
+								const toolDeltas = Array.isArray(choice?.delta?.tool_calls) ? choice.delta.tool_calls : [];
+								for (const toolDelta of toolDeltas) {
+									const toolIndex = Number(toolDelta?.index ?? 0);
+									const tool = ensureToolCallState(choiceIndex, toolIndex, entry, toolDelta?.id);
+									if (typeof toolDelta?.function?.name === "string") {
+										tool.name += toolDelta.function.name;
+									}
+									if (typeof toolDelta?.function?.arguments === "string") {
+										tool.arguments += toolDelta.function.arguments;
+										if (!tool.emittedAdded) {
+											await emitEvent("response.output_item.added", {
+												output_index: tool.outputIndex,
+												item: {
+													type: "function_call",
+													id: tool.id,
+													call_id: tool.id,
+													name: tool.name,
+													arguments: tool.arguments,
+													status: "in_progress",
+												},
+											}, controller);
+											tool.emittedAdded = true;
+										}
+										await emitEvent("response.function_call_arguments.delta", {
+											item_id: tool.id,
+											output_index: tool.outputIndex,
+											delta: toolDelta.function.arguments,
+										}, controller);
+									}
+								}
+
+								const message = choice?.message;
+								if (message && payload?.object === "chat.completion") {
+									if (typeof message.content === "string" && message.content.length > 0) {
+										if (entry.text.length === 0) {
+											entry.text = message.content;
+											ensureMessageIndex(choiceIndex, entry);
+										}
+									}
+									if (typeof message.reasoning_content === "string" && message.reasoning_content.length > 0) {
+										if (entry.reasoning.length === 0) {
+											entry.reasoning = message.reasoning_content;
+											ensureReasoningIndex(choiceIndex, entry);
+										}
+									}
+									if (Array.isArray(message.tool_calls)) {
+										for (const toolCall of message.tool_calls) {
+											const toolIndex = Number(toolCall?.index ?? 0);
+											const tool = ensureToolCallState(choiceIndex, toolIndex, entry, toolCall?.id);
+											if (typeof toolCall?.function?.name === "string") {
+												tool.name = toolCall.function.name;
+											}
+											if (typeof toolCall?.function?.arguments === "string") {
+												tool.arguments = toolCall.function.arguments;
+											}
+											if (!tool.emittedAdded) {
+												await emitEvent("response.output_item.added", {
+													output_index: tool.outputIndex,
+													item: {
+														type: "function_call",
+														id: tool.id,
+														call_id: tool.id,
+														name: tool.name,
+														arguments: tool.arguments,
+														status: "in_progress",
+													},
+												}, controller);
+												tool.emittedAdded = true;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (mode === "chat") {
+					// MiniMax can emit XML-style tool invocations (<invoke ...>) in text.
+					// For tool requests, parse text at the end so /responses stream emits canonical function_call events.
+					if (isMiniMaxToolInterop) {
+						for (const [choiceIndex, entry] of choiceStates.entries()) {
+							const parsed = parseMinimaxInterleavedText(entry.text);
+							entry.text = parsed.main;
+							if (entry.reasoning.length === 0 && parsed.reasoning.length > 0) {
+								entry.reasoning = parsed.reasoning.join("");
+							}
+							if (entry.toolCalls.size === 0 && parsed.toolCalls.length > 0) {
+								parsed.toolCalls.forEach((toolCall, toolIndex) => {
+									const tool = ensureToolCallState(choiceIndex, toolIndex, entry);
+									tool.name = toolCall.name;
+									tool.arguments = toolCall.arguments;
+								});
+								entry.finishReason = entry.finishReason ?? "tool_calls";
+							}
+						}
+					}
+
+					for (const [choiceIndex, entry] of choiceStates.entries()) {
+						if (entry.text.length > 0 && !entry.emittedText) {
+							const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+							await emitEvent("response.output_text.delta", {
+								delta: entry.text,
+								output_index: outputIndex,
+								item_id: itemId,
+							}, controller);
+							entry.emittedText = true;
+						}
+						if (entry.reasoning.length > 0 && !entry.emittedReasoning) {
+							const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+							await emitEvent("response.reasoning_text.delta", {
+								delta: entry.reasoning,
+								output_index: outputIndex,
+								item_id: itemId,
+							}, controller);
+							entry.emittedReasoning = true;
+						}
+					}
+
+					for (const entry of choiceStates.values()) {
+						for (const tool of entry.toolCalls.values()) {
+							if (!tool.emittedAdded) {
+								await emitEvent("response.output_item.added", {
+									output_index: tool.outputIndex,
+									item: {
+										type: "function_call",
+										id: tool.id,
+										call_id: tool.id,
+										name: tool.name,
+										arguments: tool.arguments,
+										status: "in_progress",
+									},
+								}, controller);
+								tool.emittedAdded = true;
+							}
+							await emitEvent("response.function_call_arguments.done", {
+								item_id: tool.id,
+								output_index: tool.outputIndex,
+								name: tool.name,
+								arguments: tool.arguments,
+							}, controller);
+							await emitEvent("response.output_item.done", {
+								output_index: tool.outputIndex,
+								item: {
+									type: "function_call",
+									id: tool.id,
+									call_id: tool.id,
+									name: tool.name,
+									arguments: tool.arguments,
+									status: "completed",
+								},
+							}, controller);
+						}
+					}
+
+					if (!createdEmitted) {
+						await emitCreated(controller);
+						createdEmitted = true;
+					}
+
+					if (finalResponse) {
+						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
+						const usage = encodeResponsesUsageFromIR(ir.usage);
+						const completion = deriveResponsesCompletionFromFinish(ir.choices?.[0]?.finishReason);
+						const encoded = encodeOpenAIResponsesResponse(ir, args.requestId);
+						const output =
+							Array.isArray(encoded.output) && encoded.output.length > 0
+								? encoded.output
+								: buildResponsesOutputFromState(choiceStates, args.requestId);
+						const response = {
+							id: args.requestId,
+							object: "response",
+							created_at: ir.created ?? createdAt,
+							status: completion.status,
+							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
+							model: ir.model ?? model,
+							output,
+							usage,
+							nativeResponseId: ir.nativeId ?? nativeResponseId,
+						};
+						await emitEvent("response.completed", { response }, controller);
+					}
+				}
+			} catch (err) {
+				console.error("openai compat chat->responses stream transform failed:", err);
+			} finally {
+				controller.close();
+			}
+		},
+	});
+}
+
+function buildResponsesOutputFromState(
+	choiceStates: Map<number, ResponsesStreamChoiceState>,
+	requestId: string,
+) {
+	const outputItems: Array<{ index: number; item: any }> = [];
+	for (const [choiceIndex, entry] of choiceStates.entries()) {
+		if (entry.reasoningOutputIndex != null && entry.reasoning.length > 0) {
+			outputItems.push({
+				index: entry.reasoningOutputIndex,
+				item: {
+					type: "reasoning",
+					id: entry.reasoningItemId ?? `reasoning_${requestId}_${choiceIndex}`,
+					status: "completed",
+					content: [{ type: "output_text", text: entry.reasoning, annotations: [] }],
+				},
+			});
+		}
+		if (entry.messageOutputIndex != null && entry.text.length > 0) {
+			outputItems.push({
+				index: entry.messageOutputIndex,
+				item: {
+					type: "message",
+					id: entry.messageItemId ?? `msg_${requestId}_${choiceIndex}`,
+					status: "completed",
+					role: "assistant",
+					content: [{ type: "output_text", text: entry.text, annotations: [] }],
+				},
+			});
+		}
+		for (const tool of entry.toolCalls.values()) {
+			outputItems.push({
+				index: tool.outputIndex,
+				item: {
+					type: "function_call",
+					call_id: tool.id,
+					name: tool.name,
+					arguments: tool.arguments,
+				},
+			});
+		}
+	}
+	outputItems.sort((a, b) => a.index - b.index);
+	return outputItems.map((entry) => entry.item);
+}
+
+function deriveResponsesCompletionFromFinish(finishReason?: string | null): {
+	status: "completed" | "incomplete" | "failed";
+	incompleteDetails?: { reason: string };
+} {
+	if (finishReason === "error") {
+		return { status: "failed" };
+	}
+	if (finishReason === "length" || finishReason === "max_tokens") {
+		return {
+			status: "incomplete",
+			incompleteDetails: { reason: "max_output_tokens" },
+		};
+	}
+	if (finishReason === "content_filter") {
+		return {
+			status: "incomplete",
+			incompleteDetails: { reason: "content_filter" },
+		};
+	}
+	return { status: "completed" };
+}
+
+function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
+	if (!usage) return undefined;
+	const inputDetails: Record<string, number> = {};
+	const outputDetails: Record<string, number> = {};
+	if (typeof usage.cachedInputTokens === "number") {
+		inputDetails.cached_tokens = usage.cachedInputTokens;
+	}
+	if (typeof usage._ext?.inputImageTokens === "number") {
+		inputDetails.input_images = usage._ext.inputImageTokens;
+	}
+	if (typeof usage._ext?.inputAudioTokens === "number") {
+		inputDetails.input_audio = usage._ext.inputAudioTokens;
+	}
+	if (typeof usage._ext?.inputVideoTokens === "number") {
+		inputDetails.input_videos = usage._ext.inputVideoTokens;
+	}
+	if (typeof usage.reasoningTokens === "number") {
+		outputDetails.reasoning_tokens = usage.reasoningTokens;
+	}
+	if (typeof usage._ext?.cachedWriteTokens === "number") {
+		outputDetails.cached_tokens = usage._ext.cachedWriteTokens;
+	}
+	if (typeof usage._ext?.outputImageTokens === "number") {
+		outputDetails.output_images = usage._ext.outputImageTokens;
+	}
+	if (typeof usage._ext?.outputAudioTokens === "number") {
+		outputDetails.output_audio = usage._ext.outputAudioTokens;
+	}
+	if (typeof usage._ext?.outputVideoTokens === "number") {
+		outputDetails.output_videos = usage._ext.outputVideoTokens;
+	}
+
+	const out: any = {
+		input_tokens: usage.inputTokens,
+		output_tokens: usage.outputTokens,
+		total_tokens: usage.totalTokens,
+	};
+	if (usage.cachedReadTokensAreSubsetOfInput === true) {
+		out.cached_read_tokens_are_subset_of_input = true;
+	}
+	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
+	if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
+	return out;
+}
+
+function isChatCompletionResponse(payload: any): boolean {
+	if (!payload || !Array.isArray(payload.choices)) return false;
+	return payload.choices.some((choice: any) => choice?.message || choice?.delta);
+}
+
+function parseUsageNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim() !== "") {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+function mergeUsageDetails(prev: any, next: any): any {
+	if (!prev || typeof prev !== "object") return next;
+	if (!next || typeof next !== "object") return prev;
+	const merged: Record<string, any> = { ...prev, ...next };
+	const keys = new Set<string>([
+		...Object.keys(prev),
+		...Object.keys(next),
+	]);
+	for (const key of keys) {
+		const prevValue = parseUsageNumber(prev[key]);
+		const nextValue = parseUsageNumber(next[key]);
+		if (prevValue == null && nextValue == null) continue;
+		if (prevValue == null) {
+			merged[key] = nextValue;
+			continue;
+		}
+		if (nextValue == null) {
+			merged[key] = prevValue;
+			continue;
+		}
+		merged[key] = Math.max(prevValue, nextValue);
+	}
+	return merged;
+}
+
+function mergeUsageSnapshots(prev: any, next: any): any {
+	if (!prev || typeof prev !== "object") return next;
+	if (!next || typeof next !== "object") return prev;
+
+	const merged: Record<string, any> = { ...prev, ...next };
+	const numericFields = [
+		"prompt_tokens",
+		"completion_tokens",
+		"total_tokens",
+		"input_tokens",
+		"output_tokens",
+		"input_text_tokens",
+		"output_text_tokens",
+	];
+	for (const field of numericFields) {
+		const prevValue = parseUsageNumber(prev[field]);
+		const nextValue = parseUsageNumber(next[field]);
+		if (prevValue == null && nextValue == null) continue;
+		if (prevValue == null) {
+			merged[field] = nextValue;
+			continue;
+		}
+		if (nextValue == null) {
+			merged[field] = prevValue;
+			continue;
+		}
+		merged[field] = Math.max(prevValue, nextValue);
+	}
+
+	const detailFields = [
+		"input_tokens_details",
+		"output_tokens_details",
+		"prompt_tokens_details",
+		"completion_tokens_details",
+	];
+	for (const field of detailFields) {
+		merged[field] = mergeUsageDetails(prev[field], next[field]);
+		if (!merged[field] || typeof merged[field] !== "object") {
+			delete merged[field];
+		}
+	}
+
+	const inputTokens = parseUsageNumber(merged.input_tokens) ?? parseUsageNumber(merged.prompt_tokens) ?? 0;
+	const outputTokens = parseUsageNumber(merged.output_tokens) ?? parseUsageNumber(merged.completion_tokens) ?? 0;
+	const minTotal = inputTokens + outputTokens;
+	const mergedTotal = parseUsageNumber(merged.total_tokens);
+	if (mergedTotal == null || mergedTotal < minTotal) {
+		merged.total_tokens = minTotal;
+	}
+
+	// Reconcile conflicting aliases only when both aliases are already present.
+	// Do not synthesize new alias fields into raw upstream payloads.
+	const inputAliasA = parseUsageNumber(merged.input_tokens);
+	const inputAliasB = parseUsageNumber(merged.prompt_tokens);
+	if (inputAliasA != null && inputAliasB != null) {
+		const canonical = Math.max(inputAliasA, inputAliasB);
+		merged.input_tokens = canonical;
+		merged.prompt_tokens = canonical;
+	}
+
+	const outputAliasA = parseUsageNumber(merged.output_tokens);
+	const outputAliasB = parseUsageNumber(merged.completion_tokens);
+	if (outputAliasA != null && outputAliasB != null) {
+		const canonical = Math.max(outputAliasA, outputAliasB);
+		merged.output_tokens = canonical;
+		merged.completion_tokens = canonical;
+	}
+
+	return merged;
+}
+
+function accumulateChatCompletion(finalResponse: any, payload: any): any {
+	if (!payload || !Array.isArray(payload?.choices)) {
+		if (payload?.usage && finalResponse) {
+			finalResponse.usage = mergeUsageSnapshots(finalResponse.usage, payload.usage);
+		}
+		return finalResponse;
+	}
+
+	let response = finalResponse;
+	if (!response) {
+		response = {
+			id: payload.id,
+			object: payload.object ?? "chat.completion",
+			created: payload.created,
+			model: payload.model,
+			choices: [],
+		};
+	}
+
+	for (const chunk of payload.choices) {
+		const idx = chunk.index || 0;
+		if (!response.choices[idx]) {
+			response.choices[idx] = {
+				index: idx,
+				message: { role: "assistant", content: "" },
+				finish_reason: null,
+			};
+		}
+		const choice = response.choices[idx];
+
+		if (chunk.message) {
+			const message = chunk.message;
+			const previousMessage = choice.message ?? { role: "assistant", content: "" };
+			choice.message = {
+				role: message.role || previousMessage.role || "assistant",
+				content: message.content ?? previousMessage.content ?? "",
+				...(message.tool_calls ? { tool_calls: message.tool_calls } : {}),
+				...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : previousMessage.reasoning_content ? { reasoning_content: previousMessage.reasoning_content } : {}),
+				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
+				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
+				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(Array.isArray(message._contentParts)
+					? { _contentParts: message._contentParts }
+					: Array.isArray(previousMessage._contentParts)
+						? { _contentParts: previousMessage._contentParts }
+						: {}),
+			};
+		}
+
+		if (chunk.delta?.content) {
+			choice.message.content = (choice.message.content || "") + chunk.delta.content;
+		}
+		if (chunk.delta?.reasoning_content) {
+			choice.message.reasoning_content =
+				(choice.message.reasoning_content || "") + chunk.delta.reasoning_content;
+		}
+		if (chunk.delta?.reasoning) {
+			choice.message.reasoning =
+				(choice.message.reasoning || "") + chunk.delta.reasoning;
+		}
+		if (chunk.delta?.tool_calls) {
+			if (!choice.message.tool_calls) choice.message.tool_calls = [];
+			// Accumulate tool calls
+			for (const tcDelta of chunk.delta.tool_calls) {
+				const tcIdx = tcDelta.index || 0;
+				if (!choice.message.tool_calls[tcIdx]) {
+					choice.message.tool_calls[tcIdx] = {
+						id: tcDelta.id || "",
+						type: "function",
+						function: { name: "", arguments: "" },
+					};
+				}
+				const tc = choice.message.tool_calls[tcIdx];
+				if (tcDelta.id) tc.id = tcDelta.id;
+				if (tcDelta.function?.name) tc.function.name += tcDelta.function.name;
+				if (tcDelta.function?.arguments) tc.function.arguments += tcDelta.function.arguments;
+			}
+		}
+		if (Array.isArray(chunk.delta?.images) && chunk.delta.images.length > 0) {
+			if (!Array.isArray(choice.message.images)) {
+				choice.message.images = [];
+			}
+			choice.message.images.push(...chunk.delta.images);
+		}
+		if (Array.isArray(chunk.delta?.audios) && chunk.delta.audios.length > 0) {
+			if (!Array.isArray(choice.message.audios)) {
+				choice.message.audios = [];
+			}
+			choice.message.audios.push(...chunk.delta.audios);
+		}
+		if (chunk.finish_reason) {
+			choice.finish_reason = chunk.finish_reason;
+		}
+		if (chunk.logprobs) {
+			choice.logprobs = chunk.logprobs;
+		}
+	}
+
+	if (payload?.usage) {
+		response.usage = mergeUsageSnapshots(response.usage, payload.usage);
+	}
+
+	return response;
+}
+
+
