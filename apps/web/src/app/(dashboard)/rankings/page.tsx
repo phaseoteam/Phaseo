@@ -5,6 +5,7 @@
 
 import { Suspense } from "react";
 import { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 import { PerformanceLandscapePanel } from "@/components/(rankings)/PerformanceLandscapePanel";
 import { PerformanceLeaderboard } from "@/components/(rankings)/PerformanceLeaderboard";
 import { MarketShareStackedBar } from "@/components/(rankings)/MarketShareStackedBar";
@@ -36,28 +37,24 @@ import {
     getAppImageUrlsByIds,
 } from "@/lib/fetchers/rankings/getRankingsData";
 
-export const metadata: Metadata = {
-    title: "AI Model Rankings - Usage Statistics & Performance | AI Stats",
-    description:
-        "Real-time rankings of AI models by usage, performance, and reliability. Compare costs, latency, and throughput across providers using data from AI Stats Gateway.",
-    keywords: [
-        "AI rankings",
-        "model usage",
-        "AI statistics",
-        "model performance",
-        "LLM rankings",
-        "AI model comparison",
-        "model costs",
-        "model latency",
-    ],
-    alternates: { canonical: "/rankings" },
-    openGraph: {
-        title: "AI Model Rankings - Live Usage Statistics",
-        description:
-            "Compare AI models by usage, cost, latency, and throughput with live gateway data, provider breakdowns, and performance rankings from AI Stats.",
-        type: "website",
-    },
-};
+export const metadata: Metadata = buildMetadata({
+	title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
+	description:
+		"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
+	path: "/rankings",
+	keywords: [
+		"AI model rankings",
+		"LLM rankings",
+		"model latency",
+		"model throughput",
+		"AI usage statistics",
+	],
+	openGraph: {
+		title: "AI Model Rankings: Live Usage Statistics",
+		description:
+			"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
+	},
+});
 
 export default async function RankingsPage() {
     return (
