@@ -22,6 +22,14 @@ async function fetchModelForMetadata(modelId: string, includeHidden: boolean) {
 	}
 }
 
+function decodeRouteSegment(value: string): string {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
+}
+
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
@@ -34,7 +42,7 @@ export async function generateMetadata(props: {
 	const model = await fetchModelForMetadata(modelId, includeHidden);
 	const path = getModelPath(modelId);
 	const imagePath = `/og/models/${modelId}`;
-	const fallbackModelLabel = decodeURIComponent(
+	const fallbackModelLabel = decodeRouteSegment(
 		modelId.split("/").filter(Boolean).pop() ?? modelId,
 	).trim();
 	const fallbackModelName = fallbackModelLabel || "AI model";
