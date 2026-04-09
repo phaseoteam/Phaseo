@@ -745,7 +745,7 @@ export const RerankSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).passthrough().transform((obj) => {
+}).transform((obj) => {
     const next: any = { ...obj };
     if (!("top_n" in next) && typeof next.top_k === "number") {
         next.top_n = next.top_k;

@@ -1768,7 +1768,7 @@ type RerankDocument = interface{}
 
 type RerankRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
-	Documents interface{} `json:"documents"`
+	Documents []interface{} `json:"documents"`
 	MaxChunksPerDoc *int `json:"max_chunks_per_doc,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`

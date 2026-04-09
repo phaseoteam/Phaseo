@@ -985,7 +985,7 @@ module AiStats
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] documents
-    #   @return [Array<String>, Array<Hash{String => Object}>]
+    #   @return [Array<String, Hash{String => Object}>]
     # @!attribute [rw] max_chunks_per_doc
     #   @return [Integer, nil]
     # @!attribute [rw] metadata

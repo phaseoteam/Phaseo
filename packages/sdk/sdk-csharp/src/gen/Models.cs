@@ -1684,7 +1684,7 @@ public sealed class RerankRequest
 	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("documents")]
-	public object Documents { get; set; }
+	public List<object> Documents { get; set; }
 
 	[JsonPropertyName("max_chunks_per_doc")]
 	public int? MaxChunksPerDoc { get; set; }
