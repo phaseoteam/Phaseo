@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, Coins, LockOpen, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
 import HomeOpenSourceSection from "@/components/landingPage/Home/HomeOpenSourceSection";
@@ -14,14 +15,19 @@ import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilit
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
-	title: "One API for AI Models | AI Stats Gateway",
+export const metadata: Metadata = buildMetadata({
+	title: "AI Models, Benchmarks & Gateway API",
 	description:
-		"AI Stats Gateway gives teams one OpenAI-compatible API for multiple model providers, transparent pricing, and no lock-in.",
-	alternates: {
-		canonical: "/",
-	},
-};
+		"Compare AI models, benchmarks, pricing and providers, then route them through one OpenAI-compatible gateway with transparent pricing.",
+	path: "/",
+	keywords: [
+		"AI models",
+		"AI benchmarks",
+		"AI gateway",
+		"model pricing",
+		"AI providers",
+	],
+});
 
 const basicTier = GATEWAY_TIERS.find((tier) => tier.key === "basic");
 
