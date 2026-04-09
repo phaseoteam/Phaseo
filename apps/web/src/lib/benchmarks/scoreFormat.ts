@@ -49,10 +49,14 @@ export function parseBenchmarkScore(
 
 export function normalizeBenchmarkScoreValue(
 	value: number | null | undefined,
-	isPercentage: boolean
+	isPercentage: boolean,
+	rawScore?: unknown
 ): number | null {
 	if (value == null || !Number.isFinite(value)) return null;
 	if (!isPercentage) return value;
+	if (typeof rawScore === "string" && rawScore.includes("%")) {
+		return value;
+	}
 
 	// Some benchmark sources report percentages as fractions (0-1) while
 	// others report 0-100. Normalize to 0-100 for consistent display/ranking.
