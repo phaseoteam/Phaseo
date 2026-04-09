@@ -38,8 +38,8 @@ export interface ModelPage {
             name: string;
             category: string | null;
             ascending_order: boolean;
-            type?: "percentage" | "numerical" | null;
             link: string | null;
+            type?: "percentage" | "numerical" | null;
         };
     }[];
 }
@@ -110,15 +110,15 @@ export default async function getModel(
             source_link,
             created_at,
             updated_at,
-            benchmark:data_benchmarks (
-                id,
-                name,
-                category,
-                ascending_order,
-                type,
-                link
+                benchmark:data_benchmarks (
+                    id,
+                    name,
+                    category,
+                    ascending_order,
+                    link,
+                    type
+                )
             )
-        )
     `),
         includeHidden
     );
@@ -270,7 +270,7 @@ export default async function getModel(
     return model;
 }
 
-type ModelStatus = "Rumoured" | "Announced" | "Available" | "Deprecated" | "Retired" | null;
+type ModelStatus = "Rumoured" | "Announced" | "Withheld" | "Available" | "Deprecated" | "Retired" | null;
 
 export interface ModelOverviewPage {
     model_id: string;

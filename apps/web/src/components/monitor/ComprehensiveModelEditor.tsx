@@ -77,7 +77,7 @@ const MODALITY_OPTIONS = [
 	"audio",
 ];
 
-const STATUS_OPTIONS = ["Rumoured", "Announced", "Available", "Deprecated", "Retired"];
+const STATUS_OPTIONS = ["Rumoured", "Announced", "Withheld", "Available", "Deprecated", "Retired"];
 
 const DETAIL_OPTIONS = [
 	"input_context_length",

@@ -321,7 +321,7 @@ export default function ModelLegacyEditor({
 									? undefined
 									: row.id,
 							provider_id: row.provider_id,
-							api_model_id: modelId,
+							api_model_id: row.api_model_id || modelId,
 							provider_model_slug: row.provider_model_slug ?? null,
 							prompt_training_policy_override:
 								row.prompt_training_policy_override ?? null,
@@ -333,6 +333,8 @@ export default function ModelLegacyEditor({
 							input_modalities: row.input_modalities ?? null,
 							output_modalities: row.output_modalities ?? null,
 							quantization_scheme: row.quantization_scheme ?? null,
+							context_length: row.context_length ?? null,
+							max_output_tokens: row.max_output_tokens ?? null,
 							effective_from: row.effective_from ?? null,
 							effective_to: row.effective_to ?? null,
 						})),
@@ -340,14 +342,11 @@ export default function ModelLegacyEditor({
 						.filter((row) => row.provider_id && row.capability_id)
 						.map((row) => ({
 							provider_id: row.provider_id,
-							api_model_id: modelId,
+							api_model_id: row.api_model_id || modelId,
 							capability_id: row.capability_id,
 							status: row.status,
-							max_input_tokens: row.max_input_tokens ?? null,
-							max_output_tokens: row.max_output_tokens ?? null,
 							effective_from: row.effective_from ?? null,
 							effective_to: row.effective_to ?? null,
-							notes: row.notes ?? null,
 							params: row.params ?? {},
 						})),
 				});
@@ -376,7 +375,7 @@ export default function ModelLegacyEditor({
 										? undefined
 										: row.id,
 								provider_id: row.provider_id ?? parsed.provider_id,
-								api_model_id: modelId,
+								api_model_id: row.api_model_id ?? parsed.api_model_id,
 								capability_id: row.capability_id ?? parsed.capability_id,
 								pricing_plan: row.pricing_plan ?? "standard",
 								meter: row.meter,
