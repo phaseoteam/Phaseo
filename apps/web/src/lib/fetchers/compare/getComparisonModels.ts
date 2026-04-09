@@ -177,14 +177,15 @@ function summariseProviderPricing(groups: ProviderPricing[]): Price[] {
 			const unitSize = Number(rule.unit_size ?? 1);
 			const normalizedUnitSize =
 				Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1;
+			const normalizedPricePerToken = pricePerUnit / normalizedUnitSize;
 			const noteParts = [`Unit: ${rule.unit || "unit"}`];
 			if (rule.note) noteParts.push(rule.note);
 
 			const isCached = meter.includes("cached");
 			const isOutput = meter.includes("output");
-			const inputTokenPrice = !isCached && !isOutput ? pricePerUnit : null;
-			const cachedInputTokenPrice = isCached ? pricePerUnit : null;
-			const outputTokenPrice = isOutput ? pricePerUnit : null;
+			const inputTokenPrice = !isCached && !isOutput ? normalizedPricePerToken : null;
+			const cachedInputTokenPrice = isCached ? normalizedPricePerToken : null;
+			const outputTokenPrice = isOutput ? normalizedPricePerToken : null;
 
 			results.push({
 				api_provider_id: group.provider.api_provider_id,
