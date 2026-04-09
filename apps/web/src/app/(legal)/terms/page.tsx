@@ -3,7 +3,7 @@ import Link from "next/link";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-	title: "Terms of Service | AI Stats",
+	title: "Terms of Service",
 	description:
 		"Review the AI Stats Terms of Service governing access to the model directory, dashboard features, billing behavior, and unified API Gateway usage requirements.",
 	path: "/terms",

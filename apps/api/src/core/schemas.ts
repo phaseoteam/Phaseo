@@ -721,6 +721,39 @@ export const ModerationsSchema = z.object({
 });
 export type ModerationsRequest = z.infer<typeof ModerationsSchema>;
 
+// Rerank schema
+const RerankDocumentSchema = z.union([
+    z.string(),
+    z.record(z.string(), z.any()),
+]);
+
+export const RerankSchema = z.object({
+    model: z.string().min(1),
+    query: z.string().min(1),
+    documents: z.array(RerankDocumentSchema).min(1),
+    top_n: z.number().int().positive().optional(),
+    // Compatibility alias used by some APIs.
+    top_k: z.number().int().positive().optional(),
+    return_documents: z.boolean().optional(),
+    max_chunks_per_doc: z.number().int().positive().optional(),
+    rank_fields: z.array(z.string().min(1)).optional(),
+    user: z.string().optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
+    provider_options: z.record(z.string(), z.any()).optional(),
+    meta: z.boolean().optional().default(false),
+    echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
+    provider: ProviderRoutingSchema,
+}).transform((obj) => {
+    const next: any = { ...obj };
+    if (!("top_n" in next) && typeof next.top_k === "number") {
+        next.top_n = next.top_k;
+    }
+    return next;
+});
+export type RerankRequest = z.infer<typeof RerankSchema>;
+
 // Audio Speech schema
 const ElevenLabsSpeechConfigSchema = z.object({
     output_format: z.string().optional(),
@@ -952,6 +985,7 @@ export function schemaFor(endpoint: Endpoint): z.ZodTypeAny | null {
         case "responses": return ResponsesSchema;
         case "messages": return AnthropicMessagesSchema;
         case "moderations": return ModerationsSchema;
+        case "rerank": return RerankSchema;
         case "audio.speech": return AudioSpeechSchema;
         case "audio.transcription": return AudioTranscriptionSchema;
         case "audio.translations": return AudioTranslationSchema;

@@ -1554,6 +1554,7 @@
     "gmicloud:text.generate:qwen-qwen3.5-35b-a3b",
     "gmicloud:text.generate:qwen-qwen3.5-397b-a17b",
     "gmicloud:text.generate:z-ai-glm-5",
+    "gmicloud:text.generate:z-ai-glm-5.1",
     "google-ai-studio:text.generate:google-gemini-2.0-flash",
     "google-ai-studio:text.generate:google-gemini-2.0-flash-lite",
     "google-ai-studio:text.generate:google-gemini-2.5-flash-image",
@@ -1759,6 +1760,7 @@
     "novita:text.generate:z-ai-glm-4.7",
     "novita:text.generate:z-ai-glm-4.7-flash",
     "novita:text.generate:z-ai-glm-5",
+    "novita:text.generate:z-ai-glm-5.1",
     "openai:text.generate:openai-ada",
     "openai:text.generate:openai-babbage",
     "openai:text.generate:openai-babbage-002",
@@ -1891,6 +1893,7 @@
     "venice:text.generate:z-ai-glm-4.7",
     "venice:text.generate:z-ai-glm-4.7-flash",
     "venice:text.generate:z-ai-glm-5",
+    "venice:text.generate:z-ai-glm-5.1",
     "venice-e2ee:text.generate:google-gemma-3-27b",
     "venice-e2ee:text.generate:openai-gpt-oss-120b",
     "venice-e2ee:text.generate:openai-gpt-oss-20b",
@@ -1950,6 +1953,7 @@
     "z-ai:text.generate:z-ai-glm-5",
     "z-ai:text.generate:z-ai-glm-5-code",
     "z-ai:text.generate:z-ai-glm-5-turbo",
+    "z-ai:text.generate:z-ai-glm-5.1",
     "z-ai:text.generate:z-ai-glm-5v-turbo"
   ]
 }

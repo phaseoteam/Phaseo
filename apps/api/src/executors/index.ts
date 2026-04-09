@@ -52,6 +52,7 @@ import { executor as googleAiStudioEmbeddings } from "./google-ai-studio/embeddi
 
 // Moderations executors (migrated providers only)
 import { executor as openaiModerations } from "./openai/moderations";
+import { executor as openaiRerank } from "./openai/rerank";
 
 import { executor as openaiVideo } from "./openai/video-generate";
 import { nonTextAdapterExecutor } from "./_shared/non-text/adapter-bridge";
@@ -69,6 +70,7 @@ type Capability =
 	| "text.generate"
 	| "embeddings"
 	| "moderations"
+	| "rerank"
 	| "image.generate"
 	| "image.edit"
 	| "audio.speech"
@@ -95,6 +97,9 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	moderation: "moderations",
 	"moderations.create": "moderations",
 	"text.moderate": "moderations",
+	"rerank.create": "rerank",
+	"text.rerank": "rerank",
+	reranking: "rerank",
 	"image.generations": "image.generate",
 	"images.generate": "image.generate",
 	"images.generations": "image.generate",
@@ -112,10 +117,17 @@ const OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST = new Set<string>([
 ]);
 const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([]);
 const OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST = new Set<string>([]);
+const OPENAI_COMPAT_RERANK_EXECUTOR_BLOCKLIST = new Set<string>([]);
 
 function supportsOpenAICompatEmbeddings(providerId: string): boolean {
 	if (!isOpenAICompatProvider(providerId)) return false;
 	if (OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)) return false;
+	return !getProviderCapabilityProfile(providerId).textOnly;
+}
+
+function supportsOpenAICompatRerank(providerId: string): boolean {
+	if (!isOpenAICompatProvider(providerId)) return false;
+	if (OPENAI_COMPAT_RERANK_EXECUTOR_BLOCKLIST.has(providerId)) return false;
 	return !getProviderCapabilityProfile(providerId).textOnly;
 }
 
@@ -136,6 +148,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": openaiText,
 		embeddings: openaiEmbeddings,
 		moderations: openaiModerations,
+		rerank: openaiRerank,
 		"video.generate": openaiVideo,
 	},
 	anthropic: {
@@ -205,6 +218,12 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 	) {
 		return openaiModerations;
 	}
+	if (
+		normalizedCapability === "rerank" &&
+		supportsOpenAICompatRerank(providerId)
+	) {
+		return openaiRerank;
+	}
 	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
 	if (
 		adapterEndpoint &&
@@ -236,6 +255,12 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 		normalizedCapability === "moderations" &&
 		isOpenAICompatProvider(providerId) &&
 		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
+	) {
+		return true;
+	}
+	if (
+		normalizedCapability === "rerank" &&
+		supportsOpenAICompatRerank(providerId)
 	) {
 		return true;
 	}

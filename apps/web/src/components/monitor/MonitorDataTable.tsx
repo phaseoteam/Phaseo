@@ -63,6 +63,7 @@ const MODALITY_DISPLAY_ORDER = [
 	"video",
 	"audio",
 	"moderations",
+	"rerank",
 	"embeddings",
 ] as const;
 
@@ -104,6 +105,12 @@ const modalityIcons: Record<string, ModalityConfig> = {
 		color: "text-red-600",
 		label: "Moderations",
 	},
+	rerank: {
+		input: ArrowUpDown,
+		output: ArrowUpDown,
+		color: "text-teal-600",
+		label: "Rerank",
+	},
 	embeddings: {
 		input: FileDigit,
 		output: FileDigit,
@@ -143,6 +150,7 @@ function normalizeModality(value: string): string {
 	if (normalized === "speech") return "audio";
 	if (normalized === "moderation") return "moderations";
 	if (normalized === "embedding") return "embeddings";
+	if (normalized === "rerank" || normalized === "re rank") return "rerank";
 	return normalized;
 }
 

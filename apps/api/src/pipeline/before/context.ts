@@ -46,6 +46,11 @@ const EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES = [
     "embeddings",
     "text.embed",
 ] as const;
+const RERANK_CONTEXT_CAPABILITY_ALIASES = [
+    "rerank",
+    "rerank.create",
+    "text.rerank",
+] as const;
 const IMAGE_CONTEXT_CAPABILITY_ALIASES = [
     "image.generate",
     "images.generate",
@@ -87,6 +92,16 @@ export function getContextCapabilityCandidates(capability: string, model?: strin
         return Array.from(new Set<string>([
             normalized,
             ...EMBEDDINGS_CONTEXT_CAPABILITY_ALIASES,
+        ]));
+    }
+    if (
+        RERANK_CONTEXT_CAPABILITY_ALIASES.includes(
+            normalized as (typeof RERANK_CONTEXT_CAPABILITY_ALIASES)[number]
+        )
+    ) {
+        return Array.from(new Set<string>([
+            normalized,
+            ...RERANK_CONTEXT_CAPABILITY_ALIASES,
         ]));
     }
     if (

@@ -2,6 +2,8 @@
 const CORE_PRICING_METER_VALUES = [
   "input_text_tokens",
   "input_image_tokens",
+  "image_pixels",
+  "video_pixels",
   "input_video_tokens",
   "input_audio_tokens",
   "output_text_tokens",

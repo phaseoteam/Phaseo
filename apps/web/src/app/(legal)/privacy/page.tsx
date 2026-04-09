@@ -3,7 +3,7 @@ import Link from "next/link";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-	title: "Privacy Policy | AI Stats",
+	title: "Privacy Policy",
 	description:
 		"Read how AI Stats collects, processes, stores, and protects personal data across the website, dashboard, and unified API Gateway services, including user controls and retention practices.",
 	path: "/privacy",

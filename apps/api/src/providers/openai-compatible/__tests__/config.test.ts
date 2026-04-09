@@ -235,6 +235,9 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatUrl("voyageai", "/embeddings")).toBe(
 			"https://api.voyageai.com/v1/embeddings",
 		);
+		expect(openAICompatUrl("voyage", "/rerank")).toBe(
+			"https://api.voyageai.com/v1/rerank",
+		);
 	});
 
 	it("builds deepinfra chat-completions endpoint with /v1/openai prefix", () => {

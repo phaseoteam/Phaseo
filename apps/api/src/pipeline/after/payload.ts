@@ -782,6 +782,37 @@ export function formatClientPayload(args: {
         return body;
     }
 
+    if (ctx.endpoint === "rerank") {
+        const {
+            provider,
+            requestId,
+            meta: _m,
+            usage: _u,
+            id: payloadId,
+            nativeResponseId: payloadNativeResponseId,
+            nativeId: payloadNativeId,
+            results,
+            object,
+            model,
+            ...rest
+        } = payload ?? {};
+        const resolvedId = payloadId ?? requestId ?? ctx.requestId ?? null;
+        const nativeResponseId = payloadNativeResponseId ?? payloadNativeId ?? null;
+        const body: any = {
+            object: object ?? "list",
+            id: resolvedId,
+            model: model ?? ctx.model,
+            results: Array.isArray(results) ? results : [],
+            ...rest,
+            ...(usage ? { usage } : {}),
+        };
+        if (nativeResponseId != null) {
+            body.nativeResponseId = nativeResponseId;
+        }
+        if (meta) body.meta = meta;
+        return body;
+    }
+
     // Fallback: keep payload structure
     const fallback: any = {
         requestId: ctx.requestId,
