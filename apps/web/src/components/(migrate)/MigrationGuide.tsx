@@ -1173,8 +1173,12 @@ function getAfterSnippet(pathId: PathId, surface: AfterApiSurface): Snippet {
 		return SNIPPETS[pathId];
 	}
 
+	if (pathId === "py-sdk") {
+		return SNIPPETS[pathId];
+	}
+
 	if (surface === "responses") {
-		if (pathId === "py-openai" || pathId === "py-sdk" || pathId === "py-anthropic") {
+		if (pathId === "py-openai" || pathId === "py-anthropic") {
 			return {
 				label: "Responses API (Python)",
 				lang: "python",
@@ -1229,7 +1233,7 @@ console.log(response.output_text);`,
 	}
 
 	// surface === "anthropic-messages"
-	if (pathId === "py-openai" || pathId === "py-sdk" || pathId === "py-anthropic") {
+	if (pathId === "py-openai" || pathId === "py-anthropic") {
 		return {
 			label: "Anthropic Messages (Python)",
 			lang: "python",
