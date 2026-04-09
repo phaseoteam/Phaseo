@@ -680,11 +680,11 @@ importers:
   packages/devtools/raycast-extension:
     dependencies:
       '@raycast/api':
-        specifier: ^1.104.6
-        version: 1.104.10(@types/node@25.5.0)(@types/react@19.2.14)
+        specifier: ^1.104.11
+        version: 1.104.11(@types/node@25.5.0)(@types/react@19.2.14)
       '@raycast/utils':
         specifier: ^2.2.2
-        version: 2.2.3(@raycast/api@1.104.10(@types/node@25.5.0)(@types/react@19.2.14))(react@19.2.4)
+        version: 2.2.3(@raycast/api@1.104.11(@types/node@25.5.0)(@types/react@19.2.14))(react@19.2.4)
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^1.0.11
@@ -2346,20 +2346,20 @@ packages:
       react: ^18 || ^19
       react-dom: ^18 || ^19
 
-  '@oclif/core@4.10.0':
-    resolution: {integrity: sha512-T52mrztDvj7RXiURdA+6vd1B4yeYVpHF6DH/RshqEwIA6R63dhe4YoIBYWJi0H3LhCQTUTL84uWadrJAImu/vg==}
+  '@oclif/core@4.10.5':
+    resolution: {integrity: sha512-qcdCF7NrdWPfme6Kr34wwljRCXbCVpL1WVxiNy0Ep6vbWKjxAjFQwuhqkoyL0yjI+KdwtLcOCGn5z2yzdijc8w==}
     engines: {node: '>=18.0.0'}
 
-  '@oclif/plugin-autocomplete@3.2.41':
-    resolution: {integrity: sha512-s8IcxohWtnbYCOA1nC6cUGWFGLBG3MjNWfCBTTa5pUyh4tGsjC5ihLeLCs8WJgGnFkPhVVQ+CfmKOIVmVGYMvA==}
+  '@oclif/plugin-autocomplete@3.2.45':
+    resolution: {integrity: sha512-ENrUg8rbVCjh40uvi3MC9kGbiUoEf11nyqE59RBzegeeLpRXNo/Zp27L9j1tUmPEqGgfS2/wvHPihNzkpK1FDw==}
     engines: {node: '>=18.0.0'}
 
-  '@oclif/plugin-help@6.2.38':
-    resolution: {integrity: sha512-aTVQ8qPy5kD/Neq2B4OEo2joukHWdEabTMHfQyXtsagW1O2MvhM58+JUWADvieX67OSjSXseD6f6O/e5SA2N/Q==}
+  '@oclif/plugin-help@6.2.43':
+    resolution: {integrity: sha512-aef92VxQECLFDjI4CpgCL+jDuAsc3jzq5gBTLwNzj60mmrh8eDd7B0ABIgWXphb6gdARSRil+/FPtcdiSSupRA==}
     engines: {node: '>=18.0.0'}
 
-  '@oclif/plugin-not-found@3.2.75':
-    resolution: {integrity: sha512-xBEf7fJoS/fIqzGBUe0i6yc7ozo23KTyusy50DHqh+oqay5gtMLPUfr1RbvJBGGwozzFAMMFXN9o+AvUDt/zTA==}
+  '@oclif/plugin-not-found@3.2.80':
+    resolution: {integrity: sha512-yTLjWvR1r/Rd/cO2LxHdMCDoL5sQhBYRUcOMCmxZtWVWhx4rAZ8KVUPDVsb+SvjJDV5ADTDBgt1H52fFx7YWqg==}
     engines: {node: '>=18.0.0'}
 
   '@octokit/app@15.1.6':
@@ -3548,8 +3548,8 @@ packages:
   '@radix-ui/rect@1.1.1':
     resolution: {integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==}
 
-  '@raycast/api@1.104.10':
-    resolution: {integrity: sha512-pSbqV0aUZKAoG760DB7mMoNAFfjuyw7ok0kLHKiu6T6mkKbRZwsH2rOgVFCpl5QmvVtjOX7V5ieETZGLOHuB+A==}
+  '@raycast/api@1.104.11':
+    resolution: {integrity: sha512-UaLyWDlgtgyruTVclcJ1RAJjRWKc/ISw+WQAzTHui4qpY3olaaXWrE/dox6/7Cd3mFZtkQ6grhdUiYTBsUUfuw==}
     engines: {node: '>=22.14.0'}
     hasBin: true
     peerDependencies:
@@ -12849,7 +12849,7 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  '@oclif/core@4.10.0':
+  '@oclif/core@4.10.5':
     dependencies:
       ansi-escapes: 4.3.2
       ansis: 3.17.0
@@ -12861,7 +12861,7 @@ snapshots:
       indent-string: 4.0.0
       is-wsl: 2.2.0
       lilconfig: 3.1.3
-      minimatch: 10.2.4
+      minimatch: 10.2.5
       semver: 7.7.4
       string-width: 4.2.3
       supports-color: 8.1.1
@@ -12870,23 +12870,23 @@ snapshots:
       wordwrap: 1.0.0
       wrap-ansi: 7.0.0
 
-  '@oclif/plugin-autocomplete@3.2.41':
+  '@oclif/plugin-autocomplete@3.2.45':
     dependencies:
-      '@oclif/core': 4.10.0
+      '@oclif/core': 4.10.5
       ansis: 3.17.0
       debug: 4.4.3(supports-color@8.1.1)
       ejs: 3.1.10
     transitivePeerDependencies:
       - supports-color
 
-  '@oclif/plugin-help@6.2.38':
+  '@oclif/plugin-help@6.2.43':
     dependencies:
-      '@oclif/core': 4.10.0
+      '@oclif/core': 4.10.5
 
-  '@oclif/plugin-not-found@3.2.75(@types/node@25.5.0)':
+  '@oclif/plugin-not-found@3.2.80(@types/node@25.5.0)':
     dependencies:
       '@inquirer/prompts': 7.10.1(@types/node@25.5.0)
-      '@oclif/core': 4.10.0
+      '@oclif/core': 4.10.5
       ansis: 3.17.0
       fast-levenshtein: 3.0.0
     transitivePeerDependencies:
@@ -14314,12 +14314,12 @@ snapshots:
 
   '@radix-ui/rect@1.1.1': {}
 
-  '@raycast/api@1.104.10(@types/node@25.5.0)(@types/react@19.2.14)':
+  '@raycast/api@1.104.11(@types/node@25.5.0)(@types/react@19.2.14)':
     dependencies:
-      '@oclif/core': 4.10.0
-      '@oclif/plugin-autocomplete': 3.2.41
-      '@oclif/plugin-help': 6.2.38
-      '@oclif/plugin-not-found': 3.2.75(@types/node@25.5.0)
+      '@oclif/core': 4.10.5
+      '@oclif/plugin-autocomplete': 3.2.45
+      '@oclif/plugin-help': 6.2.43
+      '@oclif/plugin-not-found': 3.2.80(@types/node@25.5.0)
       esbuild: 0.25.12
       react: 19.0.0
     optionalDependencies:
@@ -14349,9 +14349,9 @@ snapshots:
       - supports-color
       - typescript
 
-  '@raycast/utils@2.2.3(@raycast/api@1.104.10(@types/node@25.5.0)(@types/react@19.2.14))(react@19.2.4)':
+  '@raycast/utils@2.2.3(@raycast/api@1.104.11(@types/node@25.5.0)(@types/react@19.2.14))(react@19.2.4)':
     dependencies:
-      '@raycast/api': 1.104.10(@types/node@25.5.0)(@types/react@19.2.14)
+      '@raycast/api': 1.104.11(@types/node@25.5.0)(@types/react@19.2.14)
       dequal: 2.0.3
     optionalDependencies:
       react: 19.2.4
