@@ -2,7 +2,7 @@ export const MODEL_STATUS_OPTIONS = [
   "Rumoured",
   "Announced",
   "Withheld",
-  "Released",
+  "Available",
   "Deprecated",
   "Retired",
 ] as const
@@ -24,8 +24,8 @@ export function normalizeModelStatus(value: string | null | undefined): ModelSta
   if (normalized === "withheld") return "Withheld"
   if (normalized === "deprecated") return "Deprecated"
   if (normalized === "retired") return "Retired"
-  if (LEGACY_RELEASED_STATUSES.has(normalized)) return "Released"
-  return "Released"
+  if (LEGACY_RELEASED_STATUSES.has(normalized)) return "Available"
+  return "Available"
 }
 
 export const MODEL_MODALITY_OPTIONS = [

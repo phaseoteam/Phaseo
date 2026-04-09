@@ -663,7 +663,7 @@ export default function NewModelForm({
 					</label>
 					<label className="text-sm">
 						<div className="mb-1 text-muted-foreground">Status</div>
-						<select name="status" defaultValue="Released" className="w-full rounded-md border px-3 py-2 text-sm">
+						<select name="status" defaultValue="Available" className="w-full rounded-md border px-3 py-2 text-sm">
 							{STATUS_OPTIONS.map((status) => (
 								<option key={status} value={status}>
 									{status}
