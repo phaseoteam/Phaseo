@@ -1,15 +1,20 @@
 import { asArray, asRecord, defineProvider, fetchJson, normalizeModelEntries } from "./_shared";
 
-function hasLlmCategory(model: Record<string, unknown>): boolean {
+function isAtlascloudSupportedCategory(value: string): boolean {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "llm" || normalized.includes("video");
+}
+
+function hasSupportedCategory(model: Record<string, unknown>): boolean {
     const categories = asArray(model.categories).filter((value): value is string => typeof value === "string");
-    if (categories.some((value) => value.trim().toLowerCase() === "llm")) return true;
+    if (categories.some((value) => isAtlascloudSupportedCategory(value))) return true;
 
     const category = model.category;
     if (typeof category === "string") {
         return category
             .split(",")
             .map((value) => value.trim().toLowerCase())
-            .some((value) => value === "llm");
+            .some((value) => isAtlascloudSupportedCategory(value));
     }
 
     return false;
@@ -42,12 +47,12 @@ export default defineProvider({
               ? asArray(payloadRecord?.models)
               : asArray(payload);
 
-        const llmModels = models.filter((value) => {
+        const supportedModels = models.filter((value) => {
             const row = asRecord(value);
-            return row ? hasLlmCategory(row) : false;
+            return row ? hasSupportedCategory(row) : false;
         });
 
-        return normalizeModelEntries(llmModels, (item) => (typeof item.id === "string" ? item.id.trim() : null));
+        return normalizeModelEntries(supportedModels, (item) => (typeof item.id === "string" ? item.id.trim() : null));
     },
 });
 
