@@ -4,6 +4,7 @@ interface ModelStatusBannerProps {
 	status:
 		| "Rumoured"
 		| "Announced"
+		| "Withheld"
 		| "Available"
 		| "Deprecated"
 		| "Retired"
@@ -55,6 +56,26 @@ export default function ModelStatusBanner({ status }: ModelStatusBannerProps) {
 							This model has been announced, but not released. We
 							await the full release to make more information
 							available.
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (status === "Withheld") {
+		return (
+			<div className="bg-violet-100 border border-violet-400 text-violet-700 px-4 py-3 rounded mb-4">
+				<div className="flex">
+					<div className="py-1">
+						<Info className="h-6 w-6 text-violet-500 mr-4" />
+					</div>
+					<div>
+						<p className="font-bold">Withheld Model</p>
+						<p className="text-sm">
+							This model was announced with preliminary details but is
+							currently withheld and may never be released publicly.
+							Information may change at any time.
 						</p>
 					</div>
 				</div>
