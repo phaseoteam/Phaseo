@@ -14,6 +14,7 @@ import {
 	type WeeklyModelProviderTokens,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
 import type {
 	GatewayStatusFilter,
@@ -22,24 +23,19 @@ import type {
 	OptionCount,
 } from "@/components/(data)/models/Models/modelsDisplay.types";
 
-export const metadata: Metadata = {
-	title: "AI models - Compare Benchmarks, Pricing & Providers",
+export const metadata: Metadata = buildMetadata({
+	title: "Compare AI Models: Benchmarks, Pricing & Providers",
 	description:
-		"Explore a comprehensive directory of AI models. Compare state-of-the-art models by benchmarks, features, providers, and pricing, and find the best AI model for your use case with AI Stats.",
+		"Browse AI models by benchmark scores, providers, modalities and pricing to find the right model for your use case.",
+	path: "/models",
 	keywords: [
 		"AI models",
-		"machine learning models",
-		"AI benchmarks",
 		"compare AI models",
 		"AI model pricing",
+		"AI benchmarks",
 		"AI providers",
-		"state-of-the-art models",
-		"AI Stats",
 	],
-	alternates: {
-		canonical: "/models",
-	},
-};
+});
 
 const MODALITY_FILTER_DISPLAY_ORDER = [
 	"text",
@@ -49,6 +45,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"music",
 	"file",
 	"moderations",
+	"rerank",
 	"embeddings",
 ] as const;
 
@@ -65,6 +62,13 @@ const PROVIDER_STATUS_PRIORITY_ORDER = [
 const providerStatusPriority = new Map<string, number>(
 	PROVIDER_STATUS_PRIORITY_ORDER.map((status, index) => [status, index]),
 );
+
+const ACTIVE_PROVIDER_STATUS_SET = new Set([
+	"active",
+	"deranked_lvl1",
+	"deranked_lvl2",
+	"deranked_lvl3",
+]);
 
 function getModelYear(model: ModelsPageModel): string {
 	if (Number.isFinite(model.primary_timestamp)) {
@@ -84,6 +88,9 @@ function normalizeModalityKey(value: string): string {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("embed")) return "embeddings";
 	if (normalized.includes("moderat")) return "moderations";
+	if (normalized.includes("rerank") || normalized.includes("re rank")) {
+		return "rerank";
+	}
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("music")) return "music";
@@ -151,6 +158,10 @@ function chooseProviderGatewayStatus(
 	return statusPriority(candidateStatus) < statusPriority(currentStatus)
 		? candidateStatus
 		: currentStatus;
+}
+
+function isActiveProviderStatus(status: string): boolean {
+	return ACTIVE_PROVIDER_STATUS_SET.has(status);
 }
 
 function sortModalityOptions(
@@ -369,13 +380,13 @@ function aggregateGatewaySignals(
 		const rowGatewayStatus = normalizeProviderGatewayStatus(row.gatewayStatus);
 		if (providerId) {
 			existing.providerIds.add(providerId);
-			if (rowGatewayStatus === "active") {
+			if (isActiveProviderStatus(rowGatewayStatus)) {
 				existing.activeProviderIds.add(providerId);
 			}
 		}
 		if (providerName) {
 			existing.providerNames.add(providerName);
-			if (rowGatewayStatus === "active") {
+			if (isActiveProviderStatus(rowGatewayStatus)) {
 				existing.activeProviderNames.add(providerName);
 			}
 		}
@@ -385,7 +396,7 @@ function aggregateGatewaySignals(
 				previous?.status,
 				rowGatewayStatus,
 			);
-			const isActive = status === "active";
+			const isActive = isActiveProviderStatus(status);
 			existing.providerDetails.set(providerDetailKey, {
 				id: providerId,
 				name: providerName || previous?.name || providerDetailKey,
