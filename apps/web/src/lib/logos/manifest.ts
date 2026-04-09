@@ -179,6 +179,18 @@ export const logoManifest = {
 	mancer: {
 		color: "/logos/mancer.svg",
 	},
+	meituan: {
+		light: "/logos/meituan_light.svg",
+		dark: "/logos/meituan_dark.svg",
+	},
+	"meituan-longcat": {
+		light: "/logos/meituan_light.svg",
+		dark: "/logos/meituan_dark.svg",
+	},
+	longcat: {
+		light: "/logos/meituan_light.svg",
+		dark: "/logos/meituan_dark.svg",
+	},
 	meta: {
 		color: "/logos/meta.svg",
 	},
@@ -233,6 +245,10 @@ export const logoManifest = {
 	openrouter: {
 		light: "/logos/openrouter_light.svg",
 		dark: "/logos/openrouter_dark.svg",
+	},
+	llmgateway: {
+		light: "/logos/llmgateway-light.svg",
+		dark: "/logos/llmgateway-dark.svg",
 	},
 	parasail: {
 		light: "/logos/parasail_light.svg",
