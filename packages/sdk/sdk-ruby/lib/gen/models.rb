@@ -981,6 +981,54 @@ module AiStats
     # @!attribute [rw] summary
     #   @return [String, nil]
     ReasoningConfig = Struct.new(:effort, :enabled, :max_tokens, :summary, keyword_init: true)
+    RerankDocument = Object
+    # @!attribute [rw] debug
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] documents
+    #   @return [Array<String>, Array<Hash{String => Object}>]
+    # @!attribute [rw] max_chunks_per_doc
+    #   @return [Integer, nil]
+    # @!attribute [rw] metadata
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] query
+    #   @return [String]
+    # @!attribute [rw] rank_fields
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] return_documents
+    #   @return [Boolean, nil]
+    # @!attribute [rw] top_k
+    #   @return [Integer, nil]
+    # @!attribute [rw] top_n
+    #   @return [Integer, nil]
+    # @!attribute [rw] user
+    #   @return [String, nil]
+    RerankRequest = Struct.new(:debug, :documents, :max_chunks_per_doc, :metadata, :model, :provider, :provider_options, :query, :rank_fields, :return_documents, :top_k, :top_n, :user, keyword_init: true)
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] nativeResponseId
+    #   @return [String, nil]
+    # @!attribute [rw] object
+    #   @return [String, nil]
+    # @!attribute [rw] results
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    RerankResponse = Struct.new(:id, :model, :nativeResponseId, :object, :results, :usage, keyword_init: true)
+    # @!attribute [rw] document
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] index
+    #   @return [Integer, nil]
+    # @!attribute [rw] relevance_score
+    #   @return [Float, nil]
+    RerankResult = Struct.new(:document, :index, :relevance_score, keyword_init: true)
     # @!attribute [rw] content
     #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}, nil]
     # @!attribute [rw] role

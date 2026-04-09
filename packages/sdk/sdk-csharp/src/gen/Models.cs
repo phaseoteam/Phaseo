@@ -1676,6 +1676,86 @@ public sealed class ReasoningConfig
 
 }
 
+public sealed class RerankDocument { }
+
+public sealed class RerankRequest
+{
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("documents")]
+	public object Documents { get; set; }
+
+	[JsonPropertyName("max_chunks_per_doc")]
+	public int? MaxChunksPerDoc { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
+
+	[JsonPropertyName("query")]
+	public string Query { get; set; }
+
+	[JsonPropertyName("rank_fields")]
+	public List<string>? RankFields { get; set; }
+
+	[JsonPropertyName("return_documents")]
+	public bool? ReturnDocuments { get; set; }
+
+	[JsonPropertyName("top_k")]
+	public int? TopK { get; set; }
+
+	[JsonPropertyName("top_n")]
+	public int? TopN { get; set; }
+
+	[JsonPropertyName("user")]
+	public string? User { get; set; }
+
+}
+
+public sealed class RerankResponse
+{
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("nativeResponseId")]
+	public string? NativeResponseId { get; set; }
+
+	[JsonPropertyName("object")]
+	public string? Object { get; set; }
+
+	[JsonPropertyName("results")]
+	public List<Dictionary<string, object>>? Results { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class RerankResult
+{
+	[JsonPropertyName("document")]
+	public object? Document { get; set; }
+
+	[JsonPropertyName("index")]
+	public int? Index { get; set; }
+
+	[JsonPropertyName("relevance_score")]
+	public double? RelevanceScore { get; set; }
+
+}
+
 public sealed class ResponsesInputItem
 {
 	[JsonPropertyName("content")]
