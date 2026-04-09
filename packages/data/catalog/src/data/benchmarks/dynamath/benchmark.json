@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "dynamath",
+  "benchmark_name": "DynaMath",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

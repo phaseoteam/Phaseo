@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cc-ocr",
+  "benchmark_name": "CC-OCR",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 39
+}

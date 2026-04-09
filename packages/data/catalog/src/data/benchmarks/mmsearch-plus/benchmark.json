@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmsearch-plus",
+  "benchmark_name": "MMSearch-Plus",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

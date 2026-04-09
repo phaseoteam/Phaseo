@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ds-arena-code",
+  "benchmark_name": "DS-Arena-Code",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 2
+}

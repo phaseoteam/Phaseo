@@ -3,6 +3,7 @@
   "benchmark_name": "SOLO-Bench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://github.com/jd-3d/SOLOBench",
   "total_models": 0
 }

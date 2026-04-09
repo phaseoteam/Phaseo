@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "motionbench",
+  "benchmark_name": "MotionBench",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

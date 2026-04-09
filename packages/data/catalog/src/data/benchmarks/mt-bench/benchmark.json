@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mt-bench",
+  "benchmark_name": "MT-Bench",
+  "category": "communication",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 16
+}

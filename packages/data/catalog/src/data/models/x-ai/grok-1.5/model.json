@@ -36,5 +36,86 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 35.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 100
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 85.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 35.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 100
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 90,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 74.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "math",
+      "score": 50.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 52.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 81.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 51,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 72
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 53.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 42
+    }
+  ]
 }

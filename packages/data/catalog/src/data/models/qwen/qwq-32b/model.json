@@ -56,5 +56,86 @@
       "value": 32500000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2-sciarena",
+      "score": 996.24,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://sciarena.allen.ai/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 79.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1214.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 65.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen-ai.com/qwq-32b/",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "bfcl",
+      "score": 66.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 65.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen-ai.com/qwq-32b/",
+      "rank": 67
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 83.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b/",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 73.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 63.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 90.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen-ai.com/qwq-32b/",
+      "rank": 13
+    }
+  ]
 }

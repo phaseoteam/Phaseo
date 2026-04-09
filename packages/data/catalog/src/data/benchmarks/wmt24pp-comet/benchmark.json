@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "wmt24pp-comet",
+  "benchmark_name": "WMT24++ COMET",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/translategemma-4b-it",
+  "total_models": 3
+}

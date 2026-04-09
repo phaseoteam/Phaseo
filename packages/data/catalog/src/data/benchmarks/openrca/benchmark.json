@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "openrca",
+  "benchmark_name": "OpenRCA",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

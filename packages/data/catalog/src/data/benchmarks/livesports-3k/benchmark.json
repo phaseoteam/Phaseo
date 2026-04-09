@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "livesports-3k",
+  "benchmark_name": "LiveSports-3K",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

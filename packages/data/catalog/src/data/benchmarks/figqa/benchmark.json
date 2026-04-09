@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "figqa",
+  "benchmark_name": "FigQA",
+  "category": "healthcare",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 2
+}

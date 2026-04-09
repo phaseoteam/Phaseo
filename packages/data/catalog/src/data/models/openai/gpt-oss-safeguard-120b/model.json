@@ -15,5 +15,62 @@
   "family_id": "openai/gpt-oss",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "codeforces",
+      "score": 0.821,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 80.1,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "healthbench",
+      "score": 57.6,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "healthbench-hard",
+      "score": 30,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 14.9,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 47
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 90,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 67.8,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from gpt-oss-120b (score=0.5102; benches=7)",
+      "source_link": "https://openai.com/index/introducing-gpt-oss/",
+      "rank": 9
+    }
+  ]
 }

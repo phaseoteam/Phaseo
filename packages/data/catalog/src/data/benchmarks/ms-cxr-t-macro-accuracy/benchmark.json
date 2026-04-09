@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ms-cxr-t-macro-accuracy",
+  "benchmark_name": "MS-CXR-T Macro Accuracy",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+  "total_models": 1
+}

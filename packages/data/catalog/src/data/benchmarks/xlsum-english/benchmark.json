@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "xlsum-english",
+  "benchmark_name": "XLSum English",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "multi-swe-bench",
+  "benchmark_name": "Multi-SWE-Bench",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

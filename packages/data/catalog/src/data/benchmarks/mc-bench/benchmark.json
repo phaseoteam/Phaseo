@@ -3,6 +3,7 @@
   "benchmark_name": "MC-Bench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://mcbench.ai/leaderboard",
   "total_models": 0
 }

@@ -45,5 +45,310 @@
       "value": "2025-01-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 37.5,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 31.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 91.9,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 95,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "With Code Execution",
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 87.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": "Single Attempt",
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 91.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 74.8,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 75,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 87.5,
+      "is_self_reported": false,
+      "other_info": "Deep Think",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 45.1,
+      "is_self_reported": false,
+      "other_info": "Deep Think, With Tools",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 45.8,
+      "is_self_reported": true,
+      "other_info": "With Search & Code Execution",
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 23.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://matharena.ai/?comp=apex--apex_2025",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 7.27,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 11.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2439,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 54.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 85.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 5478.16,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "global-pica",
+      "score": 93.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-128k",
+      "score": 77,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-1m",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 41,
+      "is_self_reported": true,
+      "other_info": "Deep Think, Tools Off",
+      "source_link": "https://blog.google/products/gemini/gemini-3/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 93.8,
+      "is_self_reported": true,
+      "other_info": "Deep Think, Tools Off",
+      "source_link": "https://blog.google/products/gemini/gemini-3/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 70.5,
+      "is_self_reported": true,
+      "other_info": "Held out internal grounding, parametric, MM, and search retrieval benchmarks",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "global-piqa",
+      "score": 93.4,
+      "is_self_reported": true,
+      "other_info": "Commonsense reasoning across 100 Languages and Cultures",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 91.9,
+      "is_self_reported": true,
+      "other_info": "GPQA Diamond subset",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2439,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mrcr-v2-(8-needle)",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 72.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2439,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 2
+    }
+  ]
 }

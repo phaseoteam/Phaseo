@@ -2,8 +2,8 @@
   {
     "api_model_id": "elevenlabs/music",
     "provider_api_model_id": "elevenlabs:elevenlabs/music",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "music",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

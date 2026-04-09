@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "complexfuncbench",
+  "benchmark_name": "ComplexFuncBench",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 11
+}

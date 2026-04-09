@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "finsearchcomp-t2-t3",
+  "benchmark_name": "FinSearchComp T2&T3",
+  "category": "economics",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

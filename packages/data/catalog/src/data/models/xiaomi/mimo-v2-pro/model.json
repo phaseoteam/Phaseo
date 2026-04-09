@@ -23,5 +23,70 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "claw-eval",
+      "score": 61.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepsearchqa",
+      "score": 86.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1426,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "pinchbench",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 71.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 96.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 57.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
+      "rank": 13
+    }
+  ]
 }

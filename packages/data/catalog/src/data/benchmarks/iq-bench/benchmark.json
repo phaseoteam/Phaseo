@@ -3,6 +3,7 @@
   "benchmark_name": "IQ Bench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://www.trackingai.org/home",
   "total_models": 0
 }

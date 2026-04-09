@@ -15,5 +15,78 @@
   "family_id": "openai/gpt-5-1",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 94,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "browsecomp-long-128k",
+      "score": 0.9,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "frontiermath",
+      "score": 26.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 88.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 85.4,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 76.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 67,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 77.9,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 95.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gpt-5.1-2025-11-13",
+      "source_link": "https://openai.com/index/gpt-5-1/",
+      "rank": 9
+    }
+  ]
 }

@@ -14,5 +14,14 @@
   "api_model_id": "deepseek/deepseek-v2-2024-05-17",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1304,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 40
+    }
+  ]
 }

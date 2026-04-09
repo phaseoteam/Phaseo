@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "perceptiontest",
+  "benchmark_name": "PerceptionTest",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

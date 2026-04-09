@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmstar",
+  "benchmark_name": "MMStar",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 53
+}

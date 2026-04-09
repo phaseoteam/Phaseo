@@ -15,5 +15,158 @@
   "family_id": "openai/gpt-5",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "arc-agi",
+      "score": 93.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 82.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 56,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "frontiermath",
+      "score": 47.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 92.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-lt-128k",
+      "score": 93,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "graphwalks-bfs->128k",
+      "score": 21.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "graphwalks-parents-lt-128k",
+      "score": 89.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "graphwalks-parents->128k",
+      "score": 32.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 39.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 67.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 81.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 89.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 57.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 98.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 75.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 54.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from gpt-5.4 (score=0.4083; benches=19)",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 1
+    }
+  ]
 }

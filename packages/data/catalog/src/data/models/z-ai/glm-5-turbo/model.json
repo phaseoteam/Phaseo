@@ -14,5 +14,94 @@
   "api_model_id": "z-ai/glm-5-turbo",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 46.76,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1499.86588441985,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 98.5,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "terminal-bench-hard",
+      "score": 0.333,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 43.6,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 60.7,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "aa-omniscience",
+      "score": -15.083,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 73.2,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "hle-verified",
+      "score": 0.254,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 84.7,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "critpt",
+      "score": 0.003,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
+      "rank": 2
+    }
+  ]
 }

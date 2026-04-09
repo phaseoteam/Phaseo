@@ -36,5 +36,198 @@
       "value": 256000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 79.6,
+      "is_self_reported": false,
+      "other_info": "Diff",
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 98.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 91.7,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 66.7,
+      "is_self_reported": false,
+      "other_info": "Thinking",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 16.2,
+      "is_self_reported": false,
+      "other_info": "Thinking",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 12.41,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": 7.69,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.996,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1193.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 87.5,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 93.9,
+      "is_self_reported": true,
+      "other_info": "With Python",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 90,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 38.6,
+      "is_self_reported": true,
+      "other_info": "Tool Use",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 25.4,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.924,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.88,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "usamo-2025",
+      "score": 37.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 2.08,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://matharena.ai/?comp=apex--apex_2025",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 1999.46,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://andonlabs.com/evals/vending-bench-2",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 15.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 87.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 40,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 79,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "usamo25",
+      "score": 37.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 2
+    }
+  ]
 }

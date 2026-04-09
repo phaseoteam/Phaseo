@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "odinw",
+  "benchmark_name": "ODinW",
+  "category": "vision",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 35
+}

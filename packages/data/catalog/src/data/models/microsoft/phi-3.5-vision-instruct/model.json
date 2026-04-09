@@ -52,5 +52,78 @@
       "value": 500000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2d",
+      "score": 78.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "chartqa",
+      "score": 81.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "intergps",
+      "score": 36.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 43.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "mmbench",
+      "score": 81.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 43,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 48
+    },
+    {
+      "benchmark_id": "pope",
+      "score": 86.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scienceqa",
+      "score": 91.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "textvqa",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+      "rank": 10
+    }
+  ]
 }

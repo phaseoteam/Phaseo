@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "matharenaapex-shortlist",
+  "benchmark_name": "MathArenaApex (shortlist)",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

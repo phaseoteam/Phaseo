@@ -14,5 +14,78 @@
   "api_model_id": "google/gemini-1.0-pro-vision-001",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "big-bench",
+      "score": 75,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "egoschema",
+      "score": 55.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://deepmind.google/technologies/gemini/pro/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "fleurs",
+      "score": 0.064,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 27.9,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 105
+    },
+    {
+      "benchmark_id": "math",
+      "score": 32.6,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 46.6,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 71.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 47.9,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 47
+    },
+    {
+      "benchmark_id": "wmt23",
+      "score": 71.7,
+      "is_self_reported": false,
+      "other_info": "inferred modality/version alias from gemini-1.0-pro",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 4
+    }
+  ]
 }

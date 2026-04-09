@@ -14,5 +14,70 @@
   "api_model_id": "qwen/qwen3-omni-30b-a3b-captioner",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 80.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 70.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 58
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 91,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "bfcl",
+      "score": 69.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 66
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 74.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 62.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-30b-a3b (score=0.4129; benches=8)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 11
+    }
+  ]
 }

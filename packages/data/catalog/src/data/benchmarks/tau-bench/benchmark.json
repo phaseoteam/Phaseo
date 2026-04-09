@@ -3,6 +3,7 @@
   "benchmark_name": "TAU-Bench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://github.com/sierra-research/tau-bench",
-  "total_models": 0
+  "total_models": 6
 }

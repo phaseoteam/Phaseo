@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "longbench-v2-128k",
+  "benchmark_name": "LongBench v2 (128k)",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

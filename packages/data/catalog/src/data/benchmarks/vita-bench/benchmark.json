@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vita-bench",
+  "benchmark_name": "VITA-Bench",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

@@ -41,5 +41,342 @@
       "value": 16384
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 3066,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 44.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 36.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 10.3,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.8,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 13.64,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 6.282,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1092.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 71.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 52
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 69.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 52
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 220,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 58.65,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1434,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.342,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 34.5,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 38,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 62
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.93,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aider-polyglot-edit",
+      "score": 44.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "charxiv-d",
+      "score": 90,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 55.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "collie",
+      "score": 72.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "complexfuncbench",
+      "score": 63,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 69.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 60
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-lt-128k",
+      "score": 72.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "graphwalks-parents-lt-128k",
+      "score": 72.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 97,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-4-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-4-5/",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 88.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "internal-api-instruction-following-(hard)",
+      "score": 54,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 72.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 90.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 85.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 75.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 43.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "multichallenge-(o3-mini-grader)",
+      "score": 50.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 70.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "openai-mrcr:-2-needle-128k",
+      "score": 38.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 62.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-4-5/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 37.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 17.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 68.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 8
+    }
+  ]
 }

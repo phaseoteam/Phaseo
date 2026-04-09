@@ -14,5 +14,46 @@
   "api_model_id": "baidu/ernie-5.0-preview-1203",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 87,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-5.0",
+      "source_link": "https://www.baidu.com/",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 85,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-5.0",
+      "source_link": "https://www.baidu.com/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 39,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-5.0",
+      "source_link": "https://www.baidu.com/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 87,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-5.0",
+      "source_link": "https://www.baidu.com/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-5.0",
+      "source_link": "https://www.baidu.com/",
+      "rank": 3
+    }
+  ]
 }

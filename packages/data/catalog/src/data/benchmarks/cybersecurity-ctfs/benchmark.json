@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cybersecurity-ctfs",
+  "benchmark_name": "Cybersecurity CTFs",
+  "category": "safety",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

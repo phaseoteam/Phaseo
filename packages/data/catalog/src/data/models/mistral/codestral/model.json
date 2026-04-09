@@ -14,5 +14,62 @@
   "api_model_id": "mistral/codestral",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "cruxeval-o",
+      "score": 0.513,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 81.1,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "humaneval-average",
+      "score": 0.615,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "humanevalfim-average",
+      "score": 0.916,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.782,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "repobench",
+      "score": 0.34,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "spider",
+      "score": 0.635,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from codestral-22b",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 1
+    }
+  ]
 }

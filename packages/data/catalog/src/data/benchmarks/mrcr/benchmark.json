@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mrcr",
+  "benchmark_name": "MRCR",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 28
+}

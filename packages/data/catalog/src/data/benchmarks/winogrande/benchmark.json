@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "winogrande",
+  "benchmark_name": "Winogrande",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 17
+}

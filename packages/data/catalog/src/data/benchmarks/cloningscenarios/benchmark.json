@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cloningscenarios",
+  "benchmark_name": "CloningScenarios",
+  "category": "healthcare",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

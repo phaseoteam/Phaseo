@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "facts-grounding",
+  "benchmark_name": "FACTS Grounding",
+  "category": "factuality",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 23
+}

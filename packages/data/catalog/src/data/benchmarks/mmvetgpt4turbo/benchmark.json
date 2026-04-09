@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmvetgpt4turbo",
+  "benchmark_name": "MMVetGPT4Turbo",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 2
+}

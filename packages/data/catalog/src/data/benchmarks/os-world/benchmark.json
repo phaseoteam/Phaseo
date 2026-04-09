@@ -3,6 +3,7 @@
   "benchmark_name": "OSWorld",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://os-world.github.io/",
-  "total_models": 0
+  "total_models": 48
 }

@@ -1,0 +1,18 @@
+{
+  "model_id": "voyage/voyage-4-large",
+  "organisation_id": "voyage",
+  "name": "Voyage 4 Large",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "embeddings",
+  "api_model_id": "voyage/voyage-4-large",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

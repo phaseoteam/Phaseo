@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "flame-vlm-code",
+  "benchmark_name": "Flame-VLM-Code",
+  "category": "coding",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

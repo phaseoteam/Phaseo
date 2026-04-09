@@ -3,6 +3,7 @@
   "benchmark_name": "MathArena",
   "category": null,
   "ascending_order": null,
+  "type": "numerical",
   "link": "https://matharena.ai/",
   "total_models": 0
 }

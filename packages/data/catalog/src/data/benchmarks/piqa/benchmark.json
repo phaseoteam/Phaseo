@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "piqa",
+  "benchmark_name": "PIQA",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 12
+}

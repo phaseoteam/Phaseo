@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "biolp-bench",
+  "benchmark_name": "BioLP-Bench",
+  "category": "biology",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

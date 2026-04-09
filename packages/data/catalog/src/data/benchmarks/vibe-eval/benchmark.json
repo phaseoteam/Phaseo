@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vibe-eval",
+  "benchmark_name": "Vibe-Eval",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 29
+}

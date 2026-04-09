@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vibe-backend",
+  "benchmark_name": "VIBE Backend",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

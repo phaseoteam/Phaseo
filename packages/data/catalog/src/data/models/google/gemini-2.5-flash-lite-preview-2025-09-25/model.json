@@ -15,5 +15,110 @@
   "family_id": "google/gemini-2-5",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 26.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 49.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 70
+    },
+    {
+      "benchmark_id": "arc",
+      "score": 0.025,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 84.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "global-mmlu-lite",
+      "score": 81.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 64.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 68
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 5.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 33.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 72.9,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "mrcr-v2",
+      "score": 0.166,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 10.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 31.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 64
+    },
+    {
+      "benchmark_id": "vibe-eval",
+      "score": 51.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-flash-lite",
+      "source_link": "https://deepmind.google/models/gemini/flash-lite/",
+      "rank": 6
+    }
+  ]
 }

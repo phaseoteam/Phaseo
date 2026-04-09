@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "natural-questions",
+  "benchmark_name": "Natural Questions",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

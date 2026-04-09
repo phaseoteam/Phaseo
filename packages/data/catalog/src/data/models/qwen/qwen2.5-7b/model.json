@@ -27,5 +27,14 @@
       "value": 33500000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 36.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5-llm/",
+      "rank": 99
+    }
+  ]
 }

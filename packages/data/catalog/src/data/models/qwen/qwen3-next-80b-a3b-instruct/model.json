@@ -14,5 +14,198 @@
   "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 49.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 69.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 60
+    },
+    {
+      "benchmark_id": "arena-hard-v2",
+      "score": 82.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "bfcl-v3",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "creative-writing-v3",
+      "score": 85.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 72.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 51
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 54.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 87.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "include",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livebench-20241125",
+      "score": 75.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 56.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 76.7,
+      "is_self_reported": true,
+      "other_info": "MMLU-ProX",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 90.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 75.8,
+      "is_self_reported": true,
+      "other_info": "MultiIF",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "multipl-e",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "polymath",
+      "score": 45.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 58.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 45.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 57.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 13.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 44,
+      "is_self_reported": true,
+      "other_info": "TAU1-Airline",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 60.9,
+      "is_self_reported": true,
+      "other_info": "TAU1-Retail",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "writingbench",
+      "score": 87.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
+      "rank": 2
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "activitynet",
+  "benchmark_name": "ActivityNet",
+  "category": "video",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 9
+}

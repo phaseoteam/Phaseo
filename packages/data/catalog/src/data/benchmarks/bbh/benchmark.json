@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "bbh",
+  "benchmark_name": "BBH",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 12
+}

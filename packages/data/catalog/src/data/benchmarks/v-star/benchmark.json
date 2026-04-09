@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "v-star",
+  "benchmark_name": "V*",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 6
+}

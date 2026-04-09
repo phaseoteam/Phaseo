@@ -24,5 +24,142 @@
       "value": 32768
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 729,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 8.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 29.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "browsecomp-long-context-128k",
+      "score": 89.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "browsecomp-long-context-256k",
+      "score": 19.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 903.6,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com/",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 50.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 77
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-lt-128k",
+      "score": 25,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "graphwalks-parents-lt-128k",
+      "score": 9.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 40.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1318,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.086,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "openai-mrcr-2-needle-128k",
+      "score": 36.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "openai-mrcr-2-needle-256k",
+      "score": 22.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "videomme",
+      "score": 55.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
+      "rank": 8
+    }
+  ]
 }

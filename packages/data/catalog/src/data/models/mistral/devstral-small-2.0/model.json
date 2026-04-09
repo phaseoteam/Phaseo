@@ -14,5 +14,14 @@
   "api_model_id": "mistral/devstral-small-2.0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 53.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from devstral-small-2507",
+      "source_link": "https://huggingface.co/mistralai/Devstral-Small-2507",
+      "rank": 56
+    }
+  ]
 }

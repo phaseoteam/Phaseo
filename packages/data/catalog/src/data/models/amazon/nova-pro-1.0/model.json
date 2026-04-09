@@ -32,5 +32,54 @@
       "value": 10000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "confabulations",
+      "score": 30.05,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.75,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 46.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.amazon.science/publications/the-amazon-nova-family-of-models-technical-report-and-model-card",
+      "rank": 82
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1286,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.101,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.11,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 20
+    }
+  ]
 }

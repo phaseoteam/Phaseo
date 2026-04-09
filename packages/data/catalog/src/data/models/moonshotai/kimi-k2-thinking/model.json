@@ -29,5 +29,174 @@
       "value": "2024-12-31T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 60.2,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "browsecomp-zh",
+      "score": 62.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "finsearchcomp-t3",
+      "score": 0.474,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Thinking",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frames",
+      "score": 0.87,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 84.5,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "healthbench",
+      "score": 58,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 97.5,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 51,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "imoanswerbench",
+      "score": 78.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Thinking",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 83.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 84.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 94.4,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "multi-swe-bench",
+      "score": 41.9,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "ojbench",
+      "score": 48.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 44.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "seal-0",
+      "score": 56.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Thinking",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 61.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 71.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 47.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "writingbench",
+      "score": 73.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from kimi-k2-thinking-0905",
+      "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
+      "rank": 13
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vcr-en-easy",
+  "benchmark_name": "VCR_en_easy",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 2
+}

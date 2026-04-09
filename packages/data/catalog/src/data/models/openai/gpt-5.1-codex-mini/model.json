@@ -15,5 +15,14 @@
   "family_id": "openai/gpt-5-1",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 42.1,
+      "is_self_reported": true,
+      "other_info": "GPT-5.1 Codex Mini w/ python",
+      "source_link": "https://openai.com/",
+      "rank": 76
+    }
+  ]
 }

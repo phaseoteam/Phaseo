@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mm-if-eval",
+  "benchmark_name": "MM IF-Eval",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

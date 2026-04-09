@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmlu-french",
+  "benchmark_name": "MMLU French",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 4
+}

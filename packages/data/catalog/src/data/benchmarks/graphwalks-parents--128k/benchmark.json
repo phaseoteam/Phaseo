@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "graphwalks-parents->128k",
+  "benchmark_name": "Graphwalks parents >128k",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

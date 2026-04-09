@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aider",
+  "benchmark_name": "Aider",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

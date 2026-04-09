@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "browsecomp-zh",
+  "benchmark_name": "BrowseComp-zh",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 15
+}

@@ -15,5 +15,14 @@
   "family_id": "meta/llama-3-0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 41.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Meta-Llama-3.1-70B-Instruct",
+      "rank": 90
+    }
+  ]
 }

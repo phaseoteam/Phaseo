@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ivebench-overall-vs-kling-o1",
+  "benchmark_name": "IVEBench Overall vs Kling o1",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://x.ai/news/grok-imagine-api",
+  "total_models": 1
+}

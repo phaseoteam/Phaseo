@@ -3,6 +3,7 @@
   "benchmark_name": "XLANG Agent",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://arena.xlang.ai/leaderboard",
   "total_models": 0
 }

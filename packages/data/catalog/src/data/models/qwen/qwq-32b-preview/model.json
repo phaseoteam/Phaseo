@@ -52,5 +52,46 @@
       "value": 32768
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 65.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 65.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
+      "rank": 67
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 90.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
+      "rank": 13
+    }
+  ]
 }

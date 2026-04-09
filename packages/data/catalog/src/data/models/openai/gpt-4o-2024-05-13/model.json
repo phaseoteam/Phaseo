@@ -44,7 +44,71 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "drop",
+      "score": 83.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
       "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 53.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 79
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 90.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "math",
+      "score": 76.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 63.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mgsm",
+      "score": 90.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 88.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 72.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/blog/gpt-4o",
+      "rank": 53
     }
   ]
 }

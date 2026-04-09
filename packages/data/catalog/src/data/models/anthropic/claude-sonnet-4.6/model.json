@@ -27,5 +27,222 @@
       "value": "2025-08-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 79.6,
+      "is_self_reported": true,
+      "other_info": "Verified",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 75.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 59.1,
+      "is_self_reported": true,
+      "other_info": "Default thinking (no thinking budget)",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 91.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 97.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 61.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 72.5,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 58.3,
+      "is_self_reported": true,
+      "other_info": "Verified; max effort",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 60.42,
+      "is_self_reported": true,
+      "other_info": "ARC Prize Foundation private dataset; 120k thinking tokens; high effort",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 86.5,
+      "is_self_reported": true,
+      "other_info": "ARC Prize Foundation private dataset; 120k thinking tokens; high effort",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 89.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 95.6,
+      "is_self_reported": true,
+      "other_info": "Without tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 89.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1633,
+      "is_self_reported": true,
+      "other_info": "Elo",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 74.5,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 75.6,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 33.2,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 49,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 63.3,
+      "is_self_reported": true,
+      "other_info": "Max thinking; Vals AI",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 61.4,
+      "is_self_reported": true,
+      "other_info": "High thinking; Vals AI",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 7204.14,
+      "is_self_reported": true,
+      "other_info": "Max effort final balance",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 6625.1,
+      "is_self_reported": true,
+      "other_info": "High effort final balance",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 74.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1633,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 89.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1633,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1633,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
+      "rank": 1
+    }
+  ]
 }

@@ -1,0 +1,590 @@
+[
+  {
+    "api_model_id": "voyage/voyage-4-large",
+    "provider_api_model_id": "voyage:voyage/voyage-4-large",
+    "provider_model_slug": "voyage-4-large",
+    "internal_model_id": "voyage/voyage-4-large",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-4",
+    "provider_api_model_id": "voyage:voyage/voyage-4",
+    "provider_model_slug": "voyage-4",
+    "internal_model_id": "voyage/voyage-4",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-4-lite",
+    "provider_api_model_id": "voyage:voyage/voyage-4-lite",
+    "provider_model_slug": "voyage-4-lite",
+    "internal_model_id": "voyage/voyage-4-lite",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-context-3",
+    "provider_api_model_id": "voyage:voyage/voyage-context-3",
+    "provider_model_slug": "voyage-context-3",
+    "internal_model_id": "voyage/voyage-context-3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-code-3",
+    "provider_api_model_id": "voyage:voyage/voyage-code-3",
+    "provider_model_slug": "voyage-code-3",
+    "internal_model_id": "voyage/voyage-code-3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-finance-2",
+    "provider_api_model_id": "voyage:voyage/voyage-finance-2",
+    "provider_model_slug": "voyage-finance-2",
+    "internal_model_id": "voyage/voyage-finance-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-law-2",
+    "provider_api_model_id": "voyage:voyage/voyage-law-2",
+    "provider_model_slug": "voyage-law-2",
+    "internal_model_id": "voyage/voyage-law-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-code-2",
+    "provider_api_model_id": "voyage:voyage/voyage-code-2",
+    "provider_model_slug": "voyage-code-2",
+    "internal_model_id": "voyage/voyage-code-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-3-large",
+    "provider_api_model_id": "voyage:voyage/voyage-3-large",
+    "provider_model_slug": "voyage-3-large",
+    "internal_model_id": "voyage/voyage-3-large",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-3.5",
+    "provider_api_model_id": "voyage:voyage/voyage-3.5",
+    "provider_model_slug": "voyage-3.5",
+    "internal_model_id": "voyage/voyage-3.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-3.5-lite",
+    "provider_api_model_id": "voyage:voyage/voyage-3.5-lite",
+    "provider_model_slug": "voyage-3.5-lite",
+    "internal_model_id": "voyage/voyage-3.5-lite",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-multilingual-2",
+    "provider_api_model_id": "voyage:voyage/voyage-multilingual-2",
+    "provider_model_slug": "voyage-multilingual-2",
+    "internal_model_id": "voyage/voyage-multilingual-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-large-2-instruct",
+    "provider_api_model_id": "voyage:voyage/voyage-large-2-instruct",
+    "provider_model_slug": "voyage-large-2-instruct",
+    "internal_model_id": "voyage/voyage-large-2-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-large-2",
+    "provider_api_model_id": "voyage:voyage/voyage-large-2",
+    "provider_model_slug": "voyage-large-2",
+    "internal_model_id": "voyage/voyage-large-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-01",
+    "provider_api_model_id": "voyage:voyage/voyage-01",
+    "provider_model_slug": "voyage-01",
+    "internal_model_id": "voyage/voyage-01",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-lite-01",
+    "provider_api_model_id": "voyage:voyage/voyage-lite-01",
+    "provider_model_slug": "voyage-lite-01",
+    "internal_model_id": "voyage/voyage-lite-01",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-lite-01-instruct",
+    "provider_api_model_id": "voyage:voyage/voyage-lite-01-instruct",
+    "provider_model_slug": "voyage-lite-01-instruct",
+    "internal_model_id": "voyage/voyage-lite-01-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-02",
+    "provider_api_model_id": "voyage:voyage/voyage-02",
+    "provider_model_slug": "voyage-02",
+    "internal_model_id": "voyage/voyage-02",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-lite-02-instruct",
+    "provider_api_model_id": "voyage:voyage/voyage-lite-02-instruct",
+    "provider_model_slug": "voyage-lite-02-instruct",
+    "internal_model_id": "voyage/voyage-lite-02-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-2",
+    "provider_api_model_id": "voyage:voyage/voyage-2",
+    "provider_model_slug": "voyage-2",
+    "internal_model_id": "voyage/voyage-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-3",
+    "provider_api_model_id": "voyage:voyage/voyage-3",
+    "provider_model_slug": "voyage-3",
+    "internal_model_id": "voyage/voyage-3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-3-lite",
+    "provider_api_model_id": "voyage:voyage/voyage-3-lite",
+    "provider_model_slug": "voyage-3-lite",
+    "internal_model_id": "voyage/voyage-3-lite",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/rerank-1",
+    "provider_api_model_id": "voyage:voyage/rerank-1",
+    "provider_model_slug": "rerank-1",
+    "internal_model_id": "voyage/rerank-1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "rerank",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/rerank-2",
+    "provider_api_model_id": "voyage:voyage/rerank-2",
+    "provider_model_slug": "rerank-2",
+    "internal_model_id": "voyage/rerank-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "rerank",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/rerank-lite-1",
+    "provider_api_model_id": "voyage:voyage/rerank-lite-1",
+    "provider_model_slug": "rerank-lite-1",
+    "internal_model_id": "voyage/rerank-lite-1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "rerank",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/rerank-2-lite",
+    "provider_api_model_id": "voyage:voyage/rerank-2-lite",
+    "provider_model_slug": "rerank-2-lite",
+    "internal_model_id": "voyage/rerank-2-lite",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "rerank",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-multimodal-3.5",
+    "provider_api_model_id": "voyage:voyage/voyage-multimodal-3.5",
+    "provider_model_slug": "voyage-multimodal-3.5",
+    "internal_model_id": "voyage/voyage-multimodal-3.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "voyage/voyage-multimodal-3",
+    "provider_api_model_id": "voyage:voyage/voyage-multimodal-3",
+    "provider_model_slug": "voyage-multimodal-3",
+    "internal_model_id": "voyage/voyage-multimodal-3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "embeddings",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

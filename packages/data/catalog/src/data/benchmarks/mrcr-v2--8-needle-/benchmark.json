@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mrcr-v2-(8-needle)",
+  "benchmark_name": "MRCR v2 (8-needle)",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 12
+}

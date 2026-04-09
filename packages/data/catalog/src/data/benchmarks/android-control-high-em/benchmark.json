@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "android-control-high-em",
+  "benchmark_name": "Android Control High_EM",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 11
+}

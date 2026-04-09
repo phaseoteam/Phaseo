@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "frontiermath",
+  "benchmark_name": "FrontierMath",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 6
+}

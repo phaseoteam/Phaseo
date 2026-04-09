@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "wmt24pp-metricx",
+  "benchmark_name": "WMT24++ MetricX",
+  "category": null,
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/translategemma-4b-it",
+  "total_models": 3
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "sifo-multiturn",
+  "benchmark_name": "SIFO-Multiturn",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

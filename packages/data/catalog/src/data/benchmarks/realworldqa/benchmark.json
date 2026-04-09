@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "realworldqa",
+  "benchmark_name": "RealWorldQA",
+  "category": "spatial_reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 45
+}

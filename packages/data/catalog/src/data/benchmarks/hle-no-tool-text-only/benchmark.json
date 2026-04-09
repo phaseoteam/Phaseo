@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "hle-no-tool-text-only",
+  "benchmark_name": "HLE (no tool, text only)",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

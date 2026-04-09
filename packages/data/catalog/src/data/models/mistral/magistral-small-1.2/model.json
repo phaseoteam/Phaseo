@@ -14,5 +14,38 @@
   "api_model_id": "mistral/magistral-small-1.2",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 70.68,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-small-2506",
+      "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 62.76,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-small-2506",
+      "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
+      "rank": 67
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 68.18,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-small-2506",
+      "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 51.3,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-small-2506",
+      "source_link": "https://mistral.ai/news/codestral/",
+      "rank": 29
+    }
+  ]
 }

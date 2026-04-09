@@ -1,0 +1,21 @@
+{
+  "key": "voyage:voyage/rerank-2.5-lite:text.rerank",
+  "api_provider_id": "voyage",
+  "provider_slug": "voyage",
+  "api_model_id": "voyage/rerank-2.5-lite",
+  "capability_id": "text.rerank",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.02,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

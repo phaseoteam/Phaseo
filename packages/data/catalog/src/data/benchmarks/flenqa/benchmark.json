@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "flenqa",
+  "benchmark_name": "FlenQA",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 2
+}

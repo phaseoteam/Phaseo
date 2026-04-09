@@ -15,5 +15,118 @@
   "family_id": "anthropic/claude-3-5",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 2734,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 51.6,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 16,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 44
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 19.94,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 6.261,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1067.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 65,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 64
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 167,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 51.8,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1364,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1237.67,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.177,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 41.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.93,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 12
+    }
+  ]
 }

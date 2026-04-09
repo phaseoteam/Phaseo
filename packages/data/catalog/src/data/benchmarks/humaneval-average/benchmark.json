@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "humaneval-average",
+  "benchmark_name": "HumanEval-Average",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 3
+}

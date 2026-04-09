@@ -36,5 +36,62 @@
       "value": 2000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "deepplanning-v1.1-avg-acc",
+      "score": 5.2,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-cs-score",
+      "score": 39.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-ps-score",
+      "score": 19.7,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-comp-score",
+      "score": 29.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-case-acc",
+      "score": 0,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-shopping-match-score",
+      "score": 52.9,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-shopping-case-acc",
+      "score": 10.4,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | xAI/Grok-4.1-fast (non-reasoning)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 3
+    }
+  ]
 }

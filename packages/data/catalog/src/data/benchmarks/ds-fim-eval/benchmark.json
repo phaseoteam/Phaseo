@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ds-fim-eval",
+  "benchmark_name": "DS-FIM-Eval",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 2
+}
