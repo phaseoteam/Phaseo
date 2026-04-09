@@ -7,8 +7,14 @@ import {
   revalidateModelDataOnlyTags,
   revalidateModelDataTags,
 } from "@/lib/cache/revalidateDataTags"
+import {
+  MODEL_MODALITY_OPTIONS,
+  normalizeCapabilityStatus,
+  normalizeModelStatus,
+  type CapabilityStatusOption,
+} from "@/lib/models/editorOptions"
 
-const CORE_TYPE_OPTIONS = ["text", "image", "audio", "video"] as const
+const CORE_TYPE_OPTIONS = MODEL_MODALITY_OPTIONS
 const MODEL_DETAIL_NAME_OPTIONS = [
   "input_context_length",
   "output_context_length",
@@ -154,6 +160,8 @@ export interface ModelUpdatePayload {
     input_modalities?: string | null
     output_modalities?: string | null
     quantization_scheme?: string | null
+    context_length?: number | null
+    max_output_tokens?: number | null
     effective_from?: string | null
     effective_to?: string | null
   }>
@@ -161,7 +169,7 @@ export interface ModelUpdatePayload {
     provider_id: string
     api_model_id: string
     capability_id: string
-    status?: "active" | "deranked" | "disabled" | null
+    status?: CapabilityStatusOption | null
     max_input_tokens?: number | null
     max_output_tokens?: number | null
     effective_from?: string | null
@@ -298,7 +306,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
   if (organisation_id !== undefined) modelUpdate.organisation_id = organisation_id
   if (license !== undefined) modelUpdate.license = license
   if (hidden !== undefined) modelUpdate.hidden = hidden
-  if (status !== undefined) modelUpdate.status = status
+  if (status !== undefined) modelUpdate.status = normalizeModelStatus(status)
   if (announcement_date !== undefined) modelUpdate.announcement_date = announcement_date
   if (release_date !== undefined) modelUpdate.release_date = release_date
   if (deprecation_date !== undefined) modelUpdate.deprecation_date = deprecation_date
@@ -578,28 +586,33 @@ export async function updateModel(payload: ModelUpdatePayload) {
 
     const providerRows = provider_models
       .filter((pm) => pm.provider_id)
-      .map((pm) => ({
-        api_model_id: modelId,
-        provider_api_model_id:
-          pm.id && !pm.id.startsWith("new-")
-            ? pm.id
-            : buildProviderApiModelId(pm.provider_id, modelId),
-        provider_id: pm.provider_id,
-        provider_model_slug: pm.provider_model_slug ?? null,
-        prompt_training_policy_override: pm.prompt_training_policy_override ?? null,
-        prompt_training_override_notes: pm.prompt_training_override_notes ?? null,
-        prompt_training_override_source_url:
-          pm.prompt_training_override_source_url ?? null,
-        internal_model_id: null,
-        is_active_gateway: pm.is_active_gateway ?? false,
-        input_modalities: pm.input_modalities ?? null,
-        output_modalities: pm.output_modalities ?? null,
-        quantization_scheme: pm.quantization_scheme ?? null,
-        effective_from: pm.effective_from ?? null,
-        effective_to: pm.effective_to ?? null,
-        created_at: nowIso,
-        updated_at: nowIso,
-      }))
+      .map((pm) => {
+        const apiModelId = pm.api_model_id?.trim() || modelId
+        return {
+          api_model_id: apiModelId,
+          provider_api_model_id:
+            pm.id && !pm.id.startsWith("new-")
+              ? pm.id
+              : buildProviderApiModelId(pm.provider_id, apiModelId),
+          provider_id: pm.provider_id,
+          provider_model_slug: pm.provider_model_slug ?? null,
+          prompt_training_policy_override: pm.prompt_training_policy_override ?? null,
+          prompt_training_override_notes: pm.prompt_training_override_notes ?? null,
+          prompt_training_override_source_url:
+            pm.prompt_training_override_source_url ?? null,
+          internal_model_id: modelId,
+          is_active_gateway: pm.is_active_gateway ?? false,
+          input_modalities: pm.input_modalities ?? null,
+          output_modalities: pm.output_modalities ?? null,
+          quantization_scheme: pm.quantization_scheme ?? null,
+          context_length: pm.context_length ?? null,
+          max_output_tokens: pm.max_output_tokens ?? null,
+          effective_from: pm.effective_from ?? null,
+          effective_to: pm.effective_to ?? null,
+          created_at: nowIso,
+          updated_at: nowIso,
+        }
+      })
 
     const incomingProviderPairs = dedupeProviderPairs(
       providerRows.map((row) => ({
@@ -691,13 +704,11 @@ export async function updateModel(payload: ModelUpdatePayload) {
       .filter((capability) => capability.provider_id && capability.capability_id)
       .map((capability) => {
         const capabilityId = capability.capability_id.trim()
+        const apiModelId = capability.api_model_id?.trim() || modelId
         const providerApiModelId =
-          providerApiModelIdByPair.get(`${capability.provider_id}:${modelId}`) ??
-          buildProviderApiModelId(capability.provider_id, modelId)
-        const parsedStatus =
-          capability.status === "deranked" || capability.status === "disabled"
-            ? capability.status
-            : "active"
+          providerApiModelIdByPair.get(`${capability.provider_id}:${apiModelId}`) ??
+          buildProviderApiModelId(capability.provider_id, apiModelId)
+        const parsedStatus = normalizeCapabilityStatus(capability.status)
         const existingWindow = existingCapabilityWindowByKey.get(
           `${providerApiModelId}:::${capabilityId || "text.generate"}`
         )
