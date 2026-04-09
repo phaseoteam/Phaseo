@@ -2,6 +2,15 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import {
+	benchmarkOrderFromAscending,
+	formatBenchmarkScore,
+	getLowerIsBetter,
+	normalizeBenchmarkScoreValue,
+	normalizeBenchmarkScoreType,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 export interface ModelBenchmarkOrganisation {
 	organisation_id: string;
@@ -31,6 +40,7 @@ export interface ModelBenchmarkResult {
 		max_score: number | null;
 		order: string | null;
 		ascending_order: boolean | null;
+		type: "percentage" | "numerical" | null;
 	};
 }
 
@@ -73,6 +83,7 @@ export interface BenchmarkComparisonChart {
 	benchmarkName: string;
 	totalModels: number | null;
 	isLowerBetter: boolean;
+	isPercentage: boolean;
 	current: {
 		score: number | null;
 		scoreDisplay: string;
@@ -94,41 +105,6 @@ function modelBenchmarkTag(modelId: string): string {
 
 function modelBenchmarkPairTag(modelId: string, benchmarkId: string): string {
 	return `data:benchmarks:model:${modelId}:benchmark:${benchmarkId}`;
-}
-
-function parseScore(
-	value: string | number | null | undefined
-): number | null {
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : null;
-	}
-
-	if (typeof value === "string") {
-		const match = value.match(/[-+]?[0-9]*\.?[0-9]+/);
-		if (!match) return null;
-
-		const parsed = Number.parseFloat(match[0]);
-		return Number.isFinite(parsed) ? parsed : null;
-	}
-
-	return null;
-}
-
-function formatScore(
-	value: number | null,
-	isPercentage: boolean,
-	fallback?: string | number | null
-): string {
-	if (value == null) {
-		if (fallback == null) return "-";
-		return typeof fallback === "number" ? fallback.toString() : String(fallback);
-	}
-
-	const formatted =
-		value % 1 === 0 || Math.abs(value) >= 100
-			? value.toFixed(0)
-			: value.toFixed(2);
-	return isPercentage ? `${formatted}%` : formatted;
 }
 
 function normalizeMaybeArray<T>(value: T | T[] | null | undefined): T | null {
@@ -168,7 +144,9 @@ async function fetchBenchmarkResultsRaw(
 						name,
 						category,
 						link,
-						total_models
+						total_models,
+						ascending_order,
+						type
 					)
 				)
 			`
@@ -206,11 +184,20 @@ async function fetchBenchmarkResultsRaw(
 	const results: ModelBenchmarkResult[] = (data.benchmark_results ?? [])
 		.map((result: any) => {
 			const rawScore = result?.score ?? null;
-			const numericScore = parseScore(rawScore);
-			const isPercentage =
-				typeof rawScore === "string" && rawScore.includes("%");
-
 			const benchmark = normalizeMaybeArray(result?.benchmark) ?? {};
+			const benchmarkType = normalizeBenchmarkScoreType(benchmark.type);
+			const isPercentage = resolveBenchmarkIsPercentage({
+				benchmarkType,
+				rawScore,
+			});
+			const numericScore = normalizeBenchmarkScoreValue(
+				parseBenchmarkScore(rawScore),
+				isPercentage
+			);
+			const ascendingOrder =
+				typeof benchmark.ascending_order === "boolean"
+					? benchmark.ascending_order
+					: null;
 
 			const identifier =
 				result.id ??
@@ -225,7 +212,11 @@ async function fetchBenchmarkResultsRaw(
 				benchmark_id: result.benchmark_id ?? benchmark.id ?? "",
 				score: numericScore,
 				raw_score: rawScore,
-				score_display: formatScore(numericScore, isPercentage, rawScore),
+				score_display: formatBenchmarkScore({
+					value: numericScore,
+					isPercentage,
+					fallback: rawScore,
+				}),
 				is_percentage: isPercentage,
 				is_self_reported: Boolean(result.is_self_reported),
 				other_info: result.other_info ?? null,
@@ -240,8 +231,9 @@ async function fetchBenchmarkResultsRaw(
 					link: benchmark.link ?? null,
 					total_models: benchmark.total_models ?? null,
 					max_score: null,
-					order: null,
-					ascending_order: null,
+					order: benchmarkOrderFromAscending(ascendingOrder),
+					ascending_order: ascendingOrder,
+					type: benchmarkType,
 				},
 			} satisfies ModelBenchmarkResult;
 		})
@@ -293,7 +285,13 @@ function selectHighlightResults(
 		}
 
 		if (existing.score != null && result.score != null) {
-			const better = result.score > existing.score;
+			const isLowerBetter = getLowerIsBetter(
+				result.benchmark.order,
+				result.benchmark.ascending_order
+			);
+			const better = isLowerBetter
+				? result.score < existing.score
+				: result.score > existing.score;
 			if (better) {
 				byBenchmark.set(key, result);
 			}
@@ -373,8 +371,13 @@ type ComparisonRow = {
 };
 
 function determineIsLowerBetter(
-	models: BenchmarkComparisonModel[]
+	models: BenchmarkComparisonModel[],
+	lowerIsBetterHint?: boolean | null
 ): boolean {
+	if (typeof lowerIsBetterHint === "boolean") {
+		return lowerIsBetterHint;
+	}
+
 	const ranked = models
 		.map((model) => {
 			const firstNumeric = model.scores.find(
@@ -403,9 +406,11 @@ function determineIsLowerBetter(
 
 function aggregateComparisonRows(
 	rows: ComparisonRow[],
-	currentModelId: string
+	currentModelId: string,
+	options?: { benchmarkType?: "percentage" | "numerical" | null; lowerIsBetterHint?: boolean | null }
 ): { models: BenchmarkComparisonModel[]; isLowerBetter: boolean } {
 	const map = new Map<string, BenchmarkComparisonModel>();
+	const benchmarkType = options?.benchmarkType ?? null;
 
 	for (const row of rows) {
 		const modelEntry = normalizeMaybeArray(row.model);
@@ -442,13 +447,22 @@ function aggregateComparisonRows(
 		}
 
 		const rawScore = row.score;
-		const numericScore = parseScore(rawScore);
-		const isPercentage =
-			typeof rawScore === "string" && rawScore.includes("%");
+		const isPercentage = resolveBenchmarkIsPercentage({
+			benchmarkType,
+			rawScore,
+		});
+		const numericScore = normalizeBenchmarkScoreValue(
+			parseBenchmarkScore(rawScore),
+			isPercentage
+		);
 
 		entry.scores.push({
 			score: numericScore,
-			scoreDisplay: formatScore(numericScore, isPercentage, rawScore),
+			scoreDisplay: formatBenchmarkScore({
+				value: numericScore,
+				isPercentage,
+				fallback: rawScore,
+			}),
 			isPercentage,
 			isSelfReported: Boolean(row.is_self_reported),
 			otherInfo: row.other_info ?? null,
@@ -457,7 +471,10 @@ function aggregateComparisonRows(
 	}
 
 	const models = Array.from(map.values());
-	const isLowerBetter = determineIsLowerBetter(models);
+	const isLowerBetter = determineIsLowerBetter(
+		models,
+		options?.lowerIsBetterHint ?? null
+	);
 
 	for (const model of models) {
 		const numericScores = model.scores
@@ -482,11 +499,11 @@ function aggregateComparisonRows(
 				model.topScoreDisplay = selectedDetail.scoreDisplay;
 				model.isPercentage = selectedDetail.isPercentage;
 			} else {
-				model.topScoreDisplay = formatScore(
-					selectedScore,
-					model.scores[0]?.isPercentage ?? false,
-					selectedScore
-				);
+				model.topScoreDisplay = formatBenchmarkScore({
+					value: selectedScore,
+					isPercentage: model.scores[0]?.isPercentage ?? false,
+					fallback: selectedScore,
+				});
 				model.isPercentage =
 					model.scores[0]?.isPercentage ?? false;
 			}
@@ -553,6 +570,10 @@ async function fetchBenchmarkComparisonCharts(
 					other_info,
 					source_link,
 					rank,
+					benchmark:data_benchmarks (
+						ascending_order,
+						type
+					),
 					model:data_models (
 						model_id,
 						name,
@@ -582,14 +603,26 @@ async function fetchBenchmarkComparisonCharts(
 			return !modelEntry?.hidden;
 		});
 		if (!rows.length) continue;
+		const benchmarkType = result.benchmark.type;
+		const lowerIsBetterHint = getLowerIsBetter(
+			result.benchmark.order,
+			result.benchmark.ascending_order
+		);
 
-		const aggregated = aggregateComparisonRows(rows, currentModelId);
+		const aggregated = aggregateComparisonRows(rows, currentModelId, {
+			benchmarkType,
+			lowerIsBetterHint,
+		});
 
 		charts.push({
 			benchmarkId: result.benchmark_id,
 			benchmarkName: result.benchmark.name || result.benchmark_id,
 			totalModels: result.benchmark.total_models ?? null,
 			isLowerBetter: aggregated.isLowerBetter,
+			isPercentage: resolveBenchmarkIsPercentage({
+				benchmarkType,
+				rawScore: result.raw_score,
+			}),
 			current: {
 				score: result.score,
 				scoreDisplay: result.score_display,

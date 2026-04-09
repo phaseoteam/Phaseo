@@ -1,5 +1,11 @@
 import type { ExtendedModel } from "@/data/types";
 import { ProviderLogo } from "../ProviderLogo";
+import {
+	getLowerIsBetter,
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 interface KeyTakeawaysProps {
 	selectedModels: ExtendedModel[];
@@ -61,17 +67,39 @@ function getKeyPoints(model: ExtendedModel, allModels: ExtendedModel[]) {
 	if (model.benchmark_results && model.benchmark_results.length > 0) {
 		// Find best scores for this model
 		const bests = model.benchmark_results.filter((b) => {
-			const score = parseFloat(b.score.toString().replace("%", ""));
+			const benchmarkType = b.benchmark.type;
+			const isLowerBetter = getLowerIsBetter(b.benchmark.order);
+			const peerRawScores = allModels.map(
+				(m) =>
+					m.benchmark_results?.find(
+						(x) => x.benchmark.name === b.benchmark.name
+					)?.score
+			);
+			const isPercent = resolveBenchmarkIsPercentage({
+				benchmarkType,
+				fallback: peerRawScores.some(
+					(score) =>
+						typeof score === "string" &&
+						String(score).trim().endsWith("%")
+				),
+			});
+			const score = normalizeBenchmarkScoreValue(
+				parseBenchmarkScore(b.score),
+				isPercent
+			);
+			if (score == null) return false;
 			return allModels.every((m) => {
 				if (m.id === model.id) return true;
 				const other = m.benchmark_results?.find(
 					(x) => x.benchmark.name === b.benchmark.name
 				);
 				if (!other) return true;
-				const otherScore = parseFloat(
-					other.score.toString().replace("%", "")
+				const otherScore = normalizeBenchmarkScoreValue(
+					parseBenchmarkScore(other.score),
+					isPercent
 				);
-				return score >= otherScore;
+				if (otherScore == null) return true;
+				return isLowerBetter ? score <= otherScore : score >= otherScore;
 			});
 		});
 		bests.forEach((b) =>

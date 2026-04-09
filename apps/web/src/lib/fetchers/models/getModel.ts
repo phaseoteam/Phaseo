@@ -38,6 +38,7 @@ export interface ModelPage {
             name: string;
             category: string | null;
             ascending_order: boolean;
+            type?: "percentage" | "numerical" | null;
             link: string | null;
         };
     }[];
@@ -114,6 +115,7 @@ export default async function getModel(
                 name,
                 category,
                 ascending_order,
+                type,
                 link
             )
         )

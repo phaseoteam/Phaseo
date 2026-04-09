@@ -56,9 +56,9 @@ function getLicenseDescriptionCard(models: ExtendedModel[]) {
 						<>
 							<span className="block font-medium">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										first.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -69,9 +69,9 @@ function getLicenseDescriptionCard(models: ExtendedModel[]) {
 								{firstPhrase}
 								, while{" "}
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										second.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -206,9 +206,9 @@ export default function LicenseType({ selectedModels }: LicenseTypeProps) {
 								{getLicenseIcon(model.license)}
 								<span className="font-semibold ml-2 text-base">
 									<Link
-										href={`/models/${encodeURIComponent(
+										href={`/models/${
 											model.id
-										)}`}
+										}`}
 										className="group"
 									>
 										<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">

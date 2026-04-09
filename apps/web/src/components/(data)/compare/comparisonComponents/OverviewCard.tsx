@@ -10,6 +10,11 @@ function formatMonthYear(value: string | null | undefined): string {
 	return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+function formatCount(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value)) return "-";
+	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
 function toTypeList(value: ExtendedModel["input_types"]): string[] {
 	if (!value) return [];
 	if (Array.isArray(value)) return value.filter(Boolean);
@@ -22,7 +27,7 @@ function toTypeList(value: ExtendedModel["input_types"]): string[] {
 function normalizeTypeLabel(value: string): string {
 	const v = value.trim().toLowerCase();
 	if (v === "text") return "Text";
-	if (v === "image") return "Vision";
+	if (v === "image") return "Image";
 	if (v === "audio") return "Audio";
 	if (v === "video") return "Video";
 	if (v === "embedding" || v === "embeddings") return "Embeddings";
@@ -49,8 +54,7 @@ export default function OverviewCard({
 			<header className="space-y-1">
 				<h2 className="text-lg font-semibold">Overview</h2>
 				<p className="text-sm text-muted-foreground">
-					Capabilities, modalities, and lifecycle fields pulled from the model
-					database.
+					Input/output modalities and key model metadata from the catalog.
 				</p>
 			</header>
 
@@ -58,14 +62,6 @@ export default function OverviewCard({
 				{selectedModels.map((m) => {
 					const inputTypes = toTypeList(m.input_types).map(normalizeTypeLabel);
 					const outputTypes = toTypeList(m.output_types).map(normalizeTypeLabel);
-					const modalities = Array.from(new Set([...inputTypes, ...outputTypes])).slice(
-						0,
-						6
-					);
-
-					const capabilities: string[] = [];
-					if (m.reasoning) capabilities.push("Reasoning");
-					if (m.web_access) capabilities.push("Web access");
 
 					return (
 						<div
@@ -86,7 +82,7 @@ export default function OverviewCard({
 							</Link>
 							<div className="min-w-0">
 								<Link
-									href={`/models/${encodeURIComponent(m.id)}`}
+									href={`/models/${m.id}`}
 									className="block truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									{m.name}
@@ -100,13 +96,13 @@ export default function OverviewCard({
 						<div className="mt-4 space-y-3 text-sm">
 							<div className="space-y-1">
 								<div className="text-[11px] font-medium text-muted-foreground">
-									Modalities
+									Input Modalities
 								</div>
 								<div className="flex flex-wrap gap-1.5">
-									{modalities.length ? (
-										modalities.map((chip) => (
+									{inputTypes.length ? (
+										inputTypes.map((chip) => (
 											<Badge
-												key={`${m.id}-${chip}`}
+												key={`${m.id}-input-${chip}`}
 												variant="outline"
 												className="text-[10px]"
 											>
@@ -120,15 +116,15 @@ export default function OverviewCard({
 							</div>
 							<div className="space-y-1">
 								<div className="text-[11px] font-medium text-muted-foreground">
-									Capabilities
+									Output Modalities
 								</div>
 								<div className="flex flex-wrap gap-1.5">
-									{capabilities.length ? (
-										capabilities.map((chip) => (
+									{outputTypes.length ? (
+										outputTypes.map((chip) => (
 											<Badge
-												key={`${m.id}-${chip}`}
-												variant="secondary"
-												className="text-[10px] bg-background/60"
+												key={`${m.id}-output-${chip}`}
+												variant="outline"
+												className="text-[10px]"
 											>
 												{chip}
 											</Badge>
@@ -148,9 +144,23 @@ export default function OverviewCard({
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">Cutoff</span>
+								<span className="text-xs text-muted-foreground">
+									Knowledge Cutoff
+								</span>
 								<span className="font-mono text-xs text-foreground">
 									{formatMonthYear(m.knowledge_cutoff)}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-xs text-muted-foreground">Context</span>
+								<span className="font-mono text-xs text-foreground">
+									{formatCount(m.input_context_length)}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-xs text-muted-foreground">Max Output</span>
+								<span className="font-mono text-xs text-foreground">
+									{formatCount(m.output_context_length)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
@@ -173,4 +183,3 @@ export default function OverviewCard({
 		</section>
 	);
 }
-
