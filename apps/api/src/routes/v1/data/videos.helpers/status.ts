@@ -123,7 +123,7 @@ export function mapRunwayVideoStatus(value: unknown): "queued" | "in_progress" |
 
 export function mapAtlasVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
 	const status = String(value ?? "").toLowerCase();
-	if (status === "succeeded" || status === "success" || status === "completed" || status === "done") {
+	if (status === "succeeded" || status === "success" || status === "completed" || status === "done" || status === "finished") {
 		return "completed";
 	}
 	if (
