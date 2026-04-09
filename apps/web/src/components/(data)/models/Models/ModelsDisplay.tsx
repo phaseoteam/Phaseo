@@ -154,6 +154,9 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("moderat")) return "moderations";
+	if (normalized.includes("rerank") || normalized.includes("re rank")) {
+		return "rerank";
+	}
 	if (normalized.includes("embed")) return "embeddings";
 	return normalized.replace(/\s+/g, "_");
 }
@@ -316,6 +319,9 @@ function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
 	if (normalized.includes("embed")) return Binary;
+	if (normalized.includes("rerank") || normalized.includes("re rank")) {
+		return ArrowUpDown;
+	}
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
 	if (normalized.includes("music")) return AudioLines;

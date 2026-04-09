@@ -99,6 +99,12 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createRerank(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/rerank"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createResponse(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/responses"

@@ -142,6 +142,8 @@ const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
 	cached_read_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	cached_write_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	input_image_tokens: { unit: "token", unit_size: 1_000_000 },
+	image_pixels: { unit: "pixel", unit_size: 1_000_000 },
+	video_pixels: { unit: "pixel", unit_size: 1_000_000 },
 	output_image_tokens: { unit: "token", unit_size: 1_000_000 },
 	cached_read_image_tokens: { unit: "token", unit_size: 1_000_000 },
 	input_audio_tokens: { unit: "token", unit_size: 1_000_000 },

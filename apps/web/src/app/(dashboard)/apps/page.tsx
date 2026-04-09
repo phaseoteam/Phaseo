@@ -39,16 +39,16 @@ type TrendingPublicApp = {
 };
 
 export const metadata: Metadata = buildMetadata({
-	title: "Apps - Usage Rankings & Trends | AI Stats",
+	title: "AI App Rankings: Usage Trends & Top Apps",
 	description:
-		"Discover popular apps on AI Stats Gateway, fastest-growing apps this week, and the top 100 app leaderboard by token usage.",
+		"See the most popular and fastest-growing AI apps on AI Stats Gateway, with leaderboard and token-usage trends.",
 	path: "/apps",
 	keywords: [
 		"AI apps",
+		"AI app rankings",
 		"app leaderboard",
-		"gateway usage",
+		"app usage trends",
 		"app trends",
-		"AI Stats",
 	],
 });
 
