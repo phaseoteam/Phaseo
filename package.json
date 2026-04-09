@@ -107,7 +107,7 @@
 		"rimraf": "^6.0.0",
 		"supabase": "^2.72.7",
 		"tsx": "^4.21.0",
-		"turbo": "^2.8.6"
+		"turbo": "^2.9.4"
 	},
 	"pnpm": {
 		"overrides": {
