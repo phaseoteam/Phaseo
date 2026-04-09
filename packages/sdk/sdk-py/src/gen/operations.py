@@ -212,6 +212,19 @@ def createOcr(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def createRerank(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/rerank"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
 def createResponse(
 	client: Client,
 	*,
@@ -862,4 +875,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createOcr", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteOAuthClient", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateManagementKey", "updateOAuthClient", "uploadFile"]
+operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteOAuthClient", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateManagementKey", "updateOAuthClient", "uploadFile"]

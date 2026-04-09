@@ -12,6 +12,7 @@ export type Endpoint =
     | "audio.transcription"
     | "audio.translations"
     | "moderations"
+    | "rerank"
     | "video.generation"
     | "embeddings"
     | "batch"

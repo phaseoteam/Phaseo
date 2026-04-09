@@ -22,6 +22,14 @@ async function fetchModelForMetadata(modelId: string, includeHidden: boolean) {
 	}
 }
 
+function decodeRouteSegment(value: string): string {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
+}
+
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
@@ -34,16 +42,21 @@ export async function generateMetadata(props: {
 	const model = await fetchModelForMetadata(modelId, includeHidden);
 	const path = getModelPath(modelId);
 	const imagePath = `/og/models/${modelId}`;
+	const fallbackModelLabel = decodeRouteSegment(
+		modelId.split("/").filter(Boolean).pop() ?? modelId,
+	).trim();
+	const fallbackModelName = fallbackModelLabel || "AI model";
 
 	// Fallback if the model can't be loaded
 	if (!model) {
 		return buildMetadata({
-			title: "AI Model Overview",
+			title: `${fallbackModelName} - Benchmarks, Pricing & API Access`,
 			description:
-				"Browse individual AI model pages on AI Stats for benchmarks, providers, pricing, deployment options, and compatibility details across the broader model ecosystem.",
+				`Browse benchmarks, providers, pricing, deployment options, and compatibility details for ${modelId} on AI Stats.`,
 			path,
 			keywords: [
-				"AI model",
+				fallbackModelName,
+				modelId,
 				"AI benchmarks",
 				"AI providers",
 				"AI Stats",
