@@ -3,6 +3,7 @@ import {
 	getHelpArticleParams,
 	getHelpCategoryParams,
 } from "@/lib/content/helpCenter";
+import { getMigrationPosts } from "@/lib/content/migrations";
 import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
 import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
@@ -394,6 +395,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	];
 
 	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
+	const migrationItems = getMigrationPosts().map((post) =>
+		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt || lastModified),
+	);
 
 	const helpCategoryParams = fromSettled(
 		helpCategoryResult,
@@ -442,5 +446,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...helpArticleItems,
 		...dynamicItems,
 		...appItems,
+		...migrationItems,
 	];
 }
