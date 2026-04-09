@@ -28,6 +28,19 @@ describe("getContextCapabilityCandidates", () => {
 		]);
 	});
 
+	it("expands rerank capability aliases", () => {
+		expect(getContextCapabilityCandidates("rerank")).toEqual([
+			"rerank",
+			"rerank.create",
+			"text.rerank",
+		]);
+		expect(getContextCapabilityCandidates("text.rerank")).toEqual([
+			"text.rerank",
+			"rerank",
+			"rerank.create",
+		]);
+	});
+
 	it("keeps unrelated capabilities unchanged", () => {
 		expect(getContextCapabilityCandidates("text.generate")).toEqual([
 			"text.generate",

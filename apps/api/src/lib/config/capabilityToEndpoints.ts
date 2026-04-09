@@ -6,6 +6,9 @@
 export const capabilityToEndpoints: Record<string, string[]> = {
     "text.generate": ["/chat/completions", "/responses", "/messages"],
     "text.embed": ["/embeddings"],
+    "text.rerank": ["/rerank"],
+    "rerank": ["/rerank"],
+    "rerank.create": ["/rerank"],
     "image.generate": ["/images/generations"],
     "images.generate": ["/images/generations"],
     "images.generations": ["/images/generations"],
@@ -47,6 +50,7 @@ const ENDPOINT_TO_PATH: Record<string, string> = {
     messages: "/messages",
     embeddings: "/embeddings",
     moderations: "/moderations",
+    rerank: "/rerank",
     "images.generations": "/images/generations",
     "images.edits": "/images/edits",
     "audio.speech": "/audio/speech",
