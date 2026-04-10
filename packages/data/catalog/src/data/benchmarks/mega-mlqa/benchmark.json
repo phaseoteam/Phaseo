@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mega-mlqa",
+  "benchmark_name": "MEGA MLQA",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cmmlu",
+  "benchmark_name": "CMMLU",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 9
+}

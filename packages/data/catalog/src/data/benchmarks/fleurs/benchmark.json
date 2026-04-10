@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "fleurs",
+  "benchmark_name": "FLEURS",
+  "category": "language",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 20
+}

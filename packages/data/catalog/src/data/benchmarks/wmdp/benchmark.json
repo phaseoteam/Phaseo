@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "wmdp",
+  "benchmark_name": "WMDP",
+  "category": "biology",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

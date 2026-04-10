@@ -45,5 +45,86 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 931,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 28,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 36.74,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.293,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 41.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-3-5-haiku",
+      "rank": 91
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 39.51,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1312,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1133.19,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.103,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.25,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 23
+    }
+  ]
 }

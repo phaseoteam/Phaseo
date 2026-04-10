@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://sciarena.allen.ai/",
-      "rank": 2
+      "rank": 11
     },
     {
       "benchmark_id": "aidanbench",
@@ -67,39 +67,39 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aidanbench.com/",
-      "rank": 1
+      "rank": 8
     },
     {
       "benchmark_id": "aider-polyglot",
-      "score": 0.569,
+      "score": 56.9,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 1
+      "rank": 22
     },
     {
       "benchmark_id": "aime-2024",
-      "score": 0.798,
+      "score": 79.8,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 3
+      "rank": 23
     },
     {
       "benchmark_id": "arc-agi-1",
-      "score": 0.158,
+      "score": 15.8,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 3
+      "rank": 32
     },
     {
       "benchmark_id": "arc-agi-2",
-      "score": 0.013,
+      "score": 1.3,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 2
+      "rank": 26
     },
     {
       "benchmark_id": "confabulations",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 1
+      "rank": 8
     },
     {
       "benchmark_id": "elimination-game",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 2
+      "rank": 12
     },
     {
       "benchmark_id": "eqbench",
@@ -123,23 +123,23 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 1
+      "rank": 9
     },
     {
       "benchmark_id": "gpqa-diamond",
-      "score": 0.715,
+      "score": 71.5,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 3
+      "rank": 51
     },
     {
       "benchmark_id": "livebench",
-      "score": 0.6515,
+      "score": 65.15,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 2
+      "rank": 15
     },
     {
       "benchmark_id": "lmarena-text",
@@ -147,7 +147,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 2
+      "rank": 16
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -155,7 +155,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 2
+      "rank": 10
     },
     {
       "benchmark_id": "nyt-connections",
@@ -163,15 +163,15 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 2
+      "rank": 14
     },
     {
       "benchmark_id": "simplebench",
-      "score": 0.309,
+      "score": 30.9,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 2
+      "rank": 17
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -179,23 +179,23 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "arc-agi-1",
-      "score": 0.158,
+      "score": 15.8,
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 3
+      "rank": 32
     },
     {
       "benchmark_id": "arc-agi-2",
-      "score": 0.013,
+      "score": 1.3,
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 2
+      "rank": 26
     }
   ]
 }

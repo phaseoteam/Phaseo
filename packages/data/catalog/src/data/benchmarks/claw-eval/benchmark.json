@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "claw-eval",
+  "benchmark_name": "Claw-Eval",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 5
+}

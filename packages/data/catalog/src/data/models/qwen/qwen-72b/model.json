@@ -14,5 +14,118 @@
   "api_model_id": "qwen/qwen-72b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "alignbench",
+      "score": 0.816,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 81.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 49,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 86
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 95.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 84.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 52.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 55.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "math",
+      "score": 83.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.882,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 71.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5-llm/",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 86.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.935,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "multipl-e",
+      "score": 75.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 5
+    }
+  ]
 }

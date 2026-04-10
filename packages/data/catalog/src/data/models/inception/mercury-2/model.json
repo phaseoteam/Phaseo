@@ -14,5 +14,54 @@
   "api_model_id": "inception/mercury-2",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 91.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
+      "rank": 46
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 71,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 67,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 38,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 53,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
+      "rank": 7
+    }
+  ]
 }

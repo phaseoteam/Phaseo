@@ -3,6 +3,7 @@
   "benchmark_name": "GPQA Diamond",
   "category": "general-knowledge",
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://github.com/idavidrein/gpqa",
-  "total_models": 6
+  "total_models": 133
 }

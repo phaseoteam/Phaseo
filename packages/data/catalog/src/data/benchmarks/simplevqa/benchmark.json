@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "simplevqa",
+  "benchmark_name": "SimpleVQA",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 11
+}

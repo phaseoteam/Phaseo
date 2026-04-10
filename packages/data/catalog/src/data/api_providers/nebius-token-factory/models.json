@@ -128,7 +128,7 @@
   {
     "api_model_id": "meta/llama-3.1-8b",
     "provider_api_model_id": "nebius-token-factory:meta/llama-3.1-8b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.1-8b",
     "internal_model_id": "meta/llama-3.1-8b",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -171,7 +171,7 @@
     "api_model_id": "meta/llama-guard-3-8b",
     "provider_api_model_id": "nebius-token-factory:meta/llama-guard-3-8b",
     "provider_model_slug": "meta-llama/Llama-Guard-3-8B",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -374,7 +374,7 @@
   {
     "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
     "provider_api_model_id": "nebius-token-factory:nvidia/nemotron-3-nano-30b-a3b",
-    "provider_model_slug": null,
+    "provider_model_slug": "nemotron-3-nano-30b-a3b",
     "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
     "is_active_gateway": true,
     "quantization_scheme": null,

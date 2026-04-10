@@ -32,5 +32,270 @@
       "value": 8000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 2347,
+      "is_self_reported": false,
+      "other_info": "Reasoning",
+      "source_link": "https://aidanbench.com/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "aidanbench",
+      "score": 1857,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 53.3,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 49.3,
+      "is_self_reported": false,
+      "other_info": "Reasoning",
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 95.8,
+      "is_self_reported": true,
+      "other_info": "Reasoning",
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 93,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 83.9,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 52.2,
+      "is_self_reported": true,
+      "other_info": "Reasoning",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 93,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 90.3,
+      "is_self_reported": true,
+      "other_info": "Reasoning",
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 77.3,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 14.19,
+      "is_self_reported": false,
+      "other_info": "No Reasoning",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 6.197,
+      "is_self_reported": false,
+      "other_info": "No Reasoning",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1066.3,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 84.6,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 80.2,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 75.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 75.4,
+      "is_self_reported": true,
+      "other_info": "Reasoning",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 66.2,
+      "is_self_reported": true,
+      "other_info": "Reasoning",
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 231,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 151,
+      "is_self_reported": false,
+      "other_info": "Reasoning",
+      "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 62.36,
+      "is_self_reported": false,
+      "other_info": "High Reasoning Effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 56.05,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1406,
+      "is_self_reported": false,
+      "other_info": "Early Grok-3",
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 79.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 76,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 73.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.203,
+      "is_self_reported": false,
+      "other_info": "No Reasoning",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 43.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.07,
+      "is_self_reported": false,
+      "other_info": "No Reasoning",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 17
+    }
+  ]
 }

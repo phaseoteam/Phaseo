@@ -2,7 +2,7 @@
   {
     "api_model_id": "arcee-ai/trinity-mini",
     "provider_api_model_id": "together:arcee-ai/trinity-mini",
-    "provider_model_slug": null,
+    "provider_model_slug": "trinity-mini",
     "internal_model_id": "arcee-ai/trinity-mini",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -17,7 +17,7 @@
   {
     "api_model_id": "deepseek/deepseek-r1",
     "provider_api_model_id": "together:deepseek/deepseek-r1",
-    "provider_model_slug": null,
+    "provider_model_slug": "deepseek-r1",
     "internal_model_id": "deepseek/deepseek-r1",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -32,7 +32,7 @@
   {
     "api_model_id": "deepseek/deepseek-r1-0528",
     "provider_api_model_id": "together:deepseek/deepseek-r1-0528",
-    "provider_model_slug": null,
+    "provider_model_slug": "deepseek-r1-0528",
     "internal_model_id": "deepseek/deepseek-r1-2025-05-28",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -47,7 +47,7 @@
   {
     "api_model_id": "deepseek/deepseek-v3.1",
     "provider_api_model_id": "together:deepseek/deepseek-v3.1",
-    "provider_model_slug": null,
+    "provider_model_slug": "deepseek-v3.1",
     "internal_model_id": "deepseek/deepseek-v3.1",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -62,7 +62,7 @@
   {
     "api_model_id": "essentialai/rnj-1-instruct",
     "provider_api_model_id": "together:essentialai/rnj-1-instruct",
-    "provider_model_slug": null,
+    "provider_model_slug": "rnj-1-instruct",
     "internal_model_id": "essential-ai/rnj-1",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -77,7 +77,7 @@
   {
     "api_model_id": "google/gemma-1-2b",
     "provider_api_model_id": "together:google/gemma-1-2b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemma-1-2b",
     "internal_model_id": "google/gemma-1-2b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -92,7 +92,7 @@
   {
     "api_model_id": "google/gemma-2-9b",
     "provider_api_model_id": "together:google/gemma-2-9b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemma-2-9b",
     "internal_model_id": "google/gemma-2-9b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -107,7 +107,7 @@
   {
     "api_model_id": "google/gemma-3-1b",
     "provider_api_model_id": "together:google/gemma-3-1b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemma-3-1b",
     "internal_model_id": "google/gemma-3-1b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -122,8 +122,8 @@
   {
     "api_model_id": "google/gemma-3-270m",
     "provider_api_model_id": "together:google/gemma-3-270m",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "gemma-3-270m",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -137,7 +137,7 @@
   {
     "api_model_id": "google/gemma-3-4b",
     "provider_api_model_id": "together:google/gemma-3-4b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemma-3-4b",
     "internal_model_id": "google/gemma-3-4b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -152,7 +152,7 @@
   {
     "api_model_id": "google/gemma-3n-e4b",
     "provider_api_model_id": "together:google/gemma-3n-e4b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemma-3n-e4b",
     "internal_model_id": "google/gemma-3n-e4b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -167,7 +167,7 @@
   {
     "api_model_id": "meta/llama-3.1-405b",
     "provider_api_model_id": "together:meta/llama-3.1-405b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.1-405b",
     "internal_model_id": "meta/llama-3.1-405b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -182,7 +182,7 @@
   {
     "api_model_id": "meta/llama-3.1-70b",
     "provider_api_model_id": "together:meta/llama-3.1-70b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.1-70b",
     "internal_model_id": "meta/llama-3.1-70b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -197,7 +197,7 @@
   {
     "api_model_id": "meta/llama-3.1-8b",
     "provider_api_model_id": "together:meta/llama-3.1-8b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.1-8b",
     "internal_model_id": "meta/llama-3.1-8b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -212,7 +212,7 @@
   {
     "api_model_id": "meta/llama-3.2-1b",
     "provider_api_model_id": "together:meta/llama-3.2-1b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.2-1b",
     "internal_model_id": "meta/llama-3.2-1b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -227,7 +227,7 @@
   {
     "api_model_id": "meta/llama-3.2-3b",
     "provider_api_model_id": "together:meta/llama-3.2-3b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.2-3b",
     "internal_model_id": "meta/llama-3.2-3b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -242,7 +242,7 @@
   {
     "api_model_id": "meta/llama-3.3-70b",
     "provider_api_model_id": "together:meta/llama-3.3-70b",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-3.3-70b",
     "internal_model_id": "meta/llama-3.3-70b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -257,8 +257,8 @@
   {
     "api_model_id": "meta/llama-3-8b-lite",
     "provider_api_model_id": "together:meta/llama-3-8b-lite",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "llama-3-8b-lite",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -272,7 +272,7 @@
   {
     "api_model_id": "meta/llama-4-maverick",
     "provider_api_model_id": "together:meta/llama-4-maverick",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-4-maverick",
     "internal_model_id": "meta/llama-4-maverick",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -287,7 +287,7 @@
   {
     "api_model_id": "meta/llama-4-scout",
     "provider_api_model_id": "together:meta/llama-4-scout",
-    "provider_model_slug": null,
+    "provider_model_slug": "llama-4-scout",
     "internal_model_id": "meta/llama-4-scout",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -302,7 +302,7 @@
   {
     "api_model_id": "minimax/minimax-m2.5",
     "provider_api_model_id": "together:minimax/minimax-m2.5",
-    "provider_model_slug": null,
+    "provider_model_slug": "minimax-m2.5",
     "internal_model_id": "minimax/minimax-m2.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -317,8 +317,8 @@
   {
     "api_model_id": "mistral/magistral-small-2506",
     "provider_api_model_id": "together:mistral/magistral-small-2506",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "magistral-small-2506",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -332,8 +332,8 @@
   {
     "api_model_id": "mistral/ministral-3-14b-2512",
     "provider_api_model_id": "together:mistral/ministral-3-14b-2512",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "ministral-3-14b-2512",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -347,8 +347,8 @@
   {
     "api_model_id": "mistral/mistral-small-24b-2501",
     "provider_api_model_id": "together:mistral/mistral-small-24b-2501",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "mistral-small-24b-2501",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -362,7 +362,7 @@
   {
     "api_model_id": "mistral/mixtral-8x22b",
     "provider_api_model_id": "together:mistral/mixtral-8x22b",
-    "provider_model_slug": null,
+    "provider_model_slug": "mixtral-8x22b",
     "internal_model_id": "mistral/mixtral-8x22b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -377,7 +377,7 @@
   {
     "api_model_id": "mistral/mixtral-8x7b",
     "provider_api_model_id": "together:mistral/mixtral-8x7b",
-    "provider_model_slug": null,
+    "provider_model_slug": "mixtral-8x7b",
     "internal_model_id": "mistral/mixtral-8x7b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -392,7 +392,7 @@
   {
     "api_model_id": "moonshotai/kimi-k2-0905",
     "provider_api_model_id": "together:moonshotai/kimi-k2-0905",
-    "provider_model_slug": null,
+    "provider_model_slug": "kimi-k2-0905",
     "internal_model_id": "moonshotai/kimi-k2",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -407,8 +407,8 @@
   {
     "api_model_id": "moonshotai/kimi-k2-thinking",
     "provider_api_model_id": "together:moonshotai/kimi-k2-thinking",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "kimi-k2-thinking",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -422,8 +422,8 @@
   {
     "api_model_id": "nvidia/nemotron-nano-9b-v2",
     "provider_api_model_id": "together:nvidia/nemotron-nano-9b-v2",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "nemotron-nano-9b-v2",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -437,7 +437,7 @@
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "together:openai/gpt-oss-120b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -452,7 +452,7 @@
   {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "together:openai/gpt-oss-20b",
-    "provider_model_slug": null,
+    "provider_model_slug": "gpt-oss-20b",
     "internal_model_id": "openai/gpt-oss-20b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -467,7 +467,7 @@
   {
     "api_model_id": "qwen/qwen2.5-1.5b",
     "provider_api_model_id": "together:qwen/qwen2.5-1.5b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen2.5-1.5b",
     "internal_model_id": "qwen/qwen2.5-1.5b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -482,7 +482,7 @@
   {
     "api_model_id": "qwen/qwen2.5-14b",
     "provider_api_model_id": "together:qwen/qwen2.5-14b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen2.5-14b",
     "internal_model_id": "qwen/qwen2.5-14b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -497,7 +497,7 @@
   {
     "api_model_id": "qwen/qwen2.5-32b",
     "provider_api_model_id": "together:qwen/qwen2.5-32b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen2.5-32b",
     "internal_model_id": "qwen/qwen2.5-32b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -512,7 +512,7 @@
   {
     "api_model_id": "qwen/qwen2.5-3b",
     "provider_api_model_id": "together:qwen/qwen2.5-3b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen2.5-3b",
     "internal_model_id": "qwen/qwen2.5-3b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -527,7 +527,7 @@
   {
     "api_model_id": "qwen/qwen2.5-72b",
     "provider_api_model_id": "together:qwen/qwen2.5-72b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen2.5-72b",
     "internal_model_id": "qwen/qwen2.5-72b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -542,7 +542,7 @@
   {
     "api_model_id": "qwen/qwen2.5-7b",
     "provider_api_model_id": "together:qwen/qwen2.5-7b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen2.5-7b",
     "internal_model_id": "qwen/qwen2.5-7b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -572,7 +572,7 @@
   {
     "api_model_id": "qwen/qwen3-0.6b",
     "provider_api_model_id": "together:qwen/qwen3-0.6b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-0.6b",
     "internal_model_id": "qwen/qwen3-0.6b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -587,7 +587,7 @@
   {
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "together:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-235b-a22b-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-2507",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -602,7 +602,7 @@
   {
     "api_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
     "provider_api_model_id": "together:qwen/qwen3-235b-a22b-thinking-2507",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-235b-a22b-thinking-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -617,7 +617,7 @@
   {
     "api_model_id": "qwen/qwen3-coder-next",
     "provider_api_model_id": "together:qwen/qwen3-coder-next",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-coder-next",
     "internal_model_id": "qwen/qwen3-coder-next",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -632,7 +632,7 @@
   {
     "api_model_id": "qwen/qwen3-coder-480b-a35b",
     "provider_api_model_id": "together:qwen/qwen3-coder-480b-a35b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-coder-480b-a35b",
     "internal_model_id": "qwen/qwen3-coder-480b-a35b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -647,7 +647,7 @@
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b",
     "provider_api_model_id": "together:qwen/qwen3-next-80b-a3b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-next-80b-a3b",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -662,7 +662,7 @@
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
     "provider_api_model_id": "together:qwen/qwen3-next-80b-a3b-thinking",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-next-80b-a3b-thinking",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -677,8 +677,8 @@
   {
     "api_model_id": "qwen/qwen3-vl-32b",
     "provider_api_model_id": "together:qwen/qwen3-vl-32b",
-    "provider_model_slug": null,
-    "internal_model_id": null,
+    "provider_model_slug": "qwen3-vl-32b",
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -692,7 +692,7 @@
   {
     "api_model_id": "qwen/qwen3-vl-8b",
     "provider_api_model_id": "together:qwen/qwen3-vl-8b",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-vl-8b",
     "internal_model_id": "qwen/qwen3-vl-8b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -707,7 +707,7 @@
   {
     "api_model_id": "z-ai/glm-4.5-air",
     "provider_api_model_id": "together:z-ai/glm-4.5-air",
-    "provider_model_slug": null,
+    "provider_model_slug": "glm-4.5-air",
     "internal_model_id": "z-ai/glm-4.5-air",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -722,7 +722,7 @@
   {
     "api_model_id": "z-ai/glm-4.7",
     "provider_api_model_id": "together:z-ai/glm-4.7",
-    "provider_model_slug": null,
+    "provider_model_slug": "glm-4.7",
     "internal_model_id": "z-ai/glm-4.7",
     "is_active_gateway": false,
     "quantization_scheme": null,

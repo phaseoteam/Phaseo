@@ -15,5 +15,166 @@
   "family_id": "google/gemini-3-0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 31.1,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 70.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "global-piqa",
+      "score": 93.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 91.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 45.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2439,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 23.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 91.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mrcr-v2-(8-needle)",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 11.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 72.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 85.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 54.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 5478.16,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 87.6,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gemini-3-pro-preview",
+      "source_link": "https://blog.google/products/gemini/gemini-3",
+      "rank": 1
+    }
+  ]
 }

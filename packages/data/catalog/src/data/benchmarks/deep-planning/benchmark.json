@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "deep-planning",
+  "benchmark_name": "DeepPlanning",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

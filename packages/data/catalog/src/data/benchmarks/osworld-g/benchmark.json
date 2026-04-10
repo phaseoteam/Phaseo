@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "osworld-g",
+  "benchmark_name": "OSWorld-G",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

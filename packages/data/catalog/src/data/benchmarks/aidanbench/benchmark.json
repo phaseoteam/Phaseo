@@ -3,6 +3,7 @@
   "benchmark_name": "AidanBench",
   "category": null,
   "ascending_order": null,
+  "type": "numerical",
   "link": "https://aidanbench.com/",
-  "total_models": 1
+  "total_models": 14
 }

@@ -14,5 +14,38 @@
   "api_model_id": "mistral/ministral-3b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 77.5,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-3b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-3b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 53.4,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-3b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 80
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 54.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-3b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 26
+    }
+  ]
 }

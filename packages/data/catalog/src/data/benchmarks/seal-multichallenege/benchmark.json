@@ -3,6 +3,7 @@
   "benchmark_name": "SEAL MultiChallenege",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://scale.com/leaderboard/multichallenge",
   "total_models": 0
 }

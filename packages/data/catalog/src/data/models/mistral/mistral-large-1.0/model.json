@@ -14,5 +14,46 @@
   "api_model_id": "mistral/mistral-large-1.0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "amc-2022-23",
+      "score": 0.52,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 43.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 93
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 34.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 85.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 23.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 27
+    }
+  ]
 }

@@ -14,5 +14,46 @@
   "api_model_id": "mistral/leanstral",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "flteval",
+      "score": 21.9,
+      "is_self_reported": true,
+      "other_info": "Mistral Leanstral evaluation table (Leanstral)",
+      "source_link": "https://mistral.ai/news/leanstral",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "flteval-pass-2",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": "Mistral Leanstral evaluation table (Leanstral pass@2)",
+      "source_link": "https://mistral.ai/news/leanstral",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "flteval-pass-4",
+      "score": 29.3,
+      "is_self_reported": true,
+      "other_info": "Mistral Leanstral evaluation table (Leanstral pass@4)",
+      "source_link": "https://mistral.ai/news/leanstral",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "flteval-pass-8",
+      "score": 31,
+      "is_self_reported": true,
+      "other_info": "Mistral Leanstral evaluation table (Leanstral pass@8)",
+      "source_link": "https://mistral.ai/news/leanstral",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "flteval-pass-16",
+      "score": 31.9,
+      "is_self_reported": true,
+      "other_info": "Mistral Leanstral evaluation table (Leanstral pass@16)",
+      "source_link": "https://mistral.ai/news/leanstral",
+      "rank": 1
+    }
+  ]
 }

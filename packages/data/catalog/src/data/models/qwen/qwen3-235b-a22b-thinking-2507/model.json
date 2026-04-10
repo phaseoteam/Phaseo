@@ -31,5 +31,262 @@
       "value": 36000000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 92.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 16.77,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": 8.24,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 81.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 83.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 18.2,
+      "is_self_reported": true,
+      "other_info": "Text Only",
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 78.4,
+      "is_self_reported": true,
+      "other_info": "2024-11-25 ",
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 74.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 84.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 93.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "ojbench",
+      "score": 32.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 64.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "tau-2-airline",
+      "score": 58,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 71.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 45.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 5.21,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://matharena.ai/?comp=apex--apex_2025",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "arena-hard-v2",
+      "score": 79.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "bfcl-v3",
+      "score": 71.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "cfeval",
+      "score": 2134,
+      "is_self_reported": true,
+      "other_info": "Raw score: 2134",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "creative-writing-v3",
+      "score": 86.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 81.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "include",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "livebench-20241125",
+      "score": 78.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": "MMLU-ProX",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": "MultiIF",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "polymath",
+      "score": 60.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 58,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 46,
+      "is_self_reported": true,
+      "other_info": "TAU1-Airline",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 67.8,
+      "is_self_reported": true,
+      "other_info": "TAU1-Retail",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "writingbench",
+      "score": 88.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cfeval",
+      "score": 2134,
+      "is_self_reported": true,
+      "other_info": "Raw score: 2134",
+      "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
+      "rank": 1
+    }
+  ]
 }

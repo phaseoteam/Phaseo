@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mewc",
+  "benchmark_name": "MEWC",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

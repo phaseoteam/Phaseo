@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mobileminiwob++-sr",
+  "benchmark_name": "MobileMiniWob++_SR",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

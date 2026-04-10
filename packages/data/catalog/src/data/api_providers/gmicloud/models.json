@@ -128,7 +128,7 @@
   {
     "api_model_id": "moonshotai/kimi-k2",
     "provider_api_model_id": "gmicloud:moonshotai/kimi-k2",
-    "provider_model_slug": null,
+    "provider_model_slug": "kimi-k2",
     "internal_model_id": "moonshotai/kimi-k2",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -276,7 +276,7 @@
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "gmicloud:qwen/qwen3-235b-a22b-2507",
     "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -401,7 +401,7 @@
   {
     "api_model_id": "z-ai/glm-5",
     "provider_api_model_id": "gmicloud:z-ai/glm-5",
-    "provider_model_slug": null,
+    "provider_model_slug": "glm-5",
     "internal_model_id": "z-ai/glm-5",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -460,5 +460,35 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "gmicloud:google/gemma-4-31b",
+    "provider_model_slug": "google/gemma-4-31b-it",
+    "internal_model_id": "google/gemma-4-31b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "google/gemma-4-26b-a4b",
+    "provider_api_model_id": "gmicloud:google/gemma-4-26b-a4b",
+    "provider_model_slug": "google/gemma-4-26b-a4b-it",
+    "internal_model_id": "google/gemma-4-26b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": []
   }
 ]

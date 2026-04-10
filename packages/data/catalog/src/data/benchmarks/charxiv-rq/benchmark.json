@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "charxiv-rq",
+  "benchmark_name": "CharXiv-RQ",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

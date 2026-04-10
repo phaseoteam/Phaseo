@@ -15,5 +15,70 @@
   "family_id": "openai/gpt-3",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "drop",
+      "score": 70.2,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 30.8,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 103
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 68,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "math",
+      "score": 43.1,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "mgsm",
+      "score": 56.3,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 69.8,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 47
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
+      "source_link": "https://example.com/benchmark-image",
+      "rank": 50
+    }
+  ]
 }

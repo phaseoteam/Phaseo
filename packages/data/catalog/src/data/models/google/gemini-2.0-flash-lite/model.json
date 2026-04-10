@@ -41,5 +41,110 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "bird-sql-(dev)",
+      "score": 57.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "covost2",
+      "score": 38.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "egoschema",
+      "score": 67.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 83.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "global-mmlu-lite",
+      "score": 78.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 51.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 83
+    },
+    {
+      "benchmark_id": "hiddenmath",
+      "score": 55.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "livecodebench-v5",
+      "score": 28.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "math",
+      "score": 86.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 71.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://developers.googleblog.com/en/gemini-2-family-expands/",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 68,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "mrcr-1m",
+      "score": 58,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 21.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemini-api/docs/models",
+      "rank": 28
+    }
+  ]
 }

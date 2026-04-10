@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "miabench",
+  "benchmark_name": "MIABench",
+  "category": "instruction_following",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "longbench-v2",
+  "benchmark_name": "LongBench v2",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 17
+}

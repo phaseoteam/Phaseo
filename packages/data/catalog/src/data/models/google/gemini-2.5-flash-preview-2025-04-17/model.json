@@ -41,5 +41,134 @@
       "value": 65536
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 51.1,
+      "is_self_reported": true,
+      "other_info": "Thinking, Whole",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 44.2,
+      "is_self_reported": true,
+      "other_info": "Thinking, Diff-Fenced",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": "Thinking, Single Attempt",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": "Thinking, Single Attempt",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 49
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 78.3,
+      "is_self_reported": true,
+      "other_info": "Thinking, Single Attempt",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 78.3,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 12.1,
+      "is_self_reported": true,
+      "other_info": "Thinking, No Tools",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 52
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 12.1,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 52
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1405,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1156.94,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": "Thinking, Lite",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": "Lite",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 76.7,
+      "is_self_reported": true,
+      "other_info": "Thinking, Pass@1",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 76.7,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 29.7,
+      "is_self_reported": true,
+      "other_info": "Thinking",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 29.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 22
+    }
+  ]
 }

@@ -15,5 +15,54 @@
   "family_id": "openai/gpt-4",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "drop",
+      "score": 86,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from gpt-4-turbo-2024-04-09",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 48,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from gpt-4-turbo-2024-04-09",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 87
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 87.1,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from gpt-4-turbo-2024-04-09",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "math",
+      "score": 72.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from gpt-4-turbo-2024-04-09",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "mgsm",
+      "score": 88.5,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from gpt-4-turbo-2024-04-09",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 86.5,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from gpt-4-turbo-2024-04-09",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 18
+    }
+  ]
 }

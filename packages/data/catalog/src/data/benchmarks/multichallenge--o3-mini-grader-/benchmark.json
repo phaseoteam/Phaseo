@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "multichallenge-(o3-mini-grader)",
+  "benchmark_name": "MultiChallenge (o3-mini grader)",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

@@ -36,5 +36,14 @@
       "value": 10000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 57.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 67
+    }
+  ]
 }

@@ -15,5 +15,30 @@
   "family_id": "google/gemini-2-0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.0-flash-thinking",
+      "source_link": "https://ai.google.dev/gemini-api/docs/models/gemini#evaluation",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 74.2,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.0-flash-thinking",
+      "source_link": "https://ai.google.dev/gemini-api/docs/models/gemini#evaluation",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 75.4,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.0-flash-thinking",
+      "source_link": "https://ai.google.dev/gemini-api/docs/models/gemini#evaluation",
+      "rank": 18
+    }
+  ]
 }

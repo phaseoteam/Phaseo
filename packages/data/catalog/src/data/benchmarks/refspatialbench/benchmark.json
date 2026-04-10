@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "refspatialbench",
+  "benchmark_name": "RefSpatialBench",
+  "category": "grounding",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 8
+}

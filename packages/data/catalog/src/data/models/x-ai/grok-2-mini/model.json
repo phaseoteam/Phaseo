@@ -36,5 +36,78 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 51,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 73
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 93.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 51,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 84
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "math",
+      "score": 73,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 68.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 86.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 54
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 33
+    }
+  ]
 }

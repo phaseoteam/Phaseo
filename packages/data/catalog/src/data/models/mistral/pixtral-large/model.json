@@ -44,5 +44,62 @@
       "value": 124000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2d",
+      "score": 93.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "chartqa",
+      "score": 88.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 69.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mm-mt-bench",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 64,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "vqav2",
+      "score": 80.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/pixtral-large/",
+      "rank": 1
+    }
+  ]
 }

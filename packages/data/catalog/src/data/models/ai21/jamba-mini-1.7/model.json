@@ -49,5 +49,22 @@
       "value": 51600000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "facts",
+      "score": 79,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 3
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 36
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "repoqa",
+  "benchmark_name": "RepoQA",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

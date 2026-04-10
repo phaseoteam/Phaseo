@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "wmt23",
+  "benchmark_name": "WMT23",
+  "category": "healthcare",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 13
+}

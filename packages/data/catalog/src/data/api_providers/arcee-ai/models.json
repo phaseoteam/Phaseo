@@ -270,7 +270,7 @@
   {
     "api_model_id": "arcee-ai/trinity-nano",
     "provider_api_model_id": "arcee-ai:arcee-ai/trinity-nano",
-    "provider_model_slug": null,
+    "provider_model_slug": "trinity-nano",
     "internal_model_id": "arcee-ai/trinity-nano-preview",
     "is_active_gateway": false,
     "quantization_scheme": null,

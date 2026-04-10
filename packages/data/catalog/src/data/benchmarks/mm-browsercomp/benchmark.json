@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mm-browsercomp",
+  "benchmark_name": "MM-BrowserComp",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

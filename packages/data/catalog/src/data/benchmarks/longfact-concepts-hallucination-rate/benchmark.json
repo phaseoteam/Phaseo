@@ -3,6 +3,7 @@
   "benchmark_name": "LongFact-Concepts hallucination rate",
   "category": "hallucinations",
   "ascending_order": true,
+  "type": "percentage",
   "link": null,
-  "total_models": 0
+  "total_models": 7
 }

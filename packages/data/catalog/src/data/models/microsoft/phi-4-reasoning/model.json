@@ -53,5 +53,102 @@
       "value": 16000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 75.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 62.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
+      "rank": 65
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
+      "rank": 62
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "flenqa",
+      "score": 97.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
+      "rank": 66
+    },
+    {
+      "benchmark_id": "humaneval+",
+      "score": 92.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 83.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 53.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 74.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
+      "rank": 51
+    },
+    {
+      "benchmark_id": "omnimath",
+      "score": 76.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "phibench",
+      "score": 70.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
+      "rank": 2
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cl-bench",
+  "benchmark_name": "CL-Bench",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

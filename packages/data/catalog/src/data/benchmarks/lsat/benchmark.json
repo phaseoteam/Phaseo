@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "lsat",
+  "benchmark_name": "LSAT",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

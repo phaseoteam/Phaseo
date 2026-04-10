@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cruxeval-o",
+  "benchmark_name": "CruxEval-O",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 3
+}

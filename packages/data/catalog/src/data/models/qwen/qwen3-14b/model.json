@@ -14,5 +14,54 @@
   "api_model_id": "qwen/qwen3-14b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-max (score=0.3333; benches=6)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 62,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-max (score=0.3333; benches=6)",
+      "source_link": "https://nousresearch.com/wp-content/uploads/2025/08/Hermes_4_Technical_Report.pdf",
+      "rank": 72
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-max (score=0.3333; benches=6)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 65.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-max (score=0.3333; benches=6)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 69.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-max (score=0.3333; benches=6)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 74.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3-max (score=0.3333; benches=6)",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 13
+    }
+  ]
 }

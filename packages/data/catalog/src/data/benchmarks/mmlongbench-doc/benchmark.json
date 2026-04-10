@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmlongbench-doc",
+  "benchmark_name": "MMLongBench-Doc",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 9
+}

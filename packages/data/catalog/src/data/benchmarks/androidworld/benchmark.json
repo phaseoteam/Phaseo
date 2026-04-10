@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "androidworld",
+  "benchmark_name": "AndroidWorld",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

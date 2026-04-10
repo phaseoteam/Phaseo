@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "robospatialhome",
+  "benchmark_name": "RoboSpatialHome",
+  "category": "embodied",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

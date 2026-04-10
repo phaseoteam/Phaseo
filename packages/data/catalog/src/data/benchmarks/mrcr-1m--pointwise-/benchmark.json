@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mrcr-1m-(pointwise)",
+  "benchmark_name": "MRCR 1M (pointwise)",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 4
+}

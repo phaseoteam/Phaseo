@@ -52,5 +52,70 @@
       "value": 14800000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2-sciarena",
+      "score": 1016.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://sciarena.allen.ai/",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 39.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.161,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 59.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
+      "rank": 66
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1355,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.151,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 18.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.03,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 16
+    }
+  ]
 }

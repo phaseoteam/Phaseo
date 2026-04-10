@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "flteval-pass-2",
+  "benchmark_name": "FLTEval Pass@2",
+  "category": "lean_reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://mistral.ai/news/leanstral",
+  "total_models": 1
+}

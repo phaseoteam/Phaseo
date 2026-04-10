@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ivebench-consistency-vs-runway-aleph",
+  "benchmark_name": "IVEBench Consistency vs Runway Aleph",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://x.ai/news/grok-imagine-api",
+  "total_models": 1
+}

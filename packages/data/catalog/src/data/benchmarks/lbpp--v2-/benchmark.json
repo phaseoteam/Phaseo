@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "lbpp-(v2)",
+  "benchmark_name": "LBPP (v2)",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

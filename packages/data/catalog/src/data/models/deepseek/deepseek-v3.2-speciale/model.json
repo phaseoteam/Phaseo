@@ -27,5 +27,110 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 96,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "imoanswerbench",
+      "score": 84.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 88.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 2701,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 30.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 96,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 0.9,
+      "is_self_reported": true,
+      "other_info": "Raw rating: 2701; normalized by 3000 max",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 99.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 73.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 80.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 46.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 35.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
+      "rank": 9
+    }
+  ]
 }

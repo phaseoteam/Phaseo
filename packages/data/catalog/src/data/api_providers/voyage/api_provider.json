@@ -1,0 +1,8 @@
+{
+  "api_provider_id": "voyage",
+  "api_provider_name": "Voyage",
+  "description": "Voyage API for embedding and reranking models.",
+  "link": "https://docs.voyageai.com",
+  "country_code": "US",
+  "status": "Active"
+}

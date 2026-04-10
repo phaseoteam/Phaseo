@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mme-cc",
+  "benchmark_name": "MME-CC",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

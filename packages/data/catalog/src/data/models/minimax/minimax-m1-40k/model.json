@@ -35,5 +35,134 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 83.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 17
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 74.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 52
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 61
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 7.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 59
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 62.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 22
+    },
+    {
+      "benchmark_id": "longbench-v2",
+      "score": 61,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 96,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 35
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 44.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 17
+    },
+    {
+      "benchmark_id": "openai-mrcr:-2-needle-128k",
+      "score": 76.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "openai-mrcr:-2-needle-1m",
+      "score": 58.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 17.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 30
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 55.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 52
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 60,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 67.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 9
+    },
+    {
+      "benchmark_id": "zebralogic",
+      "score": 80.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 6
+    }
+  ]
 }

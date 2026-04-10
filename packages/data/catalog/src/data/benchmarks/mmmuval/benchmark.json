@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmmuval",
+  "benchmark_name": "MMMUval",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

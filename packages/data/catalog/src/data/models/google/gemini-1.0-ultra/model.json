@@ -28,5 +28,38 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 35.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://artificialanalysis.ai/models/gemini-1-0-ultra",
+      "rank": 101
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 74.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "math",
+      "score": 53.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 83.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 30
+    }
+  ]
 }

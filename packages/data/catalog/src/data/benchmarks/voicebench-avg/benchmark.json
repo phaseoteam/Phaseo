@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "voicebench-avg",
+  "benchmark_name": "VoiceBench Avg",
+  "category": "communication",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

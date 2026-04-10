@@ -48,5 +48,70 @@
       "value": 253000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 47.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 72
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 54.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 70
+    },
+    {
+      "benchmark_id": "bfcl-v2",
+      "score": 63.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 54.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 78
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 79.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 95.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.846,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
+      "rank": 7
+    }
+  ]
 }

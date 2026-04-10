@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "egoschema",
+  "benchmark_name": "EgoSchema",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 30
+}

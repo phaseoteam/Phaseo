@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "widesearch",
+  "benchmark_name": "WideSearch",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

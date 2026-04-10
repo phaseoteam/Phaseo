@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "design2code",
+  "benchmark_name": "Design2Code",
+  "category": "code",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 2
+}

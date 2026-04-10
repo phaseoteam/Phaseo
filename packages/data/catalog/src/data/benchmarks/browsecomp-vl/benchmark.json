@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "browsecomp-vl",
+  "benchmark_name": "BrowseComp-VL",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

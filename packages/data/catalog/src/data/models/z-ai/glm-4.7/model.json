@@ -14,5 +14,110 @@
   "api_model_id": "z-ai/glm-4.7",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 95.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 52,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "browsecomp-zh",
+      "score": 66.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 42.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "imoanswerbench",
+      "score": 82,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 84.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 84.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 66.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 73.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "tau-bench",
+      "score": 87.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 33.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 41,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.7",
+      "rank": 28
+    }
+  ]
 }

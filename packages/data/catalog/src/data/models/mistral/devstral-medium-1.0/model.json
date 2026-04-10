@@ -19,5 +19,14 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 61.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/devstral-2507",
+      "rank": 46
+    }
+  ]
 }

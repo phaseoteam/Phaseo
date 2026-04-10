@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cc-bench-v2-repo",
+  "benchmark_name": "CC-Bench-V2 Repo Exploration",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

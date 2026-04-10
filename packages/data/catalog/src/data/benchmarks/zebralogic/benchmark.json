@@ -3,6 +3,7 @@
   "benchmark_name": "ZebraLogic",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": null,
-  "total_models": 0
+  "total_models": 6
 }

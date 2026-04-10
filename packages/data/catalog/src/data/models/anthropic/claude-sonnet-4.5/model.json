@@ -32,5 +32,22 @@
       "value": "2025-01-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 1.56,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://matharena.ai/?comp=apex--apex_2025",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 3838.74,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://andonlabs.com/evals/vending-bench-2",
+      "rank": 6
+    }
+  ]
 }

@@ -14,5 +14,166 @@
   "api_model_id": "baidu/ernie-4.5-turbo",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "agieval",
+      "score": 0.285,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-c",
+      "score": 40.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "arc-e",
+      "score": 60.7,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "bbh",
+      "score": 30.4,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "c-eval",
+      "score": 40.7,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "cluewsc",
+      "score": 48.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "cmmlu",
+      "score": 0.398,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "drop",
+      "score": 28.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://www.hkubs.hku.hk/aimodelrankings_en/report/AdvancedReasoning.pdf",
+      "rank": 46
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 25.2,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "hellaswag",
+      "score": 33,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "humaneval+",
+      "score": 25,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "math",
+      "score": 12.4,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "mbpp+",
+      "score": 0.402,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 41.9,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 16,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 78
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 43.2,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "piqa",
+      "score": 55.2,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 1.8,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "winogrande",
+      "score": 51.3,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from ernie-4.5",
+      "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
+      "rank": 10
+    }
+  ]
 }

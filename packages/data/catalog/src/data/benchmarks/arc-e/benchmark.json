@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "arc-e",
+  "benchmark_name": "ARC-E",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

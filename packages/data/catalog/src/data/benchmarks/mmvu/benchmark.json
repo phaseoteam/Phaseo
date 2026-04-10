@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmvu",
+  "benchmark_name": "MMVU",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

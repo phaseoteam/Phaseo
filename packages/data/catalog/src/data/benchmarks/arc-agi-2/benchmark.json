@@ -3,6 +3,7 @@
   "benchmark_name": "ARC-AGI-2",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://arcprize.org/leaderboard",
-  "total_models": 3
+  "total_models": 51
 }

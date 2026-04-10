@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "functionalmath",
+  "benchmark_name": "FunctionalMATH",
+  "category": "math",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 7
+}

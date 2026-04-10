@@ -2,7 +2,7 @@
   {
     "api_model_id": "meta/llama-3.1-8b",
     "provider_api_model_id": "cerebras:meta/llama-3.1-8b",
-    "provider_model_slug": "\tllama3.1-8b",
+    "provider_model_slug": "llama3.1-8b",
     "internal_model_id": "meta/llama-3.1-8b",
     "is_active_gateway": true,
     "quantization_scheme": "FP16",
@@ -101,7 +101,7 @@
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "cerebras:openai/gpt-oss-120b",
-    "provider_model_slug": "gpt-oss-120b\t",
+    "provider_model_slug": "gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": true,
     "quantization_scheme": "FP16",

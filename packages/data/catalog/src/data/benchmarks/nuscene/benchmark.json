@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "nuscene",
+  "benchmark_name": "Nuscene",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

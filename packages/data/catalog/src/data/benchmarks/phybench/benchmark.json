@@ -3,6 +3,7 @@
   "benchmark_name": "PHYBench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://phybench-official.github.io/phybench-demo/",
-  "total_models": 0
+  "total_models": 3
 }

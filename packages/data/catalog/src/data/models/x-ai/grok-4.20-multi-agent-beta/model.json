@@ -14,5 +14,22 @@
   "api_model_id": "x-ai/grok-4.20-multi-agent-beta",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "arena-chat-rank",
+      "score": 9,
+      "is_self_reported": false,
+      "other_info": "Arena AI chat rank via publicName=grok-4.20-multi-agent-beta-0309",
+      "source_link": "https://arena.ai/?leaderboard=",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arena-search-rank",
+      "score": 6,
+      "is_self_reported": false,
+      "other_info": "Arena AI search rank via publicName=grok-4.20-multi-agent-beta-0309",
+      "source_link": "https://arena.ai/?leaderboard=",
+      "rank": 1
+    }
+  ]
 }

@@ -49,5 +49,30 @@
       "value": 4000000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "eqbench",
+      "score": 856.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 30.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
+      "rank": 105
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1299,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 42
+    }
+  ]
 }

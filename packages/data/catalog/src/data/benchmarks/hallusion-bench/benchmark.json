@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "hallusion-bench",
+  "benchmark_name": "Hallusion Bench",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 36
+}

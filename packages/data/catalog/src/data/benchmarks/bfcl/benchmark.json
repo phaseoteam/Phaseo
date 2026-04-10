@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "bfcl",
+  "benchmark_name": "BFCL",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 10
+}

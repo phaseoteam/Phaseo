@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "nl2repo-pass-1",
+  "benchmark_name": "NL2Repo (Pass@1)",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 2
+}

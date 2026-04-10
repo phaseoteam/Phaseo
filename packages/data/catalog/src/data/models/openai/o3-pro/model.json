@@ -41,5 +41,110 @@
       "value": 100000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 84.9,
+      "is_self_reported": false,
+      "other_info": "High Reasoning Effort",
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 93,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 59.3,
+      "is_self_reported": false,
+      "other_info": "High Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 57,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 44.3,
+      "is_self_reported": false,
+      "other_info": "Low Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 4.9,
+      "is_self_reported": false,
+      "other_info": "High Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 2.1,
+      "is_self_reported": false,
+      "other_info": "Low Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 1.9,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 2748,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 14.22,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 84,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.873,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.82,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 6
+    }
+  ]
 }

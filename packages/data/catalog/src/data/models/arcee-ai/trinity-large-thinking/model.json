@@ -28,5 +28,78 @@
       "value": 17000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ifbench",
+      "score": 52.3,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 76.3,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 94.7,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "pinchbench",
+      "score": 91.9,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 96.3,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "bcflv4",
+      "score": 70.1,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 83.4,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
+      "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+      "rank": 44
+    }
+  ]
 }

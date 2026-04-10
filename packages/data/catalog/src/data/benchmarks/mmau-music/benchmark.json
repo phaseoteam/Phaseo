@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmau-music",
+  "benchmark_name": "MMAU Music",
+  "category": "audio",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

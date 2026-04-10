@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "alpacaeval-2.0",
+  "benchmark_name": "AlpacaEval 2.0",
+  "category": "creativity",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 17
+}

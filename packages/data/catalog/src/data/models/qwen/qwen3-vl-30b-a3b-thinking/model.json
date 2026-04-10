@@ -14,5 +14,414 @@
   "api_model_id": "qwen/qwen3-vl-30b-a3b-thinking",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2d",
+      "score": 86.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 16
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 83.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 41
+    },
+    {
+      "benchmark_id": "arena-hard-v2",
+      "score": 56.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 11
+    },
+    {
+      "benchmark_id": "bfcl-v3",
+      "score": 68.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 8
+    },
+    {
+      "benchmark_id": "blink",
+      "score": 65.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 12
+    },
+    {
+      "benchmark_id": "cc-ocr",
+      "score": 77.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 10
+    },
+    {
+      "benchmark_id": "charadessta",
+      "score": 62.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "charxiv-d",
+      "score": 86.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 56.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 16
+    },
+    {
+      "benchmark_id": "creative-writing-v3",
+      "score": 82.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 9
+    },
+    {
+      "benchmark_id": "docvqatest",
+      "score": 95,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "erqa",
+      "score": 45.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 17
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 74.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 44
+    },
+    {
+      "benchmark_id": "hallusion-bench",
+      "score": 66,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 67.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 24
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 81.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 32
+    },
+    {
+      "benchmark_id": "include",
+      "score": 74.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 11
+    },
+    {
+      "benchmark_id": "infovqatest",
+      "score": 86,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 5
+    },
+    {
+      "benchmark_id": "livebench-20241125",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 64.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 23
+    },
+    {
+      "benchmark_id": "lvbench",
+      "score": 59.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 13
+    },
+    {
+      "benchmark_id": "mathvision",
+      "score": 65.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 12
+    },
+    {
+      "benchmark_id": "mathvista-mini",
+      "score": 81.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 9
+    },
+    {
+      "benchmark_id": "mlvu-m",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmbench-v1.1",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 87.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 80.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 36
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 76.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 90.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 17
+    },
+    {
+      "benchmark_id": "mm-mt-bench",
+      "score": 7.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 63,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 27
+    },
+    {
+      "benchmark_id": "mmmu-(val)",
+      "score": 76,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmstar",
+      "score": 75.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 12
+    },
+    {
+      "benchmark_id": "muirbench",
+      "score": 77.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 5
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 73,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mvbench",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 8
+    },
+    {
+      "benchmark_id": "ocrbench",
+      "score": 839,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 8
+    },
+    {
+      "benchmark_id": "ocrbench-v2-(en)",
+      "score": 62.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 9
+    },
+    {
+      "benchmark_id": "ocrbench-v2-(zh)",
+      "score": 60.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 5
+    },
+    {
+      "benchmark_id": "odinw",
+      "score": 42.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 11
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 30.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 21
+    },
+    {
+      "benchmark_id": "polymath",
+      "score": 51.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 10
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 77.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 13
+    },
+    {
+      "benchmark_id": "screenspot",
+      "score": 94.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 57.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 13
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 23.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 26
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 56.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 19
+    },
+    {
+      "benchmark_id": "video-mme",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 10
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 17
+    },
+    {
+      "benchmark_id": "writingbench",
+      "score": 85.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "ocrbench",
+      "score": 839,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 8
+    }
+  ]
 }

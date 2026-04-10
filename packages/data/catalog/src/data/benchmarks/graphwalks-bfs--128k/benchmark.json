@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "graphwalks-bfs->128k",
+  "benchmark_name": "Graphwalks BFS >128k",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

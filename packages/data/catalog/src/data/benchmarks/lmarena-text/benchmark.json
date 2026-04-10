@@ -3,6 +3,7 @@
   "benchmark_name": "LMArena Text",
   "category": null,
   "ascending_order": null,
+  "type": "numerical",
   "link": "https://lmarena.ai/leaderboard/text",
-  "total_models": 10
+  "total_models": 77
 }

@@ -27,5 +27,70 @@
       "value": 32500000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 61.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 69.6,
+      "is_self_reported": true,
+      "other_info": "OpenHands Scaffold, 500 Turns",
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 67,
+      "is_self_reported": true,
+      "other_info": "OpenHands Scaffold, 100 Turns",
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "swe-bench-live",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 54.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 60,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 77.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 37.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
+      "rank": 10
+    }
+  ]
 }

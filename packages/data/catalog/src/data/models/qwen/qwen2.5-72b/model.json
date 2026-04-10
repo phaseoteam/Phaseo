@@ -31,5 +31,54 @@
       "value": 18000000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "confabulations",
+      "score": 19.09,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 691.5,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 49,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
+      "rank": 79
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1300,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.111,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.21,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 22
+    }
+  ]
 }

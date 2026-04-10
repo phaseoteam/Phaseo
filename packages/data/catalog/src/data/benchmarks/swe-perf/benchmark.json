@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "swe-perf",
+  "benchmark_name": "SWE-Perf",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

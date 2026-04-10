@@ -14,5 +14,102 @@
   "api_model_id": "google/gemma-4-26b-a4b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 82.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "aime-2026",
+      "score": 88.3,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 77.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 1718,
+      "is_self_reported": true,
+      "other_info": "ELO",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 82.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 68.2,
+      "is_self_reported": true,
+      "other_info": "Average over 3",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 8.7,
+      "is_self_reported": true,
+      "other_info": "Without tools",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 17.2,
+      "is_self_reported": true,
+      "other_info": "With search",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 86.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 73.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 14.9,
+      "is_self_reported": true,
+      "other_info": "Average edit distance (lower is better)",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-128k",
+      "score": 44.1,
+      "is_self_reported": true,
+      "other_info": "Average",
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
+      "rank": 8
+    }
+  ]
 }

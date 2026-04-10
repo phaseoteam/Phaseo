@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "infovqa",
+  "benchmark_name": "InfoVQA",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 11
+}

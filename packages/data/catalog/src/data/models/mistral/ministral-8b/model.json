@@ -40,5 +40,38 @@
       "value": 8019808256
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 86,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-8b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 78.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-8b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 48
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 66.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-8b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 64
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 61.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from ministral-8b-latest",
+      "source_link": "https://mistral.ai/news/mistral-3",
+      "rank": 23
+    }
+  ]
 }

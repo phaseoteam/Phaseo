@@ -15,5 +15,94 @@
   "family_id": "google/gemma-3",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "arc-c",
+      "score": 51.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-e",
+      "score": 75.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "big-bench-hard",
+      "score": 44.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "boolq",
+      "score": 76.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "drop",
+      "score": 53.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "hellaswag",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "natural-questions",
+      "score": 15.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "piqa",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "social-iqa",
+      "score": 48.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "triviaqa",
+      "score": 60.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "winogrande",
+      "score": 66.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/gemma-3n-E2B",
+      "rank": 9
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "tydiqa",
+  "benchmark_name": "TydiQA",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 2
+}

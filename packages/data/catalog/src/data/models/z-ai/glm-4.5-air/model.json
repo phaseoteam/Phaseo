@@ -14,5 +14,118 @@
   "api_model_id": "z-ai/glm-4.5-air",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-index",
+      "score": 64.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 89.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "bfcl-v3",
+      "score": 76.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 21.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 10.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 70.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 98.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 37.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 57.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 50
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 60.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 77.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 30,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://z.ai/blog/glm-4.5",
+      "rank": 15
+    }
+  ]
 }

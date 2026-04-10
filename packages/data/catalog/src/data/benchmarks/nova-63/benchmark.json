@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "nova-63",
+  "benchmark_name": "NOVA-63",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 10
+}

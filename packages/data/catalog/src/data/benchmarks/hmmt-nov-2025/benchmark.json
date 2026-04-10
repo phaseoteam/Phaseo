@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "hmmt-nov-2025",
+  "benchmark_name": "HMMT Nov 2025",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "arena-chat-rank",
+  "benchmark_name": "Arena Chat Rank",
+  "category": "ranking",
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://arena.ai/?leaderboard=",
+  "total_models": 1
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vision2web",
+  "benchmark_name": "Vision2Web",
+  "category": "coding",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

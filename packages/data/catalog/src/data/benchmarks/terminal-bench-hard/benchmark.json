@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "terminal-bench-hard",
+  "benchmark_name": "Terminal Bench Hard",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/models/solar-pro-3",
+  "total_models": 3
+}

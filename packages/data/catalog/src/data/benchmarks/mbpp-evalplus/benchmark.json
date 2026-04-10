@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mbpp-evalplus",
+  "benchmark_name": "MBPP EvalPlus",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}
