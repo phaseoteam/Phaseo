@@ -104,7 +104,7 @@ export default function ModelReleaseWeekdayAnalysis({
 	const [hoveredDayKey, setHoveredDayKey] = useState<string | null>(null);
 	const [expandLevel, setExpandLevel] = useState<ExpandLevel>(0);
 	const todayWeekdayIndex = useMemo(
-		() => toMondayFirstIndex(new Date().getDay()),
+		() => toMondayFirstIndex(new Date().getUTCDay()),
 		[]
 	);
 
@@ -284,6 +284,16 @@ export default function ModelReleaseWeekdayAnalysis({
 	const dayOrder = new Map<string, number>(
 		DAY_SERIES.map((day, index) => [day.key, index])
 	);
+	const organisationLabelById = useMemo(
+		() =>
+			new Map(
+				analysis.organisationChartRows.map((row) => [
+					row.organisationId,
+					row.shortLabel,
+				])
+			),
+		[analysis.organisationChartRows]
+	);
 
 	const chartConfig = {
 		mon: { label: "Mon", color: "#60a5fa" },
@@ -438,7 +448,11 @@ export default function ModelReleaseWeekdayAnalysis({
 								/>
 								<YAxis
 									type="category"
-									dataKey="shortLabel"
+									dataKey="organisationId"
+									tickFormatter={(value) =>
+										organisationLabelById.get(String(value)) ??
+										String(value)
+									}
 									tickLine={false}
 									axisLine={false}
 									width={120}
