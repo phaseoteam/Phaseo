@@ -20,6 +20,12 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from "@/components/ui/empty";
 import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
@@ -725,17 +731,23 @@ export default function ModelPricingClient({
                             ) : null}
                         </div>
                     ) : sortedProviders.length > 0 ? (
-                        <Card className="p-6">
-                            <p className="text-sm text-muted-foreground">
-                                No providers match the selected quantization filter.
-                            </p>
-                        </Card>
+                        <Empty className="rounded-lg border p-8">
+                            <EmptyHeader>
+                                <EmptyTitle>No matching API providers</EmptyTitle>
+                                <EmptyDescription>
+                                    No providers match the selected quantization filter.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     ) : (
-                        <Card className="p-6">
-                            <p className="text-sm text-muted-foreground">
-                                No API provider availability is listed for this model yet.
-                            </p>
-                        </Card>
+                        <Empty className="rounded-lg border p-8">
+                            <EmptyHeader>
+                                <EmptyTitle>No API providers listed yet</EmptyTitle>
+                                <EmptyDescription>
+                                    No API provider availability is listed for this model yet.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     )}
                 </section>
             ) : (
@@ -790,11 +802,14 @@ export default function ModelPricingClient({
                             ))}
                         </div>
                     ) : (
-                        <Card className="p-6">
-                            <p className="text-sm text-muted-foreground">
-                                No subscription pricing is available for this model.
-                            </p>
-                        </Card>
+                        <Empty className="rounded-lg border p-8">
+                            <EmptyHeader>
+                                <EmptyTitle>No subscription plans listed yet</EmptyTitle>
+                                <EmptyDescription>
+                                    No subscription pricing is available for this model.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     )}
                 </section>
             )}
