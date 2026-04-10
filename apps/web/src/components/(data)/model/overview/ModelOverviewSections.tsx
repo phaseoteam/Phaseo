@@ -25,6 +25,7 @@ import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModel
 import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
+import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +129,29 @@ function formatDate(dateStr?: string | null): string {
 		month: "short",
 		year: "numeric",
 	});
+}
+
+function isProviderModelActiveNow(
+	providerModel: {
+		is_active_gateway: boolean;
+		capability_status?: string | null;
+		effective_from?: string | null;
+		effective_to?: string | null;
+	},
+	now = new Date(),
+): boolean {
+	if (!providerModel.is_active_gateway) return false;
+	if (providerModel.capability_status === "disabled") return false;
+
+	const from = providerModel.effective_from
+		? new Date(providerModel.effective_from)
+		: null;
+	const to = providerModel.effective_to ? new Date(providerModel.effective_to) : null;
+
+	if (from && Number.isFinite(from.getTime()) && now < from) return false;
+	if (to && Number.isFinite(to.getTime()) && now >= to) return false;
+
+	return true;
 }
 
 const KNOWN_MODALITY_META = [
@@ -679,11 +703,17 @@ export default async function ModelOverviewSections({
 	model,
 	includeHidden,
 }: ModelOverviewSectionsProps) {
-	const gatewayMetadata = await getModelGatewayMetadataCached(
+	const providerPricing = await getModelPricingCached(
 		modelId,
 		includeHidden,
 	).catch(() => null);
-	const hasApiProviders = (gatewayMetadata?.providers?.length ?? 0) > 0;
+	const hasApiProviders = (providerPricing ?? []).some(
+		(provider) =>
+			provider.pricing_rules.length > 0 &&
+			provider.provider_models.some((providerModel) =>
+				isProviderModelActiveNow(providerModel),
+			),
+	);
 	const hasInternalModelData = Boolean(model);
 	const modelStatus = model?.status ?? null;
 	const isWithheldModel = modelStatus === "Withheld";
