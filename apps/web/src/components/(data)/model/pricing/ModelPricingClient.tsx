@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
+import { AppWindow, ArrowDown, ArrowUp, ChevronDown, SlidersHorizontal, Server } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
     Empty,
     EmptyDescription,
     EmptyHeader,
+    EmptyMedia,
     EmptyTitle,
 } from "@/components/ui/empty";
 import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
@@ -733,6 +734,9 @@ export default function ModelPricingClient({
                     ) : sortedProviders.length > 0 ? (
                         <Empty className="rounded-lg border p-8">
                             <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <SlidersHorizontal className="size-5" />
+                                </EmptyMedia>
                                 <EmptyTitle>No matching API providers</EmptyTitle>
                                 <EmptyDescription>
                                     No providers match the selected quantization filter.
@@ -742,6 +746,9 @@ export default function ModelPricingClient({
                     ) : (
                         <Empty className="rounded-lg border p-8">
                             <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Server className="size-5" />
+                                </EmptyMedia>
                                 <EmptyTitle>No API providers listed yet</EmptyTitle>
                                 <EmptyDescription>
                                     No API provider availability is listed for this model yet.
@@ -804,6 +811,9 @@ export default function ModelPricingClient({
                     ) : (
                         <Empty className="rounded-lg border p-8">
                             <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <AppWindow className="size-5" />
+                                </EmptyMedia>
                                 <EmptyTitle>No subscription plans listed yet</EmptyTitle>
                                 <EmptyDescription>
                                     No subscription pricing is available for this model.
