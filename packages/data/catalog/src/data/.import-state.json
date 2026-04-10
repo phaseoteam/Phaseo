@@ -272,7 +272,7 @@
       }
     },
     "../../packages/data/catalog/src/data/benchmarks/2-bench-telecom/benchmark.json": {
-      "hash": "151cbe2db776c8169b735794e08f6976",
+      "hash": "c7effdd091d39d47a7c774d3e0c80479",
       "meta": {
         "benchmark_id": "2-bench-telecom"
       }
@@ -1826,7 +1826,7 @@
       }
     },
     "../../packages/data/catalog/src/data/benchmarks/livecodebench-pro/benchmark.json": {
-      "hash": "d0b11a9142efd86c167b766e2e46004f",
+      "hash": "23658a3ddfa3f9e06817843b9a619063",
       "meta": {
         "benchmark_id": "livecodebench-pro"
       }
@@ -2066,7 +2066,7 @@
       }
     },
     "../../packages/data/catalog/src/data/benchmarks/medxpertqa/benchmark.json": {
-      "hash": "9816657769444c623153e4aabe4458bc",
+      "hash": "659a105e15351703e9fcaa3223a10d26",
       "meta": {
         "benchmark_id": "medxpertqa"
       }
@@ -4587,10 +4587,10 @@
         "previous_model_id": "anthropic/claude-instant-1-1"
       }
     },
-    "../../packages/data/catalog/src/data/models/anthropic/claude-mythos-preview-2026-04-07/model.json": {
-      "hash": "d685c2ecaa8c70ac0c6ec7fa894a0ee8",
+    "../../packages/data/catalog/src/data/models/anthropic/claude-mythos-preview/model.json": {
+      "hash": "6265208de95b067e3bb5e5a70fa0cfb8",
       "meta": {
-        "model_id": "anthropic/claude-mythos-preview-2026-04-07",
+        "model_id": "anthropic/claude-mythos-preview",
         "organisation_id": "anthropic",
         "previous_model_id": null
       }
@@ -11505,7 +11505,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/anthropic/models.json": {
-      "hash": "0573a67db75afc219ae7dd6437ce3f1b",
+      "hash": "f03e4bae73fb6d849e315dad3135919b",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models"
@@ -11704,7 +11704,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/gmicloud/models.json": {
-      "hash": "2c6dd9fc7eb40e63b8f214460477f9a5",
+      "hash": "b360eddcd72b5f5c30316c2cc016dfa6",
       "meta": {
         "api_provider_id": "gmicloud",
         "kind": "provider_models"
@@ -18361,13 +18361,60 @@
         "organisation_id": "x-ai"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/anthropic/anthropic-claude-mythos-preview-2026-04-07/text.generate/pricing.json": {
-      "hash": "9492f3be6083544fd7b385a7f395c098",
+    "../../packages/data/catalog/src/data/pricing/anthropic/anthropic-claude-mythos-preview/text.generate/pricing.json": {
+      "hash": "08ef745edbcdb67dc4cf66d738bad734",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-mythos-preview-2026-04-07",
-        "model_key": "anthropic:anthropic/claude-mythos-preview-2026-04-07:text.generate"
+        "model_id": "anthropic/claude-mythos-preview",
+        "model_key": "anthropic:anthropic/claude-mythos-preview:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/meta/muse-spark/model.json": {
+      "hash": "fbbf86dc4c34795273d8e65e3d70e4c5",
+      "meta": {
+        "model_id": "meta/muse-spark",
+        "organisation_id": "meta",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/meta/muse-spark-contemplating/model.json": {
+      "hash": "b8c1e8989836f3483cb56b1a0a65928b",
+      "meta": {
+        "model_id": "meta/muse-spark-contemplating",
+        "organisation_id": "meta",
+        "previous_model_id": "meta/muse-spark"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/gmicloud/z-ai-glm-5.1/text.generate/pricing.json": {
+      "hash": "b0fc638138cc4992fbd0b6c0d81a81c5",
+      "meta": {
+        "api_provider_id": "gmicloud",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5.1",
+        "model_key": "gmicloud:z-ai/glm-5.1:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/venice/z-ai-glm-5.1/text.generate/pricing.json": {
+      "hash": "83f9d4e489a5afc0e7a1574c83c049e8",
+      "meta": {
+        "api_provider_id": "venice",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5.1",
+        "model_key": "venice:z-ai/glm-5.1:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/meta/api_provider.json": {
+      "hash": "dec37ef766aa1d0b06182119f710262c",
+      "meta": {
+        "api_provider_id": "meta"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/meta/models.json": {
+      "hash": "43f6a069596c419778ffb2c985ebd91e",
+      "meta": {
+        "api_provider_id": "meta",
+        "kind": "provider_models"
       }
     }
   }

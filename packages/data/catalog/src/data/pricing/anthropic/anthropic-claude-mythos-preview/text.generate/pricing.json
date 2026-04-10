@@ -1,8 +1,8 @@
 {
-  "key": "anthropic:anthropic/claude-mythos-preview-2026-04-07:text.generate",
+  "key": "anthropic:anthropic/claude-mythos-preview:text.generate",
   "api_provider_id": "anthropic",
   "provider_slug": "anthropic",
-  "api_model_id": "anthropic/claude-mythos-preview-2026-04-07",
+  "api_model_id": "anthropic/claude-mythos-preview",
   "capability_id": "text.generate",
   "rules": [
     {

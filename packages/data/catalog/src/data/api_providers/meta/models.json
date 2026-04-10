@@ -1,0 +1,44 @@
+[
+  {
+    "api_model_id": "meta/muse-spark",
+    "provider_api_model_id": "meta:meta/muse-spark",
+    "provider_model_slug": "muse-spark",
+    "internal_model_id": "meta/muse-spark",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/muse-spark-contemplating",
+    "provider_api_model_id": "meta:meta/muse-spark-contemplating",
+    "provider_model_slug": "muse-spark-contemplating",
+    "internal_model_id": "meta/muse-spark-contemplating",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

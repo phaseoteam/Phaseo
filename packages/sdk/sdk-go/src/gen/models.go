@@ -1180,7 +1180,7 @@ const (
 	ModelIdAnthropicClaudeInstant10 ModelId = "anthropic/claude-instant-1.0"
 	ModelIdAnthropicClaudeInstant11 ModelId = "anthropic/claude-instant-1.1"
 	ModelIdAnthropicClaudeInstant12 ModelId = "anthropic/claude-instant-1.2"
-	ModelIdAnthropicClaudeMythosPreview20260407 ModelId = "anthropic/claude-mythos-preview-2026-04-07"
+	ModelIdAnthropicClaudeMythosPreview ModelId = "anthropic/claude-mythos-preview"
 	ModelIdAnthropicClaudeOpus4 ModelId = "anthropic/claude-opus-4"
 	ModelIdAnthropicClaudeOpus41 ModelId = "anthropic/claude-opus-4.1"
 	ModelIdAnthropicClaudeOpus45 ModelId = "anthropic/claude-opus-4.5"

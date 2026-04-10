@@ -1,5 +1,5 @@
 {
-  "model_id": "anthropic/claude-mythos-preview-2026-04-07",
+  "model_id": "anthropic/claude-mythos-preview",
   "organisation_id": "anthropic",
   "name": "Claude Mythos Preview",
   "status": "Withheld",
@@ -11,7 +11,7 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
-  "api_model_id": "anthropic/claude-mythos-preview-2026-04-07",
+  "api_model_id": "anthropic/claude-mythos-preview",
   "links": [
     {
       "platform": "announcement",

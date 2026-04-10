@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
+import { AppWindow, ArrowDown, ArrowUp, ChevronDown, SlidersHorizontal, Server } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,13 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty";
 import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
@@ -155,6 +162,12 @@ export default function ModelPricingClient({
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const hasApiProviders = providers.some(
+        (provider) => provider.pricing_rules.length > 0
+    );
+    const hasSubscriptionPlans = subscriptionPlans.length > 0;
+    const defaultPricingView: PricingView =
+        !hasApiProviders && hasSubscriptionPlans ? "subscription" : "api";
 
     const availablePlans = useMemo(() => {
         const s = new Set<string>();
@@ -179,7 +192,7 @@ export default function ModelPricingClient({
     });
     const [pricingView, setPricingView] = useState<PricingView>(() => {
         const fromUrl = searchParams.get(VIEW_QUERY_KEY);
-        return isPricingView(fromUrl) ? fromUrl : "api";
+        return isPricingView(fromUrl) ? fromUrl : defaultPricingView;
     });
     const [quantizationFilter, setQuantizationFilter] = useState<string>(() =>
         getQuantizationFilterFromUrl(searchParams.get(QUANT_QUERY_KEY))
@@ -439,12 +452,19 @@ export default function ModelPricingClient({
 
             const stored = window.localStorage.getItem(PRICING_VIEW_STORAGE_KEY);
             if (isPricingView(stored)) {
-                setPricingView(stored);
+                const nextView: PricingView =
+                    !hasApiProviders && hasSubscriptionPlans && stored === "api"
+                        ? "subscription"
+                        : stored;
+                setPricingView(nextView);
+                return;
             }
+
+            setPricingView(defaultPricingView);
         } catch (error) {
             console.warn("[pricing] failed to read pricing view preference", error);
         }
-    }, []);
+    }, [defaultPricingView, hasApiProviders, hasSubscriptionPlans]);
 
     const onPricingViewChange = useCallback(
         (checked: boolean) => {
@@ -550,86 +570,88 @@ export default function ModelPricingClient({
 
             {pricingView === "api" ? (
                 <section className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            {availablePlans.length === 1 ? (
-                                <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium dark:border-zinc-800">
-                                    {formatPlanLabel(availablePlans[0])} Tier
-                                </span>
-                            ) : (
-                                <PricingPlanSelect
-                                    value={plan}
-                                    onChange={setPlan}
-                                    plans={availablePlans}
-                                />
-                            )}
-                            {hasQuantizationOptions ? (
-                                <Select
-                                    value={quantizationFilter}
-                                    onValueChange={onQuantizationFilterChange}
-                                >
-                                    <SelectTrigger className="h-9 w-[220px] bg-background">
-                                        <SelectValue placeholder="Quantization">
-                                            {quantizationFilter === "all"
-                                                ? "All Quantizations"
-                                                : quantizationFilter}
-                                        </SelectValue>
+                    {hasApiProviders ? (
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                {availablePlans.length === 1 ? (
+                                    <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium dark:border-zinc-800">
+                                        {formatPlanLabel(availablePlans[0])} Tier
+                                    </span>
+                                ) : (
+                                    <PricingPlanSelect
+                                        value={plan}
+                                        onChange={setPlan}
+                                        plans={availablePlans}
+                                    />
+                                )}
+                                {hasQuantizationOptions ? (
+                                    <Select
+                                        value={quantizationFilter}
+                                        onValueChange={onQuantizationFilterChange}
+                                    >
+                                        <SelectTrigger className="h-9 w-[220px] bg-background">
+                                            <SelectValue placeholder="Quantization">
+                                                {quantizationFilter === "all"
+                                                    ? "All Quantizations"
+                                                    : quantizationFilter}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Quantizations</SelectItem>
+                                            {quantizationOptions.map((quant) => (
+                                                <SelectItem key={quant} value={quant}>
+                                                    {quant}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : null}
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                {sort !== "default" ? (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={onToggleSortDirection}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-background text-muted-foreground transition-colors hover:text-foreground dark:border-zinc-800"
+                                                    aria-label={
+                                                        sortDirection === "asc"
+                                                            ? "Sorted ascending, click to sort descending"
+                                                            : "Sorted descending, click to sort ascending"
+                                                    }
+                                                >
+                                                    {sortDirection === "asc" ? (
+                                                        <ArrowUp className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                        <ArrowDown className="h-3.5 w-3.5" />
+                                                    )}
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {sortDirection === "asc"
+                                                    ? "Ascending"
+                                                    : "Descending"}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ) : null}
+                                <Select value={sort} onValueChange={onSortChange}>
+                                    <SelectTrigger className="h-9 w-[170px] bg-background">
+                                        <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Quantizations</SelectItem>
-                                        {quantizationOptions.map((quant) => (
-                                            <SelectItem key={quant} value={quant}>
-                                                {quant}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectItem value="default">Default</SelectItem>
+                                        <SelectItem value="pricing">Price</SelectItem>
+                                        <SelectItem value="throughput">Throughput</SelectItem>
+                                        <SelectItem value="latency">Latency</SelectItem>
+                                        <SelectItem value="uptime">Uptime</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            ) : null}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2.5">
-                            {sort !== "default" ? (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                type="button"
-                                                onClick={onToggleSortDirection}
-                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-background text-muted-foreground transition-colors hover:text-foreground dark:border-zinc-800"
-                                                aria-label={
-                                                    sortDirection === "asc"
-                                                        ? "Sorted ascending, click to sort descending"
-                                                        : "Sorted descending, click to sort ascending"
-                                                }
-                                            >
-                                                {sortDirection === "asc" ? (
-                                                    <ArrowUp className="h-3.5 w-3.5" />
-                                                ) : (
-                                                    <ArrowDown className="h-3.5 w-3.5" />
-                                                )}
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {sortDirection === "asc"
-                                                ? "Ascending"
-                                                : "Descending"}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            ) : null}
-                            <Select value={sort} onValueChange={onSortChange}>
-                                <SelectTrigger className="h-9 w-[170px] bg-background">
-                                    <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="default">Default</SelectItem>
-                                    <SelectItem value="pricing">Price</SelectItem>
-                                    <SelectItem value="throughput">Throughput</SelectItem>
-                                    <SelectItem value="latency">Latency</SelectItem>
-                                    <SelectItem value="uptime">Uptime</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                    ) : null}
                     {filteredProviders.length > 0 ? (
                         <div className="space-y-3">
 							<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -710,17 +732,29 @@ export default function ModelPricingClient({
                             ) : null}
                         </div>
                     ) : sortedProviders.length > 0 ? (
-                        <Card className="p-6">
-                            <p className="text-sm text-muted-foreground">
-                                No providers match the selected quantization filter.
-                            </p>
-                        </Card>
+                        <Empty className="rounded-lg border p-8">
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <SlidersHorizontal className="size-5" />
+                                </EmptyMedia>
+                                <EmptyTitle>No matching API providers</EmptyTitle>
+                                <EmptyDescription>
+                                    No providers match the selected quantization filter.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     ) : (
-                        <Card className="p-6">
-                            <p className="text-sm text-muted-foreground">
-                                No API provider pricing is available for this model.
-                            </p>
-                        </Card>
+                        <Empty className="rounded-lg border p-8">
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Server className="size-5" />
+                                </EmptyMedia>
+                                <EmptyTitle>No API providers listed yet</EmptyTitle>
+                                <EmptyDescription>
+                                    No API provider availability is listed for this model yet.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     )}
                 </section>
             ) : (
@@ -775,11 +809,17 @@ export default function ModelPricingClient({
                             ))}
                         </div>
                     ) : (
-                        <Card className="p-6">
-                            <p className="text-sm text-muted-foreground">
-                                No subscription pricing is available for this model.
-                            </p>
-                        </Card>
+                        <Empty className="rounded-lg border p-8">
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <AppWindow className="size-5" />
+                                </EmptyMedia>
+                                <EmptyTitle>No subscription plans listed yet</EmptyTitle>
+                                <EmptyDescription>
+                                    No subscription pricing is available for this model.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                     )}
                 </section>
             )}

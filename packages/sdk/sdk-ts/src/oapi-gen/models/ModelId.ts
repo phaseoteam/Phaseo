@@ -54,7 +54,7 @@ export type ModelId =
   | "anthropic/claude-instant-1.0"
   | "anthropic/claude-instant-1.1"
   | "anthropic/claude-instant-1.2"
-  | "anthropic/claude-mythos-preview-2026-04-07"
+  | "anthropic/claude-mythos-preview"
   | "anthropic/claude-opus-4"
   | "anthropic/claude-opus-4.1"
   | "anthropic/claude-opus-4.5"
