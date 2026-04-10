@@ -480,7 +480,7 @@
     "api_model_id": "google/gemma-4-26b-a4b",
     "provider_api_model_id": "gmicloud:google/gemma-4-26b-a4b",
     "provider_model_slug": "google/gemma-4-26b-a4b-it",
-    "internal_model_id": "google/gemma-4-26b-a3b",
+    "internal_model_id": "google/gemma-4-26b-a4b",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text,image",
