@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
     buildWebhookPayload,
     filterUnannouncedModels,
@@ -725,8 +726,8 @@ async function sendDiscordWebhook(
     }
 }
 
-async function main(): Promise<void> {
-    const options = parseArgs(process.argv.slice(2));
+export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
+    const options = parseArgs(argv);
     const internalWebhookUrl =
         options.internalWebhookUrl ??
         options.webhookUrl ??
@@ -894,8 +895,16 @@ async function main(): Promise<void> {
     }
 }
 
-main().catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`[internal-model-check] Fatal error: ${message}`);
-    process.exitCode = 1;
-});
+function isMainModule(): boolean {
+    const entry = process.argv[1];
+    if (!entry) return false;
+    return path.resolve(entry) === path.resolve(fileURLToPath(import.meta.url));
+}
+
+if (isMainModule()) {
+    runInternalModelDiscovery(process.argv.slice(2)).catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[internal-model-check] Fatal error: ${message}`);
+        process.exitCode = 1;
+    });
+}

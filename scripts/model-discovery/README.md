@@ -32,6 +32,15 @@ Internal model IDs are also marked as announced before sending webhook payloads,
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.
 
+## Script entrypoints
+
+- `scripts/model-discovery/run-internal-public.ts`
+  - Public internal release notifications (website model additions only).
+- `scripts/model-discovery/run.ts`
+  - Private external provider tracking notifications.
+- `scripts/model-discovery/run-hf-private.ts`
+  - Private Hugging Face org tracking notifications.
+
 ## Local run
 
 ```bash
@@ -48,7 +57,7 @@ pnpm run data:check-new-models:test
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
 - `DISCORD_ROLE_ID` (optional role mention)
 - `DISCORD_USER_ID` (optional mention)
-- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling `run-internal.ts` with `--discord-avatar-url`)
+- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling internal runner scripts with `--discord-avatar-url`)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for DB allowlist)
 - `SUPABASE_SERVICE_ROLE_KEY` (required for DB allowlist)
 - Provider-specific API keys declared in each provider module.

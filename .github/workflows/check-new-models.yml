@@ -55,11 +55,10 @@ jobs:
 
             - name: Check for new internal models
               run: |
-                  pnpm exec tsx scripts/model-discovery/run-internal.ts \
+                  pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
-                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png" \
-                    --skip-hf
+                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png"
 
             - name: Check for new external provider models
               env:
@@ -84,10 +83,9 @@ jobs:
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
                   DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
               run: |
-                  pnpm exec tsx scripts/model-discovery/run-internal.ts \
+                  pnpm exec tsx scripts/model-discovery/run-hf-private.ts \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
-                    --skip-internal \
                     --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
                     --hf-token "${{ secrets.HF_TOKEN }}"
 
