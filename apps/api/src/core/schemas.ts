@@ -338,6 +338,12 @@ const EmbeddingsProviderOptionsSchema = z.object({
     mistral: z.object({
         output_dtype: z.enum(["float", "int8", "uint8", "binary", "ubinary"]).optional(),
     }).optional(),
+    voyage: z.object({
+        input_type: z.enum(["query", "document"]).optional(),
+        truncation: z.boolean().optional(),
+        output_dtype: z.enum(["float", "int8", "uint8", "binary", "ubinary"]).optional(),
+        output_dimension: z.number().int().positive().optional(),
+    }).optional(),
 }).optional();
 
 export const EmbeddingsSchema = z.object({
@@ -745,7 +751,7 @@ export const RerankSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).transform((obj) => {
+}).passthrough().transform((obj) => {
     const next: any = { ...obj };
     if (!("top_n" in next) && typeof next.top_k === "number") {
         next.top_n = next.top_k;

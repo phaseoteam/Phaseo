@@ -3,6 +3,8 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 export type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 const PAGE_SIZE = 5000;
+const MAX_SHORT_RANGE_PAGES = 8;
+const MAX_LONG_RANGE_PAGES = 6;
 const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
 function fromForRange(key: RangeKey): Date {
@@ -59,10 +61,16 @@ export async function getAppUsageOverTime(
 	const fromDay = new Date(fromDate);
 	fromDay.setUTCHours(0, 0, 0, 0);
 	const fromDayIso = fromDay.toISOString().slice(0, 10);
+	let hitPageCap = true;
 	let pagesFetched = 0;
 	let hadError = false;
+	const maxPages = useDaily ? MAX_LONG_RANGE_PAGES : MAX_SHORT_RANGE_PAGES;
 
-	for (let offset = 0; ; offset += PAGE_SIZE) {
+	for (
+		let page = 0, offset = 0;
+		page < maxPages;
+		page += 1, offset += PAGE_SIZE
+	) {
 		pagesFetched += 1;
 		const to = offset + PAGE_SIZE - 1;
 		const query = useDaily
@@ -90,6 +98,7 @@ export async function getAppUsageOverTime(
 
 		if (error) {
 			hadError = true;
+			hitPageCap = false;
 			console.error(
 				`Error fetching app usage ${useDaily ? "daily" : "15m"} rollups:`,
 				error,
@@ -97,6 +106,7 @@ export async function getAppUsageOverTime(
 			return [];
 		}
 		if (!Array.isArray(data) || data.length === 0) {
+			hitPageCap = false;
 			break;
 		}
 
@@ -127,17 +137,25 @@ export async function getAppUsageOverTime(
 		}
 
 		if (data.length < PAGE_SIZE) {
+			hitPageCap = false;
 			break;
 		}
 	}
 
+	if (rows.length > 0 && hitPageCap) {
+		console.warn(
+			`App usage rows may be truncated for app=${appId} range=${range} mode=${useDaily ? "daily" : "15m"}`,
+		);
+	}
 	logUsageFetch("app_usage_over_time_query", {
 		appId,
 		range,
 		mode: useDaily ? "daily" : "15m",
 		pagesFetched,
 		rows: rows.length,
+		hitPageCap,
 		hadError,
+		maxPages,
 		pageSize: PAGE_SIZE,
 		fromIso: useDaily ? fromDayIso : from,
 		toIso: useDaily ? nowDay : nowIso,

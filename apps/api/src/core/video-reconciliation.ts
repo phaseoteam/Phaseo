@@ -32,6 +32,7 @@ const XAI_VIDEO_PREFIX = "xaivid_";
 const MINIMAX_VIDEO_PREFIX = "mmxvid_";
 const BYTEDANCE_VIDEO_PREFIX = "bdvid_";
 const RUNWAY_VIDEO_PREFIX = "rwyvid_";
+const ATLAS_VIDEO_PREFIX = "atlsvid_";
 
 function toNonEmptyString(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
@@ -118,6 +119,26 @@ function mapRunwayVideoStatus(value: unknown): "queued" | "in_progress" | "compl
 	}
 	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	if (status === "throttled") return "queued";
+	return "queued";
+}
+
+function mapAtlasCloudVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+	const status = String(value ?? "").toLowerCase();
+	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
+		return "completed";
+	}
+	if (
+		status === "failed" ||
+		status === "error" ||
+		status === "cancelled" ||
+		status === "canceled" ||
+		status === "expired"
+	) {
+		return "failed";
+	}
+	if (status === "running" || status === "processing" || status === "in_progress" || status === "pending") {
+		return "in_progress";
+	}
 	return "queued";
 }
 
@@ -252,6 +273,116 @@ async function fetchOpenAiVideoStatus(
 			resolution: (json as any).resolution ?? (json as any).size ?? job.meta?.resolution,
 			quality: (json as any).quality ?? job.meta?.quality,
 		}),
+		raw: json,
+	};
+}
+
+function extractAtlasCloudPayload(json: unknown): Record<string, unknown> | null {
+	if (!json || typeof json !== "object" || Array.isArray(json)) return null;
+	const top = json as Record<string, unknown>;
+	const nestedData = top.data;
+	if (nestedData && typeof nestedData === "object" && !Array.isArray(nestedData)) {
+		return nestedData as Record<string, unknown>;
+	}
+	return top;
+}
+
+function extractAtlasCloudOutputUrl(payload: Record<string, unknown>): string | undefined {
+	const directOutputs = Array.isArray(payload.outputs) ? payload.outputs : [];
+	for (const item of directOutputs) {
+		if (typeof item === "string" && item.trim().length > 0) return item.trim();
+		if (item && typeof item === "object" && !Array.isArray(item)) {
+			const record = item as Record<string, unknown>;
+			const uri =
+				toNonEmptyString(record.url) ??
+				toNonEmptyString(record.uri) ??
+				toNonEmptyString(record.video_url) ??
+				toNonEmptyString(record.videoUrl);
+			if (uri) return uri;
+		}
+	}
+	const outputArray = Array.isArray(payload.output) ? payload.output : [];
+	for (const item of outputArray) {
+		if (item && typeof item === "object" && !Array.isArray(item)) {
+			const record = item as Record<string, unknown>;
+			const uri =
+				toNonEmptyString(record.url) ??
+				toNonEmptyString(record.uri) ??
+				toNonEmptyString(record.video_url) ??
+				toNonEmptyString(record.videoUrl);
+			if (uri) return uri;
+		}
+	}
+	const urls = payload.urls;
+	if (urls && typeof urls === "object" && !Array.isArray(urls)) {
+		for (const value of Object.values(urls as Record<string, unknown>)) {
+			const uri = toNonEmptyString(value);
+			if (uri) return uri;
+		}
+	}
+	return (
+		toNonEmptyString((payload as any).video_url) ??
+		toNonEmptyString((payload as any).videoUrl)
+	);
+}
+
+async function fetchAtlasCloudVideoStatus(job: VideoJobRecord): Promise<VideoProviderStatusResult | null> {
+	const taskId = resolveStoredProviderTaskId(job, (value) => decodePrefixedBase64Id(value, ATLAS_VIDEO_PREFIX));
+	if (!taskId) return null;
+	const providerId = String(job.provider ?? "atlascloud").trim().toLowerCase() || "atlascloud";
+	const key = await resolveProviderPollingKey({
+		job,
+		providerId,
+		defaultEnvKey: "ATLAS_CLOUD_API_KEY",
+	});
+	if (!key) return null;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const baseUrl = String(bindings.ATLAS_CLOUD_BASE_URL || "https://api.atlascloud.ai").replace(/\/+$/, "");
+	const headers: Record<string, string> = {
+		Authorization: `Bearer ${key}`,
+		"Content-Type": "application/json",
+		Accept: "application/json",
+	};
+
+	const predictionRes = await fetch(`${baseUrl}/api/v1/model/prediction/${encodeURIComponent(taskId)}`, {
+		method: "GET",
+		headers,
+	});
+	let finalRes = predictionRes;
+	if (!predictionRes.ok) {
+		const resultRes = await fetch(`${baseUrl}/api/v1/model/result/${encodeURIComponent(taskId)}`, {
+			method: "GET",
+			headers,
+		});
+		if (resultRes.ok) {
+			finalRes = resultRes;
+		}
+	}
+	if (!finalRes.ok) return null;
+	const json = await finalRes.json().catch(() => null);
+	const payload = extractAtlasCloudPayload(json);
+	if (!payload) return null;
+	const status = mapAtlasCloudVideoStatus(payload.status);
+	const outputUrl = extractAtlasCloudOutputUrl(payload);
+	return {
+		status,
+		providerId,
+		model: String(payload.model ?? job.model ?? "").trim() || undefined,
+		seconds: toPositiveNumber(
+			payload.seconds ??
+			payload.duration_seconds ??
+			payload.duration ??
+			payload.video_duration ??
+			job.meta?.seconds,
+		),
+		requestOptions: buildVideoPricingRequestOptions({
+			resolution: payload.resolution ?? payload.size ?? job.meta?.resolution,
+			quality: payload.quality ?? job.meta?.quality,
+		}),
+		metaPatch: {
+			providerTaskId: taskId,
+			...(outputUrl ? { atlasOutputUrl: outputUrl } : {}),
+		},
 		raw: json,
 	};
 }
@@ -711,6 +842,7 @@ export async function fetchVideoProviderStatus(job: VideoJobRecord): Promise<Vid
 	if (provider === "google-ai-studio") return fetchGoogleAiStudioVideoStatus(job);
 	if (provider === "google-vertex") return fetchGoogleVertexVideoStatus(job);
 	if (provider === "alibaba" || provider === "alibaba-cloud" || provider === "qwen") return fetchAlibabaVideoStatus(job);
+	if (provider === "atlascloud" || provider === "atlas-cloud") return fetchAtlasCloudVideoStatus(job);
 	if (provider === "x-ai" || provider === "xai") return fetchXAiVideoStatus(job);
 	if (provider === "minimax" || provider === "minimax-lightning") return fetchMiniMaxVideoStatus(job);
 	if (provider === "bytedance-seed" || provider === "byteplus") return fetchBytedanceVideoStatus(job);

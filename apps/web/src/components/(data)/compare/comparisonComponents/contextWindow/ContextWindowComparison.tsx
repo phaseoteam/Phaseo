@@ -255,3 +255,4 @@ function formatTokens(val: number | null | undefined): string {
 	if (val >= 1_000) return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
 	return val.toLocaleString();
 }
+

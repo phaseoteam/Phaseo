@@ -7,7 +7,7 @@ export interface RerankRequest {
     trace_level?: "summary" | "full";
   };
   documents:
-    | string
+    | string[]
     | {
         [key: string]: unknown;
       }[];

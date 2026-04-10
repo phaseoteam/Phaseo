@@ -80,6 +80,14 @@ export function encodeOpenAIEmbeddingsRequest(ir: IREmbeddingsRequest): any {
 								output_dtype: ir.providerOptions.mistral.outputDtype,
 							}
 						: undefined,
+					voyage: ir.providerOptions.voyage
+						? {
+								input_type: ir.providerOptions.voyage.inputType,
+								truncation: ir.providerOptions.voyage.truncation,
+								output_dtype: ir.providerOptions.voyage.outputDtype,
+								output_dimension: ir.providerOptions.voyage.outputDimension,
+							}
+						: undefined,
 				}
 			: undefined,
 		user: ir.userId,

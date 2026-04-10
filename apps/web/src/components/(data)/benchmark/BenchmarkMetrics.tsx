@@ -58,8 +58,7 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 		.map((result) =>
 			normalizeBenchmarkScoreValue(
 				parseBenchmarkScore(result?.score),
-				hasPercentage,
-				result?.score
+				hasPercentage
 			)
 		)
 		.filter((score): score is number => score != null)
@@ -96,8 +95,7 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 					if (!modelId) return acc;
 					const numericScore = normalizeBenchmarkScoreValue(
 						parseBenchmarkScore(result.score),
-						hasPercentage,
-						result.score
+						hasPercentage
 					);
 					if (numericScore == null) return acc;
 

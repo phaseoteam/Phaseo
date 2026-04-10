@@ -1372,7 +1372,7 @@ export type CreateRerankParams = {
       trace_level?: "summary" | "full";
     };
     documents:
-      | string
+      | string[]
       | {
           [key: string]: unknown;
         }[];

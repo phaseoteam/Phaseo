@@ -627,7 +627,7 @@ RerankDocument = Union[str, Dict[str, Any]]
 
 class RerankRequest(TypedDict):
 	debug: NotRequired[Dict[str, Any]]
-	documents: List[Union[str, Dict[str, Any]]]
+	documents: Union[List[str], List[Dict[str, Any]]]
 	max_chunks_per_doc: NotRequired[int]
 	metadata: NotRequired[Dict[str, Any]]
 	model: str

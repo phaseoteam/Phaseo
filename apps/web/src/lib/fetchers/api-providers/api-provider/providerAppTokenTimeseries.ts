@@ -7,6 +7,8 @@ import { getTopApps } from "./top-apps";
 const DEFAULT_DAYS = 30;
 const DEFAULT_TOP_APPS = 20;
 const PAGE_SIZE = 5000;
+const MAX_FILTERED_PAGES = 8;
+const MAX_FALLBACK_PAGES = 4;
 const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
 type ProviderAppRollupRow = {
@@ -79,9 +81,11 @@ async function fetchProviderAppRollupRows(
 	sinceIso: string,
 	nowIso: string,
 	appIds?: string[],
+	maxPages = MAX_FILTERED_PAGES,
 ): Promise<ProviderAppRollupRow[]> {
 	const supabase = createAdminClient();
 	const rows: ProviderAppRollupRow[] = [];
+	let hitPageCap = true;
 	let pagesFetched = 0;
 	let hadError = false;
 
@@ -91,12 +95,13 @@ async function fetchProviderAppRollupRows(
 			filteredAppIds: 0,
 			pagesFetched: 0,
 			rows: 0,
+			hitPageCap: false,
 			hadError: false,
 		});
 		return rows;
 	}
 
-	for (let from = 0; ; from += PAGE_SIZE) {
+	for (let page = 0, from = 0; page < Math.max(1, maxPages); page += 1, from += PAGE_SIZE) {
 		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
 		let query = supabase
@@ -114,25 +119,35 @@ async function fetchProviderAppRollupRows(
 
 		if (error) {
 			hadError = true;
+			hitPageCap = false;
 			console.error("Error loading provider app rollup rows for chart:", error);
 			break;
 		}
 		if (!Array.isArray(data) || data.length === 0) {
+			hitPageCap = false;
 			break;
 		}
 
 		rows.push(...(data as ProviderAppRollupRow[]));
 		if (data.length < PAGE_SIZE) {
+			hitPageCap = false;
 			break;
 		}
 	}
 
+	if (rows.length > 0 && hitPageCap) {
+		console.warn(
+			`Provider app token rows may be truncated for provider=${apiProviderId} pages=${maxPages}`,
+		);
+	}
 	logUsageFetch("provider_app_rollup_query", {
 		providerId: apiProviderId,
 		filteredAppIds: Array.isArray(appIds) ? appIds.length : null,
 		pagesFetched,
 		rows: rows.length,
+		hitPageCap,
 		hadError,
+		maxPages,
 		pageSize: PAGE_SIZE,
 	});
 
@@ -221,6 +236,7 @@ export async function getProviderAppTokenTimeseries(
 		sinceIso,
 		nowIso,
 		preferredAppIds,
+		MAX_FILTERED_PAGES,
 	);
 	const fallbackRows = !rollupRows.length
 		? await fetchProviderAppRollupRows(
@@ -228,6 +244,7 @@ export async function getProviderAppTokenTimeseries(
 			sinceIso,
 			nowIso,
 			undefined,
+			MAX_FALLBACK_PAGES,
 		)
 		: [];
 	const sourceRows = rollupRows.length > 0 ? rollupRows : fallbackRows;

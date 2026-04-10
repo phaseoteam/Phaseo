@@ -659,8 +659,7 @@ export default function ComparisonTable({
 									const scores = rawScores.map((score) =>
 										normalizeBenchmarkScoreValue(
 											parseBenchmarkScore(score as any),
-											isPercent,
-											score
+											isPercent
 										)
 									);
 
@@ -1047,8 +1046,7 @@ export default function ComparisonTable({
 																| null
 																| undefined
 														),
-														isPercent,
-														rawScore
+														isPercent
 													);
 												const bestScores =
 													rawScores
@@ -1061,8 +1059,7 @@ export default function ComparisonTable({
 																		| null
 																		| undefined
 																),
-																isPercent,
-																score
+																isPercent
 															)
 														)
 														.filter(

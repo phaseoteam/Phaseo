@@ -5,14 +5,7 @@ import type { ExtendedModel } from "@/data/types";
 import { loadCompareModelsCached } from "@/lib/fetchers/compare/loadCompareModels";
 import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
 import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModelPerformance";
-import type {
-	ModelPerformancePoint,
-	ModelProviderDailyPoint,
-	ModelProviderPerformance,
-	ModelTimeOfDayPoint,
-} from "@/lib/fetchers/models/getModelPerformance";
 import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
-import type { ModelTokenTrajectoryPoint } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { getModelRealtimeWindowStatsCached } from "@/lib/fetchers/models/getModelRealtimeWindowStats";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import CompareMiniHeader from "@/components/(data)/compare/CompareMiniHeader";
@@ -104,13 +97,12 @@ export default async function Page({ searchParams }: PageProps = {}) {
 							]);
 							const points30d = (trajectory?.points ?? [])
 								.slice(-30)
-								.map((point: ModelTokenTrajectoryPoint) => ({
+								.map((point) => ({
 									date: point.date,
 									value: Number(point.tokens ?? 0),
 								}));
 							const tokens30d = points30d.reduce(
-								(sum: number, point: { value: number }) =>
-									sum + (Number.isFinite(point.value) ? point.value : 0),
+								(sum, point) => sum + (Number.isFinite(point.value) ? point.value : 0),
 								0
 							);
 							const latestDate = points30d.length
@@ -118,50 +110,20 @@ export default async function Page({ searchParams }: PageProps = {}) {
 								: null;
 							const fallbackLatencyMs =
 								metrics.summary.avgLatencyMs ??
+								average(metrics.hourly.map((point) => point.avgLatencyMs)) ??
+								average(metrics.timeOfDay.map((point) => point.avgLatencyMs)) ??
 								average(
-									metrics.hourly.map(
-										(point: ModelPerformancePoint) => point.avgLatencyMs
-									)
+									metrics.providerPerformance.map((provider) => provider.avgLatencyMs)
 								) ??
-								average(
-									metrics.timeOfDay.map(
-										(point: ModelTimeOfDayPoint) => point.avgLatencyMs
-									)
-								) ??
-								average(
-									metrics.providerPerformance.map(
-										(provider: ModelProviderPerformance) =>
-											provider.avgLatencyMs
-									)
-								) ??
-								average(
-									metrics.providerDaily7d.map(
-										(point: ModelProviderDailyPoint) => point.avgLatencyMs
-									)
-								);
+								average(metrics.providerDaily7d.map((point) => point.avgLatencyMs));
 							const fallbackThroughput =
 								metrics.summary.avgThroughput ??
+								average(metrics.hourly.map((point) => point.avgThroughput)) ??
+								average(metrics.timeOfDay.map((point) => point.avgThroughput)) ??
 								average(
-									metrics.hourly.map(
-										(point: ModelPerformancePoint) => point.avgThroughput
-									)
+									metrics.providerPerformance.map((provider) => provider.avgThroughput)
 								) ??
-								average(
-									metrics.timeOfDay.map(
-										(point: ModelTimeOfDayPoint) => point.avgThroughput
-									)
-								) ??
-								average(
-									metrics.providerPerformance.map(
-										(provider: ModelProviderPerformance) =>
-											provider.avgThroughput
-									)
-								) ??
-								average(
-									metrics.providerDaily7d.map(
-										(point: ModelProviderDailyPoint) => point.avgThroughput
-									)
-								);
+								average(metrics.providerDaily7d.map((point) => point.avgThroughput));
 							return [
 								id,
 								{
@@ -176,7 +138,7 @@ export default async function Page({ searchParams }: PageProps = {}) {
 									throughputP50TokPerSec30m:
 										realtime30m.throughputP50TokPerSec ?? fallbackThroughput ?? null,
 									cumulativeTokens: metrics.cumulativeTokens ?? null,
-									requestPoints24h: metrics.hourly.map((point: ModelPerformancePoint) => ({
+									requestPoints24h: metrics.hourly.map((point) => ({
 										date: point.bucket,
 										value: point.requests,
 									})),

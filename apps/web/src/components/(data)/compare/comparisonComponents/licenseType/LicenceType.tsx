@@ -227,3 +227,4 @@ export default function LicenseType({ selectedModels }: LicenseTypeProps) {
 		</section>
 	);
 }
+

@@ -1,42 +1,11 @@
-import fs from "node:fs";
-import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { parseSseJson, readSseFrames } from "../helpers/sse";
 import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
+import { extractResponseText, parseJsonLoose, serializeError, writeResultsReport } from "./active-providers.live.helpers";
 
-const DEFAULT_ACTIVE_PROVIDERS = [
-    "openai",
-    "anthropic",
-    "cohere",
-    "arcee-ai",
-    "x-ai",
-    "google-ai-studio",
-    "deepseek",
-    "deepinfra",
-    "mistral",
-    "minimax",
-    "qwen",
-    "z-ai",
-    "moonshot-ai",
-    "moonshot-ai-turbo",
-    "alibaba",
-    "together",
-    "xiaomi",
-] as const;
+const DEFAULT_ACTIVE_PROVIDERS = ["openai", "anthropic", "cohere", "arcee-ai", "x-ai", "google-ai-studio", "deepseek", "deepinfra", "mistral", "minimax", "qwen", "z-ai", "moonshot-ai", "moonshot-ai-turbo", "alibaba", "together", "xiaomi"] as const;
 
-const DEFAULT_SCENARIOS = [
-    "responses_nonstream_hi",
-    "responses_stream_hi",
-    "responses_nonstream_tool",
-    "responses_nonstream_structured",
-    "chat_nonstream_hi",
-    "chat_stream_hi",
-    "chat_nonstream_tool",
-    "chat_nonstream_structured",
-    "messages_nonstream_hi",
-    "messages_nonstream_tool",
-    "messages_nonstream_structured",
-] as const;
+const DEFAULT_SCENARIOS = ["responses_nonstream_hi", "responses_stream_hi", "responses_nonstream_tool", "responses_nonstream_structured", "chat_nonstream_hi", "chat_stream_hi", "chat_nonstream_tool", "chat_nonstream_structured", "messages_nonstream_hi", "messages_nonstream_tool", "messages_nonstream_structured"] as const;
 
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
 const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
@@ -51,19 +20,11 @@ const MESSAGES_MAX_TOKENS_STRUCTURED = Math.max(MAX_OUTPUT_TOKENS, 96);
 const INCLUDE_TUNING_PARAMS = (process.env.LIVE_INCLUDE_TUNING ?? "0").trim() === "1";
 const LIVE_NOVITA_PROVIDER_ONLY = (process.env.LIVE_NOVITA_PROVIDER_ONLY ?? "1").trim() !== "0";
 const LIVE_NOVITA_TESTING_MODE = (process.env.LIVE_NOVITA_TESTING_MODE ?? "0").trim() !== "0";
-const INTERNAL_TEST_TOKEN =
-    (process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+const INTERNAL_TEST_TOKEN = (process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 const LIVE_DISCOVERY_HTTP_TIMEOUT_MS = Number(process.env.LIVE_DISCOVERY_HTTP_TIMEOUT_MS ?? "25000");
 const LIVE_SUPABASE_IN_CHUNK_SIZE = Number(process.env.LIVE_SUPABASE_IN_CHUNK_SIZE ?? "120");
 
-const LIVE_PROVIDER_ALIASES: Record<string, string> = {
-    arcee: "arcee-ai",
-    "arcee-ai": "arcee-ai",
-    xai: "x-ai",
-    "x-ai": "x-ai",
-    novita: "novitaai",
-    "novita-ai": "novitaai",
-};
+const LIVE_PROVIDER_ALIASES: Record<string, string> = { arcee: "arcee-ai", "arcee-ai": "arcee-ai", xai: "x-ai", "x-ai": "x-ai", novita: "novitaai", "novita-ai": "novitaai" };
 
 function normalizeLiveProviderId(value: string): string {
     const normalized = value.trim().toLowerCase();
@@ -97,18 +58,7 @@ function messageMaxTokensStructured(providerId: string): number {
     return MESSAGES_MAX_TOKENS_STRUCTURED;
 }
 
-type ScenarioId =
-    | "responses_nonstream_hi"
-    | "chat_nonstream_hi"
-    | "messages_nonstream_hi"
-    | "chat_stream_hi"
-    | "responses_stream_hi"
-    | "responses_nonstream_tool"
-    | "chat_nonstream_tool"
-    | "messages_nonstream_tool"
-    | "responses_nonstream_structured"
-    | "chat_nonstream_structured"
-    | "messages_nonstream_structured";
+type ScenarioId = "responses_nonstream_hi" | "chat_nonstream_hi" | "messages_nonstream_hi" | "chat_stream_hi" | "responses_stream_hi" | "responses_nonstream_tool" | "chat_nonstream_tool" | "messages_nonstream_tool" | "responses_nonstream_structured" | "chat_nonstream_structured" | "messages_nonstream_structured";
 
 type Scenario = {
     id: ScenarioId;
@@ -449,100 +399,6 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
 };
 
 const SCENARIO_RUNS: ScenarioRunRecord[] = [];
-
-function nowIso(): string {
-    return new Date().toISOString();
-}
-
-function timestampSlug(): string {
-    return nowIso().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-}
-
-function serializeError(error: unknown): string {
-    if (error instanceof Error) return error.message;
-    try {
-        return JSON.stringify(error);
-    } catch {
-        return String(error);
-    }
-}
-
-function resultsReportPath(): string {
-    const explicit = (process.env.LIVE_RESULTS_PATH ?? "").trim();
-    if (explicit) return path.resolve(explicit);
-    return path.resolve(process.cwd(), "reports", "provider-live", `active-providers-${timestampSlug()}.json`);
-}
-
-function writeResultsReport(providers: string[], scenarios: ScenarioId[]) {
-    const reportPath = resultsReportPath();
-    const totals = {
-        passed: 0,
-        failed: 0,
-        skipped_no_model: 0,
-        skipped_transient: 0,
-    };
-
-    for (const run of SCENARIO_RUNS) {
-        if (run.status === "passed") totals.passed += 1;
-        if (run.status === "failed") totals.failed += 1;
-        if (run.status === "skipped_no_model") totals.skipped_no_model += 1;
-        if (run.status === "skipped_transient") totals.skipped_transient += 1;
-    }
-
-    const payload = {
-        generated_at: nowIso(),
-        gateway_url: GATEWAY_URL,
-        strict_transient_failures: !ALLOW_TRANSIENT_FAILURES,
-        providers,
-        scenarios,
-        totals,
-        runs: SCENARIO_RUNS,
-    };
-
-    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-    fs.writeFileSync(reportPath, JSON.stringify(payload, null, 2), "utf8");
-    console.log(`[live-provider-tests] results report: ${reportPath}`);
-}
-
-function extractResponseText(jsonBody: any): string {
-    if (typeof jsonBody?.output_text === "string" && jsonBody.output_text.trim()) return jsonBody.output_text;
-    const output = Array.isArray(jsonBody?.output) ? jsonBody.output : [];
-    const parts: string[] = [];
-    for (const item of output) {
-        if (item?.type !== "message") continue;
-        const content = Array.isArray(item?.content) ? item.content : [];
-        for (const part of content) {
-            if (typeof part?.text === "string") parts.push(part.text);
-        }
-    }
-    return parts.join("\n");
-}
-
-function parseJsonLoose(text: string): any | null {
-    const trimmed = String(text ?? "").trim();
-    if (!trimmed) return null;
-    try {
-        return JSON.parse(trimmed);
-    } catch {
-        const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-        if (fenced?.[1]) {
-            try {
-                return JSON.parse(fenced[1].trim());
-            } catch {
-                // continue
-            }
-        }
-        const objMatch = trimmed.match(/\{[\s\S]*\}/);
-        if (objMatch?.[0]) {
-            try {
-                return JSON.parse(objMatch[0]);
-            } catch {
-                return null;
-            }
-        }
-        return null;
-    }
-}
 
 function parseList(value: string | undefined): string[] {
     if (!value) return [];
@@ -1075,7 +931,7 @@ describeLive("Live Active Providers low-cost smoke", () => {
     });
 
     afterAll(() => {
-        writeResultsReport(providers, scenarios);
+		writeResultsReport(providers, scenarios, SCENARIO_RUNS, GATEWAY_URL, ALLOW_TRANSIENT_FAILURES);
     });
 
     for (const providerId of providers) {

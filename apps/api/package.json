@@ -4,10 +4,10 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev",
-		"build": "wrangler deploy --dry-run",
-		"start": "wrangler dev",
-		"lint": "pnpm run typecheck",
+		"dev": "npx wrangler dev",
+		"build": "npx wrangler deploy --dry-run",
+		"start": "npx wrangler dev",
+		"lint": "eslint . && pnpm run typecheck",
 		"typecheck": "tsc --noEmit",
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
@@ -49,9 +49,11 @@
 		"@anthropic-ai/sdk": "^0.32.1",
 		"@cloudflare/workers-types": "^4.20260214.0",
 		"dotenv": "^17.3.1",
+		"eslint": "^10.0.3",
 		"openai": "^6.29.0",
 		"tsx": "^4.20.6",
 		"typescript": "^5.7.2",
+		"typescript-eslint": "^8.46.0",
 		"vitest": "^4.0.18",
 		"wrangler": "^4.66.0"
 	}

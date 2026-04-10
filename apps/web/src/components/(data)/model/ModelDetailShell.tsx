@@ -91,7 +91,7 @@ export default async function ModelDetailShell({
 		hasInternalModelData,
 		modelOverview?.status,
 	);
-	if (tab && tab !== "family" && !visibleTabKeys.includes(tab)) {
+	if (tab && !visibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
 

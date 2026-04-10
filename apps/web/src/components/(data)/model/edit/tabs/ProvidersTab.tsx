@@ -61,7 +61,7 @@ export interface ProviderCapabilityRow {
     | "disabled"
   effective_from: string | null
   effective_to: string | null
-  params: Record<string, unknown>
+  params: Record<string, boolean>
 }
 
 interface ProvidersTabProps {
@@ -317,7 +317,9 @@ export default function ProvidersTab({
           status: normalizeCapabilityStatus(capability.status),
           effective_from: capability.effective_from ?? null,
           effective_to: capability.effective_to ?? null,
-          params: { ...rawParams },
+          params: Object.fromEntries(
+            Object.entries(rawParams).map(([key, value]) => [key, Boolean(value)])
+          ),
         }]
       })
       setProviderCapabilities(dedupeCapabilities(mappedCapabilities))

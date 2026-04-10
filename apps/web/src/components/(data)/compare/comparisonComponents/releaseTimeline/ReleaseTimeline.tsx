@@ -298,3 +298,4 @@ export default function ReleaseTimeline({
 		</section>
 	);
 }
+

@@ -4122,12 +4122,15 @@ components:
         query:
           type: string
         documents:
-          type: array
-          minItems: 1
-          items:
-            oneOf:
-              - type: string
-              - type: object
+          oneOf:
+            - type: array
+              minItems: 1
+              items:
+                type: string
+            - type: array
+              minItems: 1
+              items:
+                type: object
                 additionalProperties: true
         top_n:
           type: integer

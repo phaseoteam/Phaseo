@@ -111,7 +111,7 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"axios": "^1.13.5",
+			"axios": "^1.15.0",
 			"basic-ftp@^5": "^5.2.0",
 			"body-parser": "^1.20.3",
 			"cookie": "^0.7.0",

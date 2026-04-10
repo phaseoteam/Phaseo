@@ -168,6 +168,12 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("novita", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBe(
+			EXECUTORS_BY_PROVIDER["atlas-cloud"]?.["video.generate"],
+		);
+		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBe(
+			EXECUTORS_BY_PROVIDER["atlascloud"]?.["video.generate"],
+		);
 		expect(resolveProviderExecutor("fal", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("fal-ai", "video.generation")).toBeNull();
 	});

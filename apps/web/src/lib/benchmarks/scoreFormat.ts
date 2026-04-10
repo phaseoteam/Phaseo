@@ -49,14 +49,17 @@ export function parseBenchmarkScore(
 
 export function normalizeBenchmarkScoreValue(
 	value: number | null | undefined,
-	isPercentage: boolean,
-	rawScore?: unknown
+	isPercentage: boolean
 ): number | null {
 	if (value == null || !Number.isFinite(value)) return null;
 	if (!isPercentage) return value;
-	// Keep percentage values in their provided unit. Inferring 0-1 fractions
-	// from numeric magnitude can corrupt legitimate low percentages.
-	if (typeof rawScore === "string" && rawScore.includes("%")) return value;
+
+	// Some benchmark sources report percentages as fractions (0-1) while
+	// others report 0-100. Normalize to 0-100 for consistent display/ranking.
+	const abs = Math.abs(value);
+	if (abs > 0 && abs <= 1) {
+		return value * 100;
+	}
 	return value;
 }
 

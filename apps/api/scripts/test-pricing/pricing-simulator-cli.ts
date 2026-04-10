@@ -89,7 +89,6 @@ function parseArgv(argv: string[]): CLIOptions {
 }
 
 function printHelpAndExit(): never {
-    // eslint-disable-next-line no-console
     console.log(
         [
             "Usage: pnpm simulate:pricing [options]",

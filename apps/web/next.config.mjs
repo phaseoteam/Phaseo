@@ -20,6 +20,9 @@ const nextConfig = {
   turbopack: {
     root: monorepoRoot,
   },
+  experimental: {
+    turbopackFileSystemCacheForDev: true,
+  },
   async rewrites() {
     return [
       {
