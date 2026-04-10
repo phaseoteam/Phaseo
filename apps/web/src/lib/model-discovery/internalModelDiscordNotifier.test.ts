@@ -89,12 +89,11 @@ describe("internal model discord notifier", () => {
 	});
 
 	it("retries and throws on webhook failure", async () => {
-		const fetchMock = jest.fn(async () => {
+		const requestMock = jest.fn(async () => {
 			return {
-				ok: false,
 				status: 500,
-				text: async () => "temporary upstream issue",
-			} as unknown as Response;
+				body: "temporary upstream issue",
+			};
 		});
 
 		const payload = buildWebhookPayload(
@@ -110,7 +109,7 @@ describe("internal model discord notifier", () => {
 
 		await expect(
 			sendDiscordWebhookPayload("https://discord.com/api/webhooks/test/token", payload, {
-				fetchImpl: fetchMock as unknown as typeof fetch,
+				requestImpl: requestMock,
 				maxAttempts: 2,
 				retryDelayMs: 0,
 				logger: {
@@ -120,7 +119,7 @@ describe("internal model discord notifier", () => {
 				},
 			})
 		).rejects.toThrow(/Discord webhook request failed/);
-		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(requestMock).toHaveBeenCalledTimes(2);
 	});
 
 	it("formats a single model embed with expected footer and color", () => {
@@ -155,12 +154,11 @@ describe("internal model discord notifier", () => {
 	});
 
 	it("normalizes allowed Discord hosts to a canonical request endpoint", async () => {
-		const fetchMock = jest.fn(async () => {
+		const requestMock = jest.fn(async () => {
 			return {
-				ok: true,
 				status: 204,
-				text: async () => "",
-			} as unknown as Response;
+				body: "",
+			};
 		});
 		const payload = buildWebhookPayload(
 			[
@@ -177,11 +175,17 @@ describe("internal model discord notifier", () => {
 			"https://canary.discordapp.com/api/webhooks/123456/abcdef",
 			payload,
 			{
-				fetchImpl: fetchMock as unknown as typeof fetch,
+				requestImpl: requestMock,
 			}
 		);
 
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("https://discord.com/api/webhooks/123456/abcdef");
+		expect(requestMock).toHaveBeenCalledTimes(1);
+		const firstRequestArg = requestMock.mock.calls[0];
+		expect(firstRequestArg).toBeDefined();
+		if (firstRequestArg) {
+			expect((firstRequestArg as unknown as Array<{ path: string }>)[0]).toMatchObject({
+				path: "/api/webhooks/123456/abcdef",
+			});
+		}
 	});
 });

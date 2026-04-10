@@ -44,7 +44,11 @@ export type SendDiscordWebhookOptions = {
 	maxAttempts?: number;
 	timeoutMs?: number;
 	retryDelayMs?: number;
-	fetchImpl?: typeof fetch;
+	requestImpl?: (args: {
+		path: string;
+		body: string;
+		timeoutMs: number;
+	}) => Promise<{ status: number; body: string }>;
 	logger?: Pick<Console, "info" | "warn" | "error">;
 };
 
@@ -313,6 +317,49 @@ function resolveErrorMessage(value: unknown): string {
 	return String(value);
 }
 
+async function sendDiscordWebhookRequest(args: {
+	path: string;
+	body: string;
+	timeoutMs: number;
+}): Promise<{ status: number; body: string }> {
+	const { path, body, timeoutMs } = args;
+	const https = await import("node:https");
+	return new Promise((resolve, reject) => {
+		const req = https.request(
+			{
+				protocol: "https:",
+				hostname: "discord.com",
+				method: "POST",
+				path,
+				headers: {
+					"Content-Type": "application/json",
+					"Content-Length": Buffer.byteLength(body).toString(),
+				},
+				timeout: timeoutMs,
+			},
+			(res) => {
+				let responseBody = "";
+				res.setEncoding("utf8");
+				res.on("data", (chunk) => {
+					responseBody += chunk;
+				});
+				res.on("end", () => {
+					resolve({
+						status: res.statusCode ?? 0,
+						body: responseBody,
+					});
+				});
+			}
+		);
+		req.on("timeout", () => {
+			req.destroy(new Error("timeout"));
+		});
+		req.on("error", reject);
+		req.write(body);
+		req.end();
+	});
+}
+
 export async function sendDiscordWebhookPayload(
 	webhookUrl: string,
 	payload: DiscordWebhookPayload,
@@ -322,7 +369,8 @@ export async function sendDiscordWebhookPayload(
 	const segments = parsedWebhookUrl.pathname.split("/").filter(Boolean);
 	const webhookId = segments[2] ?? "";
 	const webhookToken = segments[3] ?? "";
-	const requestUrl = `https://discord.com/api/webhooks/${webhookId}/${webhookToken}`;
+	const requestPath = `/api/webhooks/${webhookId}/${webhookToken}`;
+	const requestBody = JSON.stringify(payload);
 	const maxAttempts = Number.isFinite(options?.maxAttempts)
 		? Math.max(1, Math.floor(options?.maxAttempts as number))
 		: 3;
@@ -332,22 +380,17 @@ export async function sendDiscordWebhookPayload(
 	const retryDelayMs = Number.isFinite(options?.retryDelayMs)
 		? Math.max(0, Math.floor(options?.retryDelayMs as number))
 		: 500;
-	const fetchImpl = options?.fetchImpl ?? fetch;
+	const requestImpl = options?.requestImpl ?? sendDiscordWebhookRequest;
 	const logger = options?.logger ?? console;
 
 	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), timeoutMs);
 		try {
-			// lgtm[js/request-forgery] Validated to Discord webhook domains/path in validateDiscordWebhookUrl.
-			// codeql[js/request-forgery] Validated to Discord webhook domains/path in validateDiscordWebhookUrl.
-			const response = await fetchImpl(requestUrl, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
-				signal: controller.signal,
+			const response = await requestImpl({
+				path: requestPath,
+				body: requestBody,
+				timeoutMs,
 			});
-			if (response.ok) {
+			if (response.status >= 200 && response.status < 300) {
 				if (attempt > 1) {
 					logger.info(
 						`[internal-model-check] Discord webhook send succeeded on retry ${attempt}/${maxAttempts}.`
@@ -356,9 +399,9 @@ export async function sendDiscordWebhookPayload(
 				return;
 			}
 
-			const body = await response.text().catch(() => "");
+			const body = response.body ?? "";
 			const bodySnippet = body ? `: ${body.slice(0, 300)}` : "";
-			const retryableStatus = response.status === 429 || response.status >= 500;
+			const retryableStatus = response.status === 429 || response.status >= 500 || response.status === 0;
 			if (!retryableStatus || attempt >= maxAttempts) {
 				throw new Error(`Discord webhook failed with HTTP ${response.status}${bodySnippet}`);
 			}
@@ -375,8 +418,6 @@ export async function sendDiscordWebhookPayload(
 			logger.warn(
 				`[internal-model-check] Discord webhook attempt ${attempt}/${maxAttempts} failed (${message}); retrying.`
 			);
-		} finally {
-			clearTimeout(timeout);
 		}
 
 		if (retryDelayMs > 0) {
