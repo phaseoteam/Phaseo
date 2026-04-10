@@ -122,22 +122,22 @@ export default function ModelCalendarChart({
 
 	return (
 		<section className="space-y-4 py-6">
-			<div className="rounded-2xl border border-zinc-200 bg-zinc-50/40 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+			<div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-						Model event cadence (last 12 months)
+						Model event cadence
 					</h2>
 					<span className="text-xs text-zinc-500 dark:text-zinc-400">
-						Rolling 12 mo.
+						Last 12 months
 					</span>
 				</div>
-				<div className="flex flex-wrap gap-3 pb-3 pt-4">
-					{STACKED_TYPES.map((type) => (
-						<div
-							key={type}
-							className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400"
-						>
-							<span
+					<div className="flex flex-wrap gap-3 pb-3 pt-4">
+						{STACKED_TYPES.map((type) => (
+							<div
+								key={type}
+								className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
+							>
+								<span
 								className={cn(
 									"h-2 w-2 rounded-full",
 									TYPE_COLORS[type]

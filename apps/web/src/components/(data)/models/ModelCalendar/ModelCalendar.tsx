@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Logo } from "@/components/Logo";
 import ModelCalendarChart from "./ModelCalendarChart";
 import ModelReleasePace from "./ModelReleasePace";
+import ModelReleaseWeekdayAnalysis from "./ModelReleaseWeekdayAnalysis";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type {
@@ -216,7 +217,7 @@ export default function ModelCalendar({
 					>
 						{cell.date.getDate()}
 					</p>
-					<span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
 						{WEEKDAY_LABELS[getWeekdayIndex(cell.date)]}
 					</span>
 				</header>
@@ -545,7 +546,7 @@ export default function ModelCalendar({
 			</div>
 
 			<div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white/70 shadow-lg shadow-zinc-200/40 dark:border-zinc-800 dark:bg-zinc-950/70">
-				<div className="hidden grid-cols-7 px-2 py-3 text-[10px] font-semibold uppercase tracking-[0.4em] text-zinc-500 dark:text-zinc-400 sm:grid">
+				<div className="hidden grid-cols-7 px-2 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:grid">
 					{WEEKDAY_LABELS.map((label) => (
 						<span key={`weekday-${label}`} className="text-center">
 							{label}
@@ -570,6 +571,7 @@ export default function ModelCalendar({
 				</div>
 			</div>
 
+			<ModelReleaseWeekdayAnalysis events={events} />
 			<ModelCalendarChart events={events} monthsWindow={monthsWindow} />
 			<ModelReleasePace events={events} monthsWindow={monthsWindow} />
 		</section>
