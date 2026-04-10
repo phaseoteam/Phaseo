@@ -69,7 +69,7 @@ const ReleaseTooltip = ({
 
 	return (
 		<div className="rounded-2xl border border-zinc-200 bg-white p-3 text-xs text-zinc-900 shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:text-white">
-			<p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+			<p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
 				{label} {label === currentLabel ? "(in progress)" : ""}
 			</p>
 			<div className="mt-2 space-y-1">
@@ -82,7 +82,7 @@ const ReleaseTooltip = ({
 							key={`${entry.dataKey}-${label}-${isPred}`}
 							className="flex items-center justify-between"
 						>
-							<span className="uppercase text-[10px] tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
+							<span className="text-[11px] text-zinc-600 dark:text-zinc-400">
 								{labelText}
 								{isPred ? " (predicted)" : ""}
 							</span>
@@ -179,11 +179,11 @@ export default function ModelReleasePace({
 
 	return (
 		<section>
-			<div className="rounded-2xl border border-zinc-200 bg-zinc-50/40 p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+			<div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex flex-col gap-1">
 						<h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-							Releases per month (last 12 months)
+							Releases per month
 						</h3>
 					</div>
 					<Tooltip delayDuration={400}>
