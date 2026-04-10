@@ -59,14 +59,22 @@ function toVoyageMultimodalPart(part: any): Record<string, string> | null {
 		return { type: "text", text: asString(part?.text) };
 	}
 	if (type === "input_image" || type === "image_url" || type === "image") {
-		const imageValue = extractUrlString(part?.image_url ?? part?.url);
+		const imageValue =
+			type === "image"
+				? (part?.source === "data"
+						? asString(part?.data)
+						: extractUrlString(part?.data ?? part?.url))
+				: extractUrlString(part?.image_url ?? part?.url);
 		if (!imageValue) return null;
 		return isDataUrl(imageValue)
 			? { type: "image_base64", image_base64: extractBase64Payload(imageValue) }
 			: { type: "image_url", image_url: imageValue };
 	}
-	if (type === "input_video" || type === "video_url") {
-		const videoValue = extractUrlString(part?.video_url ?? part?.url);
+	if (type === "input_video" || type === "video_url" || type === "video") {
+		const videoValue =
+			type === "video"
+				? extractUrlString(part?.url ?? part?.data)
+				: extractUrlString(part?.video_url ?? part?.url);
 		if (!videoValue) return null;
 		return isDataUrl(videoValue)
 			? { type: "video_base64", video_base64: extractBase64Payload(videoValue) }
