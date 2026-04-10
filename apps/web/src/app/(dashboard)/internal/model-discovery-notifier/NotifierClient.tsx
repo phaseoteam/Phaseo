@@ -113,10 +113,10 @@ export default function NotifierClient() {
 							onChange={(event) => setWebhookUrl(event.target.value)}
 							placeholder="https://discord.com/api/webhooks/..."
 						/>
-						<p className="text-xs text-muted-foreground">
-							If empty, the action uses <code>DISCORD_WEBHOOK_URL</code>.
-						</p>
-					</div>
+							<p className="text-xs text-muted-foreground">
+								If empty, the action uses <code>DISCORD_WEBHOOK_NEW_MODELS_PUBLIC</code> (fallback: <code>DISCORD_WEBHOOK_URL</code>).
+							</p>
+						</div>
 					<div className="flex flex-wrap gap-2">
 						<Button type="button" variant="outline" disabled={isPending} onClick={() => run(false)}>
 							Preview Payload

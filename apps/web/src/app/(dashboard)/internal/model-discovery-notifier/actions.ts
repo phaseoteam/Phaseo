@@ -237,12 +237,14 @@ export async function testInternalModelDiscoveryNotifierAction(
 
 		const webhookUrl =
 			trimOrNull(input.webhookUrl) ??
+			trimOrNull(process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC) ??
 			trimOrNull(process.env.DISCORD_WEBHOOK_URL) ??
 			null;
 		if (!webhookUrl) {
 			return {
 				ok: false,
-				message: "Webhook URL missing. Provide one in the form or set DISCORD_WEBHOOK_URL.",
+				message:
+					"Webhook URL missing. Provide one in the form or set DISCORD_WEBHOOK_NEW_MODELS_PUBLIC (fallback: DISCORD_WEBHOOK_URL).",
 				payloadPreview,
 				modelCount: models.length,
 			};

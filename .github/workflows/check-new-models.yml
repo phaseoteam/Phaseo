@@ -11,6 +11,7 @@ concurrency:
 
 env:
     NODE_VERSION: 22
+    DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC || secrets.DISCORD_WEBHOOK_URL }}
 
 permissions:
     contents: read
@@ -54,13 +55,13 @@ jobs:
             - name: Check for new internal models
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal.ts \
-                    --webhook-url "${{ secrets.DISCORD_WEBHOOK_URL }}" \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
                     --skip-hf
 
             - name: Check for new external provider models
               env:
+                  DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC || secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
                   DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
@@ -79,7 +80,6 @@ jobs:
             - name: Check for new external Hugging Face models
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal.ts \
-                    --webhook-url "${{ secrets.DISCORD_WEBHOOK_URL }}" \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
                     --skip-internal \

@@ -63,6 +63,13 @@ function nowIso(): string {
     return new Date().toISOString();
 }
 
+function envValue(name: string): string | null {
+    const raw = process.env[name];
+    if (typeof raw !== "string") return null;
+    const trimmed = raw.trim();
+    return trimmed || null;
+}
+
 function normalizeRepoRelativePath(filePath: string): string {
     return filePath.replace(/\\/g, "/");
 }
@@ -693,6 +700,10 @@ async function sendDiscordWebhook(
 
 async function main(): Promise<void> {
     const options = parseArgs(process.argv.slice(2));
+    const webhookUrl =
+        options.webhookUrl ??
+        envValue("DISCORD_WEBHOOK_NEW_MODELS_PUBLIC") ??
+        envValue("DISCORD_WEBHOOK_URL");
     const shouldCheckInternal = !options.skipInternal;
     const shouldCheckHf = !options.skipHf && options.hfOrgs.length > 0;
     const repoRoot = process.cwd();
@@ -789,7 +800,7 @@ async function main(): Promise<void> {
         return;
     }
 
-    if (!options.webhookUrl) {
+    if (!webhookUrl) {
         const total = internalAdditionsCount + hfAdditionsTotal;
         console.log(
             `[internal-model-check] ${total} model change(s) detected (${internalAdditionsCount} internal additions, ${hfAdditionsTotal} HF), but no webhook URL was provided.`
@@ -818,7 +829,7 @@ async function main(): Promise<void> {
             avatarUrl,
             maxModelEmbeds: 10,
         });
-        await sendDiscordWebhookPayload(options.webhookUrl, payload, {
+        await sendDiscordWebhookPayload(webhookUrl, payload, {
             maxAttempts: 3,
             timeoutMs: 10_000,
             retryDelayMs: 750,
@@ -840,7 +851,7 @@ async function main(): Promise<void> {
     if (shouldSendHf) {
         const hfMessage = buildHfDiscordMessage(hfAdditionsByOrg);
         await sendDiscordWebhook(hfMessage, {
-            webhookUrl: options.webhookUrl,
+            webhookUrl,
             discordUserId: options.discordUserId,
             discordRoleId: options.discordRoleId,
             includeMentions: !mentionsSent,

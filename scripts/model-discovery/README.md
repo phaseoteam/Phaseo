@@ -43,7 +43,8 @@ pnpm run data:check-new-models:test
 
 ## Environment variables
 
-- `DISCORD_WEBHOOK_URL` (optional, but required for alerts)
+- `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (preferred webhook URL for model-discovery alerts)
+- `DISCORD_WEBHOOK_URL` (fallback webhook URL for model-discovery alerts)
 - `DISCORD_ROLE_ID` (optional role mention)
 - `DISCORD_USER_ID` (optional mention)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional webhook avatar URL, e.g. `https://ai-stats.phaseo.app/png_logo_light.png`)
