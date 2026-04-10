@@ -147,7 +147,7 @@
     "api_model_id": "meta/llama-3-8b",
     "provider_api_model_id": "fireworks:meta/llama-3-8b",
     "provider_model_slug": "accounts/fireworks/models/llama-v3-8b-instruct",
-    "internal_model_id": "",
+    "internal_model_id": "meta/llama-3-8b",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,

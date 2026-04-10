@@ -3,7 +3,7 @@
     "api_model_id": "stepfun/step-3.5-flash",
     "provider_api_model_id": "stepfun:stepfun/step-3.5-flash",
     "provider_model_slug": "step-3.5-flash",
-    "internal_model_id": "",
+    "internal_model_id": "stepfun/step-3.5-flash",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
