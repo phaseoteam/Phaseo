@@ -115,6 +115,13 @@ function createOcr(Client $client, ?array $path = null, ?array $query = null, ?a
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createRerank(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rerank";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createResponse(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

@@ -3,6 +3,7 @@ import {
 	getHelpArticleParams,
 	getHelpCategoryParams,
 } from "@/lib/content/helpCenter";
+import { getMigrationPosts } from "@/lib/content/migrations";
 import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
 import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
@@ -59,7 +60,7 @@ const staticRoutes: Array<{
         { path: "/families", changeFrequency: "weekly", priority: 0.75 },
         { path: "/subscription-plans", changeFrequency: "weekly", priority: 0.75 },
         { path: "/pricing", changeFrequency: "weekly", priority: 0.75 },
-        { path: "/compare", changeFrequency: "weekly", priority: 0.7 },
+		{ path: "/compare", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/migrate", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/migrate/openrouter", changeFrequency: "weekly", priority: 0.65 },
 		{ path: "/migrate/vercel-ai-gateway", changeFrequency: "weekly", priority: 0.65 },
@@ -398,6 +399,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	];
 
 	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
+	const migrationItems = getMigrationPosts().map((post) =>
+		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt || lastModified),
+	);
 
 	const helpCategoryParams = fromSettled(
 		helpCategoryResult,
@@ -446,5 +450,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...helpArticleItems,
 		...dynamicItems,
 		...appItems,
+		...migrationItems,
 	];
 }
