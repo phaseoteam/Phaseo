@@ -16,7 +16,7 @@ type ActionResult = {
 } | null;
 
 const SAMPLE_MODELS = [
-	"anthropic/claude-mythos-preview-2026-04-07",
+	"anthropic/claude-mythos-preview",
 	"voyage/voyage-4",
 	"Voyage Code 3 | https://ai-stats.phaseo.app/models/voyage/voyage-code-3",
 ].join("\n");

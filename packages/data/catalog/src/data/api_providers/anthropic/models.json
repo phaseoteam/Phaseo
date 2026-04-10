@@ -962,10 +962,10 @@
     ]
   },
   {
-    "api_model_id": "anthropic/claude-mythos-preview-2026-04-07",
-    "provider_api_model_id": "anthropic:anthropic/claude-mythos-preview-2026-04-07",
-    "provider_model_slug": "claude-mythos-preview-2026-04-07",
-    "internal_model_id": "anthropic/claude-mythos-preview-2026-04-07",
+    "api_model_id": "anthropic/claude-mythos-preview",
+    "provider_api_model_id": "anthropic:anthropic/claude-mythos-preview",
+    "provider_model_slug": "claude-mythos-preview",
+    "internal_model_id": "anthropic/claude-mythos-preview",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

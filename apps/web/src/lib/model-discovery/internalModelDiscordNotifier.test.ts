@@ -12,9 +12,9 @@ describe("internal model discord notifier", () => {
 		const payload = buildWebhookPayload(
 			[
 				{
-					modelId: "anthropic/claude-mythos-preview-2026-04-07",
+					modelId: "anthropic/claude-mythos-preview",
 					modelName: "Claude Mythos Preview",
-					modelUrl: "https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview-2026-04-07",
+					modelUrl: "https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview",
 					creatorName: "Anthropic",
 					creatorColor: "#cc785c",
 				},
@@ -32,10 +32,10 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds).toHaveLength(1);
 		expect(payload.embeds[0].title).toBe("Anthropic: Claude Mythos Preview");
 		expect(payload.embeds[0].url).toBe(
-			"https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview-2026-04-07"
+			"https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview"
 		);
-		expect(payload.embeds[0].description).toContain("Model ID: `anthropic/claude-mythos-preview-2026-04-07`");
-		expect(payload.embeds[0].description).toContain("[View Model](https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview-2026-04-07)");
+		expect(payload.embeds[0].description).toContain("Model ID: `anthropic/claude-mythos-preview`");
+		expect(payload.embeds[0].description).toContain("[View Model](https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview)");
 		expect(payload.embeds[0].footer.text).toBe("AI Stats | 10 Apr 2026");
 		expect(payload.embeds[0].color).toBe(0xcc785c);
 		expect(payload.avatar_url).toBe("https://ai-stats.phaseo.app/png_logo_light.png");
