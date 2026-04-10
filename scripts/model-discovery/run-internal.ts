@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
     buildWebhookPayload,
     filterUnannouncedModels,
@@ -10,6 +11,8 @@ import {
 
 type CliOptions = {
     webhookUrl: string | null;
+    internalWebhookUrl: string | null;
+    hfWebhookUrl: string | null;
     discordUserId: string | null;
     discordRoleId: string | null;
     discordAvatarUrl: string | null;
@@ -84,6 +87,8 @@ function migrateModelRootPrefix(filePath: string): string {
 
 function parseArgs(argv: string[]): CliOptions {
     let webhookUrl: string | null = null;
+    let internalWebhookUrl: string | null = null;
+    let hfWebhookUrl: string | null = null;
     let discordUserId: string | null = null;
     let discordRoleId: string | null = null;
     let discordAvatarUrl: string | null = null;
@@ -111,6 +116,18 @@ function parseArgs(argv: string[]): CliOptions {
 
         if (key === "--webhook-url") {
             webhookUrl = value.trim() || null;
+            index += 1;
+            continue;
+        }
+
+        if (key === "--internal-webhook-url") {
+            internalWebhookUrl = value.trim() || null;
+            index += 1;
+            continue;
+        }
+
+        if (key === "--hf-webhook-url") {
+            hfWebhookUrl = value.trim() || null;
             index += 1;
             continue;
         }
@@ -149,7 +166,18 @@ function parseArgs(argv: string[]): CliOptions {
         }
     }
 
-    return { webhookUrl, discordUserId, discordRoleId, discordAvatarUrl, hfOrgs, hfToken, skipInternal, skipHf };
+    return {
+        webhookUrl,
+        internalWebhookUrl,
+        hfWebhookUrl,
+        discordUserId,
+        discordRoleId,
+        discordAvatarUrl,
+        hfOrgs,
+        hfToken,
+        skipInternal,
+        skipHf,
+    };
 }
 
 function collectModelJsonFiles(rootDir: string): string[] {
@@ -320,6 +348,19 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
 function writeJson(filePath: string, value: unknown): void {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+}
+
+function writeDiscoveryState(
+    statePath: string,
+    files: Record<string, ModelFileSnapshot>,
+    hfOrgs: Record<string, HuggingFaceOrgSnapshot>
+): void {
+    writeJson(statePath, {
+        version: 2,
+        generatedAt: nowIso(),
+        files,
+        hfOrgs,
+    } satisfies InternalModelsFileState);
 }
 
 function buildCurrentFileMap(repoRoot: string): Record<string, ModelFileSnapshot> {
@@ -698,11 +739,16 @@ async function sendDiscordWebhook(
     }
 }
 
-async function main(): Promise<void> {
-    const options = parseArgs(process.argv.slice(2));
-    const webhookUrl =
+export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
+    const options = parseArgs(argv);
+    const internalWebhookUrl =
+        options.internalWebhookUrl ??
         options.webhookUrl ??
         envValue("DISCORD_WEBHOOK_NEW_MODELS_PUBLIC");
+    const hfWebhookUrl =
+        options.hfWebhookUrl ??
+        options.webhookUrl ??
+        envValue("DISCORD_WEBHOOK_URL");
     const shouldCheckInternal = !options.skipInternal;
     const shouldCheckHf = !options.skipHf && options.hfOrgs.length > 0;
     const repoRoot = process.cwd();
@@ -718,14 +764,6 @@ async function main(): Promise<void> {
     const currentHf = shouldCheckHf
         ? await buildCurrentHfOrgMap(options.hfOrgs, options.hfToken, previousState.hfOrgs)
         : { snapshots: previousState.hfOrgs, fetchedOrgs: new Set<string>() };
-
-    const nextState: InternalModelsFileState = {
-        version: 2,
-        generatedAt: nowIso(),
-        files: currentFiles,
-        hfOrgs: currentHf.snapshots,
-    };
-    writeJson(statePath, nextState);
 
     const diff = diffStates(previousState, currentFiles);
     const announcedState = readAnnouncedState(announcedStatePath);
@@ -785,6 +823,7 @@ async function main(): Promise<void> {
     }
 
     if (shouldCheckInternal && diff.previousCount === 0) {
+        writeDiscoveryState(statePath, currentFiles, currentHf.snapshots);
         console.log("[internal-model-check] Baseline initialized. Skipping first-run notifications.");
         return;
     }
@@ -795,20 +834,35 @@ async function main(): Promise<void> {
 
     const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
     if (internalAdditionsCount === 0 && hfAdditionsTotal === 0) {
+        writeDiscoveryState(statePath, currentFiles, currentHf.snapshots);
         console.log("[internal-model-check] No new internal or HF models detected.");
         return;
     }
 
-    if (!webhookUrl) {
-        const total = internalAdditionsCount + hfAdditionsTotal;
+    if (internalAdditionsCount > 0 && !internalWebhookUrl) {
         console.log(
-            `[internal-model-check] ${total} model change(s) detected (${internalAdditionsCount} internal additions, ${hfAdditionsTotal} HF), but no webhook URL was provided.`
+            `[internal-model-check] ${internalAdditionsCount} internal model addition(s) detected, but DISCORD_WEBHOOK_NEW_MODELS_PUBLIC is missing.`
+        );
+    }
+    if (hfAdditionsTotal > 0 && !hfWebhookUrl) {
+        console.log(
+            `[internal-model-check] ${hfAdditionsTotal} HF model addition(s) detected, but DISCORD_WEBHOOK_URL is missing.`
+        );
+    }
+
+    const shouldSendInternal = shouldCheckInternal && internalAdditionsCount > 0 && Boolean(internalWebhookUrl);
+    const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0 && Boolean(hfWebhookUrl);
+    const holdInternalBaseline = shouldCheckInternal && internalAdditionsCount > 0 && !shouldSendInternal;
+    const holdHfBaseline = shouldCheckHf && hfAdditionsTotal > 0 && !shouldSendHf;
+
+    if (!shouldSendInternal && !shouldSendHf) {
+        writeDiscoveryState(
+            statePath,
+            holdInternalBaseline ? previousState.files : currentFiles,
+            holdHfBaseline ? previousState.hfOrgs : currentHf.snapshots
         );
         return;
     }
-
-    const shouldSendInternal = shouldCheckInternal && internalAdditionsCount > 0;
-    const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0;
 
     console.log(
         `[internal-model-check] Changes detected (${internalAdditionsCount} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`
@@ -816,50 +870,69 @@ async function main(): Promise<void> {
 
     let mentionsSent = false;
 
-    if (shouldSendInternal) {
-        const avatarUrl =
-            options.discordAvatarUrl ??
-            (typeof process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL === "string" && process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL.trim()
-                ? process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL.trim()
-                : null);
+    if (shouldSendInternal && internalWebhookUrl) {
+        const avatarUrl = options.discordAvatarUrl ?? null;
         const payload = buildWebhookPayload(newInternalModels, options.discordRoleId, {
             discordUserId: options.discordUserId,
             includeMentions: true,
             avatarUrl,
             maxModelEmbeds: 10,
         });
-        await sendDiscordWebhookPayload(webhookUrl, payload, {
-            maxAttempts: 3,
-            timeoutMs: 10_000,
-            retryDelayMs: 750,
-            logger: console,
-        });
+
         const nextAnnounced = { ...announcedState.announcedByModelId };
         const markedAt = nowIso();
         for (const model of newInternalModels) {
             nextAnnounced[toAnnouncementKey(model)] = markedAt;
         }
-        writeJson(announcedStatePath, {
+        const nextAnnouncedState: AnnouncedInternalModelsState = {
             version: 1,
             updatedAt: markedAt,
             announcedByModelId: nextAnnounced,
-        } satisfies AnnouncedInternalModelsState);
+        };
+        writeJson(announcedStatePath, nextAnnouncedState);
+
+        try {
+            await sendDiscordWebhookPayload(internalWebhookUrl, payload, {
+                maxAttempts: 3,
+                timeoutMs: 10_000,
+                retryDelayMs: 750,
+                logger: console,
+            });
+        } catch (error) {
+            // Roll back pre-send mark so failed sends can be retried cleanly.
+            writeJson(announcedStatePath, announcedState);
+            throw error;
+        }
         mentionsSent = true;
     }
 
-    if (shouldSendHf) {
+    if (shouldSendHf && hfWebhookUrl) {
         const hfMessage = buildHfDiscordMessage(hfAdditionsByOrg);
         await sendDiscordWebhook(hfMessage, {
-            webhookUrl,
+            webhookUrl: hfWebhookUrl,
             discordUserId: options.discordUserId,
             discordRoleId: options.discordRoleId,
             includeMentions: !mentionsSent,
         });
     }
+
+    writeDiscoveryState(
+        statePath,
+        holdInternalBaseline ? previousState.files : currentFiles,
+        holdHfBaseline ? previousState.hfOrgs : currentHf.snapshots
+    );
 }
 
-main().catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`[internal-model-check] Fatal error: ${message}`);
-    process.exitCode = 1;
-});
+function isMainModule(): boolean {
+    const entry = process.argv[1];
+    if (!entry) return false;
+    return path.resolve(entry) === path.resolve(fileURLToPath(import.meta.url));
+}
+
+if (isMainModule()) {
+    runInternalModelDiscovery(process.argv.slice(2)).catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[internal-model-check] Fatal error: ${message}`);
+        process.exitCode = 1;
+    });
+}

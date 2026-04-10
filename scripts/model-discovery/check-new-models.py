@@ -454,7 +454,7 @@ def fetch_all_provider_models() -> list[dict]:
     return results
 
 def send_discord_webhook(message: str):
-    webhook_url = os.getenv('DISCORD_WEBHOOK_NEW_MODELS_PUBLIC')
+    webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
     if not webhook_url:
         return
     user_id = os.getenv('DISCORD_USER_ID')

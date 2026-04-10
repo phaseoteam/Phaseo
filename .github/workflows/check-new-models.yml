@@ -12,6 +12,8 @@ concurrency:
 env:
     NODE_VERSION: 22
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
+    DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    DISCORD_ROLE_ID_MODEL_UPDATES: "1377690778478055584"
 
 permissions:
     contents: read
@@ -54,16 +56,16 @@ jobs:
 
             - name: Check for new internal models
               run: |
-                  pnpm exec tsx scripts/model-discovery/run-internal.ts \
+                  pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
-                    --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
-                    --skip-hf
+                    --discord-role-id "${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}" \
+                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png"
 
             - name: Check for new external provider models
               env:
-                  DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
-                  DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
+                  DISCORD_ROLE_ID: ${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
                   AION_LABS_API_KEY: ${{ secrets.AION_LABS_API_KEY }}
@@ -77,11 +79,14 @@ jobs:
                   pnpm exec tsx scripts/model-discovery/run.ts
 
             - name: Check for new external Hugging Face models
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+                  DISCORD_ROLE_ID: ${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}
               run: |
-                  pnpm exec tsx scripts/model-discovery/run-internal.ts \
+                  pnpm exec tsx scripts/model-discovery/run-hf-private.ts \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
-                    --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
-                    --skip-internal \
+                    --discord-role-id "${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}" \
                     --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
                     --hf-token "${{ secrets.HF_TOKEN }}"
 
