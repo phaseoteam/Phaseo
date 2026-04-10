@@ -276,7 +276,7 @@
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "gmicloud:qwen/qwen3-235b-a22b-2507",
     "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8",
-    "internal_model_id": "",
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
