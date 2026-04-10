@@ -21,7 +21,12 @@ Discord alerts are filtered to models from the database table `data_api_provider
 If any filtered diff exists, the runner sends a Discord webhook notification.
 
 Internal model file checks read from `packages/data/catalog/src/data/models`.
-Internal Discord alerts are sent when new internal models are added to the repository.
+Internal Discord alerts are sent as embed payloads when new internal models are added to the repository.
+Already-announced model IDs are persisted to:
+
+- `scripts/model-discovery/state/internal-announced-models.json`
+
+This avoids duplicate notifications across runs while the GitHub Actions cache is retained.
 
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.
@@ -38,9 +43,10 @@ pnpm run data:check-new-models:test
 
 ## Environment variables
 
-- `DISCORD_WEBHOOK_URL` (optional, but required for alerts)
+- `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (webhook URL for model-discovery alerts)
 - `DISCORD_ROLE_ID` (optional role mention)
 - `DISCORD_USER_ID` (optional mention)
+- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional webhook avatar URL, e.g. `https://ai-stats.phaseo.app/png_logo_light.png`)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for DB allowlist)
 - `SUPABASE_SERVICE_ROLE_KEY` (required for DB allowlist)
 - Provider-specific API keys declared in each provider module.

@@ -1,10 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+    buildWebhookPayload,
+    filterUnannouncedModels,
+    sendDiscordWebhookPayload,
+    toAnnouncementKey,
+    type InternalModelNotificationModel,
+} from "../../apps/web/src/lib/model-discovery/internalModelDiscordNotifier";
 
 type CliOptions = {
     webhookUrl: string | null;
     discordUserId: string | null;
     discordRoleId: string | null;
+    discordAvatarUrl: string | null;
     hfOrgs: string[];
     hfToken: string | null;
     skipInternal: boolean;
@@ -42,11 +50,24 @@ type HuggingFaceOrgAdditions = {
     addedModelIds: string[];
 };
 
+type AnnouncedInternalModelsState = {
+    version: 1;
+    updatedAt: string;
+    announcedByModelId: Record<string, string>;
+};
+
 const LEGACY_MODELS_ROOT_PREFIX = "apps/web/src/data/models/";
 const CANONICAL_MODELS_ROOT_PREFIX = "packages/data/catalog/src/data/models/";
 
 function nowIso(): string {
     return new Date().toISOString();
+}
+
+function envValue(name: string): string | null {
+    const raw = process.env[name];
+    if (typeof raw !== "string") return null;
+    const trimmed = raw.trim();
+    return trimmed || null;
 }
 
 function normalizeRepoRelativePath(filePath: string): string {
@@ -65,6 +86,7 @@ function parseArgs(argv: string[]): CliOptions {
     let webhookUrl: string | null = null;
     let discordUserId: string | null = null;
     let discordRoleId: string | null = null;
+    let discordAvatarUrl: string | null = null;
     let hfToken: string | null = null;
     let skipInternal = false;
     let skipHf = false;
@@ -105,6 +127,12 @@ function parseArgs(argv: string[]): CliOptions {
             continue;
         }
 
+        if (key === "--discord-avatar-url") {
+            discordAvatarUrl = value.trim() || null;
+            index += 1;
+            continue;
+        }
+
         if (key === "--hf-orgs") {
             for (const item of value.split(/[,\s]+/)) {
                 const org = item.trim().toLowerCase();
@@ -121,7 +149,7 @@ function parseArgs(argv: string[]): CliOptions {
         }
     }
 
-    return { webhookUrl, discordUserId, discordRoleId, hfOrgs, hfToken, skipInternal, skipHf };
+    return { webhookUrl, discordUserId, discordRoleId, discordAvatarUrl, hfOrgs, hfToken, skipInternal, skipHf };
 }
 
 function collectModelJsonFiles(rootDir: string): string[] {
@@ -206,6 +234,45 @@ function emptyState(): InternalModelsFileState {
     };
 }
 
+function emptyAnnouncedState(): AnnouncedInternalModelsState {
+    return {
+        version: 1,
+        updatedAt: nowIso(),
+        announcedByModelId: {},
+    };
+}
+
+function readAnnouncedState(filePath: string): AnnouncedInternalModelsState {
+    if (!fs.existsSync(filePath)) return emptyAnnouncedState();
+    try {
+        const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8")) as
+            | Partial<AnnouncedInternalModelsState>
+            | undefined;
+        if (!parsed || typeof parsed !== "object") return emptyAnnouncedState();
+        if (parsed.version !== 1 || !parsed.announcedByModelId || typeof parsed.announcedByModelId !== "object") {
+            return emptyAnnouncedState();
+        }
+
+        const normalizedEntries = Object.entries(parsed.announcedByModelId)
+            .map(([rawModelId, announcedAt]) => {
+                const modelId = rawModelId.trim().toLowerCase();
+                if (!modelId) return null;
+                const normalizedAnnouncedAt =
+                    typeof announcedAt === "string" && announcedAt.trim() ? announcedAt.trim() : nowIso();
+                return [modelId, normalizedAnnouncedAt] as const;
+            })
+            .filter((entry): entry is readonly [string, string] => Boolean(entry));
+
+        return {
+            version: 1,
+            updatedAt: typeof parsed.updatedAt === "string" && parsed.updatedAt.trim() ? parsed.updatedAt.trim() : nowIso(),
+            announcedByModelId: Object.fromEntries(normalizedEntries),
+        };
+    } catch {
+        return emptyAnnouncedState();
+    }
+}
+
 function readState(filePath: string): { state: InternalModelsFileState; hasHfState: boolean } {
     if (!fs.existsSync(filePath)) {
         return { state: emptyState(), hasHfState: false };
@@ -280,6 +347,59 @@ function buildCurrentFileMap(repoRoot: string): Record<string, ModelFileSnapshot
     }
 
     return Object.fromEntries(Array.from(map.entries()).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function normalizeHexColour(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const raw = value.trim();
+    if (!raw) return null;
+    const normalized = raw.startsWith("#") ? raw.slice(1) : raw;
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+    return `#${normalized.toLowerCase()}`;
+}
+
+type OrganisationMeta = {
+    name?: string;
+    colour?: string;
+};
+
+function buildOrganisationMetaMap(repoRoot: string): Record<string, OrganisationMeta> {
+    const map = new Map<string, OrganisationMeta>();
+    const canonicalRoot = path.join(repoRoot, "packages", "data", "catalog", "src", "data", "organisations");
+    const legacyRoot = path.join(repoRoot, "apps", "web", "src", "data", "organisations");
+    const root = fs.existsSync(canonicalRoot) ? canonicalRoot : fs.existsSync(legacyRoot) ? legacyRoot : null;
+    if (!root) return {};
+
+    const entries = fs.readdirSync(root, { withFileTypes: true });
+    for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const organisationFile = path.join(root, entry.name, "organisation.json");
+        if (!fs.existsSync(organisationFile)) continue;
+        try {
+            const parsed = JSON.parse(fs.readFileSync(organisationFile, "utf-8")) as Record<string, unknown>;
+            const organisationId =
+                typeof parsed.organisation_id === "string" && parsed.organisation_id.trim()
+                    ? parsed.organisation_id.trim().toLowerCase()
+                    : entry.name.trim().toLowerCase();
+            const organisationName =
+                typeof parsed.name === "string" && parsed.name.trim()
+                    ? parsed.name.trim()
+                    : null;
+            const colour =
+                normalizeHexColour(parsed.colour) ??
+                normalizeHexColour(parsed.color) ??
+                normalizeHexColour(parsed.colour_hex);
+            if (!organisationId) continue;
+            map.set(organisationId, {
+                name: organisationName ?? undefined,
+                colour: colour ?? undefined,
+            });
+        } catch {
+            // ignore malformed organisation records
+        }
+    }
+
+    return Object.fromEntries(Array.from(map.entries()));
 }
 
 function parseNextLink(linkHeader: string | null): string | null {
@@ -447,47 +567,69 @@ function appendBoundedLines(lines: string[], values: string[], maxItems = 40): v
     if (values.length > maxItems) lines.push(`- ...and ${values.length - maxItems} more`);
 }
 
-function buildInternalModelLink(snapshot: ModelFileSnapshot): string | null {
-    const parts = snapshot.filePath.split(/[\\/]+/g);
+type ModelPathInfo = {
+    organisationId: string;
+    modelSlug: string;
+};
+
+function parseModelPathInfo(filePath: string): ModelPathInfo | null {
+    const parts = filePath.split(/[\\/]+/g);
     const modelsIndex = parts.indexOf("models");
     if (modelsIndex === -1 || modelsIndex + 2 >= parts.length) return null;
-    const organisationId = parts[modelsIndex + 1];
-    const modelSlug = parts[modelsIndex + 2];
+    const organisationId = parts[modelsIndex + 1]?.trim();
+    const modelSlug = parts[modelsIndex + 2]?.trim();
     if (!organisationId || !modelSlug) return null;
+    return { organisationId, modelSlug };
+}
+
+function buildInternalModelLink(snapshot: ModelFileSnapshot): string | null {
+    const pathInfo = parseModelPathInfo(snapshot.filePath);
+    if (!pathInfo) return null;
+    const { organisationId, modelSlug } = pathInfo;
     return `${MODEL_DETAILS_BASE_URL}/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(modelSlug)}`;
 }
 
-function buildInternalModelLine(prefix: "New Model" | "Removed Model", snapshot: ModelFileSnapshot): string {
-    const name = displayModelName(snapshot);
-    const link = buildInternalModelLink(snapshot);
-    if (!link) return `- ${prefix}: ${name}`;
-    return `- ${prefix}: ${name} <${link}>`;
+function getOrganisationIdFromSnapshot(snapshot: ModelFileSnapshot): string | null {
+    const fromModelId = snapshot.modelId?.split("/")[0]?.trim().toLowerCase();
+    if (fromModelId) return fromModelId;
+
+    const pathInfo = parseModelPathInfo(snapshot.filePath);
+    return pathInfo?.organisationId.toLowerCase() ?? null;
+}
+
+function resolveModelIdFromSnapshot(snapshot: ModelFileSnapshot): string | null {
+    const fromFile = snapshot.modelId?.trim();
+    if (fromFile) return fromFile;
+    const pathInfo = parseModelPathInfo(snapshot.filePath);
+    if (!pathInfo) return null;
+    // Preserve notifications when model.json is malformed and missing model_id.
+    return `${pathInfo.organisationId}/${pathInfo.modelSlug}`;
+}
+
+function toInternalNotificationModel(
+    snapshot: ModelFileSnapshot,
+    organisationMetaMap: Record<string, OrganisationMeta>
+): InternalModelNotificationModel | null {
+    const modelUrl = buildInternalModelLink(snapshot);
+    if (!modelUrl) return null;
+    const modelId = resolveModelIdFromSnapshot(snapshot);
+    if (!modelId) return null;
+    const creatorId = getOrganisationIdFromSnapshot(snapshot);
+    const creatorMeta = creatorId ? organisationMetaMap[creatorId] : undefined;
+    return {
+        modelId,
+        modelName: displayModelName(snapshot),
+        modelUrl,
+        creatorId: creatorId ?? undefined,
+        creatorName: creatorMeta?.name,
+        creatorColor: creatorMeta?.colour,
+    };
 }
 
 function buildHfModelLine(modelId: string): string {
     const normalized = modelId.trim();
     if (!normalized) return "- Unknown HF model";
     return `- ${normalized} <${HUGGING_FACE_BASE_URL}/${normalized}>`;
-}
-
-function buildInternalDiscordMessage(
-    addedPaths: string[],
-    currentFilesByPath: Record<string, ModelFileSnapshot>
-): string {
-    const lines = [
-        `Detected ${addedPaths.length} new internal model${addedPaths.length === 1 ? "" : "s"} added to the repository.`,
-        "",
-    ];
-
-    lines.push(`Internal Model Additions (${addedPaths.length}):`);
-    for (const filePath of addedPaths) {
-        const snapshot = currentFilesByPath[filePath];
-        if (!snapshot) continue;
-        lines.push(buildInternalModelLine("New Model", snapshot));
-    }
-
-    const message = lines.join("\n").trim();
-    return message.length <= 1900 ? message : `${message.slice(0, 1890)}\n...[truncated]`;
 }
 
 function buildHfDiscordMessage(hfAdditionsByOrg: HuggingFaceOrgAdditions[]): string {
@@ -558,16 +700,21 @@ async function sendDiscordWebhook(
 
 async function main(): Promise<void> {
     const options = parseArgs(process.argv.slice(2));
+    const webhookUrl =
+        options.webhookUrl ??
+        envValue("DISCORD_WEBHOOK_NEW_MODELS_PUBLIC");
     const shouldCheckInternal = !options.skipInternal;
     const shouldCheckHf = !options.skipHf && options.hfOrgs.length > 0;
     const repoRoot = process.cwd();
     const stateDir = path.join(repoRoot, "scripts", "model-discovery", "state");
     const statePath = path.join(stateDir, "internal-model-files-state.json");
+    const announcedStatePath = path.join(stateDir, "internal-announced-models.json");
     const reportPath = path.join(stateDir, "last-internal-model-files-report.json");
 
     const previous = readState(statePath);
     const previousState = previous.state;
     const currentFiles = shouldCheckInternal ? buildCurrentFileMap(repoRoot) : previousState.files;
+    const organisationMetaMap = shouldCheckInternal ? buildOrganisationMetaMap(repoRoot) : {};
     const currentHf = shouldCheckHf
         ? await buildCurrentHfOrgMap(options.hfOrgs, options.hfToken, previousState.hfOrgs)
         : { snapshots: previousState.hfOrgs, fetchedOrgs: new Set<string>() };
@@ -581,6 +728,17 @@ async function main(): Promise<void> {
     writeJson(statePath, nextState);
 
     const diff = diffStates(previousState, currentFiles);
+    const announcedState = readAnnouncedState(announcedStatePath);
+    const detectedInternalModels = shouldCheckInternal
+        ? diff.added
+            .map((filePath) => currentFiles[filePath])
+            .filter((snapshot): snapshot is ModelFileSnapshot => Boolean(snapshot))
+            .map((snapshot) => toInternalNotificationModel(snapshot, organisationMetaMap))
+            .filter((snapshot): snapshot is InternalModelNotificationModel => Boolean(snapshot))
+        : [];
+    const newInternalModels = filterUnannouncedModels(detectedInternalModels, announcedState.announcedByModelId);
+    const skippedAlreadyAnnouncedInternal = Math.max(0, detectedInternalModels.length - newInternalModels.length);
+
     const hfFirstBaseline = shouldCheckHf && !previous.hasHfState;
     const hfAdditionsByOrg = !shouldCheckHf || hfFirstBaseline
         ? []
@@ -598,12 +756,23 @@ async function main(): Promise<void> {
             additionsTotal: hfAdditionsTotal,
             baselineInitialized: hfFirstBaseline,
         },
+        internalNotification: {
+            detectedAdded: detectedInternalModels.length,
+            newlyAnnounced: newInternalModels.length,
+            skippedAlreadyAnnounced: skippedAlreadyAnnouncedInternal,
+            announcedStatePath: path.relative(repoRoot, announcedStatePath),
+        },
     });
 
     if (shouldCheckInternal) {
         console.log(
             `[internal-model-check] Internal model files: ${diff.previousCount} -> ${diff.currentCount} (added=${diff.added.length}, removed=${diff.removed.length}, changed=${diff.changed.length}).`
         );
+        if (skippedAlreadyAnnouncedInternal > 0) {
+            console.log(
+                `[internal-model-check] Internal additions skipped as already announced: ${skippedAlreadyAnnouncedInternal}.`
+            );
+        }
     } else {
         console.log("[internal-model-check] Internal model diff disabled (--skip-internal).");
     }
@@ -624,13 +793,13 @@ async function main(): Promise<void> {
         console.log("[internal-model-check] HF baseline initialized from existing state; skipping HF notifications this run.");
     }
 
-    const internalAdditionsCount = shouldCheckInternal ? diff.added.length : 0;
+    const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
     if (internalAdditionsCount === 0 && hfAdditionsTotal === 0) {
         console.log("[internal-model-check] No new internal or HF models detected.");
         return;
     }
 
-    if (!options.webhookUrl) {
+    if (!webhookUrl) {
         const total = internalAdditionsCount + hfAdditionsTotal;
         console.log(
             `[internal-model-check] ${total} model change(s) detected (${internalAdditionsCount} internal additions, ${hfAdditionsTotal} HF), but no webhook URL was provided.`
@@ -642,29 +811,46 @@ async function main(): Promise<void> {
     const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0;
 
     console.log(
-        `[internal-model-check] Changes detected (${diff.added.length} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`
+        `[internal-model-check] Changes detected (${internalAdditionsCount} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`
     );
 
     let mentionsSent = false;
 
     if (shouldSendInternal) {
-        const internalMessage = buildInternalDiscordMessage(
-            diff.added,
-            currentFiles
-        );
-        await sendDiscordWebhook(internalMessage, {
-            webhookUrl: options.webhookUrl,
+        const avatarUrl =
+            options.discordAvatarUrl ??
+            (typeof process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL === "string" && process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL.trim()
+                ? process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL.trim()
+                : null);
+        const payload = buildWebhookPayload(newInternalModels, options.discordRoleId, {
             discordUserId: options.discordUserId,
-            discordRoleId: options.discordRoleId,
             includeMentions: true,
+            avatarUrl,
+            maxModelEmbeds: 10,
         });
+        await sendDiscordWebhookPayload(webhookUrl, payload, {
+            maxAttempts: 3,
+            timeoutMs: 10_000,
+            retryDelayMs: 750,
+            logger: console,
+        });
+        const nextAnnounced = { ...announcedState.announcedByModelId };
+        const markedAt = nowIso();
+        for (const model of newInternalModels) {
+            nextAnnounced[toAnnouncementKey(model)] = markedAt;
+        }
+        writeJson(announcedStatePath, {
+            version: 1,
+            updatedAt: markedAt,
+            announcedByModelId: nextAnnounced,
+        } satisfies AnnouncedInternalModelsState);
         mentionsSent = true;
     }
 
     if (shouldSendHf) {
         const hfMessage = buildHfDiscordMessage(hfAdditionsByOrg);
         await sendDiscordWebhook(hfMessage, {
-            webhookUrl: options.webhookUrl,
+            webhookUrl,
             discordUserId: options.discordUserId,
             discordRoleId: options.discordRoleId,
             includeMentions: !mentionsSent,
