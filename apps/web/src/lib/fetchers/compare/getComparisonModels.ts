@@ -14,8 +14,15 @@ import {
 	getModelSubscriptionPlansCached,
 } from "../models/getModelSubscriptionPlans";
 import { loadCompareModelsCached } from "@/lib/fetchers/compare/loadCompareModels";
+import {
+	benchmarkOrderFromAscending,
+	normalizeBenchmarkScoreType,
+} from "@/lib/benchmarks/scoreFormat";
 
 type ComparisonMap = Record<string, ExtendedModel>;
+type CompareExtendedModel = ExtendedModel & {
+	compare_provider_pricing?: ProviderPricing[] | null;
+};
 
 const BOOLEAN_TRUE = new Set(["true", "1", "yes"]);
 const BOOLEAN_FALSE = new Set(["false", "0", "no"]);
@@ -52,11 +59,16 @@ function mapBenchmark(result: ModelPage["benchmark_results"][number]) {
 		result.benchmark?.id !== undefined
 			? String(result.benchmark.id)
 			: String(result.id);
+	const ascendingOrder =
+		typeof result.benchmark?.ascending_order === "boolean"
+			? result.benchmark.ascending_order
+			: null;
 	const benchmark: Benchmark = {
 		id: benchmarkId,
 		name: result.benchmark?.name ?? "Unknown Benchmark",
 		category: result.benchmark?.category ?? null,
-		order: result.benchmark?.ascending_order ? "ascending" : "descending",
+		order: benchmarkOrderFromAscending(ascendingOrder) ?? "higher",
+		type: normalizeBenchmarkScoreType(result.benchmark?.type),
 		description: null,
 		link: result.benchmark?.link ?? null,
 	};
@@ -153,102 +165,50 @@ const mapSubscriptionPlans = (
 	}));
 };
 
-const INPUT_KEYWORDS = ["input", "prompt"];
-const OUTPUT_KEYWORDS = ["output", "completion"];
-const TOKEN_KEYWORD = "token";
-
-function pickRule(rules: PricingRule[], keywords: string[]): PricingRule | undefined {
-	const normalized = keywords.map((keyword) => keyword.toLowerCase());
-	return (
-		rules.find((rule) => {
-			const meter = rule.meter?.toLowerCase() ?? "";
-			return normalized.some((keyword) => meter.includes(keyword));
-		}) ??
-		rules.find((rule) => {
-			const meter = rule.meter?.toLowerCase() ?? "";
-			return meter.includes(TOKEN_KEYWORD);
-		})
-	);
-}
-
-function perToken(rule?: PricingRule): number | null {
-	if (!rule) return null;
-	const unitPrice = Number(rule.price_per_unit);
-	if (!Number.isFinite(unitPrice)) return null;
-	const unitSize = Number(rule.unit_size ?? 1);
-	if (!Number.isFinite(unitSize) || unitSize <= 0) return unitPrice;
-	return unitPrice / unitSize;
-}
-
 function summariseProviderPricing(groups: ProviderPricing[]): Price[] {
 	const results: Price[] = [];
 	for (const group of groups) {
-		const rules = (group.pricing_rules ?? []).filter((rule) => {
-			const plan = (rule.pricing_plan ?? "standard").toLowerCase();
-			return plan === "standard";
-		});
+		const rules = (group.pricing_rules ?? []).slice();
 		if (!rules.length) continue;
-		const inputRule = pickRule(rules, INPUT_KEYWORDS);
-		const outputRule = pickRule(rules, OUTPUT_KEYWORDS);
-		const inputPrice = perToken(inputRule);
-		const outputPrice = perToken(outputRule);
+		rules.forEach((rule) => {
+			const pricePerUnit = Number(rule.price_per_unit);
+			if (!Number.isFinite(pricePerUnit)) return;
+			const meter = (rule.meter ?? "").trim().toLowerCase();
+			const unitSize = Number(rule.unit_size ?? 1);
+			const normalizedUnitSize =
+				Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1;
+			const normalizedPricePerToken = pricePerUnit / normalizedUnitSize;
+			const noteParts = [`Unit: ${rule.unit || "unit"}`];
+			if (rule.note) noteParts.push(rule.note);
 
-		if (inputPrice == null && outputPrice == null) continue;
+			const isCached = meter.includes("cached");
+			const isOutput = meter.includes("output");
+			const inputTokenPrice = !isCached && !isOutput ? normalizedPricePerToken : null;
+			const cachedInputTokenPrice = isCached ? normalizedPricePerToken : null;
+			const outputTokenPrice = isOutput ? normalizedPricePerToken : null;
 
-		results.push({
-			api_provider_id: group.provider.api_provider_id,
-			api_provider: {
+			results.push({
 				api_provider_id: group.provider.api_provider_id,
-				api_provider_name:
-					group.provider.api_provider_name ??
-					group.provider.api_provider_id,
-				link: group.provider.link ?? null,
-				description: null,
-
-
-			},
-			input_token_price: inputPrice,
-			cached_input_token_price: inputPrice,
-			output_token_price: outputPrice,
-			throughput: null,
-			latency: null,
-			source_link: null,
-			other_info: inputRule?.note ?? outputRule?.note ?? null,
-			meter: inputRule?.meter ?? outputRule?.meter ?? null,
-			pricing_plan:
-				inputRule?.pricing_plan ?? outputRule?.pricing_plan ?? null,
-			unit_size: inputRule?.unit_size ?? outputRule?.unit_size ?? null,
-			currency: inputRule?.currency ?? outputRule?.currency ?? "USD",
-		});
-	}
-
-	// Synthetic summary entry used by compare UI for "at a glance" pricing.
-	// Note: this uses the best observed standard prices across providers; it is not
-	// guaranteed to be a single provider that offers both minima simultaneously.
-	const inputCandidates = results
-		.map((r) => r.input_token_price)
-		.filter((v): v is number => v != null && Number.isFinite(v));
-	const outputCandidates = results
-		.map((r) => r.output_token_price)
-		.filter((v): v is number => v != null && Number.isFinite(v));
-	const minInput =
-		inputCandidates.length > 0 ? Math.min(...inputCandidates) : null;
-	const minOutput =
-		outputCandidates.length > 0 ? Math.min(...outputCandidates) : null;
-
-	if (minInput != null || minOutput != null) {
-		results.unshift({
-			input_token_price: minInput,
-			cached_input_token_price: minInput,
-			output_token_price: minOutput,
-			throughput: null,
-			latency: null,
-			source_link: null,
-			other_info: "Best observed standard token prices across providers.",
-			meter: "summary",
-			pricing_plan: "standard",
-			unit_size: 1,
-			currency: results.find((r) => r.currency)?.currency ?? "USD",
+				api_provider: {
+					api_provider_id: group.provider.api_provider_id,
+					api_provider_name:
+						group.provider.api_provider_name ??
+						group.provider.api_provider_id,
+					link: group.provider.link ?? null,
+					description: null,
+				},
+				input_token_price: inputTokenPrice,
+				cached_input_token_price: cachedInputTokenPrice,
+				output_token_price: outputTokenPrice,
+				throughput: null,
+				latency: null,
+				source_link: group.provider.link ?? null,
+				other_info: noteParts.join(" | "),
+				meter: rule.meter ?? null,
+				pricing_plan: rule.pricing_plan ?? null,
+				unit_size: normalizedUnitSize,
+				currency: rule.currency ?? "USD",
+			});
 		});
 	}
 
@@ -319,6 +279,7 @@ function convertModelToExtended(
 
 	applyDetails(extended, detailMap);
 	mapLinks(model, extended);
+	(extended as CompareExtendedModel).compare_provider_pricing = providerPricing;
 	console.log("[compare] Converted model", {
 		id: extended.id,
 		name: extended.name,

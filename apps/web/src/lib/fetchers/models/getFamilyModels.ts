@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 export type FamilyModelStatus =
     | "Rumoured"
     | "Announced"
+    | "Withheld"
     | "Available"
     | "Deprecated"
     | "Retired"

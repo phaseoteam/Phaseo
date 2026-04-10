@@ -22,6 +22,11 @@ import {
 } from "@/components/ui/chart";
 import { Logo } from "@/components/Logo";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import {
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 const ColoredDot = (props: any) => {
 	const { cx, cy, payload } = props;
@@ -93,32 +98,24 @@ type ScatterPoint = {
 	modelId?: string;
 };
 
-function parseScore(value: unknown): number | null {
-	if (value == null) return null;
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : null;
-	}
-	if (typeof value === "string") {
-		const match = value.match(/[-+]?[0-9]*\.?[0-9]+/);
-		if (!match) return null;
-		const parsed = Number.parseFloat(match[0]);
-		return Number.isFinite(parsed) ? parsed : null;
-	}
-	return null;
-}
-
 const monthFormatter = new Intl.DateTimeFormat("en-GB", {
 	month: "short",
 	year: "numeric",
 });
 
-function buildScatterData(benchmark: BenchmarkPage): ScatterPoint[] {
+function buildScatterData(
+	benchmark: BenchmarkPage,
+	hasPercentage: boolean
+): ScatterPoint[] {
 	const results: any[] = benchmark?.results ?? [];
 
 	const points: ScatterPoint[] = [];
 
 	for (const result of results) {
-		const numericScore = parseScore(result?.score);
+		const numericScore = normalizeBenchmarkScoreValue(
+			parseBenchmarkScore(result?.score),
+			hasPercentage
+		);
 		if (numericScore == null) continue;
 
 		const timestamp =
@@ -167,19 +164,21 @@ const chartConfig: ChartConfig = {
 export default function BenchmarkProgressChart({
 	benchmark,
 }: BenchmarkProgressChartProps) {
-	const scatterData = React.useMemo(
-		() => buildScatterData(benchmark),
-		[benchmark]
-	);
-
 	const hasPercentage = React.useMemo(
-		() =>
-			(benchmark?.results ?? []).some(
+		() => resolveBenchmarkIsPercentage({
+			benchmarkType: benchmark?.type,
+			fallback: (benchmark?.results ?? []).some(
 				(result) =>
 					typeof result?.score === "string" &&
 					result.score.includes("%")
 			),
-		[benchmark]
+		}),
+		[benchmark?.type, benchmark?.results]
+	);
+
+	const scatterData = React.useMemo(
+		() => buildScatterData(benchmark, hasPercentage),
+		[benchmark, hasPercentage]
 	);
 
 	const tooltipValueFormatter = React.useCallback(

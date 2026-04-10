@@ -99,9 +99,9 @@ export default function ReleaseTimeline({
 						<>
 							<span className="block font-medium">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										oldest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -115,9 +115,9 @@ export default function ReleaseTimeline({
 						<>
 							<span className="block font-medium">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										newest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -126,9 +126,9 @@ export default function ReleaseTimeline({
 								</Link>{" "}
 								was released on {newestDate}, while{" "}
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										oldest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -139,9 +139,9 @@ export default function ReleaseTimeline({
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										newest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -152,9 +152,9 @@ export default function ReleaseTimeline({
 								{Math.abs(diffMonths) !== 1 ? "s" : ""} newer
 								than{" "}
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										oldest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -214,9 +214,9 @@ export default function ReleaseTimeline({
 											}`}
 										>
 											<Link
-												href={`/models/${encodeURIComponent(
+												href={`/models/${
 													model.id
-												)}`}
+												}`}
 												className="group"
 											>
 												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
@@ -279,9 +279,9 @@ export default function ReleaseTimeline({
 											}`}
 										>
 											<Link
-												href={`/models/${encodeURIComponent(
+												href={`/models/${
 													model.id
-												)}`}
+												}`}
 												className="group"
 											>
 												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">

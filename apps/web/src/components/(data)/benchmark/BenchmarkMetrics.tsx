@@ -12,30 +12,16 @@ import {
 	Database,
 } from "lucide-react";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import {
+	formatBenchmarkScore,
+	getLowerIsBetter,
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 interface BenchmarkMetricsProps {
 	benchmark: BenchmarkPage;
-}
-
-function parseScore(value: unknown): number | null {
-	if (value == null) return null;
-	if (typeof value === "number") return Number.isFinite(value) ? value : null;
-	if (typeof value === "string") {
-		const match = value.match(/[-+]?[0-9]*\.?[0-9]+/);
-		if (!match) return null;
-		const parsed = Number.parseFloat(match[0]);
-		return Number.isFinite(parsed) ? parsed : null;
-	}
-	return null;
-}
-
-function formatScore(value: number | null, showPercentage: boolean): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	const formatted =
-		Math.abs(value) >= 100 || Number.isInteger(value)
-			? value.toFixed(0)
-			: value.toFixed(2);
-	return showPercentage ? `${formatted}%` : formatted;
 }
 
 function formatDate(value: string | Date | null | undefined): string | null {
@@ -55,12 +41,27 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 	const orderHints = results
 		.map((result) => result?.benchmark?.order ?? result?.benchmark_order)
 		.filter((value: unknown): value is string => typeof value === "string");
-	const isLowerBetter = orderHints.some(
-		(order) => order.toLowerCase() === "lower"
+	const isLowerBetter = getLowerIsBetter(
+		orderHints[0],
+		benchmark?.ascending_order ?? null
 	);
 
+	const hasPercentage = resolveBenchmarkIsPercentage({
+		benchmarkType: benchmark?.type,
+		fallback: results.some(
+			(result) =>
+				typeof result?.score === "string" && result.score.includes("%")
+		),
+	});
+
 	const scores = results
-		.map((result) => parseScore(result?.score))
+		.map((result) =>
+			normalizeBenchmarkScoreValue(
+				parseBenchmarkScore(result?.score),
+				hasPercentage,
+				result?.score
+			)
+		)
 		.filter((score): score is number => score != null)
 		.sort((a, b) => a - b);
 
@@ -69,11 +70,6 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 			(result) =>
 				result.model?.model_id ?? result.model_id ?? result.id ?? null
 		)
-	);
-
-	const hasPercentage = results.some(
-		(result) =>
-			typeof result?.score === "string" && result.score.includes("%")
 	);
 
 	const averageScore =
@@ -98,7 +94,11 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 					const modelId =
 						result.model?.model_id ?? result.model_id ?? "";
 					if (!modelId) return acc;
-					const numericScore = parseScore(result.score);
+					const numericScore = normalizeBenchmarkScoreValue(
+						parseBenchmarkScore(result.score),
+						hasPercentage,
+						result.score
+					);
 					if (numericScore == null) return acc;
 
 					const existing = acc[modelId];
@@ -159,7 +159,10 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 			}
 		}
 
-		const numericScore = parseScore(result.score as any);
+		const numericScore = normalizeBenchmarkScoreValue(
+			parseBenchmarkScore(result.score as any),
+			hasPercentage
+		);
 		if (numericScore != null) {
 			const shouldReplace =
 				!bestScore ||
@@ -189,7 +192,10 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 		},
 		{
 			label: "Average Score",
-			value: formatScore(averageScore, hasPercentage),
+			value: formatBenchmarkScore({
+				value: averageScore,
+				isPercentage: hasPercentage,
+			}),
 			helper:
 				scores.length > 0
 					? `${scores.length} recorded scores`
@@ -202,10 +208,13 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 			label: "Score Range",
 			value:
 				minScore != null && maxScore != null
-					? `${formatScore(minScore, hasPercentage)} - ${formatScore(
-							maxScore,
-							hasPercentage
-					  )}`
+					? `${formatBenchmarkScore({
+							value: minScore,
+							isPercentage: hasPercentage,
+					  })} - ${formatBenchmarkScore({
+							value: maxScore,
+							isPercentage: hasPercentage,
+					  })}`
 					: "-",
 			helper: "Lowest to highest score recorded",
 			icon: Minimize2,
@@ -217,11 +226,15 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 				? "Leading Model (lowest score)"
 				: "Leading Model",
 			value: topModel
-				? `${formatScore(topModel.numericScore, hasPercentage)} - ${
-						topModel.modelName
-				  }`
+				? `${formatBenchmarkScore({
+						value: topModel.numericScore,
+						isPercentage: hasPercentage,
+				  })} - ${topModel.modelName}`
 				: bestScore
-				? `${bestScore.value.toFixed(2)} - ${bestScore.modelName}`
+				? `${formatBenchmarkScore({
+						value: bestScore.value,
+						isPercentage: hasPercentage,
+				  })} - ${bestScore.modelName}`
 				: "-",
 			helper: "Best performing model",
 			icon: Crown,

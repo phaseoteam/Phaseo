@@ -4,20 +4,18 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import {
+	formatBenchmarkScore,
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 interface ClientProps {
 	models: any[]; // flat list of models with provider and benchmark_results
 	benchmarkId: string;
+	benchmarkType: string | null;
 	isLowerBetter: boolean;
-}
-
-function parseScore(score: string | number): number | null {
-	if (typeof score === "number") return score;
-	if (typeof score === "string") {
-		const match = score.match(/([\d.]+)/);
-		if (match) return parseFloat(match[1]);
-	}
-	return null;
 }
 
 const reportedDateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -36,17 +34,28 @@ function formatReportedDate(value?: string | null) {
 export default function ModelsUsingBenchmarkClient({
 	models,
 	benchmarkId,
+	benchmarkType,
 	isLowerBetter,
 }: ClientProps) {
 	const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
 
 	function formatScoreDisplay(r: any) {
 		const rawScore = r?.score ?? "N/A";
-		const isPercentage =
-			typeof rawScore === "string" && rawScore.includes("%");
-		const parsed = parseScore(rawScore);
-		if (parsed !== null)
-			return parsed.toFixed(2) + (isPercentage ? "%" : "");
+		const isPercentage = resolveBenchmarkIsPercentage({
+			benchmarkType,
+			rawScore,
+		});
+		const parsed = normalizeBenchmarkScoreValue(
+			parseBenchmarkScore(rawScore),
+			isPercentage
+		);
+		if (parsed !== null) {
+			return formatBenchmarkScore({
+				value: parsed,
+				isPercentage,
+				fallback: rawScore,
+			});
+		}
 		if (rawScore !== "N/A" && typeof rawScore === "string") return rawScore;
 		return rawScore;
 	}
@@ -57,8 +66,22 @@ export default function ModelsUsingBenchmarkClient({
 				const diff = a.rank - b.rank;
 				if (diff !== 0) return diff;
 			}
-			const pa = parseScore(a.score ?? "");
-			const pb = parseScore(b.score ?? "");
+			const isAPercentage = resolveBenchmarkIsPercentage({
+				benchmarkType,
+				rawScore: a.score,
+			});
+			const isBPercentage = resolveBenchmarkIsPercentage({
+				benchmarkType,
+				rawScore: b.score,
+			});
+			const pb = normalizeBenchmarkScoreValue(
+				parseBenchmarkScore(b.score ?? ""),
+				isBPercentage
+			);
+			const pa = normalizeBenchmarkScoreValue(
+				parseBenchmarkScore(a.score ?? ""),
+				isAPercentage
+			);
 			if (pa != null && pb != null) {
 				return isLowerBetter ? pa - pb : pb - pa;
 			}

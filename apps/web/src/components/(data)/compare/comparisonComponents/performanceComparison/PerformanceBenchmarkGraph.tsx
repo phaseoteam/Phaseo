@@ -1,229 +1,268 @@
-import { ExtendedModel } from "@/data/types";
-import React from "react";
-import BenchmarkBarChart from "./BenchmarkBarChart";
-import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
-import {
-	Card,
-	CardContent,
-} from "@/components/ui/card";
-import Link from "next/link";
+"use client";
 
-function getCommonBenchmarks(selectedModels: ExtendedModel[]): string[] {
-	if (!selectedModels || selectedModels.length === 0) return [];
-	// Deduplicate each model's benchmarks and intersect across models
-	const setsOfNames = selectedModels.map((m) =>
-		Array.from(
-			new Set((m.benchmark_results || []).map((b) => b.benchmark.name))
-		)
-	);
-	// Preserve order from first model
-	return setsOfNames.reduce((a, b) => a.filter((x) => b.includes(x)));
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Hash, Percent, Star } from "lucide-react";
+import Link from "next/link";
+import type { ExtendedModel } from "@/data/types";
+import BenchmarkBarChart, { BENCHMARK_SERIES_COLORS } from "./BenchmarkBarChart";
+import { normalizeBenchmarkScoreType } from "@/lib/benchmarks/scoreFormat";
+import { ProviderLogo } from "../../ProviderLogo";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const DEFAULT_VISIBLE_BENCHMARKS = 4;
+
+type BenchmarkScoreType = "percent" | "numeric";
+
+type ParsedScore = {
+	numeric: number;
+	isPercent: boolean;
+};
+
+type ComparableBenchmark = {
+	name: string;
+	benchmarkId: string | null;
+	lowerIsBetter: boolean;
+	scoreType: BenchmarkScoreType;
+	scoresByModelId: Record<string, number>;
+};
+
+function parseScore(value: string | number): ParsedScore | null {
+	if (typeof value === "number") {
+		if (!Number.isFinite(value)) return null;
+		return { numeric: value, isPercent: false };
+	}
+	const normalized = value.replace(/,/g, "").trim();
+	if (!normalized) return null;
+	const isPercent = normalized.endsWith("%");
+	const parsed = Number.parseFloat(normalized.replace("%", ""));
+	if (!Number.isFinite(parsed)) return null;
+	return { numeric: parsed, isPercent };
 }
 
-function getScoresForBenchmarks(
-	selectedModels: ExtendedModel[],
-	benchmarks: string[]
-) {
-	return selectedModels.map((model) => {
-		const scores: Record<string, number | null> = {};
-		benchmarks.forEach((bench) => {
-			// Filter all entries for this benchmark
-			const results = (model.benchmark_results || []).filter(
-				(b) => b.benchmark.name === bench
-			);
-			if (results.length === 0) {
-				scores[bench] = null;
-			} else {
-				// Determine ordering rule
-				const order = String(results[0].benchmark.order ?? "").toLowerCase();
-				const isLowerBetter =
-					order === "ascending" ||
-					order.includes("ascending") ||
-					order.includes("lower");
-				let bestScore: number | null = null;
-				results.forEach((r) => {
-					let val = parseFloat(r.score.toString().replace("%", ""));
-					if (!r.score.toString().includes("%")) val = val * 100;
-					if (bestScore === null) {
-						bestScore = val;
-					} else if (
-						isLowerBetter ? val < bestScore : val > bestScore
-					) {
-						bestScore = val;
-					}
-				});
-				scores[bench] = bestScore;
+function getLowerIsBetter(orderValue: string | null | undefined): boolean {
+	const normalizedOrder = String(orderValue ?? "").toLowerCase();
+	return (
+		normalizedOrder === "ascending" ||
+		normalizedOrder.includes("ascending") ||
+		normalizedOrder.includes("lower")
+	);
+}
+
+function getSharedBenchmarkNames(selectedModels: ExtendedModel[]): string[] {
+	if (!selectedModels?.length) return [];
+
+	const firstModelBenchmarks = new Set(
+		(selectedModels[0].benchmark_results ?? [])
+			.map((result) => result.benchmark.name)
+			.filter(Boolean)
+	);
+
+	for (let index = 1; index < selectedModels.length; index += 1) {
+		const names = new Set(
+			(selectedModels[index].benchmark_results ?? [])
+				.map((result) => result.benchmark.name)
+				.filter(Boolean)
+		);
+		for (const name of Array.from(firstModelBenchmarks)) {
+			if (!names.has(name)) firstModelBenchmarks.delete(name);
+		}
+	}
+
+	return Array.from(firstModelBenchmarks).sort((a, b) => a.localeCompare(b));
+}
+
+function detectScoreType(
+	benchmarkType: unknown,
+	benchmarkName: string,
+	category: string | null,
+	scores: ParsedScore[]
+): BenchmarkScoreType {
+	const normalizedType = normalizeBenchmarkScoreType(benchmarkType);
+	if (normalizedType) {
+		return normalizedType === "percentage" ? "percent" : "numeric";
+	}
+
+	if (scores.some((score) => score.isPercent)) return "percent";
+
+	const info = `${benchmarkName} ${category ?? ""}`.toLowerCase();
+	const percentKeywords = [
+		"%",
+		"percent",
+		"accuracy",
+		"acc",
+		"precision",
+		"recall",
+		"f1",
+		"pass@",
+		"win rate",
+		"winrate",
+	];
+	const infoSuggestsPercent = percentKeywords.some((keyword) => info.includes(keyword));
+	if (infoSuggestsPercent) return "percent";
+
+	return "numeric";
+}
+
+function normalizeValueForType(
+	parsed: ParsedScore,
+	scoreType: BenchmarkScoreType
+): number {
+	if (scoreType === "percent") {
+		if (parsed.isPercent) return parsed.numeric;
+		if (parsed.numeric >= 0 && parsed.numeric <= 1) return parsed.numeric * 100;
+		return parsed.numeric;
+	}
+	return parsed.numeric;
+}
+
+function buildComparableBenchmarks(
+	selectedModels: ExtendedModel[]
+): ComparableBenchmark[] {
+	const sharedBenchmarkNames = getSharedBenchmarkNames(selectedModels);
+	if (!sharedBenchmarkNames.length) return [];
+
+	const results: ComparableBenchmark[] = [];
+
+	for (const benchmarkName of sharedBenchmarkNames) {
+		const benchmarkMatchesPerModel = selectedModels.map((model) =>
+			(model.benchmark_results ?? []).filter(
+				(result) => result.benchmark.name === benchmarkName
+			)
+		);
+
+		if (benchmarkMatchesPerModel.some((matches) => matches.length === 0)) continue;
+
+		const firstMatch = benchmarkMatchesPerModel[0][0];
+		const lowerIsBetter = getLowerIsBetter(firstMatch?.benchmark.order);
+		const benchmarkId = firstMatch?.benchmark.id ?? null;
+		const category = firstMatch?.benchmark.category ?? null;
+		const benchmarkType = firstMatch?.benchmark.type ?? null;
+
+		const allParsed = benchmarkMatchesPerModel
+			.flat()
+			.map((match) => parseScore(match.score))
+			.filter((value): value is ParsedScore => value !== null);
+
+		if (!allParsed.length) continue;
+
+		const scoreType = detectScoreType(
+			benchmarkType,
+			benchmarkName,
+			category,
+			allParsed
+		);
+		const scoresByModelId: Record<string, number> = {};
+		let allModelsHaveComparableScore = true;
+
+		for (let index = 0; index < selectedModels.length; index += 1) {
+			const model = selectedModels[index];
+			const parsedValues = benchmarkMatchesPerModel[index]
+				.map((match) => parseScore(match.score))
+				.filter((value): value is ParsedScore => value !== null)
+				.map((parsed) => normalizeValueForType(parsed, scoreType));
+
+			if (!parsedValues.length) {
+				allModelsHaveComparableScore = false;
+				break;
 			}
+
+			const bestValue = lowerIsBetter
+				? Math.min(...parsedValues)
+				: Math.max(...parsedValues);
+			scoresByModelId[model.id] = bestValue;
+		}
+
+		if (!allModelsHaveComparableScore) continue;
+
+		results.push({
+			name: benchmarkName,
+			benchmarkId,
+			lowerIsBetter,
+			scoreType,
+			scoresByModelId,
 		});
-		return { name: model.name, scores };
+	}
+
+	return results;
+}
+
+function formatScoreValue(
+	value: number | null | undefined,
+	scoreType: BenchmarkScoreType
+): string {
+	if (value == null || !Number.isFinite(value)) return "-";
+	if (scoreType === "percent") {
+		return `${value.toLocaleString("en-US", {
+			minimumFractionDigits: value < 10 ? 1 : 0,
+			maximumFractionDigits: 2,
+		})}%`;
+	}
+	return value.toLocaleString("en-US", {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2,
 	});
 }
 
-function getBarChartData(
-	models: { name: string; scores: Record<string, number | null> }[],
-	benchmarks: string[]
+function scoreTypeLabel(scoreType: BenchmarkScoreType): string {
+	return scoreType === "percent" ? "%" : "Numerical";
+}
+
+function toChartData(
+	selectedModels: ExtendedModel[],
+	benchmarks: ComparableBenchmark[]
 ) {
-	return benchmarks.map((bench) => {
+	return benchmarks.map((benchmark) => {
 		const row: { [key: string]: string | number | null } = {
-			benchmark: bench,
+			benchmark: benchmark.name,
+			scoreType: benchmark.scoreType,
 		};
-		models.forEach((model) => {
-			row[model.name] = model.scores[bench];
-		});
+		for (const model of selectedModels) {
+			row[model.name] = benchmark.scoresByModelId[model.id] ?? null;
+		}
 		return row;
 	});
 }
-
-// Removed unused getMaxScores helper
 
 function CustomTooltip({
 	active,
 	payload,
 	label,
+	metaByName,
 }: {
 	active?: boolean;
-	payload?: any;
+	payload?: Array<{ name: string; value: number | null }>;
 	label?: string;
+	metaByName: Record<string, ComparableBenchmark>;
 }) {
-	if (!active || !payload || payload.length === 0) return null;
-	const scores: { name: string; value: number | null }[] = payload.map(
-		(p: any) => ({
-			name: p.name,
-			value: p.value,
-		})
-	);
-	const maxScore = Math.max(
-		...scores.map((s: { value: number | null }) =>
-			s.value != null ? s.value : -Infinity
-		)
-	);
-	const leaders = scores.filter(
-		(s: { value: number | null }) =>
-			s.value === maxScore && maxScore !== -Infinity
-	);
-	let leadText = "";
-	if (leaders.length === 1) {
-		const leader = leaders[0];
-		const others = scores.filter(
-			(s: { name: string; value: number | null }) =>
-				s.name !== leader.name && s.value != null
-		);
-		if (others.length > 0) {
-			const diff =
-				leader.value! -
-				Math.max(
-					...others.map((s: { value: number | null }) => s.value!)
-				);
-			leadText = `${leader.name} leads by ${diff.toFixed(2)}`;
-		} else {
-			leadText = `${leader.name} leads`;
-		}
-	} else if (leaders.length > 1) {
-		leadText = `Tied: ${leaders
-			.map((l: { name: string }) => l.name)
-			.join(", ")}`;
-	}
+	if (!active || !payload || !payload.length || !label) return null;
+	const benchmarkMeta = metaByName[label];
+	const scoreType = benchmarkMeta?.scoreType ?? "numeric";
 	return (
-		<div className="rounded-lg border border-border bg-background p-3 shadow-lg min-w-[180px]">
-			<div className="font-semibold text-sm mb-1">{label}</div>
-			{scores.map((s: { name: string; value: number | null }) => (
-				<div key={s.name} className="flex justify-between text-xs mb-1">
-					<span>{s.name}</span>
-					<span>{s.value != null ? s.value.toFixed(2) : "-"}</span>
+		<div className="rounded-lg border border-border bg-background px-3 py-2 shadow-md min-w-[180px]">
+			<div className="mb-1 flex items-center justify-between gap-2">
+				<div className="text-sm font-semibold">{label}</div>
+				<Badge variant="outline" className="text-[10px]">
+					{scoreTypeLabel(scoreType)}
+				</Badge>
+			</div>
+			{payload.map((item) => (
+				<div key={item.name} className="flex items-center justify-between gap-3 text-xs">
+					<span>{item.name}</span>
+					<span className="font-mono">
+						{formatScoreValue(item.value, scoreType)}
+					</span>
 				</div>
 			))}
-			<div className="mt-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-				{leadText}
-			</div>
 		</div>
 	);
-}
-
-function getSummary(
-	models: { name: string; scores: Record<string, number | null> }[],
-	benchmarks: string[]
-) {
-	if (models.length < 2) return null;
-	const [modelA, modelB] = models;
-	const aBetter: string[] = [];
-	const bBetter: string[] = [];
-	benchmarks.forEach((bench) => {
-		if (modelA.scores[bench] != null && modelB.scores[bench] != null) {
-			if (modelA.scores[bench]! > modelB.scores[bench]!)
-				aBetter.push(bench);
-			else if (modelB.scores[bench]! > modelA.scores[bench]!)
-				bBetter.push(bench);
-		}
-	});
-	const aBenchmarks = aBetter.length > 0 ? ` (${aBetter.join(", ")})` : "";
-	const bBenchmarks = bBetter.length > 0 ? ` (${bBetter.join(", ")})` : "";
-	return `${modelA.name} outperforms in ${aBetter.length} benchmark${
-		aBetter.length === 1 ? "" : "s"
-	}${aBenchmarks}, while ${modelB.name} is better at ${
-		bBetter.length
-	} benchmark${bBetter.length === 1 ? "" : "s"}${bBenchmarks}.`;
-}
-
-function getSignificanceAnalysis(
-	models: { name: string; scores: Record<string, number | null> }[],
-	benchmarks: string[]
-) {
-	if (models.length !== 2) return null;
-	const [modelA, modelB] = models;
-	let aLeads = 0,
-		bLeads = 0;
-	let aMargin = 0,
-		bMargin = 0;
-	benchmarks.forEach((bench) => {
-		const aScore = modelA.scores[bench];
-		const bScore = modelB.scores[bench];
-		if (aScore != null && bScore != null) {
-			if (aScore > bScore) {
-				aLeads++;
-				aMargin += aScore - bScore;
-			} else if (bScore > aScore) {
-				bLeads++;
-				bMargin += bScore - aScore;
-			}
-		}
-	});
-	const total = aLeads + bLeads;
-	if (total === 0) return null;
-	const aAvg = aLeads ? aMargin / aLeads : 0;
-	const bAvg = bLeads ? bMargin / bLeads : 0;
-	const aPct = aLeads / total;
-	const bPct = bLeads / total;
-	const thresholdPct = 0.6; // 60% of benchmarks
-	const thresholdMargin = 10; // 10 points average margin
-	let message = null;
-	if (aPct > thresholdPct && aAvg > thresholdMargin) {
-		message = `${modelA.name} significantly outperforms ${modelB.name} across most benchmarks`;
-	} else if (bPct > thresholdPct && bAvg > thresholdMargin) {
-		message = `${modelB.name} significantly outperforms ${modelA.name} across most benchmarks`;
-	} else if (aLeads > bLeads) {
-		message = `${modelA.name} slightly outperforms ${modelB.name}`;
-	} else if (bLeads > aLeads) {
-		message = `${modelB.name} slightly outperforms ${modelA.name}`;
-	} else {
-		message = `No significant performance difference between ${modelA.name} and ${modelB.name}.`;
-	}
-	return message;
-}
-
-// Helper to map benchmark names to ids
-function getBenchmarkNameToIdMap(
-	selectedModels: ExtendedModel[]
-): Record<string, string> {
-	const map: Record<string, string> = {};
-	selectedModels.forEach((model) => {
-		(model.benchmark_results || []).forEach((b) => {
-			if (b.benchmark && b.benchmark.name && b.benchmark.id) {
-				map[b.benchmark.name] = b.benchmark.id;
-			}
-		});
-	});
-	return map;
 }
 
 export default function PerformanceBenchmarkGraph({
@@ -231,182 +270,286 @@ export default function PerformanceBenchmarkGraph({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
-	const commonBenchmarks = getCommonBenchmarks(selectedModels);
-	const benchmarkNameToId = getBenchmarkNameToIdMap(selectedModels);
-	if (commonBenchmarks.length === 0) {
-		return null;
-	}
-	const models = getScoresForBenchmarks(selectedModels, commonBenchmarks);
-	const chartData = getBarChartData(models, commonBenchmarks);
-	const summary =
-		models.length === 2 ? getSummary(models, commonBenchmarks) : null;
-	const significance =
-		models.length === 2
-			? getSignificanceAnalysis(models, commonBenchmarks)
-			: null;
+	const [expanded, setExpanded] = React.useState(false);
+	const [selectedScoreType, setSelectedScoreType] =
+		React.useState<BenchmarkScoreType>("percent");
+
+	const comparableBenchmarks = React.useMemo(
+		() => buildComparableBenchmarks(selectedModels),
+		[selectedModels]
+	);
+	if (!comparableBenchmarks.length) return null;
+
+	const availableScoreTypes = React.useMemo(() => {
+		const types = new Set<BenchmarkScoreType>();
+		for (const benchmark of comparableBenchmarks) {
+			types.add(benchmark.scoreType);
+		}
+		return Array.from(types);
+	}, [comparableBenchmarks]);
+
+	React.useEffect(() => {
+		if (!availableScoreTypes.includes(selectedScoreType)) {
+			setSelectedScoreType(availableScoreTypes[0] ?? "percent");
+			setExpanded(false);
+		}
+	}, [availableScoreTypes, selectedScoreType]);
+
+	const activeBenchmarks = React.useMemo(
+		() =>
+			comparableBenchmarks.filter(
+				(benchmark) => benchmark.scoreType === selectedScoreType
+			),
+		[comparableBenchmarks, selectedScoreType]
+	);
+	if (!activeBenchmarks.length) return null;
+
+	const chartData = React.useMemo(
+		() => toChartData(selectedModels, activeBenchmarks),
+		[selectedModels, activeBenchmarks]
+	);
+	const benchmarkMetaByName = React.useMemo(() => {
+		const map: Record<string, ComparableBenchmark> = {};
+		for (const benchmark of activeBenchmarks) {
+			map[benchmark.name] = benchmark;
+		}
+		return map;
+	}, [activeBenchmarks]);
+
+	const hiddenCount = Math.max(0, activeBenchmarks.length - DEFAULT_VISIBLE_BENCHMARKS);
+	const visibleBenchmarks = expanded
+		? activeBenchmarks
+		: activeBenchmarks.slice(0, DEFAULT_VISIBLE_BENCHMARKS);
+
 	return (
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Benchmarks</h2>
+					<h2 className="text-lg font-semibold">Benchmarks Comparison</h2>
 					<p className="text-sm text-muted-foreground">
-						Comparative results across benchmarks shared by the selected models.
+						Only benchmarks with comparable results across every selected model are shown.
 					</p>
 				</div>
-				<Badge variant="outline" className="text-xs">
-					{commonBenchmarks.length} benchmark{commonBenchmarks.length === 1 ? "" : "s"}
-				</Badge>
 			</header>
 
-			<div className="space-y-4">
-				{summary && <div className="mb-4 text-sm">{summary}</div>}
-				{significance && (
-					<div className="mb-4">
-						<Card className="border-none shadow-lg">
-							<CardContent className="py-4 text-sm text-center">
-								<div className="flex items-center justify-start">
-									<span className="relative flex h-4 w-4 items-center justify-center mr-4 shrink-0">
-										{/* Soft background circle */}
-										<span className="absolute h-6 w-6 rounded-full bg-emerald-400/20" />
+			<Card className="border-border/60 bg-background/60">
+				<CardHeader className="pb-2">
+					<div className="flex items-start justify-between gap-3">
+						<div>
+							<CardTitle className="text-sm font-semibold">
+								Benchmark Scores ({scoreTypeLabel(selectedScoreType)})
+							</CardTitle>
+							<p className="text-xs text-muted-foreground mt-1">
+								Switch benchmark type to compare percent and numerical families separately.
+							</p>
+						</div>
+						{availableScoreTypes.length > 1 ? (
+							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 p-1">
+								<TooltipProvider delayDuration={120}>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												type="button"
+												size="icon"
+												variant={selectedScoreType === "percent" ? "default" : "outline"}
+												onClick={() => {
+													setSelectedScoreType("percent");
+													setExpanded(false);
+												}}
+												className="h-7 w-7"
+												aria-label="Percentage benchmarks"
+												aria-pressed={selectedScoreType === "percent"}
+											>
+												<Percent className="h-4 w-4" />
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>Percentage benchmarks</TooltipContent>
+									</Tooltip>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												type="button"
+												size="icon"
+												variant={selectedScoreType === "numeric" ? "default" : "outline"}
+												onClick={() => {
+													setSelectedScoreType("numeric");
+													setExpanded(false);
+												}}
+												className="h-7 w-7"
+												aria-label="Numerical benchmarks"
+												aria-pressed={selectedScoreType === "numeric"}
+											>
+												<Hash className="h-4 w-4" />
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>Numerical benchmarks</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+							</div>
+						) : null}
+					</div>
+				</CardHeader>
+				<CardContent className="p-4">
+					<div className="mb-3 flex flex-wrap items-center gap-2">
+						{selectedModels.map((model, index) => (
+							<Link
+								key={`benchmark-legend-${model.id}`}
+								href={`/models/${model.id}`}
+								className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-muted/40"
+							>
+								<span
+									className="h-2.5 w-2.5 shrink-0 rounded-full"
+									style={{
+										backgroundColor:
+											BENCHMARK_SERIES_COLORS[
+												index % BENCHMARK_SERIES_COLORS.length
+											],
+									}}
+									aria-hidden="true"
+								/>
+								<ProviderLogo
+									id={model.provider.provider_id}
+									alt={model.provider.name}
+									size="xxs"
+									className="shrink-0"
+								/>
+								<span className="max-w-[180px] truncate">{model.name}</span>
+							</Link>
+						))}
+					</div>
+					<BenchmarkBarChart
+						chartData={chartData}
+						models={selectedModels.map((model) => ({ name: model.name }))}
+						allPercent={selectedScoreType === "percent"}
+						CustomTooltip={(props: any) => (
+							<CustomTooltip {...props} metaByName={benchmarkMetaByName} />
+						)}
+					/>
+				</CardContent>
+			</Card>
 
-										{/* Star icon */}
-										<Star className="relative h-full w-full text-emerald-700 fill-emerald-500 dark:text-emerald-400 dark:fill-emerald-400" />
-									</span>
-									<span>{significance}</span>
+			<div className="grid gap-3 md:grid-cols-2">
+				{visibleBenchmarks.map((benchmark) => {
+					const values = selectedModels.map((model) => ({
+						modelId: model.id,
+						modelName: model.name,
+						providerId: model.provider.provider_id,
+						providerName: model.provider.name,
+						value: benchmark.scoresByModelId[model.id] ?? null,
+					}));
+					const validValues = values
+						.map((entry) => entry.value)
+						.filter((value): value is number => value !== null && Number.isFinite(value));
+					const bestValue =
+						validValues.length > 0
+							? benchmark.lowerIsBetter
+								? Math.min(...validValues)
+								: Math.max(...validValues)
+							: null;
+
+					return (
+						<Card key={benchmark.name} className="border-border/60 bg-card shadow-sm">
+							<CardContent className="p-3 space-y-2">
+								<div className="flex items-center justify-between gap-2">
+									{benchmark.benchmarkId ? (
+										<Link
+											href={`/benchmarks/${encodeURIComponent(benchmark.benchmarkId)}`}
+											className="text-sm font-semibold underline decoration-transparent hover:decoration-current"
+										>
+											{benchmark.name}
+										</Link>
+									) : (
+										<div className="text-sm font-semibold">{benchmark.name}</div>
+									)}
+									<div className="inline-flex items-center gap-1.5">
+										<Badge variant="outline" className="text-[10px]">
+											{scoreTypeLabel(benchmark.scoreType)}
+										</Badge>
+										<Badge variant="secondary" className="text-[10px]">
+											{benchmark.lowerIsBetter ? "Lower is better" : "Higher is better"}
+										</Badge>
+									</div>
+								</div>
+
+								<div className="space-y-1.5">
+									{values.map((entry) => {
+										const value = entry.value;
+										const relativePercent =
+											value != null &&
+											bestValue != null &&
+											Number.isFinite(value) &&
+											(benchmark.scoreType === "percent"
+												? Math.max(0, Math.min(100, value))
+												: benchmark.lowerIsBetter && value > 0 && bestValue > 0
+													? (bestValue / value) * 100
+													: !benchmark.lowerIsBetter && bestValue > 0
+														? (value / bestValue) * 100
+														: 0);
+										const isBest =
+											value != null &&
+											bestValue != null &&
+											Number.isFinite(value) &&
+											value === bestValue;
+
+										return (
+											<div key={`${benchmark.name}-${entry.modelId}`} className="space-y-1">
+												<div className="flex items-center justify-between gap-2 text-xs">
+													<span className="inline-flex min-w-0 items-center gap-1.5">
+														<ProviderLogo
+															id={entry.providerId}
+															alt={entry.providerName}
+															size="xxs"
+															className="shrink-0"
+														/>
+														<Link
+															href={`/models/${entry.modelId}`}
+															className="truncate text-muted-foreground underline decoration-transparent hover:decoration-current"
+														>
+															{entry.modelName}
+														</Link>
+														{isBest ? (
+															<Star className="h-3.5 w-3.5 shrink-0 text-emerald-600 fill-emerald-500" />
+														) : null}
+													</span>
+													<span className="min-w-[70px] text-right font-mono tabular-nums">
+														{formatScoreValue(value, benchmark.scoreType)}
+													</span>
+												</div>
+												<div className="h-2 rounded bg-muted/60 overflow-hidden">
+													<div
+														className="h-full bg-sky-500/80 rounded"
+														style={{
+															width: `${
+																value != null && Number.isFinite(value)
+																	? Math.max(6, Math.min(100, Math.round(relativePercent || 0)))
+																	: 0
+															}%`,
+														}}
+													/>
+												</div>
+											</div>
+										);
+									})}
 								</div>
 							</CardContent>
 						</Card>
-					</div>
-				)}
-				{/* Desktop bar chart rendered above the table */}
-				<div className="hidden md:block rounded-xl border border-border/60 bg-background/60 p-4 text-center mb-4">
-					<BenchmarkBarChart
-						chartData={chartData}
-						models={models}
-						CustomTooltip={CustomTooltip}
-					/>
-				</div>
-				{/* Table for desktop */}
-				<div className="hidden md:block overflow-x-auto">
-					<table className="min-w-full text-sm border rounded">
-						<tbody>
-							{commonBenchmarks.map((bench) => (
-								<tr key={bench} className="border-t">
-									<td className="px-3 py-2 font-medium whitespace-nowrap">
-										{benchmarkNameToId[bench] ? (
-											<Link
-												href={`/benchmarks/${encodeURIComponent(
-													benchmarkNameToId[bench]
-												)}`}
-												className="group"
-											>
-												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-													{bench}
-												</span>
-											</Link>
-										) : (
-											<span>{bench}</span>
-										)}
-									</td>
-									<td className="px-3 py-2 text-right">
-										{models.flatMap((model, idx) => {
-											const value = model.scores[bench];
-											const color = [
-												"#0ea5e9",
-												"#10b981",
-												"#f59e0b",
-												"#6366f1",
-											][idx % 4];
-											const span = (
-												<span
-													key={model.name}
-													className="inline-flex items-center font-mono font-semibold px-3 py-0.5 rounded min-w-[56px] justify-end"
-													style={{
-														background: color,
-														color: "#fff",
-														textAlign: "right",
-													}}
-												>
-													{value != null
-														? `${value.toFixed(1)}%`
-														: "-"}
-												</span>
-											);
-											if (idx > 0) {
-												return [
-													<span
-														key={`vs-${idx}`}
-														className="mx-0 text-muted-foreground font-normal px-2"
-													>
-														vs
-													</span>,
-													span,
-												];
-											}
-											return [span];
-										})}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-				<div className="md:hidden space-y-4">
-					{commonBenchmarks.map((bench) => (
-						<div
-							key={bench}
-							className="rounded-lg border border-border/60 bg-card shadow-sm p-4"
-						>
-							<div className="font-medium mb-2">
-								{benchmarkNameToId[bench] ? (
-									<Link
-										href={`/benchmarks/${encodeURIComponent(
-											benchmarkNameToId[bench]
-										)}`}
-										className="group"
-									>
-										<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-											{bench}
-										</span>
-									</Link>
-								) : (
-									<span>{bench}</span>
-								)}
-							</div>
-							{models.map((model, idx) => {
-								const value = model.scores[bench];
-								const color = [
-									"#0ea5e9",
-									"#10b981",
-									"#f59e0b",
-									"#6366f1",
-								][idx % 4];
-								return (
-									<div
-										key={model.name}
-										className="flex justify-between items-center mb-1"
-									>
-										<span className="font-medium text-sm">
-											{model.name}
-										</span>
-										<span
-											className="text-sm inline-flex items-center font-mono font-semibold px-3 py-0.5 rounded"
-											style={{
-												background: color,
-												color: "#fff",
-											}}
-										>
-											{value != null
-												? `${value.toFixed(1)}%`
-												: "-"}
-										</span>
-									</div>
-								);
-							})}
-						</div>
-					))}
-				</div>
+					);
+				})}
 			</div>
+
+			{hiddenCount > 0 ? (
+				<div className="flex justify-center">
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						className="h-7 text-xs"
+						onClick={() => setExpanded((current) => !current)}
+					>
+						{expanded ? "Show Less" : `Show More (${hiddenCount})`}
+					</Button>
+				</div>
+			) : null}
 		</section>
 	);
 }

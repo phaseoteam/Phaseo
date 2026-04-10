@@ -22,6 +22,12 @@ import {
   PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
   type ProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy"
+import {
+  CAPABILITY_STATUS_OPTIONS,
+  MODEL_CAPABILITY_OPTIONS,
+  MODEL_MODALITY_OPTIONS,
+  normalizeCapabilityStatus,
+} from "@/lib/models/editorOptions"
 
 export interface ProviderModelRow {
   id: string
@@ -35,6 +41,8 @@ export interface ProviderModelRow {
   input_modalities: string | null
   output_modalities: string | null
   quantization_scheme: string | null
+  context_length: number | null
+  max_output_tokens: number | null
   effective_from: string | null
   effective_to: string | null
 }
@@ -45,13 +53,15 @@ export interface ProviderCapabilityRow {
   provider_id: string
   api_model_id: string
   capability_id: string
-  status: "active" | "deranked" | "disabled"
-  max_input_tokens: number | null
-  max_output_tokens: number | null
+  status:
+    | "active"
+    | "deranked_lvl1"
+    | "deranked_lvl2"
+    | "deranked_lvl3"
+    | "disabled"
   effective_from: string | null
   effective_to: string | null
-  notes: string | null
-  params: Record<string, boolean>
+  params: Record<string, unknown>
 }
 
 interface ProvidersTabProps {
@@ -62,21 +72,9 @@ interface ProvidersTabProps {
   onProviderCapabilitiesChange?: (providerCapabilities: ProviderCapabilityRow[]) => void
 }
 
-const MODALITY_OPTIONS = ["text", "image", "audio", "video"] as const
+const MODALITY_OPTIONS = MODEL_MODALITY_OPTIONS
 
-const CAPABILITY_OPTIONS = [
-  "text.generate",
-  "text.embed",
-  "text.moderate",
-  "image.generate",
-  "image.edit",
-  "audio.transcribe",
-  "ocr",
-  "video.edit",
-  "video.generate",
-] as const
-
-const CAPABILITY_STATUS_OPTIONS = ["active", "deranked", "disabled"] as const
+const CAPABILITY_OPTIONS = MODEL_CAPABILITY_OPTIONS
 
 const PARAMETER_FLAGS = [
   "temperature",
@@ -170,11 +168,8 @@ function defaultCapability(providerRowId: string, providerId: string, apiModelId
     api_model_id: apiModelId,
     capability_id: "text.generate",
     status: "active",
-    max_input_tokens: null,
-    max_output_tokens: null,
     effective_from: null,
     effective_to: null,
-    notes: null,
     params: {},
   }
 }
@@ -210,6 +205,7 @@ export default function ProvidersTab({
 }: ProvidersTabProps) {
   const [providerModels, setProviderModels] = useState<ProviderModelRow[]>([])
   const [providerCapabilities, setProviderCapabilities] = useState<ProviderCapabilityRow[]>([])
+  const [availableModelIds, setAvailableModelIds] = useState<string[]>([])
   const onProviderModelsChangeRef = useRef(onProviderModelsChange)
   const onProviderCapabilitiesChangeRef = useRef(onProviderCapabilitiesChange)
 
@@ -243,18 +239,40 @@ export default function ProvidersTab({
     return providerModels.filter((row) => row.provider_id === focusProviderId)
   }, [providerModels, focusProviderId])
 
+  const selectableModelIds = useMemo(() => {
+    const merged = new Set<string>([modelId])
+    for (const value of availableModelIds) merged.add(value)
+    for (const row of providerModels) {
+      if (row.api_model_id?.trim()) merged.add(row.api_model_id.trim())
+    }
+    return Array.from(merged).sort(sortLabel)
+  }, [availableModelIds, modelId, providerModels])
+
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
-      const { data: providerModelData } = await supabase
-        .from("data_api_provider_models")
-        .select("*")
-        .eq("model_id", modelId)
+      const [{ data: providerModelData }, { data: modelRows }] = await Promise.all([
+        supabase
+          .from("data_api_provider_models")
+          .select("*")
+          .eq("model_id", modelId),
+        supabase
+          .from("data_models")
+          .select("model_id")
+          .order("model_id", { ascending: true })
+          .limit(2000),
+      ])
+
+      setAvailableModelIds(
+        (modelRows ?? [])
+          .map((row: any) => (typeof row?.model_id === "string" ? row.model_id.trim() : ""))
+          .filter(Boolean)
+      )
 
       const mappedProviderModels: ProviderModelRow[] = (providerModelData ?? []).map((providerModel: any) => ({
         id: providerModel.provider_api_model_id,
         provider_id: providerModel.provider_id,
-        api_model_id: modelId,
+        api_model_id: providerModel.api_model_id ?? modelId,
         provider_model_slug: providerModel.provider_model_slug,
         prompt_training_policy_override: providerModel.prompt_training_policy_override ?? null,
         prompt_training_override_notes: providerModel.prompt_training_override_notes ?? null,
@@ -267,6 +285,8 @@ export default function ProvidersTab({
           ? providerModel.output_modalities.join(",")
           : providerModel.output_modalities,
         quantization_scheme: providerModel.quantization_scheme,
+        context_length: providerModel.context_length ?? null,
+        max_output_tokens: providerModel.max_output_tokens ?? null,
         effective_from: providerModel.effective_from,
         effective_to: providerModel.effective_to,
       }))
@@ -280,7 +300,7 @@ export default function ProvidersTab({
 
       const { data: capabilityRows } = await supabase
         .from("data_api_provider_model_capabilities")
-        .select("id, provider_api_model_id, capability_id, params, status, max_input_tokens, max_output_tokens, effective_from, effective_to, notes")
+        .select("id, provider_api_model_id, capability_id, params, status, effective_from, effective_to")
         .in("provider_api_model_id", providerModelIds)
 
       const providerById = new Map(mappedProviderModels.map((row) => [row.id, row]))
@@ -292,20 +312,12 @@ export default function ProvidersTab({
           id: capability.id ?? `${providerRow.id}:${capability.capability_id}:${createCapabilityId()}`,
           provider_row_id: providerRow.id,
           provider_id: providerRow.provider_id,
-          api_model_id: modelId,
+          api_model_id: providerRow.api_model_id,
           capability_id: capability.capability_id,
-          status:
-            capability.status === "disabled" || capability.status === "deranked"
-              ? capability.status
-              : "active",
-          max_input_tokens: capability.max_input_tokens ?? null,
-          max_output_tokens: capability.max_output_tokens ?? null,
+          status: normalizeCapabilityStatus(capability.status),
           effective_from: capability.effective_from ?? null,
           effective_to: capability.effective_to ?? null,
-          notes: capability.notes ?? null,
-          params: Object.fromEntries(
-            Object.entries(rawParams).map(([key, value]) => [key, Boolean(value)])
-          ),
+          params: { ...rawParams },
         }]
       })
       setProviderCapabilities(dedupeCapabilities(mappedCapabilities))
@@ -355,6 +367,8 @@ export default function ProvidersTab({
         input_modalities: "text",
         output_modalities: "text",
         quantization_scheme: null,
+        context_length: null,
+        max_output_tokens: null,
         effective_from: null,
         effective_to: null,
       }
@@ -371,14 +385,19 @@ export default function ProvidersTab({
       prev.map((row) => (row.id === providerRowId ? { ...row, [field]: value } : row))
     )
 
-    if (field === "provider_id") {
+    if (field === "provider_id" || field === "api_model_id") {
       setProviderCapabilities((prev) =>
         prev.map((capability) => {
           if (capability.provider_row_id !== providerRowId) return capability
+          const providerModel = providerModels.find((row) => row.id === providerRowId)
+          const nextProviderId =
+            field === "provider_id" ? String(value) : providerModel?.provider_id ?? capability.provider_id
+          const nextApiModelId =
+            field === "api_model_id" ? String(value) : providerModel?.api_model_id ?? capability.api_model_id
           return {
             ...capability,
-            provider_id: value,
-            api_model_id: modelId,
+            provider_id: nextProviderId,
+            api_model_id: nextApiModelId,
           }
         })
       )
@@ -512,15 +531,32 @@ export default function ProvidersTab({
                 </Button>
               </div>
 
-              <FieldRow label="Provider API model ID">
-                <Input
-                  value={modelId}
-                  readOnly
-                  disabled
-                />
+              <FieldRow
+                label="Public model ID"
+                description="Select from known model IDs or enter one manually."
+              >
+                <div>
+                  <Input
+                    list={`model-id-options-${providerModel.id}`}
+                    value={providerModel.api_model_id}
+                    onChange={(event) =>
+                      updateProviderModel(
+                        providerModel.id,
+                        "api_model_id",
+                        event.target.value.trim()
+                      )
+                    }
+                    placeholder="organisation/model-id"
+                  />
+                  <datalist id={`model-id-options-${providerModel.id}`}>
+                    {selectableModelIds.map((candidateModelId) => (
+                      <option key={`${providerModel.id}-${candidateModelId}`} value={candidateModelId} />
+                    ))}
+                  </datalist>
+                </div>
               </FieldRow>
 
-              <FieldRow label="Provider model slug">
+              <FieldRow label="Provider model ID">
                 <Input
                   value={providerModel.provider_model_slug ?? ""}
                   onChange={(event) =>
@@ -530,7 +566,7 @@ export default function ProvidersTab({
                       event.target.value || null
                     )
                   }
-                  placeholder="Optional provider slug"
+                  placeholder="Provider-specific model id/slug"
                 />
               </FieldRow>
 
@@ -568,6 +604,35 @@ export default function ProvidersTab({
                 />
               </FieldRow>
 
+              <FieldRow label="Context and output limits">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Input
+                    type="number"
+                    value={providerModel.context_length ?? ""}
+                    onChange={(event) =>
+                      updateProviderModel(
+                        providerModel.id,
+                        "context_length",
+                        event.target.value ? Number(event.target.value) : null
+                      )
+                    }
+                    placeholder="Input context length"
+                  />
+                  <Input
+                    type="number"
+                    value={providerModel.max_output_tokens ?? ""}
+                    onChange={(event) =>
+                      updateProviderModel(
+                        providerModel.id,
+                        "max_output_tokens",
+                        event.target.value ? Number(event.target.value) : null
+                      )
+                    }
+                    placeholder="Max output tokens"
+                  />
+                </div>
+              </FieldRow>
+
               <FieldRow
                 label="Prompt training override"
                 description="Leave as Provider default unless this model/provider mapping differs."
@@ -594,34 +659,6 @@ export default function ProvidersTab({
                     ))}
                   </SelectContent>
                 </Select>
-              </FieldRow>
-
-              <FieldRow label="Override source URL">
-                <Input
-                  value={providerModel.prompt_training_override_source_url ?? ""}
-                  onChange={(event) =>
-                    updateProviderModel(
-                      providerModel.id,
-                      "prompt_training_override_source_url",
-                      event.target.value || null
-                    )
-                  }
-                  placeholder="https://..."
-                />
-              </FieldRow>
-
-              <FieldRow label="Override notes">
-                <Input
-                  value={providerModel.prompt_training_override_notes ?? ""}
-                  onChange={(event) =>
-                    updateProviderModel(
-                      providerModel.id,
-                      "prompt_training_override_notes",
-                      event.target.value || null
-                    )
-                  }
-                  placeholder="Optional context for this model-specific override"
-                />
               </FieldRow>
 
               <FieldRow label="Effective window">
@@ -809,37 +846,6 @@ export default function ProvidersTab({
                         </Select>
                       </FieldRow>
 
-                      <FieldRow label="Token limits">
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <Input
-                            type="number"
-                            value={capability.max_input_tokens ?? ""}
-                            onChange={(event) =>
-                              updateCapability(capability.id, (row) => ({
-                                ...row,
-                                max_input_tokens: event.target.value
-                                  ? Number(event.target.value)
-                                  : null,
-                              }))
-                            }
-                            placeholder="Max input tokens"
-                          />
-                          <Input
-                            type="number"
-                            value={capability.max_output_tokens ?? ""}
-                            onChange={(event) =>
-                              updateCapability(capability.id, (row) => ({
-                                ...row,
-                                max_output_tokens: event.target.value
-                                  ? Number(event.target.value)
-                                  : null,
-                              }))
-                            }
-                            placeholder="Max output tokens"
-                          />
-                        </div>
-                      </FieldRow>
-
                       <FieldRow
                         label="Supported params"
                         description="Toggle known request parameters supported by this capability."
@@ -874,18 +880,6 @@ export default function ProvidersTab({
                         </div>
                       </FieldRow>
 
-                      <FieldRow label="Notes">
-                        <Input
-                          value={capability.notes ?? ""}
-                          onChange={(event) =>
-                            updateCapability(capability.id, (row) => ({
-                              ...row,
-                              notes: event.target.value || null,
-                            }))
-                          }
-                          placeholder="Optional note"
-                        />
-                      </FieldRow>
                     </div>
                   )
                 })}

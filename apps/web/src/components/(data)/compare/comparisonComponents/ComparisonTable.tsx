@@ -14,6 +14,12 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ProviderLogo } from "../ProviderLogo";
+import {
+	getLowerIsBetter,
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 interface ComparisonTableProps {
 	selectedModels: ExtendedModel[];
@@ -630,52 +636,33 @@ export default function ComparisonTable({
 
 								{/* Dynamic Benchmark Scores */}
 								{allBenchmarks.map((benchmarkName) => {
-									// Gather all scores and check if any score is a string with a %
-									const rawScores = selectedModels.map(
-										(model) => {
-											const score =
-												model.benchmark_results?.find(
-													(b) =>
-														b.benchmark.name ===
-														benchmarkName
-												)?.score;
-											return score;
-										}
-									);
-
-									const isPercent = rawScores.some(
-										(score) =>
-											typeof score === "string" &&
-											String(score).trim().endsWith("%")
-									);
-
-									const order = selectedModels
+									const benchmarkEntry = selectedModels
 										.flatMap((model) => model.benchmark_results ?? [])
-										.find((b) => b.benchmark.name === benchmarkName)
-										?.benchmark.order;
-									const normalizedOrder = String(order ?? "").toLowerCase();
-									const isLowerBetter =
-										normalizedOrder === "ascending" ||
-										normalizedOrder.includes("ascending") ||
-										normalizedOrder.includes("lower");
+										.find((b) => b.benchmark.name === benchmarkName);
+									const benchmarkOrder = benchmarkEntry?.benchmark.order;
+									const benchmarkType = benchmarkEntry?.benchmark.type;
+									const isLowerBetter = getLowerIsBetter(benchmarkOrder);
 
-									// Parse all scores to numbers (strip % if needed)
-									const scores = rawScores.map((score) => {
-										if (
-											score === undefined ||
-											score === null
-										)
-											return null;
-										if (typeof score === "string") {
-											const s = score.trim();
-											if (s.endsWith("%"))
-												return parseFloat(
-													s.replace("%", "")
-												);
-											return parseFloat(s);
-										}
-										return score;
+									const rawScores = selectedModels.map((model) =>
+										model.benchmark_results?.find(
+											(b) => b.benchmark.name === benchmarkName
+										)?.score
+									);
+									const isPercent = resolveBenchmarkIsPercentage({
+										benchmarkType,
+										fallback: rawScores.some(
+											(score) =>
+												typeof score === "string" &&
+												String(score).trim().endsWith("%")
+										),
 									});
+									const scores = rawScores.map((score) =>
+										normalizeBenchmarkScoreValue(
+											parseBenchmarkScore(score as any),
+											isPercent,
+											score
+										)
+									);
 
 									// Find the best score (max by default; min for ascending/lower-better benchmarks)
 									const validScores = scores.filter(
@@ -722,7 +709,6 @@ export default function ComparisonTable({
 														);
 													// Only normalise to 100% if NOT percent-based
 													const percentOfBest =
-														!isPercent &&
 														bestScore &&
 														hasScore
 															? isLowerBetter
@@ -730,9 +716,6 @@ export default function ComparisonTable({
 																	? (bestScore / numericScore) * 100
 																	: 0
 																: (numericScore / bestScore) * 100
-															: isPercent &&
-															  hasScore
-															? numericScore
 															: 0;
 
 													return (
@@ -745,7 +728,7 @@ export default function ComparisonTable({
 																	<div className="flex-grow">
 																		<Progress
 																			value={
-																				isPercent
+																				isPercent && numericScore <= 100
 																					? numericScore
 																					: percentOfBest
 																			}
@@ -997,74 +980,125 @@ export default function ComparisonTable({
 												)
 											)
 											.map((benchmarkName) => {
+												const benchmarkEntry =
+													selectedModels
+														.flatMap(
+															(m) =>
+																m.benchmark_results ??
+																[]
+														)
+														.find(
+															(b) =>
+																b.benchmark
+																	.name ===
+																benchmarkName
+														);
+												const benchmarkType =
+													benchmarkEntry?.benchmark
+														.type;
+												const benchmarkOrder =
+													benchmarkEntry?.benchmark
+														.order;
+												const isLowerBetter =
+													getLowerIsBetter(
+														benchmarkOrder
+													);
 												const rawScore =
 													model.benchmark_results?.find(
 														(b) =>
 															b.benchmark.name ===
 															benchmarkName
 													)?.score;
-												let num = null;
-												if (rawScore != null)
-													num =
-														typeof rawScore ===
-														"string"
-															? parseFloat(
-																	rawScore.replace(
-																		"%",
-																		""
-																	)
-															  )
-															: rawScore;
-												const bestScores =
-													selectedModels
-														.map((m) => {
-															const r =
-																m.benchmark_results?.find(
-																	(b) =>
-																		b
-																			.benchmark
-																			.name ===
-																		benchmarkName
-																)?.score;
-															return r == null
-																? NaN
-																: typeof r ===
-																  "string"
-																? parseFloat(
-																		r.replace(
-																			"%",
-																			""
+												const rawScores =
+													selectedModels.map(
+														(m) =>
+															m.benchmark_results?.find(
+																(b) =>
+																	b.benchmark
+																		.name ===
+																	benchmarkName
+															)?.score
+													);
+												const isPercent =
+													resolveBenchmarkIsPercentage(
+														{
+															benchmarkType,
+															fallback:
+																rawScores.some(
+																	(score) =>
+																		typeof score ===
+																			"string" &&
+																		String(
+																			score
 																		)
-																  )
-																: r;
-														})
+																			.trim()
+																			.endsWith(
+																				"%"
+																			)
+																),
+														}
+													);
+												const num =
+													normalizeBenchmarkScoreValue(
+														parseBenchmarkScore(
+															rawScore as
+																| string
+																| number
+																| null
+																| undefined
+														),
+														isPercent,
+														rawScore
+													);
+												const bestScores =
+													rawScores
+														.map((score) =>
+															normalizeBenchmarkScoreValue(
+																parseBenchmarkScore(
+																	score as
+																		| string
+																		| number
+																		| null
+																		| undefined
+																),
+																isPercent,
+																score
+															)
+														)
 														.filter(
-															(n) => !isNaN(n)
-														) as number[];
+															(
+																n
+															): n is number =>
+																n != null &&
+																!Number.isNaN(
+																	n
+																)
+														);
 												const bestVal =
 													bestScores.length
-														? Math.max(
-																...bestScores
-														  )
+														? isLowerBetter
+															? Math.min(
+																	...bestScores
+															  )
+															: Math.max(
+																	...bestScores
+															  )
 														: null;
 												const disp =
 													num != null
-														? `${num.toLocaleString(
-																undefined,
-																{
-																	maximumFractionDigits: 2,
-																}
-														  )}${
-																typeof rawScore ===
-																	"string" &&
-																String(rawScore)
-																	.trim()
-																	.endsWith(
-																		"%"
-																	)
-																	? "%"
-																	: ""
-														  }`
+														? isPercent
+															? `${num.toLocaleString(
+																	undefined,
+																	{
+																		maximumFractionDigits: 2,
+																	}
+															  )}%`
+															: num.toLocaleString(
+																	undefined,
+																	{
+																		maximumFractionDigits: 2,
+																	}
+															  )
 														: "-";
 												return (
 													<div
@@ -1100,7 +1134,9 @@ export default function ComparisonTable({
 														<span className="tabular-nums">
 															{disp}
 														</span>
-														{num === bestVal && (
+														{num !== null &&
+															bestVal !== null &&
+															num === bestVal && (
 															<Star className="inline h-4 w-4 text-emerald-600 fill-emerald-500" />
 														)}
 													</div>
