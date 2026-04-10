@@ -2246,6 +2246,39 @@ type ReasoningConfig struct {
 	Summary *string `json:"summary,omitempty"`
 }
 
+type RerankDocument = interface{}
+
+type RerankRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	Documents []interface{} `json:"documents"`
+	MaxChunksPerDoc *int `json:"max_chunks_per_doc,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
+	Query string `json:"query"`
+	RankFields *[]string `json:"rank_fields,omitempty"`
+	ReturnDocuments *bool `json:"return_documents,omitempty"`
+	TopK *int `json:"top_k,omitempty"`
+	TopN *int `json:"top_n,omitempty"`
+	User *string `json:"user,omitempty"`
+}
+
+type RerankResponse struct {
+	Id *string `json:"id,omitempty"`
+	Model *string `json:"model,omitempty"`
+	NativeResponseId *string `json:"nativeResponseId,omitempty"`
+	Object *string `json:"object,omitempty"`
+	Results *[]map[string]interface{} `json:"results,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type RerankResult struct {
+	Document interface{} `json:"document,omitempty"`
+	Index *int `json:"index,omitempty"`
+	RelevanceScore *float64 `json:"relevance_score,omitempty"`
+}
+
 type ResponsesInputItem struct {
 	Content interface{} `json:"content,omitempty"`
 	Role *string `json:"role,omitempty"`

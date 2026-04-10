@@ -4,25 +4,21 @@ import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPI
 import type { APIProviderCard } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-	title: "AI API providers - Compare Pricing & Capabilities",
+export const metadata: Metadata = buildMetadata({
+	title: "AI API Providers: Pricing, Models & Performance",
 	description:
-		"Explore a comprehensive directory of AI API providers. Compare pricing, supported models, and capabilities across leading providers to find the best fit for your use case with AI Stats.",
+		"Compare AI API providers by pricing, model coverage, latency signals, BYOK support and gateway capabilities.",
+	path: "/api-providers",
 	keywords: [
 		"AI API providers",
-		"AI API pricing",
-		"LLM API",
-		"token pricing",
-		"AI model pricing",
-		"compare AI providers",
-		"AI gateway",
-		"AI Stats",
+		"AI provider pricing",
+		"LLM API providers",
+		"BYOK AI providers",
+		"AI gateway providers",
 	],
-	alternates: {
-		canonical: "/api-providers",
-	},
-};
+});
 
 async function APIProvidersSection() {
 	const apiProviders =

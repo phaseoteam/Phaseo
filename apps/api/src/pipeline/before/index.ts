@@ -163,6 +163,7 @@ export async function beforeRequest(
         "text.generate",
         "embeddings",
         "moderations",
+        "rerank",
         "image.generate",
         "image.edit",
         "audio.speech",

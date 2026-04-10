@@ -29,7 +29,7 @@ export default [
 		rules: {
 			"max-lines": [
 				"warn",
-				{ max: 300, skipBlankLines: true, skipComments: true },
+				{ max: 1000, skipBlankLines: true, skipComments: true },
 			],
 			"@typescript-eslint/no-explicit-any": "off",
 			"@typescript-eslint/no-unused-vars": [
@@ -53,7 +53,10 @@ export default [
 	{
 		files: ["**/*.{js,jsx,mjs,cjs}"],
 		rules: {
-			"max-lines": "off",
+			"max-lines": [
+				"warn",
+				{ max: 1000, skipBlankLines: true, skipComments: true },
+			],
 			"@typescript-eslint/no-require-imports": "off",
 		},
 	},

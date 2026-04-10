@@ -1227,6 +1227,64 @@ class ReasoningConfig
 	public $summary;
 }
 
+class RerankDocument { }
+
+class RerankRequest
+{
+	/** @var array<string, mixed>|null */
+	public $debug;
+	/** @var array */
+	public $documents;
+	/** @var int|null */
+	public $max_chunks_per_doc;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string */
+	public $model;
+	/** @var array<string, mixed>|null */
+	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
+	/** @var string */
+	public $query;
+	/** @var array|null */
+	public $rank_fields;
+	/** @var bool|null */
+	public $return_documents;
+	/** @var int|null */
+	public $top_k;
+	/** @var int|null */
+	public $top_n;
+	/** @var string|null */
+	public $user;
+}
+
+class RerankResponse
+{
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $nativeResponseId;
+	/** @var string|null */
+	public $object;
+	/** @var array|null */
+	public $results;
+	/** @var array<string, mixed>|null */
+	public $usage;
+}
+
+class RerankResult
+{
+	/** @var string|array<string, mixed>|null */
+	public $document;
+	/** @var int|null */
+	public $index;
+	/** @var float|null */
+	public $relevance_score;
+}
+
 class ResponsesInputItem
 {
 	/** @var string|array|array<string, mixed>|null */

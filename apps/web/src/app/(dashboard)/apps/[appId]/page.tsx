@@ -79,11 +79,11 @@ function getModelLookupVariants(modelId: string): string[] {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
 	const { appId } = await params;
 	const app = await getAppDetailsCached(appId);
-	const path = `/apps/${appId}`;
+	const path = `/apps/${encodeURIComponent(appId)}`;
 
 	if (!app) {
 		return buildMetadata({
-			title: "App Usage - AI Stats",
+			title: "AI App Usage Overview",
 			description:
 				"Usage analytics for applications powered by AI Stats Gateway, including request volume, token usage, and top models over the last four weeks.",
 			path,
@@ -91,7 +91,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 	}
 
 	return buildMetadata({
-		title: `${app.title} - App Usage | AI Stats`,
+		title: `${app.title} - App Usage`,
 		description: `Usage analytics for ${app.title}, including model usage and request activity over time.`,
 		path,
 		imagePath:

@@ -41,7 +41,7 @@ export function buildMetadata({
 	keywords = [],
 	imagePath,
 	imageAlt,
-	type = "article",
+	type = "website",
 	openGraph: openGraphOverrides,
 	twitter: twitterOverrides,
 	robots,

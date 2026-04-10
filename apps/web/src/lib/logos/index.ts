@@ -41,6 +41,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	ai21: "AI21",
 	ibm: "IBM",
 	lg: "LG",
+	llmgateway: "LLM Gateway",
 	stepfun: "StepFun",
 	xai: "xAI",
 	"zai": "Z.ai",
