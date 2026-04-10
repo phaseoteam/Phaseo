@@ -679,6 +679,11 @@ export default async function ModelOverviewSections({
 	model,
 	includeHidden,
 }: ModelOverviewSectionsProps) {
+	const gatewayMetadata = await getModelGatewayMetadataCached(
+		modelId,
+		includeHidden,
+	).catch(() => null);
+	const hasApiProviders = (gatewayMetadata?.providers?.length ?? 0) > 0;
 	const hasInternalModelData = Boolean(model);
 	const modelStatus = model?.status ?? null;
 	const isWithheldModel = modelStatus === "Withheld";
@@ -703,7 +708,7 @@ export default async function ModelOverviewSections({
 				</Section>
 			) : null}
 			<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
-			{isLimitedAvailabilityModel ? null : (
+			{isLimitedAvailabilityModel || !hasApiProviders ? null : (
 				<>
 					<ModelPerformanceSection
 						modelId={modelId}
