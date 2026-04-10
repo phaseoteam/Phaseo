@@ -12,6 +12,7 @@ concurrency:
 env:
     NODE_VERSION: 22
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
+    DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
 permissions:
     contents: read
@@ -57,11 +58,12 @@ jobs:
                   pnpm exec tsx scripts/model-discovery/run-internal.ts \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
+                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png" \
                     --skip-hf
 
             - name: Check for new external provider models
               env:
-                  DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
                   DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -77,6 +79,10 @@ jobs:
                   pnpm exec tsx scripts/model-discovery/run.ts
 
             - name: Check for new external Hugging Face models
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+                  DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal.ts \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \

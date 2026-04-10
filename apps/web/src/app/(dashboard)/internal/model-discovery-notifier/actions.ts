@@ -221,7 +221,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 		const payload = buildWebhookPayload(models, trimOrNull(input.roleId), {
 			discordUserId: trimOrNull(input.userId),
 			includeMentions: true,
-			avatarUrl: trimOrNull(process.env.DISCORD_MODEL_DISCOVERY_AVATAR_URL),
+			avatarUrl: null,
 			maxModelEmbeds: 10,
 		});
 		const payloadPreview = JSON.stringify(payload, null, 2);
