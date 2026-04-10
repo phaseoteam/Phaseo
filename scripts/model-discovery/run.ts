@@ -707,17 +707,14 @@ function buildDiscordMessage(changes: ProviderChangeSet[], entries: ProviderChan
 }
 
 async function sendDiscordWebhook(message: string): Promise<void> {
-    const webhookUrl =
-        process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?.trim() ||
-        process.env.DISCORD_WEBHOOK_URL?.trim() ||
-        "";
+    const webhookUrl = process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?.trim() || "";
     if (!webhookUrl) return;
 
     try {
         new URL(webhookUrl);
     } catch {
         console.warn(
-            "[model-discovery] Skipping Discord webhook: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC/DISCORD_WEBHOOK_URL is not a valid URL."
+            "[model-discovery] Skipping Discord webhook: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC is not a valid URL."
         );
         return;
     }

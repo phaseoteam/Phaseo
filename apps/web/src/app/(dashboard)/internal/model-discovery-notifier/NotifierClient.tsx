@@ -114,7 +114,7 @@ export default function NotifierClient() {
 							placeholder="https://discord.com/api/webhooks/..."
 						/>
 							<p className="text-xs text-muted-foreground">
-								If empty, the action uses <code>DISCORD_WEBHOOK_NEW_MODELS_PUBLIC</code> (fallback: <code>DISCORD_WEBHOOK_URL</code>).
+								If empty, the action uses <code>DISCORD_WEBHOOK_NEW_MODELS_PUBLIC</code>.
 							</p>
 						</div>
 					<div className="flex flex-wrap gap-2">

@@ -702,8 +702,7 @@ async function main(): Promise<void> {
     const options = parseArgs(process.argv.slice(2));
     const webhookUrl =
         options.webhookUrl ??
-        envValue("DISCORD_WEBHOOK_NEW_MODELS_PUBLIC") ??
-        envValue("DISCORD_WEBHOOK_URL");
+        envValue("DISCORD_WEBHOOK_NEW_MODELS_PUBLIC");
     const shouldCheckInternal = !options.skipInternal;
     const shouldCheckHf = !options.skipHf && options.hfOrgs.length > 0;
     const repoRoot = process.cwd();
