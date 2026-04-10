@@ -14,5 +14,30 @@
   "api_model_id": "google/translategemma-4b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "wmt24pp-metricx",
+      "score": 5.32,
+      "is_self_reported": true,
+      "other_info": "TranslateGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/translategemma-4b-it",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "wmt24pp-comet",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "TranslateGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/translategemma-4b-it",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "vistra-metricx",
+      "score": 2.57,
+      "is_self_reported": true,
+      "other_info": "TranslateGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/translategemma-4b-it",
+      "rank": 3
+    }
+  ]
 }

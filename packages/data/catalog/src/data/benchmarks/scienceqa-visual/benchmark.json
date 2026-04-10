@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "scienceqa-visual",
+  "benchmark_name": "ScienceQA Visual",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

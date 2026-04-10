@@ -289,6 +289,12 @@ export type IREmbeddingsRequest = {
 		mistral?: {
 			outputDtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
 		};
+		voyage?: {
+			inputType?: "query" | "document";
+			truncation?: boolean;
+			outputDtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
+			outputDimension?: number;
+		};
 	};
 	userId?: string;
 	metadata?: Record<string, string>;
@@ -323,6 +329,8 @@ export type IREmbeddingsUsage = {
 		inputImageTokens?: number;
 		inputAudioTokens?: number;
 		inputVideoTokens?: number;
+		imagePixels?: number;
+		videoPixels?: number;
 	};
 };
 
@@ -366,6 +374,43 @@ export type IRModerationsResponse = {
 		totalTokens?: number;
 	};
 	// Debug-only fields (never logged)
+	rawResponse?: any;
+};
+
+// ============================================================================
+// RERANK
+// ============================================================================
+
+export type IRRerankRequest = {
+	model: string;
+	query: string;
+	documents: Array<string | Record<string, any>>;
+	topN?: number;
+	returnDocuments?: boolean;
+	maxChunksPerDoc?: number;
+	rankFields?: string[];
+	userId?: string;
+	metadata?: Record<string, string>;
+	vendor?: Record<string, any>;
+	rawRequest?: any;
+};
+
+export type IRRerankResult = {
+	index: number;
+	relevanceScore: number;
+	document?: string | Record<string, any>;
+};
+
+export type IRRerankResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	results: IRRerankResult[];
+	usage?: {
+		inputTokens?: number;
+		outputTokens?: number;
+		totalTokens?: number;
+	};
 	rawResponse?: any;
 };
 

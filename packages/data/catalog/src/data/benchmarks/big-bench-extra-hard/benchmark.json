@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "big-bench-extra-hard",
+  "benchmark_name": "BIG-Bench Extra Hard",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

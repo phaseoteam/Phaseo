@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "instruct-humaneval",
+  "benchmark_name": "Instruct HumanEval",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

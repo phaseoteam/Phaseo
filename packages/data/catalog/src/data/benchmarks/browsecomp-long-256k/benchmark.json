@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "browsecomp-long-256k",
+  "benchmark_name": "BrowseComp Long Context 256k",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

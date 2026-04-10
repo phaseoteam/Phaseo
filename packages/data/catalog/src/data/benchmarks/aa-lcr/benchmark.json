@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-lcr",
+  "benchmark_name": "AA-LCR",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 20
+}

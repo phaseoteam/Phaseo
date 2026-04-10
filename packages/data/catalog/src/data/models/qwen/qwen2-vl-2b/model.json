@@ -14,5 +14,126 @@
   "api_model_id": "qwen/qwen2-vl-2b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "chartqa",
+      "score": 88.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "docvqatest",
+      "score": 96.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "egoschema",
+      "score": 77.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "infovqatest",
+      "score": 84.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mathvista-mini",
+      "score": 70.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "mmbench-test",
+      "score": 86.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 46.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "mmmuval",
+      "score": 64.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmvetgpt4turbo",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mtvqa",
+      "score": 30.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mvbench",
+      "score": 73.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "ocrbench",
+      "score": 87.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 77.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "textvqa",
+      "score": 85.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vcr-en-easy",
+      "score": 91.93,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2-vl-72b (score=0.4083; benches=15)",
+      "source_link": "https://github.com/QwenLM/Qwen2",
+      "rank": 1
+    }
+  ]
 }

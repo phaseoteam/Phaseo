@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "natural2code",
+  "benchmark_name": "Natural2Code",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 14
+}

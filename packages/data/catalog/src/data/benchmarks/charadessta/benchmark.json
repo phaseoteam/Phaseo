@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "charadessta",
+  "benchmark_name": "CharadesSTA",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 31
+}

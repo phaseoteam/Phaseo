@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vistra-metricx",
+  "benchmark_name": "Vistra MetricX",
+  "category": null,
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/translategemma-4b-it",
+  "total_models": 3
+}

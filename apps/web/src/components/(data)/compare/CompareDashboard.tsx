@@ -8,6 +8,7 @@ import MainCard from "./MainCard";
 import ComparisonDisplay from "./ComparisonDisplay";
 import { ExtendedModel } from "@/data/types";
 import ModelCombobox from "./ModelCombobox";
+import type { CompareGatewayUsageByModel } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -138,11 +139,13 @@ const buildQuickComparisonHref = (modelIds: string[]): string => {
 type CompareDashboardProps = {
 	models: ExtendedModel[];
 	comparisonData: ExtendedModel[];
+	usageByModel: CompareGatewayUsageByModel;
 };
 
 export default function CompareDashboard({
 	models,
 	comparisonData,
+	usageByModel,
 }: CompareDashboardProps) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
@@ -164,11 +167,29 @@ export default function CompareDashboard({
 		() => selected.map((value) => selectionLookup.get(value) ?? value),
 		[selected, selectionLookup]
 	);
+	const uniqueResolvedSelectionIds = useMemo(() => {
+		const uniqueIds: string[] = [];
+		const seen = new Set<string>();
+		for (const id of resolvedSelectionIds) {
+			if (!id || seen.has(id)) continue;
+			seen.add(id);
+			uniqueIds.push(id);
+		}
+		return uniqueIds;
+	}, [resolvedSelectionIds]);
 
 	const resolvedSelectionSet = useMemo(
-		() => new Set(resolvedSelectionIds),
-		[resolvedSelectionIds]
+		() => new Set(uniqueResolvedSelectionIds),
+		[uniqueResolvedSelectionIds]
 	);
+	const modelsById = useMemo(() => {
+		const map = new Map<string, ExtendedModel>();
+		for (const model of models) {
+			if (!model.id) continue;
+			map.set(model.id, model);
+		}
+		return map;
+	}, [models]);
 
 	const setSelected = (ids: string[]) => {
 		const params = new URLSearchParams(searchParams.toString());
@@ -177,9 +198,30 @@ export default function CompareDashboard({
 		router.replace(`?${params.toString()}`);
 	};
 
-	const selectedModels = models.filter((m) => resolvedSelectionSet.has(m.id));
+	const selectedModels = uniqueResolvedSelectionIds
+		.map((modelId) => modelsById.get(modelId))
+		.filter((model): model is ExtendedModel => Boolean(model));
+	const comparisonDataById = useMemo(() => {
+		const map = new Map<string, ExtendedModel>();
+		for (const model of comparisonData) {
+			if (!model.id) continue;
+			map.set(model.id, model);
+		}
+		return map;
+	}, [comparisonData]);
+	const orderedComparisonData = useMemo(() => {
+		if (!uniqueResolvedSelectionIds.length) return comparisonData;
+		const ordered = uniqueResolvedSelectionIds
+			.map((modelId) => comparisonDataById.get(modelId))
+			.filter((model): model is ExtendedModel => Boolean(model));
+		const orderedIds = new Set(ordered.map((model) => model.id));
+		const fallbackRemainder = comparisonData.filter(
+			(model) => !orderedIds.has(model.id)
+		);
+		return [...ordered, ...fallbackRemainder];
+	}, [comparisonData, comparisonDataById, uniqueResolvedSelectionIds]);
 
-	const notFound = resolvedSelectionIds.filter(
+	const notFound = uniqueResolvedSelectionIds.filter(
 		(id) => !selectedModels.some((m) => m.id === id)
 	);
 
@@ -332,7 +374,7 @@ export default function CompareDashboard({
 	if (selected.length > 0 && comparisonData.length === 0) {
 		console.warn("[compare] No comparison data resolved", {
 			selection: selected,
-			resolvedIds: resolvedSelectionIds,
+			resolvedIds: uniqueResolvedSelectionIds,
 		});
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-muted-foreground space-y-2">
@@ -340,7 +382,7 @@ export default function CompareDashboard({
 				<button
 					type="button"
 					className="text-sm font-medium underline underline-offset-4"
-					onClick={() => setSelected(resolvedSelectionIds)}
+					onClick={() => setSelected(uniqueResolvedSelectionIds)}
 				>
 					Refresh selection
 				</button>
@@ -348,5 +390,10 @@ export default function CompareDashboard({
 		);
 	}
 
-	return <ComparisonDisplay selectedModels={comparisonData} />;
+	return (
+		<ComparisonDisplay
+			selectedModels={orderedComparisonData}
+			usageByModel={usageByModel}
+		/>
+	);
 }

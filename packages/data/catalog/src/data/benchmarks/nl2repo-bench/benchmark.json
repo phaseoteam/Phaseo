@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "nl2repo-bench",
+  "benchmark_name": "NL2Repo-Bench",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 2
+}

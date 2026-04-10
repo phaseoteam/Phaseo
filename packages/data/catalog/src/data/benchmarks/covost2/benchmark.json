@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "covost2",
+  "benchmark_name": "CoVoST2",
+  "category": "audio",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 5
+}

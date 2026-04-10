@@ -48,15 +48,15 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 2
+      "rank": 33
     },
     {
       "benchmark_id": "gpqa-diamond",
-      "score": 0.357,
+      "score": 35.7,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 6
+      "rank": 101
     },
     {
       "benchmark_id": "lmarena-text",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 6
+      "rank": 48
     }
   ]
 }

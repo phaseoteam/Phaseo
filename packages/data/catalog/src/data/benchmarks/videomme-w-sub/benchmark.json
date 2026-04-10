@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "videomme-w-sub.",
+  "benchmark_name": "VideoMME w sub.",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 18
+}

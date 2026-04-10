@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "webvoyager",
+  "benchmark_name": "WebVoyager",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

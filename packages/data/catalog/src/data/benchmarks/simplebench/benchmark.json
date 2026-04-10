@@ -3,6 +3,7 @@
   "benchmark_name": "SimpleBench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://simple-bench.com/index.html",
-  "total_models": 4
+  "total_models": 34
 }

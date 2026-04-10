@@ -10,6 +10,7 @@ describe("resolveCapabilityFromEndpoint", () => {
 		expect(resolveCapabilityFromEndpoint("video.generation")).toBe("video.generation");
 		expect(resolveCapabilityFromEndpoint("ocr")).toBe("ocr");
 		expect(resolveCapabilityFromEndpoint("music.generate")).toBe("music.generate");
+		expect(resolveCapabilityFromEndpoint("rerank")).toBe("rerank");
 	});
 
 	it("maps canonical path aliases", () => {
@@ -19,5 +20,6 @@ describe("resolveCapabilityFromEndpoint", () => {
 		expect(resolveCapabilityFromEndpoint("/music/generations")).toBe("music.generate");
 		expect(resolveCapabilityFromEndpoint("/audio/transcriptions")).toBe("audio.transcription");
 		expect(resolveCapabilityFromEndpoint("/realtime")).toBe("audio.realtime");
+		expect(resolveCapabilityFromEndpoint("/rerank")).toBe("text.rerank");
 	});
 });

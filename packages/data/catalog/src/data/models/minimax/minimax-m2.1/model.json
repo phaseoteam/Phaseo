@@ -14,5 +14,206 @@
   "api_model_id": "minimax/minimax-m2.1",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 62,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 62,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 22,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 70,
+      "is_self_reported": true,
+      "other_info": "Instruction following benchmark",
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "multi-swe-bench",
+      "score": 49.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "octocodingbench",
+      "score": 26.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 39,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 72.5,
+      "is_self_reported": true,
+      "other_info": "Outperforms Claude Sonnet 4.5 (68%) and DeepSeek V3.2 (70.2%)",
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 67,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "swe-perf",
+      "score": 3.1,
+      "is_self_reported": true,
+      "other_info": "Code performance optimization benchmark",
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "swe-review",
+      "score": 8.9,
+      "is_self_reported": true,
+      "other_info": "Code review benchmark",
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "swt-bench",
+      "score": 69.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 87,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 47.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 43.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "vibe",
+      "score": 88.6,
+      "is_self_reported": true,
+      "other_info": "Visual & Interactive Benchmark for Execution - full-stack development benchmark",
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibe-android",
+      "score": 89.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibe-backend",
+      "score": 86.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibe-ios",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibe-simulation",
+      "score": 87.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibe-web",
+      "score": 91.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m2-1",
+      "rank": 1
+    }
+  ]
 }

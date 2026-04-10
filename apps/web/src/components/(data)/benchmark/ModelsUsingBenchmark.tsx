@@ -1,17 +1,13 @@
 import ModelsUsingBenchmarkClient from "./ModelsUsingBenchmarkTable";
+import {
+	getLowerIsBetter,
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 interface ModelsUsingBenchmarkProps {
 	benchmark: any; // BenchmarkPage from getBenchmark
-}
-
-// Small helper to parse numeric score from strings like "12.34%" or "12.34"
-function parseScore(score: string | number): number | null {
-	if (typeof score === "number") return score;
-	if (typeof score === "string") {
-		const match = score.match(/([\d.]+)/);
-		if (match) return parseFloat(match[1]);
-	}
-	return null;
 }
 
 export default function ModelsUsingBenchmark({
@@ -54,6 +50,7 @@ export default function ModelsUsingBenchmark({
 				id: benchmark.id,
 				name: benchmark.name ?? undefined,
 				order: r.benchmark_order ?? null,
+				type: benchmark.type ?? null,
 			},
 			name: benchmark.name ?? undefined,
 			score: r.score,
@@ -68,27 +65,28 @@ export default function ModelsUsingBenchmark({
 
 	const modelsWithBenchmark = Array.from(map.values());
 
-	const isLowerBetter = modelsWithBenchmark.some((model) =>
-		model.benchmark_results?.some(
-			(br: any) => br.benchmark && br.benchmark.order === "lower"
-		)
+	const isLowerBetter = getLowerIsBetter(
+		null,
+		typeof benchmark?.ascending_order === "boolean"
+			? benchmark.ascending_order
+			: null
 	);
+	const isPercentage = resolveBenchmarkIsPercentage({
+		benchmarkType: benchmark?.type,
+		fallback: results.some(
+			(result: any) =>
+				typeof result?.score === "string" && result.score.includes("%")
+		),
+	});
 
 	// Build flat models array and compute top score per model
-	function parse(s: any) {
-		if (s == null) return null;
-		if (typeof s === "number") return s;
-		if (typeof s === "string") {
-			const m = s.match(/([\d.]+)/);
-			if (m) return parseFloat(m[1]);
-		}
-		return null;
-	}
-
 	const models = modelsWithBenchmark.map((m: any) => {
 		const scores = (m.benchmark_results || []).map((r: any) => ({
 			...r,
-			parsed_score: parse(r.score),
+			parsed_score: normalizeBenchmarkScoreValue(
+				parseBenchmarkScore(r.score),
+				isPercentage
+			),
 		}));
 		const sortedScores = scores.slice().sort((a: any, b: any) => {
 			if (a.rank != null && b.rank != null) {
@@ -127,6 +125,7 @@ export default function ModelsUsingBenchmark({
 		<ModelsUsingBenchmarkClient
 			models={models}
 			benchmarkId={benchmark?.id}
+			benchmarkType={benchmark?.type ?? null}
 			isLowerBetter={isLowerBetter}
 		/>
 	);

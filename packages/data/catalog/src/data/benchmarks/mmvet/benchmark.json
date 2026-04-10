@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmvet",
+  "benchmark_name": "MMVet",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 8
+}

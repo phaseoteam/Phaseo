@@ -57,6 +57,8 @@ export type ProviderMetrics = {
 
 const HOURS_DEFAULT = 24 * 7;
 const PAGE_SIZE = 5000;
+const MAX_PAGES = 8;
+const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
 type Aggregate = {
 	requests: number;
@@ -67,6 +69,11 @@ type Aggregate = {
 	throughputSum: number;
 	throughputSamples: number;
 };
+
+function logUsageFetch(stage: string, payload: Record<string, unknown>): void {
+	if (!USAGE_FETCH_DEBUG_ENABLED) return;
+	console.info(`[gateway-usage-fetchers] ${stage}`, payload);
+}
 
 function toNumber(value: unknown): number {
 	const parsed = Number(value);
@@ -115,8 +122,12 @@ async function fetchProviderRollupRows(
 	const rows: ProviderRollupRow[] = [];
 	const toIso = now.toISOString();
 	const fromIso = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
+	let hitPageCap = true;
+	let pagesFetched = 0;
+	let hadError = false;
 
-	for (let from = 0; ; from += PAGE_SIZE) {
+	for (let page = 0, from = 0; page < MAX_PAGES; page += 1, from += PAGE_SIZE) {
+		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
 		const { data, error } = await client
 			.from("gateway_usage_rollup_15m_model_provider")
@@ -129,12 +140,47 @@ async function fetchProviderRollupRows(
 			.order("bucket_15m", { ascending: true })
 			.range(from, to);
 
-		if (error) throw new Error(error.message ?? "Failed to load provider rollup data");
-		if (!Array.isArray(data) || data.length === 0) break;
+		if (error) {
+			hadError = true;
+			hitPageCap = false;
+			logUsageFetch("provider_metrics_rollup_query_error", {
+				providerId,
+				hours,
+				pagesFetched,
+				pageSize: PAGE_SIZE,
+				message: error.message ?? "Failed to load provider rollup data",
+			});
+			throw new Error(error.message ?? "Failed to load provider rollup data");
+		}
+		if (!Array.isArray(data) || data.length === 0) {
+			hitPageCap = false;
+			break;
+		}
 
 		rows.push(...(data as ProviderRollupRow[]));
-		if (data.length < PAGE_SIZE) break;
+		if (data.length < PAGE_SIZE) {
+			hitPageCap = false;
+			break;
+		}
 	}
+
+	if (rows.length > 0 && hitPageCap) {
+		console.warn(
+			`Provider metrics rows may be truncated for provider=${providerId} hours=${hours}`,
+		);
+	}
+	logUsageFetch("provider_metrics_rollup_query", {
+		providerId,
+		hours,
+		pagesFetched,
+		rows: rows.length,
+		hitPageCap,
+		hadError,
+		maxPages: MAX_PAGES,
+		pageSize: PAGE_SIZE,
+		fromIso,
+		toIso,
+	});
 
 	return rows;
 }
@@ -367,5 +413,12 @@ export async function getProviderMetrics(
 		),
 	);
 	const modelLabels = await fetchModelLabels(client, modelIds);
+	logUsageFetch("provider_metrics_result", {
+		providerId,
+		hours,
+		rollupRows: rows.length,
+		modelIds: modelIds.length,
+		modelLabels: modelLabels.size,
+	});
 	return buildProviderMetricsFromRollups(rows, now, hours, modelLabels);
 }

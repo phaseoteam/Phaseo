@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mimic-cxr-top5-macro-f1",
+  "benchmark_name": "MIMIC CXR Top-5 Macro F1",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+  "total_models": 1
+}

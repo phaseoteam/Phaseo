@@ -15,5 +15,102 @@
   "family_id": "meta/llama-4-0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "chartqa",
+      "score": 88.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 94.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 57.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "rank": 75
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 32.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "math",
+      "score": 50.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 70.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.678,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "mgsm",
+      "score": 90.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 79.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 74.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+      "rank": 51
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 69.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "tydiqa",
+      "score": 31.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "rank": 2
+    }
+  ]
 }

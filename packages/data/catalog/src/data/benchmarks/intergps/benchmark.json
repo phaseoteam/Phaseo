@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "intergps",
+  "benchmark_name": "InterGPS",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

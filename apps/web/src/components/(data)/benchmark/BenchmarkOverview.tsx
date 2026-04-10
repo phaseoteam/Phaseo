@@ -7,18 +7,12 @@ import BenchmarkMetrics from "./BenchmarkMetrics";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
-
-function parseScore(score: string | number | null | undefined): number | null {
-	if (score == null) return null;
-	if (typeof score === "number") return Number.isFinite(score) ? score : null;
-	if (typeof score === "string") {
-		const match = score.match(/[-+]?[0-9]*\.?[0-9]+/);
-		if (!match) return null;
-		const parsed = Number.parseFloat(match[0]);
-		return Number.isFinite(parsed) ? parsed : null;
-	}
-	return null;
-}
+import {
+	getLowerIsBetter,
+	normalizeBenchmarkScoreValue,
+	parseBenchmarkScore,
+	resolveBenchmarkIsPercentage,
+} from "@/lib/benchmarks/scoreFormat";
 
 function getCategoryColor(category: string): string {
 	// Simple hash function for consistent color assignment
@@ -134,9 +128,18 @@ export default function BenchmarkOverview({
 			(result: any) => result?.benchmark?.order ?? result?.benchmark_order
 		)
 		.filter((value: unknown): value is string => typeof value === "string");
-	const isLowerBetter = orderHints.some(
-		(order) => order.toLowerCase() === "lower"
+	const isLowerBetter = getLowerIsBetter(
+		orderHints[0],
+		benchmark?.ascending_order ?? null
 	);
+	const isPercentage = resolveBenchmarkIsPercentage({
+		benchmarkType: benchmark.type,
+		fallback: results.some(
+			(result) =>
+				typeof result?.score === "string" &&
+				String(result.score).trim().endsWith("%")
+		),
+	});
 
 	const uniqueModelIds = new Set<string>();
 	let latestTimestamp: Date | null = null;
@@ -159,7 +162,10 @@ export default function BenchmarkOverview({
 			}
 		}
 
-		const numericScore = parseScore(result.score as any);
+		const numericScore = normalizeBenchmarkScoreValue(
+			parseBenchmarkScore(result.score as any),
+			isPercentage
+		);
 		if (numericScore != null) {
 			const shouldReplace =
 				!bestScore ||

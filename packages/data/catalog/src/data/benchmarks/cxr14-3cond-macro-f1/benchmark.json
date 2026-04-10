@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cxr14-3cond-macro-f1",
+  "benchmark_name": "CXR14 3-Condition Macro F1",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+  "total_models": 1
+}

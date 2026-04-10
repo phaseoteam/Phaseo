@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "swe-review",
+  "benchmark_name": "SWE-Review",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

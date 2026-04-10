@@ -15,5 +15,30 @@
   "family_id": "microsoft/phi-4-0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime",
+      "score": 57.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from phi-4-mini-reasoning",
+      "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 52,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from phi-4-mini-reasoning",
+      "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
+      "rank": 81
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 94.6,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from phi-4-mini-reasoning",
+      "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
+      "rank": 12
+    }
+  ]
 }

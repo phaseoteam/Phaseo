@@ -15,6 +15,8 @@ type SourceId =
 	| "anthropic-sdk"
 	| "openrouter"
 	| "vercel-ai"
+	| "requesty"
+	| "llm-gateway"
 	| "openai-compatible"
 	| "getting-started";
 
@@ -53,6 +55,7 @@ type Flow = {
 };
 
 type DiffView = "split" | "diff";
+type AfterApiSurface = "chat-completions" | "responses" | "anthropic-messages";
 type ChangeNote = {
 	title: string;
 	description: string;
@@ -84,6 +87,16 @@ const SOURCE_OPTIONS: Array<{
 		description: "Using Vercel AI Gateway or the AI SDK provider stack.",
 	},
 	{
+		id: "requesty",
+		label: "Requesty",
+		description: "Using Requesty as an OpenAI-compatible gateway.",
+	},
+	{
+		id: "llm-gateway",
+		label: "LLM Gateway",
+		description: "Using LLMGateway as an OpenAI-compatible endpoint.",
+	},
+	{
 		id: "openai-compatible",
 		label: "OpenAI Compatible Libraries",
 		description: "Any OpenAI-style SDK or REST integration.",
@@ -100,8 +113,18 @@ const SOURCE_LOGOS: Partial<Record<SourceId, string>> = {
 	"anthropic-sdk": "anthropic",
 	openrouter: "openrouter",
 	"vercel-ai": "vercel",
+	"llm-gateway": "llmgateway",
 	"openai-compatible": "openai",
 };
+
+const AFTER_API_SURFACE_OPTIONS: Array<{
+	id: AfterApiSurface;
+	label: string;
+}> = [
+	{ id: "chat-completions", label: "Chat Completions" },
+	{ id: "responses", label: "Responses" },
+	{ id: "anthropic-messages", label: "Anthropic Messages" },
+];
 
 const DOC_LINKS = [
 	{
@@ -429,6 +452,72 @@ console.log(response);`,
 	},
 };
 
+const BEFORE_SNIPPETS_REQUESTY: Partial<Record<PathId, Snippet>> = {
+	"ts-openai": {
+		label: "Before (Requesty + OpenAI SDK)",
+		lang: "ts",
+		code: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.REQUESTY_API_KEY ?? "YOUR_REQUESTY_KEY",
+  baseURL: "https://router.requesty.ai/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4o",
+  messages: [{ role: "user", content: "Ship a migration checklist." }],
+});
+
+console.log(response);`,
+	},
+	rest: {
+		label: "Before (Requesty REST)",
+		lang: "bash",
+		code: `curl -s "https://router.requesty.ai/v1/chat/completions" \\
+  -H "Authorization: Bearer $REQUESTY_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "openai/gpt-4o",
+    "messages": [
+      { "role": "user", "content": "Ship a migration checklist." }
+    ]
+  }'`,
+	},
+};
+
+const BEFORE_SNIPPETS_LLM_GATEWAY: Partial<Record<PathId, Snippet>> = {
+	"ts-openai": {
+		label: "Before (LLMGateway + OpenAI SDK)",
+		lang: "ts",
+		code: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.LLM_GATEWAY_API_KEY ?? "YOUR_LLM_GATEWAY_KEY",
+  baseURL: "https://api.llmgateway.io/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "gpt-4o",
+  messages: [{ role: "user", content: "Ship a migration checklist." }],
+});
+
+console.log(response);`,
+	},
+	rest: {
+		label: "Before (LLMGateway REST)",
+		lang: "bash",
+		code: `curl -s "https://api.llmgateway.io/v1/chat/completions" \\
+  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "gpt-4o",
+    "messages": [
+      { "role": "user", "content": "Ship a migration checklist." }
+    ]
+  }'`,
+	},
+};
+
 const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 	"ts-openai": {
 		label: "Diff",
@@ -617,9 +706,97 @@ const DIFF_SNIPPETS_OPENROUTER: Partial<Record<PathId, Snippet>> = {
 	},
 };
 
+const DIFF_SNIPPETS_REQUESTY: Partial<Record<PathId, Snippet>> = {
+	"ts-openai": {
+		label: "Diff",
+		lang: "diff",
+		code: ` import OpenAI from "openai";
+
+ const client = new OpenAI({
+-  apiKey: process.env.REQUESTY_API_KEY ?? "YOUR_REQUESTY_KEY",
+-  baseURL: "https://router.requesty.ai/v1",
++  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  baseURL: "${BASE_URL}",
+ });
+
+ const response = await client.chat.completions.create({
+-  model: "openai/gpt-4o",
++  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Ship a migration checklist." }],
+ });
+`,
+	},
+	rest: {
+		label: "Diff",
+		lang: "diff",
+		code: `-curl -s "https://router.requesty.ai/v1/chat/completions" \\
+-  -H "Authorization: Bearer $REQUESTY_API_KEY" \\
++curl -s "${BASE_URL}/chat/completions" \\
++  -H "Authorization: Bearer YOUR_API_KEY" \\
+ -H "Content-Type: application/json" \\
+ -d '{
+-    "model": "openai/gpt-4o",
++    "model": "openai/gpt-4.1-mini",
+    "messages": [
+      { "role": "user", "content": "Ship a migration checklist." }
+     ]
+   }'`,
+	},
+};
+
+const DIFF_SNIPPETS_LLM_GATEWAY: Partial<Record<PathId, Snippet>> = {
+	"ts-openai": {
+		label: "Diff",
+		lang: "diff",
+		code: ` import OpenAI from "openai";
+
+ const client = new OpenAI({
+-  apiKey: process.env.LLM_GATEWAY_API_KEY ?? "YOUR_LLM_GATEWAY_KEY",
+-  baseURL: "https://api.llmgateway.io/v1",
++  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  baseURL: "${BASE_URL}",
+ });
+
+ const response = await client.chat.completions.create({
+-  model: "gpt-4o",
++  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Ship a migration checklist." }],
+ });
+`,
+	},
+	rest: {
+		label: "Diff",
+		lang: "diff",
+		code: `-curl -s "https://api.llmgateway.io/v1/chat/completions" \\
+-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \\
++curl -s "${BASE_URL}/chat/completions" \\
++  -H "Authorization: Bearer YOUR_API_KEY" \\
+ -H "Content-Type: application/json" \\
+ -d '{
+-    "model": "gpt-4o",
++    "model": "openai/gpt-4.1-mini",
+    "messages": [
+      { "role": "user", "content": "Ship a migration checklist." }
+     ]
+   }'`,
+	},
+};
+
 const getBeforeSnippet = (source: SourceId, pathId: PathId) => {
 	if (source === "openrouter") {
 		const override = BEFORE_SNIPPETS_OPENROUTER[pathId];
+		if (override) {
+			return override;
+		}
+	}
+	if (source === "requesty") {
+		const override = BEFORE_SNIPPETS_REQUESTY[pathId];
+		if (override) {
+			return override;
+		}
+	}
+	if (source === "llm-gateway") {
+		const override = BEFORE_SNIPPETS_LLM_GATEWAY[pathId];
 		if (override) {
 			return override;
 		}
@@ -631,6 +808,18 @@ const getBeforeSnippet = (source: SourceId, pathId: PathId) => {
 const getDiffSnippet = (source: SourceId, pathId: PathId) => {
 	if (source === "openrouter") {
 		const override = DIFF_SNIPPETS_OPENROUTER[pathId];
+		if (override) {
+			return override;
+		}
+	}
+	if (source === "requesty") {
+		const override = DIFF_SNIPPETS_REQUESTY[pathId];
+		if (override) {
+			return override;
+		}
+	}
+	if (source === "llm-gateway") {
+		const override = DIFF_SNIPPETS_LLM_GATEWAY[pathId];
 		if (override) {
 			return override;
 		}
@@ -852,6 +1041,58 @@ const FLOWS: Record<SourceId, Flow> = {
 			},
 		],
 	},
+	requesty: {
+		prompt: "How do you call Requesty today?",
+		options: [
+			{
+				id: "ts-openai",
+				label: "OpenAI-compatible SDK",
+				description: "Keep the client and swap env vars plus base URL.",
+				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				snippet: SNIPPETS["ts-openai"],
+			},
+			{
+				id: "py-openai",
+				label: "Python SDK",
+				description: "Use OpenAI Python client settings for AI Stats.",
+				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				snippet: SNIPPETS["py-openai"],
+			},
+			{
+				id: "rest",
+				label: "REST",
+				description: "Switch REST calls to AI Stats Gateway.",
+				steps: [SHARED_STEPS.headers, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				snippet: SNIPPETS.rest,
+			},
+		],
+	},
+	"llm-gateway": {
+		prompt: "How do you call LLMGateway today?",
+		options: [
+			{
+				id: "ts-openai",
+				label: "OpenAI-compatible SDK",
+				description: "Keep the client and swap env vars plus base URL.",
+				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				snippet: SNIPPETS["ts-openai"],
+			},
+			{
+				id: "py-openai",
+				label: "Python SDK",
+				description: "Use OpenAI Python client settings for AI Stats.",
+				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				snippet: SNIPPETS["py-openai"],
+			},
+			{
+				id: "rest",
+				label: "REST",
+				description: "Switch REST calls to AI Stats Gateway.",
+				steps: [SHARED_STEPS.headers, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				snippet: SNIPPETS.rest,
+			},
+		],
+	},
 	"openai-compatible": {
 		prompt: "Choose your environment.",
 		options: [
@@ -906,6 +1147,147 @@ const FLOWS: Record<SourceId, Flow> = {
 	},
 };
 
+const FULL_GUIDE_LINK_BY_SOURCE: Partial<
+	Record<SourceId, { href: string; label: string }>
+> = {
+	openrouter: {
+		href: "/migrate/openrouter",
+		label: "OpenRouter",
+	},
+	"vercel-ai": {
+		href: "/migrate/vercel-ai-gateway",
+		label: "Vercel AI Gateway",
+	},
+	requesty: {
+		href: "/migrate/requesty",
+		label: "Requesty",
+	},
+	"llm-gateway": {
+		href: "/migrate/llmgateway",
+		label: "LLM Gateway",
+	},
+};
+
+function getAfterSnippet(pathId: PathId, surface: AfterApiSurface): Snippet {
+	if (surface === "chat-completions") {
+		return SNIPPETS[pathId];
+	}
+
+	if (surface === "responses") {
+		if (pathId === "py-openai" || pathId === "py-sdk" || pathId === "py-anthropic") {
+			return {
+				label: "Responses API (Python)",
+				lang: "python",
+				code: `from openai import OpenAI
+import os
+
+client = OpenAI(
+    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
+    base_url="${BASE_URL}",
+)
+
+response = client.responses.create(
+    model="openai/gpt-4.1-mini",
+    input="Ship a migration checklist."
+)
+
+print(response.output_text)`,
+			};
+		}
+
+		if (pathId === "rest") {
+			return {
+				label: "Responses API (cURL)",
+				lang: "bash",
+				code: `curl -s "${BASE_URL}/responses" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "input": "Ship a migration checklist."
+  }'`,
+			};
+		}
+
+		return {
+			label: "Responses API (TypeScript)",
+			lang: "ts",
+			code: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.responses.create({
+  model: "openai/gpt-4.1-mini",
+  input: "Ship a migration checklist.",
+});
+
+console.log(response.output_text);`,
+		};
+	}
+
+	// surface === "anthropic-messages"
+	if (pathId === "py-openai" || pathId === "py-sdk" || pathId === "py-anthropic") {
+		return {
+			label: "Anthropic Messages (Python)",
+			lang: "python",
+			code: `from anthropic import Anthropic
+import os
+
+client = Anthropic(
+    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
+    base_url="${BASE_URL}",
+)
+
+response = client.messages.create(
+    model="anthropic/claude-3.5-sonnet",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Ship a migration checklist."}],
+)
+
+print(response)`,
+		};
+	}
+
+	if (pathId === "rest") {
+		return {
+			label: "Anthropic Messages (cURL)",
+			lang: "bash",
+			code: `curl -s "${BASE_URL}/anthropic/messages" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -d '{
+    "model": "anthropic/claude-3.5-sonnet",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "Ship a migration checklist." }
+    ]
+  }'`,
+		};
+	}
+
+	return {
+		label: "Anthropic Messages (TypeScript)",
+		lang: "ts",
+		code: `import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.messages.create({
+  model: "anthropic/claude-3.5-sonnet",
+  max_tokens: 512,
+  messages: [{ role: "user", content: "Ship a migration checklist." }],
+});
+
+console.log(response);`,
+	};
+}
+
 function OptionCard({
 	label,
 	description,
@@ -958,10 +1340,20 @@ export function MigrationGuide() {
 	const flow = useMemo(() => (source ? FLOWS[source] : null), [source]);
 	const [pathId, setPathId] = useState<PathId | null>(null);
 	const [diffView, setDiffView] = useState<DiffView>("split");
+	const [afterSurface, setAfterSurface] =
+		useState<AfterApiSurface>("chat-completions");
 
 	useEffect(() => {
 		setPathId(null);
 	}, [source]);
+
+	useEffect(() => {
+		if (pathId === "ts-anthropic" || pathId === "py-anthropic") {
+			setAfterSurface("anthropic-messages");
+			return;
+		}
+		setAfterSurface("chat-completions");
+	}, [pathId]);
 
 	const selectedOption = flow?.options.find((option) => option.id === pathId);
 	const beforeSnippet =
@@ -972,7 +1364,11 @@ export function MigrationGuide() {
 		source && selectedOption
 			? getDiffSnippet(source, selectedOption.id)
 			: null;
+	const afterSnippet = selectedOption
+		? getAfterSnippet(selectedOption.id, afterSurface)
+		: null;
 	const changeNotes = selectedOption ? CHANGE_NOTES[selectedOption.id] ?? [] : [];
+	const fullGuide = source ? FULL_GUIDE_LINK_BY_SOURCE[source] : null;
 
 	return (
 		<div className="space-y-10">
@@ -1135,10 +1531,29 @@ export function MigrationGuide() {
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
 											After
 										</p>
+										<div className="flex flex-wrap items-center gap-2">
+											{AFTER_API_SURFACE_OPTIONS.map((surfaceOption) => (
+												<Button
+													key={surfaceOption.id}
+													type="button"
+													variant={
+														afterSurface === surfaceOption.id
+															? "secondary"
+															: "ghost"
+													}
+													size="sm"
+													onClick={() => setAfterSurface(surfaceOption.id)}
+													aria-pressed={afterSurface === surfaceOption.id}
+													className="h-7 rounded-full px-3 text-xs"
+												>
+													{surfaceOption.label}
+												</Button>
+											))}
+										</div>
 										<CodeBlock
-											label={selectedOption?.snippet.label}
-											code={selectedOption?.snippet.code ?? ""}
-											lang={selectedOption?.snippet.lang}
+											label={afterSnippet?.label}
+											code={afterSnippet?.code ?? ""}
+											lang={afterSnippet?.lang}
 										/>
 									</div>
 								</div>
@@ -1198,6 +1613,19 @@ export function MigrationGuide() {
 							))}
 						</div>
 					</div>
+
+				</section>
+			) : null}
+
+			{fullGuide ? (
+				<section className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+					<p className="text-sm">
+						If you are migrating from {fullGuide.label}, check out the full
+						step-by-step guide.{" "}
+						<Link href={fullGuide.href} className="font-medium text-primary hover:underline">
+							Read full guide
+						</Link>
+					</p>
 				</section>
 			) : null}
 		</div>

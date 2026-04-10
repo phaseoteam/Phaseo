@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, X } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,19 @@ interface ModelComboboxProps {
 	models: ExtendedModel[];
 	selected: string[];
 	setSelected: (ids: string[]) => void;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+	replaceTargetId?: string | null;
+	labelWhenEmpty?: string;
+	labelWhenSelected?: string;
+	showSelectionCount?: boolean;
+	className?: string;
 }
 
 type GroupedModels = {
-	providerId: string;
-	providerName: string;
+	monthKey: string;
+	monthLabel: string;
+	monthTimestamp: number;
 	models: ExtendedModel[];
 };
 
@@ -73,12 +81,35 @@ function buildRequiredSignature(selectedModels: ExtendedModel[]): Set<string> | 
 	return required;
 }
 
+function getReleaseDate(model: ExtendedModel): Date | null {
+	if (!model.release_date) return null;
+	const parsed = new Date(model.release_date);
+	if (Number.isNaN(parsed.getTime())) return null;
+	return parsed;
+}
+
+function getReleaseMonthLabel(date: Date): string {
+	return date.toLocaleDateString("en-US", {
+		month: "short",
+		year: "numeric",
+	});
+}
+
 export default function ModelCombobox({
 	models,
 	selected,
 	setSelected,
+	open,
+	onOpenChange,
+	replaceTargetId,
+	labelWhenEmpty = "Select models",
+	labelWhenSelected = "Edit selected models",
+	showSelectionCount = true,
+	className,
 }: ModelComboboxProps) {
-	const [dialogOpen, setDialogOpen] = React.useState(false);
+	const [internalDialogOpen, setInternalDialogOpen] = React.useState(false);
+	const openPropIsControlled = open !== undefined;
+	const dialogOpen = open ?? internalDialogOpen;
 	const [searchTerm, setSearchTerm] = React.useState("");
 	const [pendingSelection, setPendingSelection] = React.useState<string[]>(
 		selected.slice(0, MAX_SELECTION)
@@ -103,30 +134,44 @@ export default function ModelCombobox({
 	const groupedModels = React.useMemo<GroupedModels[]>(() => {
 		const map = new Map<string, GroupedModels>();
 		models.forEach((model) => {
-			const providerId = model.provider?.provider_id ?? "unknown";
-			const providerName = model.provider?.name ?? providerId;
-			if (!map.has(providerId)) {
-				map.set(providerId, {
-					providerId,
-					providerName,
+			const releaseDate = getReleaseDate(model);
+			const monthKey = releaseDate
+				? `${releaseDate.getUTCFullYear()}-${String(releaseDate.getUTCMonth() + 1).padStart(2, "0")}`
+				: "unknown";
+			const monthLabel = releaseDate
+				? getReleaseMonthLabel(releaseDate)
+				: "Unknown release date";
+			const monthTimestamp = releaseDate
+				? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
+				: Number.NEGATIVE_INFINITY;
+			if (!map.has(monthKey)) {
+				map.set(monthKey, {
+					monthKey,
+					monthLabel,
+					monthTimestamp,
 					models: [],
 				});
 			}
-			map.get(providerId)!.models.push(model);
+			map.get(monthKey)!.models.push(model);
 		});
 
 		return Array.from(map.values())
 			.map((group) => ({
 				...group,
-				models: group.models.sort((a, b) =>
-					a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-				),
+				models: group.models
+					.slice()
+					.sort((a, b) => {
+						const aDate = getReleaseDate(a);
+						const bDate = getReleaseDate(b);
+						const aTime = aDate ? aDate.getTime() : Number.NEGATIVE_INFINITY;
+						const bTime = bDate ? bDate.getTime() : Number.NEGATIVE_INFINITY;
+						if (aTime !== bTime) return bTime - aTime;
+						return a.name.localeCompare(b.name, undefined, {
+							sensitivity: "base",
+						});
+					}),
 			}))
-			.sort((a, b) =>
-				a.providerName.localeCompare(b.providerName, undefined, {
-					sensitivity: "base",
-				})
-			);
+			.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
 	}, [models]);
 
 	const filteredGroups = React.useMemo(() => {
@@ -135,10 +180,8 @@ export default function ModelCombobox({
 
 		return groupedModels
 			.map((group) => {
-				const matchesProvider = group.providerName
-					.toLowerCase()
-					.includes(term);
-				if (matchesProvider) {
+				const matchesMonth = group.monthLabel.toLowerCase().includes(term);
+				if (matchesMonth) {
 					return group;
 				}
 				const matchingModels = group.models.filter((model) => {
@@ -161,32 +204,72 @@ export default function ModelCombobox({
 		return lookup;
 	}, [models]);
 
-	const pendingSelectedModels = React.useMemo(() => {
-		return pendingSelection
+	const activeReplaceTarget = React.useMemo(() => {
+		if (!replaceTargetId) return null;
+		return pendingSelection.includes(replaceTargetId) ? replaceTargetId : null;
+	}, [replaceTargetId, pendingSelection]);
+
+	const replaceTargetModel = React.useMemo(() => {
+		if (!activeReplaceTarget) return null;
+		return modelsById.get(activeReplaceTarget) ?? null;
+	}, [activeReplaceTarget, modelsById]);
+
+	const pendingSelectedModelsForCompatibility = React.useMemo(() => {
+		const idsForCompatibility = activeReplaceTarget
+			? pendingSelection.filter((id) => id !== activeReplaceTarget)
+			: pendingSelection;
+		return idsForCompatibility
 			.map((id) => modelsById.get(id))
 			.filter(Boolean) as ExtendedModel[];
-	}, [pendingSelection, modelsById]);
+	}, [activeReplaceTarget, pendingSelection, modelsById]);
 
 	const requiredSignature = React.useMemo(() => {
-		return buildRequiredSignature(pendingSelectedModels);
-	}, [pendingSelectedModels]);
+		return buildRequiredSignature(pendingSelectedModelsForCompatibility);
+	}, [pendingSelectedModelsForCompatibility]);
 
 	const compatibilityActive = requiredSignature !== null;
 	const selectionIncompatible =
 		compatibilityActive && requiredSignature.size === 0;
 
 	const handleOpenChange = (open: boolean) => {
-		setDialogOpen(open);
+		if (openPropIsControlled) {
+			onOpenChange?.(open);
+		} else {
+			setInternalDialogOpen(open);
+			onOpenChange?.(open);
+		}
 		if (open) {
 			setSelectionNotice(null);
 		}
 	};
 
+	React.useEffect(() => {
+		if (!dialogOpen) return;
+		const nextSelection = Array.from(new Set(pendingSelection)).slice(
+			0,
+			MAX_SELECTION
+		);
+		const currentSelection = selected.slice(0, MAX_SELECTION);
+		if (
+			nextSelection.length === currentSelection.length &&
+			nextSelection.every((value, index) => value === currentSelection[index])
+		) {
+			return;
+		}
+		setSelected(nextSelection);
+	}, [dialogOpen, pendingSelection, selected, setSelected]);
+
 	const toggleSelection = (modelId: string, available: boolean) => {
 		setSelectionNotice(null);
-		setPendingSelection((current) => {
+		const current = pendingSelection.slice(0, MAX_SELECTION);
+
+		if (activeReplaceTarget) {
+			if (modelId === activeReplaceTarget) return;
 			if (current.includes(modelId)) {
-				return current.filter((id) => id !== modelId);
+				setSelectionNotice(
+					"That model is already selected. Choose another model to replace this slot."
+				);
+				return;
 			}
 			if (!available) {
 				setSelectionNotice(
@@ -194,33 +277,43 @@ export default function ModelCombobox({
 						? "Your current selection mixes incompatible model types. Remove a model to continue."
 						: "This model doesn't share a compatible endpoint with the current selection."
 				);
-				return current;
+				return;
 			}
-			if (current.length >= MAX_SELECTION) {
-				setSelectionNotice("You can compare up to four models at a time.");
-				return current;
-			}
-			return [...current, modelId];
-		});
+			const targetIndex = current.indexOf(activeReplaceTarget);
+			if (targetIndex === -1) return;
+			const next = current.slice();
+			next[targetIndex] = modelId;
+			setPendingSelection(Array.from(new Set(next)).slice(0, MAX_SELECTION));
+			handleOpenChange(false);
+			return;
+		}
+
+		if (current.includes(modelId)) {
+			setPendingSelection(current.filter((id) => id !== modelId));
+			return;
+		}
+		if (!available) {
+			setSelectionNotice(
+				selectionIncompatible
+					? "Your current selection mixes incompatible model types. Remove a model to continue."
+					: "This model doesn't share a compatible endpoint with the current selection."
+			);
+			return;
+		}
+		if (current.length >= MAX_SELECTION) {
+			setSelectionNotice("You can compare up to four models at a time.");
+			return;
+		}
+		setPendingSelection(Array.from(new Set([...current, modelId])).slice(0, MAX_SELECTION));
 	};
 
 	const removeSelection = (modelId: string) => {
-		setPendingSelection((current) =>
-			current.filter((existing) => existing !== modelId)
-		);
-	};
-
-	const handleApply = () => {
-		const nextSelection = Array.from(new Set(pendingSelection)).slice(
-			0,
-			MAX_SELECTION
-		);
-		setSelected(nextSelection);
-		setDialogOpen(false);
+		const current = pendingSelection.slice(0, MAX_SELECTION);
+		setPendingSelection(current.filter((existing) => existing !== modelId));
 	};
 
 	const buttonLabel =
-		selected.length > 0 ? "Edit selected models" : "Select models";
+		selected.length > 0 ? labelWhenSelected : labelWhenEmpty;
 
 	const selectedDetails = pendingSelection.map((id) => {
 		const model = modelsById.get(id);
@@ -237,12 +330,13 @@ export default function ModelCombobox({
 					variant="outline"
 					className={cn(
 						"w-fit justify-start gap-2",
-						selected.length === 0 && "text-muted-foreground"
+						selected.length === 0 && "text-muted-foreground",
+						className
 					)}
 				>
 					<Plus className="h-4 w-4" />
 					{buttonLabel}
-					{selected.length > 0 && (
+					{showSelectionCount && selected.length > 0 && (
 						<Badge
 							variant="secondary"
 							className="ml-1 bg-primary/10 text-primary"
@@ -256,9 +350,9 @@ export default function ModelCombobox({
 				<DialogHeader>
 					<DialogTitle>Choose models to compare</DialogTitle>
 					<DialogDescription>
-						Pick up to four models. We group everything by organisation to
-						make browsing easier. Use search to jump straight to a specific
-						model or provider.
+						{replaceTargetModel
+							? `Replacing ${replaceTargetModel.name}. Select another compatible model to swap into this slot.`
+							: "Pick up to four models. Results are grouped by release month (newest first). Use search to jump to a model, provider, or month."}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -267,7 +361,7 @@ export default function ModelCombobox({
 						autoFocus
 						value={searchTerm}
 						onChange={(event) => setSearchTerm(event.target.value)}
-						placeholder="Search by model name, identifier, or organisation"
+						placeholder="Search by model name, identifier, provider, or month"
 					/>
 
 					<div className="rounded-md border border-dashed border-border/60 p-3">
@@ -315,37 +409,30 @@ export default function ModelCombobox({
 						</div>
 					) : null}
 
-					<div className="max-h-[420px] space-y-4 overflow-y-auto pr-2">
+					<div className="max-h-[420px] space-y-4 overflow-y-auto pr-1">
 						{filteredGroups.length === 0 ? (
 							<p className="py-8 text-center text-sm text-muted-foreground">
 								No models match your search yet.
 							</p>
 						) : (
 							filteredGroups.map((group) => (
-								<div
-									key={group.providerId}
-									className="rounded-lg border border-border/60 p-4"
-								>
-									<div className="mb-3 flex items-center justify-between gap-4">
-										<div className="flex items-center gap-2">
-											<ProviderLogo
-												id={group.providerId}
-												alt={group.providerName}
-												size="xs"
-											/>
-											<span className="font-semibold">
-												{group.providerName}
+								<div key={group.monthKey} className="space-y-2">
+									<div className="sticky top-0 z-10 -mx-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+										<div className="flex items-center justify-between gap-4">
+											<span className="text-sm font-semibold">
+												{group.monthLabel}
+											</span>
+											<span className="text-[11px] text-muted-foreground">
+												{group.models.length} model
+												{group.models.length === 1 ? "" : "s"}
 											</span>
 										</div>
-										<span className="text-xs text-muted-foreground">
-											{group.models.length} model
-											{group.models.length === 1 ? "" : "s"}
-										</span>
 									</div>
-									<div className="grid gap-2 sm:grid-cols-2">
+									<div className="space-y-2">
 										{group.models.map((model) => {
 											const sig = getEndpointSignature(model);
 											const hasSignature = sig.size > 0;
+											const modalities = Array.from(sig).slice(0, 3);
 											const modelAvailable = (() => {
 												// Always allow removing an already-selected model.
 												if (pendingSelection.includes(model.id)) return true;
@@ -361,10 +448,7 @@ export default function ModelCombobox({
 												if (selectionIncompatible) return false;
 												return true;
 											})();
-											const isSelected =
-												pendingSelection.includes(
-													model.id
-												);
+											const isSelected = pendingSelection.includes(model.id);
 											return (
 												<button
 													type="button"
@@ -376,32 +460,54 @@ export default function ModelCombobox({
 														)
 													}
 													className={cn(
-														"flex w-full items-center justify-between rounded-lg border p-3 text-left transition",
+														"group flex w-full items-center justify-between rounded-lg border border-border/70 bg-background px-3 py-2 text-left transition",
 														isSelected
-															? "border-primary bg-primary/5 shadow-sm"
-															: "hover:border-primary",
+															? "border-primary/60 bg-primary/5 shadow-sm"
+															: "hover:border-primary/40 hover:bg-muted/30",
 														!modelAvailable &&
 															!isSelected &&
-															"opacity-60"
+															"opacity-60 cursor-not-allowed"
 													)}
-													disabled={
-														!modelAvailable &&
-														!isSelected
-													}
+													disabled={!modelAvailable && !isSelected}
 												>
-													<div className="space-y-1">
-														<p className="text-sm font-medium leading-tight">
-															{model.name}
-														</p>
-														<p className="text-xs text-muted-foreground font-mono">
-															{model.id}
-														</p>
+													<div className="flex min-w-0 items-center gap-3">
+														<ProviderLogo
+															id={model.provider?.provider_id ?? "unknown"}
+															alt={model.provider?.name ?? "Unknown"}
+															size="xs"
+															className="shrink-0"
+														/>
+														<div className="min-w-0 space-y-1">
+															<div className="flex items-center gap-2">
+																<p className="truncate text-sm font-medium leading-tight">
+																	{model.name}
+																</p>
+																{isSelected ? (
+																	<Badge
+																		variant="secondary"
+																		className="text-[10px] bg-primary/10 text-primary px-1.5 py-0"
+																	>
+																		Selected
+																	</Badge>
+																) : null}
+															</div>
+															<p className="truncate text-[11px] text-muted-foreground font-mono">
+																{model.id}
+															</p>
+														</div>
 													</div>
-													<div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-														<span>
-															{model.provider?.name ??
-																group.providerName}
-														</span>
+													<div className="ml-2 flex flex-col items-end gap-1.5 text-xs text-muted-foreground">
+														<div className="flex flex-wrap justify-end gap-1">
+															{modalities.map((modality) => (
+																<Badge
+																	key={`${model.id}-${modality}`}
+																	variant="outline"
+																	className="px-1.5 py-0 text-[10px] font-normal uppercase"
+																>
+																	{modality}
+																</Badge>
+															))}
+														</div>
 														{!modelAvailable && (
 															<Badge
 																variant="outline"
@@ -410,14 +516,12 @@ export default function ModelCombobox({
 																Incompatible
 															</Badge>
 														)}
-														{isSelected && (
-															<Badge
-																variant="secondary"
-																className="text-[10px] bg-primary/10 text-primary px-2 py-0.5"
-															>
-																Selected
-															</Badge>
-														)}
+														{isSelected ? (
+															<span className="inline-flex items-center gap-1 text-[10px] text-primary">
+																<Check className="h-3 w-3" />
+																Included
+															</span>
+														) : null}
 													</div>
 												</button>
 											);
@@ -437,19 +541,9 @@ export default function ModelCombobox({
 					<Button
 						variant="outline"
 						type="button"
-						onClick={() => {
-							setPendingSelection(selected.slice(0, MAX_SELECTION));
-							setSelectionNotice(null);
-						}}
+						onClick={() => handleOpenChange(false)}
 					>
-						Reset to current selection
-					</Button>
-					<Button
-						type="button"
-						onClick={handleApply}
-						disabled={pendingSelection.length === 0}
-					>
-						Apply selection
+						Done
 					</Button>
 				</DialogFooter>
 			</DialogContent>

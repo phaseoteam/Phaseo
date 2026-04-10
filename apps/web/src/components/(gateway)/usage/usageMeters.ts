@@ -19,6 +19,8 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	total_tokens: { long: "Total tokens", short: "total tokens" },
 	requests: { long: "Requests", short: "req" },
 	output_image: { long: "Images", short: "images" },
+	image_pixels: { long: "Image pixels", short: "img px" },
+	video_pixels: { long: "Video pixels", short: "vid px" },
 	output_video_seconds: { long: "Video seconds", short: "video sec" },
 	output_audio_seconds: { long: "Audio seconds", short: "audio sec" },
 	bfl_credits: { long: "BFL credits", short: "bfl credits" },

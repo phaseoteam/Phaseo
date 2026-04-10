@@ -16,16 +16,16 @@ import {
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Stats Pricing",
+	title: "AI Gateway Pricing & Credit Fees",
 	description:
-		"AI Stats Gateway pricing matrix for Free and Pay As You Go plans, including capabilities, controls, and support.",
+		"See gateway pricing, credit fees, BYOK support and plan differences for Free and Pay As You Go.",
 	path: "/pricing",
 	keywords: [
-		"AI Stats pricing",
-		"gateway pricing",
-		"free pay as you go",
-		"pricing matrix",
-		"api gateway plans",
+		"AI gateway pricing",
+		"API credit fees",
+		"BYOK pricing",
+		"pay as you go AI API",
+		"AI gateway plans",
 	],
 });
 

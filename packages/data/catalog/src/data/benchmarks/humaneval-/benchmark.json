@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "humaneval+",
+  "benchmark_name": "HumanEval+",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 27
+}

@@ -19,7 +19,9 @@ export async function loadBenchmarks(tracker: ChangeTracker) {
             id: j.benchmark_id,
             name: j.benchmark_name,
             category: j.category ?? null,
-            ascending_order: j.ascending_order ?? true,
+            ascending_order:
+                typeof j.ascending_order === "boolean" ? j.ascending_order : null,
+            type: j.type ?? null,
             link: j.link ?? null,
             total_models: j.total_models ?? 0,
         };

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "tir-bench",
+  "benchmark_name": "TIR-Bench",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 5
+}

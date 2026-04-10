@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "textvqa",
+  "benchmark_name": "TextVQA",
+  "category": "image_to_text",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 21
+}

@@ -1,8 +1,9 @@
 {
-  "benchmark_id": "multiPL-E",
-  "benchmark_name": "Multi‑Programming Language Evaluation",
-  "category": null,
+  "benchmark_id": "multipl-e",
+  "benchmark_name": "MultiPL-E",
+  "category": "general",
   "ascending_order": null,
+  "type": "percentage",
   "link": null,
-  "total_models": 0
+  "total_models": 19
 }

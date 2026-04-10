@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": null,
   "input_types": null,
-  "output_types": null,
+  "output_types": "rerank",
   "api_model_id": "qwen/qwen3-vl-reranker-2b",
   "links": [],
   "details": [],

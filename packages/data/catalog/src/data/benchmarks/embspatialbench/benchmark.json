@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "embspatialbench",
+  "benchmark_name": "EmbSpatialBench",
+  "category": "embodied",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 5
+}

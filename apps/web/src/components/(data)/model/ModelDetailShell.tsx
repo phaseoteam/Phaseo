@@ -12,6 +12,7 @@ import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { ModelCreatorModelsSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import { redirect } from "next/navigation";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -30,16 +31,21 @@ async function getVisibleTabKeys(
 	modelId: string,
 	includeHidden: boolean,
 	hasInternalModelData: boolean,
+	modelStatus: ModelOverviewPage["status"] | undefined,
 ): Promise<string[]> {
-	const baseTabs: string[] = [
-		"overview",
-		"playground",
-		"providers",
-		"performance",
-		"apps",
-		"activity",
-		"quickstart",
-	];
+	const isLimitedAvailabilityModel =
+		modelStatus === "Announced" || modelStatus === "Withheld";
+	const baseTabs: string[] = isLimitedAvailabilityModel
+		? ["overview"]
+		: [
+			"overview",
+			"playground",
+			"providers",
+			"performance",
+			"apps",
+			"activity",
+			"quickstart",
+		];
 
 	const visibleTabs = [...baseTabs];
 
@@ -83,7 +89,11 @@ export default async function ModelDetailShell({
 		modelId,
 		includeHidden,
 		hasInternalModelData,
+		modelOverview?.status,
 	);
+	if (tab && !visibleTabKeys.includes(tab)) {
+		redirect(`/models/${modelId}`);
+	}
 
 	return (
 		<main className="flex flex-col">

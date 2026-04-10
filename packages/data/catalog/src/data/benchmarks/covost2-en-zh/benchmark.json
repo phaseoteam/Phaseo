@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "covost2-en-zh",
+  "benchmark_name": "CoVoST2 en-zh",
+  "category": "audio",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 7
+}

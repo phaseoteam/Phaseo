@@ -3,6 +3,7 @@
   "benchmark_name": "AIME 2025",
   "category": "math",
   "ascending_order": null,
+  "type": "percentage",
   "link": null,
-  "total_models": 2
+  "total_models": 149
 }

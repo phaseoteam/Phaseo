@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "arena-search-rank",
+  "benchmark_name": "Arena Search Rank",
+  "category": "ranking",
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://arena.ai/?leaderboard=",
+  "total_models": 1
+}

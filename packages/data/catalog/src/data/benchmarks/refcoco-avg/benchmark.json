@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "refcoco-avg",
+  "benchmark_name": "RefCOCO-avg",
+  "category": "grounding",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 6
+}

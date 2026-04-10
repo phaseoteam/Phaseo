@@ -3,6 +3,7 @@
   "benchmark_name": "Aider-Polyglot",
   "category": "code",
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://aider.chat/docs/leaderboards/",
-  "total_models": 1
+  "total_models": 71
 }

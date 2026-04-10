@@ -45,5 +45,278 @@
       "value": 64000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2-sciarena",
+      "score": 975.38,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://sciarena.allen.ai/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aidanbench",
+      "score": 2233,
+      "is_self_reported": false,
+      "other_info": "Thinking",
+      "source_link": "https://aidanbench.com/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aidanbench",
+      "score": 1968,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 64.9,
+      "is_self_reported": false,
+      "other_info": "32k Thinking",
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 60.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 80,
+      "is_self_reported": true,
+      "other_info": "64k Thinking",
+      "source_link": "https://www.anthropic.com/news/claude-3-7-sonnet",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 61.3,
+      "is_self_reported": true,
+      "other_info": "Thinking",
+      "source_link": null,
+      "rank": 22
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 28.6,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 21.2,
+      "is_self_reported": false,
+      "other_info": "8k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 13.6,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 11.6,
+      "is_self_reported": false,
+      "other_info": "1k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.9,
+      "is_self_reported": false,
+      "other_info": "8k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.7,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.4,
+      "is_self_reported": false,
+      "other_info": "1k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 19.76,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 14.71,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 6.311,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.923,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1082.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 84.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-3-7-sonnet",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 78.2,
+      "is_self_reported": true,
+      "other_info": "Thinking",
+      "source_link": null,
+      "rank": 22
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 166,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 67.43,
+      "is_self_reported": false,
+      "other_info": "64k Thinking",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 58.48,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://livebench.ai/#/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1385,
+      "is_self_reported": false,
+      "other_info": "32k Thinking",
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1374,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1357.03,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.336,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.192,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 46.4,
+      "is_self_reported": false,
+      "other_info": "Thinking",
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 44.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.88,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.73,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 9
+    }
+  ]
 }

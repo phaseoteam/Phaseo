@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "hellaswag",
+  "benchmark_name": "HellaSwag",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 24
+}

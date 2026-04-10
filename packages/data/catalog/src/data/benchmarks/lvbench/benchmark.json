@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "lvbench",
+  "benchmark_name": "LVBench",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 43
+}

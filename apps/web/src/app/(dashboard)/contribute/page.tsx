@@ -7,7 +7,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
 type StaticContributor = {
 	name?: string;
@@ -24,11 +24,13 @@ type StaticSponsor = {
 	url?: string;
 };
 
-export const metadata: Metadata = {
-	title: "Contributors & Sponsors | AI Stats",
+export const metadata = buildMetadata({
+	title: "Contributors & Sponsors",
 	description:
 		"Meet the contributors and sponsors supporting AI Stats, browse community profiles and contribution history, and find clear ways to participate, sponsor, or help improve the platform.",
-};
+	path: "/contribute",
+	keywords: ["AI Stats contributors", "AI sponsors", "open source contributors"],
+});
 
 const staticSponsors = null;
 

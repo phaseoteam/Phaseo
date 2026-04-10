@@ -3,6 +3,7 @@
   "benchmark_name": "MMMU",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://mmmu-benchmark.github.io/#leaderboard",
-  "total_models": 0
+  "total_models": 120
 }

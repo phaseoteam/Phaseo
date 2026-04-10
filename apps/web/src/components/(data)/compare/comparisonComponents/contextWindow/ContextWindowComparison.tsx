@@ -52,7 +52,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 	return (
 		<>
 			<Link
-				href={`/models/${encodeURIComponent(first.id)}`}
+				href={`/models/${first.id}`}
 				className="group"
 			>
 				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -62,7 +62,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 			accepts {first.input_context_length?.toLocaleString() ?? "-"} input
 			tokens compared to{" "}
 			<Link
-				href={`/models/${encodeURIComponent(second.id)}`}
+				href={`/models/${second.id}`}
 				className="group"
 			>
 				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -71,7 +71,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 			</Link>
 			&apos;s {second.input_context_length?.toLocaleString() ?? "-"}.{" "}
 			<Link
-				href={`/models/${encodeURIComponent(first.id)}`}
+				href={`/models/${first.id}`}
 				className="group"
 			>
 				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -81,7 +81,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 			can generate responses up to{" "}
 			{first.output_context_length?.toLocaleString() ?? "-"} tokens, while{" "}
 			<Link
-				href={`/models/${encodeURIComponent(second.id)}`}
+				href={`/models/${second.id}`}
 				className="group"
 			>
 				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -189,9 +189,9 @@ export default function ContextWindowComparison({
 								/>
 								<div className="font-semibold truncate text-base leading-tight">
 									<Link
-										href={`/models/${encodeURIComponent(
+										href={`/models/${
 											model.id
-										)}`}
+										}`}
 										className="group"
 									>
 										<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
@@ -255,3 +255,4 @@ function formatTokens(val: number | null | undefined): string {
 	if (val >= 1_000) return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
 	return val.toLocaleString();
 }
+

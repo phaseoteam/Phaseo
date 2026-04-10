@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "countbench",
+  "benchmark_name": "CountBench",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 9
+}

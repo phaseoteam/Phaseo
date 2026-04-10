@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "nl2repo",
+  "benchmark_name": "NL2Repo",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://huggingface.co/zai-org/GLM-5.1",
+  "total_models": 3
+}

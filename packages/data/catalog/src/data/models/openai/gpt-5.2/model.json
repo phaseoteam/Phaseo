@@ -20,5 +20,174 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 55.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 80,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 74.6,
+      "is_self_reported": true,
+      "other_info": "IC Diamond",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 92.4,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 34.5,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 45.5,
+      "is_self_reported": true,
+      "other_info": "With Search + Python",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 89.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 99.4,
+      "is_self_reported": true,
+      "other_info": "Feb 2025, No Tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frontier-math",
+      "score": 40.3,
+      "is_self_reported": true,
+      "other_info": "Tier 1-3 With Python",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "frontier-math",
+      "score": 14.6,
+      "is_self_reported": true,
+      "other_info": "Tier 4 With Python",
+      "source_link": "https://openai.com/index/introducing-gpt-5-2/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 12.3,
+      "is_self_reported": true,
+      "other_info": "No Reasoning",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 55.7,
+      "is_self_reported": true,
+      "other_info": "Low Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 72.7,
+      "is_self_reported": true,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 78.7,
+      "is_self_reported": true,
+      "other_info": "High Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 86.2,
+      "is_self_reported": true,
+      "other_info": "Extra High Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.8,
+      "is_self_reported": true,
+      "other_info": "No Reasoning",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 9.7,
+      "is_self_reported": true,
+      "other_info": "Low Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 26.7,
+      "is_self_reported": true,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 43.3,
+      "is_self_reported": true,
+      "other_info": "High Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 52.9,
+      "is_self_reported": true,
+      "other_info": "Extra High Reasoning Effort",
+      "source_link": null,
+      "rank": 6
+    }
+  ]
 }

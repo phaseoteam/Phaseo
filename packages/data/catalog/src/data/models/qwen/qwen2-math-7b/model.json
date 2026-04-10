@@ -14,5 +14,118 @@
   "api_model_id": "qwen/qwen2-math-7b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "alignbench",
+      "score": 0.721,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "c-eval",
+      "score": 77.2,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "evalplus",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 25.3,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 106
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 82.3,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 79.9,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 26.6,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "math",
+      "score": 49.6,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.672,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 70.5,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 46
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 44.1,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 76
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.841,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "multipl-e",
+      "score": 59.1,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "theoremqa",
+      "score": 0.253,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from qwen2-7b-instruct (score=0.4706; benches=14)",
+      "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
+      "rank": 3
+    }
+  ]
 }

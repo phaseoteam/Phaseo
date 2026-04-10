@@ -104,6 +104,16 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("anthropic", "moderations")).toBeNull();
 	});
 
+	it("resolves rerank for openai-compatible providers", () => {
+		expect(resolveProviderExecutor("openai", "rerank")).toBeTruthy();
+		expect(resolveProviderExecutor("openai", "text.rerank")).toBeTruthy();
+		expect(resolveProviderExecutor("cohere", "rerank")).toBeTruthy();
+		expect(resolveProviderExecutor("fireworks", "rerank")).toBeTruthy();
+		expect(resolveProviderExecutor("voyage", "rerank")).toBeTruthy();
+		expect(resolveProviderExecutor("voyageai", "rerank")).toBeTruthy();
+		expect(resolveProviderExecutor("anthropic", "rerank")).toBeNull();
+	});
+
 	it("normalizes canonical provider ids used in routing hints", () => {
 		const variants = [
 			"OPENAI",
@@ -158,6 +168,12 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("novita", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBeTruthy();
 		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBeTruthy();
+		expect(resolveProviderExecutor("atlas-cloud", "video.generation")).toBe(
+			EXECUTORS_BY_PROVIDER["atlas-cloud"]?.["video.generate"],
+		);
+		expect(resolveProviderExecutor("atlascloud", "video.generation")).toBe(
+			EXECUTORS_BY_PROVIDER["atlascloud"]?.["video.generate"],
+		);
 		expect(resolveProviderExecutor("fal", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("fal-ai", "video.generation")).toBeNull();
 	});

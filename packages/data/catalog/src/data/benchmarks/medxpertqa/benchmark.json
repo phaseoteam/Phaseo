@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "medxpertqa",
+  "benchmark_name": "MedXpertQA",
+  "category": "healthcare",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

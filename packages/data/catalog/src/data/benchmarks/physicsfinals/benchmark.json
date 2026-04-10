@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "physicsfinals",
+  "benchmark_name": "PhysicsFinals",
+  "category": "math",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 7
+}

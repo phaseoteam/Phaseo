@@ -14,5 +14,134 @@
   "api_model_id": "google/medgemma-1.5-4b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ct-dataset-1-macro-accuracy",
+      "score": 61.1,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mri-dataset-1-macro-accuracy",
+      "score": 64.7,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mimic-cxr-top5-macro-f1",
+      "score": 89.5,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "chexpert-cxr-top5-macro-f1",
+      "score": 48.2,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cxr14-3cond-macro-f1",
+      "score": 48.4,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "pathmcqa-accuracy",
+      "score": 70,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "wsi-path-rouge",
+      "score": 49.4,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "us-dermmcqa-accuracy",
+      "score": 73.5,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "eyepacs-accuracy",
+      "score": 76.8,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ms-cxr-t-macro-accuracy",
+      "score": 65.7,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "slake-tokenized-f1",
+      "score": 59.7,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vqa-rad-tokenized-f1",
+      "score": 48.1,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "chest-imagenome-anatomy-iou",
+      "score": 38,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "medxpertqa-accuracy",
+      "score": 20.9,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "slake-closed-accuracy",
+      "score": 82.8,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vqa-rad-closed-accuracy",
+      "score": 70.2,
+      "is_self_reported": true,
+      "other_info": "MedGemma model card benchmark table",
+      "source_link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+      "rank": 1
+    }
+  ]
 }

@@ -1,140 +1,119 @@
 import React from "react";
 import {
-	BarChart,
 	Bar,
+	BarChart,
+	CartesianGrid,
+	ResponsiveContainer,
+	Tooltip,
 	XAxis,
 	YAxis,
-	Tooltip,
-	ResponsiveContainer,
-	Legend,
-	CartesianGrid,
-	LabelList,
 } from "recharts";
 
-const PASTEL_COLORS = [
-	// sky-500, emerald-500, amber-500, indigo-500
-	"#0ea5e9", // sky-500
-	"#10b981", // emerald-500
-	"#f59e0b", // amber-500
-	"#6366f1", // indigo-500
-];
+export const BENCHMARK_SERIES_COLORS = ["#0ea5e9", "#10b981", "#f59e0b", "#6366f1"];
 
-function getMaxScores(
-	chartData: { [key: string]: string | number | null }[],
-	models: { name: string }[]
-) {
-	const maxScores: Record<string, number> = {};
-	chartData.forEach((row) => {
-		let max = -Infinity;
-		models.forEach((model) => {
-			const val =
-				typeof row[model.name] === "number"
-					? (row[model.name] as number)
-					: -Infinity;
-			if (val > max) max = val;
-		});
-		maxScores[row.benchmark as string] = max;
+interface BenchmarkBarChartProps {
+	chartData: { [key: string]: string | number | null }[];
+	models: { name: string }[];
+	allPercent: boolean;
+	CustomTooltip: React.FC<any>;
+}
+
+function getNiceMax(value: number): number {
+	if (!Number.isFinite(value) || value <= 0) return 1;
+	if (value <= 10) return 10;
+	const pow = Math.pow(10, Math.floor(Math.log10(value)));
+	return Math.ceil(value / pow) * pow;
+}
+
+function formatAxisValue(value: number, allPercent: boolean): string {
+	if (!Number.isFinite(value)) return allPercent ? "0%" : "0";
+	if (allPercent) {
+		return `${value.toLocaleString("en-US", {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 1,
+		})}%`;
+	}
+	let digits = 0;
+	if (Math.abs(value) < 1) digits = 2;
+	else if (Math.abs(value) < 10) digits = 1;
+	return value.toLocaleString("en-US", {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: digits,
 	});
-	return maxScores;
+}
+
+function extractAllSeriesValues(
+	rows: { [key: string]: string | number | null }[],
+	series: { name: string }[]
+): number[] {
+	const values: number[] = [];
+	for (const row of rows) {
+		for (const model of series) {
+			const value = row[model.name];
+			if (typeof value === "number" && Number.isFinite(value)) values.push(value);
+		}
+	}
+	return values;
 }
 
 export default function BenchmarkBarChart({
 	chartData,
 	models,
+	allPercent,
 	CustomTooltip,
-}: {
-	chartData: { [key: string]: string | number | null }[];
-	models: { name: string }[];
-	CustomTooltip: React.FC<any>;
-}) {
-	const maxScores = getMaxScores(chartData, models);
+}: BenchmarkBarChartProps) {
+	const allValues = extractAllSeriesValues(chartData, models);
+	const maxVal = Math.max(...allValues, 0);
+	const computedMax = allPercent ? Math.max(100, getNiceMax(maxVal)) : getNiceMax(maxVal);
+	const linearTicks = allPercent
+		? computedMax <= 100
+			? [0, 25, 50, 75, 100]
+			: (() => {
+					const tickCount = 5;
+					const step = Math.max(1, Math.ceil(computedMax / tickCount));
+					return Array.from({ length: tickCount + 1 }, (_, index) => index * step);
+				})()
+		: (() => {
+				const tickCount = 5;
+				const step = Math.max(1, Math.ceil(computedMax / tickCount));
+				return Array.from({ length: tickCount + 1 }, (_, index) => index * step);
+			})();
+
 	return (
-		<ResponsiveContainer width="100%" height={360}>
-			<BarChart
-				data={chartData}
-				margin={{ left: 0, right: 0, top: 0, bottom: 32 }}
-				barCategoryGap="60%"
-				barGap={2}
-			>
-				<Legend verticalAlign="top" height={64} />
+		<ResponsiveContainer width="100%" height={320}>
+			<BarChart data={chartData} margin={{ top: 4, right: 24, left: 0, bottom: 18 }}>
+				<CartesianGrid strokeDasharray="3 3" vertical={false} />
 				<XAxis
 					type="category"
 					dataKey="benchmark"
-					fontSize={12}
-					textAnchor="end"
-					angle={-10}
+					tick={{ fontSize: 12 }}
 					interval={0}
-					minTickGap={0}
 					axisLine={false}
+					tickLine={false}
+					angle={-15}
+					textAnchor="end"
+					height={56}
 				/>
 				<YAxis
 					type="number"
-					domain={[0, 100]}
+					domain={[0, computedMax]}
+					ticks={linearTicks}
+					tickFormatter={(value) => formatAxisValue(Number(value), allPercent)}
 					tick={{ fontSize: 12 }}
 					axisLine={false}
-					interval={0}
-					allowDecimals={false}
 					tickLine={false}
 				/>
-				<CartesianGrid
-					stroke="#d1d5db"
-					strokeDasharray="0 0 0 0"
-					horizontal
-					vertical={false}
-				/>
 				<Tooltip content={<CustomTooltip />} />
-				{models.map((model, idx) => (
+				{models.map((model, index) => (
 					<Bar
 						key={model.name}
 						dataKey={model.name}
-						fill={PASTEL_COLORS[idx % PASTEL_COLORS.length]}
-						barSize={40}
+						name={model.name}
+						fill={BENCHMARK_SERIES_COLORS[index % BENCHMARK_SERIES_COLORS.length]}
+						radius={[4, 4, 0, 0]}
+						maxBarSize={22}
 						isAnimationActive={false}
-						shape={(props: any) => {
-							const { x, y, width, height, payload } = props;
-							const value = props[model.name];
-							const max = maxScores[payload.benchmark];
-							// Find all model values for this benchmark
-							const values = models.map((m) =>
-								typeof payload[m.name] === "number"
-									? payload[m.name]
-									: -Infinity
-							);
-							const localMax = Math.max(...values);
-							const faded = value !== localMax;
-							return (
-								<rect
-									x={x}
-									y={y}
-									width={width}
-									height={height}
-									fill={
-										PASTEL_COLORS[
-											idx % PASTEL_COLORS.length
-										]
-									}
-									fillOpacity={faded ? 0.5 : 1}
-								/>
-							);
-						}}
-					>
-						<LabelList
-							dataKey={model.name}
-							position="top"
-							formatter={(value: unknown) => {
-								const numericValue =
-									typeof value === "number"
-										? value
-										: typeof value === "string"
-											? Number(value)
-											: NaN;
-								return Number.isFinite(numericValue)
-									? numericValue.toFixed(1)
-									: "";
-							}}
-							fontSize={12}
-						/>
-					</Bar>
+					/>
 				))}
 			</BarChart>
 		</ResponsiveContainer>

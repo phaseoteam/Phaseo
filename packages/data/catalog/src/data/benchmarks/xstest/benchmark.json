@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "xstest",
+  "benchmark_name": "XSTest",
+  "category": "safety",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 10
+}

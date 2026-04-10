@@ -194,7 +194,7 @@ export function TierTiles({
 	);
 
 	return (
-		<div className={dense ? "space-y-1" : "space-y-1.5"}>
+		<div className={dense ? "space-y-0.5" : "space-y-1.5"}>
 			{tiers.map((t, i) => (
 				<div key={i} className="space-y-0.5">
 					<div className="flex items-baseline gap-1">
@@ -230,6 +230,7 @@ export function TokenTripleSection({
 	leadingTiles = [],
 	compact = false,
 	minimumSegments = [],
+	vertical = false,
 }: {
 	title?: string;
 	triple?: TokenTriple;
@@ -238,6 +239,7 @@ export function TokenTripleSection({
 	leadingTiles?: Array<{ label: string; value: string }>;
 	compact?: boolean;
 	minimumSegments?: Array<"Input" | "Cache Reads" | "Cache Writes" | "Output">;
+	vertical?: boolean;
 }) {
 	if (!triple) return null;
 	const baseSegments = [
@@ -267,32 +269,47 @@ export function TokenTripleSection({
 			content: <TierTiles tiers={s.tiers} dense={compact} />,
 		})),
 	];
+	const columnsWrapClass = vertical
+		? "grid grid-cols-1 gap-1"
+		: "grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800";
+	const columnClass = vertical
+		? "min-w-0 rounded-md border border-zinc-200/70 px-1 py-1 dark:border-zinc-800"
+		: "min-w-0 px-1 py-1 sm:min-w-[140px] sm:flex-1 sm:px-3 sm:py-2";
+	const wrapperClass = vertical ? "space-y-1" : "space-y-1.5";
+	const titleClass = vertical ? "mb-0 text-xs text-muted-foreground" : "mb-0.5 text-xs text-muted-foreground";
+	const contentClass = vertical ? "space-y-0" : "space-y-0.5";
 
 	return (
-		<div className="space-y-1.5">
+		<div className={wrapperClass}>
 			{!hideHeader ? (
 				<div className="flex items-center justify-between">
 					<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
 					<span className="text-xs text-muted-foreground">{headerRight ?? "Per 1M tokens"}</span>
 				</div>
 			) : null}
-				<div className="w-full overflow-visible sm:overflow-x-auto">
-					<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
-							{columns.map((column) => (
-								<div key={column.key} className="min-w-0 px-1 py-1 sm:min-w-[140px] sm:flex-1 sm:px-3 sm:py-2">
-									{column.title ? (
-										<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
-									) : null}
-								<div className="space-y-0.5">{column.content}</div>
-							</div>
-						))}
+					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
+						<div className={columnsWrapClass}>
+								{columns.map((column) => (
+									<div key={column.key} className={columnClass}>
+										{column.title ? (
+											<div className={titleClass}>{column.title}</div>
+										) : null}
+									<div className={contentClass}>{column.content}</div>
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
-			</div>
-		);
+			);
 }
 
-export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
+export function ImageGenSection({
+	rows,
+	vertical = false,
+}: {
+	rows?: QualityRow[];
+	vertical?: boolean;
+}) {
 	if (!rows || !rows.length) return null;
 
 	const qualityRows = rows.map((row) => ({
@@ -303,19 +320,27 @@ export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
 		(max, row) => Math.max(max, ...row.items.map((item) => countUsdDecimals(item.price))),
 		0,
 	);
+	const columnsWrapClass = vertical
+		? "grid grid-cols-1 gap-1"
+		: "grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800";
+	const columnClass = vertical
+		? "min-w-0 rounded-md border border-zinc-200/70 px-1 py-1 dark:border-zinc-800"
+		: "min-w-0 space-y-0.5 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2";
+	const wrapperClass = vertical ? "space-y-1" : "space-y-1.5";
+	const innerStackClass = vertical ? "space-y-0.5" : "space-y-1";
 
 	return (
-		<div className="space-y-1.5">
+		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
 				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image Generation</h4>
 				<span className="text-xs text-muted-foreground">Per image</span>
 			</div>
-				<div className="w-full overflow-visible sm:overflow-x-auto">
-					<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
-						{qualityRows.map((row, rowIndex) => (
-							<div key={`${row.quality}-${rowIndex}`} className="min-w-0 space-y-0.5 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2">
-								<div className="text-xs text-muted-foreground">{row.quality}</div>
-								<div className="space-y-1">
+					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
+						<div className={columnsWrapClass}>
+							{qualityRows.map((row, rowIndex) => (
+								<div key={`${row.quality}-${rowIndex}`} className={columnClass}>
+									<div className="text-xs text-muted-foreground">{row.quality}</div>
+									<div className={innerStackClass}>
 									{row.items.map((item, itemIndex) => {
 									const label = item.label || "Any resolution";
 									return (
@@ -353,6 +378,7 @@ export function VideoGenSection({
 	rows,
 	showAudioVariants = false,
 	audioHints = [],
+	vertical = false,
 }: {
 	rows?: ResolutionRow[];
 	showAudioVariants?: boolean;
@@ -361,6 +387,7 @@ export function VideoGenSection({
 		price: number;
 		audioMode: "with-audio" | "without-audio";
 	}>;
+	vertical?: boolean;
 }) {
 	if (!rows || !rows.length) return null;
 
@@ -453,22 +480,33 @@ export function VideoGenSection({
 		(max, item) => Math.max(max, countUsdDecimals(item.price)),
 		0,
 	);
+	const columnsWrapClass = vertical
+		? "grid grid-cols-1 gap-1"
+		: "grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800";
+	const resolutionColumnClass = vertical
+		? "min-w-0 rounded-md border border-zinc-200/70 px-1 py-1 dark:border-zinc-800"
+		: "min-w-0 px-1 py-1 sm:min-w-[180px] sm:flex-1 sm:px-3 sm:py-2";
+	const audioColumnClass = vertical
+		? "min-w-0 rounded-md border border-zinc-200/70 px-1 py-1 dark:border-zinc-800"
+		: "min-w-0 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2";
+	const wrapperClass = vertical ? "space-y-1" : "space-y-1.5";
+	const itemStackClass = vertical ? "space-y-0.5" : "space-y-1";
 
 	return (
-		<div className="space-y-1.5">
+		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
 				<h4 className="text-xs font-semibold tracking-wide text-foreground">Video Generation</h4>
 				{hasSingleUnit ? <span className="text-xs text-muted-foreground">{unitEntries[0][0]}</span> : null}
 			</div>
-			{showAudioVariants ? (
-					<div className="w-full overflow-visible sm:overflow-x-auto">
-						{(() => {
+				{showAudioVariants ? (
+						<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
+							{(() => {
 						const withAudioItems = items.filter((item) => item.audioMode === "with-audio");
 						const withoutAudioItems = items.filter((item) => item.audioMode === "without-audio");
 						const hasExplicitSplit = withAudioItems.length > 0 || withoutAudioItems.length > 0;
 						if (!hasExplicitSplit) {
 							return (
-									<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+										<div className={columnsWrapClass}>
 										{Array.from(
 										items.reduce((acc, item) => {
 											const list = acc.get(item.resolution) ?? [];
@@ -479,9 +517,9 @@ export function VideoGenSection({
 									)
 										.sort(([a], [b]) => compareResolutionLabels(a, b))
 										.map(([resolution, resolutionItems]) => (
-												<div key={resolution} className="min-w-0 px-1 py-1 sm:min-w-[180px] sm:flex-1 sm:px-3 sm:py-2">
+													<div key={resolution} className={resolutionColumnClass}>
 													<div className="mb-0.5 text-xs text-muted-foreground">{resolution}</div>
-												<div className="space-y-1">
+													<div className={itemStackClass}>
 													{resolutionItems
 														.sort((a, b) => a.price - b.price)
 														.map((item, index) => (
@@ -514,7 +552,7 @@ export function VideoGenSection({
 							);
 						}
 						return (
-								<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+									<div className={columnsWrapClass}>
 									{[
 									{
 										key: "with-audio",
@@ -527,10 +565,10 @@ export function VideoGenSection({
 										items: withoutAudioItems,
 									},
 								].map((column) => (
-								<div key={column.key} className="min-w-0 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2">
+									<div key={column.key} className={audioColumnClass}>
 									<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
-								{column.items.length ? (
-									<div className="space-y-1">
+									{column.items.length ? (
+										<div className={itemStackClass}>
 										{column.items.map((item, index) => (
 											<div key={`${column.key}-${item.unit}-${item.resolution}-${index}`} className="space-y-0.5">
 												<div className="flex items-baseline gap-1">
@@ -566,8 +604,8 @@ export function VideoGenSection({
 						})()}
 						</div>
 				) : (
-					<div className="w-full overflow-visible sm:overflow-x-auto">
-						<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
+						<div className={columnsWrapClass}>
 							{Array.from(
 							items.reduce((acc, item) => {
 								const list = acc.get(item.resolution) ?? [];
@@ -578,9 +616,9 @@ export function VideoGenSection({
 						)
 							.sort(([a], [b]) => compareResolutionLabels(a, b))
 							.map(([resolution, resolutionItems]) => (
-									<div key={resolution} className="min-w-0 px-1 py-1 sm:min-w-[180px] sm:flex-1 sm:px-3 sm:py-2">
+										<div key={resolution} className={resolutionColumnClass}>
 										<div className="mb-0.5 text-xs text-muted-foreground">{resolution}</div>
-									<div className="space-y-1">
+										<div className={itemStackClass}>
 										{resolutionItems
 											.sort((a, b) => a.price - b.price)
 											.map((item, index) => (
@@ -619,9 +657,11 @@ export function VideoGenSection({
 export function InputsSection({
 	rows,
 	title,
+	compact = false,
 }: {
 	rows?: UsageRow[];
 	title: string;
+	compact?: boolean;
 }) {
 	if (!rows?.length) return null;
 
@@ -645,13 +685,16 @@ export function InputsSection({
 		0,
 	);
 
+	const wrapperClass = compact ? "space-y-1" : "space-y-1.5";
+	const listClass = compact ? "space-y-0.5" : "space-y-1";
+
 	return (
-		<div className="space-y-1.5">
+		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
 				<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
 				{hasSingleUnit ? <span className="text-xs text-muted-foreground">{unitEntries[0][0]}</span> : null}
 			</div>
-			<div className="space-y-1">
+			<div className={listClass}>
 				{items.map((item, index) => {
 					const label = item.label && item.label !== "All usage" ? item.label : "All usage";
 					return (
@@ -722,20 +765,28 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 	);
 }
 
-export function RequestsSection({ rows }: { rows?: TokenTier[] }) {
+export function RequestsSection({
+	rows,
+	compact = false,
+}: {
+	rows?: TokenTier[];
+	compact?: boolean;
+}) {
 	if (!rows?.length) return null;
 	const sharedDecimals = rows.reduce(
 		(max, tier) => Math.max(max, countUsdDecimals(tier.price)),
 		0,
 	);
+	const wrapperClass = compact ? "space-y-1" : "space-y-1.5";
+	const listClass = compact ? "space-y-0.5" : "space-y-1";
 
 	return (
-		<div className="space-y-1.5">
+		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
 				<h4 className="text-xs font-semibold tracking-wide text-foreground">Requests</h4>
 				<span className="text-xs text-muted-foreground">Per request</span>
 			</div>
-			<div className="space-y-1">
+			<div className={listClass}>
 				{rows.map((t, i) => (
 					<div key={`request-${i}`} className="space-y-0.5">
 						<div className="flex items-baseline gap-1">
@@ -766,10 +817,12 @@ export function UpcomingPricingSection({
 	rows,
 	title = "Upcoming Pricing",
 	compact = false,
+	vertical = false,
 }: {
 	rows?: UpcomingPricingChange[];
 	title?: string;
 	compact?: boolean;
+	vertical?: boolean;
 }) {
 	if (!rows?.length) return null;
 
@@ -788,7 +841,7 @@ export function UpcomingPricingSection({
 		? "space-y-1 rounded-md border border-zinc-200/70 bg-zinc-50/70 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/25"
 		: "space-y-1.5 rounded-md border border-zinc-200/70 bg-zinc-50/70 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/25";
 	const gridClass =
-		visibleRows.length <= 1
+		vertical || visibleRows.length <= 1
 			? "grid-cols-1"
 			: visibleRows.length === 2
 			? "grid-cols-1 sm:grid-cols-2"
@@ -821,10 +874,14 @@ export function UpcomingPricingSection({
 						? row.subtitle ?? row.unitLabel
 						: [row.title, row.subtitle ?? row.unitLabel].filter(Boolean).join(" - ");
 
+					const rowClass = vertical
+						? "space-y-0 rounded-md border border-zinc-200/70 bg-background/70 px-1.5 py-1 dark:border-zinc-800 dark:bg-zinc-900/30"
+						: "space-y-1 rounded-md border border-zinc-200/70 bg-background/70 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/30";
+
 					return (
 						<div
 							key={`upcoming-${row.title}-${row.effectiveFrom}-${i}`}
-							className="space-y-1 rounded-md border border-zinc-200/70 bg-background/70 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/30"
+							className={rowClass}
 						>
 							<div className="flex items-baseline gap-1.5">
 								<span className={cn("inline-flex items-center gap-1 tabular-nums", trendClass)}>

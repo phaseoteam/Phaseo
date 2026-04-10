@@ -45,5 +45,38 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 1423,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 67.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/fed9cc193a14b84131812372d8d5857f8f304c52/Model_Card_Claude_3_Addendum.pdf",
+      "rank": 58
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1338,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 27.5,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 19
+    }
+  ]
 }

@@ -35,6 +35,9 @@ describe("detectProtocol", () => {
 		expect(detectProtocol("moderations", "/v1/moderations")).toBe(
 			"openai.moderations",
 		);
+		expect(detectProtocol("rerank", "/v1/rerank")).toBe(
+			"openai.rerank",
+		);
 	});
 });
 

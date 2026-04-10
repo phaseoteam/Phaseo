@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mathverse-mini",
+  "benchmark_name": "MathVerse-Mini",
+  "category": "math",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

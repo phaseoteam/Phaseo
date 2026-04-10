@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "openai-mrcr:-2-needle-128k",
+  "benchmark_name": "OpenAI-MRCR: 2 needle 128k",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 13
+}

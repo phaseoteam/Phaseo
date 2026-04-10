@@ -65,7 +65,7 @@
   {
     "api_model_id": "moonshotai/kimi-k2",
     "provider_api_model_id": "baseten:moonshotai/kimi-k2",
-    "provider_model_slug": null,
+    "provider_model_slug": "kimi-k2",
     "internal_model_id": "moonshotai/kimi-k2-2025-07-11",
     "is_active_gateway": false,
     "quantization_scheme": null,

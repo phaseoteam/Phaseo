@@ -53,5 +53,22 @@
       "value": 398000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 36.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/ai21labs/AI21-Jamba-1.5-Large",
+      "rank": 97
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1283,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 47
+    }
+  ]
 }

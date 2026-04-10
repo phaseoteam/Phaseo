@@ -4,6 +4,7 @@ import Link from "next/link";
 import { memo, useState, type CSSProperties, type MouseEvent } from "react";
 import {
 	ArrowUpRight,
+	ArrowUpDown,
 	Check,
 	Copy,
 	Type,
@@ -48,6 +49,7 @@ const MODALITY_DISPLAY_ORDER = [
 	"image",
 	"audio",
 	"video",
+	"rerank",
 	"embedding",
 	"moderation",
 ] as const;
@@ -122,6 +124,9 @@ function toTitleLabel(value: string): string {
 function normalizeModalityOrderKey(value: string): string {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("embed")) return "embedding";
+	if (normalized.includes("rerank") || normalized.includes("re rank")) {
+		return "rerank";
+	}
 	if (normalized.includes("moderat")) return "moderation";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
@@ -259,6 +264,9 @@ function formatFromPrice(
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("embed")) return Binary;
+	if (normalized.includes("rerank") || normalized.includes("re rank")) {
+		return ArrowUpDown;
+	}
 	if (normalized.includes("moderat")) return Shield;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("image")) return ImageIcon;

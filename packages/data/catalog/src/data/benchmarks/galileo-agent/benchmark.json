@@ -3,6 +3,7 @@
   "benchmark_name": "Galileo Agent",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://huggingface.co/spaces/galileo-ai/agent-leaderboard",
   "total_models": 0
 }

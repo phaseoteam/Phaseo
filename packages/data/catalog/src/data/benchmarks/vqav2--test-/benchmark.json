@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vqav2-(test)",
+  "benchmark_name": "VQAv2 (test)",
+  "category": "image_to_text",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 2
+}

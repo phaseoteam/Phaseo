@@ -57,5 +57,14 @@
       "value": 2000000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 19.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
+      "rank": 110
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "factscore",
+  "benchmark_name": "FactScore",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

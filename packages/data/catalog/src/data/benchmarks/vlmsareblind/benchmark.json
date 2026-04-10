@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vlmsareblind",
+  "benchmark_name": "VLMsAreBlind",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

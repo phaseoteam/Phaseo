@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmmu-(validation)",
+  "benchmark_name": "MMMU (validation)",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

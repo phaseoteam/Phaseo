@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export const metadata: Metadata = buildMetadata({
-	title: "About AI Stats",
+	title: "About AI Stats: Model Database & Gateway",
 	description:
 		"Learn what AI Stats does, how the gateway and model directory work together, and where to find updates, pricing, and platform policies.",
 	path: "/about",

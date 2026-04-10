@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "sat-math",
+  "benchmark_name": "SAT Math",
+  "category": "math",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

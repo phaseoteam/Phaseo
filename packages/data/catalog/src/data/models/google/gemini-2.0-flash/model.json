@@ -41,5 +41,238 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 22.2,
+      "is_self_reported": true,
+      "other_info": "Whole",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 32,
+      "is_self_reported": true,
+      "other_info": "Single Attempt",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 27.5,
+      "is_self_reported": true,
+      "other_info": "Single Attempt",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 77
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 775.3,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 78.3,
+      "is_self_reported": true,
+      "other_info": "Single Attempt",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 60.1,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 5.1,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1362,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1039.97,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": "Lite",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 83.4,
+      "is_self_reported": true,
+      "other_info": "Lite",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 76.7,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 71.7,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 30.7,
+      "is_self_reported": false,
+      "other_info": "Thinking",
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 29.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 29.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "bird-sql-(dev)",
+      "score": 56.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "covost2",
+      "score": 39.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "egoschema",
+      "score": 71.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 83.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 62.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 71
+    },
+    {
+      "benchmark_id": "hiddenmath",
+      "score": 63,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 35.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "math",
+      "score": 89.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 76.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 70.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mrcr",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "natural2code",
+      "score": 92.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibe-eval",
+      "score": 56.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
+      "rank": 4
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-index",
+  "benchmark_name": "AA-Index",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

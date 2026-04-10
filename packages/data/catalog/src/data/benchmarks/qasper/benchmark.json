@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "qasper",
+  "benchmark_name": "Qasper",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

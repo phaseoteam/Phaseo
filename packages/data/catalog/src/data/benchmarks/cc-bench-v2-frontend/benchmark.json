@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cc-bench-v2-frontend",
+  "benchmark_name": "CC-Bench-V2 Frontend",
+  "category": "coding",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

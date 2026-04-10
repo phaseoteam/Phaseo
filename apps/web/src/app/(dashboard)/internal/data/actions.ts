@@ -9,6 +9,12 @@ import {
 } from "@/lib/cache/revalidateDataTags";
 import { updateModel } from "@/app/(dashboard)/models/actions";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
+import {
+	MODEL_MODALITY_OPTIONS,
+	normalizeCapabilityStatus,
+	normalizeModelStatus,
+	type CapabilityStatusOption,
+} from "@/lib/models/editorOptions";
 
 async function requireAdmin() {
 	const supabase = await createClient();
@@ -36,7 +42,7 @@ function optionalString(v: FormDataEntryValue | null) {
 	return trimmed.length ? trimmed : null;
 }
 
-const CORE_TYPE_OPTIONS = ["text", "image", "audio", "video"] as const;
+const CORE_TYPE_OPTIONS = MODEL_MODALITY_OPTIONS;
 const MODEL_DETAIL_NAME_OPTIONS = [
 	"input_context_length",
 	"output_context_length",
@@ -516,6 +522,8 @@ export async function createModelAction(formData: FormData) {
 			input_modalities?: string[] | string | null;
 			output_modalities?: string[] | string | null;
 			quantization_scheme?: string | null;
+			context_length?: number | null;
+			max_output_tokens?: number | null;
 			effective_from?: string | null;
 			effective_to?: string | null;
 		}>
@@ -526,7 +534,7 @@ export async function createModelAction(formData: FormData) {
 			provider_id?: string;
 			api_model_id?: string;
 			capability_id?: string;
-			status?: "active" | "deranked" | "disabled" | null;
+			status?: CapabilityStatusOption | null;
 			max_input_tokens?: number | null;
 			max_output_tokens?: number | null;
 			notes?: string | null;
@@ -581,6 +589,19 @@ export async function createModelAction(formData: FormData) {
 			other_info?: unknown;
 		}>
 	>(formData.get("subscription_plan_models_payload"), "subscription_plan_models_payload", []);
+	const newSubscriptionPlans = parseJsonField<
+		Array<{
+			plan_uuid?: string;
+			plan_id?: string;
+			name?: string;
+			frequency?: string | null;
+			price?: number | string | null;
+			currency?: string | null;
+			description?: string | null;
+			link?: string | null;
+			organisation_id?: string | null;
+		}>
+	>(formData.get("new_subscription_plans_payload"), "new_subscription_plans_payload", []);
 	const modelDetails = parseJsonField<
 		Array<{
 			detail_name?: string;
@@ -640,7 +661,7 @@ export async function createModelAction(formData: FormData) {
 			name,
 			organisation_id: organisationId,
 			family_id: resolvedFamilyId,
-			status: optionalString(formData.get("status")) ?? "active",
+			status: normalizeModelStatus(optionalString(formData.get("status"))),
 			previous_model_id: optionalString(formData.get("previous_model_id")),
 			release_date: optionalString(formData.get("release_date")),
 			announcement_date: optionalString(formData.get("announcement_date")),
@@ -680,13 +701,14 @@ export async function createModelAction(formData: FormData) {
 	const providerModelRows = providerModels
 		.filter((row) => row.provider_id)
 		.map((row) => {
+			const apiModelId = row.api_model_id?.trim() || modelId;
 			const overrideRaw =
 				typeof row.prompt_training_policy_override === "string"
 					? row.prompt_training_policy_override.trim()
 					: "";
 			return {
 				provider_id: row.provider_id!.trim(),
-				api_model_id: modelId,
+				api_model_id: apiModelId,
 				provider_model_slug: row.provider_model_slug?.trim() || null,
 				prompt_training_policy_override: overrideRaw
 					? normalizeProviderPromptTrainingPolicy(overrideRaw)
@@ -703,6 +725,14 @@ export async function createModelAction(formData: FormData) {
 					? row.output_modalities.join(",")
 					: (typeof row.output_modalities === "string" ? row.output_modalities : null),
 				quantization_scheme: row.quantization_scheme?.trim() || null,
+				context_length:
+					typeof row.context_length === "number" && Number.isFinite(row.context_length)
+						? row.context_length
+						: null,
+				max_output_tokens:
+					typeof row.max_output_tokens === "number" && Number.isFinite(row.max_output_tokens)
+						? row.max_output_tokens
+						: null,
 				effective_from: row.effective_from || null,
 				effective_to: row.effective_to || null,
 			};
@@ -712,9 +742,9 @@ export async function createModelAction(formData: FormData) {
 		.filter((row) => row.provider_id && row.capability_id)
 		.map((row) => ({
 			provider_id: row.provider_id!.trim(),
-			api_model_id: modelId,
+			api_model_id: row.api_model_id?.trim() || modelId,
 			capability_id: row.capability_id!.trim(),
-			status: row.status ?? "active",
+			status: normalizeCapabilityStatus(row.status),
 			max_input_tokens: row.max_input_tokens ?? null,
 			max_output_tokens: row.max_output_tokens ?? null,
 			notes: row.notes?.trim() || null,
@@ -736,7 +766,7 @@ export async function createModelAction(formData: FormData) {
 		.filter((row) => row.provider_id && row.capability_id && row.meter)
 		.map((row) => ({
 			provider_id: row.provider_id!.trim(),
-			api_model_id: modelId,
+			api_model_id: row.api_model_id?.trim() || modelId,
 			capability_id: row.capability_id!.trim(),
 			pricing_plan: row.pricing_plan?.trim() || "standard",
 			meter: row.meter!.trim(),
@@ -774,13 +804,83 @@ export async function createModelAction(formData: FormData) {
 		})
 		.filter((row): row is { platform: (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]; url: string } => Boolean(row));
 
+		const insertedInlinePlanRows = newSubscriptionPlans
+			.map((row) => {
+				const planId = row.plan_id?.trim();
+				const planName = row.name?.trim();
+				if (!planId || !planName) return null;
+				const priceValue = Number(row.price ?? 0);
+				return {
+					plan_uuid: row.plan_uuid?.trim() || crypto.randomUUID(),
+					plan_id: planId,
+					name: planName,
+					organisation_id: row.organisation_id?.trim() || canonicalOrganisationId,
+					description: row.description?.trim() || null,
+					frequency: row.frequency?.trim() || "monthly",
+					price: Number.isFinite(priceValue) ? priceValue : 0,
+					currency: row.currency?.trim() || "USD",
+					link: row.link?.trim() || null,
+					other_info: {},
+				};
+			})
+			.filter(
+				(
+					row
+				): row is {
+					plan_uuid: string;
+					plan_id: string;
+					name: string;
+					organisation_id: string;
+					description: string | null;
+					frequency: string;
+					price: number;
+					currency: string;
+					link: string | null;
+					other_info: Record<string, never>;
+				} => Boolean(row)
+			);
+
+		if (insertedInlinePlanRows.length > 0) {
+			const { error: planInsertError } = await supabase
+				.from("data_subscription_plans")
+				.upsert(insertedInlinePlanRows, { onConflict: "plan_uuid" });
+			if (planInsertError) throw new Error(planInsertError.message);
+		}
+
+		const mergedSubscriptionPlanModels = [
+			...subscriptionPlanModels
+				.filter((row) => typeof row.plan_uuid === "string" && row.plan_uuid.trim())
+				.map((row) => ({
+					plan_uuid: row.plan_uuid!.trim(),
+					model_info:
+						row.model_info && typeof row.model_info === "object"
+							? row.model_info
+							: {},
+					rate_limit:
+						row.rate_limit && typeof row.rate_limit === "object"
+							? row.rate_limit
+							: {},
+					other_info:
+						row.other_info && typeof row.other_info === "object"
+							? row.other_info
+							: {},
+				})),
+			...insertedInlinePlanRows.map((row) => ({
+				plan_uuid: row.plan_uuid,
+				model_info: {},
+				rate_limit: {},
+				other_info: {},
+			})),
+		];
+
 		if (
 			providerModelRows.length ||
 			providerCapabilityRows.length ||
 			benchmarkRows.length ||
 			pricingRuleRows.length ||
 			modelDetailRows.length ||
-			modelLinkRows.length
+			modelLinkRows.length ||
+			mergedSubscriptionPlanModels.length
 		) {
 			await updateModel({
 				modelId,
@@ -790,23 +890,7 @@ export async function createModelAction(formData: FormData) {
 				pricing_rules: pricingRuleRows,
 				model_details: modelDetailRows,
 				links: modelLinkRows,
-				subscription_plan_models: subscriptionPlanModels
-					.filter((row) => typeof row.plan_uuid === "string" && row.plan_uuid.trim())
-					.map((row) => ({
-						plan_uuid: row.plan_uuid!.trim(),
-						model_info:
-							row.model_info && typeof row.model_info === "object"
-								? row.model_info
-								: {},
-						rate_limit:
-							row.rate_limit && typeof row.rate_limit === "object"
-								? row.rate_limit
-								: {},
-						other_info:
-							row.other_info && typeof row.other_info === "object"
-								? row.other_info
-								: {},
-					})),
+				subscription_plan_models: mergedSubscriptionPlanModels,
 			});
 		}
 	} catch (error) {
@@ -850,7 +934,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 		.update({
 			name,
 			organisation_id: organisationId,
-			status: optionalString(formData.get("status")),
+			status: normalizeModelStatus(optionalString(formData.get("status"))),
 			previous_model_id: optionalString(formData.get("previous_model_id")),
 			release_date: optionalString(formData.get("release_date")),
 			announcement_date: optionalString(formData.get("announcement_date")),

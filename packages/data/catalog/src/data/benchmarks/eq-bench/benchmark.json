@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "eq-bench",
+  "benchmark_name": "EQ-Bench",
+  "category": "creativity",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

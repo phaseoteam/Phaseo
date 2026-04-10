@@ -3,6 +3,7 @@
   "benchmark_name": "LiveCodeBench Pro",
   "category": null,
   "ascending_order": null,
+  "type": "numerical",
   "link": null,
-  "total_models": 0
+  "total_models": 5
 }

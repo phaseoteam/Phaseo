@@ -24,5 +24,70 @@
       "value": 204800
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "bfcl-v3-multiturn",
+      "score": 76.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 76.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "gdpval-mm",
+      "score": 59,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mewc",
+      "score": 74.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "multi-swe-bench",
+      "score": 51.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 55.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 80.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "vibe-pro",
+      "score": 54.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m25",
+      "rank": 2
+    }
+  ]
 }

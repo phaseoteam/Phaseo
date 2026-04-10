@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "global-piqa",
+  "benchmark_name": "Global PIQA",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 16
+}

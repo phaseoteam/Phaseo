@@ -32,5 +32,14 @@
       "value": 2000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1195,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 65
+    }
+  ]
 }

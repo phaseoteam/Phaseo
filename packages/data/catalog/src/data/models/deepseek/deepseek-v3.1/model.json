@@ -14,5 +14,134 @@
   "api_model_id": "deepseek/deepseek-v3.1",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 68.4,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 68.4%, Thinking: 76.3%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 66.3,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 66.3%, Thinking: 93.1%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 49.8,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 49.8%, Thinking: 88.4%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 70
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 30,
+      "is_self_reported": true,
+      "other_info": "Search agent with commercial API + webpage filter + 128K context",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "browsecomp-zh",
+      "score": 49.2,
+      "is_self_reported": true,
+      "other_info": "Search agent with commercial API + webpage filter + 128K context",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 0.697,
+      "is_self_reported": true,
+      "other_info": "Codeforces Div1 rating in thinking mode",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 74.9,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 74.9%, Thinking: 80.1%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 33.5,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 33.5%, Thinking: 84.2%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 15.9,
+      "is_self_reported": true,
+      "other_info": "Thinking mode only, text-only subset",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 56.4,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 56.4%, Thinking: 74.8%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 83.7,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 83.7%, Thinking: 84.8%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 91.8,
+      "is_self_reported": true,
+      "other_info": "Non-thinking: 91.8%, Thinking: 93.7%",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 93.4,
+      "is_self_reported": true,
+      "other_info": "Search agent evaluation",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 54.5,
+      "is_self_reported": true,
+      "other_info": "Evaluated with internal code agent framework",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 66,
+      "is_self_reported": true,
+      "other_info": "Evaluated with internal code agent framework",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 31.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
+      "rank": 13
+    }
+  ]
 }

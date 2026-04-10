@@ -27,5 +27,126 @@
       "value": 32800000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 80.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 70.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 58
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 12.28,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 3.057,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 729.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 62
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1295,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.38,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.09,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 91,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "bfcl",
+      "score": 69.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 66
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 74.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 62.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 11
+    }
+  ]
 }

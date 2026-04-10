@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "creative-writing-v3",
+  "benchmark_name": "Creative Writing v3",
+  "category": "creativity",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 25
+}

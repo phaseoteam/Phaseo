@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ocrbench-v2-(zh)",
+  "benchmark_name": "OCRBench-V2 (zh)",
+  "category": "image_to_text",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 27
+}

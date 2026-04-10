@@ -28,5 +28,158 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "androidworld",
+      "score": 75.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "browsecomp-vl",
+      "score": 51.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cc-bench-v2-backend",
+      "score": 22.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cc-bench-v2-frontend",
+      "score": 68.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cc-bench-v2-repo",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "claw-eval",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "design2code",
+      "score": 0.948,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 58.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "flame-vlm-code",
+      "score": 93.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "imagemining",
+      "score": 30.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmsearch",
+      "score": 72.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmsearch-plus",
+      "score": 30,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 62.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "pinchbench",
+      "score": 80.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "simplevqa",
+      "score": 0.782,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "v-star",
+      "score": 89,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "vision2web",
+      "score": 31,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "webvoyager",
+      "score": 88.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "zclawbench",
+      "score": 57.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
+      "rank": 1
+    }
+  ]
 }

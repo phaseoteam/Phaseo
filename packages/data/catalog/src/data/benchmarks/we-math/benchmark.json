@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "we-math",
+  "benchmark_name": "We-Math",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

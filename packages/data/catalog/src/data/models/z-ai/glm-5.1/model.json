@@ -8,11 +8,165 @@
   "release_date": null,
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
+  "license": "MIT",
   "input_types": null,
   "output_types": null,
   "api_model_id": "z-ai/glm-5.1",
-  "links": [],
+  "links": [
+    {
+      "platform": "repository",
+      "url": "https://huggingface.co/zai-org/GLM-5.1"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/zai-org/GLM-5.1"
+    }
+  ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 31,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 52.3,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2026",
+      "score": 95.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 94,
+      "is_self_reported": true,
+      "other_info": "Nov. 2025",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "hmmt-feb-2026",
+      "score": 82.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "imoanswerbench",
+      "score": 83.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 86.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 58.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "nl2repo",
+      "score": 42.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 63.5,
+      "is_self_reported": true,
+      "other_info": "Terminus-2",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": "Best self-reported (Claude Code)",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "cybergym",
+      "score": 68.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 68,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 79.3,
+      "is_self_reported": true,
+      "other_info": "w/ Context Manage",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 70.6,
+      "is_self_reported": true,
+      "other_info": "τ³-Bench",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 71.8,
+      "is_self_reported": true,
+      "other_info": "Public Set",
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "tool-decathlon",
+      "score": 40.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 5634.41,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/zai-org/GLM-5.1",
+      "rank": 3
+    }
+  ]
 }

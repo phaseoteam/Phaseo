@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "vocalsound",
+  "benchmark_name": "VocalSound",
+  "category": "audio",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

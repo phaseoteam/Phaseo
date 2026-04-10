@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import {
 	AudioLines,
+	ArrowUpDown,
 	Braces,
 	FilePlus,
 	Image as ImageIcon,
@@ -32,7 +33,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/getAPIProvider";
+import type {
+	APIProviderModelListItem,
+	APIProviderModelPricingMeter,
+} from "@/lib/fetchers/api-providers/getAPIProvider";
 
 type ProviderModelsClientProps = {
 	apiProvider: string;
@@ -60,6 +64,26 @@ function formatUsd(value: number | null | undefined): string {
 	if (value >= 100) return `$${value.toFixed(0)}`;
 	if (value >= 10) return `$${value.toFixed(2)}`;
 	return `$${value.toFixed(4).replace(/\.?0+$/, "")}`;
+}
+
+function formatMeterDisplay(
+	meter: APIProviderModelPricingMeter,
+): { amount: number | null; unitLabel: string } {
+	const isPixelMeter = meter.unit === "pixel" || meter.meter.includes("pixel");
+	const isTokenMeter = meter.unit === "token" || meter.meter.includes("token");
+	if (meter.price_per_1m_usd != null && Number.isFinite(meter.price_per_1m_usd)) {
+		if (isPixelMeter) {
+			return { amount: meter.price_per_1m_usd, unitLabel: "1M pixels" };
+		}
+		if (isTokenMeter) {
+			return { amount: meter.price_per_1m_usd, unitLabel: "1M tokens" };
+		}
+	}
+
+	return {
+		amount: meter.price_per_unit_usd,
+		unitLabel: meter.display_unit_label || meter.unit || "unit",
+	};
 }
 
 function normalizeCapabilityKey(value: string): string {
@@ -96,6 +120,7 @@ const MODALITY_ICONS: Record<string, IconMeta> = {
 	image: { id: "image", label: "Image", icon: ImageIcon },
 	audio: { id: "audio", label: "Audio", icon: AudioLines },
 	video: { id: "video", label: "Video", icon: Video },
+	rerank: { id: "rerank", label: "Rerank", icon: ArrowUpDown },
 	embeddings: { id: "embeddings", label: "Embeddings", icon: Braces },
 };
 
@@ -352,6 +377,7 @@ export default function ProviderModelsClient({
 							const supportedParams = listify(model.supported_params).sort((a, b) =>
 								a.localeCompare(b),
 							);
+							const pricingMeters = model.pricing_meters ?? [];
 
 							const inputModalityIcons = resolveModalityIcons(inputModalities);
 							const outputModalityIcons = resolveModalityIcons(outputModalities);
@@ -471,26 +497,43 @@ export default function ProviderModelsClient({
 
 									<div className="space-y-2 border-t pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-4">
 										<div className="text-xs text-muted-foreground">Pricing</div>
-										<div className="text-sm">
-											Input / 1M:{" "}
-											<span className="font-semibold">
-												{formatUsd(model.input_price_per_1m_usd)}
-											</span>
-										</div>
-										<div className="text-sm">
-											Output / 1M:{" "}
-											<span className="font-semibold">
-												{formatUsd(model.output_price_per_1m_usd)}
-											</span>
-										</div>
-										{model.starting_price_usd != null &&
-										(model.input_price_per_1m_usd == null ||
-											model.output_price_per_1m_usd == null) ? (
+										{pricingMeters.length > 0 ? (
+											<div className="space-y-1.5">
+												{pricingMeters.map((meter) => {
+													const display = formatMeterDisplay(meter);
+													return (
+														<div key={`${model.model_id}-meter-${meter.meter}`}>
+															<div className="text-sm">
+																<span className="text-muted-foreground">
+																	{meter.label}:
+																</span>{" "}
+																<span className="font-semibold">
+																	{formatUsd(display.amount)}
+																</span>{" "}
+																<span className="text-muted-foreground">
+																	/ {display.unitLabel}
+																</span>
+															</div>
+															{meter.meter === "image_pixels" &&
+															meter.estimated_price_per_image_usd != null ? (
+																<div className="text-xs text-muted-foreground">
+																	~{" "}
+																	{formatUsd(meter.estimated_price_per_image_usd)} / 1024x1024
+																	image
+																</div>
+															) : null}
+														</div>
+													);
+												})}
+											</div>
+										) : model.starting_price_usd != null ? (
 											<div className="text-xs text-muted-foreground">
 												From {formatUsd(model.starting_price_usd)} /{" "}
 												{model.starting_price_unit ?? "unit"}
 											</div>
-										) : null}
+										) : (
+											<div className="text-xs text-muted-foreground">-</div>
+										)}
 									</div>
 								</div>
 							);

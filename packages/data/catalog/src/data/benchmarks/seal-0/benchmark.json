@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "seal-0",
+  "benchmark_name": "Seal-0",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 9
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "fullstackbench-zh",
+  "benchmark_name": "FullStackBench zh",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

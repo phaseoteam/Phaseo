@@ -49,5 +49,22 @@
       "value": 12000000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 40.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
+      "rank": 92
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1339,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 28
+    }
+  ]
 }

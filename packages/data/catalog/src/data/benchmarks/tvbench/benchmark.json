@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "tvbench",
+  "benchmark_name": "TVBench",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

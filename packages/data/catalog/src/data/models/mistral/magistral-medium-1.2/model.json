@@ -14,5 +14,54 @@
   "api_model_id": "mistral/magistral-medium-1.2",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 47.1,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-medium",
+      "source_link": "https://arxiv.org/pdf/2506.10910",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 73.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-medium",
+      "source_link": "https://arxiv.org/pdf/2506.10910",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 64.9,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-medium",
+      "source_link": "https://arxiv.org/pdf/2506.10910",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 70.8,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-medium",
+      "source_link": "https://arxiv.org/pdf/2506.10910",
+      "rank": 54
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 9,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-medium",
+      "source_link": "https://arxiv.org/pdf/2506.10910",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 50.3,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from magistral-medium",
+      "source_link": "https://arxiv.org/pdf/2506.10910",
+      "rank": 30
+    }
+  ]
 }

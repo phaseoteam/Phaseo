@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "omnigaia",
+  "benchmark_name": "OmniGAIA",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

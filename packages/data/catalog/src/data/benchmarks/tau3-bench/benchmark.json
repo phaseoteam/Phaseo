@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "tau3-bench",
+  "benchmark_name": "TAU3-Bench",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

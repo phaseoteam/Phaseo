@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "multi-if",
+  "benchmark_name": "Multi-IF",
+  "category": "communication",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 44
+}

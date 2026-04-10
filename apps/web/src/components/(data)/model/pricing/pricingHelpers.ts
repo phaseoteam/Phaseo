@@ -3,7 +3,7 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 /* ---------- shared types ---------- */
 export type Direction = "input" | "output" | "cached" | "cachewrite" | "other";
 export type Modality = "text" | "image" | "audio" | "video" | "embeddings" | "multimodal" | "other";
-export type UnitClass = "token" | "image" | "video" | "minute" | "second" | "call" | "character" | "unknown";
+export type UnitClass = "token" | "pixel" | "image" | "video" | "minute" | "second" | "call" | "character" | "unknown";
 
 export type Condition = { op: string; path: string; value: any; or_group?: number; and_index?: number };
 
@@ -121,6 +121,9 @@ export function unitLabel(unit: UnitClass, unitSize?: number | null) {
     const u = Number(unitSize ?? 1);
     switch (unit) {
         case "token": return "Per 1M tokens";
+        case "pixel":
+            if (u === 1_000_000) return "Per 1M pixels";
+            return u === 1 ? "Per pixel" : `Per ${u} pixels`;
         case "image": return u === 1 ? "Per image" : `Per ${u} images`;
         case "video": return u === 1 ? "Per video" : `Per ${u} videos`;
         case "second": return u === 1 ? "Per second" : `Per ${u} seconds`;
@@ -162,6 +165,7 @@ export function parseMeter(meter?: string, explicitUnit?: string | null): { dir:
 
     const unit: UnitClass =
         u.includes("token") ? "token" :
+            u.includes("pixel") ? "pixel" :
             u.includes("image") ? "image" :
                 (u.includes("video") || u.includes("clip")) ? "video" :
                     u.includes("minute") ? "minute" :
@@ -169,6 +173,7 @@ export function parseMeter(meter?: string, explicitUnit?: string | null): { dir:
                             u.includes("character") ? "character" :
                                 (u.includes("call") || u.includes("request")) ? "call" :
                                     m.includes("token") ? "token" :
+                                        m.includes("pixel") ? "pixel" :
                                         (m.includes("image") && !m.includes("tokens")) ? "image" :
                                             m.includes("video") ? "video" :
                                                 m.includes("minute") ? "minute" :
@@ -391,6 +396,15 @@ function buildUpcomingChangeLabels(rule: any): {
             sectionKey: "imageGen",
             title: "Image Generation",
             subtitle: [quality, resolution].filter(Boolean).join(" · ") || null,
+        };
+    }
+
+    if ((mod === "image" || mod === "video") && unit === "pixel") {
+        const scope = conciseConditionLabel(conds);
+        return {
+            sectionKey: mod === "image" ? "imageInputs" : "videoInputs",
+            title: mod === "image" ? "Image Pixels" : "Video Pixels",
+            subtitle: scope === "All usage" ? null : scope,
         };
     }
 
@@ -818,9 +832,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
 
         // 4) media inputs (per image / per second)
         if (
-            dir === "input" &&
-            ((mod === "image" && unit === "image") ||
-                (mod === "video" && (unit === "second" || unit === "minute")))
+            ((mod === "image" && unit === "pixel") || (mod === "video" && unit === "pixel")) ||
+            (dir === "input" &&
+                ((mod === "image" && unit === "image") ||
+                    (mod === "video" && (unit === "second" || unit === "minute"))))
         ) {
             const label = conciseConditionLabel(conds);
             (out.mediaInputs ??= []).push({
@@ -952,6 +967,8 @@ export function getExamplesForMeter(meter: PricingMeter): number[] {
     const meterName = meter.meter.toLowerCase();
     if (unit.includes("token")) {
         return [1000, 1_000_000, 1_000_000_000]; // 1K, 1M, 1B
+    } else if (unit.includes("pixel") || meterName.includes("pixel")) {
+        return [1_000_000, 2_000_000, 8_000_000];
     } else if (
         unit.includes("second") ||
         unit.includes("minute") ||
@@ -994,6 +1011,9 @@ export function getMeterInputConfig(
 
     if (u.includes("token")) {
         return { type: "number", step: "1000", placeholder: "e.g., 10000" };
+    }
+    if (u.includes("pixel") || m.includes("pixel")) {
+        return { type: "number", step: "1000", placeholder: "e.g., 1048576" };
     }
     if (u.includes("second") || m.includes("second")) {
         return { type: "number", step: "1", placeholder: "e.g., 60" };

@@ -14,5 +14,86 @@
   "api_model_id": "deepseek/deepseek-v3-2025-03-24",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 55.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 59.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250325",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 26.15,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 1170.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 68.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250325",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1396,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1206.74,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.174,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 27.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.95,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 14
+    }
+  ]
 }

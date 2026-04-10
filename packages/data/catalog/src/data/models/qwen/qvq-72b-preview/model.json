@@ -44,5 +44,38 @@
       "value": 72000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "mathvision",
+      "score": 35.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 71.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "olympiadbench",
+      "score": 20.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
+      "rank": 1
+    }
+  ]
 }

@@ -32,5 +32,22 @@
       "value": 10000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 40,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.amazon.science/publications/the-amazon-nova-family-of-models-technical-report-and-model-card",
+      "rank": 95
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1241,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 59
+    }
+  ]
 }

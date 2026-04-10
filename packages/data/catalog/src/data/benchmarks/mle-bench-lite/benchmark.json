@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mle-bench-lite",
+  "benchmark_name": "MLE-Bench Lite",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

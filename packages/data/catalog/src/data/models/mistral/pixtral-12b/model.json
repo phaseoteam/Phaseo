@@ -35,5 +35,102 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "chartqa",
+      "score": 81.8,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 90.7,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 61.3,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "math",
+      "score": 48.1,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 58,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "mm-if-eval",
+      "score": 0.527,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 48
+    },
+    {
+      "benchmark_id": "mm-mt-bench",
+      "score": 60.5,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 52.5,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.768,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "vqav2",
+      "score": 78.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from pixtral-12b-2409",
+      "source_link": "https://mistral.ai/news/pixtral-12b/",
+      "rank": 2
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "gdpval-mm",
+  "benchmark_name": "GDPval-MM",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

@@ -14,5 +14,654 @@
   "api_model_id": "qwen/qwen3.5-flash",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 66.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "ai2d",
+      "score": 92.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "androidworld-sr",
+      "score": 64.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "babyvision",
+      "score": 44.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "bfcl-v4",
+      "score": 68.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 61,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "browsecomp-zh",
+      "score": 62.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "cc-ocr",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "c-eval",
+      "score": 90.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 79.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 0.807,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "countbench",
+      "score": 0.978,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deep-planning",
+      "score": 22.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "dynamath",
+      "score": 87.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "embspatialbench",
+      "score": 0.845,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "erqa",
+      "score": 60.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "fullstackbench-en",
+      "score": 60.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "fullstackbench-zh",
+      "score": 57.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "global-piqa",
+      "score": 87.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 85.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "hallusion-bench",
+      "score": 70,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 92,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 89.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 48.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "hypersim",
+      "score": 0.13,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 95,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "include",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "lingoqa",
+      "score": 82,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 80.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "longbench-v2",
+      "score": 60.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "lvbench",
+      "score": 73.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mathvision",
+      "score": 86,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mathvista-mini",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "maxife",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "medxpertqa",
+      "score": 62.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mlvu",
+      "score": 85.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmbench-v1.1",
+      "score": 92.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlongbench-doc",
+      "score": 0.602,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 86.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 82.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 93.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 85.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 82.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "mmstar",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mmvu",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 60.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mvbench",
+      "score": 74.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "nova-63",
+      "score": 58.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "nuscene",
+      "score": 15.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "ocrbench",
+      "score": 89.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "odinw",
+      "score": 41.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "ojbench",
+      "score": 40.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 56.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "pmc-vqa",
+      "score": 62.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "polymath",
+      "score": 71.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 83.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "refcoco-avg",
+      "score": 0.909,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "refspatialbench",
+      "score": 0.677,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "seal-0",
+      "score": 47.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "simplevqa",
+      "score": 0.56,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "slakevqa",
+      "score": 80,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "sunrgbd",
+      "score": 0.354,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 65.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 72.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 79,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 41.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "tir-bench",
+      "score": 59.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "v-star",
+      "score": 93.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "videomme-w-o-sub.",
+      "score": 82.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "videomme-w-sub.",
+      "score": 87,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 82.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "vita-bench",
+      "score": 41.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "vlmsareblind",
+      "score": 96.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "widesearch",
+      "score": 61.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "wmt24++",
+      "score": 77.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "zerobench",
+      "score": 0.1,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "zerobench-sub",
+      "score": 0.362,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    }
+  ]
 }

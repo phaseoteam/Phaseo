@@ -15,5 +15,134 @@
   "family_id": "google/gemini-2-5",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "aider-polyglot-edit",
+      "score": 72.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 92,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 83,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 4.9,
+      "is_self_reported": false,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "global-mmlu-lite",
+      "score": 88.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 83,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 17.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "livecodebench-v5",
+      "score": 75.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 79.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "mrcr",
+      "score": 93,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mrcr-1m-(pointwise)",
+      "score": 0.829,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 50.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "vibe-eval",
+      "score": 65.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "video-mme",
+      "score": 84.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from gemini-2.5-pro",
+      "source_link": "https://deepmind.google/models/gemini/pro/",
+      "rank": 4
+    }
+  ]
 }

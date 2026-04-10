@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmbench-video",
+  "benchmark_name": "MMBench-Video",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 11
+}

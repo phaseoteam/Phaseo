@@ -3,6 +3,7 @@
   "benchmark_name": "Online Judgement Benchmark",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://arxiv.org/abs/2506.16395?utm_source=chatgpt.com",
-  "total_models": 0
+  "total_models": 8
 }

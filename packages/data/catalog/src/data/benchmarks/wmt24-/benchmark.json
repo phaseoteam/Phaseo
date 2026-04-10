@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "wmt24++",
+  "benchmark_name": "WMT24++",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 12
+}

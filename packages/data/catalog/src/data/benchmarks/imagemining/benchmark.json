@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "imagemining",
+  "benchmark_name": "ImageMining",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}
