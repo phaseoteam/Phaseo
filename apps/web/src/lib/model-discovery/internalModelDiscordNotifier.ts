@@ -54,6 +54,14 @@ const DEFAULT_MAX_MODEL_EMBEDS = 10;
 const DEFAULT_LATEST_MODELS_URL = "https://ai-stats.phaseo.app/models";
 const DEFAULT_ASSET_BASE_URL = "https://ai-stats.phaseo.app";
 const DEFAULT_AVATAR_PATH = "/png_logo_light.png";
+const ALLOWED_DISCORD_WEBHOOK_HOSTS = new Set([
+	"discord.com",
+	"discordapp.com",
+	"canary.discord.com",
+	"ptb.discord.com",
+	"canary.discordapp.com",
+	"ptb.discordapp.com",
+]);
 
 function trimOrNull(value: string | null | undefined): string | null {
 	if (typeof value !== "string") return null;
@@ -276,6 +284,20 @@ export function validateDiscordWebhookUrl(webhookUrl: string): URL {
 	}
 	if (parsed.protocol !== "https:") {
 		throw new Error("Discord webhook URL must use https.");
+	}
+	const hostname = parsed.hostname.toLowerCase();
+	if (!ALLOWED_DISCORD_WEBHOOK_HOSTS.has(hostname)) {
+		throw new Error("Discord webhook URL host is not allowed.");
+	}
+	const segments = parsed.pathname.split("/").filter(Boolean);
+	const hasWebhookPath =
+		segments.length >= 4 &&
+		segments[0] === "api" &&
+		segments[1] === "webhooks" &&
+		segments[2].length > 0 &&
+		segments[3].length > 0;
+	if (!hasWebhookPath) {
+		throw new Error("Discord webhook URL path is invalid.");
 	}
 	return parsed;
 }

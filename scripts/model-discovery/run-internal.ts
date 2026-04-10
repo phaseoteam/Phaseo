@@ -560,13 +560,25 @@ function appendBoundedLines(lines: string[], values: string[], maxItems = 40): v
     if (values.length > maxItems) lines.push(`- ...and ${values.length - maxItems} more`);
 }
 
-function buildInternalModelLink(snapshot: ModelFileSnapshot): string | null {
-    const parts = snapshot.filePath.split(/[\\/]+/g);
+type ModelPathInfo = {
+    organisationId: string;
+    modelSlug: string;
+};
+
+function parseModelPathInfo(filePath: string): ModelPathInfo | null {
+    const parts = filePath.split(/[\\/]+/g);
     const modelsIndex = parts.indexOf("models");
     if (modelsIndex === -1 || modelsIndex + 2 >= parts.length) return null;
-    const organisationId = parts[modelsIndex + 1];
-    const modelSlug = parts[modelsIndex + 2];
+    const organisationId = parts[modelsIndex + 1]?.trim();
+    const modelSlug = parts[modelsIndex + 2]?.trim();
     if (!organisationId || !modelSlug) return null;
+    return { organisationId, modelSlug };
+}
+
+function buildInternalModelLink(snapshot: ModelFileSnapshot): string | null {
+    const pathInfo = parseModelPathInfo(snapshot.filePath);
+    if (!pathInfo) return null;
+    const { organisationId, modelSlug } = pathInfo;
     return `${MODEL_DETAILS_BASE_URL}/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(modelSlug)}`;
 }
 
@@ -574,11 +586,17 @@ function getOrganisationIdFromSnapshot(snapshot: ModelFileSnapshot): string | nu
     const fromModelId = snapshot.modelId?.split("/")[0]?.trim().toLowerCase();
     if (fromModelId) return fromModelId;
 
-    const parts = snapshot.filePath.split(/[\\/]+/g);
-    const modelsIndex = parts.indexOf("models");
-    if (modelsIndex === -1 || modelsIndex + 1 >= parts.length) return null;
-    const fromPath = parts[modelsIndex + 1]?.trim().toLowerCase();
-    return fromPath || null;
+    const pathInfo = parseModelPathInfo(snapshot.filePath);
+    return pathInfo?.organisationId.toLowerCase() ?? null;
+}
+
+function resolveModelIdFromSnapshot(snapshot: ModelFileSnapshot): string | null {
+    const fromFile = snapshot.modelId?.trim();
+    if (fromFile) return fromFile;
+    const pathInfo = parseModelPathInfo(snapshot.filePath);
+    if (!pathInfo) return null;
+    // Preserve notifications when model.json is malformed and missing model_id.
+    return `${pathInfo.organisationId}/${pathInfo.modelSlug}`;
 }
 
 function toInternalNotificationModel(
@@ -587,7 +605,7 @@ function toInternalNotificationModel(
 ): InternalModelNotificationModel | null {
     const modelUrl = buildInternalModelLink(snapshot);
     if (!modelUrl) return null;
-    const modelId = snapshot.modelId?.trim();
+    const modelId = resolveModelIdFromSnapshot(snapshot);
     if (!modelId) return null;
     const creatorId = getOrganisationIdFromSnapshot(snapshot);
     const creatorMeta = creatorId ? organisationMetaMap[creatorId] : undefined;
