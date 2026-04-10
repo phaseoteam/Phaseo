@@ -2,10 +2,12 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getTopApps } from "./top-apps";
 
 const DEFAULT_DAYS = 30;
 const DEFAULT_TOP_APPS = 20;
 const PAGE_SIZE = 5000;
+const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
 type ProviderAppRollupRow = {
 	bucket_15m: string;
@@ -39,6 +41,11 @@ export type ProviderAppTokenTimeseries = {
 	points: ProviderAppSeriesPoint[];
 };
 
+function logUsageFetch(stage: string, payload: Record<string, unknown>): void {
+	if (!USAGE_FETCH_DEBUG_ENABLED) return;
+	console.info(`[gateway-usage-fetchers] ${stage}`, payload);
+}
+
 function toIsoDate(value: Date): string {
 	return value.toISOString().slice(0, 10);
 }
@@ -71,13 +78,28 @@ async function fetchProviderAppRollupRows(
 	apiProviderId: string,
 	sinceIso: string,
 	nowIso: string,
+	appIds?: string[],
 ): Promise<ProviderAppRollupRow[]> {
 	const supabase = createAdminClient();
 	const rows: ProviderAppRollupRow[] = [];
+	let pagesFetched = 0;
+	let hadError = false;
+
+	if (Array.isArray(appIds) && appIds.length === 0) {
+		logUsageFetch("provider_app_rollup_query", {
+			providerId: apiProviderId,
+			filteredAppIds: 0,
+			pagesFetched: 0,
+			rows: 0,
+			hadError: false,
+		});
+		return rows;
+	}
 
 	for (let from = 0; ; from += PAGE_SIZE) {
+		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
-		const { data, error } = await supabase
+		let query = supabase
 			.from("gateway_usage_rollup_15m_provider_app")
 			.select("bucket_15m, app_id, total_tokens")
 			.eq("provider", apiProviderId)
@@ -85,18 +107,42 @@ async function fetchProviderAppRollupRows(
 			.lte("bucket_15m", nowIso)
 			.order("bucket_15m", { ascending: true })
 			.range(from, to);
+		if (Array.isArray(appIds) && appIds.length > 0) {
+			query = query.in("app_id", appIds);
+		}
+		const { data, error } = await query;
 
 		if (error) {
+			hadError = true;
 			console.error("Error loading provider app rollup rows for chart:", error);
 			break;
 		}
-		if (!Array.isArray(data) || data.length === 0) break;
+		if (!Array.isArray(data) || data.length === 0) {
+			break;
+		}
 
 		rows.push(...(data as ProviderAppRollupRow[]));
-		if (data.length < PAGE_SIZE) break;
+		if (data.length < PAGE_SIZE) {
+			break;
+		}
 	}
 
+	logUsageFetch("provider_app_rollup_query", {
+		providerId: apiProviderId,
+		filteredAppIds: Array.isArray(appIds) ? appIds.length : null,
+		pagesFetched,
+		rows: rows.length,
+		hadError,
+		pageSize: PAGE_SIZE,
+	});
+
 	return rows;
+}
+
+function topAppsPeriodForDays(days: number): "day" | "week" | "month" {
+	if (days <= 1) return "day";
+	if (days <= 7) return "week";
+	return "month";
 }
 
 async function fetchAppMetaByIds(appIds: string[]): Promise<Map<string, AppMetaRow>> {
@@ -154,17 +200,43 @@ export async function getProviderAppTokenTimeseries(
 	const dayBuckets = buildDayBuckets(since, days);
 	const dayBucketSet = new Set(dayBuckets);
 
+	const topApps = await getTopApps(
+		apiProviderId,
+		topAppsPeriodForDays(days),
+		Math.max(topAppsLimit * 5, topAppsLimit),
+	);
+	const preferredAppIds = topApps
+		.map((app) => String(app?.app_id ?? "").trim())
+		.filter(Boolean);
+	logUsageFetch("provider_app_top_ids", {
+		providerId: apiProviderId,
+		days,
+		limit: Math.max(topAppsLimit * 5, topAppsLimit),
+		count: preferredAppIds.length,
+		source: "getTopApps",
+	});
+
 	const rollupRows = await fetchProviderAppRollupRows(
 		apiProviderId,
 		sinceIso,
 		nowIso,
+		preferredAppIds,
 	);
-	if (!rollupRows.length) return { apps: [], points: [] };
+	const fallbackRows = !rollupRows.length
+		? await fetchProviderAppRollupRows(
+			apiProviderId,
+			sinceIso,
+			nowIso,
+			undefined,
+		)
+		: [];
+	const sourceRows = rollupRows.length > 0 ? rollupRows : fallbackRows;
+	if (!sourceRows.length) return { apps: [], points: [] };
 
 	const totalByApp = new Map<string, number>();
 	const tokensByDayAndApp = new Map<string, Map<string, number>>();
 
-	for (const row of rollupRows) {
+	for (const row of sourceRows) {
 		const appId = String(row?.app_id ?? "").trim();
 		if (!appId) continue;
 
@@ -187,18 +259,25 @@ export async function getProviderAppTokenTimeseries(
 
 	if (!topAppIds.length) return { apps: [], points: [] };
 
-	const appMetaById = await fetchAppMetaByIds(topAppIds);
+	const topAppMetaById = new Map(
+		topApps
+			.map((app) => [String(app?.app_id ?? "").trim(), app] as const)
+			.filter(([appId]) => Boolean(appId)),
+	);
+	const missingMetaIds = topAppIds.filter((appId) => !topAppMetaById.has(appId));
+	const appMetaById = await fetchAppMetaByIds(missingMetaIds);
 	const apps: ProviderAppSeriesApp[] = topAppIds
 		.map((appId) => {
+			const topMeta = topAppMetaById.get(appId);
 			const meta = appMetaById.get(appId);
-			const title = meta?.title?.trim() || appId;
+			const title = topMeta?.title?.trim() || meta?.title?.trim() || appId;
 			if (isUnknownAppIdentity(appId, title)) return null;
 
 			return {
 				appId,
 				title,
-				url: meta?.url ?? null,
-				imageUrl: meta?.image_url ?? null,
+				url: topMeta?.url ?? meta?.url ?? null,
+				imageUrl: topMeta?.image_url ?? meta?.image_url ?? null,
 				totalTokens: Math.round(totalByApp.get(appId) ?? 0),
 			};
 		})
@@ -217,6 +296,17 @@ export async function getProviderAppTokenTimeseries(
 			});
 		}
 	}
+	logUsageFetch("provider_app_token_timeseries", {
+		providerId: apiProviderId,
+		days,
+		topAppsLimit,
+		preferredAppIds: preferredAppIds.length,
+		rollupRows: rollupRows.length,
+		fallbackRows: fallbackRows.length,
+		sourceRows: sourceRows.length,
+		apps: apps.length,
+		points: points.length,
+	});
 
 	return { apps, points };
 }

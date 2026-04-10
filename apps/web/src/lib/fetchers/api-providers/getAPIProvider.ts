@@ -31,6 +31,18 @@ export interface APIProviderModelListItem extends APIProviderModels {
 	output_price_per_1m_usd?: number | null;
 	starting_price_usd?: number | null;
 	starting_price_unit?: string | null;
+	pricing_meters?: APIProviderModelPricingMeter[] | null;
+}
+
+export interface APIProviderModelPricingMeter {
+	meter: string;
+	label: string;
+	unit: string;
+	unit_size: number;
+	price_per_unit_usd: number;
+	price_per_1m_usd: number | null;
+	estimated_price_per_image_usd: number | null;
+	display_unit_label: string;
 }
 
 export type ModelOutputType =
@@ -38,6 +50,7 @@ export type ModelOutputType =
 	| "image"
 	| "video"
 	| "audio"
+	| "rerank"
 	| "embeddings"
 	| "moderations";
 
@@ -89,8 +102,11 @@ function isCurrentPricingRule(rule: PricingRuleRow, now = new Date()): boolean {
 }
 
 function toPerMillionUsd(rule: PricingRuleRow): number | null {
-	const unit = String(rule.unit ?? "").toLowerCase();
-	if (unit !== "token") return null;
+	const unit = String(rule.unit ?? "").toLowerCase().trim();
+	const meter = String(rule.meter ?? "").toLowerCase().trim();
+	const isToken = unit === "token";
+	const isPixel = unit === "pixel" || meter.includes("pixel");
+	if (!isToken && !isPixel) return null;
 	const pricePerUnit = Number(rule.price_per_unit ?? NaN);
 	if (!Number.isFinite(pricePerUnit)) return null;
 	const unitSize = Number(rule.unit_size ?? 1);
@@ -100,11 +116,80 @@ function toPerMillionUsd(rule: PricingRuleRow): number | null {
 
 function toBasicUnitLabel(rule: PricingRuleRow): string | null {
 	const unit = String(rule.unit ?? "").toLowerCase().trim();
-	if (!unit) return null;
+	const meter = String(rule.meter ?? "").toLowerCase().trim();
 	const unitSize = Number(rule.unit_size ?? 1);
 	if (unit === "token") return "1M tokens";
+	if (unit === "pixel" || meter.includes("pixel")) return "1M pixels";
+	if (!unit) return null;
 	if (!Number.isFinite(unitSize) || unitSize <= 1) return unit;
 	return `${unitSize} ${unit}s`;
+}
+
+function toMeterLabel(meter: string): string {
+	const normalized = meter.trim().toLowerCase();
+	const specificLabels: Record<string, string> = {
+		input_text_tokens: "Input Text Tokens",
+		output_text_tokens: "Output Text Tokens",
+		cached_read_text_tokens: "Cached Read Text Tokens",
+		cached_write_text_tokens: "Cached Write Text Tokens",
+		input_image_tokens: "Input Image Tokens",
+		output_image_tokens: "Output Image Tokens",
+		image_pixels: "Image Pixels",
+		video_pixels: "Video Pixels",
+		input_audio_tokens: "Input Audio Tokens",
+		output_audio_tokens: "Output Audio Tokens",
+		output_image: "Output Images",
+		input_image: "Input Images",
+		output_video_seconds: "Output Video Seconds",
+		input_video_seconds: "Input Video Seconds",
+		requests: "Requests",
+		total_tokens: "Total Tokens",
+	};
+	if (specificLabels[normalized]) return specificLabels[normalized];
+	return normalized
+		.split("_")
+		.filter(Boolean)
+		.map((part) => part[0].toUpperCase() + part.slice(1))
+		.join(" ");
+}
+
+function toComparableUnitPrice(rule: PricingRuleRow): number | null {
+	const pricePerUnit = Number(rule.price_per_unit ?? NaN);
+	if (!Number.isFinite(pricePerUnit)) return null;
+	const unitSize = Number(rule.unit_size ?? 1);
+	if (!Number.isFinite(unitSize) || unitSize <= 0) return null;
+	return pricePerUnit / unitSize;
+}
+
+function toPricingMeter(rule: PricingRuleRow): APIProviderModelPricingMeter | null {
+	const meter = String(rule.meter ?? "").trim().toLowerCase();
+	if (!meter) return null;
+	const unit = String(rule.unit ?? "").trim().toLowerCase() || "unit";
+	const unitSizeRaw = Number(rule.unit_size ?? 1);
+	const unitSize =
+		Number.isFinite(unitSizeRaw) && unitSizeRaw > 0 ? unitSizeRaw : 1;
+	const pricePerUnit = Number(rule.price_per_unit ?? NaN);
+	if (!Number.isFinite(pricePerUnit)) return null;
+	const normalizedPerMillion = toPerMillionUsd(rule);
+	const perBaseUnit = pricePerUnit / unitSize;
+	const estimatedPricePerImage =
+		meter === "image_pixels"
+			? perBaseUnit * (1024 * 1024)
+			: null;
+
+	return {
+		meter,
+		label: toMeterLabel(meter),
+		unit,
+		unit_size: unitSize,
+		price_per_unit_usd: pricePerUnit,
+		price_per_1m_usd: normalizedPerMillion,
+		estimated_price_per_image_usd:
+			estimatedPricePerImage != null && Number.isFinite(estimatedPricePerImage)
+				? estimatedPricePerImage
+				: null,
+		display_unit_label: toBasicUnitLabel(rule) ?? unit,
+	};
 }
 
 export async function getAPIProvider(): Promise<APIProvider[]> {
@@ -161,6 +246,7 @@ export async function getAPIProviderModels(
 		image: "image",
 		video: "video",
 		audio: "audio",
+		rerank: "rerank",
 		embeddings: "embedding",
 		moderations: "moderations",
 	};
@@ -554,6 +640,22 @@ export async function getAPIProviderModelsListByAdded(
 	const currentPricingRules = pricingRules.filter((rule) =>
 		isCurrentPricingRule(rule, now),
 	);
+	const meterOrder = new Map(
+		[
+			"input_text_tokens",
+			"output_text_tokens",
+			"cached_read_text_tokens",
+			"cached_write_text_tokens",
+			"total_tokens",
+			"image_pixels",
+			"video_pixels",
+			"output_image",
+			"input_image",
+			"output_video_seconds",
+			"input_video_seconds",
+			"requests",
+		].map((meter, index) => [meter, index]),
+	);
 
 	for (const model of results) {
 		const apiModelIds = apiModelIdsByModelId.get(model.model_id) ?? new Set<string>();
@@ -575,6 +677,18 @@ export async function getAPIProviderModelsListByAdded(
 			return plan === "standard";
 		});
 		const effectiveRules = standardRules.length ? standardRules : matchingRules;
+		const sortedRules = [...effectiveRules].sort((a, b) => {
+			const aPriority = Number(a.priority ?? 0);
+			const bPriority = Number(b.priority ?? 0);
+			if (aPriority !== bPriority) return bPriority - aPriority;
+			const aFrom = a.effective_from
+				? new Date(a.effective_from).getTime()
+				: Number.NEGATIVE_INFINITY;
+			const bFrom = b.effective_from
+				? new Date(b.effective_from).getTime()
+				: Number.NEGATIVE_INFINITY;
+			return bFrom - aFrom;
+		});
 
 		const tokenInputPrices = effectiveRules
 			.filter((rule) => {
@@ -592,18 +706,36 @@ export async function getAPIProviderModelsListByAdded(
 			.map(toPerMillionUsd)
 			.filter((value): value is number => value != null && Number.isFinite(value));
 
-		const sortedRules = [...effectiveRules].sort((a, b) => {
-			const aPriority = Number(a.priority ?? 0);
-			const bPriority = Number(b.priority ?? 0);
-			if (aPriority !== bPriority) return bPriority - aPriority;
-			const aFrom = a.effective_from
-				? new Date(a.effective_from).getTime()
-				: Number.NEGATIVE_INFINITY;
-			const bFrom = b.effective_from
-				? new Date(b.effective_from).getTime()
-				: Number.NEGATIVE_INFINITY;
-			return bFrom - aFrom;
-		});
+		const preferredRuleByMeter = new Map<string, PricingRuleRow>();
+		for (const rule of sortedRules) {
+			const meter = String(rule.meter ?? "").toLowerCase().trim();
+			if (!meter) continue;
+			const current = preferredRuleByMeter.get(meter);
+			if (!current) {
+				preferredRuleByMeter.set(meter, rule);
+				continue;
+			}
+			const currentComparable = toComparableUnitPrice(current);
+			const nextComparable = toComparableUnitPrice(rule);
+			if (
+				nextComparable != null &&
+				(currentComparable == null || nextComparable < currentComparable)
+			) {
+				preferredRuleByMeter.set(meter, rule);
+			}
+		}
+		const pricingMeters = Array.from(preferredRuleByMeter.values())
+			.map(toPricingMeter)
+			.filter(
+				(meter): meter is APIProviderModelPricingMeter =>
+					meter != null && Number.isFinite(meter.price_per_unit_usd),
+			)
+			.sort((a, b) => {
+				const aPriority = meterOrder.get(a.meter) ?? Number.MAX_SAFE_INTEGER;
+				const bPriority = meterOrder.get(b.meter) ?? Number.MAX_SAFE_INTEGER;
+				if (aPriority !== bPriority) return aPriority - bPriority;
+				return a.label.localeCompare(b.label);
+			});
 
 		const baselineRule = sortedRules[0] ?? null;
 		const baselinePrice = baselineRule
@@ -620,6 +752,7 @@ export async function getAPIProviderModelsListByAdded(
 		model.starting_price_unit = baselineRule
 			? toBasicUnitLabel(baselineRule)
 			: null;
+		model.pricing_meters = pricingMeters.length ? pricingMeters : null;
 	}
 
 	results.sort((a, b) => {
