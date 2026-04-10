@@ -18,6 +18,7 @@ import {
 	GitCompare,
 	RefreshCcw,
 	Gift,
+	Bell,
 } from "lucide-react";
 
 const internalTools = [
@@ -73,6 +74,15 @@ const internalTools = [
 			"Create, review, and disable friendly promo credit codes for wallet credits.",
 		icon: Gift,
 		href: "/internal/credits",
+		comingSoon: false,
+	},
+	{
+		id: "model-discovery-notifier",
+		title: "Model Discovery Notifier",
+		description:
+			"Preview and send Discord embed payloads for internal model discovery alerts.",
+		icon: Bell,
+		href: "/internal/model-discovery-notifier",
 		comingSoon: false,
 	},
 	{
