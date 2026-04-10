@@ -350,6 +350,19 @@ function writeJson(filePath: string, value: unknown): void {
     fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
+function writeDiscoveryState(
+    statePath: string,
+    files: Record<string, ModelFileSnapshot>,
+    hfOrgs: Record<string, HuggingFaceOrgSnapshot>
+): void {
+    writeJson(statePath, {
+        version: 2,
+        generatedAt: nowIso(),
+        files,
+        hfOrgs,
+    } satisfies InternalModelsFileState);
+}
+
 function buildCurrentFileMap(repoRoot: string): Record<string, ModelFileSnapshot> {
     const canonicalModelsRoot = path.join(repoRoot, "packages", "data", "catalog", "src", "data", "models");
     const legacyModelsRoot = path.join(repoRoot, "apps", "web", "src", "data", "models");
@@ -752,14 +765,6 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         ? await buildCurrentHfOrgMap(options.hfOrgs, options.hfToken, previousState.hfOrgs)
         : { snapshots: previousState.hfOrgs, fetchedOrgs: new Set<string>() };
 
-    const nextState: InternalModelsFileState = {
-        version: 2,
-        generatedAt: nowIso(),
-        files: currentFiles,
-        hfOrgs: currentHf.snapshots,
-    };
-    writeJson(statePath, nextState);
-
     const diff = diffStates(previousState, currentFiles);
     const announcedState = readAnnouncedState(announcedStatePath);
     const detectedInternalModels = shouldCheckInternal
@@ -818,6 +823,7 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
     }
 
     if (shouldCheckInternal && diff.previousCount === 0) {
+        writeDiscoveryState(statePath, currentFiles, currentHf.snapshots);
         console.log("[internal-model-check] Baseline initialized. Skipping first-run notifications.");
         return;
     }
@@ -828,6 +834,7 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
 
     const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
     if (internalAdditionsCount === 0 && hfAdditionsTotal === 0) {
+        writeDiscoveryState(statePath, currentFiles, currentHf.snapshots);
         console.log("[internal-model-check] No new internal or HF models detected.");
         return;
     }
@@ -845,7 +852,15 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
 
     const shouldSendInternal = shouldCheckInternal && internalAdditionsCount > 0 && Boolean(internalWebhookUrl);
     const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0 && Boolean(hfWebhookUrl);
+    const holdInternalBaseline = shouldCheckInternal && internalAdditionsCount > 0 && !shouldSendInternal;
+    const holdHfBaseline = shouldCheckHf && hfAdditionsTotal > 0 && !shouldSendHf;
+
     if (!shouldSendInternal && !shouldSendHf) {
+        writeDiscoveryState(
+            statePath,
+            holdInternalBaseline ? previousState.files : currentFiles,
+            holdHfBaseline ? previousState.hfOrgs : currentHf.snapshots
+        );
         return;
     }
 
@@ -869,18 +884,25 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         for (const model of newInternalModels) {
             nextAnnounced[toAnnouncementKey(model)] = markedAt;
         }
-        writeJson(announcedStatePath, {
+        const nextAnnouncedState: AnnouncedInternalModelsState = {
             version: 1,
             updatedAt: markedAt,
             announcedByModelId: nextAnnounced,
-        } satisfies AnnouncedInternalModelsState);
+        };
+        writeJson(announcedStatePath, nextAnnouncedState);
 
-        await sendDiscordWebhookPayload(internalWebhookUrl, payload, {
-            maxAttempts: 3,
-            timeoutMs: 10_000,
-            retryDelayMs: 750,
-            logger: console,
-        });
+        try {
+            await sendDiscordWebhookPayload(internalWebhookUrl, payload, {
+                maxAttempts: 3,
+                timeoutMs: 10_000,
+                retryDelayMs: 750,
+                logger: console,
+            });
+        } catch (error) {
+            // Roll back pre-send mark so failed sends can be retried cleanly.
+            writeJson(announcedStatePath, announcedState);
+            throw error;
+        }
         mentionsSent = true;
     }
 
@@ -893,6 +915,12 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
             includeMentions: !mentionsSent,
         });
     }
+
+    writeDiscoveryState(
+        statePath,
+        holdInternalBaseline ? previousState.files : currentFiles,
+        holdHfBaseline ? previousState.hfOrgs : currentHf.snapshots
+    );
 }
 
 function isMainModule(): boolean {
