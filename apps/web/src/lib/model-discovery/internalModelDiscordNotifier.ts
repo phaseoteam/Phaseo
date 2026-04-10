@@ -319,6 +319,10 @@ export async function sendDiscordWebhookPayload(
 	options?: SendDiscordWebhookOptions
 ): Promise<void> {
 	const parsedWebhookUrl = validateDiscordWebhookUrl(webhookUrl);
+	const segments = parsedWebhookUrl.pathname.split("/").filter(Boolean);
+	const webhookId = segments[2] ?? "";
+	const webhookToken = segments[3] ?? "";
+	const requestUrl = `https://discord.com/api/webhooks/${webhookId}/${webhookToken}`;
 	const maxAttempts = Number.isFinite(options?.maxAttempts)
 		? Math.max(1, Math.floor(options?.maxAttempts as number))
 		: 3;
@@ -335,7 +339,7 @@ export async function sendDiscordWebhookPayload(
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), timeoutMs);
 		try {
-			const response = await fetchImpl(parsedWebhookUrl.toString(), {
+			const response = await fetchImpl(requestUrl, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload),

@@ -153,4 +153,35 @@ describe("internal model discord notifier", () => {
 			validateDiscordWebhookUrl("https://discord.com/api/channels/123/messages")
 		).toThrow(/path is invalid/i);
 	});
+
+	it("normalizes allowed Discord hosts to a canonical request endpoint", async () => {
+		const fetchMock = jest.fn(async () => {
+			return {
+				ok: true,
+				status: 204,
+				text: async () => "",
+			} as unknown as Response;
+		});
+		const payload = buildWebhookPayload(
+			[
+				{
+					modelId: "voyage/voyage-4",
+					modelName: "Voyage 4",
+					modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-4",
+				},
+			],
+			null
+		);
+
+		await sendDiscordWebhookPayload(
+			"https://canary.discordapp.com/api/webhooks/123456/abcdef",
+			payload,
+			{
+				fetchImpl: fetchMock as unknown as typeof fetch,
+			}
+		);
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(fetchMock.mock.calls[0]?.[0]).toBe("https://discord.com/api/webhooks/123456/abcdef");
+	});
 });
