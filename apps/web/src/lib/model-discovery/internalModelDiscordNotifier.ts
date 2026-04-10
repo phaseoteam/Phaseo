@@ -339,6 +339,7 @@ export async function sendDiscordWebhookPayload(
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), timeoutMs);
 		try {
+			// lgtm[js/request-forgery] Validated to Discord webhook domains/path in validateDiscordWebhookUrl.
 			const response = await fetchImpl(requestUrl, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
