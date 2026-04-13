@@ -19,12 +19,32 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
+            - name: Inspect lockfile bytes (post-checkout)
+              run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  b = Path("pnpm-lock.yaml").read_bytes()
+                  t = b.decode("utf-8", errors="replace")
+                  sep = sum(1 for line in t.splitlines() if line.strip() == "---")
+                  print(f"post_checkout bytes={len(b)} sep={sep} head={b[:16].hex()}")
+                  PY
+
             - name: Setup pnpm
               uses: pnpm/action-setup@v6
               with:
                   version: 10.18.3
                   run_install: false
                   standalone: true
+
+            - name: Inspect lockfile bytes (post-setup-pnpm)
+              run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  b = Path("pnpm-lock.yaml").read_bytes()
+                  t = b.decode("utf-8", errors="replace")
+                  sep = sum(1 for line in t.splitlines() if line.strip() == "---")
+                  print(f"post_setup_pnpm bytes={len(b)} sep={sep} head={b[:16].hex()}")
+                  PY
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
