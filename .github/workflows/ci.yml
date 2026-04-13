@@ -36,6 +36,19 @@ jobs:
             - name: Normalize pnpm lockfile line endings
               run: sed -i 's/\r$//' pnpm-lock.yaml
 
+            - name: Inspect lockfile bytes
+              run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  b = Path("pnpm-lock.yaml").read_bytes()
+                  t = b.decode("utf-8", errors="replace")
+                  sep = sum(1 for line in t.splitlines() if line.strip() == "---")
+                  end = sum(1 for line in t.splitlines() if line.strip() == "...")
+                  print(f"lock_bytes={len(b)} nul={b.count(b'\\x00')} cr={b.count(b'\\r')} lf={b.count(b'\\n')}")
+                  print(f"doc_separator_lines={sep} doc_end_lines={end}")
+                  print("head_hex=", b[:64].hex())
+                  PY
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
