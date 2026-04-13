@@ -1,5 +1,5 @@
-import { XMLParser } from "fast-xml-parser";
 import { createFreshnessChecker, parseTimeString } from "../utils";
+import { parseXmlWithLimits } from "../../../xml/safe";
 
 const RSS_URL = "https://blog.google/technology/developers/rss/";
 const GOOGLE_DEVELOPERS_HOST = "blog.google";
@@ -11,12 +11,7 @@ export async function handleGoogleDevelopers(supabase: any): Promise<
     if (!resp.ok) throw new Error(`RSS fetch failed ${resp.status} ${RSS_URL}`);
     const xml = await resp.text();
 
-    const parser = new XMLParser({
-        ignoreAttributes: false,
-        attributeNamePrefix: "",
-        trimValues: true,
-    });
-    const doc = parser.parse(xml);
+    const doc = parseXmlWithLimits<Record<string, any>>(xml);
 
     const channel = doc.rss?.channel;
     if (!channel) throw new Error("No <channel> found in RSS");

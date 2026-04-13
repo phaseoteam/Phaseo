@@ -1,5 +1,5 @@
 import zlib from "zlib";
-import { XMLParser } from "fast-xml-parser";
+import { parseXmlWithLimits } from "../../xml/safe";
 
 export function parseTimeString(s: string): { iso: string | null, pretty: string | null } {
     s = s.trim();
@@ -69,12 +69,7 @@ export function parseSitemapXml(
         xml = buf.toString("utf8");
     }
 
-    const parser = new XMLParser({
-        ignoreAttributes: false,
-        attributeNamePrefix: "",
-        trimValues: true,
-    });
-    const doc = parser.parse(xml);
+    const doc = parseXmlWithLimits<Record<string, any>>(xml);
 
     const toArray = <T,>(v: T | T[] | undefined) =>
         v === undefined ? [] : Array.isArray(v) ? v : [v];

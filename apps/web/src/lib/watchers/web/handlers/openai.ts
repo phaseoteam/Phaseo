@@ -1,5 +1,5 @@
-import { XMLParser } from "fast-xml-parser";
 import { createFreshnessChecker } from "../utils";
+import { parseXmlWithLimits } from "../../../xml/safe";
 
 export async function handleOpenAI(supabase: any): Promise<Array<{ type: "web", who: string, title: string, link: string, created_at: string }>> {
     const rssUrl = "https://openai.com/news/rss.xml";
@@ -7,12 +7,7 @@ export async function handleOpenAI(supabase: any): Promise<Array<{ type: "web", 
     if (!resp.ok) throw new Error(`RSS fetch failed ${resp.status} ${rssUrl}`);
     const xml = await resp.text();
 
-    const parser = new XMLParser({
-        ignoreAttributes: false,
-        attributeNamePrefix: "",
-        trimValues: true,
-    });
-    const doc = parser.parse(xml);
+    const doc = parseXmlWithLimits<Record<string, any>>(xml);
 
     const channel = doc.rss?.channel;
     if (!channel) throw new Error("No <channel> found in RSS");
