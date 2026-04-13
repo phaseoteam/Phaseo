@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import {
 	fetchPaginatedRequests,
+	fetchModelMetadata,
 	PaginatedRequestsParams,
 	RequestRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
@@ -155,6 +156,8 @@ export default function UnifiedRequestsTable({
 	const [selectedRequest, setSelectedRequest] = useState<RequestRow | null>(
 		null,
 	);
+	const [resolvedModelMetadata, setResolvedModelMetadata] =
+		useState<ModelMetadataMap>(new Map(modelMetadata));
 	const [dialogOpen, setDialogOpen] = useState(false);
 
 	// Build cache key from filters
@@ -194,6 +197,26 @@ export default function UnifiedRequestsTable({
 				};
 
 				const result = await fetchPaginatedRequests(params);
+				const pageModelIds = Array.from(
+					new Set(
+						(result.data ?? [])
+							.map((row) => row.model_id)
+							.filter(
+								(id): id is string =>
+									typeof id === "string" && id.trim().length > 0,
+							),
+					),
+				);
+				if (pageModelIds.length > 0) {
+					const liveMetadata = await fetchModelMetadata(pageModelIds);
+					setResolvedModelMetadata((prev) => {
+						const merged = new Map(prev);
+						for (const [key, value] of liveMetadata.entries()) {
+							merged.set(key, value);
+						}
+						return merged;
+					});
+				}
 
 				setPageCache((prev) => {
 					const next = new Map(prev);
@@ -243,6 +266,10 @@ export default function UnifiedRequestsTable({
 			setPage(1);
 		}
 	}, [getCacheKey, currentCacheKey, setPage]);
+
+	useEffect(() => {
+		setResolvedModelMetadata(new Map(modelMetadata));
+	}, [modelMetadata]);
 
 	// Fetch current page and prefetch next 2 pages
 	useEffect(() => {
@@ -306,7 +333,7 @@ export default function UnifiedRequestsTable({
 				const appLabel = appTitle ?? mappedAppName ?? "-";
 				return {
 					Timestamp: new Date(row.created_at).toLocaleString(),
-					Model: getModelDisplayName(row.model_id, modelMetadata),
+					Model: getModelDisplayName(row.model_id, resolvedModelMetadata),
 					"Model ID": row.model_id || "-",
 					Provider: providerLabel,
 					App: appLabel,
@@ -329,7 +356,7 @@ export default function UnifiedRequestsTable({
 				exportToPDF(exportData, filename, "Gateway Requests");
 			}
 		},
-		[data, appNames, providerNames, modelMetadata],
+		[data, appNames, providerNames, resolvedModelMetadata],
 	);
 
 	// Expose export handler via ref
@@ -490,7 +517,7 @@ export default function UnifiedRequestsTable({
 									const rowKey = `${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
 									const modelHref = getModelDetailsHref(row.model_id);
 									const modelMeta = row.model_id
-										? modelMetadata.get(row.model_id)
+										? resolvedModelMetadata.get(row.model_id)
 										: undefined;
 									const providerLabel = row.provider
 										? providerNames.get(row.provider) || row.provider
@@ -505,7 +532,10 @@ export default function UnifiedRequestsTable({
 									const appHref = row.app_id
 										? `/apps/${encodeURIComponent(row.app_id)}`
 										: null;
-									const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
+									const modelLabel = getModelDisplayName(
+										row.model_id,
+										resolvedModelMetadata,
+									);
 
 									return (
 										<TableRow

@@ -39,6 +39,22 @@ describe("music-generate route helpers", () => {
 		expect(parsed.totalDurationSeconds).toBe(6);
 	});
 
+	it("maps MiniMax numeric status codes and parses hex audio payloads", () => {
+		expect(__musicGenerateTestUtils.mapMiniMaxTaskStatus(2)).toBe("completed");
+		expect(__musicGenerateTestUtils.mapMiniMaxTaskStatus(1)).toBe("in_progress");
+		expect(__musicGenerateTestUtils.mapMiniMaxTaskStatus(0)).toBe("queued");
+
+		const parsed = __musicGenerateTestUtils.parseMiniMaxOutput({
+			id: "mini_hex",
+			data: {
+				audio: "61".repeat(128),
+			},
+		});
+
+		expect(parsed.output[0]?.audio_url).toBeNull();
+		expect(parsed.output[0]?.audio_base64).toBe(Buffer.from("a".repeat(128), "utf-8").toString("base64"));
+	});
+
 	it("normalizes metadata statuses and detects google music provider aliases", () => {
 		expect(__musicGenerateTestUtils.normalizeMusicStatus("running")).toBe("in_progress");
 		expect(__musicGenerateTestUtils.normalizeMusicStatus("cancelled")).toBe("failed");

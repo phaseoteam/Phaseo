@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://www.sourceful.com/",
   "country_code": "GB",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#654CFF"
 }

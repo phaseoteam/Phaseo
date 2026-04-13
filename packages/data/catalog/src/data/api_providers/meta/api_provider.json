@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://ai.meta.com",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#1980E1"
 }

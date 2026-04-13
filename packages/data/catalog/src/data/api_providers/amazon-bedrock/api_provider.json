@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://aws.amazon.com/bedrock",
   "country_code": "US",
-  "status": "Alpha"
+  "status": "Alpha",
+  "colour": "#FF9900"
 }

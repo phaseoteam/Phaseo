@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.fireworks.ai/getting-started/introduction",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#EF4444"
 }

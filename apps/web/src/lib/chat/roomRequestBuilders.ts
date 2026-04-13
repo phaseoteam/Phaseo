@@ -75,6 +75,10 @@ export function extractGenerationUrls(payload: any): string[] {
 			addUrl(entry?.url);
 			addUrl(entry?.uri);
 			addUrl(entry?.video_url);
+			addUrl(entry?.audio_url);
+			addUrl(entry?.audioUrl);
+			addUrl(entry?.stream_audio_url);
+			addUrl(entry?.streamAudioUrl);
 			addUrl(entry?.content_url);
 			addUrl(entry?.result_url);
 			addUrl(entry?.video?.url);
@@ -88,6 +92,10 @@ export function extractGenerationUrls(payload: any): string[] {
 			addUrl(entry?.url);
 			addUrl(entry?.uri);
 			addUrl(entry?.video_url);
+			addUrl(entry?.audio_url);
+			addUrl(entry?.audioUrl);
+			addUrl(entry?.stream_audio_url);
+			addUrl(entry?.streamAudioUrl);
 			addUrl(entry?.content_url);
 			addUrl(entry?.result_url);
 			addUrl(entry?.video?.url);
@@ -98,6 +106,10 @@ export function extractGenerationUrls(payload: any): string[] {
 			addUrl(entry?.url);
 			addUrl(entry?.uri);
 			addUrl(entry?.video_url);
+			addUrl(entry?.audio_url);
+			addUrl(entry?.audioUrl);
+			addUrl(entry?.stream_audio_url);
+			addUrl(entry?.streamAudioUrl);
 			addUrl(entry?.content_url);
 			addUrl(entry?.result_url);
 			addUrl(entry?.video?.url);

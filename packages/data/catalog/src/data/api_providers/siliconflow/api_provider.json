@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.siliconflow.cn/",
   "country_code": "CN",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#0284C7"
 }

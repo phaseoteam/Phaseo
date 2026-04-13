@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://api-docs.deepseek.com/",
   "country_code": "CA",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#5E71ED"
 }

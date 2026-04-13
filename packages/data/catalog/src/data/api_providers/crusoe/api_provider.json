@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.crusoecloud.com/",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#0EA5E9"
 }

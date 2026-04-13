@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://infermatic.ai/",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#DC2626"
 }

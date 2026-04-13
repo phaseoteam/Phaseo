@@ -1,0 +1,18 @@
+{
+  "model_id": "minimax/music-2.6",
+  "organisation_id": "minimax",
+  "name": "Music 2.6",
+  "status": "Available",
+  "previous_model_id": "minimax/music-2.5",
+  "announced_date": "2026-04-11T00:00:00",
+  "release_date": "2026-04-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "minimax/music-2.6",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

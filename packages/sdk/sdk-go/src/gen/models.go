@@ -1530,6 +1530,7 @@ const (
 	ModelIdMinimaxMusic15 ModelId = "minimax/music-1.5"
 	ModelIdMinimaxMusic20 ModelId = "minimax/music-2.0"
 	ModelIdMinimaxMusic25 ModelId = "minimax/music-2.5"
+	ModelIdMinimaxMusic26 ModelId = "minimax/music-2.6"
 	ModelIdMinimaxS2v01 ModelId = "minimax/s2v-01"
 	ModelIdMinimaxSpeech01Hd ModelId = "minimax/speech-01-hd"
 	ModelIdMinimaxSpeech01Turbo ModelId = "minimax/speech-01-turbo"
