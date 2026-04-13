@@ -36,11 +36,6 @@ jobs:
             - name: Normalize pnpm lockfile line endings
               run: sed -i 's/\r$//' pnpm-lock.yaml
 
-            - name: Debug pnpm lockfile parsing
-              run: |
-                  corepack pnpm --version
-                  node -e "const fs=require('fs');const yaml=require('js-yaml');const s=fs.readFileSync('pnpm-lock.yaml','utf8');console.log('lock-bytes',fs.statSync('pnpm-lock.yaml').size);console.log('doc-separator',/^\\s*---\\s*$/m.test(s));console.log('doc-end',/^\\s*\\.\\.\\.\\s*$/m.test(s));try{yaml.load(s);console.log('js-yaml','ok')}catch(e){console.log('js-yaml','err',e.message)}"
-
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
