@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://platform.openai.com/docs/overview",
   "country_code": "US",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#333333"
 }

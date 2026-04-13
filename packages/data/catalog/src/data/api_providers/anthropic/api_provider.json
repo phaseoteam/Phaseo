@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.anthropic.com/en/home",
   "country_code": "US",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#CC785C"
 }

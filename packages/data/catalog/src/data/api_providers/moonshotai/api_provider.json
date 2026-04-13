@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://platform.moonshot.ai/",
   "country_code": "CN",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#333333"
 }

@@ -9,6 +9,8 @@ import { type ModelMetadataMap } from "./model-display";
 import {
 	fetchChartData,
 	ChartDataResult,
+	fetchModelMetadata,
+	fetchOrganizationColors,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 interface MetricsOverviewProps {
@@ -16,21 +18,40 @@ interface MetricsOverviewProps {
 	range: "1h" | "1d" | "1w" | "1m" | "1y";
 	colorMap: Record<string, string>;
 	modelMetadata: ModelMetadataMap;
+	validKeyIds?: string[];
 }
 
 type MetricType = "requests" | "tokens" | "cost" | null;
+type GroupBy = "model" | "key";
+
+function parseGroup(group?: string | null): GroupBy {
+	return group === "key" ? "key" : "model";
+}
 
 export default function MetricsOverview({
 	timeRange,
 	range,
 	colorMap,
 	modelMetadata,
+	validKeyIds = [],
 }: MetricsOverviewProps) {
 	const [keyFilter] = useQueryState("key");
+	const [groupBy] = useQueryState<GroupBy>("group", {
+		defaultValue: "model",
+		parse: parseGroup,
+		serialize: (value) => value,
+	});
 	const [chartData, setChartData] = useState<ChartDataResult | null>(null);
+	const [resolvedColorMap, setResolvedColorMap] = useState<Record<string, string>>(colorMap);
+	const [resolvedModelMetadata, setResolvedModelMetadata] =
+		useState<ModelMetadataMap>(new Map(modelMetadata));
 	const [loading, setLoading] = useState(true);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedMetric, setSelectedMetric] = useState<MetricType>(null);
+	const normalizedKeyFilter =
+		groupBy === "key" && keyFilter && validKeyIds.includes(keyFilter)
+			? keyFilter
+			: null;
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -39,9 +60,39 @@ export default function MetricsOverview({
 				const data = await fetchChartData({
 					timeRange,
 					range,
-					keyFilter: keyFilter || null,
+					keyFilter: normalizedKeyFilter,
 				});
 				setChartData(data);
+
+				const modelIds = Array.from(
+					new Set(
+						[
+							...data.requestsChart,
+							...data.tokensChart,
+							...data.costChart,
+						].flatMap((row) =>
+							Object.keys(row).filter((key) => key !== "bucket"),
+						),
+					),
+				);
+
+				if (modelIds.length > 0) {
+					const [liveColors, liveMetadata] = await Promise.all([
+						fetchOrganizationColors(modelIds),
+						fetchModelMetadata(modelIds),
+					]);
+					setResolvedColorMap((prev) => ({
+						...prev,
+						...Object.fromEntries(liveColors),
+					}));
+					setResolvedModelMetadata((prev) => {
+						const merged = new Map(prev);
+						for (const [key, value] of liveMetadata.entries()) {
+							merged.set(key, value);
+						}
+						return merged;
+					});
+				}
 			} catch (error) {
 				console.error("Error fetching chart data:", error);
 				setChartData(null);
@@ -51,7 +102,15 @@ export default function MetricsOverview({
 		};
 
 		fetchData();
-	}, [timeRange, range, keyFilter]);
+	}, [timeRange, range, normalizedKeyFilter]);
+
+	useEffect(() => {
+		setResolvedColorMap(colorMap);
+	}, [colorMap]);
+
+	useEffect(() => {
+		setResolvedModelMetadata(new Map(modelMetadata));
+	}, [modelMetadata]);
 
 	const handleCardClick = (metric: MetricType) => {
 		setSelectedMetric(metric);
@@ -86,8 +145,8 @@ export default function MetricsOverview({
 					avgValue={chartData.totals.requests.avg}
 					format={formatNumber}
 					chartData={chartData.requestsChart}
-					colorMap={colorMap}
-					modelMetadata={modelMetadata}
+					colorMap={resolvedColorMap}
+					modelMetadata={resolvedModelMetadata}
 					onClick={() => handleCardClick("requests")}
 					metricType="number"
 				/>
@@ -100,8 +159,8 @@ export default function MetricsOverview({
 					avgValue={chartData.totals.tokens.avg}
 					format={formatNumber}
 					chartData={chartData.tokensChart}
-					colorMap={colorMap}
-					modelMetadata={modelMetadata}
+					colorMap={resolvedColorMap}
+					modelMetadata={resolvedModelMetadata}
 					onClick={() => handleCardClick("tokens")}
 					metricType="number"
 				/>
@@ -114,8 +173,8 @@ export default function MetricsOverview({
 					avgValue={chartData.totals.cost.avg}
 					format={formatCost}
 					chartData={chartData.costChart}
-					colorMap={colorMap}
-					modelMetadata={modelMetadata}
+					colorMap={resolvedColorMap}
+					modelMetadata={resolvedModelMetadata}
 					onClick={() => handleCardClick("cost")}
 					metricType="currency"
 				/>
@@ -128,9 +187,9 @@ export default function MetricsOverview({
 					title="Requests Breakdown"
 					metric="requests"
 					chartData={chartData.requestsChart}
-					colorMap={colorMap}
+					colorMap={resolvedColorMap}
 					format={formatNumber}
-					modelMetadata={modelMetadata}
+					modelMetadata={resolvedModelMetadata}
 				/>
 			)}
 
@@ -141,9 +200,9 @@ export default function MetricsOverview({
 					title="Tokens Breakdown"
 					metric="tokens"
 					chartData={chartData.tokensChart}
-					colorMap={colorMap}
+					colorMap={resolvedColorMap}
 					format={formatNumber}
-					modelMetadata={modelMetadata}
+					modelMetadata={resolvedModelMetadata}
 				/>
 			)}
 
@@ -154,9 +213,9 @@ export default function MetricsOverview({
 					title="Cost Breakdown"
 					metric="cost"
 					chartData={chartData.costChart}
-					colorMap={colorMap}
+					colorMap={resolvedColorMap}
 					format={formatCost}
-					modelMetadata={modelMetadata}
+					modelMetadata={resolvedModelMetadata}
 				/>
 			)}
 		</>

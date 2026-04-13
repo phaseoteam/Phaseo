@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://www.liquid.ai/",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#000000"
 }

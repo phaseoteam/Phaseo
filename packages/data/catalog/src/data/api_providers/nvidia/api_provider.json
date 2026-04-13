@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.api.nvidia.com/",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#76B900"
 }

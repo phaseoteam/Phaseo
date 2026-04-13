@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import {
 	parseProxyEnvelope,
+	proxyGatewayGet,
 	proxyGatewayPost,
 } from "@/app/api/chat/_shared/gatewayProxy";
 
@@ -18,6 +19,10 @@ const ACTION_TO_PATH: Record<AudioAction, string> = {
 	translation: "/audio/translations",
 	music: "/music/generations",
 };
+
+function resolveMusicPollPath(resourceId: string): string {
+	return `/music/generations/${encodeURIComponent(resourceId)}`;
+}
 
 function isAudioAction(value: unknown): value is AudioAction {
 	return (
@@ -37,5 +42,39 @@ export async function POST(request: NextRequest) {
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,
 		debug: payload.debug,
+	});
+}
+
+export async function GET(request: NextRequest) {
+	const actionParam = request.nextUrl.searchParams.get("action");
+	const action = isAudioAction(actionParam) ? actionParam : "music";
+	if (action !== "music") {
+		return new Response(
+			JSON.stringify({ error: "Polling is only supported for music action." }),
+			{
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+	}
+
+	const resourceId =
+		request.nextUrl.searchParams.get("resourceId")?.trim() ||
+		request.nextUrl.searchParams.get("musicId")?.trim() ||
+		"";
+
+	if (!resourceId) {
+		return new Response(
+			JSON.stringify({ error: "Missing resourceId for music polling." }),
+			{
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+	}
+
+	return proxyGatewayGet({
+		path: resolveMusicPollPath(resourceId),
+		debug: request.nextUrl.searchParams.get("debug") === "1",
 	});
 }

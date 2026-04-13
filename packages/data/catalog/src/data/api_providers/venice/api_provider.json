@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.venice.ai/",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#14B8A6"
 }

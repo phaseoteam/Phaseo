@@ -42,13 +42,53 @@ function hash32(str: string) {
 	return h >>> 0;
 }
 
-function getColor(id: string, colorMap: Record<string, string>) {
+function modelIdColorVariants(modelId: string): string[] {
+	const variants = new Set<string>();
+	const add = (value: string | null | undefined) => {
+		const v = value?.trim();
+		if (!v) return;
+		variants.add(v);
+		variants.add(v.toLowerCase());
+		variants.add(v.replace(/\./g, "-"));
+	};
+
+	add(modelId);
+	if (modelId.includes("/")) {
+		add(modelId.split("/").slice(1).join("/"));
+	}
+	for (const current of Array.from(variants)) {
+		if (current.includes(":")) {
+			add(current.split(":")[0]);
+		}
+	}
+	return Array.from(variants);
+}
+
+function getColor(
+	id: string,
+	colorMap: Record<string, string>,
+	modelMetadata: ModelMetadataMap,
+) {
 	if (id === OTHER_SERIES_KEY) {
 		return "hsl(0 0% 72% / 0.78)";
 	}
-	const orgColor = colorMap[id];
-	if (orgColor) {
-		return orgColor;
+	for (const variant of modelIdColorVariants(id)) {
+		const color = colorMap[variant];
+		if (color) return color;
+	}
+	for (const variant of modelIdColorVariants(id)) {
+		const metadata = modelMetadata.get(variant);
+		if (!metadata) continue;
+		const orgCandidates = [
+			metadata.organisationId,
+			metadata.organisationId?.toLowerCase(),
+			metadata.organisationName,
+			metadata.organisationName?.toLowerCase(),
+		].filter(Boolean) as string[];
+		for (const orgCandidate of orgCandidates) {
+			const orgColor = colorMap[orgCandidate];
+			if (orgColor) return orgColor;
+		}
 	}
 	const hue = hash32(id) % 360;
 	return `hsl(${hue} 45% 78% / 0.88)`;
@@ -74,6 +114,13 @@ export default function MetricChartCard({
 	const reduced = React.useMemo(() => reduceChartSeries(chartData, 12), [chartData]);
 	const displayChartData = reduced.rows;
 	const seriesKeys = reduced.seriesKeys;
+	const rawRowsByBucket = React.useMemo(() => {
+		const map = new Map<string, { bucket: string; [key: string]: number | string }>();
+		for (const row of chartData) {
+			map.set(String(row.bucket), row);
+		}
+		return map;
+	}, [chartData]);
 
 	const topSeriesRows = React.useMemo(() => {
 		const totals = new Map<string, number>();
@@ -113,7 +160,7 @@ export default function MetricChartCard({
 				key === OTHER_SERIES_KEY
 					? "Other"
 					: getModelDisplayName(key, modelMetadata),
-				color: getColor(key, colorMap),
+				color: getColor(key, colorMap, modelMetadata),
 			};
 		}
 		return config;
@@ -204,11 +251,24 @@ export default function MetricChartCard({
 							/>
 							<Tooltip
 								content={(props) => (
-									<EnhancedChartTooltip
-										{...props}
-										format={format}
-										getColor={(key) => getColor(key, colorMap)}
-										activeKey={activeSeriesKey}
+										<EnhancedChartTooltip
+											{...props}
+											format={format}
+											getColor={(key) =>
+												getColor(key, colorMap, modelMetadata)
+											}
+											activeKey={activeSeriesKey}
+										rawBucketRow={
+											props?.label != null
+												? rawRowsByBucket.get(String(props.label)) ?? null
+												: null
+										}
+										getLabel={(key) =>
+											key === OTHER_SERIES_KEY
+												? "Other"
+												: getModelDisplayName(key, modelMetadata)
+										}
+										topN={10}
 									/>
 								)}
 								cursor={{ fill: "hsl(var(--muted))", opacity: 0.15 }}
@@ -219,8 +279,8 @@ export default function MetricChartCard({
 									dataKey={key}
 									name={key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(key, modelMetadata)}
 									stackId="a"
-									fill={getColor(key, colorMap)}
-									radius={[2, 2, 0, 0]}
+									fill={getColor(key, colorMap, modelMetadata)}
+									radius={[0, 0, 0, 0]}
 									onMouseEnter={() => setActiveSeriesKey(key)}
 									onMouseLeave={() => setActiveSeriesKey(null)}
 								/>
@@ -238,7 +298,13 @@ export default function MetricChartCard({
 							<div key={row.key} className="flex items-center gap-2 text-xs">
 								<div
 									className="h-2.5 w-2.5 rounded-sm shrink-0"
-									style={{ backgroundColor: getColor(row.key, colorMap) }}
+									style={{
+										backgroundColor: getColor(
+											row.key,
+											colorMap,
+											modelMetadata,
+										),
+									}}
 								/>
 								<span className="truncate text-muted-foreground">
 									{row.key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(row.key, modelMetadata)}

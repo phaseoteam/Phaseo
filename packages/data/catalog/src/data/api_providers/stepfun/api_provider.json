@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://platform.stepfun.com/",
   "country_code": "CN",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#0064FF"
 }

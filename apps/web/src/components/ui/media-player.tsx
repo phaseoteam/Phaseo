@@ -160,6 +160,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 		const [captionsEnabled, setCaptionsEnabled] = React.useState(false);
 		const [volumeIndicatorVisible, setVolumeIndicatorVisible] = React.useState(false);
 		const volumeIndicatorTimerRef = React.useRef<number | null>(null);
+		const loadingTimeoutRef = React.useRef<number | null>(null);
 
 		React.useEffect(() => {
 			const root = rootRef.current;
@@ -175,6 +176,21 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 
 		React.useEffect(() => {
 			if (!mediaElement) return;
+
+			const clearLoadingTimeout = () => {
+				if (loadingTimeoutRef.current != null) {
+					window.clearTimeout(loadingTimeoutRef.current);
+					loadingTimeoutRef.current = null;
+				}
+			};
+
+			const armLoadingTimeout = () => {
+				clearLoadingTimeout();
+				loadingTimeoutRef.current = window.setTimeout(() => {
+					setLoading(false);
+					setError("Media did not start loading. Source may be unavailable.");
+				}, 12000);
+			};
 
 			const syncState = () => {
 				setCurrentTime(mediaElement.currentTime || 0);
@@ -203,9 +219,23 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 			};
 			const onPlay = () => setPlaying(true);
 			const onPause = () => setPlaying(false);
-			const onWaiting = () => setLoading(true);
-			const onCanPlay = () => setLoading(false);
-			const onLoadedData = () => setLoading(false);
+			const onWaiting = () => {
+				setLoading(true);
+				armLoadingTimeout();
+			};
+			const onCanPlay = () => {
+				clearLoadingTimeout();
+				setLoading(false);
+			};
+			const onLoadedData = () => {
+				clearLoadingTimeout();
+				setLoading(false);
+			};
+			const onStalled = () => {
+				clearLoadingTimeout();
+				setLoading(false);
+				setError("Playback stalled. The audio source may have expired.");
+			};
 			const onRateChange = () => setPlaybackRateState(mediaElement.playbackRate);
 			const onVolumeChange = () => {
 				setVolumeState(mediaElement.volume);
@@ -219,6 +249,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				}, 900);
 			};
 			const onError = () => {
+				clearLoadingTimeout();
 				const code = (mediaElement as HTMLMediaElement).error?.code;
 				const message =
 					typeof code === "number"
@@ -238,6 +269,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 			mediaElement.addEventListener("waiting", onWaiting);
 			mediaElement.addEventListener("canplay", onCanPlay);
 			mediaElement.addEventListener("loadeddata", onLoadedData);
+			mediaElement.addEventListener("stalled", onStalled);
 			mediaElement.addEventListener("ratechange", onRateChange);
 			mediaElement.addEventListener("volumechange", onVolumeChange);
 			mediaElement.addEventListener("error", onError);
@@ -257,11 +289,13 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				mediaElement.removeEventListener("waiting", onWaiting);
 				mediaElement.removeEventListener("canplay", onCanPlay);
 				mediaElement.removeEventListener("loadeddata", onLoadedData);
+				mediaElement.removeEventListener("stalled", onStalled);
 				mediaElement.removeEventListener("ratechange", onRateChange);
 				mediaElement.removeEventListener("volumechange", onVolumeChange);
 				mediaElement.removeEventListener("error", onError);
 				mediaElement.removeEventListener("enterpictureinpicture", onEnterPiP);
 				mediaElement.removeEventListener("leavepictureinpicture", onLeavePiP);
+				clearLoadingTimeout();
 			};
 		}, [mediaElement, mutedProp, loopProp]);
 
@@ -269,6 +303,9 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 			return () => {
 				if (volumeIndicatorTimerRef.current) {
 					window.clearTimeout(volumeIndicatorTimerRef.current);
+				}
+				if (loadingTimeoutRef.current) {
+					window.clearTimeout(loadingTimeoutRef.current);
 				}
 			};
 		}, []);

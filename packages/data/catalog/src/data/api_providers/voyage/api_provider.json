@@ -4,5 +4,6 @@
   "description": "Voyage API for embedding and reranking models.",
   "link": "https://docs.voyageai.com",
   "country_code": "US",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#809641"
 }

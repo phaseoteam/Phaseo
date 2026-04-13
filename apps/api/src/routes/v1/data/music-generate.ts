@@ -44,6 +44,13 @@ function mapSunoTaskStatus(value: unknown): "queued" | "in_progress" | "complete
 }
 
 function mapMiniMaxTaskStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		// MiniMax status codes can be numeric (for example 2 => success).
+		if (value >= 2) return "completed";
+		if (value === 1) return "in_progress";
+		if (value <= -1) return "failed";
+		return "queued";
+	}
 	const status = String(value ?? "").toLowerCase();
 	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
@@ -73,6 +80,36 @@ function toPositiveNumber(value: unknown): number | undefined {
 		if (Number.isFinite(parsed) && parsed > 0) return parsed;
 	}
 	return undefined;
+}
+
+function isLikelyBase64(value: string): boolean {
+	if (!value || value.length < 32) return false;
+	const compact = value.replace(/\s+/g, "");
+	return compact.length % 4 === 0 && /^[A-Za-z0-9+/]+=*$/.test(compact);
+}
+
+function isLikelyHex(value: string): boolean {
+	if (!value || value.length < 64) return false;
+	const compact = value.replace(/\s+/g, "");
+	return compact.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(compact);
+}
+
+function hexToBase64(value: string): string | null {
+	const compact = value.replace(/\s+/g, "");
+	if (!isLikelyHex(compact)) return null;
+	try {
+		const bytes = new Uint8Array(compact.length / 2);
+		for (let i = 0; i < compact.length; i += 2) {
+			bytes[i / 2] = Number.parseInt(compact.slice(i, i + 2), 16);
+		}
+		let binary = "";
+		for (const byte of bytes) {
+			binary += String.fromCharCode(byte);
+		}
+		return btoa(binary);
+	} catch {
+		return null;
+	}
 }
 
 type SunoOutputItem = {
@@ -151,14 +188,25 @@ async function fetchMiniMaxTask(taskId: string) {
 }
 
 function parseMiniMaxOutput(json: any): { output: SunoOutputItem[]; totalDurationSeconds: number } {
-	const audioUrl =
+	const audioField =
 		json?.audio_url ??
 		json?.audioUrl ??
 		json?.url ??
+		json?.data?.audio ??
 		json?.data?.audio_url ??
 		json?.data?.audioUrl ??
+		json?.output?.audio ??
 		json?.output?.audio_url ??
 		json?.output?.audioUrl;
+	const trimmedAudio = typeof audioField === "string" ? audioField.trim() : "";
+	const audioUrl = /^https?:\/\//i.test(trimmedAudio) ? trimmedAudio : null;
+	const audioBase64 = trimmedAudio
+		? (isLikelyHex(trimmedAudio)
+			? hexToBase64(trimmedAudio)
+			: isLikelyBase64(trimmedAudio)
+				? trimmedAudio.replace(/\s+/g, "")
+				: null)
+		: null;
 	const duration = toPositiveNumber(
 		json?.duration ??
 		json?.duration_seconds ??
@@ -169,7 +217,8 @@ function parseMiniMaxOutput(json: any): { output: SunoOutputItem[]; totalDuratio
 		output: [{
 			index: 0,
 			id: json?.id != null ? String(json.id) : null,
-			audio_url: typeof audioUrl === "string" ? audioUrl : null,
+			audio_url: audioUrl,
+			audio_base64: audioBase64,
 			stream_audio_url: null,
 			image_url: null,
 			title: json?.title ?? null,
@@ -367,7 +416,7 @@ musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 		const usage =
 			status === "completed"
 				? {
-					output_audio_count: output.filter((item) => item.audio_url).length,
+					output_audio_count: output.filter((item) => item.audio_url || item.audio_base64).length,
 					...(totalDurationSeconds > 0 ? { output_audio_seconds: totalDurationSeconds } : {}),
 				}
 				: undefined;

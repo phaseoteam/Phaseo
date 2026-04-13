@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.arcee.ai/",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#008C8C"
 }

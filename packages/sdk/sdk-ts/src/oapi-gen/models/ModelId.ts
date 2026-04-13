@@ -404,6 +404,7 @@ export type ModelId =
   | "minimax/music-1.5"
   | "minimax/music-2.0"
   | "minimax/music-2.5"
+  | "minimax/music-2.6"
   | "minimax/s2v-01"
   | "minimax/speech-01-hd"
   | "minimax/speech-01-turbo"

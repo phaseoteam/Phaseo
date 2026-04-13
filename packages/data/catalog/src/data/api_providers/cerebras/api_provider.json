@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://inference-docs.cerebras.ai/",
   "country_code": "US",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#F97316"
 }

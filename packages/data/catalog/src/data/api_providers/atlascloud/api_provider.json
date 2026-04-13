@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.atlascloud.ai/",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#2563EB"
 }

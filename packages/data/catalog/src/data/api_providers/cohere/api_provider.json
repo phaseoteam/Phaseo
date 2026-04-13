@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.cohere.com/v2/cohere-documentation",
   "country_code": "CA",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#41584F"
 }
