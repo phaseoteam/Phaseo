@@ -33,11 +33,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Validate data files
               run: pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway
@@ -79,11 +76,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Validate SDK version literals
               run: pnpm run sdk:check-version-literals
@@ -127,11 +121,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: API lint & build
               if: matrix.app == 'api'
@@ -173,11 +164,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Build devtools packages
               run: |
@@ -210,11 +198,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Run importer (all sections)
               if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != '' }}
@@ -278,11 +263,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             # --- ACTUAL GENERATION ---
             - name: Generate ${{ matrix.sdk }} SDK
@@ -350,11 +332,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Build SDKs
               run: pnpm run validate:packages
@@ -385,11 +364,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Setup Go
               if: matrix.sdk == 'go'
@@ -450,11 +426,8 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Install Vercel CLI
               run: npm install --global vercel@latest
@@ -504,12 +477,10 @@ jobs:
                   cache-dependency-path: pnpm-lock.yaml
 
             # ---------- WEB (Vercel) ----------
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
 
             - name: Install dependencies
               if: matrix.target == 'web'
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Install Vercel CLI
               if: matrix.target == 'web'
@@ -527,12 +498,10 @@ jobs:
                   vercel deploy --prebuilt --archive=tgz --prod --token=$VERCEL_TOKEN
             # ---------- API (Cloudflare Workers) ----------
             # Install deps so wrangler can resolve imports
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
 
             - name: Install dependencies (for API)
               if: matrix.target == 'api'
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
               if: matrix.target == 'api'
@@ -622,11 +591,8 @@ jobs:
                   node -v
                   npm -v
 
-            - name: Normalize pnpm lockfile line endings
-              run: sed -i 's/\\r$//' pnpm-lock.yaml
-
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: corepack pnpm install --frozen-lockfile
 
             - name: Preflight publishable npm packages
               run: |
