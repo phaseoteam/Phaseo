@@ -1,0 +1,19 @@
+{
+  "model_id": "moonshotai/kimi-k2.6-code-preview",
+  "organisation_id": "moonshotai",
+  "name": "Kimi K2.6 Code Preview",
+  "status": "Available",
+  "previous_model_id": "moonshotai/kimi-k2.5",
+  "announced_date": "2026-04-13T00:00:00",
+  "release_date": "2026-04-13T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "moonshotai/kimi-k2.6-code-preview",
+  "family_id": "moonshotai/kimi-k2",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

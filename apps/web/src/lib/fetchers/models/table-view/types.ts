@@ -6,6 +6,7 @@ export interface MonitorModelData {
     modelId: string; // Canonical model_id (API model id semantics)
     apiModelId?: string;
     organisationId?: string; // Add organisation ID for logo lookup
+    organisationName?: string;
     provider: {
         name: string;
         id: string; // Add provider ID for logo lookup

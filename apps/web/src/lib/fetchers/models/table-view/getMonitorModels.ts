@@ -584,6 +584,9 @@ export async function getMonitorModels(
 		const providerName =
 			gatewayModel.provider?.api_provider_name ||
 			gatewayModel.api_provider_id;
+		const organisationRecord = Array.isArray(modelRow?.organisation)
+			? (modelRow?.organisation[0] as any)
+			: (modelRow?.organisation as any);
 
 		const rawEndpoint = gatewayModel?.endpoint || gatewayModel?.key || "";
 		const monitorModel: MonitorModelData = {
@@ -591,9 +594,8 @@ export async function getMonitorModels(
 			model: modelRow?.name || modelId || "",
 			modelId,
 			apiModelId: pm?.api_model_id ?? gatewayModel.api_model_id ?? undefined,
-			organisationId: Array.isArray(modelRow?.organisation)
-				? (modelRow?.organisation[0] as any)?.organisation_id
-				: (modelRow?.organisation as any)?.organisation_id || undefined,
+			organisationId: organisationRecord?.organisation_id || undefined,
+			organisationName: organisationRecord?.name || undefined,
 			provider: {
 				name: providerName ?? gatewayModel.api_provider_id,
 				id: gatewayModel.api_provider_id,

@@ -283,12 +283,27 @@ function formatPrimaryDate(model: ModelCardType): string {
 	return PRIMARY_DATE_FORMATTER.format(parsed);
 }
 
-function ModelCardImpl({ model }: { model: ModelCardType }) {
+function ModelCardImpl({
+	model,
+	showOrganisationPrefix = false,
+}: {
+	model: ModelCardType;
+	showOrganisationPrefix?: boolean;
+}) {
 	const modelSlug = model.model_id;
 	const modelHref = `/models/${modelSlug}`;
 	const router = useRouter();
 	const apiModelId = model.gateway_api_model_ids?.[0] ?? null;
 	const displayModelId = apiModelId ?? "No API Model ID";
+	const organisationLabel = String(
+		model.organisation_name ?? model.organisation_id ?? "",
+	).trim();
+	const modelDisplayName =
+		showOrganisationPrefix && organisationLabel
+			? model.name.toLowerCase().startsWith(`${organisationLabel.toLowerCase()}: `)
+				? model.name
+				: `${organisationLabel}: ${model.name}`
+			: model.name;
 	const [copied, setCopied] = useState(false);
 	const providerCount = model.gateway_provider_count ?? 0;
 	const activeProviders = model.gateway_active_provider_count ?? 0;
@@ -455,7 +470,7 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 								prefetch={false}
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
-								{model.name}
+								{modelDisplayName}
 							</Link>
 							{apiModelId ? (
 								<Tooltip>
@@ -466,7 +481,7 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 											variant="ghost"
 											onClick={copyModelId}
 											className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-											aria-label={`Copy API model ID for ${model.name}`}
+											aria-label={`Copy API model ID for ${modelDisplayName}`}
 										>
 											<span className="relative h-3 w-3">
 												<Copy
@@ -503,7 +518,7 @@ function ModelCardImpl({ model }: { model: ModelCardType }) {
 						<Link
 							href={modelHref}
 							prefetch={false}
-							aria-label={`Open ${model.name}`}
+							aria-label={`Open ${modelDisplayName}`}
 							className="group/open"
 						>
 							<ArrowUpRight

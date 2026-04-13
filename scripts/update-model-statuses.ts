@@ -25,7 +25,18 @@ const STATUS_ORDER: Record<Exclude<ModelStatus, null>, number> = {
 };
 
 const REPO_ROOT = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
-const MODELS_ROOT = path.join(REPO_ROOT, "apps", "web", "src", "data", "models");
+const CANONICAL_MODELS_ROOT = path.join(REPO_ROOT, "packages", "data", "catalog", "src", "data", "models");
+const LEGACY_MODELS_ROOT = path.join(REPO_ROOT, "apps", "web", "src", "data", "models");
+
+function resolveModelsRoot(): string {
+    if (fs.existsSync(CANONICAL_MODELS_ROOT)) return CANONICAL_MODELS_ROOT;
+    if (fs.existsSync(LEGACY_MODELS_ROOT)) return LEGACY_MODELS_ROOT;
+    throw new Error(
+        `[update-model-statuses] Could not find models directory at '${path.relative(REPO_ROOT, CANONICAL_MODELS_ROOT)}' or '${path.relative(REPO_ROOT, LEGACY_MODELS_ROOT)}'.`
+    );
+}
+
+const MODELS_ROOT = resolveModelsRoot();
 
 function parseDate(value: unknown): Date | null {
     if (value === null || value === undefined) return null;
