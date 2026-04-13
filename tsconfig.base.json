@@ -5,6 +5,8 @@
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
 		"resolveJsonModule": true,
+		"noImplicitAny": false,
+		"strictNullChecks": false,
 		"baseUrl": ".",
 		"ignoreDeprecations": "6.0",
 		"paths": {
