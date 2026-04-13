@@ -3,6 +3,9 @@
 	"version": "1.0.1",
 	"private": true,
 	"type": "module",
+	"engines": {
+		"node": ">=22.0.0"
+	},
 	"scripts": {
 		"dev": "npx wrangler dev",
 		"build": "npx wrangler deploy --dry-run",
