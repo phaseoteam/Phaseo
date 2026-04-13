@@ -33,6 +33,9 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
@@ -75,6 +78,9 @@ jobs:
                   registry-url: https://registry.npmjs.org
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
+
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
@@ -121,6 +127,9 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
@@ -164,6 +173,9 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
@@ -197,6 +209,9 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
+
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
@@ -262,6 +277,9 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
+
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
@@ -332,6 +350,9 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
@@ -363,6 +384,9 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
+
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
@@ -426,6 +450,9 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
@@ -478,6 +505,9 @@ jobs:
 
             # ---------- WEB (Vercel) ----------
 
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
+
             - name: Install dependencies
               if: matrix.target == 'web'
               run: corepack pnpm install --frozen-lockfile
@@ -498,6 +528,9 @@ jobs:
                   vercel deploy --prebuilt --archive=tgz --prod --token=$VERCEL_TOKEN
             # ---------- API (Cloudflare Workers) ----------
             # Install deps so wrangler can resolve imports
+
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
 
             - name: Install dependencies (for API)
               if: matrix.target == 'api'
@@ -590,6 +623,9 @@ jobs:
               run: |
                   node -v
                   npm -v
+
+            - name: Normalize pnpm lockfile line endings
+              run: sed -i 's/\r$//' pnpm-lock.yaml
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
