@@ -30,8 +30,6 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -76,8 +74,6 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -124,8 +120,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -170,8 +164,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -207,8 +199,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -275,8 +265,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -347,8 +335,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -382,8 +368,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -447,8 +431,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
@@ -500,8 +482,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             # ---------- WEB (Vercel) ----------
 
@@ -616,8 +596,6 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
-                  cache: pnpm
-                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Check runtime versions (trusted publishing)
               run: |
