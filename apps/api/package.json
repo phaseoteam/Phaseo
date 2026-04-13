@@ -47,13 +47,13 @@
 	},
 	"devDependencies": {
 		"@anthropic-ai/sdk": "^0.32.1",
-		"@cloudflare/workers-types": "^4.20260214.0",
+		"@cloudflare/workers-types": "^4.20260413.1",
 		"dotenv": "^17.3.1",
 		"eslint": "^10.0.3",
 		"openai": "^6.29.0",
 		"tsx": "^4.20.6",
-		"typescript": "^5.7.2",
-		"typescript-eslint": "^8.46.0",
+		"typescript": "^6.0.2",
+		"typescript-eslint": "^8.58.1",
 		"vitest": "^4.0.18",
 		"wrangler": "^4.66.0"
 	}

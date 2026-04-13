@@ -90,6 +90,18 @@ function bucketStartISOHour(date: Date): string {
 	return bucket.toISOString();
 }
 
+function normalizeBucketHour(value: string | null): string | null {
+	const raw = String(value ?? "").trim();
+	if (!raw) return null;
+
+	const parsed = new Date(raw);
+	if (Number.isFinite(parsed.getTime())) {
+		return bucketStartISOHour(parsed);
+	}
+
+	return raw;
+}
+
 async function fetchActiveGatewayModels(
 	client: SupabaseClient,
 	now = new Date(),
@@ -151,7 +163,7 @@ function buildMetricsFromRollup(
 	>();
 
 	for (const row of rollupRows) {
-		const bucket = String(row.bucket_hour ?? "").trim();
+		const bucket = normalizeBucketHour(row.bucket_hour);
 		if (!bucket) continue;
 		byHour.set(bucket, {
 			requests: coerceNumber(row.requests, 0),
