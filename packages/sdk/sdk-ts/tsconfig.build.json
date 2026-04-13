@@ -5,6 +5,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
+    "types": ["node"],
     "module": "ESNext",
     "target": "ES2022",
     "moduleResolution": "Bundler",
