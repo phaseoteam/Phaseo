@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://suno.com/",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#FF4B23"
 }

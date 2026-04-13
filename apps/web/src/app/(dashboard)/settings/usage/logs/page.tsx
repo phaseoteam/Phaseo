@@ -211,13 +211,31 @@ async function UsageLogsContent({
 		.eq("team_id", teamId)
 		.gte("created_at", from)
 		.lte("created_at", nowIso);
+	const { data: rollupData } = await supabase
+		.from("gateway_usage_rollup_15m_team_provider_model")
+		.select("canonical_model_id, provider")
+		.eq("team_id", teamId)
+		.gte("bucket_15m", from)
+		.lte("bucket_15m", nowIso);
 
 	const uniqueModels = Array.from(
 		new Set((uniqueData ?? []).map((r: any) => r.model_id).filter(Boolean)),
 	);
+	for (const row of rollupData ?? []) {
+		if (typeof row?.canonical_model_id === "string" && row.canonical_model_id.trim().length > 0) {
+			uniqueModels.push(row.canonical_model_id.trim());
+		}
+	}
+	const dedupedModels = Array.from(new Set(uniqueModels));
 	const uniqueProviders = Array.from(
 		new Set((uniqueData ?? []).map((r: any) => r.provider).filter(Boolean)),
 	);
+	for (const row of rollupData ?? []) {
+		if (typeof row?.provider === "string" && row.provider.trim().length > 0) {
+			uniqueProviders.push(row.provider.trim());
+		}
+	}
+	const dedupedProviders = Array.from(new Set(uniqueProviders));
 	const uniqueAppIds = Array.from(
 		new Set((uniqueData ?? []).map((r: any) => r.app_id).filter(Boolean)),
 	);
@@ -227,6 +245,19 @@ async function UsageLogsContent({
 		for (const row of uniqueData ?? []) {
 			const modelId = typeof row?.model_id === "string" ? row.model_id : null;
 			const providerId = typeof row?.provider === "string" ? row.provider : null;
+			if (!modelId || !providerId) continue;
+			if (!providerSetsByModel.has(modelId)) {
+				providerSetsByModel.set(modelId, new Set<string>());
+			}
+			providerSetsByModel.get(modelId)!.add(providerId);
+		}
+		for (const row of rollupData ?? []) {
+			const modelId =
+				typeof row?.canonical_model_id === "string"
+					? row.canonical_model_id.trim()
+					: null;
+			const providerId =
+				typeof row?.provider === "string" ? row.provider.trim() : null;
 			if (!modelId || !providerId) continue;
 			if (!providerSetsByModel.has(modelId)) {
 				providerSetsByModel.set(modelId, new Set<string>());
@@ -243,8 +274,8 @@ async function UsageLogsContent({
 
 	const [appNames, providerNames, modelMetadata] = await Promise.all([
 		fetchAppNames(uniqueAppIds),
-		fetchProviderNames(uniqueProviders),
-		fetchModelMetadata(uniqueModels),
+		fetchProviderNames(dedupedProviders),
+		fetchModelMetadata(dedupedModels),
 	]);
 
 	// Keys list for key label rendering inside the logs table.
@@ -296,8 +327,8 @@ async function UsageLogsContent({
 				<RequestsSection
 					timeRange={{ from, to: nowIso }}
 					appNames={appNames}
-					models={uniqueModels}
-					providers={uniqueProviders}
+					models={dedupedModels}
+					providers={dedupedProviders}
 					modelProviders={modelProviders}
 					providerNames={providerNames}
 					apiKeys={availableKeys}

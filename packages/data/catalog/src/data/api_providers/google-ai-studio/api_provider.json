@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://aistudio.google.com/",
   "country_code": "US",
-  "status": "Active"
+  "status": "Active",
+  "colour": "#4285F4"
 }

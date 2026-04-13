@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.wandb.ai/inference",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#FFBE00"
 }

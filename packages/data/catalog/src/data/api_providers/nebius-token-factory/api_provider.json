@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://nebius.com/docs",
   "country_code": "NL",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#6366F1"
 }

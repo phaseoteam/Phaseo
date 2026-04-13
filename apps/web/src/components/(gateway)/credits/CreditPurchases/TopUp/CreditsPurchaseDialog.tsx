@@ -14,10 +14,10 @@ import {
 	DialogClose,
 } from "@/components/ui/dialog";
 import {
-	HoverCard,
-	HoverCardTrigger,
-	HoverCardContent,
-} from "@/components/ui/hover-card";
+	Tooltip,
+	TooltipTrigger,
+	TooltipContent,
+} from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import PaymentMethodStrip from "@/components/(gateway)/credits/CreditPurchases/TopUp/PaymentMethodStrip";
 import { Switch } from "@/components/ui/switch";
@@ -507,26 +507,31 @@ export default function CreditsPurchaseDialog({
 								<span className="text-zinc-600">
 									Top-Up Fee
 								</span>
-								<HoverCard>
-									<HoverCardTrigger asChild>
+								<Tooltip>
+									<TooltipTrigger asChild>
 										<Button
+											type="button"
 											variant="ghost"
 											size="icon"
 											aria-label="Service fee info"
-											className="inline-flex"
+											className="h-6 w-6 p-0 text-zinc-500 hover:text-zinc-700"
 										>
 											<Info className="h-4 w-4 text-zinc-400" />
 										</Button>
-									</HoverCardTrigger>
-									<HoverCardContent>
+									</TooltipTrigger>
+									<TooltipContent
+										side="top"
+										sideOffset={6}
+										className="max-w-xs text-left leading-relaxed"
+									>
 										We charge{" "}
 										{(FEE_RATE * 100)
 											.toFixed(2)
 											.replace(/\.?0+$/, "")}
 										% of the top-up as a fee, with a
 										minimum fee of $1.
-									</HoverCardContent>
-								</HoverCard>
+									</TooltipContent>
+								</Tooltip>
 								<span className="font-medium">
 									{feeDisplay}
 								</span>

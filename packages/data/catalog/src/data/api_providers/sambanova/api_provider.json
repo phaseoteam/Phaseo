@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#FF4D4F"
 }

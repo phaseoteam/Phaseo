@@ -1,11 +1,132 @@
 import { join } from "path";
 import { promises as fs } from "fs";
-import { DIR_PROVIDERS } from "../paths";
+import { DIR_ORGS, DIR_PROVIDERS } from "../paths";
 import { listDirs, readJsonWithHash, chunk } from "../util";
 import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
 import { ChangeTracker } from "../state";
 
 type ProviderStatus = "Active" | "Beta" | "Alpha" | "NotReady";
+
+const PROVIDER_ORG_ALIASES: Record<string, string> = {
+    "amazon-bedrock": "amazon",
+    "elevenlabs": "eleven-labs",
+    "google-ai-studio": "google",
+    "google-vertex": "google",
+    "minimax-lightning": "minimax",
+    "moonshotai-turbo": "moonshotai",
+    "nousresearch": "nous",
+};
+
+const PROVIDER_COLOUR_FALLBACKS: Record<string, string> = {
+    "akashml": "#00D1FF",
+    "alibaba-cloud": "#FF6A00",
+    "atlascloud": "#2563EB",
+    "azure": "#0078D4",
+    "baseten": "#6D28D9",
+    "byteplus": "#1E293B",
+    "cerebras": "#00C389",
+    "cloudflare": "#F38020",
+    "deepinfra": "#3B82F6",
+    "fireworks": "#EF4444",
+    "friendli": "#4F46E5",
+    "gmicloud": "#0EA5E9",
+    "groq": "#F55036",
+    "hyperbolic": "#7C3AED",
+    "infermatic": "#0F766E",
+    "ionrouter": "#334155",
+    "morph": "#0F172A",
+    "nebius-token-factory": "#2563EB",
+    "nextbit": "#84CC16",
+    "novita": "#06B6D4",
+    "parasail": "#0EA5E9",
+    "phala": "#14B8A6",
+    "siliconflow": "#6366F1",
+    "sourceful": "#0EA5E9",
+    "together": "#111827",
+    "venice": "#06B6D4",
+    "venice-e2ee": "#0284C7",
+    "weights-and-biases": "#FFBE00",
+};
+
+const normalizeColour = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+    return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toUpperCase() : null;
+};
+
+const hslToHex = (h: number, s: number, l: number): string => {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const hh = h / 60;
+    const x = c * (1 - Math.abs((hh % 2) - 1));
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    if (hh >= 0 && hh < 1) [r, g, b] = [c, x, 0];
+    else if (hh < 2) [r, g, b] = [x, c, 0];
+    else if (hh < 3) [r, g, b] = [0, c, x];
+    else if (hh < 4) [r, g, b] = [0, x, c];
+    else if (hh < 5) [r, g, b] = [x, 0, c];
+    else [r, g, b] = [c, 0, x];
+
+    const m = l - c / 2;
+    const toHex = (v: number) => {
+        const n = Math.round((v + m) * 255);
+        return n.toString(16).padStart(2, "0");
+    };
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+};
+
+const generateDeterministicColour = (seed: string): string => {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) {
+        hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+    }
+    const hue = hash % 360;
+    return hslToHex(hue, 0.72, 0.48);
+};
+
+const loadOrganisationColours = async (): Promise<Map<string, string>> => {
+    const colours = new Map<string, string>();
+    const dirs = await listDirs(DIR_ORGS);
+    for (const dir of dirs) {
+        const fp = join(dir, "organisation.json");
+        try {
+            const { data } = await readJsonWithHash<any>(fp);
+            const orgId = typeof data?.organisation_id === "string" ? data.organisation_id.trim().toLowerCase() : "";
+            const colour = normalizeColour(data?.colour ?? data?.color ?? null);
+            if (!orgId || !colour) continue;
+            colours.set(orgId, colour);
+        } catch {
+            // ignore malformed/missing organisation files and continue
+        }
+    }
+    return colours;
+};
+
+const resolveProviderColour = (
+    providerIdRaw: unknown,
+    inputColour: unknown,
+    organisationColours: Map<string, string>
+): string => {
+    const explicit = normalizeColour(inputColour);
+    if (explicit) return explicit;
+
+    const providerId = typeof providerIdRaw === "string" ? providerIdRaw.trim().toLowerCase() : "";
+    if (!providerId) return "#64748B";
+
+    const directOrgColour = organisationColours.get(providerId);
+    if (directOrgColour) return directOrgColour;
+
+    const aliasOrgColour = organisationColours.get(PROVIDER_ORG_ALIASES[providerId] ?? "");
+    if (aliasOrgColour) return aliasOrgColour;
+
+    const fallbackColour = normalizeColour(PROVIDER_COLOUR_FALLBACKS[providerId]);
+    if (fallbackColour) return fallbackColour;
+
+    return generateDeterministicColour(providerId);
+};
 
 const toTextArray = (value?: string[] | string | null): string[] | null => {
     if (Array.isArray(value)) return value.length ? value : null;
@@ -321,6 +442,7 @@ export async function loadProviders(
     const modelFilter = opts?.modelId ?? null;
     const dirs = await listDirs(DIR_PROVIDERS);
     const supa = client();
+    const organisationColours = await loadOrganisationColours();
     const {
         modelIds: knownModelIds,
         apiToModelId,
@@ -391,7 +513,7 @@ export async function loadProviders(
             description: j.description ?? null,
             link: j.link ?? null,
             country_code: j.country_code ?? null,
-            colour: j.colour ?? j.color ?? null,
+            colour: resolveProviderColour(j.api_provider_id, j.colour ?? j.color ?? null, organisationColours),
             status,
         };
         providerIds.add(row.api_provider_id);

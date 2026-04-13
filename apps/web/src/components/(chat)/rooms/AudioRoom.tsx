@@ -40,6 +40,7 @@ import {
 	MediaPlayerPlay,
 	MediaPlayerSeek,
 	MediaPlayerSettings,
+	MediaPlayerTime,
 	MediaPlayerVolume,
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
@@ -75,6 +76,7 @@ import {
 import { AudioModelSettingsDialog } from "@/components/(chat)/rooms/settings/AudioModelSettingsDialog";
 import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
 import {
+	AudioLines,
 	ArrowUpRight,
 	Check,
 	ChevronRight,
@@ -83,8 +85,12 @@ import {
 	Database,
 	Download,
 	Info,
+	Languages,
+	Loader2,
 	MessageCircleDashed,
+	Mic,
 	MoreHorizontal,
+	Music2,
 	Pencil,
 	PencilLine,
 	Pin,
@@ -103,11 +109,13 @@ type AudioMode = "speech" | "transcription" | "translation" | "music";
 type AudioHistoryPayload = {
 	conversationId?: string;
 	conversationTitle?: string;
+	conversationMode?: AudioMode;
 	modelId: string;
 	providerId?: string;
 	mode: AudioMode;
 	promptText?: string;
 	inputText?: string;
+	musicLyrics?: string;
 	text?: string;
 	audioUrl?: string;
 	audioDataUrl?: string;
@@ -134,10 +142,13 @@ type AudioEntry = {
 	modelId: string;
 	providerId?: string;
 	mode: AudioMode;
+	conversationMode?: AudioMode;
 	inputText?: string;
+	musicLyrics?: string;
 	text?: string;
 	audioSrc?: string;
 	isTemporary?: boolean;
+	isPending?: boolean;
 	metrics?: AudioEntryMetrics;
 	raw?: unknown;
 };
@@ -145,6 +156,7 @@ type AudioEntry = {
 type AudioConversation = {
 	id: string;
 	title: string;
+	mode: AudioMode;
 	updatedAt: string;
 	messageCount: number;
 	pinned: boolean;
@@ -181,6 +193,8 @@ const AUDIO_MODE_OPTIONS: AudioMode[] = [
 	"translation",
 ];
 const AUDIO_PINNED_STORAGE_KEY = "ai-stats-audio-room-pinned-conversations-v1";
+const MUSIC_POLL_INTERVAL_MS = 2_500;
+const MUSIC_POLL_MAX_ATTEMPTS = 36;
 
 function nowIso() {
 	return new Date().toISOString();
@@ -201,6 +215,20 @@ function modeLabel(mode: AudioMode): string {
 	if (mode === "music") return "Music";
 	if (mode === "transcription") return "Transcription";
 	return "Translation";
+}
+
+function modeBusyLabel(mode: AudioMode): string {
+	if (mode === "speech") return "Converting to speech...";
+	if (mode === "music") return "Generating music...";
+	if (mode === "transcription") return "Transcribing audio...";
+	return "Translating audio...";
+}
+
+function modeIcon(mode: AudioMode) {
+	if (mode === "speech") return <Mic className="h-3.5 w-3.5" />;
+	if (mode === "music") return <Music2 className="h-3.5 w-3.5" />;
+	if (mode === "transcription") return <AudioLines className="h-3.5 w-3.5" />;
+	return <Languages className="h-3.5 w-3.5" />;
 }
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -250,6 +278,54 @@ function normalizeAudioMimeType(mimeType: string | undefined): string {
 	return "audio/mpeg";
 }
 
+function isLikelyBase64(value: string): boolean {
+	if (!value || value.length < 32) return false;
+	const compact = value.replace(/\s+/g, "");
+	return compact.length % 4 === 0 && /^[A-Za-z0-9+/]+=*$/.test(compact);
+}
+
+function isLikelyHexEncodedAudio(value: string): boolean {
+	if (!value || value.length < 64) return false;
+	const compact = value.replace(/\s+/g, "");
+	return compact.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(compact);
+}
+
+function hexToBase64(value: string): string | null {
+	const compact = value.replace(/\s+/g, "");
+	if (!isLikelyHexEncodedAudio(compact)) return null;
+	try {
+		const bytes = new Uint8Array(compact.length / 2);
+		for (let i = 0; i < compact.length; i += 2) {
+			bytes[i / 2] = Number.parseInt(compact.slice(i, i + 2), 16);
+		}
+		let binary = "";
+		for (const byte of bytes) {
+			binary += String.fromCharCode(byte);
+		}
+		return btoa(binary);
+	} catch {
+		return null;
+	}
+}
+
+function coerceAudioStringToSource(value: string, mimeType: string): string | undefined {
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	if (trimmed.startsWith("data:audio/")) return trimmed;
+	if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("/") || trimmed.startsWith("blob:")) {
+		return trimmed;
+	}
+	if (isLikelyHexEncodedAudio(trimmed)) {
+		const base64 = hexToBase64(trimmed);
+		if (base64) return `data:${mimeType};base64,${base64}`;
+		return undefined;
+	}
+	if (isLikelyBase64(trimmed)) {
+		return `data:${mimeType};base64,${trimmed.replace(/\s+/g, "")}`;
+	}
+	return undefined;
+}
+
 function extractAudioFromPayload(payload: unknown): string | undefined {
 	const asRecord =
 		payload && typeof payload === "object"
@@ -277,9 +353,8 @@ function extractAudioFromPayload(payload: unknown): string | undefined {
 	const directData =
 		typeof asRecord.data === "string" ? asRecord.data.trim() : "";
 	if (directData) {
-		return directData.startsWith("data:")
-			? directData
-			: `data:${mimeType};base64,${directData}`;
+		const coerced = coerceAudioStringToSource(directData, mimeType);
+		if (coerced) return coerced;
 	}
 	const directAudioBase64 =
 		typeof asRecord.audio_base64 === "string"
@@ -292,16 +367,14 @@ function extractAudioFromPayload(payload: unknown): string | undefined {
 						? asRecord.b64_json.trim()
 						: "";
 	if (directAudioBase64) {
-		return directAudioBase64.startsWith("data:")
-			? directAudioBase64
-			: `data:${mimeType};base64,${directAudioBase64}`;
+		const coerced = coerceAudioStringToSource(directAudioBase64, mimeType);
+		if (coerced) return coerced;
 	}
 	const directAudio =
 		typeof asRecord.audio === "string" ? asRecord.audio.trim() : "";
 	if (directAudio) {
-		return directAudio.startsWith("data:")
-			? directAudio
-			: `data:${mimeType};base64,${directAudio}`;
+		const coerced = coerceAudioStringToSource(directAudio, mimeType);
+		if (coerced) return coerced;
 	}
 
 	const chooseFromObject = (value: unknown): string | undefined => {
@@ -340,10 +413,13 @@ function extractAudioFromPayload(payload: unknown): string | undefined {
 						? record.format
 						: mimeType,
 			);
-			return data.startsWith("data:")
-				? data
-				: `data:${nodeMime};base64,${data}`;
+			const coerced = coerceAudioStringToSource(data, nodeMime);
+			if (coerced) return coerced;
 		}
+		const nestedFile = chooseFromObject(record.file);
+		if (nestedFile) return nestedFile;
+		const nestedAudio = chooseFromObject(record.audio);
+		if (nestedAudio) return nestedAudio;
 		return undefined;
 	};
 
@@ -366,6 +442,25 @@ function extractAudioFromPayload(payload: unknown): string | undefined {
 		}
 	}
 
+	const resultRecord =
+		asRecord.result && typeof asRecord.result === "object"
+			? (asRecord.result as Record<string, unknown>)
+			: null;
+	const resultDirect = chooseFromObject(resultRecord);
+	if (resultDirect) return resultDirect;
+	const nestedArrays = [resultRecord?.output, resultRecord?.data];
+	for (const node of nestedArrays) {
+		if (node && typeof node === "object" && !Array.isArray(node)) {
+			const direct = chooseFromObject(node);
+			if (direct) return direct;
+		}
+		if (!Array.isArray(node)) continue;
+		for (const entry of node) {
+			const direct = chooseFromObject(entry);
+			if (direct) return direct;
+		}
+	}
+
 	const url = extractGenerationUrls(asRecord)[0];
 	return typeof url === "string" && url.trim() ? url.trim() : undefined;
 }
@@ -378,10 +473,160 @@ function inferAudioMimeTypeFromSource(src: string): string {
 	return inferAudioMimeType(src);
 }
 
-function isLikelyBase64(value: string): boolean {
-	if (!value || value.length < 128) return false;
-	const compact = value.replace(/\s+/g, "");
-	return /^[A-Za-z0-9+/]+=*$/.test(compact);
+function wait(ms: number): Promise<void> {
+	return new Promise((resolve) => {
+		window.setTimeout(resolve, ms);
+	});
+}
+
+function normalizeMusicStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" | null {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		if (value >= 2) return "completed";
+		if (value === 1) return "in_progress";
+		if (value <= -1) return "failed";
+		return "queued";
+	}
+	const status = String(value ?? "").trim().toLowerCase();
+	if (!status) return null;
+	if (
+		status === "completed" ||
+		status === "success" ||
+		status === "succeeded" ||
+		status === "finished" ||
+		status === "done"
+	) {
+		return "completed";
+	}
+	if (
+		status === "failed" ||
+		status === "error" ||
+		status === "cancelled" ||
+		status === "canceled"
+	) {
+		return "failed";
+	}
+	if (
+		status === "in_progress" ||
+		status === "running" ||
+		status === "processing" ||
+		status === "pending"
+	) {
+		return "in_progress";
+	}
+	if (status === "queued") return "queued";
+	return null;
+}
+
+function extractMusicStatus(payload: unknown): "queued" | "in_progress" | "completed" | "failed" | null {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	const result =
+		record.result && typeof record.result === "object"
+			? (record.result as Record<string, unknown>)
+			: null;
+	return (
+		normalizeMusicStatus(record.status) ??
+		normalizeMusicStatus(record.task_status) ??
+		normalizeMusicStatus(record.taskStatus) ??
+		normalizeMusicStatus(result?.status) ??
+		normalizeMusicStatus(result?.task_status) ??
+		normalizeMusicStatus(
+			result?.data && typeof result.data === "object"
+				? (result.data as Record<string, unknown>).status
+				: undefined,
+		) ??
+		null
+	);
+}
+
+function extractMusicResourceId(payload: unknown): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	const candidates = [
+		record.nativeId,
+		record.native_id,
+		record.nativeResponseId,
+		record.native_response_id,
+		record.musicId,
+		record.music_id,
+		record.id,
+	];
+	for (const value of candidates) {
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (trimmed) return trimmed;
+	}
+	return null;
+}
+
+function extractMusicErrorMessage(payload: unknown): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	if (typeof record.error === "string" && record.error.trim()) return record.error.trim();
+	if (
+		record.error &&
+		typeof record.error === "object" &&
+		typeof (record.error as Record<string, unknown>).message === "string"
+	) {
+		const message = String((record.error as Record<string, unknown>).message).trim();
+		if (message) return message;
+	}
+	if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+	if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+	return null;
+}
+
+async function pollMusicGeneration(resourceId: string): Promise<{
+	payload: unknown;
+	audioSrc: string | undefined;
+	status: "queued" | "in_progress" | "completed" | "failed" | null;
+}> {
+	let latestPayload: unknown = null;
+	let latestStatus: "queued" | "in_progress" | "completed" | "failed" | null = null;
+	for (let attempt = 0; attempt < MUSIC_POLL_MAX_ATTEMPTS; attempt += 1) {
+		const response = await fetch(
+			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
+			{ method: "GET" },
+		);
+		const rawText = await response.text();
+		let payload: unknown = null;
+		if (rawText.trim()) {
+			try {
+				payload = JSON.parse(rawText);
+			} catch {
+				payload = { raw_text: rawText };
+			}
+		}
+		latestPayload = payload;
+
+		if (!response.ok) {
+			const message =
+				extractMusicErrorMessage(payload) ||
+				rawText.trim() ||
+				`Music status request failed (${response.status}).`;
+			throw new Error(message);
+		}
+
+		const audioSrc = extractAudioFromPayload(payload);
+		if (audioSrc) {
+			return { payload, audioSrc, status: "completed" };
+		}
+
+		const status = extractMusicStatus(payload);
+		latestStatus = status;
+		if (status === "failed") {
+			throw new Error(extractMusicErrorMessage(payload) ?? "Music generation failed.");
+		}
+		if (status === "completed") {
+			return { payload, audioSrc: undefined, status };
+		}
+
+		if (attempt < MUSIC_POLL_MAX_ATTEMPTS - 1) {
+			await wait(MUSIC_POLL_INTERVAL_MS);
+		}
+	}
+
+	return { payload: latestPayload, audioSrc: undefined, status: latestStatus };
 }
 
 function toFiniteNumber(value: unknown): number | undefined {
@@ -526,10 +771,15 @@ function toEntry(record: {
 				? payload.providerId.trim()
 				: undefined,
 		mode: payload.mode,
+		conversationMode: payload.conversationMode ?? payload.mode,
 		inputText:
 			(typeof payload.inputText === "string" && payload.inputText.trim()) ||
 			(typeof payload.promptText === "string" && payload.promptText.trim()) ||
 			undefined,
+		musicLyrics:
+			typeof payload.musicLyrics === "string" && payload.musicLyrics.trim()
+				? payload.musicLyrics.trim()
+				: undefined,
 		text: payload.text,
 		audioSrc:
 			payload.audioDataUrl ||
@@ -551,11 +801,13 @@ function toHistoryPayload(entry: AudioEntry): AudioHistoryPayload {
 	return {
 		conversationId: entry.conversationId,
 		conversationTitle: entry.conversationTitle,
+		conversationMode: entry.conversationMode ?? entry.mode,
 		modelId: entry.modelId,
 		providerId: entry.providerId,
 		mode: entry.mode,
 		promptText: entry.inputText,
 		inputText: entry.inputText,
+		musicLyrics: entry.musicLyrics,
 		text: entry.text,
 		audioUrl: audioDataUrl ? undefined : entry.audioSrc,
 		audioDataUrl,
@@ -608,6 +860,7 @@ function buildConversations(
 			byId.set(entry.conversationId, {
 				id: entry.conversationId,
 				title: entry.conversationTitle,
+				mode: entry.conversationMode ?? entry.mode,
 				updatedAt: entry.createdAt,
 				messageCount: 1,
 				pinned: Boolean(pinnedById[entry.conversationId]),
@@ -616,6 +869,7 @@ function buildConversations(
 		}
 		existing.messageCount += 1;
 		existing.pinned = Boolean(pinnedById[existing.id]);
+		existing.mode = existing.mode ?? entry.conversationMode ?? entry.mode;
 		if (entry.createdAt > existing.updatedAt) existing.updatedAt = entry.createdAt;
 		if (
 			(existing.title === "Past conversions" || !existing.title.trim()) &&
@@ -697,14 +951,26 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
-	const filteredModels = useMemo(
-		() => filterModelsForRoom(models, "audio").filter((model) => model.isAvailable),
+	const [mode, setMode] = useState<AudioMode>("speech");
+	const allAudioModels = useMemo(
+		() => filterModelsForRoom(models, "audio"),
 		[models],
 	);
-	const [mode, setMode] = useState<AudioMode>("speech");
+	const filteredModels = useMemo(
+		() =>
+			allAudioModels.filter((model) => {
+				const support = intersectAudioModeSupport(
+					getAudioModeSupportForCapabilities(model.capabilities),
+					AUDIO_MODE_UI_ENABLED,
+				);
+				return support[mode];
+			}),
+		[allAudioModels, mode],
+	);
 	const [modelId, setModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [textInput, setTextInput] = useState("");
+	const [musicLyricsInput, setMusicLyricsInput] = useState("");
 	const [audioUrlInput, setAudioUrlInput] = useState("");
 	const [audioFile, setAudioFile] = useState<File | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -766,8 +1032,8 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	};
 
 	const selectedModeSupport = useMemo(
-		() => getModelModeSupport(filteredModels, modelId, selectedProviderId),
-		[filteredModels, modelId, selectedProviderId],
+		() => getModelModeSupport(allAudioModels, modelId, selectedProviderId),
+		[allAudioModels, modelId, selectedProviderId],
 	);
 	const effectiveModeSupport = useMemo(
 		() => intersectAudioModeSupport(selectedModeSupport, AUDIO_MODE_UI_ENABLED),
@@ -781,6 +1047,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		if (effectiveModeSupport.translation) supported.push("translation");
 		return supported.length ? supported : (["speech"] as AudioMode[]);
 	}, [effectiveModeSupport]);
+	const uiAvailableModes = useMemo(() => {
+		const enabled: AudioMode[] = [];
+		if (AUDIO_MODE_UI_ENABLED.speech) enabled.push("speech");
+		if (AUDIO_MODE_UI_ENABLED.music) enabled.push("music");
+		if (AUDIO_MODE_UI_ENABLED.transcription) enabled.push("transcription");
+		if (AUDIO_MODE_UI_ENABLED.translation) enabled.push("translation");
+		return enabled.length ? enabled : (["speech"] as AudioMode[]);
+	}, []);
 	const conversations = useMemo(
 		() => buildConversations(entries, pinnedConversationIds),
 		[entries, pinnedConversationIds],
@@ -807,6 +1081,20 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			.filter((entry) => entry.conversationId === targetId)
 			.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 	}, [activeConversationId, conversations, entries]);
+	const conversationModeById = useMemo(() => {
+		const map = new Map<string, AudioMode>();
+		for (const entry of entries) {
+			if (map.has(entry.conversationId)) continue;
+			map.set(entry.conversationId, entry.conversationMode ?? entry.mode);
+		}
+		return map;
+	}, [entries]);
+	const activeConversationResolvedId =
+		activeConversationId ?? conversations[0]?.id ?? null;
+	const activeConversationMode =
+		(activeConversationResolvedId
+			? conversationModeById.get(activeConversationResolvedId)
+			: null) ?? null;
 
 	const dialogModelId: string | null = modelSettingsCompat.modelSettingsModelId ?? null;
 	const dialogProfile =
@@ -817,12 +1105,12 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				: null;
 	const dialogModeSupport = useMemo(() => {
 		const detected = getModelModeSupport(
-			filteredModels,
+			allAudioModels,
 			dialogModelId ?? "",
 			(dialogProfile?.providerId as string | undefined) ?? "auto",
 		);
 		return intersectAudioModeSupport(detected, AUDIO_MODE_UI_ENABLED);
-	}, [dialogModelId, dialogProfile?.providerId, filteredModels]);
+	}, [allAudioModels, dialogModelId, dialogProfile?.providerId]);
 	const updateModelBaseSettings = (partial: Record<string, unknown>) => {
 		if (typeof modelSettingsCompat.updateModelBaseSettings === "function") {
 			modelSettingsCompat.updateModelBaseSettings(partial);
@@ -848,14 +1136,38 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			if (current && filteredModels.some((model) => model.modelId === current)) {
 				return current;
 			}
-			return "";
+			return filteredModels[0]?.modelId ?? "";
 		});
 	}, [filteredModels]);
 
 	useEffect(() => {
-		if (availableModes.includes(mode)) return;
-		setMode(availableModes[0] ?? "speech");
-	}, [availableModes, mode]);
+		if (uiAvailableModes.includes(mode)) return;
+		setMode(uiAvailableModes[0] ?? "speech");
+	}, [mode, uiAvailableModes]);
+
+	useEffect(() => {
+		if (!activeConversationMode) return;
+		if (mode === activeConversationMode) return;
+		setMode(activeConversationMode);
+	}, [activeConversationMode, mode]);
+
+	const handleModeSelect = (targetMode: AudioMode) => {
+		if (activeConversationMode) return;
+		if (!uiAvailableModes.includes(targetMode)) return;
+		if (!availableModes.includes(targetMode)) {
+			const fallbackModel = allAudioModels.find((model) => {
+				const support = intersectAudioModeSupport(
+					getAudioModeSupportForCapabilities(model.capabilities),
+					AUDIO_MODE_UI_ENABLED,
+				);
+				return support[targetMode];
+			});
+			if (fallbackModel) {
+				setModelId(fallbackModel.modelId);
+			}
+		}
+		setMode(targetMode);
+	};
 
 	useEffect(() => {
 		setSidebarSlotEl(document.getElementById(ROOM_SIDEBAR_SLOT_ID));
@@ -926,6 +1238,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		setModelId("");
 		setActiveConversationId(createConversationId());
 		setTextInput("");
+		setMusicLyricsInput("");
 		setAudioUrlInput("");
 		setAudioFile(null);
 		setError(null);
@@ -936,6 +1249,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			setTemporaryMode(true);
 			setActiveConversationId(createConversationId());
 			setTextInput("");
+			setMusicLyricsInput("");
 			setAudioUrlInput("");
 			setAudioFile(null);
 			setError(null);
@@ -951,6 +1265,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		);
 		setActiveConversationId(remainingConversations[0]?.id ?? createConversationId());
 		setTextInput("");
+		setMusicLyricsInput("");
 		setAudioUrlInput("");
 		setAudioFile(null);
 		setError(null);
@@ -986,6 +1301,10 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			updatedAt: nowIso(),
 			payload: toHistoryPayload(updated),
 		});
+	};
+
+	const removeEntry = (entryId: string) => {
+		setEntries((prev) => prev.filter((entry) => entry.id !== entryId));
 	};
 
 	const toggleConversationPin = (conversation: AudioConversation) => {
@@ -1137,9 +1456,13 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		setModelId(entry.modelId);
 		setMode(retryMode);
 		setTextInput(prompt);
+		if (retryMode === "music") {
+			setMusicLyricsInput(entry.musicLyrics ?? "");
+		}
 		requestAnimationFrame(() => {
 			void submit({
 				forcedPrompt: prompt,
+				forcedLyrics: retryMode === "music" ? (entry.musicLyrics ?? "") : undefined,
 				forcedMode: retryMode,
 				forcedModelId: entry.modelId,
 				forcedConversationId: entry.conversationId,
@@ -1181,15 +1504,29 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 		try {
 			if (/^https?:\/\//i.test(source)) {
-				const response = await fetch(source);
-				if (!response.ok) {
-					throw new Error(`Download failed (${response.status})`);
+				try {
+					const response = await fetch(source);
+					if (!response.ok) {
+						throw new Error(`Download failed (${response.status})`);
+					}
+					const blob = await response.blob();
+					const objectUrl = URL.createObjectURL(blob);
+					triggerDownload(objectUrl);
+					setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+					return;
+				} catch {
+					// Some providers serve signed URLs without permissive CORS headers.
+					// Fall back to direct navigation/download so browser handles it.
+					const anchor = document.createElement("a");
+					anchor.href = source;
+					anchor.download = filename;
+					anchor.target = "_blank";
+					anchor.rel = "noopener noreferrer";
+					document.body.appendChild(anchor);
+					anchor.click();
+					document.body.removeChild(anchor);
+					return;
 				}
-				const blob = await response.blob();
-				const objectUrl = URL.createObjectURL(blob);
-				triggerDownload(objectUrl);
-				setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-				return;
 			}
 			triggerDownload(source);
 		} catch {
@@ -1199,6 +1536,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	const submit = async (overrides?: {
 		forcedPrompt?: string;
+		forcedLyrics?: string;
 		forcedMode?: AudioMode;
 		forcedModelId?: string;
 		forcedConversationId?: string;
@@ -1206,12 +1544,16 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}) => {
 		const targetModelId = overrides?.forcedModelId ?? modelId;
 		if (!targetModelId || isLoading || !selectedModelEnabled) return;
-		const targetMode = overrides?.forcedMode ?? mode;
+		const requestedMode = overrides?.forcedMode ?? mode;
+		const conversationId =
+			overrides?.forcedConversationId ?? activeConversationId ?? createConversationId();
+		const lockedConversationMode = conversationModeById.get(conversationId);
+		const targetMode = lockedConversationMode ?? requestedMode;
 		const targetModeSupport =
 			targetModelId === modelId
 				? effectiveModeSupport
 				: intersectAudioModeSupport(
-						getModelModeSupport(filteredModels, targetModelId, selectedProviderId),
+						getModelModeSupport(allAudioModels, targetModelId, selectedProviderId),
 						AUDIO_MODE_UI_ENABLED,
 					);
 		if (
@@ -1241,8 +1583,6 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			targetMode === "speech" || targetMode === "music"
 				? promptTextSource.trim()
 				: "";
-		const conversationId =
-			overrides?.forcedConversationId ?? activeConversationId ?? createConversationId();
 		if (!activeConversationId) {
 			setActiveConversationId(conversationId);
 		}
@@ -1253,9 +1593,38 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
+		let pendingEntryId: string | null = null;
 
 		setError(null);
 		setIsLoading(true);
+		if (targetMode === "speech" || targetMode === "music") {
+			const musicLyrics =
+				targetMode === "music"
+					? (overrides?.forcedLyrics ?? musicLyricsInput).trim() || undefined
+					: undefined;
+			pendingEntryId = crypto.randomUUID();
+			await addEntry({
+				id: pendingEntryId,
+				createdAt: nowIso(),
+				conversationId,
+				conversationTitle,
+				modelId: targetModelId,
+				providerId:
+					selectedProviderId && selectedProviderId !== "auto"
+						? selectedProviderId
+						: undefined,
+				mode: targetMode,
+				conversationMode: lockedConversationMode ?? targetMode,
+				inputText: promptText,
+				musicLyrics,
+				isTemporary: true,
+				isPending: true,
+			});
+			setTextInput("");
+			if (targetMode === "music") {
+				setMusicLyricsInput("");
+			}
+		}
 		const requestStartedAt = performance.now();
 		try {
 			const requestBody: Record<string, unknown> = {
@@ -1274,6 +1643,22 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				requestBody.input = promptText;
 			} else if (targetMode === "music") {
 				requestBody.prompt = promptText;
+				const lyrics = (overrides?.forcedLyrics ?? musicLyricsInput).trim();
+				const existingMiniMax =
+					requestBody.minimax && typeof requestBody.minimax === "object"
+						? (requestBody.minimax as Record<string, unknown>)
+						: {};
+				const existingMiniMaxRequest =
+					existingMiniMax.request && typeof existingMiniMax.request === "object"
+						? (existingMiniMax.request as Record<string, unknown>)
+						: {};
+				requestBody.minimax = {
+					...existingMiniMax,
+					request: {
+						...existingMiniMaxRequest,
+						...(lyrics ? { lyrics, is_instrumental: false } : { is_instrumental: true }),
+					},
+				};
 			} else {
 				if (audioUrlInput.trim()) {
 					requestBody.audio_url = audioUrlInput.trim();
@@ -1321,6 +1706,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			if (isJsonLike) {
 				const rawText = await response.text();
 				const trimmed = rawText.trim();
+				let musicPollingNotice: string | undefined;
 				if (trimmed) {
 					try {
 						payload = JSON.parse(trimmed);
@@ -1335,12 +1721,49 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						audioSrc = rawValue;
 					} else if (/^https?:\/\//i.test(rawValue)) {
 						audioSrc = rawValue;
+					} else if (isLikelyHexEncodedAudio(rawValue)) {
+						const base64 = hexToBase64(rawValue);
+						if (base64) {
+							audioSrc = `data:audio/mpeg;base64,${base64}`;
+						}
 					} else if (isLikelyBase64(rawValue)) {
 						audioSrc = `data:audio/mpeg;base64,${rawValue.replace(/\s+/g, "")}`;
 					}
 				}
+				if (targetMode === "music" && !audioSrc) {
+					const resourceId = extractMusicResourceId(payload);
+					const normalizedModel = targetModelId.trim().toLowerCase();
+					const responseProvider =
+						typeof payload?.provider === "string"
+							? payload.provider.trim().toLowerCase()
+							: "";
+					const isMiniMaxMusicResponse =
+						normalizedModel.startsWith("minimax/") ||
+						responseProvider === "minimax" ||
+						(resourceId?.startsWith("mmxmus_") ?? false);
+					if (resourceId && !isMiniMaxMusicResponse) {
+						try {
+							const polled = await pollMusicGeneration(resourceId);
+							if (polled.payload) {
+								payload = polled.payload;
+							}
+							audioSrc = polled.audioSrc ?? extractAudioFromPayload(payload);
+							if (!audioSrc && (polled.status === "queued" || polled.status === "in_progress")) {
+								musicPollingNotice = `Music generation is still processing (id: ${resourceId}).`;
+							}
+						} catch (pollError) {
+							const message =
+								pollError instanceof Error && pollError.message.trim()
+									? pollError.message.trim()
+									: "Music status polling failed.";
+							musicPollingNotice = `Music generation started but polling failed: ${message}`;
+						}
+					}
+				}
 				text =
-					typeof payload?.text === "string"
+					typeof musicPollingNotice === "string" && musicPollingNotice.trim()
+						? musicPollingNotice
+						: typeof payload?.text === "string"
 						? payload.text
 						: typeof payload?.output_text === "string"
 							? payload.output_text
@@ -1355,6 +1778,9 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			}
 			const elapsedMs = Math.max(0, Math.round(performance.now() - requestStartedAt));
 			metrics = extractMetricsFromRaw(payload, elapsedMs);
+			if (pendingEntryId) {
+				removeEntry(pendingEntryId);
+			}
 
 			await addEntry({
 				id: crypto.randomUUID(),
@@ -1367,9 +1793,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						? selectedProviderId
 						: undefined,
 				mode: targetMode,
+				conversationMode: lockedConversationMode ?? targetMode,
 				inputText:
 					targetMode === "speech" || targetMode === "music"
 						? promptText
+						: undefined,
+				musicLyrics:
+					targetMode === "music"
+						? (overrides?.forcedLyrics ?? musicLyricsInput).trim() || undefined
 						: undefined,
 				text,
 				audioSrc,
@@ -1377,14 +1808,25 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				metrics,
 				raw: payload,
 			});
-			if (targetMode === "speech" || targetMode === "music") {
+			if ((targetMode === "speech" || targetMode === "music") && !pendingEntryId) {
 				setTextInput("");
+				if (targetMode === "music") {
+					setMusicLyricsInput("");
+				}
 			} else {
 				setAudioUrlInput("");
 				setAudioFile(null);
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Audio request failed");
+			const errorMessage = err instanceof Error ? err.message : "Audio request failed";
+			if (pendingEntryId) {
+				await updateEntry(pendingEntryId, (entry) => ({
+					...entry,
+					isPending: false,
+					text: errorMessage,
+				}));
+			}
+			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
 		}
@@ -1409,6 +1851,9 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								setError(null);
 							}}
 						>
+							<span className="shrink-0 text-muted-foreground">
+								{modeIcon(conversation.mode)}
+							</span>
 							<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
 								{conversation.title}
 							</span>
@@ -1671,14 +2116,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						</div>
 					) : (
 						activeEntries.map((entry) => {
-							const resolvedModel =
-								filteredModels.find(
-									(model) =>
-										model.modelId === entry.modelId &&
-										(!entry.providerId || model.providerId === entry.providerId),
-								) ??
-								filteredModels.find((model) => model.modelId === entry.modelId) ??
-								null;
+						const resolvedModel =
+							allAudioModels.find(
+								(model) =>
+									model.modelId === entry.modelId &&
+									(!entry.providerId || model.providerId === entry.providerId),
+							) ??
+							allAudioModels.find((model) => model.modelId === entry.modelId) ??
+							null;
 							const logoId =
 								resolvedModel?.organisationId?.trim() ||
 								resolvedModel?.providerId ||
@@ -1709,6 +2154,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 							const costLabel = getCostLabel(entry.raw);
 							const isEditing = editingEntryId === entry.id;
 							const promptCopied = copiedPromptEntryId === entry.id;
+							const pendingEntry = entry.isPending === true;
 							return (
 								<div key={entry.id} className="space-y-3">
 									{entry.inputText ? (
@@ -1748,6 +2194,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 											) : (
 												<div className="rounded-2xl bg-foreground px-4 py-3 text-sm text-background">
 													<p className="whitespace-pre-wrap">{entry.inputText}</p>
+													{entry.mode === "music" && entry.musicLyrics ? (
+														<div className="mt-3 border-t border-white/20 pt-3">
+															<p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+																Lyrics
+															</p>
+															<p className="whitespace-pre-wrap">{entry.musicLyrics}</p>
+														</div>
+													) : null}
 												</div>
 											)}
 											<div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
@@ -1826,12 +2280,18 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 														<MediaPlayerSeek />
 														<div className="flex flex-wrap items-center gap-1">
 															<MediaPlayerPlay />
-															<MediaPlayerVolume className="mr-auto" />
+															<MediaPlayerTime className="mr-auto px-1 text-xs tabular-nums" />
+															<MediaPlayerVolume />
 															<MediaPlayerSettings />
 														</div>
 													</MediaPlayerControls>
 												</MediaPlayer>
-											) : (
+											) : pendingEntry ? (
+												<div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+													<Loader2 className="h-3.5 w-3.5 animate-spin" />
+													<span>{modeBusyLabel(entry.mode)}</span>
+												</div>
+											) : entry.text ? null : (
 												<p className="text-xs text-muted-foreground">
 													No playable audio returned by this response.
 												</p>
@@ -1841,6 +2301,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 													{entry.text}
 												</pre>
 											) : null}
+											{pendingEntry ? null : (
 											<div className="flex items-center gap-1 text-xs text-muted-foreground">
 												<Tooltip>
 													<TooltipTrigger asChild>
@@ -1923,6 +2384,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 													</PopoverContent>
 												</Popover>
 											</div>
+											)}
 										</div>
 									</div>
 								</div>
@@ -1935,37 +2397,47 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			<footer className="border-t border-border px-4 py-3 md:px-6">
 				<div className="mx-auto w-full max-w-3xl">
 					<div className="rounded-2xl border border-border bg-background px-3 py-2">
-						<div className="flex flex-wrap gap-2 px-1 py-1">
-							{AUDIO_MODE_OPTIONS.map((option) => {
-								const isDisabled = !availableModes.includes(option);
-								const showComingSoon = isDisabled && option !== "speech";
-								const button = (
-									<Button
-										key={option}
-										type="button"
-										variant={mode === option ? "default" : "outline"}
-										size="sm"
-										onClick={() => setMode(option)}
-										className="h-7 text-xs"
-										disabled={isDisabled}
-									>
-										{modeLabel(option)}
-									</Button>
-								);
-								if (!showComingSoon) return button;
-								return (
-									<Tooltip key={option}>
-										<TooltipTrigger asChild>
-											<span className="inline-flex cursor-not-allowed">
-												{button}
-											</span>
-										</TooltipTrigger>
-										<TooltipContent side="top">Coming Soon</TooltipContent>
-									</Tooltip>
-								);
-							})}
-						</div>
-						{mode === "speech" || mode === "music" ? (
+						{activeConversationMode ? (
+							<div className="flex items-center px-1 py-1 text-xs text-muted-foreground">
+								<span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1">
+									{modeIcon(activeConversationMode)}
+									{modeLabel(activeConversationMode)}
+								</span>
+							</div>
+						) : (
+							<div className="flex flex-wrap gap-2 px-1 py-1">
+								{AUDIO_MODE_OPTIONS.map((option) => {
+									const isDisabled = !uiAvailableModes.includes(option);
+									const showComingSoon = isDisabled && option !== "speech";
+									const button = (
+										<Button
+											key={option}
+											type="button"
+											variant={mode === option ? "default" : "outline"}
+											size="sm"
+											onClick={() => handleModeSelect(option)}
+											className="h-7 gap-1.5 text-xs"
+											disabled={isDisabled}
+										>
+											{modeIcon(option)}
+											{modeLabel(option)}
+										</Button>
+									);
+									if (!showComingSoon) return button;
+									return (
+										<Tooltip key={option}>
+											<TooltipTrigger asChild>
+												<span className="inline-flex cursor-not-allowed">
+													{button}
+												</span>
+											</TooltipTrigger>
+											<TooltipContent side="top">Coming Soon</TooltipContent>
+										</Tooltip>
+									);
+								})}
+							</div>
+						)}
+						{mode === "speech" ? (
 							<Textarea
 								value={textInput}
 								onChange={(event) => setTextInput(event.target.value)}
@@ -1976,13 +2448,42 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 									}
 								}}
 								rows={3}
-								placeholder={
-									mode === "music"
-										? "Describe the music you want to generate..."
-										: "Type text for TTS conversion..."
-								}
+								placeholder="Type text for TTS conversion..."
 								className="min-h-[72px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 							/>
+						) : mode === "music" ? (
+							<div className="grid gap-2 px-1 py-2">
+								<div className="grid gap-1">
+									<p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+										Prompt
+									</p>
+									<Textarea
+										value={textInput}
+										onChange={(event) => setTextInput(event.target.value)}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" && !event.shiftKey) {
+												event.preventDefault();
+												void submit();
+											}
+										}}
+										rows={3}
+										placeholder="Describe the music style, mood, instruments, and structure..."
+										className="min-h-[72px] max-h-40 overflow-y-auto resize-none border-0 bg-transparent px-1 py-1 shadow-none focus-visible:ring-0"
+									/>
+								</div>
+								<div className="grid gap-1">
+									<p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+										Lyrics (Optional)
+									</p>
+									<Textarea
+										value={musicLyricsInput}
+										onChange={(event) => setMusicLyricsInput(event.target.value)}
+										rows={3}
+										placeholder="Add lyrics to generate a vocal track. Leave empty for instrumental."
+										className="min-h-[72px] max-h-40 overflow-y-auto resize-none border-0 bg-transparent px-1 py-1 shadow-none focus-visible:ring-0"
+									/>
+								</div>
+							</div>
 						) : (
 							<div className="grid gap-2 px-1 py-2 md:grid-cols-2">
 								<Input
@@ -2035,9 +2536,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								disabled={isLoading || !modelId || !selectedModelEnabled}
 							>
 								{isLoading
-									? mode === "music"
-										? "Generating..."
-										: "Converting..."
+									? <Loader2 className="h-4 w-4 animate-spin" />
 									: mode === "music"
 										? "Generate"
 										: "Convert"}

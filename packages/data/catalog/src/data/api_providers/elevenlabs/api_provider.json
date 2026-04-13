@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://elevenlabs.io/docs/",
   "country_code": "GB",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#6E6E6E"
 }

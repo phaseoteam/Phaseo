@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.gmicloud.ai/",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#3B82F6"
 }

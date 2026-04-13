@@ -4,5 +4,6 @@
   "description": null,
   "link": null,
   "country_code": null,
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#2563EB"
 }

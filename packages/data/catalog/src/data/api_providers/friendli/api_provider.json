@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://friendli.ai/docs/guides/openai-compatibility",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#10B981"
 }

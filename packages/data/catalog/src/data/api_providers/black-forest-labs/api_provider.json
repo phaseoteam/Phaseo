@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.bfl.ai/",
   "country_code": "DE",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#000000"
 }

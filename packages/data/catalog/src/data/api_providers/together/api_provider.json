@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://docs.together.ai/",
   "country_code": "US",
-  "status": "NotReady"
+  "status": "NotReady",
+  "colour": "#111827"
 }

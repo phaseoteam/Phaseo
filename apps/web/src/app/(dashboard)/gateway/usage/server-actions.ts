@@ -264,6 +264,7 @@ export async function fetchOrganizationColors(
 		.select(
 			`
 			model_id,
+			organisation_id,
 			organisation:data_organisations!data_models_organisation_id_fkey(colour)
 		`
 		)
@@ -274,8 +275,16 @@ export async function fetchOrganizationColors(
 			if (!m.organisation?.colour) return;
 			const fullId = m.model_id;
 			const color = m.organisation.colour;
+			const organisationId =
+				typeof m?.organisation_id === "string" && m.organisation_id.trim().length > 0
+					? m.organisation_id.trim()
+					: null;
 
 			colorMap.set(fullId, color);
+			if (organisationId) {
+				colorMap.set(organisationId, color);
+				colorMap.set(organisationId.toLowerCase(), color);
+			}
 
 			if (fullId.includes("/")) {
 				const withoutOrg = fullId.split("/")[1];
@@ -307,6 +316,7 @@ export async function fetchOrganizationColors(
 				.select(
 					`
 					model_id,
+					organisation_id,
 					organisation:data_organisations!data_models_organisation_id_fkey(colour)
 				`,
 				)
@@ -320,6 +330,14 @@ export async function fetchOrganizationColors(
 			typeof model?.organisation?.colour === "string" ? model.organisation.colour : null;
 		if (!color) continue;
 		colorByCanonicalModelId.set(model.model_id, color);
+		const organisationId =
+			typeof model?.organisation_id === "string" && model.organisation_id.trim().length > 0
+				? model.organisation_id.trim()
+				: null;
+		if (organisationId) {
+			colorMap.set(organisationId, color);
+			colorMap.set(organisationId.toLowerCase(), color);
+		}
 	}
 
 	const providerApiIds = new Set<string>();
@@ -384,6 +402,16 @@ export async function fetchModelMetadata(
 	>
 > {
 	const { supabase } = await requireAuthenticatedUser();
+	const metadataDebugEnabled =
+		process.env.USAGE_MODEL_METADATA_DEBUG === "1" ||
+		process.env.NEXT_PUBLIC_USAGE_MODEL_METADATA_DEBUG === "1";
+	const metadataDebugEvents: Array<Record<string, unknown>> = [];
+	const metadataDebugLog = (event: Record<string, unknown>) => {
+		if (!metadataDebugEnabled) return;
+		if (metadataDebugEvents.length < 300) {
+			metadataDebugEvents.push(event);
+		}
+	};
 
 	if (modelIds.length === 0) {
 		return new Map();
@@ -406,15 +434,34 @@ export async function fetchModelMetadata(
 			organisationName: string;
 			modelName?: string;
 		},
+		source?: string,
 	) => {
 		if (!key) return;
 		const existing = metadataMap.get(key);
 		if (!existing) {
 			metadataMap.set(key, value);
+			metadataDebugLog({
+				stage: "add",
+				source: source ?? "unknown",
+				key,
+				organisationId: value.organisationId,
+				organisationName: value.organisationName,
+				modelName: value.modelName ?? null,
+				replaced: false,
+			});
 			return;
 		}
 		if (!existing.modelName && value.modelName) {
 			metadataMap.set(key, { ...existing, modelName: value.modelName });
+			metadataDebugLog({
+				stage: "add",
+				source: source ?? "unknown",
+				key,
+				organisationId: existing.organisationId,
+				organisationName: existing.organisationName,
+				modelName: value.modelName,
+				replaced: true,
+			});
 		}
 	};
 
@@ -441,7 +488,16 @@ export async function fetchModelMetadata(
 			if (current.includes(":")) {
 				const parts = current.split(":");
 				add(parts[0]);
-				add(parts.slice(1).join(":"));
+			}
+			if (/:free$/i.test(current)) {
+				add(current.replace(/:free$/i, ""));
+				add(current.replace(/:free$/i, "-free"));
+			} else if (/-free$/i.test(current)) {
+				add(current.replace(/-free$/i, ""));
+				add(current.replace(/-free$/i, ":free"));
+			} else {
+				add(`${current}:free`);
+				add(`${current}-free`);
 			}
 		}
 
@@ -462,10 +518,15 @@ export async function fetchModelMetadata(
 			model_id,
 			name,
 			organisation_id,
-			organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
+			organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)
 		`
 		)
 		.in("model_id", uniqueModelIds);
+	if (!models) {
+		console.warn(
+			"Usage metadata debug: no direct model metadata rows found for unique model IDs",
+		);
+	}
 
 	if (models) {
 		models.forEach((m: any) => {
@@ -477,8 +538,8 @@ export async function fetchModelMetadata(
 						: deriveOrganisationId(m?.model_id);
 
 			const organisationName =
-				typeof m?.organisation?.organisation_name === "string" && m.organisation.organisation_name
-					? m.organisation.organisation_name
+				typeof m?.organisation?.name === "string" && m.organisation.name
+					? m.organisation.name
 					: organisationId;
 
 			const value = {
@@ -487,83 +548,303 @@ export async function fetchModelMetadata(
 				modelName: typeof m?.name === "string" ? m.name : undefined,
 			};
 
-			addMetadata(m?.model_id, value);
+			addMetadata(m?.model_id, value, "data_models:model_id");
 			if (typeof m?.model_id === "string" && m.model_id.includes("/")) {
 				const withoutOrg = m.model_id.split("/").slice(1).join("/");
-				addMetadata(withoutOrg, value);
+				addMetadata(withoutOrg, value, "data_models:without_org");
 			}
 		});
 	}
 
-	// Resolve API model IDs -> canonical model IDs -> data_models.name
+	// Resolve API model IDs -> canonical model IDs -> names/organisation metadata.
 	const apiLookupIds = Array.from(
 		new Set(uniqueModelIds.flatMap((id) => normalizeApiId(id))),
 	);
-	const { data: providerModels } = await supabase
-		.from("data_api_provider_models")
-		.select("api_model_id, model_id")
+
+	const { data: apiModels, error: apiModelsError } = await supabase
+		.from("data_models")
+		.select(
+			`
+			model_id,
+			api_model_id,
+			name,
+			organisation_id,
+			organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)
+		`,
+		)
 		.in("api_model_id", apiLookupIds);
+	if (apiModelsError) {
+		console.error(
+			"Usage metadata debug: failed loading data_models by api_model_id",
+			apiModelsError,
+		);
+	}
+
+	for (const apiModel of apiModels ?? []) {
+		const apiModelId =
+			typeof apiModel?.api_model_id === "string" ? apiModel.api_model_id : null;
+		if (!apiModelId) continue;
+		const organisationRow = Array.isArray(apiModel?.organisation)
+			? apiModel.organisation[0]
+			: apiModel?.organisation;
+		const organisationId =
+			typeof organisationRow?.organisation_id === "string" &&
+			organisationRow.organisation_id.trim().length > 0
+				? organisationRow.organisation_id
+				: typeof apiModel?.organisation_id === "string" &&
+					  apiModel.organisation_id.trim().length > 0
+				? apiModel.organisation_id
+				: deriveOrganisationId(apiModelId);
+		const organisationName =
+			typeof organisationRow?.name === "string" &&
+			organisationRow.name.trim().length > 0
+				? organisationRow.name
+				: organisationId;
+		const modelName =
+			typeof apiModel?.name === "string" && apiModel.name.trim().length > 0
+				? apiModel.name
+				: undefined;
+		const value = { organisationId, organisationName, modelName };
+		for (const variant of normalizeApiId(apiModelId)) {
+			addMetadata(variant, value, `data_models:api_model_id:${apiModelId}`);
+		}
+		if (typeof apiModel?.model_id === "string" && apiModel.model_id.trim().length > 0) {
+			addMetadata(apiModel.model_id, value, `data_models:model_id_from_api:${apiModelId}`);
+		}
+	}
+
+	const providerModelSelect =
+		"provider_api_model_id, api_model_id, model_id, internal_model_id, provider_model_slug";
+	const [
+		providerModelsByApiId,
+		providerModelsByCanonicalId,
+		providerModelsByInternalId,
+		providerModelsBySlug,
+	] = await Promise.all([
+		supabase
+			.from("data_api_provider_models")
+			.select(providerModelSelect)
+			.in("api_model_id", apiLookupIds),
+		supabase
+			.from("data_api_provider_models")
+			.select(providerModelSelect)
+			.in("model_id", apiLookupIds),
+		supabase
+			.from("data_api_provider_models")
+			.select(providerModelSelect)
+			.in("internal_model_id", apiLookupIds),
+		supabase
+			.from("data_api_provider_models")
+			.select(providerModelSelect)
+			.in("provider_model_slug", apiLookupIds),
+	]);
+	if (providerModelsByApiId.error) {
+		console.error(
+			"Usage metadata debug: failed loading provider models by api_model_id",
+			providerModelsByApiId.error,
+		);
+	}
+	if (providerModelsByCanonicalId.error) {
+		console.error(
+			"Usage metadata debug: failed loading provider models by model_id",
+			providerModelsByCanonicalId.error,
+		);
+	}
+	if (providerModelsByInternalId.error) {
+		console.error(
+			"Usage metadata debug: failed loading provider models by internal_model_id",
+			providerModelsByInternalId.error,
+		);
+	}
+	if (providerModelsBySlug.error) {
+		console.error(
+			"Usage metadata debug: failed loading provider models by provider_model_slug",
+			providerModelsBySlug.error,
+		);
+	}
+
+	const providerModelsMap = new Map<string, any>();
+	for (const row of [
+		...(providerModelsByApiId.data ?? []),
+		...(providerModelsByCanonicalId.data ?? []),
+		...(providerModelsByInternalId.data ?? []),
+		...(providerModelsBySlug.data ?? []),
+	]) {
+		const id =
+			typeof row?.provider_api_model_id === "string" && row.provider_api_model_id.trim().length > 0
+				? row.provider_api_model_id
+				: `${row?.api_model_id ?? ""}::${row?.model_id ?? ""}::${row?.provider_model_slug ?? ""}`;
+		if (!providerModelsMap.has(id)) {
+			providerModelsMap.set(id, row);
+		}
+	}
+	const providerModels = Array.from(providerModelsMap.values());
 
 	const canonicalIds = Array.from(
 		new Set((providerModels ?? []).map((pm: any) => pm?.model_id).filter(Boolean)),
 	);
-	const { data: canonicalModels } = canonicalIds.length
-		? await supabase
-				.from("data_models")
-				.select(
-					`
-					model_id,
-					name,
-					organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
-				`,
-				)
-				.in("model_id", canonicalIds)
-		: { data: [] as any[] };
-
+	const canonicalInternalIds = Array.from(
+		new Set((providerModels ?? []).map((pm: any) => pm?.internal_model_id).filter(Boolean)),
+	);
+	const canonicalApiIds = Array.from(
+		new Set((providerModels ?? []).map((pm: any) => pm?.api_model_id).filter(Boolean)),
+	);
+	const canonicalModelIds = Array.from(
+		new Set([...canonicalIds, ...canonicalInternalIds].filter(Boolean)),
+	);
+	const [canonicalModelsByIdResult, canonicalModelsByApiResult] = await Promise.all([
+		canonicalModelIds.length
+			? supabase
+					.from("data_models")
+					.select(
+						`
+						model_id,
+						api_model_id,
+						name,
+						organisation_id,
+						organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)
+					`,
+					)
+					.in("model_id", canonicalModelIds)
+			: Promise.resolve({ data: [] as any[], error: null }),
+		canonicalApiIds.length
+			? supabase
+					.from("data_models")
+					.select(
+						`
+						model_id,
+						api_model_id,
+						name,
+						organisation_id,
+						organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)
+					`,
+					)
+					.in("api_model_id", canonicalApiIds)
+			: Promise.resolve({ data: [] as any[], error: null }),
+	]);
+	if (canonicalModelsByIdResult.error) {
+		console.error(
+			"Usage metadata debug: failed loading canonical models by model_id",
+			canonicalModelsByIdResult.error,
+		);
+	}
+	if (canonicalModelsByApiResult.error) {
+		console.error(
+			"Usage metadata debug: failed loading canonical models by api_model_id",
+			canonicalModelsByApiResult.error,
+		);
+	}
 	const canonicalModelMap = new Map<string, any>();
-	for (const model of canonicalModels ?? []) {
-		if (typeof model?.model_id !== "string") continue;
-		canonicalModelMap.set(model.model_id, model);
+	for (const model of [
+		...(canonicalModelsByIdResult.data ?? []),
+		...(canonicalModelsByApiResult.data ?? []),
+	]) {
+		if (typeof model?.model_id === "string") {
+			for (const variant of normalizeApiId(model.model_id)) {
+				if (!canonicalModelMap.has(variant)) {
+					canonicalModelMap.set(variant, model);
+				}
+			}
+		}
+		if (typeof model?.api_model_id === "string") {
+			for (const variant of normalizeApiId(model.api_model_id)) {
+				if (!canonicalModelMap.has(variant)) {
+					canonicalModelMap.set(variant, model);
+				}
+			}
+		}
 	}
 
-	if (providerModels) {
+	if (providerModels.length > 0) {
 		providerModels.forEach((pm: any) => {
 			const apiId: string | null = typeof pm?.api_model_id === "string" ? pm.api_model_id : null;
 			const canonicalId: string | null =
 				typeof pm?.model_id === "string" ? pm.model_id : null;
-			const canonicalModel = canonicalId ? canonicalModelMap.get(canonicalId) : null;
+			const internalModelId: string | null =
+				typeof pm?.internal_model_id === "string" ? pm.internal_model_id : null;
+			const providerModelSlug: string | null =
+				typeof pm?.provider_model_slug === "string" ? pm.provider_model_slug : null;
+			const metadataCandidates = [
+				apiId,
+				canonicalId,
+				internalModelId,
+				providerModelSlug,
+			].filter(Boolean) as string[];
+			if (metadataCandidates.length === 0) return;
+			const canonicalModel =
+				metadataCandidates
+					.flatMap((candidate) => normalizeApiId(candidate))
+					.map((candidate) => canonicalModelMap.get(candidate))
+					.find(Boolean) ?? null;
 
-			if (!apiId && !canonicalId) return;
+			const matchedMetadataKey = metadataCandidates
+				.flatMap((candidate) => normalizeApiId(candidate))
+				.find((candidate) => metadataMap.has(candidate));
+			const matchedMetadata = matchedMetadataKey
+				? metadataMap.get(matchedMetadataKey)
+				: null;
+			const fallbackSourceId =
+				canonicalId ?? internalModelId ?? apiId ?? providerModelSlug;
+			const hasTrustedOrigin = Boolean(canonicalModel || matchedMetadata);
+			const isUntrustedDerivedOrigin =
+				!hasTrustedOrigin &&
+				typeof fallbackSourceId === "string" &&
+				!fallbackSourceId.includes("/");
+			if (isUntrustedDerivedOrigin) {
+				metadataDebugLog({
+					stage: "provider_resolution_skipped",
+					apiId,
+					canonicalId,
+					internalModelId,
+					providerModelSlug,
+					reason: "untrusted_derived_origin",
+				});
+				return;
+			}
 
 			const organisationId =
 				typeof canonicalModel?.organisation?.organisation_id === "string" &&
 				canonicalModel.organisation.organisation_id
 					? canonicalModel.organisation.organisation_id
-					: deriveOrganisationId(canonicalId);
+					: matchedMetadata?.organisationId ??
+						deriveOrganisationId(fallbackSourceId);
 
 			const organisationName =
-				typeof canonicalModel?.organisation?.organisation_name === "string" &&
-				canonicalModel.organisation.organisation_name
-					? canonicalModel.organisation.organisation_name
-					: organisationId;
+				typeof canonicalModel?.organisation?.name === "string" &&
+				canonicalModel.organisation.name
+					? canonicalModel.organisation.name
+					: matchedMetadata?.organisationName ?? organisationId;
 
 			const value = {
 				organisationId,
 				organisationName,
-				modelName: typeof canonicalModel?.name === "string" ? canonicalModel.name : undefined,
+				modelName:
+					typeof canonicalModel?.name === "string" && canonicalModel.name.trim().length > 0
+						? canonicalModel.name
+						: matchedMetadata?.modelName,
 			};
 
-			addMetadata(apiId, value);
-			if (apiId && apiId.includes(":")) {
-				addMetadata(apiId.split(":")[0], value);
+			for (const candidate of metadataCandidates) {
+				for (const variant of normalizeApiId(candidate)) {
+					addMetadata(
+						variant,
+						value,
+						`provider_models:${apiId ?? "null"}:${canonicalId ?? "null"}:${providerModelSlug ?? "null"}`,
+					);
+				}
 			}
-			if (apiId && apiId.includes("/")) {
-				addMetadata(apiId.split("/").slice(1).join("/"), value);
-			}
-			addMetadata(canonicalId, value);
-			if (canonicalId && canonicalId.includes("/")) {
-				addMetadata(canonicalId.split("/").slice(1).join("/"), value);
-			}
+			metadataDebugLog({
+				stage: "provider_resolution",
+				apiId,
+				canonicalId,
+				internalModelId,
+				providerModelSlug,
+				matchedMetadataKey: matchedMetadataKey ?? null,
+				chosenOrganisationId: value.organisationId,
+				chosenOrganisationName: value.organisationName,
+				chosenModelName: value.modelName ?? null,
+				candidates: metadataCandidates,
+			});
 		});
 	}
 
@@ -573,7 +854,50 @@ export async function fetchModelMetadata(
 		const match = variants.find((variant) => metadataMap.has(variant));
 		if (match) {
 			metadataMap.set(id, metadataMap.get(match)!);
+			metadataDebugLog({
+				stage: "finalize",
+				modelId: id,
+				matchedVariant: match,
+				resolution: metadataMap.get(match) ?? null,
+			});
+		} else {
+			metadataDebugLog({
+				stage: "finalize",
+				modelId: id,
+				matchedVariant: null,
+				resolution: null,
+			});
 		}
+	}
+
+	if (metadataDebugEnabled) {
+		const summary = uniqueModelIds.map((id) => {
+			const variants = normalizeApiId(id);
+			const matchedVariant = variants.find((variant) => metadataMap.has(variant)) ?? null;
+			const resolved = matchedVariant ? metadataMap.get(matchedVariant) ?? null : null;
+			return {
+				modelId: id,
+				matchedVariant,
+				organisationId: resolved?.organisationId ?? null,
+				organisationName: resolved?.organisationName ?? null,
+				modelName: resolved?.modelName ?? null,
+			};
+		});
+		console.log(
+			"Usage metadata debug summary",
+			JSON.stringify(
+				{
+					inputCount: uniqueModelIds.length,
+					apiLookupCount: apiLookupIds.length,
+					apiModelsCount: apiModels?.length ?? 0,
+					providerModelsCount: providerModels.length,
+					summary,
+					events: metadataDebugEvents,
+				},
+				null,
+				2,
+			),
+		);
 	}
 
 	return metadataMap;
@@ -865,6 +1189,136 @@ export async function fetchChartData(
 		return "day";
 	})();
 
+	const toFiniteNumber = (value: unknown): number => {
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+		if (typeof value === "string" && value.trim().length > 0) {
+			const parsed = Number(value);
+			if (Number.isFinite(parsed)) return parsed;
+		}
+		return 0;
+	};
+
+	const usageTokens = (usage: unknown): number => {
+		if (!usage || typeof usage !== "object" || Array.isArray(usage)) return 0;
+		const usageRecord = usage as Record<string, unknown>;
+		const totalTokens = toFiniteNumber(usageRecord.total_tokens);
+		if (totalTokens > 0) return totalTokens;
+		const inputTokens = toFiniteNumber(
+			usageRecord.input_tokens ?? usageRecord.input_text_tokens ?? usageRecord.prompt_tokens,
+		);
+		const outputTokens = toFiniteNumber(
+			usageRecord.output_tokens ??
+				usageRecord.output_text_tokens ??
+				usageRecord.completion_tokens,
+		);
+		return inputTokens + outputTokens;
+	};
+
+	const floorToRollupBucket = (date: Date, bucket: string): Date => {
+		const d = new Date(date);
+		if (bucket === "5min") {
+			d.setSeconds(0, 0);
+			d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
+			return d;
+		}
+		if (bucket === "hour") {
+			d.setMinutes(0, 0, 0);
+			return d;
+		}
+		if (bucket === "day") {
+			d.setHours(0, 0, 0, 0);
+			return d;
+		}
+		d.setDate(1);
+		d.setHours(0, 0, 0, 0);
+		return d;
+	};
+
+	const fetchGatewayRequestFallbackRows = async (
+		fromIso: string,
+		toIso: string,
+	): Promise<any[]> => {
+		const pageSize = 1000;
+		const maxPages = 200;
+		const merged = new Map<
+			string,
+			{
+				bucket: string;
+				provider: string;
+				model_id: string;
+				requests: number;
+				tokens: number;
+				cost: number;
+			}
+		>();
+
+		for (let page = 0; page < maxPages; page += 1) {
+			const from = page * pageSize;
+			const to = from + pageSize - 1;
+			let query = supabase
+				.from("gateway_requests")
+				.select("created_at, provider, model_id, usage, cost_nanos")
+				.eq("team_id", teamId)
+				.gte("created_at", fromIso)
+				.lte("created_at", toIso)
+				.order("created_at", { ascending: true })
+				.range(from, to);
+
+			if (params.keyFilter) {
+				query = query.eq("key_id", params.keyFilter);
+			}
+
+			const { data, error } = await query;
+			if (error) {
+				console.error("Error fetching gateway request usage fallback:", error);
+				return [];
+			}
+
+			const batch = data ?? [];
+			for (const row of batch as any[]) {
+				const createdAt =
+					typeof row?.created_at === "string" ? new Date(row.created_at) : null;
+				if (!createdAt || Number.isNaN(createdAt.getTime())) continue;
+				const bucketDate = floorToRollupBucket(createdAt, bucketKey);
+				const bucketIso = bucketDate.toISOString();
+				const provider =
+					typeof row?.provider === "string" && row.provider.trim().length > 0
+						? row.provider.trim()
+						: "unknown";
+				const modelId =
+					typeof row?.model_id === "string" && row.model_id.trim().length > 0
+						? row.model_id.trim()
+						: "unknown";
+				const rowTokens = usageTokens(row?.usage);
+				const rowCost = toFiniteNumber(row?.cost_nanos) / 1e9;
+				const key = `${bucketIso}::${provider}::${modelId}`;
+				const existing = merged.get(key);
+				if (!existing) {
+					merged.set(key, {
+						bucket: bucketIso,
+						provider,
+						model_id: modelId,
+						requests: 1,
+						tokens: rowTokens,
+						cost: rowCost,
+					});
+					continue;
+				}
+				existing.requests += 1;
+				existing.tokens += rowTokens;
+				existing.cost += rowCost;
+			}
+
+			if (batch.length < pageSize) {
+				break;
+			}
+		}
+
+		return Array.from(merged.values()).sort(
+			(a, b) => new Date(a.bucket).getTime() - new Date(b.bucket).getTime(),
+		);
+	};
+
 	// Fetch current period data (aggregated)
 	const { data: rows, error: rollupError } = await supabase.rpc(
 		"get_usage_chart_rollup",
@@ -899,19 +1353,16 @@ export async function fetchChartData(
 	if (prevError) {
 		console.error("Error fetching usage rollup (prev):", prevError);
 	}
-
-	if (!rows) {
-		return {
-			requestsChart: [],
-			tokensChart: [],
-			costChart: [],
-			providerBreakdown: new Map(),
-			totals: {
-				requests: { current: 0, previous: 0, avg: 0 },
-				tokens: { current: 0, previous: 0, avg: 0 },
-				cost: { current: 0, previous: 0, avg: 0 },
-			},
-		};
+	let currentRows = (rows ?? []) as any[];
+	if (currentRows.length === 0) {
+		currentRows = await fetchGatewayRequestFallbackRows(
+			params.timeRange.from,
+			params.timeRange.to,
+		);
+	}
+	let previousRows = (prevRows ?? []) as any[];
+	if (previousRows.length === 0) {
+		previousRows = await fetchGatewayRequestFallbackRows(prevFrom, prevTo);
 	}
 
 
@@ -998,7 +1449,7 @@ export async function fetchChartData(
 		costBuckets.set(bucket, new Map());
 	}
 
-	(rows ?? []).forEach((row: any) => {
+	currentRows.forEach((row: any) => {
 		const provider = row.provider || "unknown";
 		const modelId = row.model_id || "unknown";
 		const bucket = bucketFor(new Date(row.bucket), params.range);
@@ -1070,28 +1521,28 @@ export async function fetchChartData(
 	});
 
 	// Calculate totals
-	const currentRequests = (rows ?? []).reduce(
+	const currentRequests = currentRows.reduce(
 		(sum: number, r: any) => sum + (Number(r.requests ?? 0) || 0),
 		0,
 	);
-	const currentTokens = (rows ?? []).reduce(
+	const currentTokens = currentRows.reduce(
 		(sum: number, r: any) => sum + (Number(r.tokens ?? 0) || 0),
 		0,
 	);
-	const currentCost = (rows ?? []).reduce(
+	const currentCost = currentRows.reduce(
 		(sum: number, r: any) => sum + (Number(r.cost ?? 0) || 0),
 		0,
 	);
 
-	const previousRequests = (prevRows ?? []).reduce(
+	const previousRequests = previousRows.reduce(
 		(sum: number, r: any) => sum + (Number(r.requests ?? 0) || 0),
 		0,
 	);
-	const previousTokens = (prevRows ?? []).reduce(
+	const previousTokens = previousRows.reduce(
 		(sum: number, r: any) => sum + (Number(r.tokens ?? 0) || 0),
 		0,
 	);
-	const previousCost = (prevRows ?? []).reduce(
+	const previousCost = previousRows.reduce(
 		(sum: number, r: any) => sum + (Number(r.cost ?? 0) || 0),
 		0,
 	);

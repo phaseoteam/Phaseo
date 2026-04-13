@@ -4,5 +4,6 @@
   "description": null,
   "link": "https://console.groq.com/docs/overview",
   "country_code": "US",
-  "status": "Beta"
+  "status": "Beta",
+  "colour": "#F55036"
 }

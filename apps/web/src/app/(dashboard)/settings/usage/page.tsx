@@ -12,9 +12,7 @@ import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
 import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
 import {
 	fetchOrganizationColors,
-	fetchAppNames,
 	fetchModelMetadata,
-	fetchProviderNames,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 export const metadata: Metadata = {
@@ -132,14 +130,15 @@ async function UsageSettingsContent({
 		name: row?.name ?? null,
 		prefix: row?.prefix ?? null,
 	}));
-	if (keyParam) {
+	if (keyParam && groupBy === "key") {
 		activeKey = availableKeys.find((k) => k.id === keyParam) ?? null;
 	}
 
 	const from = fromForRange(range).toISOString();
 	const nowIso = new Date().toISOString();
 
-	// Fetch aggregated data for unique models and providers from team rollups.
+	// Prefer rollup-derived IDs, but union with request-derived IDs so usage
+	// metadata still populates when rollups are delayed.
 	const { data: modelProviderRollups } = await supabase
 		.from("gateway_usage_rollup_15m_team_provider_model")
 		.select("canonical_model_id, provider")
@@ -147,78 +146,26 @@ async function UsageSettingsContent({
 		.gte("bucket_15m", from)
 		.lte("bucket_15m", nowIso);
 
-	// Apps are scoped by team membership and activity in app/model rollups.
-	const { data: teamApps } = await supabase
-		.from("api_apps")
-		.select("id")
-		.eq("team_id", teamId);
-	const teamAppIds = Array.from(
-		new Set((teamApps ?? []).map((row: any) => row?.id).filter(Boolean)),
-	);
-	const { data: appRollups } =
-		teamAppIds.length > 0
-			? await supabase
-					.from("gateway_usage_rollup_15m_app_model")
-					.select("app_id")
-					.in("app_id", teamAppIds)
-					.gte("bucket_15m", from)
-					.lte("bucket_15m", nowIso)
-			: { data: [] as any[] };
+	const { data: requestUniques } = await supabase
+		.from("gateway_requests")
+		.select("model_id")
+		.eq("team_id", teamId)
+		.gte("created_at", from)
+		.lte("created_at", nowIso);
 
 	// Extract unique values for filters
 	const uniqueModels = Array.from(
 		new Set(
-			(modelProviderRollups ?? [])
-				.map((r: any) => r.canonical_model_id)
-				.filter(Boolean),
+			[
+				...(modelProviderRollups ?? []).map((r: any) => r.canonical_model_id),
+				...(requestUniques ?? []).map((r: any) => r.model_id),
+			].filter(Boolean),
 		),
 	);
-	const uniqueProviders = Array.from(
-		new Set(
-			(modelProviderRollups ?? []).map((r: any) => r.provider).filter(Boolean),
-		),
-	);
-	const uniqueAppIds = Array.from(
-		new Set((appRollups ?? []).map((r: any) => r.app_id).filter(Boolean)),
-	);
-	const modelProviders = (() => {
-		const providerSetsByModel = new Map<string, Set<string>>();
-		for (const row of modelProviderRollups ?? []) {
-			const modelId =
-				typeof row?.canonical_model_id === "string" ? row.canonical_model_id : null;
-			const providerId = typeof row?.provider === "string" ? row.provider : null;
-			if (!modelId || !providerId) continue;
-			if (!providerSetsByModel.has(modelId)) {
-				providerSetsByModel.set(modelId, new Set<string>());
-			}
-			providerSetsByModel.get(modelId)!.add(providerId);
-		}
-		return new Map(
-			Array.from(providerSetsByModel.entries()).map(([m, set]) => [
-				m,
-				Array.from(set),
-			]),
-		);
-	})();
-
-	const [colorMap, appNames, providerNames, modelMetadata] =
-		await Promise.all([
-			fetchOrganizationColors(uniqueModels),
-			fetchAppNames(uniqueAppIds),
-			fetchProviderNames(uniqueProviders),
-			fetchModelMetadata(uniqueModels),
-		]);
-
-	const periodLabel =
-		range === "1h"
-			? "Last hour"
-			: range === "1d"
-				? "Last 24 hours"
-				: range === "1w"
-					? "Last 7 days"
-					: range === "1m"
-						? "Last 30 days"
-						: "Last year";
+	const [colorMap, modelMetadata] = await Promise.all([
+		fetchOrganizationColors(uniqueModels),
+		fetchModelMetadata(uniqueModels),
+	]);
 
 	return (
 		<div className="space-y-6">
@@ -246,18 +193,8 @@ async function UsageSettingsContent({
 				range={range}
 				colorMap={Object.fromEntries(colorMap)}
 				modelMetadata={modelMetadata}
+				validKeyIds={availableKeys.map((key) => key.id)}
 			/>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Requests</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p className="text-sm text-muted-foreground">
-						{periodLabel}. View detailed request logs on the Logs tab.
-					</p>
-				</CardContent>
-			</Card>
 		</div>
 	);
 }
