@@ -78,7 +78,8 @@ function fillRandom(buf: Uint8Array): void {
     if (!globalThis.crypto?.getRandomValues) {
         throw new Error("Web Crypto not available in this runtime");
     }
-    globalThis.crypto.getRandomValues(buf);
+    const byteView = new Uint8Array(buf.buffer as ArrayBuffer, buf.byteOffset, buf.byteLength);
+    globalThis.crypto.getRandomValues(byteView);
 }
 
 // Increment a random buffer (like a big-endian integer).

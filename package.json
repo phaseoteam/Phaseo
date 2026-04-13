@@ -1,7 +1,7 @@
 {
 	"name": "ai-stats-monorepo",
 	"private": true,
-	"packageManager": "pnpm@10.15.1",
+	"packageManager": "pnpm@10.18.3",
 	"workspaces": [
 		"apps/*",
 		"packages/*/*"
@@ -107,7 +107,7 @@
 		"js-yaml": "^4.1.1",
 		"knip": "^5.67.1",
 		"rimraf": "^6.0.0",
-		"supabase": "^2.84.10",
+		"supabase": "^2.89.1",
 		"tsx": "^4.21.0",
 		"turbo": "^2.9.4"
 	},

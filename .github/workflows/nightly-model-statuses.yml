@@ -41,15 +41,18 @@ jobs:
                   echo "committer=${bot} <${email}>" >> "$GITHUB_OUTPUT"
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@v6
               with:
-                  version: 10.15.1
+                  version: 10.18.3
                   run_install: false
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: pnpm
+
+            - name: Restore lockfile (guard setup-node cache mutation)
+              run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile

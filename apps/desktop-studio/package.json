@@ -17,7 +17,7 @@
     "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
     "nanoid": "^5.1.6",
-    "react": "19.2.4",
+    "react": "19.2.5",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "zod": "^4.3.6"
@@ -31,9 +31,9 @@
     "electron-vite": "^5.0.0",
     "eslint": "^10.0.3",
     "rimraf": "^6.0.0",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.46.0",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.1",
     "vite": "^8.0.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.4"
   }
 }
