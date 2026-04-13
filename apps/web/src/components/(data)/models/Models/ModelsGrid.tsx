@@ -5,6 +5,7 @@ import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
 interface ModelsGridProps {
 	filteredModels: ModelCardType[];
+	showOrganisationPrefix?: boolean;
 }
 
 type ModelRow = {
@@ -88,7 +89,10 @@ function getCellPaddingClass(rowColumnIndex: number, renderedColumns: number): s
 	return "";
 }
 
-function ModelsGridImpl({ filteredModels }: ModelsGridProps) {
+function ModelsGridImpl({
+	filteredModels,
+	showOrganisationPrefix = false,
+}: ModelsGridProps) {
 	if (filteredModels.length === 0) {
 		return (
 			<div className="rounded-2xl border bg-card px-4 py-10 text-center text-muted-foreground">
@@ -188,7 +192,10 @@ function ModelsGridImpl({ filteredModels }: ModelsGridProps) {
 								);
 								return (
 									<div key={model.model_id} className={`bg-background ${sideClass}`}>
-										<ModelCard model={model} />
+										<ModelCard
+											model={model}
+											showOrganisationPrefix={showOrganisationPrefix}
+										/>
 									</div>
 								);
 							})}
@@ -237,7 +244,10 @@ function ModelsGridImpl({ filteredModels }: ModelsGridProps) {
 									);
 									return (
 										<div key={model.model_id} className={`bg-background ${sideClass}`}>
-											<ModelCard model={model} />
+											<ModelCard
+												model={model}
+												showOrganisationPrefix={showOrganisationPrefix}
+											/>
 										</div>
 									);
 								})}

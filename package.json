@@ -8,11 +8,6 @@
 	],
 	"scripts": {
 		"dev": "turbo run dev --parallel",
-		"desktop:dev": "pnpm --filter @ai-stats/desktop-studio dev",
-		"desktop:build": "pnpm --filter @ai-stats/desktop-studio build",
-		"desktop:typecheck": "pnpm --filter @ai-stats/desktop-studio typecheck",
-		"desktop:lint": "pnpm --filter @ai-stats/desktop-studio lint",
-		"desktop:test": "pnpm --filter @ai-stats/desktop-studio test",
 		"build": "turbo run build",
 		"lint": "turbo run lint",
 		"typecheck": "turbo run typecheck",

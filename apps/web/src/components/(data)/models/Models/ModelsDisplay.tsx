@@ -1241,7 +1241,10 @@ export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 				</div>
 
 				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
-					<ModelsGrid filteredModels={filteredModels} />
+					<ModelsGrid
+						filteredModels={filteredModels}
+						showOrganisationPrefix
+					/>
 				</div>
 			</section>
 

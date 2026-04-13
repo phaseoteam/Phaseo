@@ -21,6 +21,18 @@ function buildModelProviderKey(modelKey: string, providerKey: string): string {
 	return `${modelKey}::${providerKey}`;
 }
 
+function formatModelDisplayName(
+	modelName: string | null | undefined,
+	organisationLabel: string | null | undefined,
+): string {
+	const model = String(modelName ?? "").trim();
+	const organisation = String(organisationLabel ?? "").trim();
+	if (!model || !organisation) return model;
+	const prefixed = `${organisation}: `;
+	if (model.toLowerCase().startsWith(prefixed.toLowerCase())) return model;
+	return `${prefixed}${model}`;
+}
+
 export function MonitorTableClient({
 	initialModelData,
 	weeklyTokensByModel,
@@ -67,7 +79,10 @@ export function MonitorTableClient({
 
 		return {
 			id: item.id,
-			model: item.model,
+			model: formatModelDisplayName(
+				item.model,
+				item.organisationName ?? item.organisationId,
+			),
 			modelId: item.modelId,
 			organisationId: item.organisationId,
 			provider: item.provider,
