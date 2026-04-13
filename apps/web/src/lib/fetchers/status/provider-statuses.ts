@@ -1,5 +1,5 @@
-import { XMLParser } from "fast-xml-parser";
 import { cacheLife, cacheTag } from "next/cache";
+import { assertXmlEntityLimits, createSafeXmlParser } from "../../xml/safe";
 
 export type ProviderPriority = "critical" | "high" | "medium" | "info";
 
@@ -42,10 +42,7 @@ type AnthropicSummary = {
 	incidents: AnthropicIncident[];
 };
 
-const parser = new XMLParser({
-	ignoreAttributes: false,
-	attributeNamePrefix: "",
-	trimValues: true,
+const parser = createSafeXmlParser({
 	parseTagValue: true,
 });
 
@@ -139,6 +136,7 @@ const mapItemToIncident = (
 };
 
 const extractItemsFromFeed = (xml: string) => {
+	assertXmlEntityLimits(xml);
 	const parsed = parser.parse(xml);
 	const channel = parsed?.rss?.channel;
 	const items = channel?.item;
