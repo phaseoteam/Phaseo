@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "bird-sql-(dev)",
+  "benchmark_name": "Bird-SQL (dev)",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 6
+}

@@ -3,6 +3,7 @@
   "benchmark_name": "MLE-Bench",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://github.com/openai/mle-bench",
   "total_models": 0
 }

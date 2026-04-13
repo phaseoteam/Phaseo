@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmlu-chat",
+  "benchmark_name": "MMLU Chat",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

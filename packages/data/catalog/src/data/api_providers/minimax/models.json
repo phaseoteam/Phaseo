@@ -65,7 +65,7 @@
   {
     "api_model_id": "minimax/i2v-01-director",
     "provider_api_model_id": "minimax:minimax/i2v-01-director",
-    "provider_model_slug": null,
+    "provider_model_slug": "i2v-01-director",
     "internal_model_id": "minimax/i2v-01-director",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -80,7 +80,7 @@
   {
     "api_model_id": "minimax/i2v-01-live",
     "provider_api_model_id": "minimax:minimax/i2v-01-live",
-    "provider_model_slug": null,
+    "provider_model_slug": "i2v-01-live",
     "internal_model_id": "minimax/i2v-01-live",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -95,7 +95,7 @@
   {
     "api_model_id": "minimax/image-01",
     "provider_api_model_id": "minimax:minimax/image-01",
-    "provider_model_slug": null,
+    "provider_model_slug": "image-01",
     "internal_model_id": "minimax/image-01",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -110,7 +110,7 @@
   {
     "api_model_id": "minimax/m2-her",
     "provider_api_model_id": "minimax:minimax/m2-her",
-    "provider_model_slug": null,
+    "provider_model_slug": "m2-her",
     "internal_model_id": "minimax/minimax-m2-her",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -160,7 +160,7 @@
   {
     "api_model_id": "minimax/minimax-01",
     "provider_api_model_id": "minimax:minimax/minimax-01",
-    "provider_model_slug": null,
+    "provider_model_slug": "minimax-01",
     "internal_model_id": "minimax/minimax-text-01",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -181,7 +181,7 @@
   {
     "api_model_id": "minimax/minimax-m1-80k",
     "provider_api_model_id": "minimax:minimax/minimax-m1-80k",
-    "provider_model_slug": null,
+    "provider_model_slug": "minimax-m1-80k",
     "internal_model_id": "minimax/minimax-m1-80k",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -464,7 +464,7 @@
   {
     "api_model_id": "minimax/music-1.5",
     "provider_api_model_id": "minimax:minimax/music-1.5",
-    "provider_model_slug": null,
+    "provider_model_slug": "music-1.5",
     "internal_model_id": "minimax/music-1.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -479,7 +479,7 @@
   {
     "api_model_id": "minimax/s2v-01",
     "provider_api_model_id": "minimax:minimax/s2v-01",
-    "provider_model_slug": null,
+    "provider_model_slug": "s2v-01",
     "internal_model_id": "minimax/s2v-01",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -494,7 +494,7 @@
   {
     "api_model_id": "minimax/speech-01-hd",
     "provider_api_model_id": "minimax:minimax/speech-01-hd",
-    "provider_model_slug": null,
+    "provider_model_slug": "speech-01-hd",
     "internal_model_id": "minimax/speech-01-hd",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -509,7 +509,7 @@
   {
     "api_model_id": "minimax/speech-01-turbo",
     "provider_api_model_id": "minimax:minimax/speech-01-turbo",
-    "provider_model_slug": null,
+    "provider_model_slug": "speech-01-turbo",
     "internal_model_id": "minimax/speech-01-turbo",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -524,7 +524,7 @@
   {
     "api_model_id": "minimax/speech-02-hd",
     "provider_api_model_id": "minimax:minimax/speech-02-hd",
-    "provider_model_slug": null,
+    "provider_model_slug": "speech-02-hd",
     "internal_model_id": "minimax/speech-02-hd",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -539,7 +539,7 @@
   {
     "api_model_id": "minimax/speech-02-turbo",
     "provider_api_model_id": "minimax:minimax/speech-02-turbo",
-    "provider_model_slug": null,
+    "provider_model_slug": "speech-02-turbo",
     "internal_model_id": "minimax/speech-02-turbo",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -554,7 +554,7 @@
   {
     "api_model_id": "minimax/speech-2.5-hd-preview",
     "provider_api_model_id": "minimax:minimax/speech-2.5-hd-preview",
-    "provider_model_slug": null,
+    "provider_model_slug": "speech-2.5-hd-preview",
     "internal_model_id": "minimax/speech-2.5-hd-preview",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -569,7 +569,7 @@
   {
     "api_model_id": "minimax/speech-2.5-turbo-preview",
     "provider_api_model_id": "minimax:minimax/speech-2.5-turbo-preview",
-    "provider_model_slug": null,
+    "provider_model_slug": "speech-2.5-turbo-preview",
     "internal_model_id": "minimax/speech-2.5-turbo-preview",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -584,7 +584,7 @@
   {
     "api_model_id": "minimax/t2v-01-director",
     "provider_api_model_id": "minimax:minimax/t2v-01-director",
-    "provider_model_slug": null,
+    "provider_model_slug": "t2v-01-director",
     "internal_model_id": "minimax/t2v-01-director",
     "is_active_gateway": false,
     "quantization_scheme": null,

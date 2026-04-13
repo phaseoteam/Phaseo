@@ -19,5 +19,22 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "healthbench",
+      "score": 54.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-5-3-instant-system-card/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "healthbench-hard",
+      "score": 25.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-5-3-instant-system-card/",
+      "rank": 4
+    }
+  ]
 }

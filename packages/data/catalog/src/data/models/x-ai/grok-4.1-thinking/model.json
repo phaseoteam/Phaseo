@@ -14,5 +14,94 @@
   "api_model_id": "x-ai/grok-4.1-thinking",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "biolp-bench",
+      "score": 0.37,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cloningscenarios",
+      "score": 0.46,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "creative-writing-v3",
+      "score": 1721.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cybench",
+      "score": 0.39,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "eq-bench",
+      "score": 1586,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "figqa",
+      "score": 34,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1483,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mask",
+      "score": 0.51,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "protocolqa",
+      "score": 0.79,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vct",
+      "score": 0.61,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "wmdp",
+      "score": 0.84,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from grok-4.1-thinking-2025-11-17",
+      "source_link": "https://x.ai/news/grok-4.1",
+      "rank": 1
+    }
+  ]
 }

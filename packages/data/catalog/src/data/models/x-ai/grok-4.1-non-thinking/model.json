@@ -14,5 +14,14 @@
   "api_model_id": "x-ai/grok-4.1-non-thinking",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 350.66,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://andonlabs.com/evals/vending-bench-2",
+      "rank": 11
+    }
+  ]
 }

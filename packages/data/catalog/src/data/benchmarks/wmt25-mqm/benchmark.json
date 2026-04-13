@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "wmt25-mqm",
+  "benchmark_name": "WMT25 MQM",
+  "category": null,
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/translategemma-4b-it",
+  "total_models": 2
+}

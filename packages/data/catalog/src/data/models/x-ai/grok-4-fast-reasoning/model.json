@@ -36,5 +36,14 @@
       "value": 2000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 5.21,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://matharena.ai/?comp=apex--apex_2025",
+      "rank": 2
+    }
+  ]
 }

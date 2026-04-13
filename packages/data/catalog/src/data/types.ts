@@ -42,6 +42,7 @@ export interface Benchmark {
     name: string;
     category: string | null; // Category can be null if not specified
     order: string;
+    type?: "percentage" | "numerical" | null;
     description: string | null;
     link: string | null;
 }

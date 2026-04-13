@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mathvision",
+  "benchmark_name": "MathVision",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 52
+}

@@ -41,6 +41,7 @@ export interface BenchmarkPage {
     // name may be null in the database
     name: string | null;
     category: string | null;
+    ascending_order: boolean | null;
     total_models: number | null;
     link: string | null;
     results: BenchmarkResult[];
@@ -61,6 +62,7 @@ export default async function getBenchmark(
             id,
             name,
             category,
+            ascending_order,
             total_models,
             link,
             type,
@@ -147,6 +149,8 @@ export default async function getBenchmark(
         id: row.id,
         name: row.name ?? null,
         category: row.category ?? null,
+        ascending_order:
+            typeof row.ascending_order === "boolean" ? row.ascending_order : null,
         total_models: row.total_models ?? null,
         link: row.link ?? null,
         results,

@@ -24,5 +24,142 @@
       "value": 100000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 6117,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 61.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 74.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 30.7,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 27.2,
+      "is_self_reported": false,
+      "other_info": "Low Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 1.3,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.8,
+      "is_self_reported": false,
+      "other_info": "Low Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 11.74,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.017,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o3-mini/",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 338,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1397,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1044.96,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.708,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 40.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 36.7,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.8,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 5
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "summscreenfd",
+  "benchmark_name": "SummScreenFD",
+  "category": "long_context",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

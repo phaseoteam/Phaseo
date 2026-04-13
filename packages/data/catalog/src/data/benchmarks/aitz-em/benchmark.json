@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aitz-em",
+  "benchmark_name": "AITZ_EM",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 11
+}

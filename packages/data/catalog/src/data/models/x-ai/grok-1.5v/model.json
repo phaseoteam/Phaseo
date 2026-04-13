@@ -32,5 +32,62 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "mmmu",
+      "score": 53.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-1.5v",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "ai2d",
+      "score": 88.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5v",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "chartqa",
+      "score": 76.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5v",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 85.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5v",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 52.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5v",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 68.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5v",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "textvqa",
+      "score": 78.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-1.5v",
+      "rank": 7
+    }
+  ]
 }

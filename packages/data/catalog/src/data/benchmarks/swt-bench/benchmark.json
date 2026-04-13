@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "swt-bench",
+  "benchmark_name": "SWT-Bench",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

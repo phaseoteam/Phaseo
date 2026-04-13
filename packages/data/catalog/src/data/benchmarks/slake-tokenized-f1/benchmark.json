@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "slake-tokenized-f1",
+  "benchmark_name": "SLAKE Tokenized F1",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+  "total_models": 1
+}

@@ -44,5 +44,78 @@
       "value": 131072
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 58.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 69
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 66.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 60
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1324,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 88.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "bfcl-v2",
+      "score": 73.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 66.67,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 65
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 96.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.913,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.917,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 2
+    }
+  ]
 }

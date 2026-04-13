@@ -48,5 +48,70 @@
       "value": 49900000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 72.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 76,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1326,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "bfcl-v2",
+      "score": 74.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 76.01,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 89.45,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 66.31,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 97,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "rank": 5
+    }
+  ]
 }

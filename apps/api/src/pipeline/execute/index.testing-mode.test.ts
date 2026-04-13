@@ -127,11 +127,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		);
 
 		expect((result as any).ok).toBe(true);
-		expect(loadPriceCardMock).toHaveBeenCalledWith(
-			"openai",
-			"openai/gpt-image-1-mini",
-			"image.generate",
-		);
+		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate");
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
 	});
@@ -191,10 +187,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			maxInputTokens: null,
 			maxOutputTokens: null,
 		};
-		guardCandidatesMock.mockResolvedValue({
-			ok: true,
-			value: [firstCandidate, secondCandidate],
-		});
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [firstCandidate, secondCandidate] });
 		rankProvidersMock.mockResolvedValue([
 			{ candidate: firstCandidate, health: {} },
 			{ candidate: secondCandidate, health: {} },

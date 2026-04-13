@@ -21,6 +21,7 @@ import {
 	AudioLines,
 	Video,
 	Workflow,
+	ArrowUpDown,
 	Braces,
 	Eye,
 	Bot,
@@ -38,6 +39,7 @@ const MOD_ICON: Record<string, React.ElementType> = {
 	audio: AudioLines,
 	video: Video,
 	tool: Workflow, // "tool use" / function calling
+	rerank: ArrowUpDown,
 	embeddings: Braces,
 	vision: Eye,
 };
@@ -48,11 +50,12 @@ const MOD_BADGE_CLASS: Record<string, string> = {
 	audio: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	video: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200",
 	tool: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+	rerank: "bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200",
 	embeddings: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	vision: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 };
 
-const KNOWN_MODALITIES = ["text", "image", "audio", "video", "embeddings"];
+const KNOWN_MODALITIES = ["text", "image", "audio", "video", "rerank", "embeddings"];
 
 function toList(v?: string[] | string | null) {
 	if (!v) return [] as string[];

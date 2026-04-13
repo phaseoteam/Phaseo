@@ -280,7 +280,7 @@
     "api_model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
     "provider_api_model_id": "novita:baidu/ernie-4.5-vl-28b-a3b-thinking",
     "provider_model_slug": "baidu/ernie-4.5-vl-28b-a3b-thinking",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP16",
     "input_modalities": "text,image,video",
@@ -647,7 +647,7 @@
     "api_model_id": "deepseek/deepseek-prover-v2-671b",
     "provider_api_model_id": "novita:deepseek/deepseek-prover-v2-671b",
     "provider_model_slug": "deepseek/deepseek-prover-v2-671b",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -894,7 +894,7 @@
     "api_model_id": "deepseek/deepseek-r1-turbo",
     "provider_api_model_id": "novita:deepseek/deepseek-r1-turbo",
     "provider_model_slug": "deepseek/deepseek-r1-turbo",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1571,7 +1571,7 @@
     "api_model_id": "deepseek/deepseek-v3-turbo",
     "provider_api_model_id": "novita:deepseek/deepseek-v3-turbo",
     "provider_model_slug": "deepseek/deepseek-v3-turbo",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1804,7 +1804,7 @@
     "api_model_id": "kwaipilot/kat-coder-pro",
     "provider_api_model_id": "novita:kwaipilot/kat-coder-pro",
     "provider_model_slug": "kwaipilot/kat-coder-pro",
-    "internal_model_id": null,
+    "internal_model_id": "kwaipilot/kat-coder-pro",
     "is_active_gateway": true,
     "quantization_scheme": "FP16",
     "input_modalities": "text",
@@ -1931,7 +1931,7 @@
     "api_model_id": "meta/llama-3.1-8b",
     "provider_api_model_id": "novita:meta/llama-3.1-8b",
     "provider_model_slug": "meta-llama/llama-3.1-8b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "meta/llama-3.1-8b",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -2044,7 +2044,7 @@
     "api_model_id": "meta/llama-3.3-70b",
     "provider_api_model_id": "novita:meta/llama-3.3-70b",
     "provider_model_slug": "meta-llama/llama-3.3-70b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "meta/llama-3.3-70b",
     "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text",
@@ -2164,7 +2164,7 @@
     "api_model_id": "meta/llama-3-70b",
     "provider_api_model_id": "novita:meta/llama-3-70b",
     "provider_model_slug": "meta-llama/llama-3-70b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "meta/llama-3-70b",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -2284,7 +2284,7 @@
     "api_model_id": "meta/llama-3-8b",
     "provider_api_model_id": "novita:meta/llama-3-8b",
     "provider_model_slug": "meta-llama/llama-3-8b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "meta/llama-3-8b",
     "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text",
@@ -3138,7 +3138,7 @@
     "api_model_id": "minimax/minimax-m2.5-highspeed",
     "provider_api_model_id": "novita:minimax/minimax-m2.5-highspeed",
     "provider_model_slug": "minimax/minimax-m2.5-highspeed",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -3230,7 +3230,7 @@
     "api_model_id": "mistralai/mistral-nemo",
     "provider_api_model_id": "novita:mistralai/mistral-nemo",
     "provider_model_slug": "mistralai/mistral-nemo",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -5036,7 +5036,7 @@
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "novita:qwen/qwen3-235b-a22b-2507",
     "provider_model_slug": "qwen/qwen3-235b-a22b-instruct-2507",
-    "internal_model_id": null,
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -6143,7 +6143,7 @@
     "api_model_id": "qwen/qwen3-max",
     "provider_api_model_id": "novita:qwen/qwen3-max",
     "provider_model_slug": "qwen/qwen3-max",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -6270,7 +6270,7 @@
     "api_model_id": "qwen/qwen3-next-80b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-next-80b-a3b",
     "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text",
@@ -6531,7 +6531,7 @@
     "api_model_id": "qwen/qwen3-omni-30b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-omni-30b-a3b",
     "provider_model_slug": "qwen/qwen3-omni-30b-a3b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,video,audio,image",
@@ -6792,7 +6792,7 @@
     "api_model_id": "qwen/qwen3-vl-235b-a22b",
     "provider_api_model_id": "novita:qwen/qwen3-vl-235b-a22b",
     "provider_model_slug": "qwen/qwen3-vl-235b-a22b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text,image,video",
@@ -7039,7 +7039,7 @@
     "api_model_id": "qwen/qwen3-vl-30b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-vl-30b-a3b",
     "provider_model_slug": "qwen/qwen3-vl-30b-a3b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text,video,image",
@@ -7293,7 +7293,7 @@
     "api_model_id": "qwen/qwen3-vl-8b",
     "provider_api_model_id": "novita:qwen/qwen3-vl-8b",
     "provider_model_slug": "qwen/qwen3-vl-8b-instruct",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text,image,video",
@@ -7419,7 +7419,7 @@
   {
     "api_model_id": "qwen/qwen3-vl-8b-instruct",
     "provider_api_model_id": "novita:qwen/qwen3-vl-8b-instruct",
-    "provider_model_slug": null,
+    "provider_model_slug": "qwen3-vl-8b-instruct",
     "internal_model_id": "qwen/qwen3-vl-8b-instruct",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -7441,7 +7441,7 @@
     "api_model_id": "qwen/qwen-mt-plus",
     "provider_api_model_id": "novita:qwen/qwen-mt-plus",
     "provider_model_slug": "qwen/qwen-mt-plus",
-    "internal_model_id": null,
+    "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -7814,7 +7814,7 @@
   {
     "api_model_id": "z-ai/glm-4.5-air",
     "provider_api_model_id": "novita:z-ai/glm-4.5-air",
-    "provider_model_slug": null,
+    "provider_model_slug": "glm-4.5-air",
     "internal_model_id": "z-ai/glm-4.5-air",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -8637,140 +8637,6 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-5.1",
-    "provider_api_model_id": "novita:z-ai/glm-5.1",
-    "provider_model_slug": "zai-org/glm-5.1",
-    "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 204800,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-04-07T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "seed",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "frequency_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "presence_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "repetition_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "min_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logit_bias",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "structured_outputs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "include_reasoning",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
     "api_model_id": "zai-org/glm-4.5-air",
     "provider_api_model_id": "novita:zai-org/glm-4.5-air",
     "provider_model_slug": "zai-org/glm-4.5-air",
@@ -8789,7 +8655,7 @@
     "api_model_id": "google/gemma-4-26b-a4b",
     "provider_api_model_id": "novita:google/gemma-4-26b-a4b",
     "provider_model_slug": "google/gemma-4-26b-a4b-it",
-    "internal_model_id": "google/gemma-4-26b-a3b",
+    "internal_model_id": "google/gemma-4-26b-a4b",
     "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text,image",

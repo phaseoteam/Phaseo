@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cybergym",
+  "benchmark_name": "CyberGym",
+  "category": "cybersecurity",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://www.anthropic.com/glasswing",
+  "total_models": 5
+}

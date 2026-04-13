@@ -15,5 +15,118 @@
   "family_id": "ibm/granite-guardian",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 81.2,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "alpacaeval-2.0",
+      "score": 62.68,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 57.56,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "attaq",
+      "score": 88.5,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "big-bench-hard",
+      "score": 69.13,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "drop",
+      "score": 59.36,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 80.89,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 89.73,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "humaneval+",
+      "score": 86.09,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 74.82,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 69.02,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 65.54,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 54
+    },
+    {
+      "benchmark_id": "popqa",
+      "score": 26.17,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "truthfulqa",
+      "score": 66.86,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-3.3-8b-instruct (score=0.5071; benches=14)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
+      "rank": 2
+    }
+  ]
 }

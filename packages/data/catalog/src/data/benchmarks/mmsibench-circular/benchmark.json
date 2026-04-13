@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmsibench-circular",
+  "benchmark_name": "MMSIBench (circular)",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

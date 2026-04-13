@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "gsm8k-chat",
+  "benchmark_name": "GSM8K Chat",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

@@ -14,5 +14,198 @@
   "api_model_id": "nvidia/nemotron-3-super-120b-a12b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 58.31,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 90.21,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "arena-hard-v2",
+      "score": 73.88,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "bird-sql-(dev)",
+      "score": 41.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 31.28,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 82.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 94.73,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 22.82,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 72.56,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 81.19,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 83.73,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 79.36,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "ruler",
+      "score": 91.75,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scale-multichallenge",
+      "score": 55.23,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 42.05,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 45.78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 53.73,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 56.25,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 62.83,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 64.36,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 25.78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 31,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "wmt24++",
+      "score": 86.67,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 55.23,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+      "rank": 12
+    }
+  ]
 }

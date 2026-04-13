@@ -36,5 +36,270 @@
       "value": "2025-05-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 40,
+      "is_self_reported": false,
+      "other_info": "Thinking, None",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 35.2,
+      "is_self_reported": false,
+      "other_info": "1k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 58.7,
+      "is_self_reported": false,
+      "other_info": "8k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 72,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 75.8,
+      "is_self_reported": false,
+      "other_info": "32k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 80,
+      "is_self_reported": false,
+      "other_info": "64k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 7.8,
+      "is_self_reported": false,
+      "other_info": "Thinking, None",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 9.4,
+      "is_self_reported": false,
+      "other_info": "1k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 13.9,
+      "is_self_reported": false,
+      "other_info": "8k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 22.8,
+      "is_self_reported": false,
+      "other_info": "16k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 30.6,
+      "is_self_reported": false,
+      "other_info": "32k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 37.6,
+      "is_self_reported": false,
+      "other_info": "64k Thinking",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 80.9,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 59.3,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 128k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 98.2,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 86.95,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 80.72,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 90.77,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 57.8,
+      "is_self_reported": true,
+      "other_info": "Avg@10, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 52,
+      "is_self_reported": true,
+      "other_info": "Avg@5",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 51.6,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": "Avg@5",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "tau-2-airline",
+      "score": 70.1,
+      "is_self_reported": true,
+      "other_info": "Original",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tau-2-airline",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": "Corrected",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 66.26,
+      "is_self_reported": true,
+      "other_info": "Pass@1; Avg@5, 64k Thinking",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 4967.06,
+      "is_self_reported": false,
+      "other_info": "8k Thinking",
+      "source_link": "https://andonlabs.com/evals/vending-bench-2",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 30.8,
+      "is_self_reported": true,
+      "other_info": "Without Search",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 43.2,
+      "is_self_reported": true,
+      "other_info": "With Search",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 92.77,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking, Without Tools",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "Avg@5, 64k Thinking, With Tools",
+      "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "rank": 1
+    }
+  ]
 }

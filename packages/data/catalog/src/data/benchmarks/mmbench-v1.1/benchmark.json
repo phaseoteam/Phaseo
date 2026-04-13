@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmbench-v1.1",
+  "benchmark_name": "MMBench-V1.1",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 37
+}

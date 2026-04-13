@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "arc",
+  "benchmark_name": "Arc",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

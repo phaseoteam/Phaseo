@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "hypersim",
+  "benchmark_name": "Hypersim",
+  "category": "3d",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 5
+}

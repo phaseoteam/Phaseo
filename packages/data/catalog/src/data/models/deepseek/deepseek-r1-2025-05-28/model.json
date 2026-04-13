@@ -21,39 +21,39 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://sciarena.allen.ai/",
-      "rank": 1
+      "rank": 4
     },
     {
       "benchmark_id": "aime-2024",
-      "score": 0.914,
+      "score": 91.4,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 2
+      "rank": 10
     },
     {
       "benchmark_id": "aime-2025",
-      "score": 0.855,
+      "score": 85.5,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 1
+      "rank": 35
     },
     {
       "benchmark_id": "arc-agi-1",
-      "score": 0.212,
+      "score": 21.2,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 2
+      "rank": 29
     },
     {
       "benchmark_id": "arc-agi-2",
-      "score": 0.011,
+      "score": 1.1,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 3
+      "rank": 27
     },
     {
       "benchmark_id": "confabulations",
@@ -61,7 +61,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 2
+      "rank": 16
     },
     {
       "benchmark_id": "elimination-game",
@@ -69,31 +69,31 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 1
-    },
-    {
-      "benchmark_id": "gpqa-diamond",
-      "score": 0.81,
-      "is_self_reported": true,
-      "other_info": null,
-      "source_link": "https://api-docs.deepseek.com/news/news250528",
       "rank": 2
     },
     {
-      "benchmark_id": "humanitys-last-exam",
-      "score": 0.177,
+      "benchmark_id": "gpqa-diamond",
+      "score": 81,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 1
+      "rank": 34
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 17.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://api-docs.deepseek.com/news/news250528",
+      "rank": 40
     },
     {
       "benchmark_id": "livebench",
-      "score": 0.6939,
+      "score": 69.39,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 1
+      "rank": 13
     },
     {
       "benchmark_id": "lmarena-text",
@@ -101,7 +101,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 1
+      "rank": 8
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -109,7 +109,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "nyt-connections",
@@ -117,15 +117,15 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 1
+      "rank": 11
     },
     {
       "benchmark_id": "simplebench",
-      "score": 0.408,
+      "score": 40.8,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 1
+      "rank": 11
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -133,23 +133,23 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 1
-    },
-    {
-      "benchmark_id": "arc-agi-1",
-      "score": 0.212,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": null,
       "rank": 2
     },
     {
-      "benchmark_id": "arc-agi-2",
-      "score": 0.011,
+      "benchmark_id": "arc-agi-1",
+      "score": 21.2,
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 3
+      "rank": 29
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 1.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": null,
+      "rank": 27
     }
   ]
 }

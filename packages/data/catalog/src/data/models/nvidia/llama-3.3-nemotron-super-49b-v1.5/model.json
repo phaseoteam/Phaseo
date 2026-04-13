@@ -14,5 +14,62 @@
   "api_model_id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 58.4,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 69
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 88.3,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "bfcl-v2",
+      "score": 73.7,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 66.67,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 65
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 96.6,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.913,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.917,
+      "is_self_reported": true,
+      "other_info": "inferred version-family alias from llama-3.3-nemotron-super-49b-v1",
+      "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
+      "rank": 2
+    }
+  ]
 }

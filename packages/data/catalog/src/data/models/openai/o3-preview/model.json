@@ -2,7 +2,7 @@
   "model_id": "openai/o3-preview",
   "organisation_id": "openai",
   "name": "o3 Preview",
-  "status": "Announced",
+  "status": "Withheld",
   "previous_model_id": "openai/o1-preview-2024-09-12",
   "announced_date": "2024-12-20T00:00:00",
   "release_date": null,
@@ -23,7 +23,7 @@
   "benchmarks": [
     {
       "benchmark_id": "aime-2024",
-      "score": 0.967,
+      "score": 96.7,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.youtube.com/live/SKBG1sqdyIU?si=lWccKHt8bnttuYta",
@@ -31,27 +31,27 @@
     },
     {
       "benchmark_id": "arc-agi-1",
-      "score": 0.757,
+      "score": 75.7,
       "is_self_reported": false,
       "other_info": "Preview Model & Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 1
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-2",
-      "score": 0.04,
+      "score": 4,
       "is_self_reported": false,
       "other_info": "Preview Model & Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 1
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa-diamond",
-      "score": 0.877,
+      "score": 87.7,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.youtube.com/live/SKBG1sqdyIU?si=lWccKHt8bnttuYta",
-      "rank": 1
+      "rank": 13
     }
   ]
 }

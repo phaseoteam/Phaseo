@@ -14,5 +14,366 @@
   "api_model_id": "qwen/qwen2.5-math-7b-prm800k",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2d",
+      "score": 83.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "chartqa",
+      "score": 85.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "common-voice-15",
+      "score": 0.076,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "covost2-en-zh",
+      "score": 0.414,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "crperelation",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 95.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "egoschema",
+      "score": 68.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "fleurs",
+      "score": 0.041,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "giantsteps-tempo",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 30.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 103
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 88.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 78.7,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 29.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "math",
+      "score": 71.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "mathvision",
+      "score": 25,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 67.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 0.732,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "meld",
+      "score": 57,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmau",
+      "score": 65.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmau-music",
+      "score": 69.16,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmau-sound",
+      "score": 67.87,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmau-speech",
+      "score": 59.76,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmbench-v1.1",
+      "score": 81.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "mme-realworld",
+      "score": 61.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 47,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 74
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 71,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "mm-mt-bench",
+      "score": 6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 59.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 36.6,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "mmstar",
+      "score": 64,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "muirbench",
+      "score": 59.2,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "multipl-e",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "musiccaps",
+      "score": 32.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mvbench",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "nmos",
+      "score": 0.0451,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://qwenlm.github.io/blog/qwen2.5-omni/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ocrbench-v2",
+      "score": 57.8,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "odinw",
+      "score": 42.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "omnibench",
+      "score": 56.13,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "omnibench-music",
+      "score": 52.83,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "pointgrounding",
+      "score": 66.5,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "textvqa",
+      "score": 84.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "videomme-w-sub.",
+      "score": 72.4,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "vocalsound",
+      "score": 93.9,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "voicebench-avg",
+      "score": 74.12,
+      "is_self_reported": true,
+      "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
+      "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
+      "rank": 1
+    }
+  ]
 }

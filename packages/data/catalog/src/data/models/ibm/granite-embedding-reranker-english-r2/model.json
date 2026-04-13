@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": null,
   "input_types": null,
-  "output_types": null,
+  "output_types": "rerank",
   "api_model_id": "ibm/granite-embedding-reranker-english-r2",
   "family_id": "ibm/granite-embedding",
   "links": [],

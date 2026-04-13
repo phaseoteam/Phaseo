@@ -289,6 +289,12 @@ export type IREmbeddingsRequest = {
 		mistral?: {
 			outputDtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
 		};
+		voyage?: {
+			inputType?: "query" | "document";
+			truncation?: boolean;
+			outputDtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
+			outputDimension?: number;
+		};
 	};
 	userId?: string;
 	metadata?: Record<string, string>;
@@ -323,6 +329,8 @@ export type IREmbeddingsUsage = {
 		inputImageTokens?: number;
 		inputAudioTokens?: number;
 		inputVideoTokens?: number;
+		imagePixels?: number;
+		videoPixels?: number;
 	};
 };
 

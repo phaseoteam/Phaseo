@@ -3,6 +3,7 @@
   "benchmark_name": "Dubesor LLM",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://dubesor.de/benchtable.html",
   "total_models": 0
 }

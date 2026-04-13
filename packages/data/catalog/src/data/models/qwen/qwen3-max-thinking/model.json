@@ -14,5 +14,110 @@
   "api_model_id": "qwen/qwen3-max-thinking",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from qwen3-max",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 62,
+      "is_self_reported": true,
+      "other_info": "inferred alias from qwen3-max",
+      "source_link": "https://nousresearch.com/wp-content/uploads/2025/08/Hermes_4_Technical_Report.pdf",
+      "rank": 72
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": "inferred alias from qwen3-max",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 65.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from qwen3-max",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 69.6,
+      "is_self_reported": true,
+      "other_info": "inferred alias from qwen3-max",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 74.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from qwen3-max",
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-avg-acc",
+      "score": 29.7,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-cs-score",
+      "score": 64,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-ps-score",
+      "score": 61.7,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-comp-score",
+      "score": 62.8,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-case-acc",
+      "score": 13.8,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-shopping-match-score",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-shopping-case-acc",
+      "score": 45.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 2
+    }
+  ]
 }

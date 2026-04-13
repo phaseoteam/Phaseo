@@ -14,5 +14,94 @@
   "api_model_id": "upstage/solar-pro-3",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 25.87,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 682.236307324766,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 86.3,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "terminal-bench-hard",
+      "score": 0.076,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 24.7,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 27,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "aa-omniscience",
+      "score": -53.783,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 71.2,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "hle-verified",
+      "score": 0.101,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 72.4,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 50
+    },
+    {
+      "benchmark_id": "critpt",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
+      "rank": 3
+    }
+  ]
 }

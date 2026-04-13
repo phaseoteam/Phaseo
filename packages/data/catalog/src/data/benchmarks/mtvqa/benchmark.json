@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mtvqa",
+  "benchmark_name": "MTVQA",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 5
+}

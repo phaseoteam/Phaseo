@@ -37,5 +37,238 @@
       "value": "2025-01-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 44.4,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 51.4,
+      "is_self_reported": true,
+      "other_info": "Search + Code",
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 77.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 94.3,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": null,
+      "rank": 3
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 68.5,
+      "is_self_reported": true,
+      "other_info": "Terminus-2 Harness",
+      "source_link": null,
+      "rank": 5
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": "Single Attempt",
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 54.2,
+      "is_self_reported": true,
+      "other_info": "Single Attempt",
+      "source_link": null,
+      "rank": 11
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2887,
+      "is_self_reported": true,
+      "other_info": "Elo",
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 59,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "apex-agents",
+      "score": 33.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1317,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 90.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 99.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 85.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 80.5,
+      "is_self_reported": true,
+      "other_info": "Search + Python + Browse",
+      "source_link": null,
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 92.6,
+      "is_self_reported": true,
+      "other_info": "No Tools",
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-128k",
+      "score": 84.9,
+      "is_self_reported": true,
+      "other_info": "Average",
+      "source_link": null,
+      "rank": 2
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-1m",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": "Pointwise",
+      "source_link": null,
+      "rank": 2
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 98,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1317,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 94.3,
+      "is_self_reported": true,
+      "other_info": "GPQA Diamond subset",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2887,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mrcr-v2-(8-needle)",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 99.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1317,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2887,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1317,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 2887,
+      "is_self_reported": true,
+      "other_info": "Higher is better",
+      "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
+      "rank": 1
+    }
+  ]
 }

@@ -25,5 +25,158 @@
       "value": 1000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 80.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 79.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 91,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "if-bench",
+      "score": 70.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 76.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "longcodebench-1m",
+      "score": 84,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 61.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "ocrbench-v2",
+      "score": 56.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "realkie",
+      "score": 62.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "qvhighlights",
+      "score": 77.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 76,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "tau-2-airline",
+      "score": 64.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "bfcl-overall-fc-v4",
+      "score": 60.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 24.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "screenspot",
+      "score": 83.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 64.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "terminal-bench",
+      "score": 32.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "livecodebench-coding",
+      "score": 71,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
+      "rank": 2
+    }
+  ]
 }

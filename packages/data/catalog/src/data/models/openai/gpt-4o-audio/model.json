@@ -33,5 +33,310 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "activitynet",
+      "score": 61.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ai2d",
+      "score": 94.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 30.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "aider-polyglot-edit",
+      "score": 18.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 13.1,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "chartqa",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "charxiv-d",
+      "score": 85.3,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 58.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "collie",
+      "score": 61,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "complexfuncbench",
+      "score": 66.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 92.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "egoschema",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/hello-gpt-4o/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "erqa",
+      "score": 35.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 70.1,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-lt-128k",
+      "score": 41.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "graphwalks-parents-lt-128k",
+      "score": 35.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 5.3,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 62
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "internal-api-instruction-following-(hard)",
+      "score": 29.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 61.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 74.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://huggingface.co/spaces/TIGER-Lab/MMLU-Pro",
+      "rank": 50
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 59.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 40.3,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "multi-if",
+      "score": 60.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "openai-mrcr:-2-needle-128k",
+      "score": 31.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 38.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/introducing-gpt-4-5/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 33.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 32.6,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 12.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "tau2-airline",
+      "score": 45.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 63.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 23.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 42.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 60.3,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-4-1/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 61.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
+      "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 24
+    }
+  ]
 }

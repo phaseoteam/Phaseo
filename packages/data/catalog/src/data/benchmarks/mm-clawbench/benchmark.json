@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mm-clawbench",
+  "benchmark_name": "MM-ClawBench",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

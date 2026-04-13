@@ -41,5 +41,118 @@
       "value": 73400000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 68.9,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aider-polyglot-edit",
+      "score": 58.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 93.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 92.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 51.5,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 14.7,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 48
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 84.3,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 43,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 68.1,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 49.2,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 71.8,
+      "is_self_reported": true,
+      "other_info": "inferred modality/version alias from o4-mini",
+      "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
+      "rank": 5
+    }
+  ]
 }

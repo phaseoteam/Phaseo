@@ -14,5 +14,62 @@
   "api_model_id": "stepfun/step-3.5-flash",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 97.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "imoanswerbench",
+      "score": 85.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 86.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 74.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "tau-bench",
+      "score": 88.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 51,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://stepfun.com/",
+      "rank": 20
+    }
+  ]
 }

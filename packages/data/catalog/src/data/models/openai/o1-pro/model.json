@@ -24,5 +24,62 @@
       "value": 100000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 86,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 23.3,
+      "is_self_reported": false,
+      "other_info": "Low Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.9,
+      "is_self_reported": false,
+      "other_info": "Low Reasoning Effort",
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 1707,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 79,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.825,
+      "is_self_reported": false,
+      "other_info": "Medium Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 79,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
+      "rank": 36
+    }
+  ]
 }

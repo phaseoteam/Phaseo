@@ -41,5 +41,14 @@
       "value": 4096
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1187,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 66
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "deepresearchbench",
+  "benchmark_name": "DeepResearchBench",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 2
+}

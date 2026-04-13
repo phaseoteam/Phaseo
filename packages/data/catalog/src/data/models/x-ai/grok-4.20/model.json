@@ -19,5 +19,94 @@
       "value": 2000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 49.33,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1186.69875946904,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 93,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "terminal-bench-hard",
+      "score": 0.379,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 45.6,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 58,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aa-omniscience",
+      "score": 15.35,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 81.2,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hle-verified",
+      "score": 0.322,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 91.1,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "critpt",
+      "score": 0.066,
+      "is_self_reported": false,
+      "other_info": "Artificial Analysis structured model metrics",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-20",
+      "rank": 1
+    }
+  ]
 }

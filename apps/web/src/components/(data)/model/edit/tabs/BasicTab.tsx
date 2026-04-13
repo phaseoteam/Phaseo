@@ -13,6 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  MODEL_MODALITY_OPTIONS,
+  MODEL_STATUS_OPTIONS,
+  normalizeModelStatus,
+} from "@/lib/models/editorOptions"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import type { ModelData } from "../ModelEditDialog"
@@ -37,7 +42,7 @@ interface FamilyOption {
   family_name: string | null
 }
 
-const TYPE_OPTIONS = ["text", "image", "audio", "video"] as const
+const TYPE_OPTIONS = MODEL_MODALITY_OPTIONS
 
 function formatDateForInput(dateStr: string | null): string {
   if (!dateStr) return ""
@@ -166,21 +171,16 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
         </FieldRow>
         <FieldRow label="Status">
           <Select
-            value={model.status || "active"}
+            value={normalizeModelStatus(model.status)}
             onValueChange={(value) => onModelChange({ ...model, status: value })}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Rumoured">Rumoured</SelectItem>
-              <SelectItem value="Announced">Announced</SelectItem>
-              <SelectItem value="Available">Available</SelectItem>
-              <SelectItem value="Deprecated">Deprecated</SelectItem>
-              <SelectItem value="Retired">Retired</SelectItem>
-              <SelectItem value="active">active</SelectItem>
-              <SelectItem value="beta">beta</SelectItem>
-              <SelectItem value="preview">preview</SelectItem>
-              <SelectItem value="deprecated">deprecated</SelectItem>
-              <SelectItem value="retired">retired</SelectItem>
+              {MODEL_STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </FieldRow>

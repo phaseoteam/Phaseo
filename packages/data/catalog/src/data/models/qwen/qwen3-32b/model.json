@@ -27,5 +27,94 @@
       "value": 235000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2-sciarena",
+      "score": 1008.64,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://sciarena.allen.ai/",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 72.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 54
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 952.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "aider",
+      "score": 50.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 93.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "bfcl",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 0.659,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 74.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 65.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "multilf",
+      "score": 73,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwenlm.github.io/blog/qwen3/",
+      "rank": 1
+    }
+  ]
 }

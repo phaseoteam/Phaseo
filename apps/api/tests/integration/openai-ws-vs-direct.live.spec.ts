@@ -162,14 +162,8 @@ describeBench("Live benchmark: OpenAI direct WS vs Gateway WS tunnel", () => {
 		expect(direct.every((entry) => entry.turns.length > 0)).toBe(true);
 		expect(gateway.every((entry) => entry.turns.length > 0)).toBe(true);
 
-		const directToolCallTurns = direct
-			.flatMap((entry) => entry.turns)
-			.filter((turn) => turn.toolCalls > 0)
-			.length;
-		const gatewayToolCallTurns = gateway
-			.flatMap((entry) => entry.turns)
-			.filter((turn) => turn.toolCalls > 0)
-			.length;
+		const directToolCallTurns = direct.flatMap((entry) => entry.turns).filter((turn) => turn.toolCalls > 0).length;
+		const gatewayToolCallTurns = gateway.flatMap((entry) => entry.turns).filter((turn) => turn.toolCalls > 0).length;
 		expect(directToolCallTurns).toBeGreaterThan(0);
 		expect(gatewayToolCallTurns).toBeGreaterThan(0);
 
@@ -183,9 +177,7 @@ describeBench("Live benchmark: OpenAI direct WS vs Gateway WS tunnel", () => {
 
 		console.log("");
 		console.log("OpenAI websocket benchmark summary");
-		console.log(
-			`iterations=${ITERATIONS} concurrency=${CONCURRENCY} maxTurns=${MAX_TURNS} model=${DIRECT_MODEL}`,
-		);
+		console.log(`iterations=${ITERATIONS} concurrency=${CONCURRENCY} maxTurns=${MAX_TURNS} model=${DIRECT_MODEL}`);
 		console.log(formatStatsLine("direct ws total", directTotalStats));
 		console.log(formatStatsLine("gateway ws total", gatewayTotalStats));
 		console.log(formatStatsLine("direct ws ttfb", directFirstTtfbStats));

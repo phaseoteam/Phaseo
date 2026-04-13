@@ -14,5 +14,206 @@
   "api_model_id": "qwen/qwen3.5-4b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 57,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "bfcl-v4",
+      "score": 50.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "c-eval",
+      "score": 85.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "deep-planning",
+      "score": 17.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "global-piqa",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 76.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 59.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 89.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "include",
+      "score": 71,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 55.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "longbench-v2",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "maxife",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 79.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 71.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 88.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 76.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 49,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "nova-63",
+      "score": 54.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "polymath",
+      "score": 51.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 52.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 79.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "vita-bench",
+      "score": 22,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "wmt24++",
+      "score": 66.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "rank": 9
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "pmc-vqa",
+  "benchmark_name": "PMC-VQA",
+  "category": "healthcare",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

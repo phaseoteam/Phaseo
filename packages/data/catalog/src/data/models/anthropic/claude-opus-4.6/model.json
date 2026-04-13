@@ -27,5 +27,318 @@
       "value": "2025-05-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 80.8,
+      "is_self_reported": true,
+      "other_info": "Verified",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 77.83,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 65.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "tau-2-retail",
+      "score": 91.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 99.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 59.5,
+      "is_self_reported": true,
+      "other_info": "Max effort",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 62.7,
+      "is_self_reported": true,
+      "other_info": "High effort",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 72.7,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 68.8,
+      "is_self_reported": true,
+      "other_info": "Verified; max effort",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 69.17,
+      "is_self_reported": true,
+      "other_info": "ARC Prize Foundation private dataset; 120k thinking tokens; high effort",
+      "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 94,
+      "is_self_reported": true,
+      "other_info": "ARC Prize Foundation private dataset; 120k thinking tokens; high effort",
+      "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 91.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 99.79,
+      "is_self_reported": true,
+      "other_info": "Without tools",
+      "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 91.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1606,
+      "is_self_reported": true,
+      "other_info": "Elo",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 73.9,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 77.3,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 40,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 53,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 60.05,
+      "is_self_reported": true,
+      "other_info": "Vals AI",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 8017.59,
+      "is_self_reported": true,
+      "other_info": "Final balance",
+      "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cybergym",
+      "score": 66,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": "Multi-agent configuration",
+      "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 84,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 77.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "cybergym",
+      "score": 66.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "deepsearchqa",
+      "score": 91.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "figqa",
+      "score": 78.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 60.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1606,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 91.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "graphwalks-bfs->128k",
+      "score": 61.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "graphwalks-parents->128k",
+      "score": 95.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 53.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mrcr-v2-(8-needle)",
+      "score": 93,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "openrca",
+      "score": 34.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1606,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1606,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
+      "rank": 2
+    }
+  ]
 }

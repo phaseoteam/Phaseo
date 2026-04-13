@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "big-bench",
+  "benchmark_name": "BIG-Bench",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 3
+}

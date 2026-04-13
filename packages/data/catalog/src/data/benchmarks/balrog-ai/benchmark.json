@@ -3,6 +3,7 @@
   "benchmark_name": "Balrog-AI",
   "category": null,
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://balrogai.com/",
   "total_models": 0
 }

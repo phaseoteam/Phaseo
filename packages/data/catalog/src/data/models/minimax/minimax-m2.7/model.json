@@ -28,5 +28,94 @@
       "value": 131072
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 56.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 0.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "artificial-analysis",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m27",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mle-bench-lite",
+      "score": 66.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m27",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mm-clawbench",
+      "score": 62.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m27",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "multi-swe-bench",
+      "score": 52.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m27",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "nl2repo",
+      "score": 39.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m27-en",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m27-en",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 57,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/news/minimax-m27-en",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 46.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m27",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "vibe-pro",
+      "score": 55.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m27",
+      "rank": 1
+    }
+  ]
 }

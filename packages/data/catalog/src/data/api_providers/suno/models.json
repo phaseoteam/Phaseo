@@ -2,7 +2,7 @@
   {
     "api_model_id": "suno/suno-v4",
     "provider_api_model_id": "suno:suno/suno-v4",
-    "provider_model_slug": null,
+    "provider_model_slug": "suno-v4",
     "internal_model_id": "suno/suno-v4",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -23,7 +23,7 @@
   {
     "api_model_id": "suno/suno-v4.5",
     "provider_api_model_id": "suno:suno/suno-v4.5",
-    "provider_model_slug": null,
+    "provider_model_slug": "suno-v4.5",
     "internal_model_id": "suno/suno-v4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -44,7 +44,7 @@
   {
     "api_model_id": "suno/suno-v4.5+",
     "provider_api_model_id": "suno:suno/suno-v4.5+",
-    "provider_model_slug": null,
+    "provider_model_slug": "suno-v4.5+",
     "internal_model_id": "suno/suno-v4.5+",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -65,7 +65,7 @@
   {
     "api_model_id": "suno/suno-v4.5-all",
     "provider_api_model_id": "suno:suno/suno-v4.5-all",
-    "provider_model_slug": null,
+    "provider_model_slug": "suno-v4.5-all",
     "internal_model_id": "suno/suno-v4.5-all",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -86,7 +86,7 @@
   {
     "api_model_id": "suno/suno-v5",
     "provider_api_model_id": "suno:suno/suno-v5",
-    "provider_model_slug": null,
+    "provider_model_slug": "suno-v5",
     "internal_model_id": "suno/suno-v5",
     "is_active_gateway": false,
     "quantization_scheme": null,

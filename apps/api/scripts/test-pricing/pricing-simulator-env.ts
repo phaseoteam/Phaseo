@@ -69,7 +69,6 @@ export function loadEnvFromFiles(files: string[] = [".env.local", ".env", ".dev.
                 process.env[key] = value;
             }
         } catch (err) {
-            // eslint-disable-next-line no-console
             console.warn(`Failed to load env file ${file}:`, err);
         }
     }

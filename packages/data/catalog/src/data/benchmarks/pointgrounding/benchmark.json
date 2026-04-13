@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "pointgrounding",
+  "benchmark_name": "PointGrounding",
+  "category": "grounding",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

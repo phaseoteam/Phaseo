@@ -27,5 +27,22 @@
       "value": 7620000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 42.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/Qwen/Qwen2-72B",
+      "rank": 88
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1258,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 54
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "giantsteps-tempo",
+  "benchmark_name": "GiantSteps Tempo",
+  "category": "audio",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

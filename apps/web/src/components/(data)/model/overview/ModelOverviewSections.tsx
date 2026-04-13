@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import {
 	Activity,
+	AlertTriangle,
 	AppWindow,
 	AudioLines,
 	Braces,
@@ -24,6 +25,7 @@ import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModel
 import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
+import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +43,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ModelOverviewSectionsProps = {
 	modelId: string;
@@ -126,6 +129,29 @@ function formatDate(dateStr?: string | null): string {
 		month: "short",
 		year: "numeric",
 	});
+}
+
+function isProviderModelActiveNow(
+	providerModel: {
+		is_active_gateway: boolean;
+		capability_status?: string | null;
+		effective_from?: string | null;
+		effective_to?: string | null;
+	},
+	now = new Date(),
+): boolean {
+	if (!providerModel.is_active_gateway) return false;
+	if (providerModel.capability_status === "disabled") return false;
+
+	const from = providerModel.effective_from
+		? new Date(providerModel.effective_from)
+		: null;
+	const to = providerModel.effective_to ? new Date(providerModel.effective_to) : null;
+
+	if (from && Number.isFinite(from.getTime()) && now < from) return false;
+	if (to && Number.isFinite(to.getTime()) && now >= to) return false;
+
+	return true;
 }
 
 const KNOWN_MODALITY_META = [
@@ -677,22 +703,56 @@ export default async function ModelOverviewSections({
 	model,
 	includeHidden,
 }: ModelOverviewSectionsProps) {
+	const providerPricing = await getModelPricingCached(
+		modelId,
+		includeHidden,
+	).catch(() => null);
+	const hasApiProviders = (providerPricing ?? []).some(
+		(provider) =>
+			provider.pricing_rules.length > 0 &&
+			provider.provider_models.some((providerModel) =>
+				isProviderModelActiveNow(providerModel),
+			),
+	);
 	const hasInternalModelData = Boolean(model);
+	const modelStatus = model?.status ?? null;
+	const isWithheldModel = modelStatus === "Withheld";
+	const isLimitedAvailabilityModel =
+		modelStatus === "Announced" || isWithheldModel;
 
 	return (
 		<div className="space-y-10">
+			{isLimitedAvailabilityModel ? (
+				<Section id="announced-status" showDivider={false}>
+					<Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
+						<AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+						<AlertTitle>
+							{isWithheldModel ? "Withheld Model" : "Announced Model"}
+						</AlertTitle>
+						<AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
+							{isWithheldModel
+								? "This model was announced with preliminary details but is currently withheld and may never become publicly accessible. Information on this page is provisional and can change at any moment."
+								: "This model has been announced and may never become generally accessible. Information on this page can change at any moment as the provider updates release plans, routing availability, and technical details."}
+						</AlertDescription>
+					</Alert>
+				</Section>
+			) : null}
 			<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
-			<ModelPerformanceSection
-				modelId={modelId}
-				includeHidden={includeHidden}
-				surface="overview"
-			/>
-			<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />
-			<ModelQuickstartSection
-				modelId={modelId}
-				includeHidden={includeHidden}
-				surface="overview"
-			/>
+			{isLimitedAvailabilityModel || !hasApiProviders ? null : (
+				<>
+					<ModelPerformanceSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						surface="overview"
+					/>
+					<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />
+					<ModelQuickstartSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						surface="overview"
+					/>
+				</>
+			)}
 			{hasInternalModelData ? (
 				<>
 					<ModelBenchmarksSection

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "hmmt-feb-2026",
+  "benchmark_name": "HMMT Feb. 2026",
+  "category": "mathematics",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://huggingface.co/zai-org/GLM-5.1",
+  "total_models": 1
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "charxiv-r",
+  "benchmark_name": "CharXiv-R",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 50
+}

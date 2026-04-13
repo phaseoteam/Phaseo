@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "polymath",
+  "benchmark_name": "PolyMATH",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 35
+}

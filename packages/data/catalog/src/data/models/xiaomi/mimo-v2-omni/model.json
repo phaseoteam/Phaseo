@@ -23,5 +23,54 @@
       "value": 128000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "claw-eval",
+      "score": 54.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1410,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "mm-browsercomp",
+      "score": 52,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "omnigaia",
+      "score": 49.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "pinchbench",
+      "score": 81.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 74.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
+      "rank": 17
+    }
+  ]
 }

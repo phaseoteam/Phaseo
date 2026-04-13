@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "bcflv4",
+  "benchmark_name": "BCFLv4",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
+  "total_models": 1
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenRouter to AI Stats Migration"
+  short_description: "Migrate OpenRouter integrations to AI Stats end-to-end."
+  default_prompt: "Use $openrouter-to-ai-stats-migration to migrate this integration fully from OpenRouter to AI Stats."

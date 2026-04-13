@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "agieval",
+  "benchmark_name": "AGIEval",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 6
+}

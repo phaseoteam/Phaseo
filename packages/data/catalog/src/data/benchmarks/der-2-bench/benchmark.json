@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "der-2-bench",
+  "benchmark_name": "DeR 2 Bench",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

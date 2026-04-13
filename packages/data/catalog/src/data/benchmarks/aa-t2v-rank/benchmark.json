@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-t2v-rank",
+  "benchmark_name": "Artificial Analysis Text-to-Video Rank",
+  "category": null,
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://x.ai/news/grok-imagine-api",
+  "total_models": 1
+}

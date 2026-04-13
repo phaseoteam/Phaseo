@@ -24,5 +24,30 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1346,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 892.55,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 27.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 21
+    }
+  ]
 }

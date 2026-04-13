@@ -15,5 +15,30 @@
   "family_id": "openai/gpt-5-1",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 73.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 66.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 52.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
+      "rank": 18
+    }
+  ]
 }

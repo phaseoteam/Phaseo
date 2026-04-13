@@ -9,6 +9,7 @@ import { ProviderLogoName } from "../ProviderLogoName";
 
 interface AvailabilityComparisonProps {
 	selectedModels: ExtendedModel[];
+	hideHeader?: boolean;
 }
 
 type AvailabilitySummary = {
@@ -64,6 +65,7 @@ function buildAvailabilitySummaries(
 
 export default function AvailabilityComparison({
 	selectedModels,
+	hideHeader = false,
 }: AvailabilityComparisonProps) {
 	if (!selectedModels || selectedModels.length === 0) return null;
 
@@ -73,18 +75,20 @@ export default function AvailabilityComparison({
 	if (!anyPricing) return null;
 
 	return (
-		<section className="space-y-3">
-			<header className="flex items-start justify-between gap-4">
-				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Availability</h2>
-					<p className="text-sm text-muted-foreground">
-						Providers that expose each model based on observed pricing data.
-					</p>
-				</div>
-				<Badge variant="outline" className="text-xs">
-					From provider pricing data
-				</Badge>
-			</header>
+		<div className="space-y-3">
+			{!hideHeader ? (
+				<header className="flex items-start justify-between gap-4">
+					<div className="space-y-1">
+						<h2 className="text-lg font-semibold">Availability</h2>
+						<p className="text-sm text-muted-foreground">
+							Providers that expose each model based on observed pricing data.
+						</p>
+					</div>
+					<Badge variant="outline" className="text-xs">
+						From provider pricing data
+					</Badge>
+				</header>
+			) : null}
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 				{summaries.map((summary) => (
@@ -105,9 +109,9 @@ export default function AvailabilityComparison({
 							</Link>
 							<div className="flex flex-col">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										summary.modelId
-									)}`}
+									}`}
 									className="group text-sm font-semibold"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
@@ -151,7 +155,8 @@ export default function AvailabilityComparison({
 					</Card>
 				))}
 			</div>
-		</section>
+		</div>
 	);
 }
+
 

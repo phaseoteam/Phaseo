@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-omniscience",
+  "benchmark_name": "AA-Omniscience",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/models/solar-pro-3",
+  "total_models": 3
+}

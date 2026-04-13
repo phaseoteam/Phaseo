@@ -36,5 +36,14 @@
       "value": 23600000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 53.6,
+      "is_self_reported": true,
+      "other_info": "OpenHands Scaffold",
+      "source_link": "https://huggingface.co/mistralai/Devstral-Small-2507",
+      "rank": 56
+    }
+  ]
 }

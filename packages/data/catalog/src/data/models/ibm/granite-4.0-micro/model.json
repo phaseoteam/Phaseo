@@ -14,5 +14,102 @@
   "api_model_id": "ibm/granite-4.0-micro",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "alpacaeval-2.0",
+      "score": 35.16,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.0-tiny-preview",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 26.7,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.0-tiny-preview",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "attaq",
+      "score": 86.1,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "big-bench-hard",
+      "score": 55.7,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "drop",
+      "score": 46.2,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 70.1,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 82.4,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "humaneval+",
+      "score": 78.3,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 63,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 60.4,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "popqa",
+      "score": 22.9,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "truthfulqa",
+      "score": 58.1,
+      "is_self_reported": true,
+      "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
+      "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
+      "rank": 7
+    }
+  ]
 }

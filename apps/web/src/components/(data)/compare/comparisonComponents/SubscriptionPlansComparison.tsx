@@ -8,6 +8,7 @@ import { PriceRotator } from "./PriceRotator";
 
 interface SubscriptionPlansComparisonProps {
 	selectedModels: ExtendedModel[];
+	hideHeader?: boolean;
 }
 
 type PlanPrice =
@@ -124,6 +125,7 @@ function getSortedPlanPrices(prices: PlanPrice[] | null | undefined): PlanPrice[
 
 export default function SubscriptionPlansComparison({
 	selectedModels,
+	hideHeader = false,
 }: SubscriptionPlansComparisonProps) {
 	if (!selectedModels || selectedModels.length === 0) return null;
 
@@ -137,13 +139,15 @@ export default function SubscriptionPlansComparison({
 	if (!anyPlanData) return null;
 
 	return (
-		<section className="space-y-3">
-			<header className="space-y-1">
-				<h2 className="text-lg font-semibold">Subscription plans</h2>
-				<p className="text-sm text-muted-foreground">
-					Plans that include each selected model, grouped by organisation.
-				</p>
-			</header>
+		<div className="space-y-3">
+			{!hideHeader ? (
+				<header className="space-y-1">
+					<h2 className="text-lg font-semibold">Subscription plans</h2>
+					<p className="text-sm text-muted-foreground">
+						Plans that include each selected model, grouped by organisation.
+					</p>
+				</header>
+			) : null}
 
 			<div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
 				{modelPlans.map(({ model, plans }) => (
@@ -295,6 +299,6 @@ export default function SubscriptionPlansComparison({
 					</div>
 				))}
 			</div>
-		</section>
+		</div>
 	);
 }

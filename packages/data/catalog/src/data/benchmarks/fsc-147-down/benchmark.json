@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "fsc-147-down",
+  "benchmark_name": "FSC-147â†“",
+  "category": null,
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

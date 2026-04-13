@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mathvista-mini",
+  "benchmark_name": "MathVista-Mini",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 42
+}

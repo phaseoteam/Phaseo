@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mcp-mark",
+  "benchmark_name": "MCP-Mark",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 4
+}

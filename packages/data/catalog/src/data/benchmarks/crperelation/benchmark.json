@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "crperelation",
+  "benchmark_name": "CRPErelation",
+  "category": "healthcare",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

@@ -24,5 +24,142 @@
       "value": 65536
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aidanbench",
+      "score": 1488,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aidanbench.com/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 32.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://aider.chat/docs/leaderboards/",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 14,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.8,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 18.55,
+      "is_self_reported": false,
+      "other_info": "High Reasoning Effort",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 60,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 65
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1333,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "lmarena-webdev",
+      "score": 1041.86,
+      "is_self_reported": false,
+      "other_info": "16th June 2025",
+      "source_link": "https://web.lmarena.ai/leaderboard",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.269,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 18.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 1.95,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "cybersecurity-ctfs",
+      "score": 28.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 60,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 73
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 92.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 90,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 85.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "superglue",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
+      "rank": 1
+    }
+  ]
 }

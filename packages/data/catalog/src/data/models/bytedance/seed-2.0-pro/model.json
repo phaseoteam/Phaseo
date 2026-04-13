@@ -19,5 +19,1342 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 98.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "aime-2026",
+      "score": 94.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 77.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 87,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMLU-Pro",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "hle-no-tool-text-only",
+      "score": 32.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HLE (no tool, text only)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simpleqa-verified",
+      "score": 36,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SimpleQA Verified",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "healthbench",
+      "score": 57.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HealthBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "healthbench-hard",
+      "score": 29.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HealthBench - Hard",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 68.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SuperGPQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "lpfqa",
+      "score": 52.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LPFQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "encyclo-k",
+      "score": 65.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Encyclo-K",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2026",
+      "score": 94.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | AIME 2026",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 98.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | AIME 2025",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "hmmt-feb-2025",
+      "score": 97.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HMMT Feb 2025",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hmmt-nov-2025",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HMMT Nov 2025",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "matharenaapex",
+      "score": 20.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MathArenaApex",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "matharenaapex-shortlist",
+      "score": 82.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MathArenaApex (shortlist)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "beyondaime",
+      "score": 86.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BeyondAIME",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "imoanswerbench-no-tool",
+      "score": 89.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | IMOAnswerBench (no tool)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "codeforces-no-tool",
+      "score": 3020,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Codeforces(no tool)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aethercode",
+      "score": 60.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | AetherCode",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LiveCodeBench (v6)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | GPQA Diamond",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "superchem-text-only",
+      "score": 51.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Superchem (text-only)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "babe",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BABE",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "phybench",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Phybench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frontiersci-research",
+      "score": 25,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | FrontierSci-research",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frontiersci-olympiad",
+      "score": 74,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | FrontierSci-olympiad",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 85.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ARC-AGI-1",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 37.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ARC-AGI-2",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "korbench",
+      "score": 77.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | KORBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "procbench",
+      "score": 96.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ProcBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mrcr-v2-8-needle",
+      "score": 54,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MRCR v2 (8-needle)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-lt-128k",
+      "score": 68.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Graphwalks Bfs (<128k)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "graphwalks-parents-lt-128k",
+      "score": 97.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Graphwalks Parents (<128k)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "longbench-v2-128k",
+      "score": 63.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LongBench v2 (128k)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frames",
+      "score": 84.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Frames",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "der-2-bench",
+      "score": 58.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DeR 2 Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cl-bench",
+      "score": 20.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CL-Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "global-piqa",
+      "score": 92.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Global PIQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 88.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMMLU",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "disco-x",
+      "score": 82,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Disco-X",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 68.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MultiChallenge",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "collie",
+      "score": 93.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | COLLIE",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mars-bench",
+      "score": 85.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MARS-Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "inverse-ifeval",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Inverse IFEval",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "longfact-objects",
+      "score": 92.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LongFact-Objects",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "longfact-concepts",
+      "score": 92.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LongFact-Concepts",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "factscore",
+      "score": 71.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | FactScore",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 89.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MathVista",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mathvision",
+      "score": 88.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MathVision",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "dynamath",
+      "score": 68.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DynaMath",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mathkangaroo",
+      "score": 90.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MathKangaroo",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mathcanvas",
+      "score": 61.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MathCanvas",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 85.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMMU",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 78.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMMU-Pro",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "emma",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | EMMA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "sfe",
+      "score": 55.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SFE",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hipho",
+      "score": 74.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HiPhO",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "xlrs-bench-macro",
+      "score": 54.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | XLRS-Bench (macro)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "phyx-openended",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | PhyX (openended)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "logicvista",
+      "score": 81.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LogicVista",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vpct",
+      "score": 76,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VPCT",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "zerobench-main",
+      "score": 12,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ZeroBench (main)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "zerobench-sub",
+      "score": 47.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ZeroBench (sub)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arcagi1-image",
+      "score": 88.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ArcAGI1-Image",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arcagi2-image",
+      "score": 43.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ArcAGI2-Image",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "visulogic",
+      "score": 47.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VisuLogic",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vlmsarebiased",
+      "score": 77.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VLMsAreBiased",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vlmsareblind",
+      "score": 98.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VLMsAreBlind",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "visfactor",
+      "score": 36.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VisFactor",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 86,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | RealWorldQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "babyvision",
+      "score": 60.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BabyVision",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simplevqa",
+      "score": 71.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SimpleVQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hallusionbench",
+      "score": 68,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HallusionBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mme-cc",
+      "score": 57,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MME-CC",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmstar",
+      "score": 83,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMStar",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "muirbench",
+      "score": 81.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MUIRBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mtvqa",
+      "score": 51.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MTVQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "worldvqa",
+      "score": 49.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | WorldVQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vibeeval",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VibeEval",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "viverbench",
+      "score": 75.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ViVerBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "countbench",
+      "score": 95.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CountBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "fsc-147-down",
+      "score": 11.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | FSC-147â†“",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "point-bench",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Point-Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "blink",
+      "score": 79.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BLINK",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmsibench-circular",
+      "score": 32.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMSIBench (circular)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "treebench",
+      "score": 64.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | TreeBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "refspatialbench",
+      "score": 72.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | RefSpatialBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "da-2k",
+      "score": 92.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DA-2K",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "all-angles",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | All-Angles",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "erqa",
+      "score": 68.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ERQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "chartqapro",
+      "score": 71.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ChartQAPro",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ocrbenchv2",
+      "score": 62.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | OCRBenchv2",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "omnidocbench-1-5-down",
+      "score": 0.099,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | OmniDocBench 1.5 â†“",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "charxiv-dq",
+      "score": 93.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CharXiv-DQ",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "charxiv-rq",
+      "score": 80.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CharXiv-RQ",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "dude",
+      "score": 72.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DUDE",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mmlongbench",
+      "score": 74.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMLongBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "longdocurl",
+      "score": 74.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LongDocURL",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmlongbench-doc",
+      "score": 61.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMLongBench-Doc",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 86.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VideoMMMU",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmvu",
+      "score": 78.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MMVU",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "videosimpleqa",
+      "score": 71.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VideoSimpleQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "videoreasonbench",
+      "score": 77.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VideoReasonBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "morse-500",
+      "score": 37.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Morse-500",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "videoholmes",
+      "score": 67.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VideoHolmes â€¡",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "minerva",
+      "score": 66.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Minerva â€¡",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tvbench",
+      "score": 75,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | TVBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "contphy",
+      "score": 67.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ContPhy",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tempcompass",
+      "score": 89.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | TempCompass",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "egotempo",
+      "score": 71.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | EgoTempo",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "motionbench",
+      "score": 75.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MotionBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "tomato",
+      "score": 59.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | TOMATO",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "thinking-with-tracking",
+      "score": 65.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | + Thinking with Tracking",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "video-mme",
+      "score": 89.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VideoMME â€¡",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cgbench",
+      "score": 65,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CGBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "longvideobench",
+      "score": 80.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LongVideoBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "videoeval-pro",
+      "score": 48,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VideoEval-Pro",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "lvbench",
+      "score": 76.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LVBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "crossvid",
+      "score": 60.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CrossVid",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ovbench",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | OVBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livesports-3k",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | LiveSports-3K",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ovobench",
+      "score": 77,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | OVOBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "odvbench",
+      "score": 72.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ODVBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vispeak",
+      "score": 78.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ViSpeak",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 55.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Terminal Bench 2.0 1",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "swe-lancer",
+      "score": 49.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SWE-Lancer",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 76.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SWE Bench Verified",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "multi-swe-bench",
+      "score": 45.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Multi-SWE-Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 46.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SWE-Bench Pro",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 71.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SWE Multilingual",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 48.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Scicode",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "swe-evo",
+      "score": 8.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SWE-Evo",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 80,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Aider Polyglot",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "artifactsbench",
+      "score": 66.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ArtifactsBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "codesimpleqa",
+      "score": 58,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | CodeSimpleQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "spreadsheetbench-verified",
+      "score": 79.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | SpreadsheetBench Verified",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 77.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BrowseComp",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "browsecomp-zh",
+      "score": 82.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BrowseComp-zh",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hle-text",
+      "score": 54.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HLE-text",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hle-verified",
+      "score": 73.6,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HLE-Verified",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "wide-search",
+      "score": 74.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | WideSearch",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "finsearchcomp",
+      "score": 70.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | FinSearchComp",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepsearchqa",
+      "score": 77.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DeepSearchQA",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "seal-0",
+      "score": 49.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Seal-0",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "2-bench-retail",
+      "score": 90.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Ï„ 2 -Bench (retail)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "2-bench-telecom",
+      "score": 94.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Ï„ 2 -Bench (telecom)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mcp-mark",
+      "score": 54.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MCP-Mark",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "bfcl-v4",
+      "score": 73.4,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BFCL-v4",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "vitabench",
+      "score": 47,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | VitaBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepconsult",
+      "score": 61.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DeepConsult",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepresearchbench",
+      "score": 53.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | DeepResearchBench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "researchrubrics",
+      "score": 50.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | ResearchRubrics",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "minedojo-verified",
+      "score": 49,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Minedojo Verified",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "mm-browsecomp",
+      "score": 48.8,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | MM-BrowseComp",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "hle-vl",
+      "score": 39.2,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | HLE-VL",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 52.1,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Scicode",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "frontiersci-research",
+      "score": 23.3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | FrontierSci-research",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "superchem-text-only",
+      "score": 53,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | Superchem (text-only)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "biobench",
+      "score": 53.5,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | BIObench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ainstein-bench",
+      "score": 47.7,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | AInstein Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "nl2repo-bench",
+      "score": 27.9,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | NL2Repo-Bench",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "nl2repo-pass-1",
+      "score": 3,
+      "is_self_reported": true,
+      "other_info": "Seed2 official benchmark table | NL2Repo (Pass@1)",
+      "source_link": "https://seed.bytedance.com/en/seed2",
+      "rank": 1
+    }
+  ]
 }

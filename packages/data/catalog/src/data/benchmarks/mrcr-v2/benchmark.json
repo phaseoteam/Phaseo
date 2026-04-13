@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mrcr-v2",
+  "benchmark_name": "MRCR v2",
+  "category": "general",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

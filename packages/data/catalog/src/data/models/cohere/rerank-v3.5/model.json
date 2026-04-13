@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": null,
-  "output_types": null,
+  "output_types": "rerank",
   "api_model_id": "cohere/rerank-v3.5",
   "links": [],
   "details": [],

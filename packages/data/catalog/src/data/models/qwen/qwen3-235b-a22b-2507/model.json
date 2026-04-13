@@ -14,5 +14,142 @@
   "api_model_id": "qwen/qwen3-235b-a22b-2507",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider-polyglot",
+      "score": 57.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 70.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 59
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 41.8,
+      "is_self_reported": true,
+      "other_info": "NOT confirmed by Arc-AGI",
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "csimpleqa",
+      "score": 84.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 77.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 55.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 88.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 75.4,
+      "is_self_reported": true,
+      "other_info": "2024-11-25 ",
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 51.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 83,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 93.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "multipl-e",
+      "score": 87.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 54.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 62.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "tau-bench-airline",
+      "score": 44,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "tau-bench-retail",
+      "score": 71.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "zebralogic",
+      "score": 95,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
+      "rank": 2
+    }
+  ]
 }

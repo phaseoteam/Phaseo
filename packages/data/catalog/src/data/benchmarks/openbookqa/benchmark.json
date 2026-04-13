@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "openbookqa",
+  "benchmark_name": "OpenBookQA",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 5
+}

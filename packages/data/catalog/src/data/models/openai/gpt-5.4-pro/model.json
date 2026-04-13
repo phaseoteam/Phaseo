@@ -40,5 +40,70 @@
       "value": "2025-08-31T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 0.82,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 61.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 89.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 94.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 42.7,
+      "is_self_reported": true,
+      "other_info": "Without tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 58.7,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "frontier-math",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": "Tier 1-3",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frontier-math",
+      "score": 38,
+      "is_self_reported": true,
+      "other_info": "Tier 4",
+      "source_link": "https://openai.com/index/introducing-gpt-5-4/",
+      "rank": 1
+    }
+  ]
 }

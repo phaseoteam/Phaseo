@@ -14,5 +14,30 @@
   "api_model_id": "deepseek/deepseek-v3.2",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "matharena-apex",
+      "score": 0.52,
+      "is_self_reported": false,
+      "other_info": "Reasoning",
+      "source_link": "https://matharena.ai/?comp=apex--apex_2025",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 57,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": null,
+      "rank": 15
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": null,
+      "rank": 21
+    }
+  ]
 }

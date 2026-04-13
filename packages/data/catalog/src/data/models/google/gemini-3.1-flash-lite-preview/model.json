@@ -32,5 +32,126 @@
       "value": 65536
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 16,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 86.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 76.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 73.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 84.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 43.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "facts-benchmark-suite",
+      "score": 40.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 72,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-128k",
+      "score": 60.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-1m",
+      "score": 12.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 73.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "facts-grounding",
+      "score": 40.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 86.9,
+      "is_self_reported": true,
+      "other_info": "GPQA Diamond subset",
+      "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "mrcr-v2-(8-needle)",
+      "score": 60.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
+      "rank": 2
+    }
+  ]
 }

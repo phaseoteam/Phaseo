@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "deepplanning-v1.1-avg-acc",
+  "benchmark_name": "DeepPlanning v1.1 Avg Accuracy",
+  "category": "planning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+  "total_models": 3
+}

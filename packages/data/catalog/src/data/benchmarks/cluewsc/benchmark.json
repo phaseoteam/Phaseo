@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cluewsc",
+  "benchmark_name": "CLUEWSC",
+  "category": "language",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 10
+}

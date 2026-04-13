@@ -960,5 +960,26 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "anthropic/claude-mythos-preview",
+    "provider_api_model_id": "anthropic:anthropic/claude-mythos-preview",
+    "provider_model_slug": "claude-mythos-preview",
+    "internal_model_id": "anthropic/claude-mythos-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
   }
 ]

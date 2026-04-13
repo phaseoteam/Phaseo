@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ct-dataset-1-macro-accuracy",
+  "benchmark_name": "CT Dataset 1 Macro Accuracy",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://huggingface.co/google/medgemma-1.5-4b-it",
+  "total_models": 1
+}

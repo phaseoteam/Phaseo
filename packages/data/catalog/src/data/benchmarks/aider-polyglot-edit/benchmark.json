@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aider-polyglot-edit",
+  "benchmark_name": "Aider-Polyglot Edit",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 29
+}

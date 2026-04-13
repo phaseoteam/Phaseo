@@ -14,5 +14,654 @@
   "api_model_id": "qwen/qwen3.5-35b-a3b",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-lcr",
+      "score": 58.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "ai2d",
+      "score": 92.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "androidworld-sr",
+      "score": 71.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "babyvision",
+      "score": 38.4,
+      "is_self_reported": true,
+      "other_info": "Without CI: 34.5",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "bfcl-v4",
+      "score": 67.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 61,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "browsecomp-zh",
+      "score": 69.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "cc-ocr",
+      "score": 80.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "c-eval",
+      "score": 90.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "charxiv-r",
+      "score": 77.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 0.822,
+      "is_self_reported": true,
+      "other_info": "Raw score: 2028",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "countbench",
+      "score": 0.978,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "deep-planning",
+      "score": 22.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "dynamath",
+      "score": 85,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "embspatialbench",
+      "score": 0.831,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "erqa",
+      "score": 64.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "fullstackbench-en",
+      "score": 58.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "fullstackbench-zh",
+      "score": 55,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "global-piqa",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 84.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "hallusion-bench",
+      "score": 67.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 89,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 89.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 47.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "hypersim",
+      "score": 0.131,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ifbench",
+      "score": 70.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 91.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "include",
+      "score": 79.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "lingoqa",
+      "score": 79.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 74.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "longbench-v2",
+      "score": 59,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "lvbench",
+      "score": 71.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mathvision",
+      "score": 83.9,
+      "is_self_reported": true,
+      "other_info": "Highest reported variant uses fixed boxed-answer prompt.",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mathvista-mini",
+      "score": 86.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "maxife",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "medxpertqa",
+      "score": 61.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mlvu",
+      "score": 85.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmbench-v1.1",
+      "score": 91.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmlongbench-doc",
+      "score": 0.595,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 85.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "mmlu-prox",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 85.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 81.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 75.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "mmstar",
+      "score": 81.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmvu",
+      "score": 72.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "multi-challenge",
+      "score": 60,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mvbench",
+      "score": 74.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "nova-63",
+      "score": 57.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "nuscene",
+      "score": 14.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "ocrbench",
+      "score": 91,
+      "is_self_reported": true,
+      "other_info": "Raw score: 91.0",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "odinw",
+      "score": 42.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "ojbench",
+      "score": 36,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 89.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 54.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "pmc-vqa",
+      "score": 62,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "polymath",
+      "score": 64.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "realworldqa",
+      "score": 84.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "refcoco-avg",
+      "score": 0.892,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "refspatialbench",
+      "score": 0.635,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 68.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "seal-0",
+      "score": 41.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "simplevqa",
+      "score": 0.583,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "slakevqa",
+      "score": 78.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "sunrgbd",
+      "score": 0.334,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 63.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 81.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 40.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "tir-bench",
+      "score": 55.5,
+      "is_self_reported": true,
+      "other_info": "Without CI: 38.0",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "v-star",
+      "score": 92.7,
+      "is_self_reported": true,
+      "other_info": "Without CI: 89.5",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "videomme-w-o-sub.",
+      "score": 82.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "videomme-w-sub.",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": 80.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "vita-bench",
+      "score": 31.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "vlmsareblind",
+      "score": 97,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "widesearch",
+      "score": 57.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "wmt24++",
+      "score": 76.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "zerobench",
+      "score": 0.08,
+      "is_self_reported": true,
+      "other_info": "Raw score: 8",
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "zerobench-sub",
+      "score": 0.341,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://qwen.ai/blog?id=qwen3.5",
+      "rank": 5
+    }
+  ]
 }

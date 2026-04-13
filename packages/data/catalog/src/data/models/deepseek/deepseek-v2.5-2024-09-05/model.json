@@ -48,5 +48,126 @@
       "value": 236000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aider",
+      "score": 72.2,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "alignbench",
+      "score": 0.804,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "alpacaeval-2.0",
+      "score": 50.5,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "bbh",
+      "score": 84.3,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "ds-arena-code",
+      "score": 0.631,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ds-fim-eval",
+      "score": 0.783,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 95.1,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 89,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "humaneval-mul",
+      "score": 0.738,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "livecodebench(01-09)",
+      "score": 0.418,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "math",
+      "score": 74.7,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 80.4,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 0.902,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://www.deepseek.com/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 16.8,
+      "is_self_reported": true,
+      "other_info": "inferred alias from deepseek-v2.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5",
+      "rank": 66
+    }
+  ]
 }

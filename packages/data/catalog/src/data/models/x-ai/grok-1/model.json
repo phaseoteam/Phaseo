@@ -30,35 +30,35 @@
   "benchmarks": [
     {
       "benchmark_id": "gsm8k",
-      "score": 0.629,
+      "score": 62.9,
       "is_self_reported": true,
       "other_info": "8 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 1
+      "rank": 19
     },
     {
       "benchmark_id": "humaneval",
-      "score": 0.632,
+      "score": 63.2,
       "is_self_reported": true,
       "other_info": "0 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 2
+      "rank": 32
     },
     {
       "benchmark_id": "math",
-      "score": 0.239,
+      "score": 23.9,
       "is_self_reported": true,
       "other_info": "4 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 1
+      "rank": 42
     },
     {
       "benchmark_id": "mmlu",
-      "score": 0.73,
+      "score": 73,
       "is_self_reported": true,
       "other_info": "5 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 1
+      "rank": 44
     }
   ]
 }

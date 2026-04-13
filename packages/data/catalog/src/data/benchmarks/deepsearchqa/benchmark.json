@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "deepsearchqa",
+  "benchmark_name": "DeepSearchQA",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 6
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "infographicsqa",
+  "benchmark_name": "InfographicsQA",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

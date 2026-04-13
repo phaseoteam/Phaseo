@@ -3,6 +3,7 @@
   "benchmark_name": "NYT Connections",
   "category": null,
   "ascending_order": null,
+  "type": "numerical",
   "link": "https://github.com/lechmazur/nyt-connections",
-  "total_models": 3
+  "total_models": 41
 }

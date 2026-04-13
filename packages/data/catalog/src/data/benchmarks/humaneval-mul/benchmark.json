@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "humaneval-mul",
+  "benchmark_name": "HumanEval-Mul",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 5
+}

@@ -14,5 +14,54 @@
   "api_model_id": "nvidia/nvidia-nemotron-nano-9b-v2",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 72.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nvidia-nemotron-nano-9b-v2/modelcard",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "bfcl-v3-multiturn",
+      "score": 66.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nvidia-nemotron-nano-9b-v2/modelcard",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 64,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nvidia-nemotron-nano-9b-v2/modelcard",
+      "rank": 70
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 90.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nvidia-nemotron-nano-9b-v2/modelcard",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 71.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nvidia-nemotron-nano-9b-v2/modelcard",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "math-500",
+      "score": 97.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://build.nvidia.com/nvidia/nvidia-nemotron-nano-9b-v2/modelcard",
+      "rank": 3
+    }
+  ]
 }

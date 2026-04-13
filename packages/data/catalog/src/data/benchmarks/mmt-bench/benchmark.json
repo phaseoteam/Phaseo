@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmt-bench",
+  "benchmark_name": "MMT-Bench",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 7
+}

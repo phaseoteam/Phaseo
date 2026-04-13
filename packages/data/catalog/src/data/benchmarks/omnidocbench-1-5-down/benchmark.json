@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "omnidocbench-1-5-down",
+  "benchmark_name": "OmniDocBench 1.5 â†“",
+  "category": null,
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

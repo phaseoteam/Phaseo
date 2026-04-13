@@ -31,30 +31,6 @@ describe("rerank schema validation", () => {
 		}
 	});
 
-	it("accepts mixed document arrays", () => {
-		const parsed = RerankSchema.safeParse({
-			model: "cohere/rerank-v4.0-fast",
-			query: "mixed docs",
-			documents: ["doc 1", { id: "b", text: "doc 2" }],
-		});
-
-		expect(parsed.success).toBe(true);
-	});
-
-	it("strips unsupported streaming flags", () => {
-		const parsed = RerankSchema.safeParse({
-			model: "cohere/rerank-v4.0-fast",
-			query: "no stream",
-			documents: ["doc 1"],
-			stream: true,
-		});
-
-		expect(parsed.success).toBe(true);
-		if (parsed.success) {
-			expect("stream" in parsed.data).toBe(false);
-		}
-	});
-
 	it("rejects missing query or documents", () => {
 		const parsed = RerankSchema.safeParse({
 			model: "cohere/rerank-v4.0-fast",

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "writingbench",
+  "benchmark_name": "WritingBench",
+  "category": "communication",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 28
+}

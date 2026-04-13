@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { MODEL_CAPABILITY_OPTIONS } from "@/lib/models/editorOptions"
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters"
 import { createClient } from "@/utils/supabase/client"
 
@@ -94,17 +95,7 @@ const PRICING_PLANS = [
   { value: "priority", label: "Priority" },
 ] as const
 
-const CAPABILITY_OPTIONS = [
-  "text.generate",
-  "text.embed",
-  "text.moderate",
-  "image.generate",
-  "image.edit",
-  "audio.transcribe",
-  "ocr",
-  "video.edit",
-  "video.generate",
-] as const
+const CAPABILITY_OPTIONS = MODEL_CAPABILITY_OPTIONS
 
 const OP_OPTIONS = [
   "eq",
@@ -122,11 +113,11 @@ const OP_OPTIONS = [
 const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
   input_text_tokens: { unit: "token", unit_size: 1_000_000 },
   output_text_tokens: { unit: "token", unit_size: 1_000_000 },
+  image_pixels: { unit: "pixel", unit_size: 1_000_000 },
+  video_pixels: { unit: "pixel", unit_size: 1_000_000 },
   cached_read_text_tokens: { unit: "token", unit_size: 1_000_000 },
   cached_write_text_tokens: { unit: "token", unit_size: 1_000_000 },
   input_image_tokens: { unit: "token", unit_size: 1_000_000 },
-  image_pixels: { unit: "pixel", unit_size: 1_000_000 },
-  video_pixels: { unit: "pixel", unit_size: 1_000_000 },
   output_image_tokens: { unit: "token", unit_size: 1_000_000 },
   cached_read_image_tokens: { unit: "token", unit_size: 1_000_000 },
   input_audio_tokens: { unit: "token", unit_size: 1_000_000 },
@@ -329,10 +320,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
         .from("data_api_provider_models")
         .select("provider_api_model_id, provider_id, api_model_id")
         .eq("model_id", modelId)
-      const providerModelData = ((providerModelRows ?? []) as ProviderModelRef[]).map((row) => ({
-        ...row,
-        api_model_id: modelId,
-      }))
+      const providerModelData = (providerModelRows ?? []) as ProviderModelRef[]
       setProviderModels(providerModelData)
 
       const providerIds = Array.from(new Set(providerModelData.map((row) => row.provider_id)))

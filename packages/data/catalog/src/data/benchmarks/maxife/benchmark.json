@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "maxife",
+  "benchmark_name": "MAXIFE",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 10
+}

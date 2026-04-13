@@ -14,5 +14,62 @@
   "api_model_id": "qwen/qwen3.5-plus",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "deepplanning-v1.1-avg-acc",
+      "score": 37.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-cs-score",
+      "score": 83.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-ps-score",
+      "score": 79.9,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-comp-score",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-travel-case-acc",
+      "score": 26.3,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-shopping-match-score",
+      "score": 82.4,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "deepplanning-v1.1-shopping-case-acc",
+      "score": 48.9,
+      "is_self_reported": true,
+      "other_info": "DeepPlanning v1.1 | Alibaba/Qwen-3.5-Plus (w/o thinking)",
+      "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
+      "rank": 1
+    }
+  ]
 }

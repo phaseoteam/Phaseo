@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "longfact-concepts",
+  "benchmark_name": "LongFact-Concepts",
+  "category": null,
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://seed.bytedance.com/en/seed2",
+  "total_models": 3
+}

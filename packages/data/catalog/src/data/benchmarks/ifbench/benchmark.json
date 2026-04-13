@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "ifbench",
+  "benchmark_name": "IFBench",
+  "category": "general",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 22
+}

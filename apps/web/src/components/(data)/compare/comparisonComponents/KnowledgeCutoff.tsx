@@ -93,9 +93,9 @@ export default function KnowledgeCutoffTimeline({
 						<>
 							<span className="block font-medium">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										oldest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -109,9 +109,9 @@ export default function KnowledgeCutoffTimeline({
 						<>
 							<span className="block font-medium">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										newest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -120,9 +120,9 @@ export default function KnowledgeCutoffTimeline({
 								</Link>{" "}
 								has knowledge up to {newestDate}, while{" "}
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										oldest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -133,9 +133,9 @@ export default function KnowledgeCutoffTimeline({
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										newest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -147,9 +147,9 @@ export default function KnowledgeCutoffTimeline({
 								{Math.abs(diffMonths) !== 1 ? "s" : ""} more
 								recent than{" "}
 								<Link
-									href={`/models/${encodeURIComponent(
+									href={`/models/${
 										oldest.id
-									)}`}
+									}`}
 									className="group"
 								>
 									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
@@ -270,9 +270,9 @@ export default function KnowledgeCutoffTimeline({
 											}`}
 										>
 											<Link
-												href={`/models/${encodeURIComponent(
+												href={`/models/${
 													model.id
-												)}`}
+												}`}
 												className="group"
 											>
 												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
@@ -289,3 +289,4 @@ export default function KnowledgeCutoffTimeline({
 		</section>
 	);
 }
+

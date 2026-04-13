@@ -3,6 +3,7 @@
   "benchmark_name": "SWE-Bench",
   "category": "code",
   "ascending_order": null,
+  "type": "percentage",
   "link": "https://www.swebench.com/",
-  "total_models": 2
+  "total_models": 118
 }

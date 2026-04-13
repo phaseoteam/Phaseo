@@ -44,5 +44,62 @@
       "value": 23600000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 70.7,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "https://mistral.ai/static/research/magistral.pdf",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 62.8,
+      "is_self_reported": true,
+      "other_info": "Pass@1",
+      "source_link": "https://mistral.ai/static/research/magistral.pdf",
+      "rank": 66
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 5,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 38
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 68.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/static/research/magistral.pdf",
+      "rank": 57
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 6.4,
+      "is_self_reported": true,
+      "other_info": "Text Only Subset",
+      "source_link": "https://mistral.ai/static/research/magistral.pdf",
+      "rank": 61
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 66,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/static/research/magistral.pdf",
+      "rank": 30
+    }
+  ]
 }

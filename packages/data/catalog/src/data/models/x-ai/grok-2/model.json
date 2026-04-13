@@ -36,5 +36,118 @@
       "value": 8000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "confabulations",
+      "score": 20.14,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.499,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 56,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 69
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 0.192,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 22.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 2.21,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "docvqa",
+      "score": 93.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 56,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 77
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "math",
+      "score": 76.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 87.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 75.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 49
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 66.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-2",
+      "rank": 29
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "repobench",
+  "benchmark_name": "RepoBench",
+  "category": "code",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 3
+}

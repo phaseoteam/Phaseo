@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "arkitscenes",
+  "benchmark_name": "ARKitScenes",
+  "category": "3d",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": null,
+  "total_models": 1
+}

@@ -19,10 +19,7 @@ type ModelsResponse = {
 	models?: GatewayModel[];
 };
 
-type ScenarioId =
-	| "chat_stream_native_tool"
-	| "responses_stream_native_tool"
-	| "chat_stream_server_datetime";
+type ScenarioId = "chat_stream_native_tool" | "responses_stream_native_tool" | "chat_stream_server_datetime";
 
 type Scenario = {
 	id: ScenarioId;
@@ -32,9 +29,7 @@ type Scenario = {
 	serverTool: boolean;
 };
 
-type ScenarioOutcome =
-	| { status: "passed"; details: Record<string, unknown> }
-	| { status: "skipped_unsupported"; reason: string };
+type ScenarioOutcome = { status: "passed"; details: Record<string, unknown> } | { status: "skipped_unsupported"; reason: string };
 
 type ScenarioRecord = {
 	provider: string;
@@ -51,10 +46,8 @@ const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const LIVE_RUN = (process.env.LIVE_RUN ?? "").trim() === "1";
 const LIVE_STREAM_TOOLS_RUN = (process.env.LIVE_STREAM_TOOLS_RUN ?? "").trim() === "1";
 const REQUIRE_USAGE = (process.env.LIVE_STREAM_TOOLS_REQUIRE_USAGE ?? "0").trim() === "1";
-const INCLUDE_NOVITA_TESTING_MODE =
-	(process.env.LIVE_STREAM_TOOLS_NOVITA_TESTING_MODE ?? "0").trim() === "1";
-const INTERNAL_TEST_TOKEN =
-	(process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+const INCLUDE_NOVITA_TESTING_MODE = (process.env.LIVE_STREAM_TOOLS_NOVITA_TESTING_MODE ?? "0").trim() === "1";
+const INTERNAL_TEST_TOKEN = (process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 
 const PROVIDER_ALIASES: Record<string, string> = {
 	novita: "novitaai",
@@ -172,19 +165,13 @@ function normalizeProviderId(providerId: string): string {
 }
 
 function providerList(): string[] {
-	const fromEnv = (process.env.LIVE_STREAM_TOOLS_PROVIDERS ?? "")
-		.split(/[\s,]+/)
-		.map(normalizeProviderId)
-		.filter(Boolean);
+	const fromEnv = (process.env.LIVE_STREAM_TOOLS_PROVIDERS ?? "").split(/[\s,]+/).map(normalizeProviderId).filter(Boolean);
 	if (fromEnv.length > 0) return Array.from(new Set(fromEnv));
 	return [...DEFAULT_PROVIDERS];
 }
 
 function scenarioList(): ScenarioId[] {
-	const fromEnv = (process.env.LIVE_STREAM_TOOLS_SCENARIOS ?? "")
-		.split(/[\s,]+/)
-		.map((value) => value.trim())
-		.filter(Boolean) as ScenarioId[];
+	const fromEnv = (process.env.LIVE_STREAM_TOOLS_SCENARIOS ?? "").split(/[\s,]+/).map((value) => value.trim()).filter(Boolean) as ScenarioId[];
 	if (!fromEnv.length) {
 		return Object.keys(SCENARIOS) as ScenarioId[];
 	}
@@ -192,8 +179,7 @@ function scenarioList(): ScenarioId[] {
 }
 
 function resolveGatewayUrl(pathname: string): string {
-	const base = GATEWAY_URL.endsWith("/") ? GATEWAY_URL.slice(0, -1) : GATEWAY_URL;
-	const suffix = pathname.startsWith("/") ? pathname : `/${pathname}`;
+	const base = GATEWAY_URL.endsWith("/") ? GATEWAY_URL.slice(0, -1) : GATEWAY_URL, suffix = pathname.startsWith("/") ? pathname : `/${pathname}`;
 	return `${base}${suffix}`;
 }
 
