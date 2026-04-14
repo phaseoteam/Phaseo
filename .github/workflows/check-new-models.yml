@@ -28,11 +28,11 @@ jobs:
                   fetch-depth: 0
                   persist-credentials: false
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
 
             - name: Inspect lockfile (post-checkout, pre-setup-node)
               run: |
