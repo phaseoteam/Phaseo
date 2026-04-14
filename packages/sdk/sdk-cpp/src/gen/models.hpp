@@ -7,14 +7,21 @@
 
 namespace ai_stats::gen {
 struct ActivityEntry {
-	std::optional<double> cost_cents;
-	std::string endpoint;
-	std::optional<int> latency_ms;
+	double byok_usage_inference;
+	int completion_tokens;
+	std::string date;
+	std::string endpoint_id;
 	std::string model;
-	std::string provider;
-	std::string request_id;
-	std::string timestamp;
-	std::map<std::string, std::any> usage;
+	std::string model_permaslug;
+	int prompt_tokens;
+	std::string provider_name;
+	int reasoning_tokens;
+	int requests;
+	double usage;
+};
+
+struct ActivityResponse {
+	std::vector<std::map<std::string, std::any>> data;
 };
 
 struct AnalyticsAccessTokenRequiredResponse {
@@ -61,7 +68,7 @@ struct AnthropicMessagesRequest {
 	std::any system;
 	std::optional<double> temperature;
 	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
+	std::vector<std::any> tools;
 	std::optional<int> top_k;
 	std::optional<double> top_p;
 	std::optional<bool> usage;
@@ -174,6 +181,13 @@ struct CacheControl {
 	std::string type;
 };
 
+struct ChatAudioOutputPart {
+	std::map<std::string, std::any> audio_url;
+	std::any format;
+	std::string mime_type;
+	std::any type;
+};
+
 struct ChatChoice {
 	std::any finish_reason;
 	std::optional<int> index;
@@ -193,7 +207,7 @@ struct ChatCompletionsRequest {
 	std::vector<std::map<std::string, std::any>> messages;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
-	std::vector<std::string> modalities;
+	std::vector<std::any> modalities;
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
@@ -211,7 +225,7 @@ struct ChatCompletionsRequest {
 	std::map<std::string, std::any> stream_options;
 	std::optional<double> temperature;
 	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
+	std::vector<std::any> tools;
 	std::optional<int> top_logprobs;
 	std::optional<double> top_p;
 	std::optional<bool> usage;
@@ -228,8 +242,16 @@ struct ChatCompletionsResponse {
 	std::map<std::string, std::any> usage;
 };
 
+struct ChatImageOutputPart {
+	std::map<std::string, std::any> image_url;
+	std::string mime_type;
+	std::any type;
+};
+
 struct ChatMessage {
+	std::vector<std::map<std::string, std::any>> audios;
 	std::any content;
+	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
 	std::any role;
 	std::string tool_call_id;
@@ -309,6 +331,17 @@ struct FileResponse {
 struct FileUploadRequest {
 	std::any file;
 	std::string purpose;
+};
+
+struct FunctionToolDefinition {
+	std::map<std::string, std::any> function;
+	std::any type;
+};
+
+struct GatewayDatetimeToolDefinition {
+	std::map<std::string, std::any> parameters;
+	std::string timezone;
+	std::any type;
 };
 
 struct GatewayModelsResponse {
@@ -670,16 +703,75 @@ struct ReasoningConfig {
 	std::any summary;
 };
 
+using RerankDocument = std::any;
+
+struct RerankRequest {
+	std::map<std::string, std::any> debug;
+	std::any documents;
+	std::optional<int> max_chunks_per_doc;
+	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
+	std::string query;
+	std::vector<std::string> rank_fields;
+	std::optional<bool> return_documents;
+	std::optional<int> top_k;
+	std::optional<int> top_n;
+	std::string user;
+};
+
+struct RerankResponse {
+	std::string id;
+	std::string model;
+	std::optional<std::string> nativeResponseId;
+	std::string object;
+	std::vector<std::map<std::string, std::any>> results;
+	std::map<std::string, std::any> usage;
+};
+
+struct RerankResult {
+	std::any document;
+	std::optional<int> index;
+	std::optional<double> relevance_score;
+};
+
 struct ResponsesInputItem {
 	std::any content;
 	std::any role;
 	std::string type;
 };
 
+struct ResponsesOutputAudioPart {
+	std::map<std::string, std::any> audio_url;
+	std::string b64_json;
+	std::any format;
+	std::string mime_type;
+	std::any type;
+};
+
+using ResponsesOutputContentPart = std::any;
+
+struct ResponsesOutputImagePart {
+	std::string b64_json;
+	std::map<std::string, std::any> image_url;
+	std::string mime_type;
+	std::any type;
+};
+
 struct ResponsesOutputItem {
-	std::vector<std::map<std::string, std::any>> content;
+	std::string arguments;
+	std::string call_id;
+	std::vector<std::any> content;
+	std::string name;
 	std::string role;
 	std::string type;
+};
+
+struct ResponsesOutputTextPart {
+	std::vector<std::map<std::string, std::any>> annotations;
+	std::string text;
+	std::any type;
 };
 
 struct ResponsesRequest {
@@ -693,7 +785,7 @@ struct ResponsesRequest {
 	std::optional<int> max_output_tokens;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
-	std::vector<std::string> modalities;
+	std::vector<std::any> modalities;
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
@@ -708,7 +800,7 @@ struct ResponsesRequest {
 	std::optional<double> temperature;
 	std::map<std::string, std::any> text;
 	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
+	std::vector<std::any> tools;
 	std::optional<double> top_p;
 	std::any truncation;
 	std::optional<bool> usage;
@@ -750,15 +842,23 @@ struct ResponsesWebSocketUpgradeRequiredResponse {
 	std::map<std::string, std::any> error;
 };
 
+struct ServerToolUsage {
+	std::optional<int> datetime_requests;
+};
+
 struct TextContentPart {
 	std::string text;
 	std::any type;
 };
 
+using TextGenerateTool = std::any;
+
 struct TextModerationInput {
 	std::string text;
 	std::any type;
 };
+
+using TextToolChoice = std::any;
 
 struct ToolCall {
 	std::map<std::string, std::any> function;
@@ -775,6 +875,7 @@ struct ToolCallContentPart {
 struct Usage {
 	std::optional<int> completion_tokens;
 	std::optional<int> prompt_tokens;
+	std::map<std::string, std::any> server_tool_use;
 	std::optional<int> total_tokens;
 };
 
@@ -791,40 +892,72 @@ struct VideoDeleteResponse {
 
 struct VideoGenerationRequest {
 	std::string aspect_ratio;
+	std::optional<int> compression_quality;
 	std::optional<int> duration;
-	std::optional<int> duration_seconds;
 	std::optional<bool> enhance_prompt;
 	std::optional<bool> generate_audio;
-	std::map<std::string, std::any> input;
-	std::any input_image;
-	std::any input_last_frame;
-	std::string input_reference;
-	std::string input_reference_mime_type;
-	std::any input_video;
-	std::any last_frame;
+	std::vector<std::map<std::string, std::any>> input_references;
 	std::string model;
 	std::string negative_prompt;
-	std::optional<int> number_of_videos;
-	std::string output_storage_uri;
+	std::map<std::string, std::any> output;
 	std::string person_generation;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
-	std::string quality;
-	std::string ratio;
-	std::vector<std::map<std::string, std::any>> reference_images;
+	std::map<std::string, std::any> provider_params;
+	std::string resize_mode;
 	std::string resolution;
 	std::optional<int> sample_count;
-	std::any seconds;
 	std::optional<int> seed;
+	std::string size;
+	std::map<std::string, std::any> webhook;
 };
 
 struct VideoGenerationResponse {
-	std::optional<int> created;
+	std::optional<std::map<std::string, std::any>> asset;
+	std::optional<bool> audio;
+	std::map<std::string, std::any> billing;
+	std::optional<std::any> completed_at;
+	std::string content_url;
+	std::any created_at;
+	std::optional<std::string> download_url;
+	std::optional<std::any> error;
+	std::optional<int> expires_at;
+	std::optional<std::string> generation_id;
 	std::string id;
 	std::string model;
 	std::string object;
-	std::vector<std::map<std::string, std::any>> output;
-	std::string status;
+	std::any output_access;
+	std::vector<std::map<std::string, std::any>> outputs;
+	std::optional<int> poll_after_seconds;
+	std::string polling_url;
+	std::optional<int> progress;
+	std::string progress_source;
+	std::string provider;
+	std::optional<double> seconds;
+	std::string size;
+	std::optional<std::any> started_at;
+	std::any status;
+	std::map<std::string, std::any> usage;
+};
+
+struct VideoInputReference {
+	std::map<std::string, std::any> image_url;
+	std::string reference_type;
+	std::any role;
+	std::any type;
+};
+
+struct VideoOutput {
+	std::optional<bool> bytes_available;
+	std::string content_url;
+	std::string download_url;
+	std::optional<int> expires_at;
+	std::optional<int> index;
+	std::string mime_type;
+};
+
+struct VideoOutputConfig {
+	std::any access;
 };
 
 } // namespace ai_stats::gen

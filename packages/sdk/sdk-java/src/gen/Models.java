@@ -4,14 +4,21 @@ public final class Models {
 	private Models() {}
 
 	public static class ActivityEntry {
-		public Double cost_cents;
-		public String endpoint;
-		public Integer latency_ms;
+		public Double byok_usage_inference;
+		public Integer completion_tokens;
+		public String date;
+		public String endpoint_id;
 		public String model;
-		public String provider;
-		public String request_id;
-		public String timestamp;
-		public Object usage;
+		public String model_permaslug;
+		public Integer prompt_tokens;
+		public String provider_name;
+		public Integer reasoning_tokens;
+		public Integer requests;
+		public Double usage;
+	}
+
+	public static class ActivityResponse {
+		public java.util.List<Object> data;
 	}
 
 	public static class AnalyticsAccessTokenRequiredResponse {
@@ -172,6 +179,13 @@ public final class Models {
 		public String type;
 	}
 
+	public static class ChatAudioOutputPart {
+		public Object audio_url;
+		public Object format;
+		public String mime_type;
+		public Object type;
+	}
+
 	public static class ChatChoice {
 		public Object finish_reason;
 		public Integer index;
@@ -191,7 +205,7 @@ public final class Models {
 		public java.util.List<Object> messages;
 		public Boolean meta;
 		public Object metadata;
-		public java.util.List<String> modalities;
+		public java.util.List<Object> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
@@ -226,8 +240,16 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class ChatImageOutputPart {
+		public Object image_url;
+		public String mime_type;
+		public Object type;
+	}
+
 	public static class ChatMessage {
+		public java.util.List<Object> audios;
 		public Object content;
+		public java.util.List<Object> images;
 		public String name;
 		public Object role;
 		public String tool_call_id;
@@ -308,6 +330,17 @@ public final class Models {
 	public static class FileUploadRequest {
 		public Object file;
 		public String purpose;
+	}
+
+	public static class FunctionToolDefinition {
+		public Object function;
+		public Object type;
+	}
+
+	public static class GatewayDatetimeToolDefinition {
+		public Object parameters;
+		public String timezone;
+		public Object type;
 	}
 
 	public static class GatewayModelsResponse {
@@ -673,16 +706,77 @@ public final class Models {
 		public Object summary;
 	}
 
+	public static class RerankDocument {
+	}
+
+	public static class RerankRequest {
+		public Object debug;
+		public Object documents;
+		public Integer max_chunks_per_doc;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public Object provider_options;
+		public String query;
+		public java.util.List<String> rank_fields;
+		public Boolean return_documents;
+		public Integer top_k;
+		public Integer top_n;
+		public String user;
+	}
+
+	public static class RerankResponse {
+		public String id;
+		public String model;
+		public String nativeResponseId;
+		public String object;
+		public java.util.List<Object> results;
+		public Object usage;
+	}
+
+	public static class RerankResult {
+		public Object document;
+		public Integer index;
+		public Double relevance_score;
+	}
+
 	public static class ResponsesInputItem {
 		public Object content;
 		public Object role;
 		public String type;
 	}
 
+	public static class ResponsesOutputAudioPart {
+		public Object audio_url;
+		public String b64_json;
+		public Object format;
+		public String mime_type;
+		public Object type;
+	}
+
+	public static class ResponsesOutputContentPart {
+	}
+
+	public static class ResponsesOutputImagePart {
+		public String b64_json;
+		public Object image_url;
+		public String mime_type;
+		public Object type;
+	}
+
 	public static class ResponsesOutputItem {
+		public String arguments;
+		public String call_id;
 		public java.util.List<Object> content;
+		public String name;
 		public String role;
 		public String type;
+	}
+
+	public static class ResponsesOutputTextPart {
+		public java.util.List<Object> annotations;
+		public String text;
+		public Object type;
 	}
 
 	public static class ResponsesRequest {
@@ -696,7 +790,7 @@ public final class Models {
 		public Integer max_output_tokens;
 		public Boolean meta;
 		public Object metadata;
-		public java.util.List<String> modalities;
+		public java.util.List<Object> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
@@ -753,14 +847,24 @@ public final class Models {
 		public Object error;
 	}
 
+	public static class ServerToolUsage {
+		public Integer datetime_requests;
+	}
+
 	public static class TextContentPart {
 		public String text;
 		public Object type;
 	}
 
+	public static class TextGenerateTool {
+	}
+
 	public static class TextModerationInput {
 		public String text;
 		public Object type;
+	}
+
+	public static class TextToolChoice {
 	}
 
 	public static class ToolCall {
@@ -778,6 +882,7 @@ public final class Models {
 	public static class Usage {
 		public Integer completion_tokens;
 		public Integer prompt_tokens;
+		public Object server_tool_use;
 		public Integer total_tokens;
 	}
 
@@ -794,40 +899,72 @@ public final class Models {
 
 	public static class VideoGenerationRequest {
 		public String aspect_ratio;
+		public Integer compression_quality;
 		public Integer duration;
-		public Integer duration_seconds;
 		public Boolean enhance_prompt;
 		public Boolean generate_audio;
-		public Object input;
-		public Object input_image;
-		public Object input_last_frame;
-		public String input_reference;
-		public String input_reference_mime_type;
-		public Object input_video;
-		public Object last_frame;
+		public java.util.List<Object> input_references;
 		public String model;
 		public String negative_prompt;
-		public Integer number_of_videos;
-		public String output_storage_uri;
+		public Object output;
 		public String person_generation;
 		public String prompt;
 		public Object provider;
-		public String quality;
-		public String ratio;
-		public java.util.List<Object> reference_images;
+		public Object provider_params;
+		public String resize_mode;
 		public String resolution;
 		public Integer sample_count;
-		public Object seconds;
 		public Integer seed;
+		public String size;
+		public Object webhook;
 	}
 
 	public static class VideoGenerationResponse {
-		public Integer created;
+		public Object asset;
+		public Boolean audio;
+		public Object billing;
+		public Object completed_at;
+		public String content_url;
+		public Object created_at;
+		public String download_url;
+		public Object error;
+		public Integer expires_at;
+		public String generation_id;
 		public String id;
 		public String model;
 		public String object;
-		public java.util.List<Object> output;
-		public String status;
+		public Object output_access;
+		public java.util.List<Object> outputs;
+		public Integer poll_after_seconds;
+		public String polling_url;
+		public Integer progress;
+		public String progress_source;
+		public String provider;
+		public Double seconds;
+		public String size;
+		public Object started_at;
+		public Object status;
+		public Object usage;
+	}
+
+	public static class VideoInputReference {
+		public Object image_url;
+		public String reference_type;
+		public Object role;
+		public Object type;
+	}
+
+	public static class VideoOutput {
+		public Boolean bytes_available;
+		public String content_url;
+		public String download_url;
+		public Integer expires_at;
+		public Integer index;
+		public String mime_type;
+	}
+
+	public static class VideoOutputConfig {
+		public Object access;
 	}
 
 }

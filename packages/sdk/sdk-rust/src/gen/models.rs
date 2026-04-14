@@ -3,14 +3,21 @@ use std::collections::HashMap;
 pub type JsonValue = String;
 
 pub struct ActivityEntry {
-	pub cost_cents: Option<f64>,
-	pub endpoint: Option<String>,
-	pub latency_ms: Option<i64>,
-	pub model: Option<String>,
-	pub provider: Option<String>,
-	pub request_id: Option<String>,
-	pub timestamp: Option<String>,
-	pub usage: Option<HashMap<String, String>>,
+	pub byok_usage_inference: f64,
+	pub completion_tokens: i64,
+	pub date: String,
+	pub endpoint_id: String,
+	pub model: String,
+	pub model_permaslug: String,
+	pub prompt_tokens: i64,
+	pub provider_name: String,
+	pub reasoning_tokens: i64,
+	pub requests: i64,
+	pub usage: f64,
+}
+
+pub struct ActivityResponse {
+	pub data: Vec<HashMap<String, String>>,
 }
 
 pub struct AnalyticsAccessTokenRequiredResponse {
@@ -57,7 +64,7 @@ pub struct AnthropicMessagesRequest {
 	pub system: Option<String>,
 	pub temperature: Option<f64>,
 	pub tool_choice: Option<String>,
-	pub tools: Option<Vec<HashMap<String, String>>>,
+	pub tools: Option<Vec<String>>,
 	pub top_k: Option<i64>,
 	pub top_p: Option<f64>,
 	pub usage: Option<bool>,
@@ -170,6 +177,13 @@ pub struct CacheControl {
 	pub r#type: Option<String>,
 }
 
+pub struct ChatAudioOutputPart {
+	pub audio_url: HashMap<String, String>,
+	pub format: Option<String>,
+	pub mime_type: Option<String>,
+	pub r#type: String,
+}
+
 pub struct ChatChoice {
 	pub finish_reason: Option<String>,
 	pub index: Option<i64>,
@@ -207,7 +221,7 @@ pub struct ChatCompletionsRequest {
 	pub stream_options: Option<HashMap<String, String>>,
 	pub temperature: Option<f64>,
 	pub tool_choice: Option<String>,
-	pub tools: Option<Vec<HashMap<String, String>>>,
+	pub tools: Option<Vec<String>>,
 	pub top_logprobs: Option<i64>,
 	pub top_p: Option<f64>,
 	pub usage: Option<bool>,
@@ -224,8 +238,16 @@ pub struct ChatCompletionsResponse {
 	pub usage: Option<HashMap<String, String>>,
 }
 
+pub struct ChatImageOutputPart {
+	pub image_url: HashMap<String, String>,
+	pub mime_type: Option<String>,
+	pub r#type: String,
+}
+
 pub struct ChatMessage {
+	pub audios: Option<Vec<HashMap<String, String>>>,
 	pub content: Option<String>,
+	pub images: Option<Vec<HashMap<String, String>>>,
 	pub name: Option<String>,
 	pub role: String,
 	pub tool_call_id: Option<String>,
@@ -305,6 +327,17 @@ pub struct FileResponse {
 pub struct FileUploadRequest {
 	pub file: String,
 	pub purpose: String,
+}
+
+pub struct FunctionToolDefinition {
+	pub function: HashMap<String, String>,
+	pub r#type: String,
+}
+
+pub struct GatewayDatetimeToolDefinition {
+	pub parameters: Option<HashMap<String, String>>,
+	pub timezone: Option<String>,
+	pub r#type: String,
 }
 
 pub struct GatewayModelsResponse {
@@ -666,16 +699,75 @@ pub struct ReasoningConfig {
 	pub summary: Option<String>,
 }
 
+pub type RerankDocument = JsonValue;
+
+pub struct RerankRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub documents: String,
+	pub max_chunks_per_doc: Option<i64>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
+	pub query: String,
+	pub rank_fields: Option<Vec<String>>,
+	pub return_documents: Option<bool>,
+	pub top_k: Option<i64>,
+	pub top_n: Option<i64>,
+	pub user: Option<String>,
+}
+
+pub struct RerankResponse {
+	pub id: Option<String>,
+	pub model: Option<String>,
+	pub nativeResponseId: Option<Option<String>>,
+	pub object: Option<String>,
+	pub results: Option<Vec<HashMap<String, String>>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct RerankResult {
+	pub document: Option<String>,
+	pub index: Option<i64>,
+	pub relevance_score: Option<f64>,
+}
+
 pub struct ResponsesInputItem {
 	pub content: Option<String>,
 	pub role: Option<String>,
 	pub r#type: Option<String>,
 }
 
+pub struct ResponsesOutputAudioPart {
+	pub audio_url: Option<HashMap<String, String>>,
+	pub b64_json: Option<String>,
+	pub format: Option<String>,
+	pub mime_type: Option<String>,
+	pub r#type: String,
+}
+
+pub type ResponsesOutputContentPart = JsonValue;
+
+pub struct ResponsesOutputImagePart {
+	pub b64_json: Option<String>,
+	pub image_url: Option<HashMap<String, String>>,
+	pub mime_type: Option<String>,
+	pub r#type: String,
+}
+
 pub struct ResponsesOutputItem {
-	pub content: Option<Vec<HashMap<String, String>>>,
+	pub arguments: Option<String>,
+	pub call_id: Option<String>,
+	pub content: Option<Vec<String>>,
+	pub name: Option<String>,
 	pub role: Option<String>,
 	pub r#type: Option<String>,
+}
+
+pub struct ResponsesOutputTextPart {
+	pub annotations: Option<Vec<HashMap<String, String>>>,
+	pub text: String,
+	pub r#type: String,
 }
 
 pub struct ResponsesRequest {
@@ -704,7 +796,7 @@ pub struct ResponsesRequest {
 	pub temperature: Option<f64>,
 	pub text: Option<HashMap<String, String>>,
 	pub tool_choice: Option<String>,
-	pub tools: Option<Vec<HashMap<String, String>>>,
+	pub tools: Option<Vec<String>>,
 	pub top_p: Option<f64>,
 	pub truncation: Option<String>,
 	pub usage: Option<bool>,
@@ -746,15 +838,23 @@ pub struct ResponsesWebSocketUpgradeRequiredResponse {
 	pub error: Option<HashMap<String, String>>,
 }
 
+pub struct ServerToolUsage {
+	pub datetime_requests: Option<i64>,
+}
+
 pub struct TextContentPart {
 	pub text: String,
 	pub r#type: String,
 }
 
+pub type TextGenerateTool = JsonValue;
+
 pub struct TextModerationInput {
 	pub text: String,
 	pub r#type: String,
 }
+
+pub type TextToolChoice = JsonValue;
 
 pub struct ToolCall {
 	pub function: HashMap<String, String>,
@@ -771,6 +871,7 @@ pub struct ToolCallContentPart {
 pub struct Usage {
 	pub completion_tokens: Option<i64>,
 	pub prompt_tokens: Option<i64>,
+	pub server_tool_use: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
 }
 
@@ -787,38 +888,70 @@ pub struct VideoDeleteResponse {
 
 pub struct VideoGenerationRequest {
 	pub aspect_ratio: Option<String>,
+	pub compression_quality: Option<i64>,
 	pub duration: Option<i64>,
-	pub duration_seconds: Option<i64>,
 	pub enhance_prompt: Option<bool>,
 	pub generate_audio: Option<bool>,
-	pub input: Option<HashMap<String, String>>,
-	pub input_image: Option<String>,
-	pub input_last_frame: Option<String>,
-	pub input_reference: Option<String>,
-	pub input_reference_mime_type: Option<String>,
-	pub input_video: Option<String>,
-	pub last_frame: Option<String>,
+	pub input_references: Option<Vec<HashMap<String, String>>>,
 	pub model: String,
 	pub negative_prompt: Option<String>,
-	pub number_of_videos: Option<i64>,
-	pub output_storage_uri: Option<String>,
+	pub output: Option<HashMap<String, String>>,
 	pub person_generation: Option<String>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
-	pub quality: Option<String>,
-	pub ratio: Option<String>,
-	pub reference_images: Option<Vec<HashMap<String, String>>>,
+	pub provider_params: Option<HashMap<String, String>>,
+	pub resize_mode: Option<String>,
 	pub resolution: Option<String>,
 	pub sample_count: Option<i64>,
-	pub seconds: Option<String>,
 	pub seed: Option<i64>,
+	pub size: Option<String>,
+	pub webhook: Option<HashMap<String, String>>,
 }
 
 pub struct VideoGenerationResponse {
-	pub created: Option<i64>,
+	pub asset: Option<Option<HashMap<String, String>>>,
+	pub audio: Option<bool>,
+	pub billing: Option<HashMap<String, String>>,
+	pub completed_at: Option<Option<String>>,
+	pub content_url: Option<String>,
+	pub created_at: Option<String>,
+	pub download_url: Option<Option<String>>,
+	pub error: Option<Option<String>>,
+	pub expires_at: Option<Option<i64>>,
+	pub generation_id: Option<Option<String>>,
 	pub id: Option<String>,
 	pub model: Option<String>,
 	pub object: Option<String>,
-	pub output: Option<Vec<HashMap<String, String>>>,
+	pub output_access: Option<String>,
+	pub outputs: Option<Vec<HashMap<String, String>>>,
+	pub poll_after_seconds: Option<i64>,
+	pub polling_url: Option<String>,
+	pub progress: Option<Option<i64>>,
+	pub progress_source: Option<String>,
+	pub provider: Option<String>,
+	pub seconds: Option<f64>,
+	pub size: Option<String>,
+	pub started_at: Option<Option<String>>,
 	pub status: Option<String>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct VideoInputReference {
+	pub image_url: Option<HashMap<String, String>>,
+	pub reference_type: Option<String>,
+	pub role: Option<String>,
+	pub r#type: String,
+}
+
+pub struct VideoOutput {
+	pub bytes_available: Option<bool>,
+	pub content_url: Option<String>,
+	pub download_url: Option<String>,
+	pub expires_at: Option<i64>,
+	pub index: Option<i64>,
+	pub mime_type: Option<String>,
+}
+
+pub struct VideoOutputConfig {
+	pub access: Option<String>,
 }
