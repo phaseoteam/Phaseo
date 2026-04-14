@@ -116,7 +116,7 @@ public final class AIStats {
 		this.enableDeprecationWarnings = enableDeprecationWarnings;
 		this.warningsAsErrors = warningsAsErrors;
 		this.logger = logger;
-		this.telemetry = new TelemetryRecorder(devtoolsConfig, "1.1.1");
+		this.telemetry = new TelemetryRecorder(devtoolsConfig, "1.1.2");
 		this.lifecycleResolver = lifecycleResolver == null ? this::fetchModelLifecycle : lifecycleResolver;
 	}
 
