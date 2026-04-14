@@ -33,13 +33,70 @@ jobs:
               with:
                   version: 10.18.3
                   run_install: false
+
+            - name: Inspect lockfile (post-checkout, pre-setup-node)
+              run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  import hashlib
+
+                  p = Path("pnpm-lock.yaml")
+                  b = p.read_bytes()
+                  t = b.decode("utf-8", errors="replace")
+                  sep = sum(1 for line in t.splitlines() if line.strip() == "---")
+                  end = sum(1 for line in t.splitlines() if line.strip() == "...")
+                  lock = sum(1 for line in t.splitlines() if line.startswith("lockfileVersion:"))
+                  print(f"bytes={len(b)} lockfileVersion_lines={lock} doc_start_lines={sep} doc_end_lines={end}")
+                  print(f"sha256={hashlib.sha256(b).hexdigest()}")
+                  print(f"head_hex={b[:48].hex()}")
+                  PY
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
+            - name: Inspect lockfile (post-setup-node)
+              run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  import hashlib
+
+                  p = Path("pnpm-lock.yaml")
+                  b = p.read_bytes()
+                  t = b.decode("utf-8", errors="replace")
+                  sep = sum(1 for line in t.splitlines() if line.strip() == "---")
+                  end = sum(1 for line in t.splitlines() if line.strip() == "...")
+                  lock = sum(1 for line in t.splitlines() if line.startswith("lockfileVersion:"))
+                  print(f"bytes={len(b)} lockfileVersion_lines={lock} doc_start_lines={sep} doc_end_lines={end}")
+                  print(f"sha256={hashlib.sha256(b).hexdigest()}")
+                  print(f"head_hex={b[:48].hex()}")
+                  PY
+
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
+
+            - name: Rehydrate lockfile directly from HEAD blob
+              run: git show HEAD:pnpm-lock.yaml > pnpm-lock.yaml
+
+            - name: Inspect lockfile (pre-install)
+              run: |
+                  python - <<'PY'
+                  from pathlib import Path
+                  import hashlib
+                  import subprocess
+
+                  p = Path("pnpm-lock.yaml")
+                  b = p.read_bytes()
+                  t = b.decode("utf-8", errors="replace")
+                  sep = sum(1 for line in t.splitlines() if line.strip() == "---")
+                  end = sum(1 for line in t.splitlines() if line.strip() == "...")
+                  lock = sum(1 for line in t.splitlines() if line.startswith("lockfileVersion:"))
+                  blob = subprocess.check_output(["git", "show", "HEAD:pnpm-lock.yaml"])
+                  print(f"bytes={len(b)} lockfileVersion_lines={lock} doc_start_lines={sep} doc_end_lines={end}")
+                  print(f"sha256={hashlib.sha256(b).hexdigest()}")
+                  print(f"matches_head_blob={b == blob}")
+                  print(f"head_hex={b[:48].hex()}")
+                  PY
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
