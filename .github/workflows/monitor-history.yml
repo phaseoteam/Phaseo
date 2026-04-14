@@ -42,11 +42,11 @@ jobs:
                   echo "name=${bot}" >> "$GITHUB_OUTPUT"
                   echo "email=${email}" >> "$GITHUB_OUTPUT"
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:

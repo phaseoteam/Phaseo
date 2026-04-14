@@ -19,12 +19,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -63,12 +62,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -110,12 +108,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -154,12 +151,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -189,12 +185,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -255,12 +250,11 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -325,12 +319,11 @@ jobs:
                   python -m pip install build pytest
                   python -m pip install -e packages/sdk/sdk-py
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -357,12 +350,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
 
             - name: Setup Node.js
               uses: actions/setup-node@v6
@@ -421,12 +413,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -472,12 +463,11 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
@@ -585,12 +575,11 @@ jobs:
                   app-id: ${{ secrets.AI_STATS_APP_ID }}
                   private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v6
-              with:
-                  version: 10.18.3
-                  run_install: false
-                  standalone: true
+            - name: Setup pnpm (corepack)
+              run: |
+                  corepack enable
+                  corepack prepare pnpm@10.18.3 --activate
+                  pnpm --version
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
