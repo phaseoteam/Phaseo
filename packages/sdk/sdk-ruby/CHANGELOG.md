@@ -1,5 +1,13 @@
 # @ai-stats/ruby-sdk
 
+## 1.1.2
+
+### Patch Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes (sdk/openapi changes with no model-id surface changes).
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
 ## 1.1.1
 
 ### Patch Changes
