@@ -289,7 +289,7 @@ public final class AIStats {
 	}
 
 	public JsonNode getAnalytics(Map<String, String> query) throws IOException, InterruptedException {
-		return withLifecycleAndTelemetry("analytics", query, false, () -> parse(Operations.getAnalytics(rawClient, null, query, null, null)));
+		return withLifecycleAndTelemetry("analytics", query, false, () -> parse(Operations.getActivityAlias(rawClient, null, query, null, null)));
 	}
 
 	public JsonNode getCredits(Map<String, String> query) throws IOException, InterruptedException {
