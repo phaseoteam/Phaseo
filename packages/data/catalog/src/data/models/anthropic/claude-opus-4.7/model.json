@@ -1,0 +1,18 @@
+{
+  "model_id": "anthropic/claude-opus-4.7",
+  "organisation_id": "anthropic",
+  "name": "Claude Opus 4.7",
+  "status": "Rumoured",
+  "previous_model_id": "anthropic/claude-opus-4.6",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "anthropic/claude-opus-4.7",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
