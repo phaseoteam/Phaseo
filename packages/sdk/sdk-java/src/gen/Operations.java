@@ -11,28 +11,28 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object cancelBatch(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/" + (path != null && path.containsKey("batch_id") ? path.get("batch_id") : "") + "/cancel";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object cancelBatchAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/" + (path != null && path.containsKey("id") ? path.get("id") : "") + "/cancel";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object cancelVideo(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/videos/" + (path != null && path.containsKey("video_id") ? path.get("video_id") : "") + "/cancel";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object cancelVideoAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/video/generations/" + (path != null && path.containsKey("video_id") ? path.get("video_id") : "") + "/cancel";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createAnthropicMessage(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/messages";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createAudioRealtimeCallPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/audio/realtime/calls";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createAudioRealtimeClientSecretsPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/audio/realtime/client_secrets";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createAudioRealtimeSessionPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/audio/realtime";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createAudioRealtimeSessionsPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/audio/realtime/sessions";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -86,23 +86,8 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Object createRealtimeCallPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/realtime/calls";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createRealtimeClientSecretsPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/realtime/client_secrets";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createRealtimeSessionPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/realtime";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createRealtimeSessionsPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/realtime/sessions";
+	public static Object createRerank(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rerank";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -171,13 +156,8 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object getAnalytics(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+	public static Object getActivityAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/analytics";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object getAudioRealtimeCallPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/audio/realtime/calls/" + (path != null && path.containsKey("call_id") ? path.get("call_id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -213,11 +193,6 @@ public final class Operations {
 
 	public static Object getProviderDerankStatus(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/health/providers/" + (path != null && path.containsKey("provider_id") ? path.get("provider_id") : "") + "/derank";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object getRealtimeCallPlaceholder(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/realtime/calls/" + (path != null && path.containsKey("call_id") ? path.get("call_id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -296,6 +271,31 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listTeamModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/gateway/models/me";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listVideoModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/videos/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listVideoModelsAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/video/generations/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listVideos(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/videos";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listVideosAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/video/generations";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object openResponsesWebSocket(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/responses/ws";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -318,6 +318,11 @@ public final class Operations {
 
 	public static Object retrieveFile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object retrieveFileContent(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "") + "/content";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

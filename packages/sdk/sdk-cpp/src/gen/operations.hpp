@@ -9,28 +9,28 @@ inline Response CalculatePricing(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CancelBatch(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/" + (path.count("batch_id") ? path.at("batch_id") : std::string{}) + "/cancel";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CancelBatchAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/" + (path.count("id") ? path.at("id") : std::string{}) + "/cancel";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CancelVideo(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/videos/" + (path.count("video_id") ? path.at("video_id") : std::string{}) + "/cancel";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CancelVideoAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/video/generations/" + (path.count("video_id") ? path.at("video_id") : std::string{}) + "/cancel";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateAnthropicMessage(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/messages";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateAudioRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/audio/realtime/calls";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateAudioRealtimeClientSecretsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/audio/realtime/client_secrets";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateAudioRealtimeSessionPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/audio/realtime";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateAudioRealtimeSessionsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/audio/realtime/sessions";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -84,23 +84,8 @@ inline Response CreateOcr(Client& client, const std::map<std::string, std::strin
 	return client.request("POST", resolved_path, body);
 }
 
-inline Response CreateRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/realtime/calls";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateRealtimeClientSecretsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/realtime/client_secrets";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateRealtimeSessionPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/realtime";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateRealtimeSessionsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/realtime/sessions";
+inline Response CreateRerank(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rerank";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -169,13 +154,8 @@ inline Response GetActivity(Client& client, const std::map<std::string, std::str
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response GetAnalytics(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+inline Response GetActivityAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/analytics";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response GetAudioRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/audio/realtime/calls/" + (path.count("call_id") ? path.at("call_id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -211,11 +191,6 @@ inline Response GetOAuthClient(Client& client, const std::map<std::string, std::
 
 inline Response GetProviderDerankStatus(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/health/providers/" + (path.count("provider_id") ? path.at("provider_id") : std::string{}) + "/derank";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response GetRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/realtime/calls/" + (path.count("call_id") ? path.at("call_id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -294,6 +269,31 @@ inline Response ListProviders(Client& client, const std::map<std::string, std::s
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListTeamModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/gateway/models/me";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListVideoModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/videos/models";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListVideoModelsAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/video/generations/models";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListVideos(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/videos";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListVideosAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/video/generations";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response OpenResponsesWebSocket(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/responses/ws";
 	return client.request("GET", resolved_path, body);
@@ -316,6 +316,11 @@ inline Response RetrieveBatchAlias(Client& client, const std::map<std::string, s
 
 inline Response RetrieveFile(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/files/" + (path.count("file_id") ? path.at("file_id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response RetrieveFileContent(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/files/" + (path.count("file_id") ? path.at("file_id") : std::string{}) + "/content";
 	return client.request("GET", resolved_path, body);
 }
 

@@ -10,28 +10,28 @@ pub fn calculatePricing<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn cancelBatch<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batches/{}/cancel", path.get("batch_id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn cancelBatchAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batch/{}/cancel", path.get("id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn cancelVideo<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/videos/{}/cancel", path.get("video_id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn cancelVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/video/generations/{}/cancel", path.get("video_id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createAnthropicMessage<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/messages");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createAudioRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/audio/realtime/calls");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createAudioRealtimeClientSecretsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/audio/realtime/client_secrets");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createAudioRealtimeSessionPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/audio/realtime");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createAudioRealtimeSessionsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/audio/realtime/sessions");
 	client.request("POST", &resolved_path, body)
 }
 
@@ -85,23 +85,8 @@ pub fn createOcr<T: Transport>(client: &Client<T>, path: &HashMap<String, String
 	client.request("POST", &resolved_path, body)
 }
 
-pub fn createRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/realtime/calls");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createRealtimeClientSecretsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/realtime/client_secrets");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createRealtimeSessionPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/realtime");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createRealtimeSessionsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/realtime/sessions");
+pub fn createRerank<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/rerank");
 	client.request("POST", &resolved_path, body)
 }
 
@@ -170,13 +155,8 @@ pub fn getActivity<T: Transport>(client: &Client<T>, path: &HashMap<String, Stri
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn getAnalytics<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+pub fn getActivityAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/analytics");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn getAudioRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/audio/realtime/calls/{}", path.get("call_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 
@@ -212,11 +192,6 @@ pub fn getOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, S
 
 pub fn getProviderDerankStatus<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/health/providers/{}/derank", path.get("provider_id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn getRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/realtime/calls/{}", path.get("call_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 
@@ -295,6 +270,31 @@ pub fn listProviders<T: Transport>(client: &Client<T>, path: &HashMap<String, St
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listTeamModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/gateway/models/me");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listVideoModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/videos/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listVideoModelsAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/video/generations/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listVideos<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/videos");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listVideosAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/video/generations");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn openResponsesWebSocket<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/responses/ws");
 	client.request("GET", &resolved_path, body)
@@ -317,6 +317,11 @@ pub fn retrieveBatchAlias<T: Transport>(client: &Client<T>, path: &HashMap<Strin
 
 pub fn retrieveFile<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/files/{}", path.get("file_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn retrieveFileContent<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/files/{}/content", path.get("file_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 

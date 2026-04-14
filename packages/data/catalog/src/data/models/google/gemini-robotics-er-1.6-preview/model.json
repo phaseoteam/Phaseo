@@ -1,0 +1,27 @@
+{
+  "model_id": "google/gemini-robotics-er-1.6-preview",
+  "organisation_id": "google",
+  "name": "Gemini Robotics ER 1.6 Preview",
+  "status": "Available",
+  "previous_model_id": "google/gemini-robotics-er-1.5-preview",
+  "announced_date": "2026-04-14T00:00:00",
+  "release_date": "2026-04-14T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "google/gemini-robotics-er-1.6-preview",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://deepmind.google/blog/gemini-robotics-er-1-6/"
+    },
+    {
+      "platform": "docs",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-robotics-er-1.6-preview"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

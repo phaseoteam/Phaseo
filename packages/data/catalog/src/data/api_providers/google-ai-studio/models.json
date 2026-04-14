@@ -1461,6 +1461,27 @@
     "capabilities": []
   },
   {
+    "api_model_id": "google/gemini-robotics-er-1.6-preview",
+    "provider_api_model_id": "google-ai-studio:google/gemini-robotics-er-1.6-preview",
+    "provider_model_slug": "gemini-robotics-er-1.6-preview",
+    "internal_model_id": "google/gemini-robotics-er-1.6-preview",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-04-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "google/gemma-3-12b:free",
     "provider_api_model_id": "google-ai-studio:google/gemma-3-12b:free",
     "provider_model_slug": "gemma-3-12b-it",
