@@ -205,7 +205,11 @@ export async function beforeRequest(
         return hasAdapter;
     });
     const missingPricingProviders = enabledProviders
-        .filter((provider) => !provider.pricingCard)
+        .filter((provider) =>
+            !provider.pricingCard ||
+            !Array.isArray(provider.pricingCard.rules) ||
+            provider.pricingCard.rules.length === 0
+        )
         .map((provider) => provider.providerId);
     if (missingPricingProviders.length) {
         for (const providerId of missingPricingProviders) {
@@ -214,7 +218,13 @@ export async function beforeRequest(
                 reason: "pricing_missing",
             });
         }
-        enabledProviders = enabledProviders.filter((provider) => Boolean(provider.pricingCard));
+        enabledProviders = enabledProviders.filter((provider) =>
+            Boolean(
+                provider.pricingCard &&
+                Array.isArray(provider.pricingCard.rules) &&
+                provider.pricingCard.rules.length > 0
+            )
+        );
     }
     const providerEnablementDiagnostics: ProviderEnablementDiagnostics = {
         capability: normalizedCapability,
