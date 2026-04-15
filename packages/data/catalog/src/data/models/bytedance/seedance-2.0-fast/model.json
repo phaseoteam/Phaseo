@@ -1,0 +1,27 @@
+{
+  "model_id": "bytedance/seedance-2.0-fast",
+  "organisation_id": "bytedance",
+  "name": "Seedance 2.0 Fast",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-28T00:00:00",
+  "release_date": "2026-01-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "video",
+  "api_model_id": "bytedance/seedance-2.0-fast",
+  "links": [
+    {
+      "platform": "documentation",
+      "url": "https://docs.byteplus.com/en/docs/ModelArk/2222480"
+    },
+    {
+      "platform": "pricing",
+      "url": "https://docs.byteplus.com/en/docs/ModelArk/1544106"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

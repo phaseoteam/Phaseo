@@ -1,0 +1,57 @@
+{
+  "key": "alibaba-cloud:qwen/wan2.7-t2v:video.generate",
+  "api_provider_id": "alibaba-cloud",
+  "provider_slug": "alibaba-cloud",
+  "api_model_id": "qwen/wan2.7-t2v",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.733924,
+      "currency": "CNY",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "International deployment",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720P",
+            "720p"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-03T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 1.100886,
+      "currency": "CNY",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "International deployment",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080P",
+            "1080p"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-03T00:00:00"
+    }
+  ]
+}

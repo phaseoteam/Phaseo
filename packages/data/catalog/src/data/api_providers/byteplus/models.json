@@ -213,6 +213,27 @@
     "capabilities": []
   },
   {
+    "api_model_id": "bytedance/seedance-2.0-fast",
+    "provider_api_model_id": "byteplus:bytedance/seedance-2.0-fast",
+    "provider_model_slug": "dreamina-seedance-2-0-fast-260128",
+    "internal_model_id": "bytedance/seedance-2.0-fast",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-01-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "bytedance/seedream-4.0",
     "provider_api_model_id": "byteplus:bytedance/seedream-4.0",
     "provider_model_slug": "seedream-4-0-250828",
