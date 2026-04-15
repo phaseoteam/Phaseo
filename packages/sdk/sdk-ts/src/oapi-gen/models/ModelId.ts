@@ -216,6 +216,7 @@ export type ModelId =
   | "google/gemini-3-pro-preview"
   | "google/gemini-3.1-flash-image-preview"
   | "google/gemini-3.1-flash-lite-preview"
+  | "google/gemini-3.1-flash-tts-preview"
   | "google/gemini-3.1-pro-preview"
   | "google/gemini-3.1-pro-preview-customtools"
   | "google/gemini-diffusion"

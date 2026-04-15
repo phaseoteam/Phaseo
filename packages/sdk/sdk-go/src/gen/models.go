@@ -1342,6 +1342,7 @@ const (
 	ModelIdGoogleGemini3ProPreview ModelId = "google/gemini-3-pro-preview"
 	ModelIdGoogleGemini31FlashImagePreview ModelId = "google/gemini-3.1-flash-image-preview"
 	ModelIdGoogleGemini31FlashLitePreview ModelId = "google/gemini-3.1-flash-lite-preview"
+	ModelIdGoogleGemini31FlashTtsPreview ModelId = "google/gemini-3.1-flash-tts-preview"
 	ModelIdGoogleGemini31ProPreview ModelId = "google/gemini-3.1-pro-preview"
 	ModelIdGoogleGemini31ProPreviewCustomtools ModelId = "google/gemini-3.1-pro-preview-customtools"
 	ModelIdGoogleGeminiDiffusion ModelId = "google/gemini-diffusion"
