@@ -15,6 +15,7 @@ namespace AiStatsSdk
     {
         public required string ModelId { get; init; }
         public required string Status { get; init; }
+        public string? SourceStatus { get; init; }
         public string? DeprecationDate { get; init; }
         public string? RetirementDate { get; init; }
         public string? ReplacementModelId { get; init; }
@@ -33,6 +34,29 @@ namespace AiStatsSdk
         private readonly Func<string, Task<ModelLifecycleInfo?>> _lifecycleResolver;
         private readonly HashSet<string> _warnedModels = new(StringComparer.Ordinal);
         private readonly Dictionary<string, ModelLifecycleInfo?> _lifecycleCache = new(StringComparer.Ordinal);
+        private static readonly HashSet<string> ActiveModelSourceStatuses = new(StringComparer.Ordinal)
+        {
+            "active",
+            "available"
+        };
+        private static readonly HashSet<string> InactiveModelSourceStatuses = new(StringComparer.Ordinal)
+        {
+            "deprecated",
+            "retired",
+            "withheld",
+            "announced",
+            "rumoured",
+            "rumored",
+            "unavailable",
+            "disabled",
+            "internal",
+            "private",
+            "removed",
+            "sunset",
+            "eol",
+            "end_of_life",
+            "end-of-life"
+        };
 
         public AiStats.Gen.Client RawClient => _client;
 
@@ -87,13 +111,13 @@ namespace AiStatsSdk
                 return new Dictionary<string, object?> { ["ok"] = true, ["info"] = null };
             }
 
-            if (string.Equals(info.Status, "retired", StringComparison.Ordinal))
+            if (!IsModelRequestableForInference(info))
             {
                 return new Dictionary<string, object?>
                 {
                     ["ok"] = false,
                     ["info"] = info,
-                    ["reason"] = info.Message ?? $"Model \"{modelId}\" is retired."
+                    ["reason"] = BuildInactiveModelRequestMessage(info)
                 };
             }
 
@@ -108,7 +132,30 @@ namespace AiStatsSdk
                 return;
             }
 
+            await EnsureModelRequestable(modelId).ConfigureAwait(false);
             await MaybeWarnForModel(modelId).ConfigureAwait(false);
+        }
+
+        private async Task EnsureModelRequestable(string modelId)
+        {
+            var normalized = modelId.Trim();
+            if (normalized.Length == 0)
+            {
+                return;
+            }
+
+            var lifecycle = await GetModelDeprecationInfo(normalized).ConfigureAwait(false);
+            if (lifecycle is null)
+            {
+                return;
+            }
+
+            if (IsModelRequestableForInference(lifecycle))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(BuildInactiveModelRequestMessage(lifecycle));
         }
 
         private async Task MaybeWarnForModel(string modelId)
@@ -125,7 +172,7 @@ namespace AiStatsSdk
             }
 
             var lifecycle = await GetModelDeprecationInfo(normalized).ConfigureAwait(false);
-            if (lifecycle is null || lifecycle.Status == "active")
+            if (lifecycle is null || string.Equals(NormalizeRequestabilityStatus(lifecycle.Status), "active", StringComparison.Ordinal))
             {
                 return;
             }
@@ -417,6 +464,7 @@ namespace AiStatsSdk
         {
             var lifecycle = GetObject(model, "lifecycle");
             var modelId = FirstNonEmpty(GetString(model, "model_id"), fallbackModelId) ?? fallbackModelId;
+            var sourceStatus = FirstNonEmpty(GetString(model, "status"), GetString(lifecycle, "status"));
             var deprecationDate = FirstNonEmpty(GetString(lifecycle, "deprecation_date"), GetString(model, "deprecation_date"));
             var retirementDate = FirstNonEmpty(GetString(lifecycle, "retirement_date"), GetString(model, "retirement_date"));
             var status = NormalizeLifecycleStatus(
@@ -432,6 +480,7 @@ namespace AiStatsSdk
             {
                 ModelId = modelId,
                 Status = status,
+                SourceStatus = sourceStatus,
                 DeprecationDate = deprecationDate,
                 RetirementDate = retirementDate,
                 ReplacementModelId = replacementModelId,
@@ -493,6 +542,81 @@ namespace AiStatsSdk
                     => $"[ai-stats] Model \"{modelId}\" is deprecated.{replacement}",
                 _ => string.Empty
             };
+        }
+
+        private static string? NormalizeSourceStatus(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+            return value.Trim().ToLowerInvariant();
+        }
+
+        private static string NormalizeRequestabilityStatus(string? value)
+        {
+            return NormalizeSourceStatus(value) switch
+            {
+                "active" or "available" => "active",
+                "deprecated" => "deprecated",
+                "retired" => "retired",
+                _ => string.Empty
+            };
+        }
+
+        private static bool IsModelRequestableForInference(ModelLifecycleInfo info)
+        {
+            if (!string.Equals(NormalizeRequestabilityStatus(info.Status), "active", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var sourceStatus = NormalizeSourceStatus(info.SourceStatus);
+            if (sourceStatus is null)
+            {
+                return true;
+            }
+            if (ActiveModelSourceStatuses.Contains(sourceStatus))
+            {
+                return true;
+            }
+            if (InactiveModelSourceStatuses.Contains(sourceStatus))
+            {
+                return false;
+            }
+            return false;
+        }
+
+        private static string BuildInactiveModelRequestMessage(ModelLifecycleInfo info)
+        {
+            var normalizedStatus = NormalizeRequestabilityStatus(info.Status);
+            if (!string.Equals(normalizedStatus, "active", StringComparison.Ordinal))
+            {
+                var lifecycleStatusForMessage = string.IsNullOrWhiteSpace(normalizedStatus)
+                    ? (NormalizeSourceStatus(info.Status) ?? info.Status)
+                    : normalizedStatus;
+                var fallback = BuildLifecycleMessage(
+                    lifecycleStatusForMessage,
+                    info.ModelId,
+                    info.DeprecationDate,
+                    info.RetirementDate,
+                    info.ReplacementModelId);
+                if (!string.IsNullOrWhiteSpace(info.Message))
+                {
+                    return info.Message!;
+                }
+                if (!string.IsNullOrWhiteSpace(fallback))
+                {
+                    return fallback;
+                }
+                return $"[ai-stats] Model \"{info.ModelId}\" is not active for inference.";
+            }
+
+            var sourceStatus = NormalizeSourceStatus(info.SourceStatus) ?? "unknown";
+            var replacement = string.IsNullOrWhiteSpace(info.ReplacementModelId)
+                ? string.Empty
+                : $" Use \"{info.ReplacementModelId}\" instead.";
+            return $"[ai-stats] Model \"{info.ModelId}\" is not active for inference (status: {sourceStatus}).{replacement}";
         }
 
         private static JsonElement GetObject(JsonElement source, string property)

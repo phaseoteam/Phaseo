@@ -9,7 +9,7 @@ namespace AIStats.Sdk.Tests;
 public class LifecycleTests
 {
     [Fact]
-    public async Task DeprecatedModelWarnsOncePerModel()
+    public async Task DeprecatedModelBlocksRequest()
     {
         var warnings = new List<string>();
         var handler = new StubHttpHandler((request) =>
@@ -58,17 +58,16 @@ public class LifecycleTests
             ["model"] = "provider/old-model",
             ["input"] = "Hello"
         };
-        await client.CreateResponse(payload);
-        await client.CreateResponse(payload);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => client.CreateResponse(payload));
 
-        Assert.Single(warnings);
-        Assert.Contains("provider/new-model", warnings[0]);
+        Assert.Contains("provider/new-model", ex.Message);
+        Assert.Empty(warnings);
         Assert.Equal(1, handler.Count("/data/models"));
-        Assert.Equal(2, handler.Count("/responses"));
+        Assert.Equal(0, handler.Count("/responses"));
     }
 
     [Fact]
-    public async Task WarningsAsErrorsBlocksRequestForRetiredModels()
+    public async Task RetiredModelBlocksRequestWithoutWarningsAsErrors()
     {
         var handler = new StubHttpHandler((request) =>
         {
@@ -101,7 +100,7 @@ public class LifecycleTests
         var client = new AiStatsSdk.AIStats(
             apiKey: "test",
             basePath: "http://localhost",
-            warningsAsErrors: true,
+            warningsAsErrors: false,
             httpClient: httpClient);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>

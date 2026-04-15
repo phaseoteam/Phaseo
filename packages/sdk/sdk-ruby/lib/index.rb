@@ -11,6 +11,25 @@ module AIStatsSdk
   # Thin wrapper around the in-house generated Ruby SDK.
   # Regenerate with: `pnpm openapi:gen:ruby`
   class AIStats
+    ACTIVE_MODEL_SOURCE_STATUSES = %w[active available].freeze
+    INACTIVE_MODEL_SOURCE_STATUSES = %w[
+      deprecated
+      retired
+      withheld
+      announced
+      rumoured
+      rumored
+      unavailable
+      disabled
+      internal
+      private
+      removed
+      sunset
+      eol
+      end_of_life
+      end-of-life
+    ].freeze
+
     attr_reader :raw_client
 
     def initialize(
@@ -51,7 +70,9 @@ module AIStatsSdk
     def validate_model(model_id)
       info = get_model_deprecation_info(model_id)
       return { ok: true, info: nil } unless info
-      return { ok: false, info: info, reason: info[:message] || %(Model "#{model_id}" is retired.) } if info[:status] == "retired"
+      unless is_model_requestable_for_inference?(info)
+        return { ok: false, info: info, reason: build_inactive_model_request_message(info) }
+      end
 
       { ok: true, info: info }
     end
@@ -227,7 +248,19 @@ module AIStatsSdk
     def maybe_warn_for_payload(payload)
       model_id = extract_model_id(payload)
       return unless model_id
+      ensure_model_requestable(model_id)
       maybe_warn_for_model(model_id)
+    end
+
+    def ensure_model_requestable(model_id)
+      normalized = as_trimmed_string(model_id)
+      return unless normalized
+
+      lifecycle = get_model_deprecation_info(normalized)
+      return unless lifecycle
+      return if is_model_requestable_for_inference?(lifecycle)
+
+      raise RuntimeError, build_inactive_model_request_message(lifecycle)
     end
 
     def with_lifecycle_and_telemetry(endpoint:, payload:, check_lifecycle:)
@@ -314,6 +347,7 @@ module AIStatsSdk
     def to_model_lifecycle_info(model, fallback_model_id)
       lifecycle = normalize_hash(model[:lifecycle]) || {}
       model_id = first_non_empty(as_trimmed_string(model[:model_id]), fallback_model_id) || fallback_model_id
+      source_status = first_non_empty(as_trimmed_string(model[:status]), as_trimmed_string(lifecycle[:status]))
       deprecation_date = first_non_empty(as_trimmed_string(lifecycle[:deprecation_date]), as_trimmed_string(model[:deprecation_date]))
       retirement_date = first_non_empty(as_trimmed_string(lifecycle[:retirement_date]), as_trimmed_string(model[:retirement_date]))
       status = normalize_lifecycle_status(
@@ -330,6 +364,7 @@ module AIStatsSdk
       {
         model_id: model_id,
         status: status,
+        source_status: source_status,
         deprecation_date: deprecation_date,
         retirement_date: retirement_date,
         replacement_model_id: replacement_model_id,
@@ -371,6 +406,42 @@ module AIStatsSdk
         return %[ [ai-stats] Model "#{model_id}" is deprecated.#{replacement} ].strip
       end
       ""
+    end
+
+    def normalize_source_status(value)
+      normalized = as_trimmed_string(value)
+      normalized&.downcase
+    end
+
+    def is_model_requestable_for_inference?(info)
+      return false unless info[:status] == "active"
+
+      source_status = normalize_source_status(info[:source_status])
+      return true unless source_status
+      return true if ACTIVE_MODEL_SOURCE_STATUSES.include?(source_status)
+      return false if INACTIVE_MODEL_SOURCE_STATUSES.include?(source_status)
+
+      false
+    end
+
+    def build_inactive_model_request_message(info)
+      if info[:status] != "active"
+        fallback = build_lifecycle_message(
+          info[:status] || "retired",
+          info[:model_id] || "unknown-model",
+          info[:deprecation_date],
+          info[:retirement_date],
+          info[:replacement_model_id]
+        )
+        return info[:message] if as_trimmed_string(info[:message])
+        return fallback if as_trimmed_string(fallback)
+
+        return %[ [ai-stats] Model "#{info[:model_id]}" is not active for inference. ].strip
+      end
+
+      source_status = normalize_source_status(info[:source_status]) || "unknown"
+      replacement = info[:replacement_model_id] ? %( Use "#{info[:replacement_model_id]}" instead.) : ""
+      %[ [ai-stats] Model "#{info[:model_id]}" is not active for inference (status: #{source_status}).#{replacement} ].strip
     end
 
     def extract_model_id(payload)

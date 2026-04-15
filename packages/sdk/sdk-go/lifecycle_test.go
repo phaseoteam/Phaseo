@@ -12,7 +12,7 @@ import (
 	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
 )
 
-func TestLifecycleWarningEmitsOncePerModel(t *testing.T) {
+func TestInactiveModelBlocksRequest(t *testing.T) {
 	var dataModelsCalls int32
 	var responsesCalls int32
 
@@ -43,39 +43,31 @@ func TestLifecycleWarningEmitsOncePerModel(t *testing.T) {
 	}))
 	defer server.Close()
 
-	var warnings []string
 	client := New("test", server.URL, WithLogger(func(level AIStatsLogLevel, message string, _ map[string]any) {
-		if level == AIStatsLogLevelWarn {
-			warnings = append(warnings, message)
-		}
+		_ = level
+		_ = message
 	}))
 
 	req := gen.ResponsesRequest{
 		Model: "provider/old-model",
 		Input: "hello",
 	}
-	if _, err := client.CreateResponse(context.Background(), req); err != nil {
-		t.Fatalf("first CreateResponse failed: %v", err)
+	_, err := client.CreateResponse(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error for inactive model")
 	}
-	if _, err := client.CreateResponse(context.Background(), req); err != nil {
-		t.Fatalf("second CreateResponse failed: %v", err)
-	}
-
-	if len(warnings) != 1 {
-		t.Fatalf("expected 1 warning, got %d (%v)", len(warnings), warnings)
-	}
-	if !strings.Contains(warnings[0], "provider/new-model") {
-		t.Fatalf("expected replacement model in warning, got %q", warnings[0])
+	if !strings.Contains(err.Error(), "provider/new-model") {
+		t.Fatalf("expected replacement model in inactive-model error, got %q", err.Error())
 	}
 	if atomic.LoadInt32(&dataModelsCalls) != 1 {
 		t.Fatalf("expected 1 /data/models lookup due to cache, got %d", dataModelsCalls)
 	}
-	if atomic.LoadInt32(&responsesCalls) != 2 {
-		t.Fatalf("expected 2 /responses calls, got %d", responsesCalls)
+	if atomic.LoadInt32(&responsesCalls) != 0 {
+		t.Fatalf("expected 0 /responses calls when lifecycle blocks request, got %d", responsesCalls)
 	}
 }
 
-func TestLifecycleWarningsAsErrorsBlocksRequest(t *testing.T) {
+func TestRetiredModelBlocksRequestWithoutWarningsAsErrors(t *testing.T) {
 	var responsesCalls int32
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -103,13 +95,16 @@ func TestLifecycleWarningsAsErrorsBlocksRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := New("test", server.URL, WithWarningsAsErrors(true))
+	client := New("test", server.URL, WithWarningsAsErrors(false))
 	_, err := client.CreateResponse(context.Background(), gen.ResponsesRequest{
 		Model: "provider/retired-model",
 		Input: "hello",
 	})
 	if err == nil {
-		t.Fatal("expected error when warningsAsErrors is enabled")
+		t.Fatal("expected error when model is retired")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "retired") {
+		t.Fatalf("expected retired model error, got %q", err.Error())
 	}
 	if atomic.LoadInt32(&responsesCalls) != 0 {
 		t.Fatalf("expected no /responses call when blocked by lifecycle warning, got %d", responsesCalls)

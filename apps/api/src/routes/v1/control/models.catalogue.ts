@@ -113,6 +113,7 @@ export type CatalogueFilters = {
     inputTypes?: string[];
     outputTypes?: string[];
     params?: string[];
+    statuses?: string[];
 };
 
 const PRICING_METERS = [
@@ -208,6 +209,40 @@ function normalizeStringSet(values?: string[]): string[] | undefined {
     if (!values || !values.length) return undefined;
     const normalized = Array.from(new Set(values.map((value) => value.trim()).filter((value) => value.length > 0)));
     return normalized.length ? normalized : undefined;
+}
+
+function toNormalizedStatus(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const normalized = value.trim().toLowerCase();
+    return normalized.length > 0 ? normalized : null;
+}
+
+function matchesRequestedStatus(args: {
+    requestedStatus: string;
+    modelStatus: string | null;
+    deprecationDate: string | null;
+    retirementDate: string | null;
+}): boolean {
+    const requested = args.requestedStatus.trim().toLowerCase();
+    const modelStatus = toNormalizedStatus(args.modelStatus);
+    const now = Date.now();
+
+    const retirementAt = parseDate(args.retirementDate);
+    if (retirementAt !== null && retirementAt <= now) {
+        return requested === "retired";
+    }
+
+    const deprecationAt = parseDate(args.deprecationDate);
+    if (deprecationAt !== null && deprecationAt <= now) {
+        return requested === "deprecated";
+    }
+
+    if (requested === "active") {
+        if (!modelStatus) return true;
+        return modelStatus === "active" || modelStatus === "available";
+    }
+
+    return modelStatus === requested;
 }
 
 function chunkArray<T>(values: T[], size: number): T[][] {
@@ -539,9 +574,22 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const inputTypesFilter = normalizeStringSet(filter.inputTypes)?.map((value) => value.toLowerCase());
     const outputTypesFilter = normalizeStringSet(filter.outputTypes)?.map((value) => value.toLowerCase());
     const paramsFilter = normalizeStringSet(filter.params);
+    const statusesFilter = normalizeStringSet(filter.statuses)?.map((value) => value.toLowerCase());
 
     const models: CatalogueModel[] = [];
     for (const [modelId, info] of baseModels) {
+        if (statusesFilter?.length) {
+            const matchesAny = statusesFilter.some((requestedStatus) =>
+                matchesRequestedStatus({
+                    requestedStatus,
+                    modelStatus: info.status,
+                    deprecationDate: info.deprecation_date,
+                    retirementDate: info.retirement_date,
+                })
+            );
+            if (!matchesAny) continue;
+        }
+
         if (organisationIds?.length) {
             const organisationId = info.organisation?.organisation_id ?? info.organisation_id ?? null;
             if (!organisationId || !organisationIds.includes(organisationId)) continue;

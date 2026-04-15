@@ -16,6 +16,18 @@ import (
 func TestDevtoolsCapturesResponsesRequests(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case "/data/models":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"models": []map[string]any{
+					{
+						"model_id": "openai/gpt-5-nano",
+						"status":   "Available",
+						"lifecycle": map[string]any{
+							"status": "active",
+						},
+					},
+				},
+			})
 		case "/responses":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"id":    "resp_1",

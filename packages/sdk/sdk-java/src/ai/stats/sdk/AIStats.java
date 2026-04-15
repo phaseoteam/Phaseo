@@ -29,6 +29,7 @@ public final class AIStats {
 	public static final class ModelLifecycleInfo {
 		public final String modelId;
 		public final String status;
+		public final String sourceStatus;
 		public final String deprecationDate;
 		public final String retirementDate;
 		public final String replacementModelId;
@@ -37,6 +38,7 @@ public final class AIStats {
 		public ModelLifecycleInfo(
 			String modelId,
 			String status,
+			String sourceStatus,
 			String deprecationDate,
 			String retirementDate,
 			String replacementModelId,
@@ -44,6 +46,7 @@ public final class AIStats {
 		) {
 			this.modelId = modelId;
 			this.status = status;
+			this.sourceStatus = sourceStatus;
 			this.deprecationDate = deprecationDate;
 			this.retirementDate = retirementDate;
 			this.replacementModelId = replacementModelId;
@@ -53,6 +56,24 @@ public final class AIStats {
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final String DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+	private static final Set<String> ACTIVE_MODEL_SOURCE_STATUSES = Set.of("active", "available");
+	private static final Set<String> INACTIVE_MODEL_SOURCE_STATUSES = Set.of(
+		"deprecated",
+		"retired",
+		"withheld",
+		"announced",
+		"rumoured",
+		"rumored",
+		"unavailable",
+		"disabled",
+		"internal",
+		"private",
+		"removed",
+		"sunset",
+		"eol",
+		"end_of_life",
+		"end-of-life"
+	);
 	private final Client rawClient;
 	private final boolean enableDeprecationWarnings;
 	private final boolean warningsAsErrors;
@@ -157,10 +178,10 @@ public final class AIStats {
 			out.put("info", null);
 			return out;
 		}
-		if ("retired".equals(info.status)) {
+		if (!isModelRequestableForInference(info)) {
 			out.put("ok", false);
 			out.put("info", info);
-			out.put("reason", info.message != null ? info.message : "Model \"" + modelId + "\" is retired.");
+			out.put("reason", buildInactiveModelRequestMessage(info));
 			return out;
 		}
 		out.put("ok", true);
@@ -335,7 +356,26 @@ public final class AIStats {
 		if (modelId == null) {
 			return;
 		}
+		ensureModelRequestable(modelId);
 		maybeWarnForModel(modelId);
+	}
+
+	private void ensureModelRequestable(String modelId) throws IOException, InterruptedException {
+		String normalized = asTrimmedString(modelId);
+		if (normalized == null) {
+			return;
+		}
+
+		ModelLifecycleInfo lifecycle = getModelDeprecationInfo(normalized);
+		if (lifecycle == null) {
+			return;
+		}
+
+		if (isModelRequestableForInference(lifecycle)) {
+			return;
+		}
+
+		throw new IllegalStateException(buildInactiveModelRequestMessage(lifecycle));
 	}
 
 	private void maybeWarnForModel(String modelId) throws IOException, InterruptedException {
@@ -413,6 +453,10 @@ public final class AIStats {
 			asTrimmedString(model.path("model_id").asText(null)),
 			fallbackModelId
 		);
+		String sourceStatus = firstNonEmpty(
+			asTrimmedString(model.path("status").asText(null)),
+			asTrimmedString(lifecycle.path("status").asText(null))
+		);
 		String deprecationDate = firstNonEmpty(
 			asTrimmedString(lifecycle.path("deprecation_date").asText(null)),
 			asTrimmedString(model.path("deprecation_date").asText(null))
@@ -434,7 +478,7 @@ public final class AIStats {
 			asTrimmedString(lifecycle.path("message").asText(null)),
 			buildLifecycleMessage(status, modelId, deprecationDate, retirementDate, replacement)
 		);
-		return new ModelLifecycleInfo(modelId, status, deprecationDate, retirementDate, replacement, message);
+		return new ModelLifecycleInfo(modelId, status, sourceStatus, deprecationDate, retirementDate, replacement, message);
 	}
 
 	private static String normalizeLifecycleStatus(String status, String deprecationDate, String retirementDate) {
@@ -492,6 +536,59 @@ public final class AIStats {
 			return "[ai-stats] Model \"" + modelId + "\" is deprecated." + replacement;
 		}
 		return "";
+	}
+
+	private static String normalizeSourceStatus(String value) {
+		String normalized = asTrimmedString(value);
+		return normalized == null ? null : normalized.toLowerCase();
+	}
+
+	private static boolean isModelRequestableForInference(ModelLifecycleInfo info) {
+		if (info == null || !"active".equals(info.status)) {
+			return false;
+		}
+
+		String sourceStatus = normalizeSourceStatus(info.sourceStatus);
+		if (sourceStatus == null) {
+			return true;
+		}
+		if (ACTIVE_MODEL_SOURCE_STATUSES.contains(sourceStatus)) {
+			return true;
+		}
+		if (INACTIVE_MODEL_SOURCE_STATUSES.contains(sourceStatus)) {
+			return false;
+		}
+		return false;
+	}
+
+	private static String buildInactiveModelRequestMessage(ModelLifecycleInfo info) {
+		if (info == null) {
+			return "[ai-stats] Model \"unknown-model\" is not active for inference.";
+		}
+
+		if (!"active".equals(info.status)) {
+			String fallback = buildLifecycleMessage(
+				info.status,
+				info.modelId,
+				info.deprecationDate,
+				info.retirementDate,
+				info.replacementModelId
+			);
+			if (info.message != null && !info.message.isBlank()) {
+				return info.message;
+			}
+			if (fallback != null && !fallback.isBlank()) {
+				return fallback;
+			}
+			return "[ai-stats] Model \"" + info.modelId + "\" is not active for inference.";
+		}
+
+		String sourceStatus = normalizeSourceStatus(info.sourceStatus);
+		if (sourceStatus == null) {
+			sourceStatus = "unknown";
+		}
+		String replacement = info.replacementModelId == null ? "" : " Use \"" + info.replacementModelId + "\" instead.";
+		return "[ai-stats] Model \"" + info.modelId + "\" is not active for inference (status: " + sourceStatus + ")." + replacement;
 	}
 
 	private static String extractModelIdFromPayload(Object payload) {

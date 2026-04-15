@@ -178,6 +178,7 @@ AIStatsLogger: TypeAlias = Callable[[AIStatsLogLevel, str, dict[str, Any]], None
 class ModelLifecycleInfo(TypedDict):
     model_id: str
     status: Literal["active", "deprecated", "retired"]
+    source_status: Optional[str]
     deprecation_date: Optional[str]
     retirement_date: Optional[str]
     replacement_model_id: Optional[str]
@@ -305,19 +306,27 @@ class AIStats:
         info = self.get_model_deprecation_info(model_id)
         if not info:
             return {"ok": True, "info": None}
-        if info["status"] == "retired":
-            return {
-                "ok": False,
-                "info": info,
-                "reason": info.get("message") or f'Model "{model_id}" is retired.',
-            }
+        if not _is_model_requestable_for_inference(info):
+            return {"ok": False, "info": info, "reason": _build_inactive_model_request_message(info)}
         return {"ok": True, "info": info}
 
     def _maybe_warn_for_payload(self, payload: dict[str, Any] | None) -> None:
         model_id = _extract_model_id_from_payload(payload)
         if not model_id:
             return
+        self._ensure_model_requestable(model_id)
         self._maybe_warn_for_model(model_id)
+
+    def _ensure_model_requestable(self, model_id: str) -> None:
+        normalized_model_id = _as_trimmed_string(model_id)
+        if not normalized_model_id:
+            return
+        lifecycle = self._resolve_model_lifecycle(normalized_model_id)
+        if not lifecycle:
+            return
+        if _is_model_requestable_for_inference(lifecycle):
+            return
+        raise ValueError(_build_inactive_model_request_message(lifecycle))
 
     def _maybe_warn_for_model(self, model_id: str) -> None:
         if not self._enable_deprecation_warnings:
@@ -808,6 +817,7 @@ def _to_model_lifecycle_info(model: dict[str, Any], fallback_model_id: str) -> M
     lifecycle_obj = model.get("lifecycle")
     lifecycle = lifecycle_obj if isinstance(lifecycle_obj, dict) else {}
     model_id = _as_trimmed_string(model.get("model_id")) or fallback_model_id
+    source_status = _as_trimmed_string(model.get("status")) or _as_trimmed_string(lifecycle.get("status"))
 
     deprecation_date = _as_trimmed_string(lifecycle.get("deprecation_date")) or _as_trimmed_string(
         model.get("deprecation_date")
@@ -828,6 +838,7 @@ def _to_model_lifecycle_info(model: dict[str, Any], fallback_model_id: str) -> M
     return {
         "model_id": model_id,
         "status": status,
+        "source_status": source_status,
         "deprecation_date": deprecation_date,
         "retirement_date": retirement_date,
         "replacement_model_id": replacement_model_id,
@@ -879,6 +890,70 @@ def _build_lifecycle_message(
             return f'[ai-stats] Model "{model_id}" has been deprecated since {deprecation_date}.{replacement}'
         return f'[ai-stats] Model "{model_id}" is deprecated.{replacement}'
     return None
+
+
+_ACTIVE_MODEL_SOURCE_STATUSES = {"active", "available"}
+_INACTIVE_MODEL_SOURCE_STATUSES = {
+    "deprecated",
+    "retired",
+    "withheld",
+    "announced",
+    "rumoured",
+    "rumored",
+    "unavailable",
+    "disabled",
+    "internal",
+    "private",
+    "removed",
+    "sunset",
+    "eol",
+    "end_of_life",
+    "end-of-life",
+}
+
+
+def _normalize_source_status(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    return normalized or None
+
+
+def _is_model_requestable_for_inference(info: ModelLifecycleInfo) -> bool:
+    if info.get("status") != "active":
+        return False
+    source_status = _normalize_source_status(info.get("source_status"))
+    if not source_status:
+        return True
+    if source_status in _ACTIVE_MODEL_SOURCE_STATUSES:
+        return True
+    if source_status in _INACTIVE_MODEL_SOURCE_STATUSES:
+        return False
+    return False
+
+
+def _build_inactive_model_request_message(info: ModelLifecycleInfo) -> str:
+    status = info.get("status")
+    if status != "active":
+        fallback = _build_lifecycle_message(
+            status or "retired",
+            info.get("model_id") or "unknown-model",
+            info.get("deprecation_date"),
+            info.get("retirement_date"),
+            info.get("replacement_model_id"),
+        )
+        return info.get("message") or fallback or f'Model "{info.get("model_id")}" is not active for inference.'
+
+    source_status = _normalize_source_status(info.get("source_status")) or "unknown"
+    replacement = (
+        f' Use "{info.get("replacement_model_id")}" instead.'
+        if info.get("replacement_model_id")
+        else ""
+    )
+    return (
+        f'[ai-stats] Model "{info.get("model_id")}" is not active for inference '
+        f"(status: {source_status}).{replacement}"
+    )
 
 
 def _parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:

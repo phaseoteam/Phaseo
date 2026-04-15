@@ -58,6 +58,7 @@ export type AIStatsLogger = (level: AIStatsLogLevel, message: string, meta?: Rec
 export type ModelLifecycleInfo = {
   modelId: string;
   status: "active" | "deprecated" | "retired";
+  sourceStatus: string | null;
   deprecationDate: string | null;
   retirementDate: string | null;
   replacementModelId: string | null;
@@ -305,8 +306,8 @@ export class AIStats {
   async validateModel(modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> {
     const info = await this.getModelDeprecationInfo(modelId);
     if (!info) return { ok: true, info: null };
-    if (info.status === "retired") {
-      return { ok: false, info, reason: info.message ?? `Model "${modelId}" is retired.` };
+    if (!isModelRequestableForInference(info)) {
+      return { ok: false, info, reason: buildInactiveModelRequestMessage(info) };
     }
     return { ok: true, info };
   }
@@ -319,7 +320,17 @@ export class AIStats {
   private async maybeWarnForPayload(payload: unknown): Promise<void> {
     const modelId = extractModelIdFromPayload(payload);
     if (!modelId) return;
+    await this.ensureModelRequestable(modelId);
     await this.maybeWarnForModel(modelId);
+  }
+
+  private async ensureModelRequestable(modelId: string): Promise<void> {
+    const normalizedModelId = modelId.trim();
+    if (!normalizedModelId) return;
+    const lifecycle = await this.resolveModelLifecycle(normalizedModelId);
+    if (!lifecycle) return;
+    if (isModelRequestableForInference(lifecycle)) return;
+    throw new Error(buildInactiveModelRequestMessage(lifecycle));
   }
 
   private async maybeWarnForModel(modelId: string): Promise<void> {
@@ -809,6 +820,10 @@ function toModelLifecycleInfo(
 ): ModelLifecycleInfo {
   const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
   const modelId = asTrimmedString(model.model_id) ?? fallbackModelId;
+  const sourceStatus =
+    asTrimmedString(model.status) ??
+    asTrimmedString(lifecycle.status) ??
+    null;
 
   const deprecationDate =
     asTrimmedString(lifecycle.deprecation_date) ??
@@ -832,6 +847,7 @@ function toModelLifecycleInfo(
   return {
     modelId,
     status,
+    sourceStatus,
     deprecationDate,
     retirementDate,
     replacementModelId,
@@ -882,6 +898,60 @@ function buildLifecycleMessage(
     return `[ai-stats] Model "${modelId}" is deprecated.${replacement}`;
   }
   return null;
+}
+
+const ACTIVE_MODEL_SOURCE_STATUSES = new Set(["active", "available"]);
+const INACTIVE_MODEL_SOURCE_STATUSES = new Set([
+  "deprecated",
+  "retired",
+  "withheld",
+  "announced",
+  "rumoured",
+  "rumored",
+  "unavailable",
+  "disabled",
+  "internal",
+  "private",
+  "removed",
+  "sunset",
+  "eol",
+  "end_of_life",
+  "end-of-life",
+]);
+
+function normalizeSourceStatus(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function isModelRequestableForInference(info: ModelLifecycleInfo): boolean {
+  if (info.status !== "active") return false;
+  const sourceStatus = normalizeSourceStatus(info.sourceStatus);
+  if (!sourceStatus) return true;
+  if (ACTIVE_MODEL_SOURCE_STATUSES.has(sourceStatus)) return true;
+  if (INACTIVE_MODEL_SOURCE_STATUSES.has(sourceStatus)) return false;
+  return false;
+}
+
+function buildInactiveModelRequestMessage(info: ModelLifecycleInfo): string {
+  if (info.status !== "active") {
+    return (
+      info.message ??
+      buildLifecycleMessage(
+        info.status,
+        info.modelId,
+        info.deprecationDate,
+        info.retirementDate,
+        info.replacementModelId
+      ) ??
+      `[ai-stats] Model "${info.modelId}" is not active for inference.`
+    );
+  }
+
+  const sourceStatus = normalizeSourceStatus(info.sourceStatus) ?? "unknown";
+  const replacement = info.replacementModelId ? ` Use "${info.replacementModelId}" instead.` : "";
+  return `[ai-stats] Model "${info.modelId}" is not active for inference (status: ${sourceStatus}).${replacement}`;
 }
 
 function asTrimmedString(value: unknown): string | null {
