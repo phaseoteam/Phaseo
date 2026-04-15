@@ -76,7 +76,7 @@ export default function Page() {
 								<span className="mt-2 block">One Open Model Database</span>
 							</h1>
 							<p className="mx-auto max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-								Access 300+ AI models through a unified API, with open benchmarks, pricing data, and reliability insights.
+								Open-source AI gateway and open model database, with OpenAI-compatible drop-in access to 300+ models plus benchmarks, pricing, and reliability data.
 							</p>
 						</div>
 						<div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
