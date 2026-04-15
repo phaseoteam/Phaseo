@@ -39,17 +39,17 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Model Apps and Distribution",
 			description:
-				"See where this model is available across apps and subscription plans on AI Stats, including plan-level pricing context and provider coverage.",
+				"See which public apps are actively sending gateway requests to this model on AI Stats.",
 			path,
-			keywords: ["AI model apps", "subscription plans", "AI distribution", "AI Stats"],
+			keywords: ["AI model apps", "gateway app usage", "AI distribution", "AI Stats"],
 			imagePath,
 		});
 	}
 
 	const organisationName = model.organisation?.name ?? "AI provider";
 	const description = [
-		`${model.name} app and plan availability by ${organisationName} on AI Stats.`,
-		"Review where this model ships across products and subscription tiers.",
+		`${model.name} app usage by ${organisationName} on AI Stats.`,
+		"Review which public apps are actively using this model through gateway requests.",
 	]
 		.filter(Boolean)
 		.join(" ");
@@ -61,9 +61,9 @@ export async function generateMetadata(props: {
 		keywords: [
 			model.name,
 			`${model.name} apps`,
-			`${model.name} subscription plans`,
+			`${model.name} app usage`,
 			`${organisationName} AI`,
-			"AI app availability",
+			"gateway request usage",
 			"AI Stats",
 		],
 		imagePath,
