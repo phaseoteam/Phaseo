@@ -1,11 +1,20 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
+import { CircleAlert } from "lucide-react";
 import getModelPricing from "@/lib/fetchers/models/getModelPricing";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import { getModelProviderRuntimeStatsCached } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { getModelProviderRoutingHealthCached } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 
 export default async function ModelPricing({
 	modelId,
@@ -62,24 +71,33 @@ export default async function ModelPricing({
 				{showHeader ? (
 					<h2 className="mb-2 text-xl font-semibold">Availability + Pricing</h2>
 				) : null}
-				<p className="text-sm text-muted-foreground">
-					No API pricing or subscription plan information is available
-					for this model yet.
-				</p>
-				<p className="text-sm text-muted-foreground mt-2">
-					If you know providers we can integrate, please tell us on
-					Discord or open an issue on GitHub so we can add pricing
-					data.
-					{/* Link to repository issues */}
-					<a
-						className="text-primary underline ml-1"
-						href="https://github.com/AI-Stats/AI-Stats/issues"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						Open an issue
-					</a>
-				</p>
+				<Empty className="rounded-md border p-6">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<CircleAlert className="size-4" />
+						</EmptyMedia>
+						<EmptyTitle>No pricing data available yet</EmptyTitle>
+						<EmptyDescription>
+							No API pricing or subscription plan information is available
+							for this model yet.
+						</EmptyDescription>
+					</EmptyHeader>
+					<EmptyContent>
+						<EmptyDescription>
+							If you know providers we can integrate, please tell us on
+							Discord or open an issue on GitHub so we can add pricing
+							data.
+							<a
+								className="ml-1 text-primary underline"
+								href="https://github.com/AI-Stats/AI-Stats/issues"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								Open an issue
+							</a>
+						</EmptyDescription>
+					</EmptyContent>
+				</Empty>
 			</Card>
 		);
 	}
