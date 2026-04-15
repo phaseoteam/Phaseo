@@ -388,10 +388,53 @@ export async function finalizeVideoStatusIfTerminal(args: {
 	seconds?: number | null;
 	resolution?: string | null;
 	quality?: string | null;
+	requestOptions?: Record<string, unknown>;
 	metaPatch?: Record<string, unknown>;
 	rawPayload?: unknown;
 }): Promise<void> {
 	if (args.status !== "completed" && args.status !== "failed") return;
+	const inputImageCountCandidate = [
+		toFiniteNumber((args.requestOptions as any)?.input_image_count),
+		toFiniteNumber((args.requestOptions as any)?.video_params?.input_image_count),
+		toFiniteNumber(args.videoMeta?.inputImageCount),
+	].find((value): value is number => value != null && value >= 0);
+	const normalizedInputImageCount =
+		inputImageCountCandidate != null ? Math.trunc(inputImageCountCandidate) : undefined;
+	const inputVideoSecondsCandidate = [
+		toFiniteNumber((args.requestOptions as any)?.input_video_seconds),
+		toFiniteNumber((args.requestOptions as any)?.video_params?.input_video_seconds),
+		toFiniteNumber(args.videoMeta?.inputVideoSeconds),
+	].find((value): value is number => value != null && value >= 0);
+	const inputVideoCountCandidate = [
+		toFiniteNumber((args.requestOptions as any)?.input_video_count),
+		toFiniteNumber((args.requestOptions as any)?.video_params?.input_video_count),
+		toFiniteNumber(args.videoMeta?.inputVideoCount),
+	].find((value): value is number => value != null && value >= 0);
+	const frameRateCandidate = [
+		toFiniteNumber((args.requestOptions as any)?.frame_rate),
+		toFiniteNumber((args.requestOptions as any)?.video_params?.frame_rate),
+		toFiniteNumber(args.videoMeta?.frameRate),
+	].find((value): value is number => value != null && value > 0);
+	const totalTokensCandidate = [
+		toFiniteNumber((args.requestOptions as any)?.total_tokens),
+		toFiniteNumber((args.requestOptions as any)?.video_params?.total_tokens),
+		toFiniteNumber((args.rawPayload as any)?.usage?.total_tokens),
+		toFiniteNumber((args.rawPayload as any)?.usage?.totalTokens),
+		toFiniteNumber((args.rawPayload as any)?.data?.usage?.total_tokens),
+		toFiniteNumber((args.rawPayload as any)?.data?.usage?.totalTokens),
+	].find((value): value is number => value != null && value > 0);
+	const requestOptions = {
+		...(args.requestOptions ?? {}),
+		...buildVideoPricingRequestOptions({
+			resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
+			quality: args.quality ?? args.videoMeta?.quality ?? null,
+			input_image_count: normalizedInputImageCount,
+			input_video_seconds: inputVideoSecondsCandidate,
+			input_video_count: inputVideoCountCandidate,
+			frame_rate: frameRateCandidate,
+			total_tokens: totalTokensCandidate,
+		}),
+	};
 	await finalizeVideoJob({
 		teamId: args.auth.teamId,
 		videoId: args.videoId,
@@ -399,10 +442,7 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		status: args.status,
 		model: args.model ?? args.videoMeta?.model ?? null,
 		seconds: args.seconds ?? args.videoMeta?.seconds ?? null,
-		requestOptions: buildVideoPricingRequestOptions({
-			resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
-			quality: args.quality ?? args.videoMeta?.quality ?? null,
-		}),
+		requestOptions,
 		isByok: args.videoMeta?.keySource === "byok",
 		metaPatch: {
 			...(args.metaPatch ?? {}),

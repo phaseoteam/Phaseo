@@ -1,0 +1,27 @@
+{
+  "model_id": "qwen/wan2.7-t2v",
+  "organisation_id": "qwen",
+  "name": "Wan 2.7 T2V",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-03T00:00:00",
+  "release_date": "2026-04-03T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "video",
+  "api_model_id": "qwen/wan2.7-t2v",
+  "links": [
+    {
+      "platform": "documentation",
+      "url": "https://www.alibabacloud.com/help/en/model-studio/models"
+    },
+    {
+      "platform": "pricing",
+      "url": "https://help.aliyun.com/zh/model-studio/model-pricing"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

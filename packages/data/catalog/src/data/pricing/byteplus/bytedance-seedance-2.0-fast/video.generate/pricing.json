@@ -1,0 +1,51 @@
+{
+  "key": "byteplus:bytedance/seedance-2.0-fast:video.generate",
+  "api_provider_id": "byteplus",
+  "provider_slug": "byteplus",
+  "api_model_id": "bytedance/seedance-2.0-fast",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.6,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "No video included in input",
+      "match": [
+        {
+          "path": "input_video_seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-01-28T00:00:00"
+    },
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.3,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "Video included in input",
+      "match": [
+        {
+          "path": "input_video_seconds",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-01-28T00:00:00"
+    }
+  ]
+}

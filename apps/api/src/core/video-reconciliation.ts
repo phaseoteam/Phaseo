@@ -51,6 +51,17 @@ function toPositiveNumber(value: unknown): number | undefined {
 	return undefined;
 }
 
+function toNonNegativeNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+		return value;
+	}
+	if (typeof value === "string" && value.trim().length > 0) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+	}
+	return undefined;
+}
+
 function mapOpenAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "completed" || status === "succeeded") return "completed";
@@ -756,6 +767,29 @@ async function fetchBytedanceVideoStatus(job: VideoJobRecord): Promise<VideoProv
 	if (!res.ok) return null;
 	const json = await res.json().catch(() => null);
 	if (!json || typeof json !== "object") return null;
+	const inputVideoSeconds =
+		toNonNegativeNumber((json as any).input_video_seconds) ??
+		toNonNegativeNumber((json as any).parameters?.input_video_seconds) ??
+		toNonNegativeNumber((json as any).data?.input_video_seconds) ??
+		toNonNegativeNumber((json as any).data?.parameters?.input_video_seconds) ??
+		toNonNegativeNumber(job.meta?.inputVideoSeconds);
+	const inputVideoCount =
+		toNonNegativeNumber((json as any).input_video_count) ??
+		toNonNegativeNumber((json as any).parameters?.input_video_count) ??
+		toNonNegativeNumber((json as any).data?.input_video_count) ??
+		toNonNegativeNumber((json as any).data?.parameters?.input_video_count) ??
+		toNonNegativeNumber(job.meta?.inputVideoCount);
+	const frameRate =
+		toPositiveNumber((json as any).frame_rate) ??
+		toPositiveNumber((json as any).parameters?.frame_rate) ??
+		toPositiveNumber((json as any).data?.frame_rate) ??
+		toPositiveNumber((json as any).data?.parameters?.frame_rate) ??
+		toPositiveNumber(job.meta?.frameRate);
+	const totalTokens =
+		toPositiveNumber((json as any).usage?.total_tokens) ??
+		toPositiveNumber((json as any).usage?.totalTokens) ??
+		toPositiveNumber((json as any).data?.usage?.total_tokens) ??
+		toPositiveNumber((json as any).data?.usage?.totalTokens);
 	return {
 		status: mapBytedanceVideoStatus((json as any).status ?? (json as any).task_status ?? (json as any).data?.status),
 		providerId,
@@ -784,6 +818,10 @@ async function fetchBytedanceVideoStatus(job: VideoJobRecord): Promise<VideoProv
 				(json as any).data?.quality ??
 				(json as any).data?.parameters?.quality ??
 				job.meta?.quality,
+			input_video_seconds: inputVideoSeconds,
+			input_video_count: inputVideoCount,
+			frame_rate: frameRate,
+			total_tokens: totalTokens,
 		}),
 		raw: json,
 	};

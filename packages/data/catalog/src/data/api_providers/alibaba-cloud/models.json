@@ -1521,6 +1521,27 @@
     "capabilities": []
   },
   {
+    "api_model_id": "qwen/wan2.7-t2v",
+    "provider_api_model_id": "alibaba-cloud:qwen/wan2.7-t2v",
+    "provider_model_slug": "wan2.7-t2v",
+    "internal_model_id": "qwen/wan2.7-t2v",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-03T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwen3.6-plus",
     "provider_api_model_id": "alibaba-cloud:qwen/qwen3.6-plus",
     "provider_model_slug": "qwen3.6-plus-2026-04-02",
