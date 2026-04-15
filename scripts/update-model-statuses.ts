@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-type ModelStatus = "Rumoured" | "Announced" | "Available" | "Deprecated" | "Retired" | null;
+type ModelStatus = "Rumoured" | "Announced" | "Withheld" | "Available" | "Deprecated" | "Retired" | null;
 
 type ModelDates = {
     announced_date?: unknown;
@@ -19,6 +19,7 @@ type DerivedStatus = {
 const STATUS_ORDER: Record<Exclude<ModelStatus, null>, number> = {
     Rumoured: 0,
     Announced: 1,
+    Withheld: 1.5,
     Available: 2,
     Deprecated: 3,
     Retired: 4,
@@ -50,6 +51,7 @@ function normalizeStatus(value: unknown): ModelStatus {
     const trimmed = value.trim();
     return (trimmed === "Rumoured" ||
         trimmed === "Announced" ||
+        trimmed === "Withheld" ||
         trimmed === "Available" ||
         trimmed === "Deprecated" ||
         trimmed === "Retired")
@@ -83,6 +85,9 @@ function deriveStatusFromDates(dates: ModelDates, now: Date): DerivedStatus | nu
 
 function pickStatus(current: ModelStatus, derived: DerivedStatus | null): ModelStatus {
     if (!derived) return current;
+    if (current === "Withheld" && (derived.status === "Announced" || derived.status === "Available")) {
+        return current;
+    }
     const currentRank = current ? STATUS_ORDER[current] ?? -1 : -1;
     const derivedRank = STATUS_ORDER[derived.status];
     return derivedRank > currentRank ? derived.status : current;
