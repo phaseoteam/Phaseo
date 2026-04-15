@@ -4,7 +4,7 @@ TypeScript and JavaScript SDK for AI Stats Gateway.
 
 ## Drop-in compatibility
 
-The SDK includes compatibility layers for OpenAI and Anthropic style clients:
+The SDK includes compatibility layers for OpenAI and Anthropic-style clients:
 
 ```ts
 import { OpenAI } from "@ai-stats/sdk/compat/openai";

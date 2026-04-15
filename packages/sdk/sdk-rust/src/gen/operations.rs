@@ -75,11 +75,6 @@ pub fn createModeration<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
-pub fn createOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/oauth-clients");
-	client.request("POST", &resolved_path, body)
-}
-
 pub fn createOcr<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/ocr");
 	client.request("POST", &resolved_path, body)
@@ -122,11 +117,6 @@ pub fn createVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String,
 
 pub fn deleteManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/management/keys/{}", path.get("id").cloned().unwrap_or_default());
-	client.request("DELETE", &resolved_path, body)
-}
-
-pub fn deleteOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
 	client.request("DELETE", &resolved_path, body)
 }
 
@@ -182,11 +172,6 @@ pub fn getMusicGeneration<T: Transport>(client: &Client<T>, path: &HashMap<Strin
 
 pub fn getMusicGenerationAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/music/generations/{}", path.get("music_id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn getOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 
@@ -250,11 +235,6 @@ pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, Strin
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn listOAuthClients<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/oauth-clients");
-	client.request("GET", &resolved_path, body)
-}
-
 pub fn listOrganisations<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/organisations");
 	client.request("GET", &resolved_path, body)
@@ -300,11 +280,6 @@ pub fn openResponsesWebSocket<T: Transport>(client: &Client<T>, path: &HashMap<S
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn regenerateOAuthClientSecret<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/oauth-clients/{}/regenerate-secret", path.get("client_id").cloned().unwrap_or_default());
-	client.request("POST", &resolved_path, body)
-}
-
 pub fn retrieveBatch<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/batches/{}", path.get("batch_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
@@ -327,11 +302,6 @@ pub fn retrieveFileContent<T: Transport>(client: &Client<T>, path: &HashMap<Stri
 
 pub fn updateManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/management/keys/{}", path.get("id").cloned().unwrap_or_default());
-	client.request("PATCH", &resolved_path, body)
-}
-
-pub fn updateOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
 	client.request("PATCH", &resolved_path, body)
 }
 

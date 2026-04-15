@@ -1275,43 +1275,6 @@ export async function createModeration(
   });
 }
 
-export type CreateOAuthClientParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    description?: string;
-    homepage_url?: string;
-    logo_url?: string;
-    name: string;
-    privacy_policy_url?: string;
-    redirect_uris: string[];
-    terms_of_service_url?: string;
-  };
-};
-
-/**
- * Creates a team-scoped OAuth client.
- */
-export async function createOAuthClient(
-  client: Client,
-  args: CreateOAuthClientParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/oauth-clients";
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type CreateOcrParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -2220,37 +2183,6 @@ export async function deleteManagementKey(
   });
 }
 
-export type DeleteOAuthClientParams = {
-  path?: {
-    client_id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Deletes an OAuth client and related metadata.
- */
-export async function deleteOAuthClient(
-  client: Client,
-  args: DeleteOAuthClientParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "DELETE",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type DeleteVideoParams = {
   path?: {
     video_id: string;
@@ -2805,37 +2737,6 @@ export async function getMusicGenerationAlias(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/music/generations/${encodeURIComponent(String(path?.music_id))}`;
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type GetOAuthClientParams = {
-  path?: {
-    client_id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns details for an OAuth client.
- */
-export async function getOAuthClient(
-  client: Client,
-  args: GetOAuthClientParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
   return client.request<{
     [key: string]: unknown;
   }>({
@@ -5625,45 +5526,6 @@ export async function listModels(
   });
 }
 
-export type ListOAuthClientsParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Lists OAuth clients for the authenticated team.
- */
-export async function listOAuthClients(
-  client: Client,
-  args: ListOAuthClientsParams = {},
-): Promise<{
-  data?: {
-    [key: string]: unknown;
-  }[];
-  pagination?: {
-    [key: string]: unknown;
-  };
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/oauth-clients";
-  return client.request<{
-    data?: {
-      [key: string]: unknown;
-    }[];
-    pagination?: {
-      [key: string]: unknown;
-    };
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type ListOrganisationsParams = {
   path?: Record<string, never>;
   query?: {
@@ -6227,37 +6089,6 @@ export async function openResponsesWebSocket(
   });
 }
 
-export type RegenerateOAuthClientSecretParams = {
-  path?: {
-    client_id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Regenerates and returns a new OAuth client secret.
- */
-export async function regenerateOAuthClientSecret(
-  client: Client,
-  args: RegenerateOAuthClientSecretParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}/regenerate-secret`;
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type RetrieveBatchParams = {
   path?: {
     batch_id: string;
@@ -6394,39 +6225,6 @@ export async function updateManagementKey(
   return client.request<{
     message: string;
     ok: true;
-  }>({
-    method: "PATCH",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type UpdateOAuthClientParams = {
-  path?: {
-    client_id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    [key: string]: unknown;
-  };
-};
-
-/**
- * Updates OAuth client metadata and redirect URIs.
- */
-export async function updateOAuthClient(
-  client: Client,
-  args: UpdateOAuthClientParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
-  return client.request<{
-    [key: string]: unknown;
   }>({
     method: "PATCH",
     path: resolvedPath,

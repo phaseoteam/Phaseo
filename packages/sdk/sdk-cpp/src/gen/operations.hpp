@@ -74,11 +74,6 @@ inline Response CreateModeration(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
-inline Response CreateOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients";
-	return client.request("POST", resolved_path, body);
-}
-
 inline Response CreateOcr(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/ocr";
 	return client.request("POST", resolved_path, body);
@@ -121,11 +116,6 @@ inline Response CreateVideoAlias(Client& client, const std::map<std::string, std
 
 inline Response DeleteManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
-	return client.request("DELETE", resolved_path, body);
-}
-
-inline Response DeleteOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -181,11 +171,6 @@ inline Response GetMusicGeneration(Client& client, const std::map<std::string, s
 
 inline Response GetMusicGenerationAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/music/generations/" + (path.count("music_id") ? path.at("music_id") : std::string{});
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response GetOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -249,11 +234,6 @@ inline Response ListModels(Client& client, const std::map<std::string, std::stri
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response ListOAuthClients(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients";
-	return client.request("GET", resolved_path, body);
-}
-
 inline Response ListOrganisations(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/organisations";
 	return client.request("GET", resolved_path, body);
@@ -299,11 +279,6 @@ inline Response OpenResponsesWebSocket(Client& client, const std::map<std::strin
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response RegenerateOAuthClientSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{}) + "/regenerate-secret";
-	return client.request("POST", resolved_path, body);
-}
-
 inline Response RetrieveBatch(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batches/" + (path.count("batch_id") ? path.at("batch_id") : std::string{});
 	return client.request("GET", resolved_path, body);
@@ -326,11 +301,6 @@ inline Response RetrieveFileContent(Client& client, const std::map<std::string, 
 
 inline Response UpdateManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
-	return client.request("PATCH", resolved_path, body);
-}
-
-inline Response UpdateOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 
