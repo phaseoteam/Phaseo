@@ -96,4 +96,51 @@ describe("fetchCatalogue", () => {
         expect(models).toHaveLength(1);
         expect(models[0]?.model_id).toBe("test/model-1");
     });
+
+    it("filters models by requested statuses", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-active",
+                            name: "Active Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: null,
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                        {
+                            model_id: "test/model-retired",
+                            name: "Retired Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "retired",
+                            organisation_id: null,
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [{ data: [], error: null }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({ statuses: ["active"] });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.model_id).toBe("test/model-active");
+    });
 });

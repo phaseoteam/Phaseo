@@ -2,7 +2,7 @@ require "minitest/autorun"
 require_relative "../lib/index"
 
 class LifecycleTest < Minitest::Test
-  def test_warns_once_per_model
+  def test_inactive_model_is_blocked_before_dispatch
     warnings = []
     logger = lambda do |level, message, _meta|
       warnings << message if level == "warn"
@@ -22,17 +22,21 @@ class LifecycleTest < Minitest::Test
       end
     )
 
-    client.send(:maybe_warn_for_model, "provider/old-model")
-    client.send(:maybe_warn_for_model, "provider/old-model")
+    validation = client.validate_model("provider/old-model")
+    assert_equal false, validation[:ok]
+    assert_includes validation[:reason], "provider/new-model"
 
-    assert_equal 1, warnings.length
-    assert_includes warnings[0], "provider/new-model"
+    error = assert_raises(RuntimeError) do
+      client.send(:maybe_warn_for_payload, { model: "provider/old-model" })
+    end
+    assert_includes error.message, "provider/new-model"
+    assert_equal 0, warnings.length
   end
 
-  def test_warnings_as_errors_for_retired_model
+  def test_retired_model_is_blocked_without_warnings_as_errors
     client = AIStatsSdk::AIStats.new(
       api_key: "test",
-      warnings_as_errors: true,
+      warnings_as_errors: false,
       lifecycle_resolver: lambda do |model_id|
         {
           model_id: model_id,
@@ -44,7 +48,7 @@ class LifecycleTest < Minitest::Test
     )
 
     error = assert_raises(RuntimeError) do
-      client.send(:maybe_warn_for_model, "provider/retired-model")
+      client.send(:maybe_warn_for_payload, { model: "provider/retired-model" })
     end
     assert_includes error.message, "retired"
   end

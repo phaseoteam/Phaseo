@@ -30,6 +30,7 @@ type Option func(*AIStats)
 type ModelLifecycleInfo struct {
 	ModelID            string
 	Status             string
+	SourceStatus       *string
 	DeprecationDate    *string
 	RetirementDate     *string
 	ReplacementModelID *string
@@ -40,6 +41,29 @@ type ModelValidationResult struct {
 	OK     bool
 	Info   *ModelLifecycleInfo
 	Reason string
+}
+
+var activeModelSourceStatuses = map[string]struct{}{
+	"active":    {},
+	"available": {},
+}
+
+var inactiveModelSourceStatuses = map[string]struct{}{
+	"deprecated":  {},
+	"retired":     {},
+	"withheld":    {},
+	"announced":   {},
+	"rumoured":    {},
+	"rumored":     {},
+	"unavailable": {},
+	"disabled":    {},
+	"internal":    {},
+	"private":     {},
+	"removed":     {},
+	"sunset":      {},
+	"eol":         {},
+	"end_of_life": {},
+	"end-of-life": {},
 }
 
 // AIStats is a thin facade over the generated Go client in src/gen.
@@ -210,12 +234,12 @@ func (c *AIStats) ValidateModel(ctx context.Context, modelID string) (ModelValid
 	if info == nil {
 		return ModelValidationResult{OK: true, Info: nil}, nil
 	}
-	if info.Status == "retired" {
-		reason := fmt.Sprintf(`Model "%s" is retired.`, modelID)
-		if info.Message != nil {
-			reason = *info.Message
-		}
-		return ModelValidationResult{OK: false, Info: info, Reason: reason}, nil
+	if !isModelRequestableForInference(info) {
+		return ModelValidationResult{
+			OK:     false,
+			Info:   info,
+			Reason: buildInactiveModelRequestMessage(info),
+		}, nil
 	}
 	return ModelValidationResult{OK: true, Info: info}, nil
 }
@@ -225,7 +249,28 @@ func (c *AIStats) maybeWarnForPayload(ctx context.Context, payload any) error {
 	if modelID == "" {
 		return nil
 	}
+	if err := c.ensureModelRequestable(ctx, modelID); err != nil {
+		return err
+	}
 	return c.maybeWarnForModel(ctx, modelID)
+}
+
+func (c *AIStats) ensureModelRequestable(ctx context.Context, modelID string) error {
+	normalizedModelID := strings.TrimSpace(modelID)
+	if normalizedModelID == "" {
+		return nil
+	}
+
+	lifecycle, err := c.GetModelDeprecationInfo(ctx, normalizedModelID)
+	if err != nil || lifecycle == nil {
+		return err
+	}
+
+	if isModelRequestableForInference(lifecycle) {
+		return nil
+	}
+
+	return errors.New(buildInactiveModelRequestMessage(lifecycle))
 }
 
 func (c *AIStats) maybeWarnForModel(ctx context.Context, modelID string) error {
@@ -296,7 +341,7 @@ func (c *AIStats) fetchModelLifecycle(
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 
 	models, ok := payload["models"]
@@ -609,6 +654,7 @@ func firstNonEmpty(values ...string) string {
 func toModelLifecycleInfo(model map[string]any, fallbackModelID string) *ModelLifecycleInfo {
 	lifecycle := asMap(model["lifecycle"])
 	modelID := firstNonEmpty(asString(model["model_id"]), fallbackModelID)
+	sourceStatus := firstNonEmpty(asString(model["status"]), asString(lifecycle["status"]))
 	deprecationDate := firstNonEmpty(asString(lifecycle["deprecation_date"]), asString(model["deprecation_date"]))
 	retirementDate := firstNonEmpty(asString(lifecycle["retirement_date"]), asString(model["retirement_date"]))
 	status := normalizeLifecycleStatus(
@@ -625,6 +671,7 @@ func toModelLifecycleInfo(model map[string]any, fallbackModelID string) *ModelLi
 	return &ModelLifecycleInfo{
 		ModelID:            modelID,
 		Status:             status,
+		SourceStatus:       stringPtr(sourceStatus),
 		DeprecationDate:    stringPtr(deprecationDate),
 		RetirementDate:     stringPtr(retirementDate),
 		ReplacementModelID: stringPtr(replacementModelID),
@@ -675,4 +722,66 @@ func buildLifecycleMessage(
 	default:
 		return ""
 	}
+}
+
+func normalizeSourceStatus(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(*value))
+}
+
+func isModelRequestableForInference(info *ModelLifecycleInfo) bool {
+	if info == nil || info.Status != "active" {
+		return false
+	}
+	sourceStatus := normalizeSourceStatus(info.SourceStatus)
+	if sourceStatus == "" {
+		return true
+	}
+	if _, ok := activeModelSourceStatuses[sourceStatus]; ok {
+		return true
+	}
+	if _, ok := inactiveModelSourceStatuses[sourceStatus]; ok {
+		return false
+	}
+	return false
+}
+
+func buildInactiveModelRequestMessage(info *ModelLifecycleInfo) string {
+	if info == nil {
+		return `[ai-stats] Model "unknown-model" is not active for inference.`
+	}
+
+	if info.Status != "active" {
+		if info.Message != nil && strings.TrimSpace(*info.Message) != "" {
+			return *info.Message
+		}
+		fallback := buildLifecycleMessage(
+			info.Status,
+			info.ModelID,
+			info.DeprecationDate,
+			info.RetirementDate,
+			info.ReplacementModelID,
+		)
+		if strings.TrimSpace(fallback) != "" {
+			return fallback
+		}
+		return fmt.Sprintf(`[ai-stats] Model "%s" is not active for inference.`, info.ModelID)
+	}
+
+	sourceStatus := normalizeSourceStatus(info.SourceStatus)
+	if sourceStatus == "" {
+		sourceStatus = "unknown"
+	}
+	replacement := ""
+	if info.ReplacementModelID != nil {
+		replacement = fmt.Sprintf(` Use "%s" instead.`, *info.ReplacementModelID)
+	}
+	return fmt.Sprintf(
+		`[ai-stats] Model "%s" is not active for inference (status: %s).%s`,
+		info.ModelID,
+		sourceStatus,
+		replacement,
+	)
 }

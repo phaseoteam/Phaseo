@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AIStatsLifecycleTest {
 	@Test
-	void deprecatedModelWarnsOncePerModel() throws Exception {
+	void deprecatedModelBlocksRequest() throws Exception {
 		AtomicInteger dataModelsCalls = new AtomicInteger(0);
 		AtomicInteger responseCalls = new AtomicInteger(0);
 		List<String> warnings = new ArrayList<>();
@@ -48,20 +48,19 @@ public class AIStatsLifecycleTest {
 			Map<String, Object> request = new HashMap<>();
 			request.put("model", "provider/old-model");
 			request.put("input", "hello");
-			client.createResponse(request);
-			client.createResponse(request);
+			IllegalStateException ex = assertThrows(IllegalStateException.class, () -> client.createResponse(request));
 
-			assertEquals(1, warnings.size());
-			assertTrue(warnings.get(0).contains("provider/new-model"));
+			assertTrue(ex.getMessage().contains("provider/new-model"));
+			assertEquals(0, warnings.size());
 			assertEquals(1, dataModelsCalls.get());
-			assertEquals(2, responseCalls.get());
+			assertEquals(0, responseCalls.get());
 		} finally {
 			server.stop(0);
 		}
 	}
 
 	@Test
-	void warningsAsErrorsBlocksRequestWhenRetired() throws Exception {
+	void retiredModelBlocksRequestWithoutWarningsAsErrors() throws Exception {
 		AtomicInteger responseCalls = new AtomicInteger(0);
 
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -74,7 +73,7 @@ public class AIStatsLifecycleTest {
 		server.start();
 		try {
 			String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
-			AIStats client = new AIStats("test", baseUrl, true, true, null);
+			AIStats client = new AIStats("test", baseUrl, true, false, null);
 			Map<String, Object> request = new HashMap<>();
 			request.put("model", "provider/retired-model");
 			request.put("input", "hello");

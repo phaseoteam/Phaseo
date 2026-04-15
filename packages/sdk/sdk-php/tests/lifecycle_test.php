@@ -42,16 +42,24 @@ $deprecatedClient = new AIStats(
     }
 );
 
-invoke_private($deprecatedClient, "maybeWarnForModel", ["provider/old-model"]);
-invoke_private($deprecatedClient, "maybeWarnForModel", ["provider/old-model"]);
-assert_true(count($warnings) === 1, "expected warn-once behavior for deprecated model");
-assert_true(str_contains($warnings[0][0], "provider/new-model"), "expected replacement model in warning message");
+$validation = $deprecatedClient->validateModel("provider/old-model");
+assert_true($validation["ok"] === false, "expected validateModel to reject deprecated model");
+assert_true(str_contains((string) $validation["reason"], "provider/new-model"), "expected replacement model in validation reason");
+
+$threw = false;
+try {
+    invoke_private($deprecatedClient, "maybeWarnForPayload", [["model" => "provider/old-model"]]);
+} catch (RuntimeException $e) {
+    $threw = str_contains($e->getMessage(), "provider/new-model");
+}
+assert_true($threw, "expected inactive model preflight to throw before dispatch");
+assert_true(count($warnings) === 0, "expected no warning callback when request is blocked");
 
 $retiredClient = new AIStats(
     apiKey: "test",
     basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: true,
-    warningsAsErrors: true,
+    warningsAsErrors: false,
     lifecycleResolver: function (string $modelId): array {
         return [
             "model_id" => $modelId,
@@ -64,10 +72,10 @@ $retiredClient = new AIStats(
 
 $threw = false;
 try {
-    invoke_private($retiredClient, "maybeWarnForModel", ["provider/retired-model"]);
+    invoke_private($retiredClient, "maybeWarnForPayload", [["model" => "provider/retired-model"]]);
 } catch (RuntimeException $e) {
     $threw = str_contains($e->getMessage(), "retired");
 }
-assert_true($threw, "expected warningsAsErrors to throw for retired model");
+assert_true($threw, "expected retired model preflight to throw regardless of warning mode");
 
 echo "php lifecycle tests ok" . PHP_EOL;

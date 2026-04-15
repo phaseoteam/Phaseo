@@ -49,43 +49,34 @@ def test_chat_completions_propagates_errors(monkeypatch):
         )
 
 
-def test_deprecation_warning_emits_once_per_model(monkeypatch):
-    warning_events = []
-    response_calls = []
+def test_non_active_status_blocks_request_dispatch(monkeypatch):
+    called = False
 
     def fake_create_response(_client, body):
-        response_calls.append(body["model"])
+        nonlocal called
+        called = True
         return {"id": "resp_123", "output_text": "ok"}
 
     def fake_request(method, path, *, query=None, headers=None, body=None):
         assert method == "GET"
         assert path == "/data/models"
-        assert query == {"model_id": "openai/legacy-model", "limit": 1}
+        assert query == {"model_id": "openai/rumoured-model", "limit": 1}
         return {
             "models": [
                 {
-                    "model_id": "openai/legacy-model",
-                    "status": "deprecated",
-                    "retirement_date": "2099-01-01T00:00:00Z",
+                    "model_id": "openai/rumoured-model",
+                    "status": "rumoured",
                 }
             ]
         }
 
     monkeypatch.setattr(ops, "createResponse", fake_create_response)
-    client = AIStats(
-        api_key="sk_test_123",
-        base_url="https://example.test",
-        logger=lambda level, message, meta: warning_events.append((level, message, meta)),
-    )
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
-    client.generate_response({"model": "openai/legacy-model", "input": "first"})
-    client.generate_response({"model": "openai/legacy-model", "input": "second"})
-
-    assert len(response_calls) == 2
-    assert len(warning_events) == 1
-    assert warning_events[0][0] == "warn"
-    assert "deprecated" in warning_events[0][1]
+    with pytest.raises(ValueError, match="not active for inference"):
+        client.generate_response({"model": "openai/rumoured-model", "input": "first"})
+    assert called is False
 
 
 def test_warnings_as_errors_blocks_request_for_retired_models(monkeypatch):
@@ -122,14 +113,23 @@ def test_warnings_as_errors_blocks_request_for_retired_models(monkeypatch):
 
 def test_can_disable_deprecation_warnings(monkeypatch):
     called = False
+    lifecycle_lookups = []
 
     def fake_create_response(_client, body):
         nonlocal called
         called = True
         return {"id": "resp_123"}
 
-    def fail_if_called(*args, **kwargs):
-        raise AssertionError("Lifecycle lookup should not run when warnings are disabled")
+    def fake_request(method, path, *, query=None, headers=None, body=None):
+        lifecycle_lookups.append((method, path, query))
+        return {
+            "models": [
+                {
+                    "model_id": "openai/new-model",
+                    "status": "active",
+                }
+            ]
+        }
 
     monkeypatch.setattr(ops, "createResponse", fake_create_response)
     client = AIStats(
@@ -137,8 +137,9 @@ def test_can_disable_deprecation_warnings(monkeypatch):
         base_url="https://example.test",
         enable_deprecation_warnings=False,
     )
-    monkeypatch.setattr(client, "request", fail_if_called)
+    monkeypatch.setattr(client, "request", fake_request)
 
     response = client.generate_response({"model": "openai/new-model", "input": "hi"})
     assert called is True
     assert response["id"] == "resp_123"
+    assert lifecycle_lookups == [("GET", "/data/models", {"model_id": "openai/new-model", "limit": 1})]

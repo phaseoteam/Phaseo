@@ -213,7 +213,10 @@ videosRoutes.get("/", withRuntime(async (req) => {
 videosRoutes.get("/models", withRuntime(async (req) => {
 	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
-	const catalogue = await fetchCatalogue({ endpoints: ["video.generation"] });
+	const catalogue = await fetchCatalogue({
+		endpoints: ["video.generation"],
+		statuses: ["active"],
+	});
 	return new Response(JSON.stringify({
 		object: "list",
 		data: catalogue.map((model) => ({

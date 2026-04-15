@@ -16,6 +16,25 @@ use RuntimeException;
 
 class AIStats
 {
+    private const ACTIVE_MODEL_SOURCE_STATUSES = ["active", "available"];
+    private const INACTIVE_MODEL_SOURCE_STATUSES = [
+        "deprecated",
+        "retired",
+        "withheld",
+        "announced",
+        "rumoured",
+        "rumored",
+        "unavailable",
+        "disabled",
+        "internal",
+        "private",
+        "removed",
+        "sunset",
+        "eol",
+        "end_of_life",
+        "end-of-life",
+    ];
+
     private GenClient $client;
     private bool $enableDeprecationWarnings;
     private bool $warningsAsErrors;
@@ -83,11 +102,11 @@ class AIStats
         if ($info === null) {
             return ["ok" => true, "info" => null];
         }
-        if (($info["status"] ?? "active") === "retired") {
+        if (!$this->isModelRequestableForInference($info)) {
             return [
                 "ok" => false,
                 "info" => $info,
-                "reason" => (string) ($info["message"] ?? sprintf('Model "%s" is retired.', $modelId)),
+                "reason" => $this->buildInactiveModelRequestMessage($info),
             ];
         }
         return ["ok" => true, "info" => $info];
@@ -354,7 +373,27 @@ class AIStats
         if ($modelId === null) {
             return;
         }
+        $this->ensureModelRequestable($modelId);
         $this->maybeWarnForModel($modelId);
+    }
+
+    private function ensureModelRequestable(string $modelId): void
+    {
+        $normalizedModelId = $this->asTrimmedString($modelId);
+        if ($normalizedModelId === null) {
+            return;
+        }
+
+        $lifecycle = $this->getModelDeprecationInfo($normalizedModelId);
+        if ($lifecycle === null) {
+            return;
+        }
+
+        if ($this->isModelRequestableForInference($lifecycle)) {
+            return;
+        }
+
+        throw new RuntimeException($this->buildInactiveModelRequestMessage($lifecycle));
     }
 
     private function withLifecycleAndTelemetry(string $endpoint, mixed $payload, bool $checkLifecycle, callable $operation): mixed
@@ -478,6 +517,10 @@ class AIStats
             $this->asTrimmedString((string) ($model["model_id"] ?? "")),
             $fallbackModelId
         ) ?? $fallbackModelId;
+        $sourceStatus = $this->firstNonEmpty(
+            $this->asTrimmedString((string) ($model["status"] ?? "")),
+            $this->asTrimmedString((string) ($lifecycle["status"] ?? ""))
+        );
         $deprecationDate = $this->firstNonEmpty(
             $this->asTrimmedString((string) ($lifecycle["deprecation_date"] ?? "")),
             $this->asTrimmedString((string) ($model["deprecation_date"] ?? ""))
@@ -505,6 +548,7 @@ class AIStats
         return [
             "model_id" => $modelId,
             "status" => $status,
+            "source_status" => $sourceStatus,
             "deprecation_date" => $deprecationDate,
             "retirement_date" => $retirementDate,
             "replacement_model_id" => $replacementModelId,
@@ -570,6 +614,60 @@ class AIStats
             return sprintf('[ai-stats] Model "%s" is deprecated.%s', $modelId, $replacement);
         }
         return "";
+    }
+
+    private function normalizeSourceStatus(?string $status): ?string
+    {
+        $normalized = $this->asTrimmedString($status);
+        return $normalized !== null ? strtolower($normalized) : null;
+    }
+
+    /** @param array<string,mixed> $info */
+    private function isModelRequestableForInference(array $info): bool
+    {
+        if (($info["status"] ?? "active") !== "active") {
+            return false;
+        }
+
+        $sourceStatus = $this->normalizeSourceStatus(isset($info["source_status"]) ? (string) $info["source_status"] : null);
+        if ($sourceStatus === null) {
+            return true;
+        }
+        if (in_array($sourceStatus, self::ACTIVE_MODEL_SOURCE_STATUSES, true)) {
+            return true;
+        }
+        if (in_array($sourceStatus, self::INACTIVE_MODEL_SOURCE_STATUSES, true)) {
+            return false;
+        }
+        return false;
+    }
+
+    /** @param array<string,mixed> $info */
+    private function buildInactiveModelRequestMessage(array $info): string
+    {
+        $status = (string) ($info["status"] ?? "active");
+        $modelId = (string) ($info["model_id"] ?? "unknown-model");
+        if ($status !== "active") {
+            $fallback = $this->buildLifecycleMessage(
+                $status,
+                $modelId,
+                isset($info["deprecation_date"]) ? (string) $info["deprecation_date"] : null,
+                isset($info["retirement_date"]) ? (string) $info["retirement_date"] : null,
+                isset($info["replacement_model_id"]) ? (string) $info["replacement_model_id"] : null
+            );
+            $message = $this->asTrimmedString(isset($info["message"]) ? (string) $info["message"] : null);
+            return $message ?? $fallback ?? sprintf('[ai-stats] Model "%s" is not active for inference.', $modelId);
+        }
+
+        $sourceStatus = $this->normalizeSourceStatus(isset($info["source_status"]) ? (string) $info["source_status"] : null) ?? "unknown";
+        $replacementModelId = $this->asTrimmedString(isset($info["replacement_model_id"]) ? (string) $info["replacement_model_id"] : null);
+        $replacement = $replacementModelId !== null ? sprintf(' Use "%s" instead.', $replacementModelId) : "";
+        return sprintf(
+            '[ai-stats] Model "%s" is not active for inference (status: %s).%s',
+            $modelId,
+            $sourceStatus,
+            $replacement
+        );
     }
 
     private function extractModelIdFromPayload(mixed $payload): ?string
