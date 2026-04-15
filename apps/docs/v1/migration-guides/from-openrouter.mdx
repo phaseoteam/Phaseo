@@ -1,120 +1,101 @@
 ---
-title: "Migrating from OpenRouter"
-description: "Step-by-step guide to migrate your OpenRouter integration to AI Stats Gateway."
+title: "Migration from OpenRouter"
+description: "Move from OpenRouter to AI Stats Gateway with minimal request-shape changes."
 ---
 
-# Migrating from OpenRouter
+If your app currently uses a gateway like OpenRouter, this guide shows the shortest migration path to AI Stats Gateway.
 
-This guide will help you migrate your existing OpenRouter integration to use the AI Stats Gateway instead.
+## What changes
 
-## Overview
+1. Swap base URL.
+2. Swap API key.
+3. Confirm model IDs.
+4. Remove any gateway-specific headers you no longer need.
 
-AI Stats Gateway provides OpenAI-compatible endpoints, similar to OpenRouter. Migration involves:
+For most OpenAI-compatible clients, request and response shapes remain the same.
 
--   Changing the API base URL
--   Updating your API key
--   Adjusting model names if necessary
-
-## Prerequisites
-
--   An AI Stats account and API key (get one at [Gateway Keys](https://ai-stats.phaseo.app/gateway/keys))
--   Existing OpenRouter code
-
-## Migration Steps
-
-### 1. Update API Key and Base URL
-
-Replace OpenRouter's base URL with AI Stats'.
+## 1) Base URL and key swap
 
 <CodeGroup>
-```bash
-# Before (OpenRouter)
+```bash cURL
+# Before
 curl https://openrouter.ai/api/v1/chat/completions \
-  -H "Authorization: Bearer sk-or-v1-your-openrouter-key" \
+  -H "Authorization: Bearer sk-or-v1-..." \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}]
+    "model": "openai/gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 
-# After (AI Stats)
-
+# After
 curl https://api.phaseo.app/v1/chat/completions \
- -H "Authorization: Bearer your-ai-stats-key" \
- -H "Content-Type: application/json" \
- -d '{
-"model": "gpt-4",
-"messages": [{"role": "user", "content": "Hello!"}]
-}'
-
-````
-
-```python
-import openai
-
-# Before (OpenRouter)
-client = openai.OpenAI(
-    api_key="sk-or-v1-your-openrouter-key",
-    base_url="https://openrouter.ai/api/v1"
-)
-
-# After (AI Stats)
-client = openai.OpenAI(
-    api_key="your-ai-stats-key",
-    base_url="https://api.phaseo.app/v1"
-)
-
-response = client.chat.completions.create(
-    model="gpt-4",  # Changed from "openai/gpt-4"
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-````
-
-```javascript
-import OpenAI from "openai";
-
-// Before
-const client = new OpenAI({
-	apiKey: "sk-or-v1-your-openrouter-key",
-	baseURL: "https://openrouter.ai/api/v1",
-});
-
-// After
-const client = new OpenAI({
-	apiKey: "your-ai-stats-key",
-	baseURL: "https://api.phaseo.app/v1",
-});
-
-const response = await client.chat.completions.create({
-	model: "gpt-4", // Changed from "openai/gpt-4"
-	messages: [{ role: "user", content: "Hello!" }],
-});
+  -H "Authorization: Bearer aistats_v1_sk_<kid>_<secret>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
 ```
 
+```python Python
+from openai import OpenAI
+
+# Before
+before = OpenAI(
+    api_key="sk-or-v1-...",
+    base_url="https://openrouter.ai/api/v1",
+)
+
+# After
+after = OpenAI(
+    api_key="aistats_v1_sk_<kid>_<secret>",
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
 </CodeGroup>
 
-### 2. Update Model Names
+## 2) Model IDs
 
-OpenRouter uses specific model identifiers. AI Stats may use different names for the same models.
+Most provider-prefixed IDs continue to work (for example `openai/gpt-4o-mini`, `anthropic/claude-sonnet-4.5`).
 
-Check the [models endpoint](../api-reference/endpoint/models.mdx) for available models.
+Always verify available IDs via:
 
-Example mappings:
+- [Models endpoint](../api-reference/endpoint/models.mdx)
+- [Models explorer](https://ai-stats.phaseo.app/models)
 
--   `openai/gpt-4` → `gpt-4`
--   `anthropic/claude-3-sonnet` → `claude-3-sonnet-20240229`
+## 3) Free model behavior
 
-### 3. Test Your Integration
+AI Stats supports free-model IDs that end in `:free`.
 
-Run your code with the new configuration.
+- `:free` models can be called with zero deposited credits.
+- Paid models require available wallet balance.
 
-## Common Issues
+## 4) Common migration checks
 
--   **Model availability**: Not all OpenRouter models may be available in AI Stats.
--   **Pricing**: Different pricing structure.
--   **Features**: Some OpenRouter-specific features may not be available.
+- Ensure all requests send `Authorization: Bearer <AI_STATS_API_KEY>`.
+- Remove legacy gateway-specific headers unless you explicitly need them.
+- Test one text route first (`/v1/responses` or `/v1/chat/completions`) before migrating image/audio/video routes.
+- Validate tool-calling and structured-output behavior in staging with your real prompts.
 
-## Next Steps
+## 5) Suggested rollout
 
--   Explore AI Stats' analytics features.
--   Check the [API Reference](../api-reference/introduction.mdx).
+1. Route a small percentage of traffic to AI Stats.
+2. Compare latency, error rates, and output quality.
+3. Increase traffic gradually.
+4. Keep a rollback toggle until parity is confirmed.
+
+## Next steps
+
+- [Quickstart](../quickstart.mdx)
+- [Examples](../guides/examples.mdx)
+- [Error Handling](../developers/error-handling.mdx)
+

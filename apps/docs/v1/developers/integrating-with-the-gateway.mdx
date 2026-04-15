@@ -1,6 +1,6 @@
 ---
 title: "Integrating with the Gateway"
-description: "Connect your application to the AI Stats Gateway and start making requests in minutes."
+description: "Connect your application to AI Stats Gateway, start on free models, then scale to paid models."
 ---
 
 The AI Stats Gateway gives you a single, unified API surface for accessing multiple model providers. Follow this guide to create an API key, send your first request, and adopt the conventions that keep integrations production ready.
@@ -14,7 +14,7 @@ Make sure you have the following in place:
 -   An AI Stats account with Gateway access.
 -   At least one API key generated from your [dashboard](https://ai-stats.phaseo.app/gateway/keys).
 -   An HTTP client such as `curl`, `fetch`, or `axios`.
--   A model ID supported by the Gateway (for example `gpt-5-nano-2025-08-07`).
+-   A model ID supported by the Gateway (for example `google/gemma-3-27b:free` for zero-deposit start).
 
 ---
 
@@ -49,6 +49,10 @@ Pick the endpoint that matches your use case. The Gateway normalizes payloads ac
 
 Refer to the [API Reference](../api-reference/introduction.mdx) for the complete list of supported parameters and responses.
 
+<Note>
+Free-model IDs end with `:free` and can be called without depositing credits. Paid-model calls require available wallet balance.
+</Note>
+
 ---
 
 ## 3. Send a request
@@ -60,7 +64,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     -H "Authorization: Bearer $AI_STATS_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{
-        "model": "gpt-5-nano-2025-08-07",
+        "model": "google/gemma-3-27b:free",
         "messages": [
             { "role": "system", "content": "You are a helpful assistant." },
             { "role": "user", "content": "Explain the benefits of AI." }

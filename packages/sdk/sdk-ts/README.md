@@ -1,50 +1,44 @@
 # @ai-stats/sdk
 
-TypeScript/JavaScript SDK for the AI Stats Gateway - Access 300+ AI models from OpenAI, Anthropic, Google, Meta, and more through a unified API.
+TypeScript and JavaScript SDK for AI Stats Gateway.
 
-## ✨ Drop-in Replacement for OpenAI & Anthropic SDKs
+## Drop-in compatibility
 
-The AI Stats SDK provides **drop-in replacement** compatibility layers that let you switch from OpenAI or Anthropic SDKs with minimal code changes:
+The SDK includes compatibility layers for OpenAI and Anthropic style clients:
 
-```typescript
-// Instead of: import OpenAI from 'openai';
-import { OpenAI } from '@ai-stats/sdk/compat/openai';
+```ts
+import { OpenAI } from "@ai-stats/sdk/compat/openai";
+import { Anthropic } from "@ai-stats/sdk/compat/anthropic";
 
-// Instead of: import Anthropic from '@anthropic-ai/sdk';
-import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
-
-// Use the exact same API, but with access to 300+ models!
 const openai = new OpenAI({ apiKey: process.env.AI_STATS_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.AI_STATS_API_KEY });
 ```
 
-**📖 [Read the full Compatibility Guide →](./COMPAT_GUIDE.md)**
-
----
+Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 
 ## About
 
-TypeScript client for the AI Stats Gateway. The SDK is generated from `apps/docs/openapi/v1/openapi.yaml` and wrapped with a small helper class for the common "AI SDK" style helpers (generate/stream and resource getters).
+The SDK is generated from `apps/docs/openapi/v1/openapi.yaml` and wrapped with helper methods for common generate and stream workflows.
 
 ## Generator workflow
 
-1. `pnpm openapi:lint` - validate the spec.
-2. `pnpm oapi:gen` - regenerate all SDKs (TS, Py, and preview SDKs for other languages).
-3. `pnpm --filter @ai-stats/ts-sdk build` - compile wrapper + generated code into `dist/`.
+1. `pnpm openapi:lint` to validate the spec.
+2. `pnpm oapi:gen` to regenerate SDKs.
+3. `pnpm --filter @ai-stats/ts-sdk build` to compile to `dist/`.
 
-The generated directory (`src/gen`) is committed so diffs are visible in PRs. Regenerate whenever the API spec changes.
+The generated directory (`src/gen`) is committed so diffs stay visible in PRs.
 
-## Usage
+## Quick start
 
 ```ts
 import AIStats from "@ai-stats/sdk";
 
-// Uses AI_STATS_API_KEY from environment by default.
 const client = new AIStats();
 
 const response = await client.responses.create({
-  model: "openai/gpt-5.4",
-  input: "Write a one-sentence bedtime story about a unicorn.",
+  model: "google/gemma-3-27b:free",
+  input: "Reply with: SDK quickstart works",
+  temperature: 0,
 });
 
 console.log(response.output_text);
@@ -61,19 +55,24 @@ const client = new AIStats({
 });
 ```
 
-### Model ID Future-Proofing
+## Free vs paid models
 
-`model` params are typed as `KnownModelId | string`, so new gateway models work before the next SDK publish while still preserving autocomplete for known IDs.
+- `:free` models can be called with zero deposited credits.
+- Paid models require available wallet balance.
 
-### Model Deprecation Warnings
+## Model ID future-proofing
 
-By default, the SDK checks `/v1/data/models` and warns once per process when you call a deprecated or retired model.
+`model` params are typed as `KnownModelId | string`, so newly released model IDs are accepted before the next SDK publish.
+
+## Model deprecation warnings
+
+By default, the SDK checks `/v1/data/models` and warns once per process when you call deprecated or retired models.
 
 ```ts
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY!,
-  enableDeprecationWarnings: true, // default
-  warningsAsErrors: false, // set true to throw instead of warn
+  enableDeprecationWarnings: true,
+  warningsAsErrors: false,
   logger: (level, message, meta) => {
     console.log(level, message, meta);
   },
@@ -85,29 +84,7 @@ const validation = await client.models.validate("openai/old-model");
 
 ## DevTools
 
-AI Stats SDK includes built-in devtools for debugging and inspecting API requests. DevTools captures all API calls, responses, errors, costs, and usage locally and provides a beautiful web UI for viewing them.
-
-> **📦 Installation Note**: When you install the SDK, you'll be prompted to optionally install the devtools viewer. The telemetry capture is always included, but the viewer is optional.
-
-### Quick Start
-
-```ts
-import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
-
-// Simple - enable devtools with one line
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  devtools: createAIStatsDevtools()
-});
-
-// All API calls are now automatically captured!
-await client.chat.completions.create({
-  model: "gpt-4",
-  messages: [{ role: "user", content: "Hello!" }]
-});
-```
-
-### Custom Configuration
+The SDK includes built-in devtools telemetry capture.
 
 ```ts
 import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
@@ -115,86 +92,39 @@ import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY!,
   devtools: createAIStatsDevtools({
-    directory: "./my-devtools-data",  // Custom directory
-    flushIntervalMs: 2000,            // Flush every 2 seconds
-    captureHeaders: true,              // Capture HTTP headers
-    saveAssets: false,                 // Don't save binary assets
-    maxQueueSize: 500                  // Custom queue size
-  })
+    directory: ".ai-stats-devtools",
+    flushIntervalMs: 2000,
+    captureHeaders: true,
+    saveAssets: false,
+    maxQueueSize: 500,
+  }),
 });
 ```
 
-### No Extra Core Package Required
-
-`createAIStatsDevtools` and telemetry capture are bundled directly in `@ai-stats/sdk`,
-so there is no separate devtools-core dependency to install.
-
-### Environment Variable Control
-
-By default, devtools is enabled in development (`NODE_ENV !== 'production'`) but can be controlled via environment variables:
-
-```bash
-# Enable explicitly
-AI_STATS_DEVTOOLS=true
-
-# Custom directory
-AI_STATS_DEVTOOLS_DIR=./custom-dir
-
-# Then run your script
-tsx your-script.ts
-```
-
-#### Installation Environment Variables
-
-Control the post-install prompt behavior:
-
-```bash
-# Skip the interactive prompt entirely
-AI_STATS_SKIP_POSTINSTALL=true npm install @ai-stats/sdk
-
-# Auto-install viewer without prompting
-AI_STATS_INSTALL_VIEWER=true npm install @ai-stats/sdk
-
-# Auto-skip viewer without prompting
-AI_STATS_INSTALL_VIEWER=false npm install @ai-stats/sdk
-```
-
-### View Captured Data
-
-Start the devtools viewer to inspect your API requests:
+Start the viewer:
 
 ```bash
 npx @ai-stats/devtools-viewer
 ```
 
-Then open http://localhost:4983 to see your API requests in real-time with:
+By default the viewer runs at `http://localhost:4983`.
 
-- **Live telemetry** - Auto-refreshes every 2 seconds
-- **Smart filtering** - Filter by endpoint, model, provider, status
-- **Cost tracking** - See exact costs and token usage
-- **Error debugging** - Full error details with actionable solutions
-- **Quick actions** - Copy requests, generate cURL/Python/TypeScript code
-- **Dark mode** - Beautiful UI with theme switching
-- **Export** - Download data as JSON for further analysis
+Environment controls:
 
-### Pattern
-
-This pattern is inspired by [OpenRouter's devtools](https://openrouter.ai/docs/developer-tools):
-
-```ts
-// OpenRouter pattern
-import { createOpenRouterDevtools } from '@openrouter/devtools';
-const sdk = new OpenRouter({ hooks: createOpenRouterDevtools() });
-
-// AI Stats pattern
-import { createAIStatsDevtools } from '@ai-stats/sdk';
-const client = new AIStats({ devtools: createAIStatsDevtools() });
+```bash
+AI_STATS_DEVTOOLS=true
+AI_STATS_DEVTOOLS_DIR=./custom-dir
 ```
 
-### Example
+Install-time controls:
 
-See `examples/devtools-integration.ts` for a complete example with different configuration options.
+```bash
+AI_STATS_SKIP_POSTINSTALL=true npm install @ai-stats/sdk
+AI_STATS_INSTALL_VIEWER=true npm install @ai-stats/sdk
+AI_STATS_INSTALL_VIEWER=false npm install @ai-stats/sdk
+```
 
 ## Smoke test
 
-`pnpm --filter @ai-stats/ts-sdk run test:smoke` runs `packages/sdk/sdk-ts/scripts/smoke.ts` against the public gateway. Set `AI_STATS_API_KEY` (and optionally `AI_STATS_BASE_URL`) before running it.
+`pnpm --filter @ai-stats/ts-sdk run test:smoke` runs `packages/sdk/sdk-ts/scripts/smoke.ts` against the public gateway.
+Set `AI_STATS_API_KEY` (and optionally `AI_STATS_BASE_URL`) before running.

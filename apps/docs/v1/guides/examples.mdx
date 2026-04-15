@@ -1,35 +1,39 @@
 ---
 title: "Examples"
-description: "Ready-to-run request examples for common Gateway workflows."
+description: "Copy-paste examples for common Gateway workflows, starting with free-model requests."
 ---
 
 Use these examples as a starting point for your own integrations.
 
-## Text generation with /responses
+<Note>
+Examples marked with `:free` do not require deposited credits.
+</Note>
+
+## 1. Free-model text generation with `/responses`
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $AI_STATS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-5-nano-2025-08-07",
-    "messages": [{"role": "user", "content": "Summarize this article."}]
+    "model": "google/gemma-3-27b:free",
+    "input": "Summarize this article in 3 bullet points."
   }'
 ```
 
-## Chat completion
+## 2. Paid-model chat completion
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $AI_STATS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-5-nano-2025-08-07",
+    "model": "openai/gpt-5.4",
     "messages": [{"role": "user", "content": "Write a short email."}]
   }'
 ```
 
-## Image generation
+## 3. Image generation
 
 ```bash
 curl https://api.phaseo.app/v1/images/generations \

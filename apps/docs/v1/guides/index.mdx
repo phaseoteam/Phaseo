@@ -1,0 +1,51 @@
+---
+title: "Guides Overview"
+description: "A practical map of the AI Stats Guides, from zero-credit free-model start to production operations."
+---
+
+Use this page to choose the shortest path for what you need right now.
+
+## Fastest path
+
+1. [Quickstart](../quickstart.mdx): get a successful request in minutes.
+2. [Authentication](../developers/authentication.mdx): lock down key handling.
+3. [Examples](./examples.mdx): copy working request patterns.
+
+<Note>
+You can call `:free` models without depositing credits. Paid models still require available wallet balance.
+</Note>
+
+## Build features
+
+<Columns cols={2}>
+	<Card title="Routing and Fallbacks" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		Control provider order, failover behavior, and reliability tradeoffs.
+	</Card>
+	<Card title="Tool Calling" icon="wrench" href="./tool-calling.mdx">
+		Implement function tools, safety checks, and stable tool loops.
+	</Card>
+	<Card title="Structured Outputs" icon="braces" href="./structured-outputs.mdx">
+		Use schemas for predictable machine-readable responses.
+	</Card>
+	<Card title="Streaming" icon="radio" href="./streaming.mdx">
+		Ship low-latency responses with SSE and production guardrails.
+	</Card>
+</Columns>
+
+## Production operations
+
+<Columns cols={2}>
+	<Card title="Error Handling" icon="triangle-alert" href="../developers/error-handling.mdx">
+		Debug by status code, error shape, and retry strategy.
+	</Card>
+	<Card title="Rate Limits" icon="gauge" href="../developers/rate-limits.mdx">
+		Plan for throughput and backoff under load.
+	</Card>
+	<Card title="Best Practices" icon="shield-check" href="../developers/best-practices.mdx">
+		Hardening checklist for reliability and safety.
+	</Card>
+	<Card title="Management API Keys" icon="key-round" href="../developers/management-api-keys.mdx">
+		Automate key lifecycle and environment isolation.
+	</Card>
+</Columns>
+

@@ -38,22 +38,23 @@
 						"icon": "book",
 						"groups": [
 							{
-								"group": "Quickstart",
+								"group": "Start Here",
 								"icon": "rocket",
 								"expanded": true,
 								"pages": [
 									"v1/index",
 									"v1/quickstart",
-									"v1/developers/authentication",
+									"v1/guides/index",
 									"v1/guides/examples"
 								]
 							},
 							{
-								"group": "Overview",
+								"group": "Core Concepts",
 								"icon": "compass",
 								"expanded": false,
 								"pages": [
 									"v1/developers/introduction",
+									"v1/developers/authentication",
 									"v1/developers/integrating-with-the-gateway",
 									"v1/guides/principles"
 								]
@@ -137,15 +138,6 @@
 											"v1/developers/management-api-keys"
 										]
 									}
-								]
-							},
-							{
-								"group": "OAuth (Alpha)",
-								"icon": "shield-check",
-								"expanded": false,
-								"pages": [
-									"v1/guides/oauth-quickstart",
-									"v1/developers/oauth-integration"
 								]
 							},
 							{

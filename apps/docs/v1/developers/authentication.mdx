@@ -1,6 +1,6 @@
 ---
 title: "Authentication"
-description: "Understand how API keys, workspaces, and request headers secure access to the AI Stats Gateway."
+description: "Use API keys to authenticate every request to AI Stats Gateway."
 ---
 
 The Gateway uses bearer tokens for authentication. Every request must include a valid API key issued from your workspace. Keys scope access to specific features, letting you separate environments or team responsibilities.
@@ -14,6 +14,10 @@ The Gateway uses bearer tokens for authentication. Every request must include a 
 -   **Rotation** is manual today, but you can create a new key at any time without downtime.
 
 Keys follow the format `aistats_v1_sk_<kid>_<secret>`. Treat them like passwords and avoid storing them in client-side code or public repositories.
+
+<Note>
+You can call `:free` models without depositing credits. Paid models require available wallet balance.
+</Note>
 
 ---
 

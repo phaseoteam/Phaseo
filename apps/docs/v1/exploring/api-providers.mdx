@@ -1,171 +1,76 @@
 ---
 title: "Exploring API Providers"
-description: "Learn about the platforms and services that host and distribute AI models through APIs."
+description: "Understand what API providers do and how to evaluate them for reliability, performance, and cost."
 ---
 
-**API providers** are the platforms that make AI models accessible via APIs — offering developers and organisations a way to integrate cutting-edge models into their products without managing infrastructure or fine-tuning directly.
+API providers are the platforms that host and serve model APIs.
 
-While **organisations** are responsible for creating and training models, **providers** focus on **hosting, routing, and delivering** those models efficiently and reliably.
+Model organizations train models. Providers expose those models through production endpoints, authentication, usage controls, and operational tooling.
 
----
+## What an API provider typically handles
 
-## What is an API provider?
+- Authentication and key management
+- Request routing and availability management
+- Usage metering and billing surfaces
+- API and SDK ergonomics
+- Regional hosting and compliance controls
 
-An API provider offers programmatic access to one or more AI models, often with additional functionality such as:
+## Provider vs organization
 
--   Authentication and usage management
--   Load balancing and request routing
--   Logging, analytics, and cost tracking
--   Unified APIs or SDKs for multiple models
--   Regional or data-compliant hosting
+| Aspect | Organization | API Provider |
+| --- | --- | --- |
+| Primary role | Builds and trains models | Hosts and serves model APIs |
+| Focus | Research and model quality | Reliability, access, and operations |
+| Distribution | Usually own model family | May expose models from multiple organizations |
 
-Examples of providers include:
+Many companies are both, depending on the product surface.
 
--   **OpenAI API** — for GPT and Whisper models.
--   **Anthropic API** — for Claude models.
--   **Google Gemini API** — for Gemini 1.5 and Imagen models.
--   **Mistral API** — for Mistral Large and Mixtral models.
--   **AI Stats Gateway** — for unified access across multiple providers.
--   **OpenRouter** — for community-based multi-model routing.
+## What you can inspect in AI Stats provider pages
 
----
+| Section | What it tells you |
+| --- | --- |
+| Overview | Provider identity, docs links, and supported capabilities |
+| Models | Which models and variants are available |
+| Pricing | Provider pricing normalization and meters |
+| Limits | Request and throughput limits when available |
+| Features | Streaming, tools, structured output, and modality support |
 
-## Provider vs Organisation
+## AI Stats Gateway as a provider layer
 
-| Aspect           | Organisation                   | API Provider                                                  |
-| ---------------- | ------------------------------ | ------------------------------------------------------------- |
-| **Purpose**      | Develops and trains AI models. | Hosts and serves models via API.                              |
-| **Example**      | _Anthropic_ builds Claude.     | _OpenRouter_ or _AI Stats Gateway_ provides access to Claude. |
-| **Focus**        | Research and innovation.       | Reliability, access, and developer tools.                     |
-| **Distribution** | Limited to their own models.   | May host models from many organisations.                      |
+AI Stats Gateway acts as a unified provider layer across many backends.
 
-Many providers (like OpenAI or Google) are _both_ — developing and hosting their own models.
+Benefits:
 
----
-
-## What’s inside a provider page
-
-Each provider listed on AI Stats includes:
-
-| Section              | Description                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| **Overview**         | Name, website, country, supported endpoints, and data centre locations.                 |
-| **Available Models** | List of models hosted by the provider, including their latest versions.                 |
-| **Pricing**          | Provider-specific pricing structure (per token, image, or request).                     |
-| **Rate Limits**      | Information on daily or per-minute request limits.                                      |
-| **Features**         | Supported capabilities like streaming, batch processing, fine-tuning, or custom models. |
-| **Endpoints**        | Direct link to API documentation or health endpoints.                                   |
-| **SDKs & Tools**     | Links to official or community SDKs, CLI tools, or integrations.                        |
-
----
-
-## Example provider data
-
-```json
-{
-	"id": "openai",
-	"name": "OpenAI API",
-	"country": "United States",
-	"website": "https://platform.openai.com",
-	"models_supported": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo", "whisper-1"],
-	"pricing": {
-		"input_per_1k_tokens_usd": 0.005,
-		"output_per_1k_tokens_usd": 0.015
-	},
-	"features": ["streaming", "json_mode", "function_calling", "fine_tuning"],
-	"rate_limits": {
-		"tier_1": "60 RPM, 60,000 TPM",
-		"tier_2": "600 RPM, 600,000 TPM"
-	}
-}
-```
-
----
-
-## AI Stats Gateway
-
-The **AI Stats Gateway** itself is also an API provider — but with a twist.  
-It acts as a **meta-provider**, offering a unified interface across multiple platforms.
-
-### Benefits of the Gateway
-
--   🔁 **Unified endpoints** — single format across all supported providers.
--   🪶 **Smart routing** — automatically selects the best available provider.
--   🧠 **Provider-agnostic SDKs** — consistent code, regardless of backend.
--   📊 **Integrated analytics** — usage tracking and cost normalisation.
--   🔑 **BYOK (Bring Your Own Key)** — connect your own provider API keys.
-
-You can learn more about the Gateway and how to integrate with it in the [Developers Introduction](../developers/introduction.mdx).
-
----
-
-## Understanding pricing and performance
-
-Each provider’s pricing and performance can vary significantly.  
-AI Stats makes this transparent by normalising data into **USD per 1,000 tokens (or equivalent)** and comparing latency metrics where available.
-
-| Metric                             | Description                          |
-| ---------------------------------- | ------------------------------------ |
-| **Input Price (USD / 1K tokens)**  | Cost of tokens sent to the API.      |
-| **Output Price (USD / 1K tokens)** | Cost of tokens generated by the API. |
-| **Average Latency (ms)**           | Time from request to response.       |
-| **Throughput (tokens/sec)**        | Processing speed of the API.         |
-| **Availability (%)**               | Uptime and reliability score.        |
-
-Explore aggregated metrics in the [Pricing & Performance](./pricing-performance.mdx) section.
-
----
+- Unified request and response shape across providers
+- Provider-aware routing and fallback behavior
+- Unified SDK usage for multi-provider integrations
+- Centralized usage and cost observability
+- Optional BYOK support for provider-native keys
 
 ## Choosing a provider
 
-When selecting a provider, consider the following:
+When evaluating providers, focus on:
 
--   ⚙️ **Supported models** — ensure the models you need are available.
--   🌍 **Region & compliance** — verify data residency and privacy compliance.
--   💰 **Pricing tiers** — evaluate based on budget and usage volume.
--   🧩 **Integration options** — check for SDKs or tools in your language.
--   📈 **Performance** — look for low latency and high uptime.
--   🔒 **Security** — confirm API key management and authentication methods.
+- Model availability for your use case
+- Reliability and latency in your target region
+- Cost profile at your expected traffic level
+- Feature parity for tools, streaming, and structured outputs
+- Compliance and data handling requirements
 
-AI Stats aggregates this information for all supported providers to help you make informed decisions.
+## Example evaluation questions
 
----
-
-## Example use cases
-
-| Goal                                   | Example                                                     |
-| -------------------------------------- | ----------------------------------------------------------- |
-| Find all providers offering Claude 3.5 | “Which APIs support Anthropic’s Claude 3.5?”                |
-| Compare latency across providers       | “Is Mistral faster through OpenRouter or the native API?”   |
-| Optimise pricing                       | “What’s the cheapest way to access GPT-4o for 100K tokens?” |
-| Integrate multiple backends            | “How can I route between providers dynamically?”            |
-
----
-
-## Contributing provider data
-
-You can help expand AI Stats by adding new providers or updating existing ones.
-
-<Card
-	title="Contribute Provider Data"
-	icon="github"
-	href="../contributing/overview.mdx"
-	horizontal
->
-	Learn how to add or update provider listings in the database.
-</Card>
-
----
+- Which providers expose the model family I need?
+- Which provider gives better latency for my region?
+- What is the lowest-cost option at my token volume?
+- Which provider supports my required endpoint features?
 
 ## Next steps
 
-Now that you understand how providers work, continue to the **Pricing & Performance** page to see how models and providers compare side-by-side.
-
 <Card
-	title="Explore Pricing & Performance"
+	title="Explore Pricing and Performance"
 	icon="scale"
 	href="./pricing-performance.mdx"
 	horizontal
 >
-	Compare costs, speeds, and efficiencies across models and providers.
+	Compare costs, speeds, and efficiency metrics across providers.
 </Card>
