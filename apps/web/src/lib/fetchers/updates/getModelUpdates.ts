@@ -27,7 +27,13 @@ type Args = {
     now?: Date;
     upcomingLimit?: number;
     pastMonths?: number;
+    includeAllPast?: boolean;
     includeHidden?: boolean;
+};
+
+type OrganisationReleaseArgs = {
+    includeHidden?: boolean;
+    now?: Date;
 };
 
 type Row = {
@@ -107,6 +113,7 @@ export async function getRecentModelUpdatesSplit(
         now: nowInput,
         upcomingLimit = 5,
         pastMonths,
+        includeAllPast = false,
         includeHidden = false,
     }: Args = {}
 ): Promise<ModelEventSegments> {
@@ -184,11 +191,84 @@ export async function getRecentModelUpdatesSplit(
         filteredPast = sortedPast.filter(e => new Date(e.date) >= since);
     }
 
-    const effectiveLimit = pastMonths ? 10000 : limit;
-    const past = filteredPast.slice(offset, offset + effectiveLimit);
+    const past = includeAllPast
+        ? filteredPast.slice(offset)
+        : filteredPast.slice(offset, offset + limit);
     const future = sortedFuture.slice(0, upcomingLimit);
 
     return { past, future };
+}
+
+export async function getOrganisationReleaseEvents(
+    organisationId: string,
+    {
+        includeHidden = false,
+        now: nowInput,
+    }: OrganisationReleaseArgs = {}
+): Promise<ModelEvent[]> {
+    "use cache";
+    cacheLife("hours");
+    cacheTag("data:model-updates");
+    cacheTag("data:models");
+    cacheTag(`data:model-updates:organisation:${organisationId}`);
+
+    if (!organisationId) return [];
+
+    const now = nowInput ?? new Date();
+    const nowMs = +now;
+    const supabase = await createClient();
+
+    const { data, error } = await applyHiddenFilter(
+        supabase
+            .from("data_models")
+            .select(`
+            model_id,
+            name,
+            organisation_id,
+            release_date,
+            organisation:data_organisations!data_models_organisation_id_fkey(organisation_id,name)
+        `)
+            .eq("organisation_id", organisationId)
+            .not("release_date", "is", null)
+            .overrideTypes<
+                Array<{
+                    model_id: string;
+                    name: string;
+                    organisation_id: string;
+                    release_date: string | null;
+                    organisation: { organisation_id: string; name: string | null } | null;
+                }>,
+                { merge: false }
+            >(),
+        includeHidden
+    );
+
+    if (error) throw error;
+
+    const events = new Map<string, ModelEvent>();
+
+    for (const row of data ?? []) {
+        const releaseIso = toIsoOrNull(row.release_date);
+        if (!releaseIso) continue;
+        if (Date.parse(releaseIso) > nowMs) continue;
+
+        mergeEvent(
+            events,
+            {
+                model_id: row.model_id,
+                name: row.name,
+                organisation_id: row.organisation_id,
+                organisation: {
+                    organisation_id: row.organisation?.organisation_id ?? row.organisation_id,
+                    name: row.organisation?.name ?? null,
+                },
+            },
+            "Released",
+            releaseIso
+        );
+    }
+
+    return [...events.values()].sort(compareDescending);
 }
 
 export default async function getRecentModelUpdates(
