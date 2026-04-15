@@ -1,10 +1,34 @@
 # @ai-stats/sdk
 
-TypeScript and JavaScript SDK for AI Stats Gateway.
+Official TypeScript and JavaScript SDK for AI Stats Gateway.
+
+## Installation
+
+```bash
+npm install @ai-stats/sdk
+```
+
+## Quick start
+
+```ts
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+  // baseUrl: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+  model: "google/gemma-3-27b:free",
+  input: "Reply with: TypeScript SDK works",
+});
+
+console.log(response.output_text);
+```
 
 ## Drop-in compatibility
 
-The SDK includes compatibility layers for OpenAI and Anthropic-style clients:
+The SDK includes compatibility layers for OpenAI and Anthropic-style clients.
 
 ```ts
 import { OpenAI } from "@ai-stats/sdk/compat/openai";
@@ -16,115 +40,61 @@ const anthropic = new Anthropic({ apiKey: process.env.AI_STATS_API_KEY });
 
 Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 
-## About
+## Common methods
 
-The SDK is generated from `apps/docs/openapi/v1/openapi.yaml` and wrapped with helper methods for common generate and stream workflows.
+- `client.responses.create(...)`
+- `client.chat.completions.create(...)`
+- `client.models.list(...)`
+- `client.models.getDeprecationInfo(modelId)`
+- `client.models.validate(modelId)`
 
-## Generator workflow
+## Free and paid models
 
-1. `pnpm openapi:lint` to validate the spec.
-2. `pnpm oapi:gen` to regenerate SDKs.
-3. `pnpm --filter @ai-stats/ts-sdk build` to compile to `dist/`.
-
-The generated directory (`src/gen`) is committed so diffs stay visible in PRs.
-
-## Quick start
-
-```ts
-import AIStats from "@ai-stats/sdk";
-
-const client = new AIStats();
-
-const response = await client.responses.create({
-  model: "google/gemma-3-27b:free",
-  input: "Reply with: SDK quickstart works",
-  temperature: 0,
-});
-
-console.log(response.output_text);
-```
-
-With an explicit key:
-
-```ts
-import AIStats from "@ai-stats/sdk";
-
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  // baseUrl: "https://api.phaseo.app/v1",
-});
-```
-
-## Free vs paid models
-
-- `:free` models can be called with zero deposited credits.
+- Models with `:free` in the model ID can be called with zero deposited credits.
 - Paid models require available wallet balance.
 
-## Model ID future-proofing
+## Model lifecycle warnings
 
-`model` params are typed as `KnownModelId | string`, so newly released model IDs are accepted before the next SDK publish.
-
-## Model deprecation warnings
-
-By default, the SDK checks `/v1/data/models` and warns once per process when you call deprecated or retired models.
+Deprecation warnings are enabled by default.
 
 ```ts
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
+  apiKey: process.env.AI_STATS_API_KEY,
   enableDeprecationWarnings: true,
   warningsAsErrors: false,
   logger: (level, message, meta) => {
     console.log(level, message, meta);
   },
 });
-
-const info = await client.models.getDeprecationInfo("openai/old-model");
-const validation = await client.models.validate("openai/old-model");
 ```
 
-## DevTools
+## Environment variables
 
-The SDK includes built-in devtools telemetry capture.
+- `AI_STATS_API_KEY` (required unless passed in code)
+- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+
+## Devtools
 
 ```ts
 import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
 
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
+  apiKey: process.env.AI_STATS_API_KEY,
   devtools: createAIStatsDevtools({
     directory: ".ai-stats-devtools",
-    flushIntervalMs: 2000,
     captureHeaders: true,
-    saveAssets: false,
-    maxQueueSize: 500,
   }),
 });
 ```
 
-Start the viewer:
+Viewer:
 
 ```bash
 npx @ai-stats/devtools-viewer
 ```
 
-By default the viewer runs at `http://localhost:4983`.
+## Regeneration and local checks
 
-Environment controls:
-
-```bash
-AI_STATS_DEVTOOLS=true
-AI_STATS_DEVTOOLS_DIR=./custom-dir
-```
-
-Install-time controls:
-
-```bash
-AI_STATS_SKIP_POSTINSTALL=true npm install @ai-stats/sdk
-AI_STATS_INSTALL_VIEWER=true npm install @ai-stats/sdk
-AI_STATS_INSTALL_VIEWER=false npm install @ai-stats/sdk
-```
-
-## Smoke test
-
-`pnpm --filter @ai-stats/ts-sdk run test:smoke` runs `packages/sdk/sdk-ts/scripts/smoke.ts` against the public gateway.
-Set `AI_STATS_API_KEY` (and optionally `AI_STATS_BASE_URL`) before running.
+- Regenerate generated client: `pnpm openapi:gen:ts`
+- Build package: `pnpm --filter @ai-stats/ts-sdk build`
+- Smoke tests: `pnpm --filter @ai-stats/ts-sdk test:smoke`
