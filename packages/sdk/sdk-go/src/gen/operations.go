@@ -212,21 +212,6 @@ func CreateModeration(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
-func CreateOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/oauth-clients"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
 func CreateOcr(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/ocr"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -349,21 +334,6 @@ func CreateVideoAlias(client *Client, path map[string]string, query map[string]s
 
 func DeleteManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/management/keys/" + url.PathEscape(path["id"])
-	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func DeleteOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -529,21 +499,6 @@ func GetMusicGeneration(client *Client, path map[string]string, query map[string
 
 func GetMusicGenerationAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/music/generations/" + url.PathEscape(path["music_id"])
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func GetOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -737,21 +692,6 @@ func ListModels(client *Client, path map[string]string, query map[string]string,
 	return out, nil
 }
 
-func ListOAuthClients(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/oauth-clients"
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
 func ListOrganisations(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/organisations"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -887,21 +827,6 @@ func OpenResponsesWebSocket(client *Client, path map[string]string, query map[st
 	return out, nil
 }
 
-func RegenerateOAuthClientSecret(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"]) + "/regenerate-secret"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
 func RetrieveBatch(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
 	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -964,21 +889,6 @@ func RetrieveFileContent(client *Client, path map[string]string, query map[strin
 
 func UpdateManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/management/keys/" + url.PathEscape(path["id"])
-	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func UpdateOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

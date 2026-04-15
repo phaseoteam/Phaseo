@@ -101,13 +101,6 @@ function createModeration(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
-function createOAuthClient(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/oauth-clients";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
 function createOcr(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -168,13 +161,6 @@ function deleteManagementKey(Client $client, ?array $path = null, ?array $query 
 {
 	$path = $path ?? [];
 	$resolvedPath = "/management/keys/{$path["id"]}";
-	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
-}
-
-function deleteOAuthClient(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/oauth-clients/{$path["client_id"]}";
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -252,13 +238,6 @@ function getMusicGenerationAlias(Client $client, ?array $path = null, ?array $qu
 {
 	$path = $path ?? [];
 	$resolvedPath = "/music/generations/{$path["music_id"]}";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function getOAuthClient(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/oauth-clients/{$path["client_id"]}";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -346,13 +325,6 @@ function listModels(Client $client, ?array $path = null, ?array $query = null, ?
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function listOAuthClients(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/oauth-clients";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function listOrganisations(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -416,13 +388,6 @@ function openResponsesWebSocket(Client $client, ?array $path = null, ?array $que
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function regenerateOAuthClientSecret(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/oauth-clients/{$path["client_id"]}/regenerate-secret";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
 function retrieveBatch(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -455,13 +420,6 @@ function updateManagementKey(Client $client, ?array $path = null, ?array $query 
 {
 	$path = $path ?? [];
 	$resolvedPath = "/management/keys/{$path["id"]}";
-	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
-}
-
-function updateOAuthClient(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/oauth-clients/{$path["client_id"]}";
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

@@ -1,35 +1,73 @@
 # AI Stats PHP SDK
 
-Generated from the AI Stats Gateway OpenAPI spec.
+Official PHP SDK for AI Stats Gateway.
 
 Packagist package name: `ai-stats/php-sdk`
 
-Generate with `pnpm openapi:gen:php`.
+## Installation
 
-Usage:
-```php
-// Uses AI_STATS_API_KEY from environment by default.
-$client = new \AIStats\Sdk\AIStats();
-$resp = $client->listModels(['limit' => 5]);
+```bash
+composer require ai-stats/php-sdk
 ```
 
-## TLS / SSL Reliability
-
-The SDK verifies TLS by default. To keep this reliable across environments:
-
-- It first uses an explicit constructor `caBundlePath` (if provided).
-- Then it checks `AI_STATS_CA_BUNDLE`.
-- Then PHP INI values (`curl.cainfo`, `openssl.cafile`).
-- Then `SSL_CERT_FILE`.
-- Finally it falls back to the bundled `certs/cacert.pem` shipped with this SDK.
-
-You can override CA path explicitly:
+## Quick start
 
 ```php
-$client = new \AIStats\Sdk\AIStats(
-    apiKey: getenv("AI_STATS_API_KEY"),
-    caBundlePath: "/path/to/cacert.pem"
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(
+    apiKey: getenv('AI_STATS_API_KEY') ?: null,
+    basePath: getenv('AI_STATS_BASE_URL') ?: 'https://api.phaseo.app/v1',
 );
+
+$response = $client->createResponse([
+    'model' => 'google/gemma-3-27b:free',
+    'input' => 'Reply with: PHP SDK works',
+]);
+
+echo json_encode($response, JSON_PRETTY_PRINT) . PHP_EOL;
 ```
 
-Disabling TLS verification (`verifyTls: false`) is supported for local debugging only and should not be used in production.
+## Common methods
+
+- `createResponse(array $payload)`
+- `createChatCompletion(array $payload)`
+- `listModels(array $params = [])`
+- `getModelDeprecationInfo(string $modelId)`
+- `validateModel(string $modelId)`
+
+## TLS and SSL behavior
+
+TLS verification is enabled by default.
+
+Resolution order for CA bundle:
+
+1. Constructor `caBundlePath`
+2. `AI_STATS_CA_BUNDLE`
+3. `curl.cainfo` / `openssl.cafile`
+4. `SSL_CERT_FILE`
+5. Bundled `certs/cacert.pem`
+
+Disabling TLS verification (`verifyTls: false`) should only be used for local debugging.
+
+## Free and paid models
+
+- Models with `:free` in the model ID can be called with zero deposited credits.
+- Paid models require available wallet balance.
+
+## Environment variables
+
+- `AI_STATS_API_KEY` (required unless passed in code)
+- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `AI_STATS_CA_BUNDLE` (optional TLS override)
+
+## Regeneration and local checks
+
+- Regenerate generated client: `pnpm openapi:gen:php`
+- Validate and test: `pnpm --filter @ai-stats/php-sdk run validate && pnpm --filter @ai-stats/php-sdk run test`

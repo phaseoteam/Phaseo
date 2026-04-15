@@ -174,18 +174,6 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> CreateOAuthClientAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/oauth-clients";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
-	}
-
 	public static Task<Dictionary<string, object>?> CreateOcrAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -291,18 +279,6 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/management/keys/" + (path != null && path.ContainsKey("id") ? path["id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
-	}
-
-	public static Task<Dictionary<string, object>?> DeleteOAuthClientAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/oauth-clients/" + (path != null && path.ContainsKey("client_id") ? path["client_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -435,18 +411,6 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/music/generations/" + (path != null && path.ContainsKey("music_id") ? path["music_id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Task<Dictionary<string, object>?> GetOAuthClientAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/oauth-clients/" + (path != null && path.ContainsKey("client_id") ? path["client_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -594,18 +558,6 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> ListOAuthClientsAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/oauth-clients";
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
-	}
-
 	public static Task<Dictionary<string, object>?> ListOrganisationsAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -714,18 +666,6 @@ public static class Operations
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> RegenerateOAuthClientSecretAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/oauth-clients/" + (path != null && path.ContainsKey("client_id") ? path["client_id"] : "") + "/regenerate-secret";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
-	}
-
 	public static Task<object?> RetrieveBatchAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -783,18 +723,6 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/management/keys/" + (path != null && path.ContainsKey("id") ? path["id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
-	}
-
-	public static Task<Dictionary<string, object>?> UpdateOAuthClientAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/oauth-clients/" + (path != null && path.ContainsKey("client_id") ? path["client_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
 

@@ -186,19 +186,6 @@ def createModeration(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-def createOAuthClient(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/oauth-clients"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
 def createOcr(
 	client: Client,
 	*,
@@ -313,19 +300,6 @@ def deleteManagementKey(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/management/keys/{path.get("id", "")}"
-	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
-
-
-def deleteOAuthClient(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -469,19 +443,6 @@ def getMusicGenerationAlias(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/music/generations/{path.get("music_id", "")}"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def getOAuthClient(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -641,19 +602,6 @@ def listModels(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def listOAuthClients(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/oauth-clients"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
 def listOrganisations(
 	client: Client,
 	*,
@@ -771,19 +719,6 @@ def openResponsesWebSocket(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def regenerateOAuthClientSecret(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get("client_id", "")}/regenerate-secret"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
 def retrieveBatch(
 	client: Client,
 	*,
@@ -849,19 +784,6 @@ def updateManagementKey(
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
-def updateOAuthClient(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
-	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
-
-
 def uploadFile(
 	client: Client,
 	*,
@@ -875,4 +797,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteOAuthClient", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateManagementKey", "updateOAuthClient", "uploadFile"]
+operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "openResponsesWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateManagementKey", "uploadFile"]

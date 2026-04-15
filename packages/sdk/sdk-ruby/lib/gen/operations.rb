@@ -87,12 +87,6 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.createOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.createOcr(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/ocr"
@@ -144,12 +138,6 @@ module AiStats
       def self.deleteManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/management/keys/#{path["id"]}"
-        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.deleteOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients/#{path["client_id"]}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -216,12 +204,6 @@ module AiStats
       def self.getMusicGenerationAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/music/generations/#{path["music_id"]}"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.getOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients/#{path["client_id"]}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -297,12 +279,6 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.listOAuthClients(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.listOrganisations(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/organisations"
@@ -357,12 +333,6 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.regenerateOAuthClientSecret(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients/#{path["client_id"]}/regenerate-secret"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.retrieveBatch(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/batches/#{path["batch_id"]}"
@@ -390,12 +360,6 @@ module AiStats
       def self.updateManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/management/keys/#{path["id"]}"
-        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.updateOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients/#{path["client_id"]}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
