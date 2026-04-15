@@ -627,6 +627,14 @@ jobs:
                   GITHUB_SHA: ${{ github.sha }}
               run: pnpm run changeset:validate-sdk-semver
 
+            - name: Force pure OIDC npm auth context
+              run: |
+                  echo "NODE_AUTH_TOKEN=" >> "$GITHUB_ENV"
+                  echo "NPM_TOKEN=" >> "$GITHUB_ENV"
+                  oidc_npmrc="$RUNNER_TEMP/oidc-only.npmrc"
+                  printf "registry=https://registry.npmjs.org\nalways-auth=false\n" > "$oidc_npmrc"
+                  echo "NPM_CONFIG_USERCONFIG=$oidc_npmrc" >> "$GITHUB_ENV"
+
             - name: Create release PR / publish
               id: changesets
               uses: changesets/action@v1
