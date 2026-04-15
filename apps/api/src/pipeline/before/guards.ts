@@ -39,21 +39,21 @@ function isFreePriceCard(card: PriceCard | null | undefined): boolean {
     });
 }
 
-function allowsNoCreditForFreeRequest(args: { model: string; context: any }): boolean {
+function allowsNoCreditForFreeRequest(args: { model: string; context: any; providers: any[] }): boolean {
     if (isLikelyFreeModelId(args.model) || isLikelyFreeModelId(args.context?.resolvedModel)) {
         return true;
     }
 
-    const supportsEndpointProviders = Array.isArray(args.context?.providers)
-        ? args.context.providers
-            .filter((provider: any) => provider?.supportsEndpoint && typeof provider?.providerId === "string")
-            .map((provider: any) => String(provider.providerId))
+    const routableProviders = Array.isArray(args.providers)
+        ? args.providers
+            .filter((provider: any) => typeof provider?.providerId === "string")
         : [];
-    if (!supportsEndpointProviders.length) return false;
+    if (!routableProviders.length) return false;
 
-    const pricedCards = supportsEndpointProviders
-        .map((providerId) => args.context?.pricing?.[providerId] as PriceCard | undefined)
+    const pricedCards = routableProviders
+        .map((provider: any) => provider?.pricingCard as PriceCard | undefined)
         .filter((card): card is PriceCard => Boolean(card));
+    if (pricedCards.length !== routableProviders.length) return false;
     if (!pricedCards.length) return false;
 
     return pricedCards.every((card) => isFreePriceCard(card));
@@ -285,6 +285,20 @@ export async function guardContext(args: {
             };
         }
 
+        const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
+        if (!providers.length) {
+            return {
+                ok: false,
+                response: err("unsupported_model_or_endpoint", {
+                    model: args.model,
+                    endpoint: args.endpoint,
+                    request_id: args.requestId,
+                    team_id: args.teamId,
+                    provider_candidate_diagnostics: candidateDiagnostics,
+                }),
+            };
+        }
+
         const teamTier = String(context.teamEnrichment?.tier ?? "")
             .trim()
             .toLowerCase();
@@ -296,6 +310,7 @@ export async function guardContext(args: {
         const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
             model: args.model,
             context,
+            providers,
         });
 
         if (
@@ -311,20 +326,6 @@ export async function guardContext(args: {
                     min_usd: MIN_CREDIT_AMOUNT,
                     request_id: args.requestId,
                     team_id: args.teamId,
-                }),
-            };
-        }
-
-        const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
-        if (!providers.length) {
-            return {
-                ok: false,
-                response: err("unsupported_model_or_endpoint", {
-                    model: args.model,
-                    endpoint: args.endpoint,
-                    request_id: args.requestId,
-                    team_id: args.teamId,
-                    provider_candidate_diagnostics: candidateDiagnostics,
                 }),
             };
         }
