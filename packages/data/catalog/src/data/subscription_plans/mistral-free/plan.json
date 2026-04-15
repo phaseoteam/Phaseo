@@ -1,0 +1,30 @@
+{
+  "plan_id": "mistral-free",
+  "name": "Mistral Free",
+  "organisation_id": "mistral",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://mistral.ai/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Le Chat Access",
+      "feature_value": "Included",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "mistral/mistral-small-4",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

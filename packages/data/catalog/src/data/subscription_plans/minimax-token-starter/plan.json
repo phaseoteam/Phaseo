@@ -1,0 +1,48 @@
+{
+  "plan_id": "minimax-token-starter",
+  "name": "MiniMax Token Plan Starter",
+  "organisation_id": "minimax",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 10,
+      "link": "https://platform.minimax.io/docs/guides/pricing-tokenplan",
+      "other_info": null
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 100,
+      "link": "https://platform.minimax.io/docs/guides/pricing-tokenplan",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "M2.7 Quota",
+      "feature_value": "1,500 requests / 5 hours",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Music-2.6",
+      "feature_value": "100 songs / day (promo noted in docs)",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "minimax/minimax-m2.7",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/music-2.6",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

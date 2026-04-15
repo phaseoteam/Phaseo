@@ -6,7 +6,7 @@
   "pricing_options": [
     {
       "frequency": "monthly",
-      "usd_price": 0.0,
+      "usd_price": 0,
       "link": "https://gemini.google/subscriptions/",
       "other_info": null
     }
@@ -26,13 +26,13 @@
     },
     {
       "feature_name": "Deep Research",
-      "feature_value": "5 / Month With 2.5 Flash",
+      "feature_value": "5 / Month",
       "feature_description": null,
       "other_info": null
     },
     {
       "feature_name": "Image Generation",
-      "feature_value": "100 / Day",
+      "feature_value": "20 / Day",
       "feature_description": null,
       "other_info": null
     }
@@ -40,14 +40,20 @@
   "models": [
     {
       "model_id": "google/gemini-3-flash-preview",
-      "model_info": null,
-      "rate_limit": null,
+      "model_info": "Fast",
+      "rate_limit": "General Access",
       "other_info": null
     },
     {
-      "model_id": "google/gemini-3-pro-preview",
-      "model_info": null,
-      "rate_limit": "Variable Limits Daily",
+      "model_id": "google/gemini-3.1-pro-preview",
+      "model_info": "Pro",
+      "rate_limit": "Basic Access (Daily limits may change frequently)",
+      "other_info": null
+    },
+    {
+      "model_id": "google/gemini-3.1-pro-preview",
+      "model_info": "Thinking",
+      "rate_limit": "Basic Access (Daily limits may change frequently)",
       "other_info": null
     }
   ]

@@ -423,17 +423,32 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		toFiniteNumber((args.rawPayload as any)?.data?.usage?.total_tokens),
 		toFiniteNumber((args.rawPayload as any)?.data?.usage?.totalTokens),
 	].find((value): value is number => value != null && value > 0);
+	const baseRequestOptions = (args.requestOptions ?? {}) as Record<string, unknown>;
+	const pricingRequestOptions = buildVideoPricingRequestOptions({
+		resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
+		quality: args.quality ?? args.videoMeta?.quality ?? null,
+		input_image_count: normalizedInputImageCount,
+		input_video_seconds: inputVideoSecondsCandidate,
+		input_video_count: inputVideoCountCandidate,
+		frame_rate: frameRateCandidate,
+		total_tokens: totalTokensCandidate,
+	});
+	const baseVideoParams =
+		baseRequestOptions.video_params &&
+		typeof baseRequestOptions.video_params === "object" &&
+		!Array.isArray(baseRequestOptions.video_params)
+			? (baseRequestOptions.video_params as Record<string, unknown>)
+			: {};
+	const pricingVideoParams =
+		pricingRequestOptions.video_params &&
+		typeof pricingRequestOptions.video_params === "object" &&
+		!Array.isArray(pricingRequestOptions.video_params)
+			? (pricingRequestOptions.video_params as Record<string, unknown>)
+			: {};
 	const requestOptions = {
-		...(args.requestOptions ?? {}),
-		...buildVideoPricingRequestOptions({
-			resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
-			quality: args.quality ?? args.videoMeta?.quality ?? null,
-			input_image_count: normalizedInputImageCount,
-			input_video_seconds: inputVideoSecondsCandidate,
-			input_video_count: inputVideoCountCandidate,
-			frame_rate: frameRateCandidate,
-			total_tokens: totalTokensCandidate,
-		}),
+		...baseRequestOptions,
+		...pricingRequestOptions,
+		video_params: { ...baseVideoParams, ...pricingVideoParams },
 	};
 	await finalizeVideoJob({
 		teamId: args.auth.teamId,

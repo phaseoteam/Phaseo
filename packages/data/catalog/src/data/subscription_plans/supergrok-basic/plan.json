@@ -6,13 +6,13 @@
   "pricing_options": [
     {
       "frequency": "monthly",
-      "usd_price": 0.0,
+      "usd_price": 0,
       "link": "https://grok.com/#subscribe",
       "other_info": null
     },
     {
       "frequency": "yearly",
-      "usd_price": 0.0,
+      "usd_price": 0,
       "link": "https://grok.com/#subscribe",
       "other_info": null
     }

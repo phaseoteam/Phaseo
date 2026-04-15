@@ -1,0 +1,48 @@
+{
+  "plan_id": "mistral-pro",
+  "name": "Mistral Pro",
+  "organisation_id": "mistral",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 14.99,
+      "link": "https://mistral.ai/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Mistral Vibe",
+      "feature_value": "Included",
+      "feature_description": "All-day coding, PAYG beyond included quota",
+      "other_info": null
+    },
+    {
+      "feature_name": "Document Storage",
+      "feature_value": "Up to 15GB",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "mistral/mistral-small-4",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "mistral/codestral",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "mistral/devstral-small-2.0",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

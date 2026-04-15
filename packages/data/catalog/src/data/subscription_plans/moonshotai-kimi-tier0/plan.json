@@ -1,0 +1,60 @@
+{
+  "plan_id": "moonshotai-kimi-tier0",
+  "name": "Kimi API Tier0",
+  "organisation_id": "moonshotai",
+  "description": "Prepaid API tier based on cumulative recharge.",
+  "pricing_options": [
+    {
+      "frequency": "one-time",
+      "usd_price": 1,
+      "link": "https://platform.moonshot.ai/docs/pricing/limits.en-US",
+      "other_info": "Minimum recharge required to start usage"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Concurrency",
+      "feature_value": "1",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "RPM",
+      "feature_value": "3",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "TPM",
+      "feature_value": "500,000",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "TPD",
+      "feature_value": "1,500,000",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "moonshotai/kimi-k2.5",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "moonshotai/kimi-k2.6-code-preview",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "moonshotai/kimi-k2-thinking",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

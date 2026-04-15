@@ -1,0 +1,78 @@
+{
+  "plan_id": "minimax-token-max-high-speed",
+  "name": "MiniMax Token Plan Max High-Speed",
+  "organisation_id": "minimax",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 80,
+      "link": "https://platform.minimax.io/docs/guides/pricing-tokenplan",
+      "other_info": null
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 800,
+      "link": "https://platform.minimax.io/docs/guides/pricing-tokenplan",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "M2.7 High-Speed Quota",
+      "feature_value": "15,000 requests / 5 hours",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "TTS HD",
+      "feature_value": "19,000 characters / day",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Hailuo-2.3-Fast 768P 6s",
+      "feature_value": "3 videos / day",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "image-01",
+      "feature_value": "200 images / day",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "minimax/minimax-m2.7",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": "High-speed routing as listed in Token Plan docs"
+    },
+    {
+      "model_id": "minimax/hailuo-2.3-fast",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/image-01",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/music-2.6",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/speech-02-hd",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

@@ -81,6 +81,11 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	const source = value as Record<string, unknown>;
 	const provider = typeof source.provider === "string" ? source.provider.trim() : "";
 	if (!provider) return null;
+	const toNonNegativeInteger = (input: unknown): number | null => {
+		if (typeof input !== "number" || !Number.isFinite(input)) return null;
+		const normalized = Math.trunc(input);
+		return normalized >= 0 ? normalized : null;
+	};
 	const out: VideoJobMeta = { provider };
 	if (typeof source.providerTaskId === "string") out.providerTaskId = source.providerTaskId;
 	if (typeof source.provider_task_id === "string") out.providerTaskId = source.provider_task_id;
@@ -94,8 +99,10 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.seconds === "number") out.seconds = source.seconds;
 	if (typeof source.resolution === "string") out.resolution = source.resolution;
 	if (typeof source.quality === "string") out.quality = source.quality;
-	if (typeof source.inputImageCount === "number") out.inputImageCount = source.inputImageCount;
-	if (typeof source.input_image_count === "number") out.inputImageCount = source.input_image_count;
+	const camelInputImageCount = toNonNegativeInteger(source.inputImageCount);
+	if (camelInputImageCount != null) out.inputImageCount = camelInputImageCount;
+	const snakeInputImageCount = toNonNegativeInteger(source.input_image_count);
+	if (snakeInputImageCount != null) out.inputImageCount = snakeInputImageCount;
 	if (typeof source.inputVideoCount === "number") out.inputVideoCount = source.inputVideoCount;
 	if (typeof source.input_video_count === "number") out.inputVideoCount = source.input_video_count;
 	if (typeof source.inputVideoSeconds === "number") out.inputVideoSeconds = source.inputVideoSeconds;

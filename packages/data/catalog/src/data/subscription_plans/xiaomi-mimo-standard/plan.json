@@ -1,0 +1,54 @@
+{
+  "plan_id": "xiaomi-mimo-standard",
+  "name": "MiMo Token Plan Standard",
+  "organisation_id": "xiaomi",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 16,
+      "link": "https://platform.xiaomimimo.com/",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Monthly Credit Quota",
+      "feature_value": "200M Credits",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Supported Models",
+      "feature_value": "MiMo-V2-Pro, MiMo-V2-Omni, MiMo-V2-TTS",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Tools",
+      "feature_value": "OpenCode, OpenClaw, Claude Code",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "xiaomi/mimo-v2-pro",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "xiaomi/mimo-v2-omni",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "xiaomi/mimo-v2-tts",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}
