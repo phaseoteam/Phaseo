@@ -22,7 +22,7 @@ const BENEFITS: Benefit[] = [
 	},
 	{
 		title: "Unified AI Gateway",
-		body: "Integrate once and access hundreds of models across major providers through a single OpenAI-compatible API.",
+		body: "Integrate once and access hundreds of models through one OpenAI-compatible API.",
 		href: "/models",
 		cta: "Browse models",
 		visual: "models",
