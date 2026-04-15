@@ -598,6 +598,9 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
 
+            - name: Upgrade npm for trusted publishing
+              run: npm install -g npm@11
+
             - name: Check runtime versions (trusted publishing)
               run: |
                   node -v
