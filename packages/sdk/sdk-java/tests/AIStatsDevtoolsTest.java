@@ -20,6 +20,9 @@ public class AIStatsDevtoolsTest {
 	void capturesResponsesEntriesToDevtoolsDirectory() throws Exception {
 		AtomicInteger responseCalls = new AtomicInteger(0);
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+		server.createContext("/data/models", jsonHandler(new AtomicInteger(0), """
+			{"models":[{"model_id":"openai/gpt-5-nano","status":"Available","lifecycle":{"status":"active"}}]}
+			"""));
 		server.createContext("/responses", jsonHandler(responseCalls, """
 			{"id":"resp_1","model":"openai/gpt-5-nano","usage":{"input_tokens":2,"output_tokens":1,"total_tokens":3}}
 			"""));

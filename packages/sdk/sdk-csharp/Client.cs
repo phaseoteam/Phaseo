@@ -172,7 +172,7 @@ namespace AiStatsSdk
             }
 
             var lifecycle = await GetModelDeprecationInfo(normalized).ConfigureAwait(false);
-            if (lifecycle is null || lifecycle.Status == "active")
+            if (lifecycle is null || string.Equals(NormalizeRequestabilityStatus(lifecycle.Status), "active", StringComparison.Ordinal))
             {
                 return;
             }
@@ -553,9 +553,20 @@ namespace AiStatsSdk
             return value.Trim().ToLowerInvariant();
         }
 
+        private static string NormalizeRequestabilityStatus(string? value)
+        {
+            return NormalizeSourceStatus(value) switch
+            {
+                "active" or "available" => "active",
+                "deprecated" => "deprecated",
+                "retired" => "retired",
+                _ => string.Empty
+            };
+        }
+
         private static bool IsModelRequestableForInference(ModelLifecycleInfo info)
         {
-            if (!string.Equals(info.Status, "active", StringComparison.Ordinal))
+            if (!string.Equals(NormalizeRequestabilityStatus(info.Status), "active", StringComparison.Ordinal))
             {
                 return false;
             }
@@ -578,10 +589,14 @@ namespace AiStatsSdk
 
         private static string BuildInactiveModelRequestMessage(ModelLifecycleInfo info)
         {
-            if (!string.Equals(info.Status, "active", StringComparison.Ordinal))
+            var normalizedStatus = NormalizeRequestabilityStatus(info.Status);
+            if (!string.Equals(normalizedStatus, "active", StringComparison.Ordinal))
             {
+                var lifecycleStatusForMessage = string.IsNullOrWhiteSpace(normalizedStatus)
+                    ? (NormalizeSourceStatus(info.Status) ?? info.Status)
+                    : normalizedStatus;
                 var fallback = BuildLifecycleMessage(
-                    info.Status,
+                    lifecycleStatusForMessage,
                     info.ModelId,
                     info.DeprecationDate,
                     info.RetirementDate,

@@ -430,12 +430,7 @@ public final class AIStats {
 		Map<String, String> query = new HashMap<>();
 		query.put("model_id", modelId);
 		query.put("limit", "1");
-		JsonNode response;
-		try {
-			response = parse(Operations.listDataModels(rawClient, null, query, null, null));
-		} catch (RuntimeException | IOException | InterruptedException ex) {
-			return null;
-		}
+		JsonNode response = parse(Operations.listDataModels(rawClient, null, query, null, null));
 		JsonNode models = response.path("models");
 		if (!models.isArray()) {
 			return null;

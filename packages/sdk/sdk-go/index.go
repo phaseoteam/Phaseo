@@ -341,7 +341,7 @@ func (c *AIStats) fetchModelLifecycle(
 		nil,
 	)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("list model lifecycle for %q: %w", modelID, err)
 	}
 
 	models, ok := payload["models"]
