@@ -40,6 +40,7 @@ type OrganisationStat = {
 	organisationName: string;
 	total: number;
 	weekdayCounts: number[];
+	releasedTodayCount: number;
 	topWeekdayIndex: number;
 	topWeekdayCount: number;
 	topWeekdayShare: number;
@@ -98,6 +99,12 @@ function formatNumber(value: number) {
 	return value.toLocaleString();
 }
 
+function getLocalMonthDayKey(date: Date) {
+	return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+		date.getDate()
+	).padStart(2, "0")}`;
+}
+
 export default function ModelReleaseWeekdayAnalysis({
 	events,
 }: ModelReleaseWeekdayAnalysisProps) {
@@ -110,6 +117,7 @@ export default function ModelReleaseWeekdayAnalysis({
 
 	const analysis = useMemo<AnalysisResult | null>(() => {
 		const nowMs = Date.now();
+		const todayMonthDayKey = getLocalMonthDayKey(new Date());
 		const releaseEvents = events.filter((event) => {
 			if (!event.types.includes("Released")) return false;
 			const parsed = new Date(event.date);
@@ -129,6 +137,7 @@ export default function ModelReleaseWeekdayAnalysis({
 				organisationName: string;
 				total: number;
 				weekdayCounts: number[];
+				releasedTodayCount: number;
 			}
 		>();
 
@@ -150,6 +159,9 @@ export default function ModelReleaseWeekdayAnalysis({
 			if (existing) {
 				existing.total += 1;
 				existing.weekdayCounts[weekdayIndex] += 1;
+				if (event.date.slice(5, 10) === todayMonthDayKey) {
+					existing.releasedTodayCount += 1;
+				}
 			} else {
 				const counts = Array<number>(7).fill(0);
 				counts[weekdayIndex] = 1;
@@ -158,6 +170,8 @@ export default function ModelReleaseWeekdayAnalysis({
 					organisationName,
 					total: 1,
 					weekdayCounts: counts,
+					releasedTodayCount:
+						event.date.slice(5, 10) === todayMonthDayKey ? 1 : 0,
 				});
 			}
 		}
@@ -190,6 +204,7 @@ export default function ModelReleaseWeekdayAnalysis({
 					organisationName: entry.organisationName,
 					total: entry.total,
 					weekdayCounts: entry.weekdayCounts,
+					releasedTodayCount: entry.releasedTodayCount,
 					topWeekdayIndex: topIndex,
 					topWeekdayCount: topCount,
 					topWeekdayShare: entry.total === 0 ? 0 : topCount / entry.total,
@@ -350,6 +365,24 @@ export default function ModelReleaseWeekdayAnalysis({
 						{todayCount}/{org.total}
 					</span>{" "}
 					({formatPercent(todayShare)})
+				</div>
+				<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+					<Link
+						href={`/updates/calendar/organisations/${encodeURIComponent(
+							org.organisationId
+						)}?view=today`}
+						className="font-semibold text-zinc-700 hover:underline dark:text-zinc-300"
+					>
+						Released on this day ({org.releasedTodayCount})
+					</Link>
+					<Link
+						href={`/updates/calendar/organisations/${encodeURIComponent(
+							org.organisationId
+						)}?view=all`}
+						className="font-semibold text-zinc-700 hover:underline dark:text-zinc-300"
+					>
+						All releases ({org.total})
+					</Link>
 				</div>
 			</div>
 		);

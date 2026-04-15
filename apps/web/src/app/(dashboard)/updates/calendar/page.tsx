@@ -27,7 +27,7 @@ const UPCOMING_LIMIT = 64;
 export default async function Page() {
 	const { past: pastEvents, future: upcomingEvents } =
 		await getRecentModelUpdatesSplit({
-			pastMonths: 12,
+			includeAllPast: true,
 			upcomingLimit: UPCOMING_LIMIT,
 		});
 
