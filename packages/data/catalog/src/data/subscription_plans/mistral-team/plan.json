@@ -1,0 +1,54 @@
+{
+  "plan_id": "mistral-team",
+  "name": "Mistral Team",
+  "organisation_id": "mistral",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 24.99,
+      "link": "https://mistral.ai/pricing",
+      "other_info": "Per user"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Storage",
+      "feature_value": "Up to 30GB / user",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Domain Verification",
+      "feature_value": "Included",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Data Export",
+      "feature_value": "Included",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "mistral/mistral-small-4",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "mistral/codestral",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "mistral/devstral-small-2.0",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

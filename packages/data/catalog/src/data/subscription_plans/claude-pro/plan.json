@@ -6,13 +6,13 @@
   "pricing_options": [
     {
       "frequency": "monthly",
-      "usd_price": 20.0,
+      "usd_price": 20,
       "link": "https://claude.com/pricing",
       "other_info": null
     },
     {
       "frequency": "yearly",
-      "usd_price": 200.0,
+      "usd_price": 200,
       "link": "https://claude.com/pricing",
       "other_info": null
     }
@@ -20,31 +20,7 @@
   "features": [],
   "models": [
     {
-      "model_id": "anthropic/claude-3.5-haiku",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "anthropic/claude-3-opus",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "anthropic/claude-haiku-4.5",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "anthropic/claude-opus-4.5",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "anthropic/claude-opus-4.6",
+      "model_id": "anthropic/claude-sonnet-4.6",
       "model_info": null,
       "rate_limit": null,
       "other_info": null
@@ -56,9 +32,21 @@
       "other_info": null
     },
     {
-      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_id": "anthropic/claude-haiku-4.5",
       "model_info": null,
       "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.6",
+      "model_info": null,
+      "rate_limit": "Requires extra usage in Claude Code",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.5",
+      "model_info": null,
+      "rate_limit": "Requires extra usage in Claude Code",
       "other_info": null
     }
   ]

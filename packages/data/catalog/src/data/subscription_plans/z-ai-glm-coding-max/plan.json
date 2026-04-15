@@ -1,0 +1,96 @@
+{
+  "plan_id": "z-ai-glm-coding-max",
+  "name": "GLM Coding Plan Max",
+  "organisation_id": "z-ai",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 160,
+      "link": "https://z.ai/subscribe",
+      "other_info": "From 2nd month"
+    },
+    {
+      "frequency": "quarterly",
+      "usd_price": 432,
+      "link": "https://z.ai/subscribe",
+      "other_info": "From 2nd quarter"
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 1536,
+      "link": "https://z.ai/subscribe",
+      "other_info": "From 2nd year"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Relative Usage",
+      "feature_value": "4x Pro plan usage",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "5-Hour Limit",
+      "feature_value": "Up to approx. 1,600 prompts",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Weekly Limit",
+      "feature_value": "Up to approx. 8,000 prompts",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "MCP Quota (Monthly)",
+      "feature_value": "4,000 web searches + web readers / month",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Workload Profile",
+      "feature_value": "Managing high-volume workloads for advanced developers",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Model Access Priority",
+      "feature_value": "First access to new models and features",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Peak-Hour SLA",
+      "feature_value": "Guaranteed peak-hour performance",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "z-ai/glm-5.1",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "z-ai/glm-5-turbo",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "z-ai/glm-4.7",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "z-ai/glm-4.5-air",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

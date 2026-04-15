@@ -6,13 +6,13 @@
   "pricing_options": [
     {
       "frequency": "monthly",
-      "usd_price": 30.0,
+      "usd_price": 30,
       "link": "https://grok.com/#subscribe",
       "other_info": null
     },
     {
       "frequency": "yearly",
-      "usd_price": 300.0,
+      "usd_price": 300,
       "link": "https://grok.com/#subscribe",
       "other_info": null
     }
@@ -29,7 +29,7 @@
       "model_id": "x-ai/grok-4",
       "model_info": null,
       "rate_limit": null,
-      "other_info": null
+      "other_info": "Available to SuperGrok users"
     }
   ]
 }

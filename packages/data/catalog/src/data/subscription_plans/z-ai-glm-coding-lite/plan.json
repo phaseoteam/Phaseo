@@ -1,0 +1,90 @@
+{
+  "plan_id": "z-ai-glm-coding-lite",
+  "name": "GLM Coding Plan Lite",
+  "organisation_id": "z-ai",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 18,
+      "link": "https://z.ai/subscribe",
+      "other_info": "From 2nd month"
+    },
+    {
+      "frequency": "quarterly",
+      "usd_price": 48.6,
+      "link": "https://z.ai/subscribe",
+      "other_info": "From 2nd quarter"
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 172.8,
+      "link": "https://z.ai/subscribe",
+      "other_info": "From 2nd year"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Relative Usage",
+      "feature_value": "3x usage of Claude Pro plan",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "5-Hour Limit",
+      "feature_value": "Up to approx. 80 prompts",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Weekly Limit",
+      "feature_value": "Up to approx. 400 prompts",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "MCP Quota (Monthly)",
+      "feature_value": "100 web searches + web readers / month",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Workload Profile",
+      "feature_value": "Managing lightweight workloads",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Tool Compatibility",
+      "feature_value": "20+ coding tools",
+      "feature_description": "Includes Claude Code, Cursor, Cline, Kilo Code, and OpenClaw.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "z-ai/glm-5.1",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "z-ai/glm-5-turbo",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "z-ai/glm-4.7",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "z-ai/glm-4.5-air",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}

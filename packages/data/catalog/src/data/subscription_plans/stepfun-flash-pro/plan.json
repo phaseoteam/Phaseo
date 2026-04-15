@@ -1,0 +1,36 @@
+{
+  "plan_id": "stepfun-flash-pro",
+  "name": "Step Plan Flash Pro",
+  "organisation_id": "stepfun",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 29,
+      "link": "https://platform.stepfun.com/docs/en/step-plan/overview",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "5-Hour Limit",
+      "feature_value": "1,500 prompts (~22,500 requests)",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Weekly Limit",
+      "feature_value": "6,000 prompts (~90,000 requests)",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "stepfun/step-3.5-flash",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": "Step Plan docs list Step 3.5 Flash and Step 3.5 Flash 2603"
+    }
+  ]
+}

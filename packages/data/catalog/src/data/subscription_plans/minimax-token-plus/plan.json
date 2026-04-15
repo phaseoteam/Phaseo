@@ -1,0 +1,66 @@
+{
+  "plan_id": "minimax-token-plus",
+  "name": "MiniMax Token Plan Plus",
+  "organisation_id": "minimax",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 20,
+      "link": "https://platform.minimax.io/docs/guides/pricing-tokenplan",
+      "other_info": null
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 200,
+      "link": "https://platform.minimax.io/docs/guides/pricing-tokenplan",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "M2.7 Quota",
+      "feature_value": "4,500 requests / 5 hours",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "TTS HD",
+      "feature_value": "4,000 characters / day",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "image-01",
+      "feature_value": "50 images / day",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "minimax/minimax-m2.7",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/image-01",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/music-2.6",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "minimax/speech-02-hd",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    }
+  ]
+}
