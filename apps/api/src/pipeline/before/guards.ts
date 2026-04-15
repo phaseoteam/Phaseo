@@ -15,11 +15,49 @@ import type { DebugOptions } from "@core/types";
 import { authenticate, type AuthFailure } from "./auth";
 import { readAttributionHeaders } from "../after/attribution";
 import type { ProviderCandidateBuildDiagnostics } from "./types";
+import type { PriceCard } from "../pricing";
 
 const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
 const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities"]);
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities"]);
+
+function isLikelyFreeModelId(value: unknown): boolean {
+    if (typeof value !== "string") return false;
+    return value.trim().toLowerCase().includes(":free");
+}
+
+function isFreePriceCard(card: PriceCard | null | undefined): boolean {
+    if (!card || !Array.isArray(card.rules) || card.rules.length === 0) return false;
+    return card.rules.every((rule) => {
+        const pricingPlan = String(rule.pricing_plan ?? "")
+            .trim()
+            .toLowerCase();
+        if (pricingPlan === "free") return true;
+        const numericPrice = Number(rule.price_per_unit);
+        return Number.isFinite(numericPrice) && numericPrice <= 0;
+    });
+}
+
+function allowsNoCreditForFreeRequest(args: { model: string; context: any; providers: any[] }): boolean {
+    if (isLikelyFreeModelId(args.model) || isLikelyFreeModelId(args.context?.resolvedModel)) {
+        return true;
+    }
+
+    const routableProviders = Array.isArray(args.providers)
+        ? args.providers
+            .filter((provider: any) => typeof provider?.providerId === "string")
+        : [];
+    if (!routableProviders.length) return false;
+
+    const pricedCards = routableProviders
+        .map((provider: any) => provider?.pricingCard as PriceCard | undefined)
+        .filter((card): card is PriceCard => Boolean(card));
+    if (pricedCards.length !== routableProviders.length) return false;
+    if (!pricedCards.length) return false;
+
+    return pricedCards.every((card) => isFreePriceCard(card));
+}
 
 function normalizeFormKey(key: string): { key: string; array: boolean } {
     if (/\[\]$/.test(key)) {
@@ -247,27 +285,6 @@ export async function guardContext(args: {
             };
         }
 
-        const teamTier = String(context.teamEnrichment?.tier ?? "")
-            .trim()
-            .toLowerCase();
-        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
-            .trim()
-            .toLowerCase();
-        const bypassWalletCreditCheck =
-            teamTier === "enterprise" && billingMode === "invoice";
-
-        if (!args.internal && !context.credit.ok && !bypassWalletCreditCheck) {
-            return {
-                ok: false,
-                response: err("insufficient_funds", {
-                    reason: context.credit.reason ?? "credit_check_failed",
-                    min_usd: MIN_CREDIT_AMOUNT,
-                    request_id: args.requestId,
-                    team_id: args.teamId,
-                }),
-            };
-        }
-
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
             return {
@@ -278,6 +295,37 @@ export async function guardContext(args: {
                     request_id: args.requestId,
                     team_id: args.teamId,
                     provider_candidate_diagnostics: candidateDiagnostics,
+                }),
+            };
+        }
+
+        const teamTier = String(context.teamEnrichment?.tier ?? "")
+            .trim()
+            .toLowerCase();
+        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
+            .trim()
+            .toLowerCase();
+        const bypassWalletCreditCheck =
+            teamTier === "enterprise" && billingMode === "invoice";
+        const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
+            model: args.model,
+            context,
+            providers,
+        });
+
+        if (
+            !args.internal &&
+            !context.credit.ok &&
+            !bypassWalletCreditCheck &&
+            !allowFreeWithoutCredits
+        ) {
+            return {
+                ok: false,
+                response: err("insufficient_funds", {
+                    reason: context.credit.reason ?? "credit_check_failed",
+                    min_usd: MIN_CREDIT_AMOUNT,
+                    request_id: args.requestId,
+                    team_id: args.teamId,
                 }),
             };
         }
