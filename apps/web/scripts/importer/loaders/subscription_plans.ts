@@ -82,6 +82,51 @@ function generateDeterministicUUID(input: string): string {
     return hash.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
 }
 
+type RawPlanModel = {
+    model_id: unknown;
+    model_info?: unknown;
+    rate_limit?: unknown;
+    other_info?: unknown;
+};
+
+function toNonEmptyScalarString(value: unknown): string | null {
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
+    }
+    if (typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+    }
+    return null;
+}
+
+function collapsePlanModelVariants(modelId: string, variants: RawPlanModel[]): RawPlanModel {
+    if (variants.length === 1) return variants[0];
+    const modelInfoValues = [...new Set(
+        variants
+            .map((variant) => toNonEmptyScalarString(variant.model_info))
+            .filter((value): value is string => value != null)
+    )];
+    const rateLimitValues = [...new Set(
+        variants
+            .map((variant) => toNonEmptyScalarString(variant.rate_limit))
+            .filter((value): value is string => value != null)
+    )];
+
+    return {
+        model_id: modelId,
+        model_info: modelInfoValues.length > 0 ? modelInfoValues.join(" | ") : null,
+        rate_limit: rateLimitValues.length > 0 ? rateLimitValues.join(" | ") : null,
+        other_info: {
+            variants: variants.map((variant) => ({
+                model_info: variant.model_info ?? null,
+                rate_limit: variant.rate_limit ?? null,
+                other_info: variant.other_info ?? null,
+            })),
+        },
+    };
+}
+
 export async function loadSubscriptionPlans(tracker: ChangeTracker) {
     const supa = client();
     const { modelIds: knownModelIds, normalizedModelIdToModelId } = await loadKnownModelIds(supa);
@@ -144,15 +189,22 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
 
             // Insert/update the plan models
             if (j.models && Array.isArray(j.models)) {
-                // Deduplicate models by model_id
-                const uniqueModels = j.models.filter((model: any, index: number, self: any[]) =>
-                    index === self.findIndex((m: any) => m.model_id === model.model_id)
-                );
-                for (const model of uniqueModels) {
-                    if (!model.model_id) {
+                const groupedModels = new Map<string, RawPlanModel[]>();
+                for (const rawModel of j.models as RawPlanModel[]) {
+                    const modelId = typeof rawModel?.model_id === "string" ? rawModel.model_id.trim() : "";
+                    if (!modelId) {
                         console.error(`Skipping model in ${d}: missing model_id`);
                         continue;
                     }
+                    const variants = groupedModels.get(modelId) ?? [];
+                    variants.push(rawModel);
+                    groupedModels.set(modelId, variants);
+                }
+
+                const uniqueModels = Array.from(groupedModels.entries()).map(([modelId, variants]) =>
+                    collapsePlanModelVariants(modelId, variants)
+                );
+                for (const model of uniqueModels) {
                     const rawModelId = String(model.model_id).trim();
                     const resolvedModelId =
                         (knownModelIds.has(rawModelId) ? rawModelId : "") ||

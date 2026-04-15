@@ -6,6 +6,20 @@ import { computeBill } from "@pipeline/pricing/engine";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 
+const DEFAULT_VIDEO_FRAME_RATE = 24;
+const SEEDANCE_MIN_TOKENS_480P: Record<number, number> = {
+	4: 70308,
+	5: 90396,
+	6: 100440,
+	7: 120528,
+};
+const SEEDANCE_MIN_TOKENS_720P: Record<number, number> = {
+	4: 151200,
+	5: 194400,
+	6: 216000,
+	7: 259200,
+};
+
 function normalizeRequestOptions(source?: Record<string, unknown>): Record<string, unknown> {
 	if (!source) return {};
 	return Object.fromEntries(
@@ -43,7 +57,12 @@ function getPricedTotalNanos(pricedUsage: Record<string, unknown> | null | undef
 }
 
 function hasLegacyOutputVideoMeter(card: PriceCard): boolean {
-	return card.rules.some((rule) => String((rule as any)?.meter ?? "").toLowerCase() === "output_video");
+	return hasMeter(card, "output_video");
+}
+
+function hasMeter(card: PriceCard, meter: string): boolean {
+	const normalizedMeter = meter.trim().toLowerCase();
+	return card.rules.some((rule) => String((rule as any)?.meter ?? "").trim().toLowerCase() === normalizedMeter);
 }
 
 function normalizeLegacyResolution(value: unknown): string | undefined {
@@ -53,6 +72,131 @@ function normalizeLegacyResolution(value: unknown): string | undefined {
 	const pMatch = trimmed.match(/^(\d+)\s*p$/i);
 	if (pMatch) return `${pMatch[1]}P`;
 	return trimmed;
+}
+
+function parseDimensionsFromSize(value: unknown): { width: number; height: number } | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+
+	const explicitMatch = trimmed.match(/^(\d+)\s*[x*]\s*(\d+)$/i);
+	if (explicitMatch) {
+		const width = Number(explicitMatch[1]);
+		const height = Number(explicitMatch[2]);
+		if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+			return { width, height };
+		}
+	}
+
+	const pMatch = trimmed.match(/^(\d+)\s*p$/i);
+	if (!pMatch) return undefined;
+	const height = Number(pMatch[1]);
+	if (!Number.isFinite(height) || height <= 0) return undefined;
+	switch (height) {
+		case 480:
+			return { width: 854, height: 480 };
+		case 720:
+			return { width: 1280, height: 720 };
+		case 1080:
+			return { width: 1920, height: 1080 };
+		default:
+			return { width: Math.round(height * (16 / 9)), height };
+	}
+}
+
+function resolveVideoDimensions(source: Record<string, unknown>): { width: number; height: number } | undefined {
+	return (
+		parseDimensionsFromSize(source.size) ??
+		parseDimensionsFromSize(source.resolution) ??
+		parseDimensionsFromSize(source.input_resolution) ??
+		parseDimensionsFromSize((source as any)?.video_params?.size) ??
+		parseDimensionsFromSize((source as any)?.video_params?.resolution) ??
+		parseDimensionsFromSize((source as any)?.video_params?.input_resolution)
+	);
+}
+
+function resolveNumericOption(source: Record<string, unknown>, path: string): number | undefined {
+	const [head, tail] = path.split(".", 2);
+	if (!head) return undefined;
+	const topLevelValue = (source as any)?.[head];
+	if (!tail) return toFiniteNumber(topLevelValue);
+	if (!topLevelValue || typeof topLevelValue !== "object" || Array.isArray(topLevelValue)) return undefined;
+	return toFiniteNumber((topLevelValue as Record<string, unknown>)[tail]);
+}
+
+function classifySeedanceResolutionTier(dimensions: { width: number; height: number }): "480p" | "720p" | null {
+	const shortEdge = Math.min(dimensions.width, dimensions.height);
+	const longEdge = Math.max(dimensions.width, dimensions.height);
+
+	if (shortEdge >= 430 && shortEdge <= 530 && longEdge >= 760 && longEdge <= 960) {
+		return "480p";
+	}
+	if (shortEdge >= 680 && shortEdge <= 760 && longEdge >= 1180 && longEdge <= 1320) {
+		return "720p";
+	}
+	return null;
+}
+
+function resolveSeedanceMinTokenFloor(args: {
+	outputSeconds: number;
+	dimensions?: { width: number; height: number };
+	hasInputVideo: boolean;
+}): number | undefined {
+	if (!args.hasInputVideo || !args.dimensions) return undefined;
+	const roundedSeconds = Math.round(args.outputSeconds);
+	if (![4, 5, 6, 7].includes(roundedSeconds)) return undefined;
+	const tier = classifySeedanceResolutionTier(args.dimensions);
+	if (tier === "480p") return SEEDANCE_MIN_TOKENS_480P[roundedSeconds];
+	if (tier === "720p") return SEEDANCE_MIN_TOKENS_720P[roundedSeconds];
+	return undefined;
+}
+
+function resolveEstimatedTotalTokens(args: {
+	seconds: number;
+	requestOptions?: Record<string, unknown>;
+}): number | undefined {
+	const source = args.requestOptions ?? {};
+	const explicitTotalTokens =
+		resolveNumericOption(source, "total_tokens") ??
+		resolveNumericOption(source, "video_params.total_tokens");
+	if (typeof explicitTotalTokens === "number" && explicitTotalTokens > 0) {
+		return Math.round(explicitTotalTokens);
+	}
+
+	const dimensions = resolveVideoDimensions(source);
+	if (!dimensions) return undefined;
+	const frameRateRaw =
+		resolveNumericOption(source, "frame_rate") ??
+		resolveNumericOption(source, "video_params.frame_rate") ??
+		DEFAULT_VIDEO_FRAME_RATE;
+	const frameRate = Math.max(1, Math.trunc(frameRateRaw));
+	const inputVideoSecondsRaw =
+		resolveNumericOption(source, "input_video_seconds") ??
+		resolveNumericOption(source, "video_params.input_video_seconds");
+	const inputVideoCountRaw =
+		resolveNumericOption(source, "input_video_count") ??
+		resolveNumericOption(source, "video_params.input_video_count");
+	const hasInputVideo = (inputVideoCountRaw ?? 0) > 0 || (inputVideoSecondsRaw ?? 0) > 0;
+	const inferredInputVideoSeconds =
+		typeof inputVideoSecondsRaw === "number" && inputVideoSecondsRaw >= 0
+			? inputVideoSecondsRaw
+			: hasInputVideo
+				? args.seconds
+				: 0;
+	const combinedSeconds = Math.max(0, args.seconds) + Math.max(0, inferredInputVideoSeconds);
+	if (combinedSeconds <= 0) return undefined;
+
+	let estimatedTokens =
+		(combinedSeconds * dimensions.width * dimensions.height * frameRate) / 1024;
+	const minFloor = resolveSeedanceMinTokenFloor({
+		outputSeconds: args.seconds,
+		dimensions,
+		hasInputVideo,
+	});
+	if (typeof minFloor === "number") {
+		estimatedTokens = Math.max(estimatedTokens, minFloor);
+	}
+	return Math.max(1, Math.round(estimatedTokens));
 }
 
 function buildRequestContext(args: {
@@ -101,13 +245,24 @@ export function computeVideoPricedUsage(args: {
 	model: string;
 	requestOptions?: Record<string, unknown>;
 }): Record<string, unknown> {
+	const hasTotalTokensMeter = hasMeter(args.card, "total_tokens");
+	const estimatedTotalTokens = hasTotalTokensMeter
+		? resolveEstimatedTotalTokens({
+			seconds: args.seconds,
+			requestOptions: args.requestOptions,
+		})
+		: undefined;
 	const primaryContext = buildRequestContext({
 		seconds: args.seconds,
 		model: args.model,
 		requestOptions: args.requestOptions,
 	});
+	const usageMeters: Record<string, number> = { output_video_seconds: args.seconds };
+	if (typeof estimatedTotalTokens === "number" && estimatedTotalTokens > 0) {
+		usageMeters.total_tokens = estimatedTotalTokens;
+	}
 	let priced = computeBill(
-		{ output_video_seconds: args.seconds },
+		usageMeters,
 		args.card,
 		primaryContext,
 	);

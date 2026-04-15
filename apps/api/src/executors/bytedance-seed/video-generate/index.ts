@@ -29,6 +29,15 @@ function toPositiveNumber(value: unknown): number | undefined {
 	return undefined;
 }
 
+function toNonNegativeNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+	if (typeof value === "string" && value.trim().length > 0) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+	}
+	return undefined;
+}
+
 function toNonEmptyString(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
@@ -219,6 +228,19 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const seconds = parseDurationSeconds(ir);
 	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
 	const quality = ir.quality ?? null;
+	const bytedanceConfig = extractBytedanceConfig((ir.rawRequest ?? {}) as Record<string, any>);
+	const inputVideoSource = normalizeInputSource(ir.inputVideo ?? ir.input?.video);
+	const inputVideoCount = inputVideoSource ? 1 : 0;
+	const inputVideoSeconds =
+		toNonNegativeNumber(
+			bytedanceConfig.input_video_seconds ??
+			bytedanceConfig.inputVideoSeconds ??
+			bytedanceConfig.video_input_seconds ??
+			bytedanceConfig.videoInputSeconds,
+		) ??
+		(inputVideoSource ? (seconds ?? 1) : 0);
+	const frameRateForPricing =
+		toPositiveNumber(bytedanceConfig.frame_rate ?? bytedanceConfig.frameRate ?? ir.frameRate ?? ir.fps);
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => {
@@ -248,6 +270,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				size,
 				resolution: ir.resolution,
 				quality,
+				seconds: seconds ?? undefined,
+				input_video_count: inputVideoCount,
+				input_video_seconds: inputVideoSeconds,
+				frame_rate: frameRateForPricing,
 			}),
 			isByok: keyInfo.source === "byok",
 		});
@@ -407,6 +433,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				seconds: seconds ?? null,
 				resolution: size ?? null,
 				quality,
+				inputVideoCount,
+				inputVideoSeconds,
+				frameRate: frameRateForPricing ?? null,
 				outputAccess: ir.outputAccess ?? "bytes",
 				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,

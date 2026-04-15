@@ -11,6 +11,10 @@ type VideoOptionInput = {
 	duration?: unknown;
 	quality?: unknown;
 	input_image_count?: unknown;
+	input_video_seconds?: unknown;
+	input_video_count?: unknown;
+	frame_rate?: unknown;
+	total_tokens?: unknown;
 	video_params?: {
 		size?: unknown;
 		resolution?: unknown;
@@ -20,6 +24,10 @@ type VideoOptionInput = {
 		duration?: unknown;
 		quality?: unknown;
 		input_image_count?: unknown;
+		input_video_seconds?: unknown;
+		input_video_count?: unknown;
+		frame_rate?: unknown;
+		total_tokens?: unknown;
 	} | null;
 };
 
@@ -36,6 +44,17 @@ function toPositiveNumber(value: unknown): number | undefined {
 		if (!trimmed) return undefined;
 		const parsed = Number(trimmed);
 		if (Number.isFinite(parsed) && parsed > 0) return parsed;
+	}
+	return undefined;
+}
+
+function toNonNegativeNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		if (!trimmed) return undefined;
+		const parsed = Number(trimmed);
+		if (Number.isFinite(parsed) && parsed >= 0) return parsed;
 	}
 	return undefined;
 }
@@ -66,19 +85,45 @@ export function resolveVideoSeconds(input: VideoOptionInput): number | undefined
 	);
 }
 
+export function resolveInputVideoSeconds(input: VideoOptionInput): number | undefined {
+	return (
+		toNonNegativeNumber(input.input_video_seconds) ??
+		toNonNegativeNumber(input.video_params?.input_video_seconds)
+	);
+}
+
+export function resolveInputVideoCount(input: VideoOptionInput): number | undefined {
+	return (
+		toNonNegativeNumber(input.input_video_count) ??
+		toNonNegativeNumber(input.video_params?.input_video_count)
+	);
+}
+
+export function resolveFrameRate(input: VideoOptionInput): number | undefined {
+	return (
+		toPositiveNumber(input.frame_rate) ??
+		toPositiveNumber(input.video_params?.frame_rate)
+	);
+}
+
+export function resolveTotalTokens(input: VideoOptionInput): number | undefined {
+	return (
+		toPositiveNumber(input.total_tokens) ??
+		toPositiveNumber(input.video_params?.total_tokens)
+	);
+}
+
 export function buildVideoPricingRequestOptions(input: VideoOptionInput): Record<string, unknown> {
 	const size = resolveVideoSize(input);
 	const seconds = resolveVideoSeconds(input);
 	const quality = toNonEmptyString(input.quality) ?? toNonEmptyString(input.video_params?.quality);
-	const inputImageCount = toPositiveNumber(input.input_image_count) ??
-		(typeof input.input_image_count === "number" && Number.isFinite(input.input_image_count) && input.input_image_count === 0
-			? 0
-			: toPositiveNumber(input.video_params?.input_image_count) ??
-				(typeof input.video_params?.input_image_count === "number" &&
-				Number.isFinite(input.video_params.input_image_count) &&
-				input.video_params.input_image_count === 0
-					? 0
-					: undefined));
+	const inputImageCount =
+		toNonNegativeNumber(input.input_image_count) ??
+		toNonNegativeNumber(input.video_params?.input_image_count);
+	const inputVideoSeconds = resolveInputVideoSeconds(input);
+	const inputVideoCount = resolveInputVideoCount(input);
+	const frameRate = resolveFrameRate(input);
+	const totalTokens = resolveTotalTokens(input);
 	const out: Record<string, unknown> = {};
 
 	if (size) {
@@ -112,12 +157,57 @@ export function buildVideoPricingRequestOptions(input: VideoOptionInput): Record
 	}
 
 	if (typeof inputImageCount === "number") {
-		out.input_image_count = Math.max(0, Math.trunc(inputImageCount));
+		const normalizedCount = Math.max(0, Math.trunc(inputImageCount));
+		out.input_image_count = normalizedCount;
 		const videoParams =
 			out.video_params && typeof out.video_params === "object"
 				? (out.video_params as Record<string, unknown>)
 				: {};
-		videoParams.input_image_count = Math.max(0, Math.trunc(inputImageCount));
+		videoParams.input_image_count = normalizedCount;
+		out.video_params = videoParams;
+	}
+
+	if (typeof inputVideoSeconds === "number") {
+		const normalizedSeconds = Math.max(0, inputVideoSeconds);
+		out.input_video_seconds = normalizedSeconds;
+		const videoParams =
+			out.video_params && typeof out.video_params === "object"
+				? (out.video_params as Record<string, unknown>)
+				: {};
+		videoParams.input_video_seconds = normalizedSeconds;
+		out.video_params = videoParams;
+	}
+
+	if (typeof inputVideoCount === "number") {
+		const normalizedCount = Math.max(0, Math.trunc(inputVideoCount));
+		out.input_video_count = normalizedCount;
+		const videoParams =
+			out.video_params && typeof out.video_params === "object"
+				? (out.video_params as Record<string, unknown>)
+				: {};
+		videoParams.input_video_count = normalizedCount;
+		out.video_params = videoParams;
+	}
+
+	if (typeof frameRate === "number") {
+		const normalizedFrameRate = Math.max(1, Math.trunc(frameRate));
+		out.frame_rate = normalizedFrameRate;
+		const videoParams =
+			out.video_params && typeof out.video_params === "object"
+				? (out.video_params as Record<string, unknown>)
+				: {};
+		videoParams.frame_rate = normalizedFrameRate;
+		out.video_params = videoParams;
+	}
+
+	if (typeof totalTokens === "number") {
+		const normalizedTotalTokens = Math.max(0, totalTokens);
+		out.total_tokens = normalizedTotalTokens;
+		const videoParams =
+			out.video_params && typeof out.video_params === "object"
+				? (out.video_params as Record<string, unknown>)
+				: {};
+		videoParams.total_tokens = normalizedTotalTokens;
 		out.video_params = videoParams;
 	}
 

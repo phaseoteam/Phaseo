@@ -43,4 +43,38 @@ describe("video-request-options", () => {
 			},
 		});
 	});
+
+	it("normalizes input_image_count edge cases", () => {
+		const fractional = buildVideoPricingRequestOptions({
+			size: "768p",
+			seconds: 8,
+			input_image_count: 2.9,
+		});
+		expect(fractional.input_image_count).toBe(2);
+		expect((fractional.video_params as Record<string, unknown>).input_image_count).toBe(2);
+
+		const zeroString = buildVideoPricingRequestOptions({
+			size: "768p",
+			seconds: 8,
+			input_image_count: "0",
+		});
+		expect(zeroString.input_image_count).toBe(0);
+		expect((zeroString.video_params as Record<string, unknown>).input_image_count).toBe(0);
+
+		const negative = buildVideoPricingRequestOptions({
+			size: "768p",
+			seconds: 8,
+			input_image_count: -3,
+		});
+		expect(negative).not.toHaveProperty("input_image_count");
+		expect((negative.video_params as Record<string, unknown>)).not.toHaveProperty("input_image_count");
+
+		const nonFinite = buildVideoPricingRequestOptions({
+			size: "768p",
+			seconds: 8,
+			input_image_count: Number.POSITIVE_INFINITY,
+		});
+		expect(nonFinite).not.toHaveProperty("input_image_count");
+		expect((nonFinite.video_params as Record<string, unknown>)).not.toHaveProperty("input_image_count");
+	});
 });
