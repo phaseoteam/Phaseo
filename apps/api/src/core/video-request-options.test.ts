@@ -22,6 +22,7 @@ describe("video-request-options", () => {
 			size: "768p",
 			seconds: 8,
 			quality: "standard",
+			input_image_count: 1,
 		});
 
 		expect(options).toEqual({
@@ -31,12 +32,14 @@ describe("video-request-options", () => {
 			seconds: 8,
 			duration_seconds: 8,
 			quality: "standard",
+			input_image_count: 1,
 			video_params: {
 				resolution: "768p",
 				input_resolution: "768p",
 				seconds: 8,
 				duration_seconds: 8,
 				quality: "standard",
+				input_image_count: 1,
 			},
 		});
 	});

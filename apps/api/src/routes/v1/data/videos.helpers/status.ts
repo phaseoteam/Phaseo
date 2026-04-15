@@ -388,10 +388,27 @@ export async function finalizeVideoStatusIfTerminal(args: {
 	seconds?: number | null;
 	resolution?: string | null;
 	quality?: string | null;
+	requestOptions?: Record<string, unknown>;
 	metaPatch?: Record<string, unknown>;
 	rawPayload?: unknown;
 }): Promise<void> {
 	if (args.status !== "completed" && args.status !== "failed") return;
+	const inputImageCountCandidate =
+		toFiniteNumber((args.requestOptions as any)?.input_image_count) ??
+		toFiniteNumber((args.requestOptions as any)?.video_params?.input_image_count) ??
+		toFiniteNumber(args.videoMeta?.inputImageCount);
+	const normalizedInputImageCount =
+		inputImageCountCandidate != null && inputImageCountCandidate >= 0
+			? Math.trunc(inputImageCountCandidate)
+			: undefined;
+	const requestOptions = {
+		...(args.requestOptions ?? {}),
+		...buildVideoPricingRequestOptions({
+			resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
+			quality: args.quality ?? args.videoMeta?.quality ?? null,
+			input_image_count: normalizedInputImageCount,
+		}),
+	};
 	await finalizeVideoJob({
 		teamId: args.auth.teamId,
 		videoId: args.videoId,
@@ -399,10 +416,7 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		status: args.status,
 		model: args.model ?? args.videoMeta?.model ?? null,
 		seconds: args.seconds ?? args.videoMeta?.seconds ?? null,
-		requestOptions: buildVideoPricingRequestOptions({
-			resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
-			quality: args.quality ?? args.videoMeta?.quality ?? null,
-		}),
+		requestOptions,
 		isByok: args.videoMeta?.keySource === "byok",
 		metaPatch: {
 			...(args.metaPatch ?? {}),

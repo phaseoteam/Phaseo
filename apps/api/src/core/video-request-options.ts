@@ -10,6 +10,7 @@ type VideoOptionInput = {
 	duration_seconds?: unknown;
 	duration?: unknown;
 	quality?: unknown;
+	input_image_count?: unknown;
 	video_params?: {
 		size?: unknown;
 		resolution?: unknown;
@@ -18,6 +19,7 @@ type VideoOptionInput = {
 		duration_seconds?: unknown;
 		duration?: unknown;
 		quality?: unknown;
+		input_image_count?: unknown;
 	} | null;
 };
 
@@ -68,6 +70,15 @@ export function buildVideoPricingRequestOptions(input: VideoOptionInput): Record
 	const size = resolveVideoSize(input);
 	const seconds = resolveVideoSeconds(input);
 	const quality = toNonEmptyString(input.quality) ?? toNonEmptyString(input.video_params?.quality);
+	const inputImageCount = toPositiveNumber(input.input_image_count) ??
+		(typeof input.input_image_count === "number" && Number.isFinite(input.input_image_count) && input.input_image_count === 0
+			? 0
+			: toPositiveNumber(input.video_params?.input_image_count) ??
+				(typeof input.video_params?.input_image_count === "number" &&
+				Number.isFinite(input.video_params.input_image_count) &&
+				input.video_params.input_image_count === 0
+					? 0
+					: undefined));
 	const out: Record<string, unknown> = {};
 
 	if (size) {
@@ -97,6 +108,16 @@ export function buildVideoPricingRequestOptions(input: VideoOptionInput): Record
 				: {};
 		videoParams.seconds = seconds;
 		videoParams.duration_seconds = seconds;
+		out.video_params = videoParams;
+	}
+
+	if (typeof inputImageCount === "number") {
+		out.input_image_count = Math.max(0, Math.trunc(inputImageCount));
+		const videoParams =
+			out.video_params && typeof out.video_params === "object"
+				? (out.video_params as Record<string, unknown>)
+				: {};
+		videoParams.input_image_count = Math.max(0, Math.trunc(inputImageCount));
 		out.video_params = videoParams;
 	}
 

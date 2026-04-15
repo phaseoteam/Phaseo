@@ -1525,7 +1525,7 @@
     "provider_api_model_id": "alibaba-cloud:qwen/wan2.7-t2v",
     "provider_model_slug": "wan2.7-t2v",
     "internal_model_id": "qwen/wan2.7-t2v",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "video",

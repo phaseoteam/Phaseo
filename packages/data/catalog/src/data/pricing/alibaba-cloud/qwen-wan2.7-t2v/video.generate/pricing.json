@@ -9,11 +9,11 @@
       "meter": "output_video_seconds",
       "unit": "second",
       "unit_size": 1,
-      "price_per_unit": 0.733924,
-      "currency": "CNY",
+      "price_per_unit": 0.1,
+      "currency": "USD",
       "tiering_mode": null,
       "pricing_plan": "standard",
-      "note": "International deployment",
+      "note": "International deployment (T2V: no input image)",
       "match": [
         {
           "path": "video_params.resolution",
@@ -22,8 +22,18 @@
           "and_index": 1,
           "value": [
             "720P",
-            "720p"
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720"
           ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
         }
       ],
       "priority": 100,
@@ -33,11 +43,11 @@
       "meter": "output_video_seconds",
       "unit": "second",
       "unit_size": 1,
-      "price_per_unit": 1.100886,
-      "currency": "CNY",
+      "price_per_unit": 0.15,
+      "currency": "USD",
       "tiering_mode": null,
       "pricing_plan": "standard",
-      "note": "International deployment",
+      "note": "International deployment (T2V: no input image)",
       "match": [
         {
           "path": "video_params.resolution",
@@ -46,11 +56,143 @@
           "and_index": 1,
           "value": [
             "1080P",
-            "1080p"
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080"
           ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
         }
       ],
       "priority": 100,
+      "effective_from": "2026-04-03T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "International deployment (I2V: input image provided)",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720"
+          ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-03T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "International deployment (I2V: input image provided)",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080"
+          ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-03T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "International deployment fallback (no input mode signal)",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720"
+          ]
+        }
+      ],
+      "priority": 10,
+      "effective_from": "2026-04-03T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": "International deployment fallback (no input mode signal)",
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080"
+          ]
+        }
+      ],
+      "priority": 10,
       "effective_from": "2026-04-03T00:00:00"
     }
   ]

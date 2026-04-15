@@ -24,6 +24,7 @@ export type VideoJobMeta = {
 	seconds?: number | null;
 	resolution?: string | null;
 	quality?: string | null;
+	inputImageCount?: number | null;
 	outputAccess?: "bytes" | "signed_url" | "both" | null;
 	downloadUrl?: string | null;
 	expiresAt?: string | null;
@@ -90,6 +91,8 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.seconds === "number") out.seconds = source.seconds;
 	if (typeof source.resolution === "string") out.resolution = source.resolution;
 	if (typeof source.quality === "string") out.quality = source.quality;
+	if (typeof source.inputImageCount === "number") out.inputImageCount = source.inputImageCount;
+	if (typeof source.input_image_count === "number") out.inputImageCount = source.input_image_count;
 	if (source.outputAccess === "bytes" || source.outputAccess === "signed_url" || source.outputAccess === "both") {
 		out.outputAccess = source.outputAccess;
 	}

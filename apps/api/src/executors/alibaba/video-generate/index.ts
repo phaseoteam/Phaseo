@@ -69,6 +69,45 @@ function normalizeInputSource(value: unknown): string | undefined {
 		toNonEmptyString(source.gcs_uri);
 }
 
+function countImageReferences(value: unknown): number {
+	if (value == null) return 0;
+	if (typeof value === "string") return value.trim().length > 0 ? 1 : 0;
+	if (Array.isArray(value)) {
+		return value.reduce((sum, item) => sum + countImageReferences(item), 0);
+	}
+	if (typeof value === "object") {
+		const asRecord = value as Record<string, unknown>;
+		if (normalizeInputSource(asRecord) != null) return 1;
+		if (typeof asRecord.url === "string" && asRecord.url.trim().length > 0) return 1;
+		if (typeof asRecord.uri === "string" && asRecord.uri.trim().length > 0) return 1;
+	}
+	return 0;
+}
+
+function resolveWanInputImageCount(requestObject: Record<string, unknown>): number {
+	const input =
+		requestObject.input && typeof requestObject.input === "object" && !Array.isArray(requestObject.input)
+			? (requestObject.input as Record<string, unknown>)
+			: {};
+	const fromInput =
+		countImageReferences(input.img_url) +
+		countImageReferences(input.image_url) +
+		countImageReferences(input.image) +
+		countImageReferences(input.images);
+	const fromContent = Array.isArray(requestObject.content)
+		? requestObject.content.reduce((sum, part) => {
+			if (!part || typeof part !== "object" || Array.isArray(part)) return sum;
+			const entry = part as Record<string, unknown>;
+			const type = String(entry.type ?? "").toLowerCase();
+			if (type === "image_url" || type === "image") {
+				return sum + countImageReferences(entry.image_url ?? entry.image ?? entry.url ?? entry.uri);
+			}
+			return sum;
+		}, 0)
+		: 0;
+	return Math.max(0, fromInput + fromContent);
+}
+
 function irToWanRequest(ir: IRVideoGenerationRequest, model: string): any {
 	const rawRequest = (ir.rawRequest ?? {}) as Record<string, any>;
 	const alibabaConfig = extractAlibabaConfig(rawRequest);
@@ -151,6 +190,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	);
 	const baseUrl = (bindings.ALIBABA_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 	const requestObject = irToWanRequest(ir, model);
+	const inputImageCount = resolveWanInputImageCount(requestObject as Record<string, unknown>);
 	const requestBody = JSON.stringify(requestObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 	const requestedSeconds = toDurationSeconds(ir) ?? null;
@@ -172,6 +212,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				size,
 				resolution: ir.resolution,
 				quality,
+				input_image_count: inputImageCount,
 			}),
 			isByok: keyInfo.source === "byok",
 		});
@@ -333,6 +374,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		...(irResponse.usage ?? { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
 		requests: 1,
 		...(requestedSeconds != null ? { output_video_seconds: requestedSeconds } : {}),
+		...(inputImageCount > 0 ? { input_image_count: inputImageCount } : {}),
 	} as any;
 	if (irResponse.nativeId) {
 		const taskId =
@@ -354,6 +396,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				seconds: requestedSeconds,
 				resolution: size ?? null,
 				quality,
+				inputImageCount,
 				outputAccess: ir.outputAccess ?? "both",
 				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,
