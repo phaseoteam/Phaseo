@@ -26,6 +26,11 @@ type ModelFileSnapshot = {
     filePath: string;
     modelId: string | null;
     modelName: string | null;
+    status: string | null;
+    announcedDate: string | null;
+    releaseDate: string | null;
+    deprecationDate: string | null;
+    retirementDate: string | null;
 };
 
 type HuggingFaceOrgSnapshot = {
@@ -34,7 +39,7 @@ type HuggingFaceOrgSnapshot = {
 };
 
 type InternalModelsFileState = {
-    version: 2;
+    version: 3;
     generatedAt: string;
     files: Record<string, ModelFileSnapshot>;
     hfOrgs: Record<string, HuggingFaceOrgSnapshot>;
@@ -83,6 +88,17 @@ function migrateModelRootPrefix(filePath: string): string {
         return `${CANONICAL_MODELS_ROOT_PREFIX}${normalized.slice(LEGACY_MODELS_ROOT_PREFIX.length)}`;
     }
     return normalized;
+}
+
+function toNullableString(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed || null;
+}
+
+function toNullableDateString(value: unknown): string | null {
+    if (value === null || value === undefined) return null;
+    return toNullableString(value);
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -208,19 +224,23 @@ function readModelFileSnapshot(filePath: string, repoRoot: string): ModelFileSna
         const raw = fs.readFileSync(filePath, "utf-8");
         const parsed = JSON.parse(raw) as Record<string, unknown>;
 
-        const modelId =
-            typeof parsed.model_id === "string" && parsed.model_id.trim()
-                ? parsed.model_id.trim()
-                : null;
-        const modelName =
-            typeof parsed.name === "string" && parsed.name.trim()
-                ? parsed.name.trim()
-                : null;
+        const modelId = toNullableString(parsed.model_id);
+        const modelName = toNullableString(parsed.name);
+        const status = toNullableString(parsed.status);
+        const announcedDate = toNullableDateString(parsed.announced_date);
+        const releaseDate = toNullableDateString(parsed.release_date);
+        const deprecationDate = toNullableDateString(parsed.deprecation_date);
+        const retirementDate = toNullableDateString(parsed.retirement_date);
 
         return {
             filePath: migrateModelRootPrefix(path.relative(repoRoot, filePath)),
             modelId,
             modelName,
+            status,
+            announcedDate,
+            releaseDate,
+            deprecationDate,
+            retirementDate,
         };
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -242,11 +262,24 @@ function normalizeStateFiles(files: Record<string, unknown>): Record<string, Mod
             typeof snapshot?.modelName === "string" && snapshot.modelName.trim()
                 ? snapshot.modelName.trim()
                 : null;
+        const status =
+            typeof snapshot?.status === "string" && snapshot.status.trim()
+                ? snapshot.status.trim()
+                : null;
+        const announcedDate = toNullableDateString(snapshot?.announcedDate);
+        const releaseDate = toNullableDateString(snapshot?.releaseDate);
+        const deprecationDate = toNullableDateString(snapshot?.deprecationDate);
+        const retirementDate = toNullableDateString(snapshot?.retirementDate);
 
         map.set(normalizedPath, {
             filePath: normalizedPath,
             modelId,
             modelName,
+            status,
+            announcedDate,
+            releaseDate,
+            deprecationDate,
+            retirementDate,
         });
     }
 
@@ -255,7 +288,7 @@ function normalizeStateFiles(files: Record<string, unknown>): Record<string, Mod
 
 function emptyState(): InternalModelsFileState {
     return {
-        version: 2,
+        version: 3,
         generatedAt: nowIso(),
         files: {},
         hfOrgs: {},
@@ -317,11 +350,11 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
 
         const normalizedFiles = normalizeStateFiles(parsed.files as Record<string, unknown>);
 
-        if (parsed.version === 2) {
+        if (parsed.version === 3 || parsed.version === 2) {
             const hasHfState = parsed.hfOrgs !== undefined && typeof parsed.hfOrgs === "object";
             return {
                 state: {
-                    version: 2,
+                    version: 3,
                     generatedAt: typeof parsed.generatedAt === "string" ? parsed.generatedAt : nowIso(),
                     files: normalizedFiles,
                     hfOrgs: hasHfState ? (parsed.hfOrgs as Record<string, HuggingFaceOrgSnapshot>) : {},
@@ -333,7 +366,7 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
         // Backward compatibility with v1 state (no hfOrgs key).
         return {
             state: {
-                version: 2,
+                version: 3,
                 generatedAt: typeof parsed.generatedAt === "string" ? parsed.generatedAt : nowIso(),
                 files: normalizedFiles,
                 hfOrgs: {},
@@ -356,7 +389,7 @@ function writeDiscoveryState(
     hfOrgs: Record<string, HuggingFaceOrgSnapshot>
 ): void {
     writeJson(statePath, {
-        version: 2,
+        version: 3,
         generatedAt: nowIso(),
         files,
         hfOrgs,
@@ -667,6 +700,55 @@ function toInternalNotificationModel(
     };
 }
 
+function formatStatusValue(status: string | null): string {
+    return status ?? "Not set";
+}
+
+function formatDateValue(value: string | null): string {
+    if (!value) return "Not set";
+    const parsed = new Date(value);
+    if (!Number.isFinite(parsed.getTime())) return value;
+    return parsed.toLocaleDateString("en-GB", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+    });
+}
+
+function buildAddedModelSummaryLines(snapshot: ModelFileSnapshot): string[] {
+    const lines = [`Event: Added`, `Status: ${formatStatusValue(snapshot.status)}`];
+    if (snapshot.announcedDate) lines.push(`Announced: ${formatDateValue(snapshot.announcedDate)}`);
+    if (snapshot.releaseDate) lines.push(`Release: ${formatDateValue(snapshot.releaseDate)}`);
+    if (snapshot.deprecationDate) lines.push(`Deprecation: ${formatDateValue(snapshot.deprecationDate)}`);
+    if (snapshot.retirementDate) lines.push(`Retirement: ${formatDateValue(snapshot.retirementDate)}`);
+    return lines;
+}
+
+function buildUpdatedModelSummaryLines(previous: ModelFileSnapshot, current: ModelFileSnapshot): string[] {
+    const lines: string[] = ["Event: Updated"];
+
+    if (previous.status !== current.status) {
+        lines.push(`Status: ${formatStatusValue(previous.status)} -> ${formatStatusValue(current.status)}`);
+    }
+    if (previous.announcedDate !== current.announcedDate) {
+        lines.push(`Announced: ${formatDateValue(previous.announcedDate)} -> ${formatDateValue(current.announcedDate)}`);
+    }
+    if (previous.releaseDate !== current.releaseDate) {
+        lines.push(`Release: ${formatDateValue(previous.releaseDate)} -> ${formatDateValue(current.releaseDate)}`);
+    }
+    if (previous.deprecationDate !== current.deprecationDate) {
+        lines.push(
+            `Deprecation: ${formatDateValue(previous.deprecationDate)} -> ${formatDateValue(current.deprecationDate)}`
+        );
+    }
+    if (previous.retirementDate !== current.retirementDate) {
+        lines.push(`Retirement: ${formatDateValue(previous.retirementDate)} -> ${formatDateValue(current.retirementDate)}`);
+    }
+
+    return lines.length > 1 ? lines : [];
+}
+
 function buildHfModelLine(modelId: string): string {
     const normalized = modelId.trim();
     if (!normalized) return "- Unknown HF model";
@@ -767,15 +849,46 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
 
     const diff = diffStates(previousState, currentFiles);
     const announcedState = readAnnouncedState(announcedStatePath);
-    const detectedInternalModels = shouldCheckInternal
+    const detectedInternalAddedModels = shouldCheckInternal
         ? diff.added
             .map((filePath) => currentFiles[filePath])
             .filter((snapshot): snapshot is ModelFileSnapshot => Boolean(snapshot))
-            .map((snapshot) => toInternalNotificationModel(snapshot, organisationMetaMap))
+            .map((snapshot) => {
+                const model = toInternalNotificationModel(snapshot, organisationMetaMap);
+                if (!model) return null;
+                return {
+                    ...model,
+                    changeSummaryLines: buildAddedModelSummaryLines(snapshot),
+                } satisfies InternalModelNotificationModel;
+            })
             .filter((snapshot): snapshot is InternalModelNotificationModel => Boolean(snapshot))
         : [];
-    const newInternalModels = filterUnannouncedModels(detectedInternalModels, announcedState.announcedByModelId);
-    const skippedAlreadyAnnouncedInternal = Math.max(0, detectedInternalModels.length - newInternalModels.length);
+    const newInternalModels = filterUnannouncedModels(detectedInternalAddedModels, announcedState.announcedByModelId);
+    const skippedAlreadyAnnouncedInternal = Math.max(
+        0,
+        detectedInternalAddedModels.length - newInternalModels.length
+    );
+    const internalUpdatedModels = shouldCheckInternal
+        ? diff.changed
+            .map((filePath) => {
+                const previousSnapshot = previousState.files[filePath];
+                const currentSnapshot = currentFiles[filePath];
+                if (!previousSnapshot || !currentSnapshot) return null;
+                const changeSummaryLines = buildUpdatedModelSummaryLines(previousSnapshot, currentSnapshot);
+                if (changeSummaryLines.length === 0) return null;
+                const model = toInternalNotificationModel(currentSnapshot, organisationMetaMap);
+                if (!model) return null;
+                return {
+                    ...model,
+                    changeSummaryLines,
+                } satisfies InternalModelNotificationModel;
+            })
+            .filter((snapshot): snapshot is InternalModelNotificationModel => Boolean(snapshot))
+        : [];
+    const internalNotificationModels = [...newInternalModels, ...internalUpdatedModels];
+    const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
+    const internalUpdatesCount = shouldCheckInternal ? internalUpdatedModels.length : 0;
+    const internalNotificationCount = internalNotificationModels.length;
 
     const hfFirstBaseline = shouldCheckHf && !previous.hasHfState;
     const hfAdditionsByOrg = !shouldCheckHf || hfFirstBaseline
@@ -795,8 +908,10 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
             baselineInitialized: hfFirstBaseline,
         },
         internalNotification: {
-            detectedAdded: detectedInternalModels.length,
-            newlyAnnounced: newInternalModels.length,
+            detectedAdded: detectedInternalAddedModels.length,
+            detectedUpdated: internalUpdatesCount,
+            newlyAnnouncedAdded: newInternalModels.length,
+            notifiedUpdates: internalUpdatesCount,
             skippedAlreadyAnnounced: skippedAlreadyAnnouncedInternal,
             announcedStatePath: path.relative(repoRoot, announcedStatePath),
         },
@@ -810,6 +925,9 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
             console.log(
                 `[internal-model-check] Internal additions skipped as already announced: ${skippedAlreadyAnnouncedInternal}.`
             );
+        }
+        if (internalUpdatesCount > 0) {
+            console.log(`[internal-model-check] Internal model updates detected: ${internalUpdatesCount}.`);
         }
     } else {
         console.log("[internal-model-check] Internal model diff disabled (--skip-internal).");
@@ -832,16 +950,15 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         console.log("[internal-model-check] HF baseline initialized from existing state; skipping HF notifications this run.");
     }
 
-    const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
-    if (internalAdditionsCount === 0 && hfAdditionsTotal === 0) {
+    if (internalNotificationCount === 0 && hfAdditionsTotal === 0) {
         writeDiscoveryState(statePath, currentFiles, currentHf.snapshots);
-        console.log("[internal-model-check] No new internal or HF models detected.");
+        console.log("[internal-model-check] No internal model updates/additions or HF additions detected.");
         return;
     }
 
-    if (internalAdditionsCount > 0 && !internalWebhookUrl) {
+    if (internalNotificationCount > 0 && !internalWebhookUrl) {
         console.log(
-            `[internal-model-check] ${internalAdditionsCount} internal model addition(s) detected, but DISCORD_WEBHOOK_NEW_MODELS_PUBLIC is missing.`
+            `[internal-model-check] ${internalNotificationCount} internal model notification(s) detected, but DISCORD_WEBHOOK_NEW_MODELS_PUBLIC is missing.`
         );
     }
     if (hfAdditionsTotal > 0 && !hfWebhookUrl) {
@@ -850,9 +967,9 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         );
     }
 
-    const shouldSendInternal = shouldCheckInternal && internalAdditionsCount > 0 && Boolean(internalWebhookUrl);
+    const shouldSendInternal = shouldCheckInternal && internalNotificationCount > 0 && Boolean(internalWebhookUrl);
     const shouldSendHf = shouldCheckHf && hfAdditionsTotal > 0 && Boolean(hfWebhookUrl);
-    const holdInternalBaseline = shouldCheckInternal && internalAdditionsCount > 0 && !shouldSendInternal;
+    const holdInternalBaseline = shouldCheckInternal && internalNotificationCount > 0 && !shouldSendInternal;
     const holdHfBaseline = shouldCheckHf && hfAdditionsTotal > 0 && !shouldSendHf;
 
     if (!shouldSendInternal && !shouldSendHf) {
@@ -865,14 +982,14 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
     }
 
     console.log(
-        `[internal-model-check] Changes detected (${internalAdditionsCount} internal new, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`
+        `[internal-model-check] Changes detected (${internalAdditionsCount} internal added, ${internalUpdatesCount} internal updated, ${diff.removed.length} internal removed, ${hfAdditionsTotal} HF new). Sending Discord notification${shouldSendInternal && shouldSendHf ? "s" : ""}.`
     );
 
     let mentionsSent = false;
 
     if (shouldSendInternal && internalWebhookUrl) {
         const avatarUrl = options.discordAvatarUrl ?? null;
-        const payload = buildWebhookPayload(newInternalModels, options.discordRoleId, {
+        const payload = buildWebhookPayload(internalNotificationModels, options.discordRoleId, {
             discordUserId: options.discordUserId,
             includeMentions: true,
             avatarUrl,
