@@ -2,17 +2,30 @@
   "model_id": "anthropic/claude-opus-4.7",
   "organisation_id": "anthropic",
   "name": "Claude Opus 4.7",
-  "status": "Rumoured",
+  "status": "Available",
   "previous_model_id": "anthropic/claude-opus-4.6",
-  "announced_date": null,
-  "release_date": null,
+  "announced_date": "2026-04-16T00:00:00",
+  "release_date": "2026-04-16T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
-  "input_types": null,
-  "output_types": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
   "api_model_id": "anthropic/claude-opus-4.7",
   "links": [],
-  "details": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-05-01T00:00:00"
+    }
+  ],
   "benchmarks": []
 }
