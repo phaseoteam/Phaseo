@@ -2,7 +2,6 @@ import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const PAGE_SIZE = 5000;
-const MAX_PAGES = 12;
 
 export type ModelAppUsage = {
 	appId: string;
@@ -66,11 +65,14 @@ export async function getModelApps(
 		{ requests: number; success: number; tokens: number }
 	>();
 
-	for (let page = 0, offset = 0; page < MAX_PAGES; page += 1, offset += PAGE_SIZE) {
+	for (let offset = 0; ; offset += PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("gateway_usage_rollup_daily_app_model")
-			.select("app_id, requests, success_requests, total_tokens")
+			.select("day_bucket, canonical_model_id, app_id, requests, success_requests, total_tokens")
 			.in("canonical_model_id", aliases)
+			.order("day_bucket", { ascending: true })
+			.order("app_id", { ascending: true })
+			.order("canonical_model_id", { ascending: true })
 			.range(offset, offset + PAGE_SIZE - 1);
 
 		if (error) {
