@@ -11,7 +11,6 @@
       "unit_size": 1,
       "price_per_unit": 0.05,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -39,7 +38,6 @@
       "unit_size": 1,
       "price_per_unit": 0.08,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -67,7 +65,6 @@
       "unit_size": 1,
       "price_per_unit": 0.03,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -94,7 +91,6 @@
       "unit_size": 1,
       "price_per_unit": 0.05,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [

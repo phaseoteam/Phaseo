@@ -11,7 +11,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.2,
       "currency": "USD",
-      "tiering_mode": "cliff",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -20,7 +19,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 128000.0
+          "value": 128000
         }
       ],
       "priority": 100,
@@ -32,7 +31,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.05,
       "currency": "USD",
-      "tiering_mode": "cliff",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
@@ -45,7 +43,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.5,
       "currency": "USD",
-      "tiering_mode": "cliff",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -54,7 +51,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 128000.0
+          "value": 128000
         }
       ],
       "priority": 100,
@@ -66,7 +63,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.4,
       "currency": "USD",
-      "tiering_mode": "cliff",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -75,7 +71,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 128000.0
+          "value": 128000
         }
       ],
       "priority": 100,
@@ -87,7 +83,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.05,
       "currency": "USD",
-      "tiering_mode": "cliff",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
@@ -98,9 +93,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.0,
+      "price_per_unit": 1,
       "currency": "USD",
-      "tiering_mode": "cliff",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -109,7 +103,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 128000.0
+          "value": 128000
         }
       ],
       "priority": 100,

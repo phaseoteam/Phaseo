@@ -11,7 +11,6 @@
       "unit_size": 1000000,
       "price_per_unit": 2.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -20,7 +19,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -32,7 +31,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.25,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -41,7 +39,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -51,9 +49,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 15.0,
+      "price_per_unit": 15,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -62,7 +59,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -72,9 +69,8 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 5.0,
+      "price_per_unit": 5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "High Context",
       "match": [
@@ -83,7 +79,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -95,7 +91,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "High Context",
       "match": [
@@ -104,7 +99,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -116,7 +111,6 @@
       "unit_size": 1000000,
       "price_per_unit": 22.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "High Context",
       "match": [
@@ -125,7 +119,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -137,7 +131,6 @@
       "unit_size": 1000000,
       "price_per_unit": 1.25,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "flex",
       "note": null,
       "match": [
@@ -146,7 +139,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -158,7 +151,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.13,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "flex",
       "note": null,
       "match": [
@@ -167,7 +159,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -179,7 +171,6 @@
       "unit_size": 1000000,
       "price_per_unit": 7.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "flex",
       "note": null,
       "match": [
@@ -188,7 +179,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -200,7 +191,6 @@
       "unit_size": 1000000,
       "price_per_unit": 2.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "flex",
       "note": "High Context",
       "match": [
@@ -209,7 +199,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -221,7 +211,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.26,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "flex",
       "note": "High Context",
       "match": [
@@ -230,7 +219,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -242,7 +231,6 @@
       "unit_size": 1000000,
       "price_per_unit": 11.25,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "flex",
       "note": "High Context",
       "match": [
@@ -251,7 +239,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -261,9 +249,8 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 5.0,
+      "price_per_unit": 5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "priority",
       "note": null,
       "match": [
@@ -272,7 +259,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -284,7 +271,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "priority",
       "note": null,
       "match": [
@@ -293,7 +279,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -303,9 +289,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 30.0,
+      "price_per_unit": 30,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "priority",
       "note": null,
       "match": [
@@ -314,7 +299,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -324,9 +309,8 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 10.0,
+      "price_per_unit": 10,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "priority",
       "note": "High Context",
       "match": [
@@ -335,7 +319,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -345,9 +329,8 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.0,
+      "price_per_unit": 1,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "priority",
       "note": "High Context",
       "match": [
@@ -356,7 +339,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -366,9 +349,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 45.0,
+      "price_per_unit": 45,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "priority",
       "note": "High Context",
       "match": [
@@ -377,7 +359,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,

@@ -105,6 +105,21 @@
     "capabilities": []
   },
   {
+    "api_model_id": "anthropic/claude-3-haiku",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-3-haiku",
+    "provider_model_slug": "anthropic.claude-3-haiku-20240307-v1:0",
+    "internal_model_id": "anthropic/claude-3-haiku",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": 4096,
+    "effective_from": "2024-03-13T00:00:00",
+    "effective_to": "2026-04-20T00:00:00",
+    "capabilities": []
+  },
+  {
     "api_model_id": "anthropic/claude-3.5-haiku",
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-3.5-haiku",
     "provider_model_slug": "anthropic.claude-3-5-haiku-20241022-v1:0",
@@ -199,6 +214,21 @@
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-opus-4.6",
     "provider_model_slug": "anthropic.claude-opus-4-6-v1",
     "internal_model_id": "anthropic/claude-opus-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.7",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-opus-4.7",
+    "provider_model_slug": "anthropic.claude-opus-4-7-v1",
+    "internal_model_id": "anthropic/claude-opus-4.7",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
