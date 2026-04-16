@@ -50,6 +50,7 @@ export async function getAllBenchmarksCached(sorted = false): Promise<BenchmarkC
 
     cacheLife("days");
     cacheTag("data:benchmarks");
+    cacheTag("data:benchmarks:list");
 
     console.log("[fetch] HIT for benchmarks");
     return getAllBenchmarks(sorted);

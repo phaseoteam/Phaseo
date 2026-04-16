@@ -222,6 +222,7 @@ export async function getAPIProviderPricesCached(): Promise<APIProvider[]> {
 
 	cacheLife("days");
 	cacheTag("data:api_providers");
+	cacheTag("data:api_providers:list");
 
 	console.log("[fetch] HIT JSON for API providers");
 	return getAPIProvider();
@@ -417,6 +418,7 @@ export async function getAPIProviderModelsCached(
 
 	cacheLife("days");
 	cacheTag("data:api_providers");
+	cacheTag(`data:api_providers:${apiProviderId}`);
 
 	console.log(
 		`[fetch] HIT JSON for API providers - ${apiProviderId} / ${outputType}`,
@@ -440,6 +442,7 @@ export async function getAPIProviderTextModelsCached(
 
 	cacheLife("days");
 	cacheTag("data:api_providers");
+	cacheTag(`data:api_providers:${apiProviderId}`);
 
 	return getAPIProviderModels(apiProviderId, "text", includeHidden);
 }
@@ -459,6 +462,7 @@ export async function getAPIProviderImageModelsCached(
 
 	cacheLife("days");
 	cacheTag("data:api_providers");
+	cacheTag(`data:api_providers:${apiProviderId}`);
 
 	return getAPIProviderModels(apiProviderId, "image", includeHidden);
 }
@@ -781,6 +785,7 @@ export async function getAPIProviderModelsListByAddedCached(
 
 	cacheLife("days");
 	cacheTag("data:api_providers");
+	cacheTag(`data:api_providers:${apiProviderId}`);
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:data_api_pricing_rules");
 	cacheTag("data:models");

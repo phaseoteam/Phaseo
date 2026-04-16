@@ -199,6 +199,7 @@ export async function getProviderAppTokenTimeseries(
 	cacheLife("minutes");
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
+	cacheTag(`data:api_providers:${apiProviderId}`);
 
 	if (!apiProviderId) return { apps: [], points: [] };
 

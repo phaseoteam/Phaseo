@@ -168,6 +168,7 @@ export async function getBenchmarkCached(
 
     cacheLife("days");
     cacheTag("data:benchmarks");
+    cacheTag(`data:benchmarks:${benchmark_id}`);
 
     console.log("[fetch] HIT DB for benchmark:", benchmark_id);
     return getBenchmark(benchmark_id, includeHidden);

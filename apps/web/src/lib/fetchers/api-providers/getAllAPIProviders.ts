@@ -358,6 +358,7 @@ export async function getAllAPIProvidersCached(): Promise<APIProviderCard[]> {
 
     cacheLife("days");
     cacheTag("data:api_providers");
+    cacheTag("data:api_providers:list");
 
     console.log("[fetch] HIT JSON for API providers");
     return getAllAPIProviders();

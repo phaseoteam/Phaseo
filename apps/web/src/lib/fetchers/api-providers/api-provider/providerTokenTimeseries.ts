@@ -195,6 +195,7 @@ export async function getProviderModelTokenTimeseries(
 	cacheLife("minutes");
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
+	cacheTag(`data:api_providers:${apiProviderId}`);
 
 	if (!apiProviderId) {
 		return { models: [], points: [] };

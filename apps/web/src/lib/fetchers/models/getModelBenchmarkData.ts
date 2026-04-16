@@ -107,6 +107,10 @@ function modelBenchmarkPairTag(modelId: string, benchmarkId: string): string {
 	return `data:benchmarks:model:${modelId}:benchmark:${benchmarkId}`;
 }
 
+function benchmarkTag(benchmarkId: string): string {
+	return `data:benchmarks:${benchmarkId}`;
+}
+
 function normalizeMaybeArray<T>(value: T | T[] | null | undefined): T | null {
 	if (value == null) return null;
 	return Array.isArray(value) ? (value.length ? value[0] : null) : value;
@@ -642,6 +646,7 @@ export async function getModelBenchmarkHighlights(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("data:benchmarks");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
@@ -649,6 +654,7 @@ export async function getModelBenchmarkHighlights(
 	const { results } = await loadBenchmarkResults(modelId, includeHidden);
 	for (const result of results) {
 		if (!result.benchmark_id) continue;
+		cacheTag(benchmarkTag(result.benchmark_id));
 		cacheTag(modelBenchmarkPairTag(modelId, result.benchmark_id));
 	}
 	return selectHighlightResults(results);
@@ -661,6 +667,7 @@ export async function getModelBenchmarkTableData(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("data:benchmarks");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:table:${modelId}`);
@@ -668,6 +675,7 @@ export async function getModelBenchmarkTableData(
 	const { results } = await loadBenchmarkResults(modelId, includeHidden);
 	for (const result of results) {
 		if (!result.benchmark_id) continue;
+		cacheTag(benchmarkTag(result.benchmark_id));
 		cacheTag(modelBenchmarkPairTag(modelId, result.benchmark_id));
 	}
 	return groupResultsByBenchmarkName(results);
@@ -680,6 +688,7 @@ export async function getModelBenchmarkComparisonData(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("data:benchmarks");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);
@@ -687,6 +696,7 @@ export async function getModelBenchmarkComparisonData(
 	const charts = await fetchBenchmarkComparisonCharts(modelId, includeHidden);
 	for (const chart of charts) {
 		if (!chart.benchmarkId) continue;
+		cacheTag(benchmarkTag(chart.benchmarkId));
 		cacheTag(modelBenchmarkPairTag(modelId, chart.benchmarkId));
 	}
 	return charts;

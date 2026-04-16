@@ -68,6 +68,8 @@ export default async function getOrganisationOverviewHeader(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("data:organisations");
+	cacheTag(`data:organisations:${organisationId}`);
 	cacheTag(`organisation:header:${organisationId}`);
 
 	console.log("[cache] COMPUTE getOrganisationOverviewHeader", organisationId);

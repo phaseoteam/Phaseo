@@ -106,6 +106,8 @@ export async function getTopAppsCached(
 
     cacheLife("days");
     cacheTag("data:top_apps");
+    cacheTag(`data:top_apps:provider:${apiProviderId}`);
+    cacheTag(`data:api_providers:${apiProviderId}`);
 
     console.log(`[fetch] HIT JSON for top apps - ${apiProviderId} - ${period}`);
     return getTopApps(apiProviderId, period, count);

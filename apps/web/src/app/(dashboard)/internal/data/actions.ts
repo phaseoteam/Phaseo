@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import {
+	revalidateBenchmarkDataTags,
 	revalidateModelApiInfoTags,
 	revalidateModelDataOnlyTags,
 	revalidateModelDataTags,
@@ -462,7 +463,8 @@ export async function createBenchmarkAction(formData: FormData) {
 	});
 	if (error) throw new Error(error.message);
 
-	revalidateModelDataTags();
+	revalidateModelDataTags({ benchmarkIds: [id] });
+	revalidateBenchmarkDataTags({ benchmarkId: id });
 	revalidatePath("/internal/data/benchmarks");
 }
 
@@ -485,7 +487,8 @@ export async function updateBenchmarkAction(id: string, formData: FormData) {
 		.eq("id", id);
 	if (error) throw new Error(error.message);
 
-	revalidateModelDataTags();
+	revalidateModelDataTags({ benchmarkIds: [id] });
+	revalidateBenchmarkDataTags({ benchmarkId: id });
 	revalidatePath("/internal/data/benchmarks");
 }
 
@@ -494,7 +497,8 @@ export async function deleteBenchmarkAction(id: string) {
 	const { error } = await supabase.from("data_benchmarks").delete().eq("id", id);
 	if (error) throw new Error(error.message);
 
-	revalidateModelDataTags();
+	revalidateModelDataTags({ benchmarkIds: [id] });
+	revalidateBenchmarkDataTags({ benchmarkId: id });
 	revalidatePath("/internal/data/benchmarks");
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { cacheLife, cacheTag } from "next/cache";
 
 type ResolveModelIdSource =
 	| "direct"
@@ -130,7 +131,7 @@ async function resolveVisibleInternalModelIdForApiModel(
 	return null;
 }
 
-export async function resolveCanonicalModelId(
+async function resolveCanonicalModelIdUncached(
 	requestedModelId: string,
 	includeHidden: boolean,
 ): Promise<ResolveCanonicalModelIdResult> {
@@ -239,4 +240,29 @@ export async function resolveCanonicalModelId(
 		internalModelId: null,
 		source: "unresolved",
 	};
+}
+
+async function resolveCanonicalModelIdCached(
+	requestedModelId: string,
+	includeHidden: boolean,
+): Promise<ResolveCanonicalModelIdResult> {
+	"use cache";
+
+	cacheLife({
+		stale: 60 * 5,
+		revalidate: 60 * 60,
+		expire: 60 * 60 * 24,
+	});
+	cacheTag("data:models");
+	cacheTag("data:model_aliases");
+	cacheTag("data:data_api_provider_models");
+
+	return resolveCanonicalModelIdUncached(requestedModelId, includeHidden);
+}
+
+export async function resolveCanonicalModelId(
+	requestedModelId: string,
+	includeHidden: boolean,
+): Promise<ResolveCanonicalModelIdResult> {
+	return resolveCanonicalModelIdCached(requestedModelId, includeHidden);
 }
