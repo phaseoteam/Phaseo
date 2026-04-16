@@ -131,6 +131,8 @@ export async function getOrganisationDataCached(
 
     cacheLife("days");
     cacheTag("data:organisations");
+    cacheTag(`data:organisations:${organisationId}`);
+    cacheTag(`organisation:header:${organisationId}`);
 
     console.log(`[fetch] HIT JSON for organisation data ${organisationId}`);
     return getOrganisationData(organisationId, latestModelsLimit, includeHidden);
@@ -199,6 +201,8 @@ export async function getOrganisationModelsCached(
 
     cacheLife("days");
     cacheTag("data:organisations");
+    cacheTag(`data:organisations:${organisationId}`);
+    cacheTag(`organisation:header:${organisationId}`);
 
     console.log(`[fetch] HIT JSON for organisation models ${organisationId}`);
     return getOrganisationModels(organisationId, includeHidden);

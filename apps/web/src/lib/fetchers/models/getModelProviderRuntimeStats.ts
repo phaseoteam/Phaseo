@@ -433,7 +433,7 @@ export async function getModelProviderRuntimeStatsCached(args: {
 }): Promise<ProviderRuntimeStatsMap> {
 	"use cache";
 
-	cacheLife("minutes");
+	cacheLife("hours");
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag("data:gateway_requests");
 	cacheTag(`data:gateway_usage_rollups:model:${args.modelId}`);

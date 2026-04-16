@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import getFamilyModels, {
+import {
+	getFamilyModelsCached,
 	type FamilyModelItem,
 } from "@/lib/fetchers/models/getFamilyModels";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { getModelOverview } from "@/lib/fetchers/models/getModel";
+import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -29,7 +30,7 @@ import { permanentRedirect } from "next/navigation";
 
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverview(modelId, includeHidden);
+		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load model overview for metadata", {
 			modelId,
@@ -207,7 +208,9 @@ export default async function Page({
 		);
 	}
 	const familyId = header.family_id ?? null;
-	const family = familyId ? await getFamilyModels(familyId, includeHidden) : null;
+	const family = familyId
+		? await getFamilyModelsCached(familyId, includeHidden)
+		: null;
 
 	const members = family?.models ?? [];
 	const hasFamily = Boolean(family && members.length > 0);

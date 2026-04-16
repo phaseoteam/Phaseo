@@ -83,6 +83,8 @@ export async function getTopModelsCached(
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
 	cacheTag("data:top_models");
+	cacheTag(`data:top_models:provider:${apiProviderId}`);
+	cacheTag(`data:api_providers:${apiProviderId}`);
 
     console.log(`[fetch] HIT JSON for top models - ${apiProviderId}`);
     return getTopModels(apiProviderId, includeHidden, count);

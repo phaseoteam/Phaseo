@@ -2,7 +2,8 @@
 import { buildMetadata } from "@/lib/seo";
 import { ModelQuickstartSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import getModelGatewayMetadata, {
+import {
+	getModelGatewayMetadataCached,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { Metadata } from "next";
 import {
@@ -16,7 +17,7 @@ import { permanentRedirect } from "next/navigation";
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
 		const [metadata, header] = await Promise.all([
-			getModelGatewayMetadata(modelId, includeHidden),
+			getModelGatewayMetadataCached(modelId, includeHidden),
 			getModelOverviewHeader(modelId, includeHidden),
 		]);
 		if (!metadata) return null;

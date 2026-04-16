@@ -1,7 +1,10 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags";
+import {
+	revalidateBenchmarkDataTags,
+	revalidateModelDataTags,
+} from "@/lib/cache/revalidateDataTags";
 
 async function checkAdminAuth() {
 	const supabase = await createClient();
@@ -350,7 +353,14 @@ export async function createBenchmarkResult(input: CreateBenchmarkResultInput) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateModelDataTags({ modelId: input.modelId });
+	revalidateModelDataTags({
+		modelId: input.modelId,
+		benchmarkIds: [input.benchmarkId],
+	});
+	revalidateBenchmarkDataTags({
+		modelId: input.modelId,
+		benchmarkId: input.benchmarkId,
+	});
 
 	return { success: true };
 }
@@ -389,11 +399,18 @@ export async function updateBenchmarkResult(input: UpdateBenchmarkResultInput) {
 
 	const { data: benchmarkRow } = await supabase
 		.from("data_benchmark_results")
-		.select("model_id")
+		.select("model_id, benchmark_id")
 		.eq("id", input.resultId)
 		.maybeSingle();
 
-	revalidateModelDataTags({ modelId: benchmarkRow?.model_id ?? null });
+	revalidateModelDataTags({
+		modelId: benchmarkRow?.model_id ?? null,
+		benchmarkIds: [benchmarkRow?.benchmark_id ?? null],
+	});
+	revalidateBenchmarkDataTags({
+		modelId: benchmarkRow?.model_id ?? null,
+		benchmarkId: benchmarkRow?.benchmark_id ?? null,
+	});
 
 	return { success: true };
 }
@@ -406,7 +423,7 @@ export async function deleteBenchmarkResult(resultId: string) {
 
 	const { data: benchmarkRow } = await supabase
 		.from("data_benchmark_results")
-		.select("model_id")
+		.select("model_id, benchmark_id")
 		.eq("id", resultId)
 		.maybeSingle();
 
@@ -419,7 +436,14 @@ export async function deleteBenchmarkResult(resultId: string) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateModelDataTags({ modelId: benchmarkRow?.model_id ?? null });
+	revalidateModelDataTags({
+		modelId: benchmarkRow?.model_id ?? null,
+		benchmarkIds: [benchmarkRow?.benchmark_id ?? null],
+	});
+	revalidateBenchmarkDataTags({
+		modelId: benchmarkRow?.model_id ?? null,
+		benchmarkId: benchmarkRow?.benchmark_id ?? null,
+	});
 
 	return { success: true };
 }

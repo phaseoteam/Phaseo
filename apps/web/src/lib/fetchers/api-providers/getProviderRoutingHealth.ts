@@ -48,6 +48,8 @@ export async function getProviderRoutingHealth(
 
 	cacheLife("minutes");
 	cacheTag("data:gateway_provider_health_states");
+	cacheTag(`data:gateway_provider_health_states:provider:${providerId}`);
+	cacheTag(`data:api_providers:${providerId}`);
 
 	if (!providerId) return null;
 	const windowHours = options?.windowHours ?? 24;

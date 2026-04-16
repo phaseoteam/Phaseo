@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getModelOverview } from "@/lib/fetchers/models/getModel";
+import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
@@ -14,7 +14,7 @@ import {
 
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverview(modelId, includeHidden);
+		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
 		const message =
 			error instanceof Error ? error.message : typeof error === "string" ? error : "";

@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { CircleAlert } from "lucide-react";
-import getModelPricing from "@/lib/fetchers/models/getModelPricing";
+import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import { getModelProviderRuntimeStatsCached } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
@@ -26,7 +26,7 @@ export default async function ModelPricing({
 	showHeader?: boolean;
 }) {
 	const [providers, header, subscriptionPlans] = await Promise.all([
-		getModelPricing(modelId, includeHidden),
+		getModelPricingCached(modelId, includeHidden),
 		getModelOverviewHeader(modelId, includeHidden),
 		getModelSubscriptionPlansCached(modelId, includeHidden).catch((error) => {
 			console.warn("[pricing] failed to fetch subscription plans; continuing without plans", {

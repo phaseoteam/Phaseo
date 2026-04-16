@@ -113,7 +113,7 @@ export async function getModelProviderRoutingHealthCached(args: {
 }): Promise<ProviderRoutingStatusMap> {
 	"use cache";
 
-	cacheLife("minutes");
+	cacheLife("hours");
 	cacheTag("data:gateway_provider_health_states");
 
 	return getModelProviderRoutingHealth(args);
