@@ -40,6 +40,7 @@ export async function getAllOrganisationsCached(): Promise<OrganisationCard[]> {
 
     cacheLife("days");
     cacheTag("data:organisations");
+    cacheTag("data:organisations:list");
 
     console.log("[fetch] HIT DB for organisations");
     return getAllOrganisations();

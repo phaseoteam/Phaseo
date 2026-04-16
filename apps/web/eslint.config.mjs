@@ -51,6 +51,64 @@ export default [
 		},
 	},
 	{
+		files: [
+			"src/app/(dashboard)/models/**/*.{ts,tsx}",
+			"src/app/(dashboard)/families/**/*.{ts,tsx}",
+			"src/components/(data)/model/**/*.{ts,tsx}",
+		],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: [
+						{
+							name: "@/lib/fetchers/models/getModel",
+							importNames: ["default", "getModelOverview"],
+							message:
+								"Use getModelCached/getModelOverviewCached in public model surfaces.",
+						},
+						{
+							name: "@/lib/fetchers/models/getFamilyModels",
+							importNames: ["default", "getFamilyModels"],
+							message:
+								"Use getFamilyModelsCached in public model surfaces.",
+						},
+						{
+							name: "@/lib/fetchers/models/getModelPricing",
+							importNames: ["default", "getModelPricing"],
+							message:
+								"Use getModelPricingCached in public model surfaces.",
+						},
+						{
+							name: "@/lib/fetchers/models/getModelGatewayMetadata",
+							importNames: ["default", "getModelGatewayMetadata"],
+							message:
+								"Use getModelGatewayMetadataCached in public model surfaces.",
+						},
+						{
+							name: "@/lib/fetchers/models/getModelSubscriptionPlans",
+							importNames: ["default", "getModelSubscriptionPlans"],
+							message:
+								"Use getModelSubscriptionPlansCached in public model surfaces.",
+						},
+						{
+							name: "@/lib/fetchers/models/getModelTimeline",
+							importNames: ["default", "getModelTimeline"],
+							message:
+								"Use getModelTimelineCached in public model surfaces.",
+						},
+						{
+							name: "@/lib/fetchers/models/getModelAvailability",
+							importNames: ["default", "getModelAvailability"],
+							message:
+								"Use getModelAvailabilityCached in public model surfaces.",
+						},
+					],
+				},
+			],
+		},
+	},
+	{
 		files: ["**/*.{js,jsx,mjs,cjs}"],
 		rules: {
 			"max-lines": [

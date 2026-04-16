@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 import {
+  revalidateBenchmarkDataTags,
   revalidateModelApiInfoTags,
   revalidateModelDataOnlyTags,
   revalidateModelDataTags,
@@ -468,7 +469,26 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
   }
 
+  let previousBenchmarkIds: string[] = []
   if (benchmark_results !== undefined) {
+    const { data: existingBenchmarkRows, error: existingBenchmarksError } = await supabase
+      .from("data_benchmark_results")
+      .select("benchmark_id")
+      .eq("model_id", modelId)
+
+    if (existingBenchmarksError) {
+      console.error("[updateModel] Error loading existing benchmarks:", existingBenchmarksError)
+      throw new Error(existingBenchmarksError.message)
+    }
+
+    previousBenchmarkIds = Array.from(
+      new Set(
+        (existingBenchmarkRows ?? [])
+          .map((row) => row.benchmark_id?.trim() || "")
+          .filter(Boolean)
+      )
+    )
+
     const { error: deleteBenchmarksError } = await supabase
       .from("data_benchmark_results")
       .delete()
@@ -992,10 +1012,27 @@ export async function updateModel(payload: ModelUpdatePayload) {
     modelUpdate.organisation_id !== undefined
       ? (modelUpdate.organisation_id as string | null)
       : previousOrganisationId
+  const incomingBenchmarkIds =
+    benchmark_results === undefined
+      ? []
+      : Array.from(
+          new Set(
+            benchmark_results
+              .map((result) => result.benchmark_id?.trim() || "")
+              .filter(Boolean)
+          )
+        )
+  const benchmarkIds = Array.from(
+    new Set([...previousBenchmarkIds, ...incomingBenchmarkIds])
+  )
   revalidateModelDataTags({
     modelId,
     organisationIds: [previousOrganisationId, nextOrganisationId],
+    benchmarkIds,
   })
+  if (benchmarkIds.length > 0) {
+    revalidateBenchmarkDataTags({ modelId, benchmarkIds })
+  }
   revalidatePath(`/models/**`)
   revalidatePath("/models")
 
@@ -1024,7 +1061,7 @@ export async function deleteBenchmarkResult(id: string) {
 
   const { data: benchmarkRow } = await supabase
     .from("data_benchmark_results")
-    .select("model_id")
+    .select("model_id, benchmark_id")
     .eq("id", id)
     .maybeSingle()
 
@@ -1037,7 +1074,14 @@ export async function deleteBenchmarkResult(id: string) {
     throw new Error(error.message)
   }
 
-  revalidateModelDataOnlyTags({ modelId: benchmarkRow?.model_id ?? null })
+  revalidateModelDataOnlyTags({
+    modelId: benchmarkRow?.model_id ?? null,
+    benchmarkIds: [benchmarkRow?.benchmark_id ?? null],
+  })
+  revalidateBenchmarkDataTags({
+    modelId: benchmarkRow?.model_id ?? null,
+    benchmarkId: benchmarkRow?.benchmark_id ?? null,
+  })
   revalidatePath(`/models/**`)
   return { ok: true }
 }

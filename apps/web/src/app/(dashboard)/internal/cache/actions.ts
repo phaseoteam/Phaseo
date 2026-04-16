@@ -3,9 +3,12 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
 	revalidateAppDataTags,
+	revalidateBenchmarkDataTags,
 	revalidateModelApiInfoTags,
 	revalidateModelDataOnlyTags,
 	revalidateModelDataTags,
+	revalidateOrganisationDataTags,
+	revalidateProviderDataTags,
 } from "@/lib/cache/revalidateDataTags";
 import { createClient } from "@/utils/supabase/server";
 import {
@@ -113,12 +116,58 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 
 export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {
 	return runAdminAction("Providers (global API info)", async () => {
-		revalidateModelApiInfoTags();
+		revalidateProviderDataTags();
 		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/api-providers");
 		revalidatePath("/models");
 		revalidatePath("/models/collections");
 	});
+}
+
+export async function revalidateProviderScopeAction(input: {
+	providerId?: string;
+}): Promise<CacheOpResult> {
+	const providerId = input.providerId?.trim();
+	if (input.providerId !== undefined && !providerId) {
+		return { ok: false, message: "Provider ID is required." };
+	}
+
+	return runAdminAction(
+		providerId ? `Provider (${providerId})` : "Providers (global)",
+		async () => {
+			if (providerId) {
+				revalidateProviderDataTags({ providerId });
+				revalidatePath(`/api-providers/${providerId}`);
+				revalidatePath(`/api-providers/${providerId}/models`);
+			} else {
+				revalidateProviderDataTags();
+			}
+			revalidatePath("/api-providers");
+		}
+	);
+}
+
+export async function revalidateOrganisationScopeAction(input: {
+	organisationId?: string;
+}): Promise<CacheOpResult> {
+	const organisationId = input.organisationId?.trim();
+	if (input.organisationId !== undefined && !organisationId) {
+		return { ok: false, message: "Organisation ID is required." };
+	}
+
+	return runAdminAction(
+		organisationId ? `Organisation (${organisationId})` : "Organisations (global)",
+		async () => {
+			if (organisationId) {
+				revalidateOrganisationDataTags({ organisationId });
+				revalidatePath(`/organisations/${organisationId}`);
+				revalidatePath(`/organisations/${organisationId}/models`);
+			} else {
+				revalidateOrganisationDataTags();
+			}
+			revalidatePath("/organisations");
+		}
+	);
 }
 
 export async function revalidateGlobalModelAndProviderAction(): Promise<CacheOpResult> {
@@ -219,6 +268,28 @@ export async function revalidateModelScopeAction(input: {
 					: `Model (${modelId}) failed.`,
 		};
 	}
+}
+
+export async function revalidateBenchmarkScopeAction(input: {
+	benchmarkId?: string;
+}): Promise<CacheOpResult> {
+	const benchmarkId = input.benchmarkId?.trim();
+	if (input.benchmarkId !== undefined && !benchmarkId) {
+		return { ok: false, message: "Benchmark ID is required." };
+	}
+
+	return runAdminAction(
+		benchmarkId ? `Benchmark (${benchmarkId})` : "Benchmarks (global)",
+		async () => {
+			if (benchmarkId) {
+				revalidateBenchmarkDataTags({ benchmarkId });
+				revalidatePath(`/benchmarks/${benchmarkId}`);
+			} else {
+				revalidateBenchmarkDataTags();
+			}
+			revalidatePath("/benchmarks");
+		}
+	);
 }
 
 export async function revalidateCustomScopeAction(input: {

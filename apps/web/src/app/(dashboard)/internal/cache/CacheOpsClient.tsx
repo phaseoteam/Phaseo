@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	revalidateAppsDataAction,
+	revalidateBenchmarkScopeAction,
 	revalidateCustomScopeAction,
 	revalidateGlobalModelAndProviderAction,
 	revalidateLandingDataAction,
 	revalidateModelScopeAction,
 	revalidateModelsGlobalDataAction,
+	revalidateOrganisationScopeAction,
+	revalidateProviderScopeAction,
 	revalidateProvidersGlobalApiAction,
 	revalidateRankingsAction,
 	revalidateSearchDataAction,
@@ -28,6 +31,9 @@ export default function CacheOpsClient() {
 	const [isPending, startTransition] = useTransition();
 	const [status, setStatus] = useState<StatusState>(null);
 	const [modelId, setModelId] = useState("");
+	const [benchmarkId, setBenchmarkId] = useState("");
+	const [providerId, setProviderId] = useState("");
+	const [organisationId, setOrganisationId] = useState("");
 	const [appId, setAppId] = useState("");
 	const [customTagsText, setCustomTagsText] = useState("");
 	const [customPathsText, setCustomPathsText] = useState("");
@@ -188,6 +194,121 @@ export default function CacheOpsClient() {
 					>
 						Rankings
 					</Button>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Benchmarks</CardTitle>
+					<CardDescription>
+						Revalidate all benchmark caches, or one benchmark ID.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<Input
+						value={benchmarkId}
+						onChange={(event) => setBenchmarkId(event.target.value)}
+						placeholder="Optional benchmark id (e.g. mmlu-pro)"
+					/>
+					<div className="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							disabled={isPending}
+							onClick={() =>
+								runAction(() => revalidateBenchmarkScopeAction({}))
+							}
+						>
+							Revalidate Benchmarks (Global)
+						</Button>
+						<Button
+							type="button"
+							disabled={isPending || !benchmarkId.trim()}
+							onClick={() =>
+								runAction(() =>
+									revalidateBenchmarkScopeAction({ benchmarkId })
+								)
+							}
+						>
+							Revalidate This Benchmark
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Providers</CardTitle>
+					<CardDescription>
+						Revalidate all provider caches, or one provider ID.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<Input
+						value={providerId}
+						onChange={(event) => setProviderId(event.target.value)}
+						placeholder="Optional provider id (e.g. openai)"
+					/>
+					<div className="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							disabled={isPending}
+							onClick={() => runAction(() => revalidateProviderScopeAction({}))}
+						>
+							Revalidate Providers (Global)
+						</Button>
+						<Button
+							type="button"
+							disabled={isPending || !providerId.trim()}
+							onClick={() =>
+								runAction(() =>
+									revalidateProviderScopeAction({ providerId })
+								)
+							}
+						>
+							Revalidate This Provider
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Organisations</CardTitle>
+					<CardDescription>
+						Revalidate all organisation caches, or one organisation ID.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<Input
+						value={organisationId}
+						onChange={(event) => setOrganisationId(event.target.value)}
+						placeholder="Optional organisation id (e.g. anthropic)"
+					/>
+					<div className="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							disabled={isPending}
+							onClick={() =>
+								runAction(() => revalidateOrganisationScopeAction({}))
+							}
+						>
+							Revalidate Organisations (Global)
+						</Button>
+						<Button
+							type="button"
+							disabled={isPending || !organisationId.trim()}
+							onClick={() =>
+								runAction(() =>
+									revalidateOrganisationScopeAction({ organisationId })
+								)
+							}
+						>
+							Revalidate This Organisation
+						</Button>
+					</div>
 				</CardContent>
 			</Card>
 

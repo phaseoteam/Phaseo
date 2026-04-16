@@ -353,6 +353,7 @@ export async function getProviderMetrics(
 	cacheLife("minutes");
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${providerId}`);
+	cacheTag(`data:api_providers:${providerId}`);
 
 	if (!providerId) {
 		return {

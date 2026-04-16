@@ -1,4 +1,4 @@
-import getFamilyModels from "@/lib/fetchers/models/getFamilyModels";
+import { getFamilyModelsCached } from "@/lib/fetchers/models/getFamilyModels";
 import ModelFamilyButtonClient from "./ModelFamilyButtonClient";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
@@ -11,7 +11,7 @@ export default async function ModelFamilyButtonServer({
 
 	try {
 		const includeHidden = await resolveIncludeHidden();
-		const family = await getFamilyModels(familyId, includeHidden);
+		const family = await getFamilyModelsCached(familyId, includeHidden);
 		if (!family) return null;
 		return <ModelFamilyButtonClient family={family} />;
 	} catch (err) {

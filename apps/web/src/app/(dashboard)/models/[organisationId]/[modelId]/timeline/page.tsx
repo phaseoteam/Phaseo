@@ -1,5 +1,5 @@
 import { buildMetadata } from "@/lib/seo";
-import { getModelOverview } from "@/lib/fetchers/models/getModel";
+import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import ModelReleaseTimeline from "@/components/(data)/model/ModelReleaseTimeline";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
@@ -12,7 +12,7 @@ import { permanentRedirect } from "next/navigation";
 
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverview(modelId, includeHidden);
+		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load model overview for metadata", {
 			modelId,

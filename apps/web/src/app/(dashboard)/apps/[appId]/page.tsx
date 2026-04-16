@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import { Activity, BarChart3, ExternalLink } from "lucide-react";
 import AppUsageChart from "@/components/(data)/apps/AppUsageChart";
 import { ModelLeaderboard } from "@/components/(rankings)/ModelLeaderboard";
@@ -76,6 +77,44 @@ function getModelLookupVariants(modelId: string): string[] {
 	return Array.from(variants).filter(Boolean);
 }
 
+type ProviderModelMapping = {
+	provider_id: string | null;
+	api_model_id: string | null;
+	model_id: string | null;
+};
+
+async function getProviderModelMappingsCached(
+	apiLookupIds: string[],
+	providerIds: string[],
+): Promise<ProviderModelMapping[]> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("data:models");
+	cacheTag("data:data_api_provider_models");
+
+	if (apiLookupIds.length === 0) return [];
+
+	const supabase = createAdminClient();
+	let query = supabase
+		.from("data_api_provider_models")
+		.select("provider_id, api_model_id, model_id")
+		.in("api_model_id", apiLookupIds)
+		.not("model_id", "is", null);
+
+	if (providerIds.length > 0) {
+		query = query.in("provider_id", providerIds);
+	}
+
+	const { data, error } = await query;
+	if (error) {
+		throw new Error(
+			`Failed to load provider model mappings: ${error.message}`,
+		);
+	}
+	return (data ?? []) as ProviderModelMapping[];
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
 	const { appId } = await params;
 	const app = await getAppDetailsCached(appId);
@@ -145,24 +184,19 @@ export default async function Page({ params }: PageProps) {
 	);
 	const apiLookupIds = Array.from(
 		new Set(rawModelIds.flatMap((id) => getModelLookupVariants(id))),
+	).sort((a, b) => a.localeCompare(b));
+	const normalizedProviderIds = Array.from(new Set(providerIds)).sort((a, b) =>
+		a.localeCompare(b),
 	);
 
 	const providerToCanonicalByKey = new Map<string, string>();
 	const canonicalByApi = new Map<string, Set<string>>();
 
 	if (apiLookupIds.length > 0) {
-		const supabase = createAdminClient();
-		let providerModelsQuery = supabase
-			.from("data_api_provider_models")
-			.select("provider_id, api_model_id, model_id")
-			.in("api_model_id", apiLookupIds)
-			.not("model_id", "is", null);
-
-		if (providerIds.length > 0) {
-			providerModelsQuery = providerModelsQuery.in("provider_id", providerIds);
-		}
-
-		const { data: providerModels } = await providerModelsQuery;
+		const providerModels = await getProviderModelMappingsCached(
+			apiLookupIds,
+			normalizedProviderIds,
+		);
 		for (const row of providerModels ?? []) {
 			const providerId = row.provider_id?.trim();
 			const apiModelId = row.api_model_id?.trim();
