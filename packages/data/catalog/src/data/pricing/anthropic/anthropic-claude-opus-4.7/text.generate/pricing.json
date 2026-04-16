@@ -134,7 +134,15 @@
       "tiering_mode": "flat",
       "pricing_plan": "priority",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "5m"
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-04-16T00:00:00"
     },
@@ -147,7 +155,15 @@
       "tiering_mode": "flat",
       "pricing_plan": "priority",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1h"
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-04-16T00:00:00"
     },
@@ -161,7 +177,8 @@
       "pricing_plan": "batch",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -173,7 +190,8 @@
       "pricing_plan": "batch",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
     }
   ]
 }
