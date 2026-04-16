@@ -1,0 +1,32 @@
+{
+  "model_id": "openai/gpt-rosalind",
+  "organisation_id": "openai",
+  "name": "GPT Rosalind",
+  "status": "Withheld",
+  "previous_model_id": null,
+  "announced_date": "2026-04-16T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-rosalind",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-rosalind/"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Research preview for qualified customers in ChatGPT, Codex, and the API through trusted access."
+    },
+    {
+      "name": "preview_billing",
+      "value": "During research preview, usage does not consume existing credits or tokens (subject to abuse guardrails)."
+    }
+  ],
+  "benchmarks": []
+}

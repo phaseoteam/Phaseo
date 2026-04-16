@@ -3731,6 +3731,27 @@
     "capabilities": []
   },
   {
+    "api_model_id": "openai/gpt-rosalind",
+    "provider_api_model_id": "openai:openai/gpt-rosalind",
+    "provider_model_slug": "gpt-rosalind",
+    "internal_model_id": "openai/gpt-rosalind",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/o1",
     "provider_api_model_id": "openai:openai/o1",
     "provider_model_slug": "o1-2024-12-17",
