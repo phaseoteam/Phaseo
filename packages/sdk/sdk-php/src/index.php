@@ -71,7 +71,7 @@ class AIStats
         $this->warningsAsErrors = $warningsAsErrors;
         $this->logger = $logger;
         $this->lifecycleResolver = $lifecycleResolver;
-        $this->telemetryRecorder = new TelemetryRecorder($devtools, "1.1.2");
+        $this->telemetryRecorder = new TelemetryRecorder($devtools, "1.1.3");
     }
 
     public function rawClient(): GenClient
