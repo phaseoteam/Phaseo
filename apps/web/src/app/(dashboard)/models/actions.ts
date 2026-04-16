@@ -469,7 +469,26 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
   }
 
+  let previousBenchmarkIds: string[] = []
   if (benchmark_results !== undefined) {
+    const { data: existingBenchmarkRows, error: existingBenchmarksError } = await supabase
+      .from("data_benchmark_results")
+      .select("benchmark_id")
+      .eq("model_id", modelId)
+
+    if (existingBenchmarksError) {
+      console.error("[updateModel] Error loading existing benchmarks:", existingBenchmarksError)
+      throw new Error(existingBenchmarksError.message)
+    }
+
+    previousBenchmarkIds = Array.from(
+      new Set(
+        (existingBenchmarkRows ?? [])
+          .map((row) => row.benchmark_id?.trim() || "")
+          .filter(Boolean)
+      )
+    )
+
     const { error: deleteBenchmarksError } = await supabase
       .from("data_benchmark_results")
       .delete()
@@ -993,7 +1012,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     modelUpdate.organisation_id !== undefined
       ? (modelUpdate.organisation_id as string | null)
       : previousOrganisationId
-  const benchmarkIds =
+  const incomingBenchmarkIds =
     benchmark_results === undefined
       ? []
       : Array.from(
@@ -1003,6 +1022,9 @@ export async function updateModel(payload: ModelUpdatePayload) {
               .filter(Boolean)
           )
         )
+  const benchmarkIds = Array.from(
+    new Set([...previousBenchmarkIds, ...incomingBenchmarkIds])
+  )
   revalidateModelDataTags({
     modelId,
     organisationIds: [previousOrganisationId, nextOrganisationId],
