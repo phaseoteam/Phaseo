@@ -1,32 +1,10 @@
 {
-  "key": "venice/e2ee:qwen/qwen3.5-122b-a10b:text.generate",
-  "api_provider_id": "venice/e2ee",
+  "key": "venice-e2ee:qwen/qwen3.5-122b-a10b:text.generate",
+  "api_provider_id": "venice-e2ee",
   "provider_slug": "venice-e2ee",
   "api_model_id": "qwen/qwen3.5-122b-a10b",
   "capability_id": "text.generate",
   "rules": [
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.5,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 4,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100
-    },
     {
       "meter": "input_text_tokens",
       "unit": "token",

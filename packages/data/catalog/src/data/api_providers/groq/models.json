@@ -137,7 +137,7 @@
     "context_length": 262144,
     "max_output_tokens": 16384,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": "2026-04-15T00:00:00",
+    "effective_to": "2026-04-16T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
