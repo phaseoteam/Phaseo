@@ -11,7 +11,6 @@
       "unit_size": 1000000,
       "price_per_unit": 3.3,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -32,7 +31,6 @@
       "unit_size": 1000000,
       "price_per_unit": 16.5,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -53,7 +51,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.33,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -74,7 +71,6 @@
       "unit_size": 1000000,
       "price_per_unit": 4.13,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -102,7 +98,6 @@
       "unit_size": 1000000,
       "price_per_unit": 6.6,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -130,7 +125,6 @@
       "unit_size": 1000000,
       "price_per_unit": 6.6,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -151,7 +145,6 @@
       "unit_size": 1000000,
       "price_per_unit": 24.75,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -172,7 +165,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.66,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -193,7 +185,6 @@
       "unit_size": 1000000,
       "price_per_unit": 8.25,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -221,7 +212,6 @@
       "unit_size": 1000000,
       "price_per_unit": 13.2,
       "currency": "USD",
-      "tiering_mode": "flat",
       "pricing_plan": "standard",
       "note": null,
       "match": [

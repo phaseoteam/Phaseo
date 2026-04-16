@@ -11,7 +11,6 @@
       "unit_size": 1,
       "price_per_unit": 0.1,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "International deployment (T2V: no input image)",
       "match": [
@@ -46,7 +45,6 @@
       "unit_size": 1,
       "price_per_unit": 0.15,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "International deployment (T2V: no input image)",
       "match": [
@@ -81,7 +79,6 @@
       "unit_size": 1,
       "price_per_unit": 0.1,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "International deployment (I2V: input image provided)",
       "match": [
@@ -116,7 +113,6 @@
       "unit_size": 1,
       "price_per_unit": 0.15,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "International deployment (I2V: input image provided)",
       "match": [
@@ -151,7 +147,6 @@
       "unit_size": 1,
       "price_per_unit": 0.1,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "International deployment fallback (no input mode signal)",
       "match": [
@@ -179,7 +174,6 @@
       "unit_size": 1,
       "price_per_unit": 0.15,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": "International deployment fallback (no input mode signal)",
       "match": [

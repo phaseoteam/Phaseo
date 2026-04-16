@@ -11,7 +11,6 @@
       "unit_size": 1000000,
       "price_per_unit": 1.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -20,7 +19,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000.0
+          "value": 32000
         }
       ],
       "priority": 100
@@ -31,7 +30,6 @@
       "unit_size": 1000000,
       "price_per_unit": 7.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -40,7 +38,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000.0
+          "value": 32000
         }
       ],
       "priority": 100
@@ -51,7 +49,6 @@
       "unit_size": 1000000,
       "price_per_unit": 2.7,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -60,14 +57,14 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000.0
+          "value": 32000
         },
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 128000.0
+          "value": 128000
         }
       ],
       "priority": 100
@@ -78,7 +75,6 @@
       "unit_size": 1000000,
       "price_per_unit": 13.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -87,14 +83,14 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000.0
+          "value": 32000
         },
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 128000.0
+          "value": 128000
         }
       ],
       "priority": 100
@@ -105,7 +101,6 @@
       "unit_size": 1000000,
       "price_per_unit": 4.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -114,14 +109,14 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 128000.0
+          "value": 128000
         },
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 256000.0
+          "value": 256000
         }
       ],
       "priority": 100
@@ -132,7 +127,6 @@
       "unit_size": 1000000,
       "price_per_unit": 22.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -141,14 +135,14 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 128000.0
+          "value": 128000
         },
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 256000.0
+          "value": 256000
         }
       ],
       "priority": 100
@@ -157,9 +151,8 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 9.0,
+      "price_per_unit": 9,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -168,7 +161,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 256000.0
+          "value": 256000
         }
       ],
       "priority": 100
@@ -177,9 +170,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 90.0,
+      "price_per_unit": 90,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -188,7 +180,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 256000.0
+          "value": 256000
         }
       ],
       "priority": 100
