@@ -21,7 +21,13 @@ Discord alerts are filtered to models from the database table `data_api_provider
 If any filtered diff exists, the runner sends a Discord webhook notification.
 
 Internal model file checks read from `packages/data/catalog/src/data/models`.
-Internal Discord alerts are sent as embed payloads when new internal models are added to the repository.
+Internal Discord alerts are sent as embed payloads when internal models are added or when lifecycle fields change:
+
+- status
+- announced date
+- release date
+- deprecation date
+- retirement date
 Already-announced model IDs are persisted to:
 
 - `scripts/model-discovery/state/internal-announced-models.json`
@@ -35,7 +41,7 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
 ## Script entrypoints
 
 - `scripts/model-discovery/run-internal-public.ts`
-  - Public internal release notifications (website model additions only).
+  - Public internal model watcher notifications (new models + lifecycle updates).
 - `scripts/model-discovery/run.ts`
   - Private external provider tracking notifications.
 - `scripts/model-discovery/run-hf-private.ts`
@@ -56,6 +62,7 @@ pnpm run data:check-new-models:test
 - `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for internal website model additions)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
 - `DISCORD_ROLE_ID` (optional role mention)
+- `DISCORD_ROLE_ID_DEV` (optional dev role mention for Hugging Face private notifications)
 - `DISCORD_USER_ID` (optional mention)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling internal runner scripts with `--discord-avatar-url`)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for DB allowlist)

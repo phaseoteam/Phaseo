@@ -27,7 +27,7 @@ import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTok
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
-import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import { getModelAppsCached } from "@/lib/fetchers/models/getModelApps";
 import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -75,20 +75,6 @@ function Section({
 			{children}
 		</section>
 	);
-}
-
-function formatPrice(
-	prices:
-		| Array<{ price: number; currency: string; frequency: string }>
-		| undefined,
-): string {
-	if (!prices || prices.length === 0) return "Pricing unavailable";
-	const sorted = [...prices].sort((a, b) => a.price - b.price);
-	const first = sorted[0];
-	const currency = (first.currency || "USD").toUpperCase();
-	return `${currency} ${first.price.toFixed(first.price % 1 === 0 ? 0 : 2)} / ${
-		first.frequency || "period"
-	}`;
 }
 
 function formatPercent(value: number | null): string {
@@ -246,7 +232,7 @@ export async function ModelAppsSection({
 	modelId,
 	includeHidden,
 }: ModelSectionSharedProps) {
-	const subscriptionPlans = await getModelSubscriptionPlansCached(
+	const modelApps = await getModelAppsCached(
 		modelId,
 		includeHidden,
 	).catch(() => []);
@@ -258,24 +244,29 @@ export async function ModelAppsSection({
 					Apps Using This Model
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					Products and plans where this model is currently available.
+					Public apps observed in gateway request traffic for this model.
 				</p>
 			</div>
-			{subscriptionPlans.length > 0 ? (
+			{modelApps.length > 0 ? (
 				<div className="grid gap-3 md:grid-cols-2">
-					{subscriptionPlans.map((plan) => (
+					{modelApps.map((app) => (
 						<Link
-							key={plan.plan_id}
-							href={`/subscription-plans/${plan.plan_id}`}
+							key={app.appId}
+							href={`/apps/${encodeURIComponent(app.appId)}`}
 							className="rounded-lg border border-border/70 px-4 py-3 transition-colors hover:bg-muted/40"
 						>
-							<p className="text-sm font-semibold">{plan.name}</p>
+							<p className="text-sm font-semibold">{app.title}</p>
 							<p className="text-xs text-muted-foreground">
-								{plan.organisation?.name ?? "Unknown organisation"}
+								{app.appId}
 							</p>
-							<p className="mt-1 text-xs text-muted-foreground">
-								{formatPrice(plan.prices)}
-							</p>
+							<div className="mt-2 flex flex-wrap items-center gap-2">
+								<Badge variant="outline" className="text-[11px]">
+									{app.totalRequests.toLocaleString()} requests
+								</Badge>
+								<Badge variant="outline" className="text-[11px]">
+									{app.totalTokens.toLocaleString()} tokens
+								</Badge>
+							</div>
 						</Link>
 					))}
 				</div>
@@ -287,8 +278,7 @@ export async function ModelAppsSection({
 						</EmptyMedia>
 						<EmptyTitle>No app distribution yet</EmptyTitle>
 						<EmptyDescription>
-							No app or subscription distribution data is available for this
-							model yet.
+							No gateway request app data is available for this model yet.
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

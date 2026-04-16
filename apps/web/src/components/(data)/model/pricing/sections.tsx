@@ -178,6 +178,58 @@ function formatUsdAligned(value: number, decimals: number): string {
 	return `$${value.toFixed(decimals)}`;
 }
 
+function formatTierConditionLabel(label: string): {
+	shortLabel: string;
+	tooltipLabel?: string;
+} | null {
+	const raw = String(label ?? "").trim();
+	if (!raw || raw.toLowerCase() === "all usage") return null;
+
+	const ttlMatch = raw.match(/^(.+?)\s+cache\s+ttl$/i);
+	if (!ttlMatch) return { shortLabel: raw };
+
+	const durationRaw = ttlMatch[1]?.trim() ?? "";
+	const parseDuration = (
+		value: string,
+		re: RegExp,
+		unitShort: string,
+		unitLong: string,
+	): { shortLabel: string; tooltipLabel: string } | null => {
+		const m = value.match(re);
+		if (!m?.[1]) return null;
+		const amount = Number(m[1]);
+		if (!Number.isFinite(amount) || amount <= 0) return null;
+		const plural = amount === 1 ? unitLong : `${unitLong}s`;
+		return {
+			shortLabel: `${amount}${unitShort}`,
+			tooltipLabel: `${amount} ${plural} cache TTL`,
+		};
+	};
+
+	const minute =
+		parseDuration(durationRaw, /^(\d+)\s*(?:m|min|mins|minute|minutes)$/i, "m", "minute") ??
+		parseDuration(durationRaw, /^(\d+)\s*$/i, "m", "minute");
+	if (minute) return minute;
+
+	const hour = parseDuration(
+		durationRaw,
+		/^(\d+)\s*(?:h|hr|hrs|hour|hours)$/i,
+		"h",
+		"hour",
+	);
+	if (hour) return hour;
+
+	const day = parseDuration(
+		durationRaw,
+		/^(\d+)\s*(?:d|day|days)$/i,
+		"d",
+		"day",
+	);
+	if (day) return day;
+
+	return { shortLabel: durationRaw, tooltipLabel: raw };
+}
+
 export function TierTiles({
 	tiers,
 	dense = false,
@@ -194,33 +246,56 @@ export function TierTiles({
 		(max, tier) => Math.max(max, countUsdDecimals(tier.per1M)),
 		0,
 	);
+	const [primaryTier, ...additionalTiers] = tiers;
+	const hasAdditionalTiers = additionalTiers.length > 0;
+	const renderTierRow = (tier: TokenTier, key: string | number) => (
+		<div key={key} className="space-y-0.5">
+			<div className="flex items-baseline gap-1">
+				<span
+					className={
+						tier.basePer1M != null
+							? "text-xs font-semibold text-emerald-600 tabular-nums"
+							: "text-xs font-semibold text-foreground tabular-nums"
+					}
+				>
+					{formatUsdAligned(tier.per1M, sharedDecimals)}
+				</span>
+				{(() => {
+					const condition = formatTierConditionLabel(tier.label);
+					if (!condition) return null;
+					const hasTooltip =
+						condition.tooltipLabel &&
+						condition.tooltipLabel !== condition.shortLabel;
+					return (
+						<span
+							className="text-xs text-muted-foreground"
+							title={hasTooltip ? condition.tooltipLabel : undefined}
+						>
+							({condition.shortLabel})
+						</span>
+					);
+				})()}
+			</div>
+			{tier.basePer1M != null ? (
+				<div className="text-xs text-muted-foreground">
+					{renderDiscountFooter(tier.basePer1M, tier.discountEndsAt)}
+				</div>
+			) : null}
+		</div>
+	);
 
 	return (
 		<div className={dense ? "space-y-0.5" : "space-y-1.5"}>
-			{tiers.map((t, i) => (
-				<div key={i} className="space-y-0.5">
-					<div className="flex items-baseline gap-1">
-						<span
-							className={
-								t.basePer1M != null
-									? "text-xs font-semibold text-emerald-600 tabular-nums"
-									: "text-xs font-semibold text-foreground tabular-nums"
-							}
-						>
-							{formatUsdAligned(t.per1M, sharedDecimals)}
-						</span>
-						{t.label !== "All usage" ? (
-							<span className="text-xs text-muted-foreground">{t.label}</span>
-						) : null}
-					</div>
-					{t.basePer1M != null ? (
-						<div className="text-xs text-muted-foreground">
-							{renderDiscountFooter(t.basePer1M, t.discountEndsAt)}
-						</div>
-					) : null}
-				</div>
-			))}
-			{unitLabel ? (
+			<div className="space-y-0.5">
+				{renderTierRow(primaryTier, "primary")}
+				{!hasAdditionalTiers && unitLabel ? (
+					<div className="text-[11px] text-muted-foreground">{unitLabel}</div>
+				) : null}
+			</div>
+			{additionalTiers.map((tier, index) =>
+				renderTierRow(tier, `additional-${index}`),
+			)}
+			{hasAdditionalTiers && unitLabel ? (
 				<div className="text-[11px] text-muted-foreground">{unitLabel}</div>
 			) : null}
 		</div>
@@ -337,7 +412,7 @@ export function ImageGenSection({
 	return (
 		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image</h4>
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image Quality</h4>
 				<span className="text-xs text-muted-foreground">Per image</span>
 			</div>
 					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
@@ -503,18 +578,8 @@ export function VideoGenSection({
 					.filter(Boolean),
 			),
 		);
-		if (uniqueUnits.length !== 1) return null;
-		return uniqueUnits[0];
-	};
-	const formatResolutionLabel = (
-		item: { resolution: string; unit: string },
-		showUnitInline: boolean,
-	): string => {
-		const resolution = String(item.resolution ?? "").trim();
-		const unit = String(item.unit ?? "").trim();
-		if (!showUnitInline) return resolution;
-		if (resolution && unit) return `${resolution} (${unit})`;
-		return resolution || unit;
+		if (!uniqueUnits.length) return null;
+		return uniqueUnits.join(" / ");
 	};
 
 	return (
@@ -532,7 +597,6 @@ export function VideoGenSection({
 								return a.price - b.price;
 							});
 							const unitSummary = unitSummaryForItems(sortedItems);
-							const showUnitInline = unitSummary == null;
 							return (
 								<div className={columnsWrapClass}>
 									<div className={resolutionColumnClass}>
@@ -549,9 +613,7 @@ export function VideoGenSection({
 														>
 															{formatUsdAligned(item.price, sharedDecimals)}
 														</span>
-														<span className="text-xs text-muted-foreground">
-															{formatResolutionLabel(item, showUnitInline)}
-														</span>
+														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
 													{item.basePrice != null ? (
 														<div className="text-xs text-muted-foreground">
@@ -592,7 +654,6 @@ export function VideoGenSection({
 											return a.price - b.price;
 										});
 										const unitSummary = unitSummaryForItems(sortedColumnItems);
-										const showUnitInline = unitSummary == null;
 										return (
 									<div key={column.key} className={audioColumnClass}>
 									<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
@@ -611,9 +672,7 @@ export function VideoGenSection({
 													>
 														{formatUsdAligned(item.price, sharedDecimals)}
 													</span>
-													<span className="text-xs text-muted-foreground">
-														{formatResolutionLabel(item, showUnitInline)}
-													</span>
+													<span className="text-xs text-muted-foreground">{item.resolution}</span>
 												</div>
 												{item.basePrice != null ? (
 													<div className="text-xs text-muted-foreground">
@@ -648,7 +707,6 @@ export function VideoGenSection({
 									return a.price - b.price;
 								});
 								const unitSummary = unitSummaryForItems(sortedItems);
-								const showUnitInline = unitSummary == null;
 								return (
 									<div className={resolutionColumnClass}>
 										<div className={itemStackClass}>
@@ -664,9 +722,7 @@ export function VideoGenSection({
 														>
 															{formatUsdAligned(item.price, sharedDecimals)}
 														</span>
-														<span className="text-xs text-muted-foreground">
-															{formatResolutionLabel(item, showUnitInline)}
-														</span>
+														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
 													{item.basePrice != null ? (
 														<div className="text-xs text-muted-foreground">

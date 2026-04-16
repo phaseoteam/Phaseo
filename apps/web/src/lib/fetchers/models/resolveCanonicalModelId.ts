@@ -256,6 +256,8 @@ async function resolveCanonicalModelIdCached(
 	cacheTag("data:models");
 	cacheTag("data:model_aliases");
 	cacheTag("data:data_api_provider_models");
+	cacheTag("data:data_model_id_redirects");
+	cacheTag("data:data_api_models");
 
 	return resolveCanonicalModelIdUncached(requestedModelId, includeHidden);
 }

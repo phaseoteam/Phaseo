@@ -14,6 +14,7 @@ env:
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
     DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
     DISCORD_ROLE_ID_MODEL_UPDATES: "1377690778478055584"
+    DISCORD_ROLE_ID_DEV: ${{ vars.DISCORD_ROLE_ID_DEV }}
 
 permissions:
     contents: read
@@ -61,7 +62,6 @@ jobs:
                   DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ github.ref == 'refs/heads/main' && secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC || '' }}
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
-                    --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
                     --discord-role-id "${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}" \
                     --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png"
 
@@ -87,12 +87,10 @@ jobs:
               if: github.ref == 'refs/heads/main'
               env:
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
-                  DISCORD_ROLE_ID: ${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}
+                  DISCORD_ROLE_ID_DEV: ${{ env.DISCORD_ROLE_ID_DEV }}
               run: |
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts \
-                    --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
-                    --discord-role-id "${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}" \
+                    --discord-role-id "${{ env.DISCORD_ROLE_ID_DEV }}" \
                     --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
                     --hf-token "${{ secrets.HF_TOKEN }}"
 

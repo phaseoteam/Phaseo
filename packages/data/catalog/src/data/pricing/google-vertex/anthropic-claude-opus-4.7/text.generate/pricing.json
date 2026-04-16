@@ -1,0 +1,85 @@
+{
+  "key": "google-vertex:anthropic/claude-opus-4.7:text.generate",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "anthropic/claude-opus-4.7",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.55,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.875,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "5m"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 11,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1h"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 27.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-16T00:00:00"
+    }
+  ]
+}

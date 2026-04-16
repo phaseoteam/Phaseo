@@ -4,17 +4,40 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Streamdown } from "streamdown";
 import {
+	Clapperboard,
 	Clock3,
+	Fingerprint,
 	FileText,
+	ImageIcon,
 	Mic,
 	MessageSquare,
+	ShieldAlert,
 	Sparkles,
 	TerminalSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { filterModelsForRoom } from "@/lib/chat/rooms";
+import {
+	buildAudioRequestOptions,
+	buildEmbeddingsRequestOptions,
+	buildImageRequestOptions,
+	buildVideoRequestOptions,
+	getDefaultAudioRoomParams,
+	getDefaultEmbeddingsRoomParams,
+	getDefaultImageRoomParams,
+	getDefaultVideoRoomParams,
+} from "@/lib/chat/roomModelSettings";
+import {
+	buildModerationInput,
+	extractEmbeddingVectors,
+	extractGenerationUrls,
+	normalizeModerationResult,
+	type NormalizedModerationResult,
+} from "@/lib/chat/roomRequestBuilders";
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
+import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 
 const PLAYGROUND_APP_HEADERS = {
 	"x-app-id": "ai-stats-playground",
@@ -27,6 +50,7 @@ type ModelPlaygroundProps = {
 	modelId: string;
 	requestModelId?: string;
 	modelName: string;
+	gatewayModels?: GatewaySupportedModel[];
 };
 
 type PlaygroundStats = {
@@ -41,7 +65,37 @@ type SseFrame = {
 	data: string | null;
 };
 
-type PlaygroundMode = "text" | "audio";
+type PlaygroundMode =
+	| "text"
+	| "audio"
+	| "image"
+	| "video"
+	| "moderation"
+	| "embeddings";
+
+type ModeConfig = {
+	mode: PlaygroundMode;
+	label: string;
+};
+
+const MODE_CONFIGS: ModeConfig[] = [
+	{ mode: "text", label: "Text" },
+	{ mode: "audio", label: "Audio" },
+	{ mode: "image", label: "Image" },
+	{ mode: "video", label: "Video" },
+	{ mode: "embeddings", label: "Embeddings" },
+	{ mode: "moderation", label: "Moderation" },
+];
+
+function resolveSupportedModelId(
+	models: GatewaySupportedModel[],
+	preferredModelId: string,
+): string {
+	if (models.some((entry) => entry.modelId === preferredModelId)) {
+		return preferredModelId;
+	}
+	return models[0]?.modelId ?? "";
+}
 
 function toFiniteNumber(value: unknown): number | null {
 	if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -170,10 +224,40 @@ async function readErrorMessage(response: Response): Promise<string> {
 	return `Request failed (${response.status}).`;
 }
 
+function normalizeAudioMimeType(value: unknown): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (!normalized) return "audio/mpeg";
+	if (normalized.includes("/")) return normalized;
+	if (normalized === "mp3") return "audio/mpeg";
+	if (normalized === "wav") return "audio/wav";
+	if (normalized === "opus") return "audio/opus";
+	return "audio/mpeg";
+}
+
+function extractAudioDataUrl(payload: any): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	const audio = payload.audio;
+	if (audio && typeof audio === "object") {
+		const data = typeof audio.data === "string" ? audio.data.trim() : "";
+		const url = typeof audio.url === "string" ? audio.url.trim() : "";
+		if (url) return url;
+		if (data) {
+			const mimeType = normalizeAudioMimeType(
+				audio.mime_type ?? payload.mime_type ?? payload.response_format,
+			);
+			return data.startsWith("data:") ? data : `data:${mimeType};base64,${data}`;
+		}
+	}
+	const directUrl = typeof payload.url === "string" ? payload.url.trim() : "";
+	if (directUrl) return directUrl;
+	return null;
+}
+
 export default function ModelPlayground({
 	modelId,
 	requestModelId,
 	modelName,
+	gatewayModels = [],
 }: ModelPlaygroundProps) {
 	const [mode, setMode] = useState<PlaygroundMode>("text");
 	const [prompt, setPrompt] = useState("");
@@ -183,6 +267,35 @@ export default function ModelPlayground({
 	const [stats, setStats] = useState<PlaygroundStats | null>(null);
 	const [elapsedMs, setElapsedMs] = useState(0);
 	const startRef = useRef<number | null>(null);
+	const [audioPrompt, setAudioPrompt] = useState("");
+	const [audioResponseUrl, setAudioResponseUrl] = useState<string | null>(null);
+	const [audioResponseText, setAudioResponseText] = useState("");
+	const [audioIsGenerating, setAudioIsGenerating] = useState(false);
+	const [audioError, setAudioError] = useState<string | null>(null);
+	const [audioStats, setAudioStats] = useState<PlaygroundStats | null>(null);
+	const [audioElapsedMs, setAudioElapsedMs] = useState(0);
+	const audioStartRef = useRef<number | null>(null);
+	const [imagePrompt, setImagePrompt] = useState("");
+	const [imageResponseUrls, setImageResponseUrls] = useState<string[]>([]);
+	const [imageResponseText, setImageResponseText] = useState("");
+	const [imageIsGenerating, setImageIsGenerating] = useState(false);
+	const [imageError, setImageError] = useState<string | null>(null);
+	const [videoPrompt, setVideoPrompt] = useState("");
+	const [videoResponseUrls, setVideoResponseUrls] = useState<string[]>([]);
+	const [videoResponseText, setVideoResponseText] = useState("");
+	const [videoIsGenerating, setVideoIsGenerating] = useState(false);
+	const [videoError, setVideoError] = useState<string | null>(null);
+	const [embeddingsPrompt, setEmbeddingsPrompt] = useState("");
+	const [embeddingsVectors, setEmbeddingsVectors] = useState<number[][]>([]);
+	const [embeddingsRawResponse, setEmbeddingsRawResponse] = useState("");
+	const [embeddingsIsGenerating, setEmbeddingsIsGenerating] = useState(false);
+	const [embeddingsError, setEmbeddingsError] = useState<string | null>(null);
+	const [moderationPrompt, setModerationPrompt] = useState("");
+	const [moderationResult, setModerationResult] =
+		useState<NormalizedModerationResult | null>(null);
+	const [moderationRawResponse, setModerationRawResponse] = useState("");
+	const [moderationIsGenerating, setModerationIsGenerating] = useState(false);
+	const [moderationError, setModerationError] = useState<string | null>(null);
 
 	const trimmedPrompt = prompt.trim();
 	const hasPrompt = trimmedPrompt.length > 0;
@@ -195,10 +308,67 @@ export default function ModelPlayground({
 		},
 		[resolvedRequestModelId, trimmedPrompt],
 	);
-	const audioRoomHref = useMemo(() => {
-		const modelPart = `model=${encodeURIComponent(resolvedRequestModelId)}`;
-		return `/chat/audio?${modelPart}`;
-	}, [resolvedRequestModelId]);
+	const trimmedAudioPrompt = audioPrompt.trim();
+	const hasAudioPrompt = trimmedAudioPrompt.length > 0;
+	const trimmedImagePrompt = imagePrompt.trim();
+	const hasImagePrompt = trimmedImagePrompt.length > 0;
+	const trimmedVideoPrompt = videoPrompt.trim();
+	const hasVideoPrompt = trimmedVideoPrompt.length > 0;
+	const trimmedEmbeddingsPrompt = embeddingsPrompt.trim();
+	const hasEmbeddingsPrompt = trimmedEmbeddingsPrompt.length > 0;
+	const trimmedModerationPrompt = moderationPrompt.trim();
+	const hasModerationPrompt = trimmedModerationPrompt.length > 0;
+	const modelsByMode = useMemo(() => {
+		const byMode: Record<PlaygroundMode, GatewaySupportedModel[]> = {
+			text: [],
+			audio: [],
+			image: [],
+			video: [],
+			embeddings: [],
+			moderation: [],
+		};
+		byMode.text = filterModelsForRoom(gatewayModels, "text");
+		byMode.audio = filterModelsForRoom(gatewayModels, "audio");
+		byMode.image = filterModelsForRoom(gatewayModels, "image");
+		byMode.video = filterModelsForRoom(gatewayModels, "video");
+		byMode.embeddings = filterModelsForRoom(gatewayModels, "embeddings");
+		byMode.moderation = filterModelsForRoom(gatewayModels, "moderation");
+		return byMode;
+	}, [gatewayModels]);
+	const hasModeSupport = useMemo(() => {
+		const support: Record<PlaygroundMode, boolean> = {
+			text: modelsByMode.text.length > 0,
+			audio: modelsByMode.audio.length > 0,
+			image: modelsByMode.image.length > 0,
+			video: modelsByMode.video.length > 0,
+			embeddings: modelsByMode.embeddings.length > 0,
+			moderation: modelsByMode.moderation.length > 0,
+		};
+		return support;
+	}, [modelsByMode]);
+	const availableModeConfigs = useMemo(
+		() => MODE_CONFIGS.filter((config) => hasModeSupport[config.mode]),
+		[hasModeSupport],
+	);
+	const resolvedAudioModelId = useMemo(() => {
+		return resolveSupportedModelId(modelsByMode.audio, resolvedRequestModelId);
+	}, [modelsByMode.audio, resolvedRequestModelId]);
+	const resolvedImageModelId = useMemo(
+		() => resolveSupportedModelId(modelsByMode.image, resolvedRequestModelId),
+		[modelsByMode.image, resolvedRequestModelId],
+	);
+	const resolvedVideoModelId = useMemo(
+		() => resolveSupportedModelId(modelsByMode.video, resolvedRequestModelId),
+		[modelsByMode.video, resolvedRequestModelId],
+	);
+	const resolvedEmbeddingsModelId = useMemo(
+		() => resolveSupportedModelId(modelsByMode.embeddings, resolvedRequestModelId),
+		[modelsByMode.embeddings, resolvedRequestModelId],
+	);
+	const resolvedModerationModelId = useMemo(
+		() => resolveSupportedModelId(modelsByMode.moderation, resolvedRequestModelId),
+		[modelsByMode.moderation, resolvedRequestModelId],
+	);
 
 	useEffect(() => {
 		if (!isGenerating || startRef.current == null) return;
@@ -208,6 +378,28 @@ export default function ModelPlayground({
 		}, 100);
 		return () => window.clearInterval(timer);
 	}, [isGenerating]);
+	useEffect(() => {
+		if (!audioIsGenerating || audioStartRef.current == null) return;
+		const timer = window.setInterval(() => {
+			if (audioStartRef.current == null) return;
+			setAudioElapsedMs(Math.max(0, performance.now() - audioStartRef.current));
+		}, 100);
+		return () => window.clearInterval(timer);
+	}, [audioIsGenerating]);
+	useEffect(() => {
+		if (hasModeSupport[mode]) return;
+		const fallbackMode = availableModeConfigs[0]?.mode ?? null;
+		if (fallbackMode) {
+			setMode(fallbackMode);
+		}
+	}, [availableModeConfigs, hasModeSupport, mode]);
+	useEffect(() => {
+		return () => {
+			if (audioResponseUrl && audioResponseUrl.startsWith("blob:")) {
+				URL.revokeObjectURL(audioResponseUrl);
+			}
+		};
+	}, [audioResponseUrl]);
 
 	const handleGenerate = async () => {
 		if (!trimmedPrompt || isGenerating) return;
@@ -357,17 +549,752 @@ export default function ModelPlayground({
 			startRef.current = null;
 		}
 	};
+	const handleGenerateAudio = async () => {
+		if (!trimmedAudioPrompt || audioIsGenerating || !resolvedAudioModelId) return;
+
+		setAudioIsGenerating(true);
+		setAudioError(null);
+		setAudioStats(null);
+		setAudioResponseText("");
+		if (audioResponseUrl?.startsWith("blob:")) {
+			URL.revokeObjectURL(audioResponseUrl);
+		}
+		setAudioResponseUrl(null);
+		audioStartRef.current = performance.now();
+		setAudioElapsedMs(0);
+
+		try {
+			const audioDefaults = getDefaultAudioRoomParams(resolvedAudioModelId);
+			const audioOptions = buildAudioRequestOptions(
+				"speech",
+				resolvedAudioModelId,
+				audioDefaults,
+			);
+			const response = await fetch("/api/chat/audio", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					action: "speech",
+					requestBody: {
+						model: resolvedAudioModelId,
+						input: trimmedAudioPrompt,
+						...audioOptions,
+					},
+					appHeaders: PLAYGROUND_APP_HEADERS,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error(await readErrorMessage(response));
+			}
+
+			const contentType = response.headers.get("content-type") ?? "";
+			let usage: Record<string, unknown> | null = null;
+			let meta: Record<string, unknown> | null = null;
+			let nextAudioUrl: string | null = null;
+			let nextAudioText = "";
+			if (contentType.includes("application/json")) {
+				const payload = await response.json();
+				usage = extractUsage(payload);
+				meta = extractMeta(payload);
+				const maybeAudioUrl = extractAudioDataUrl(payload);
+				if (maybeAudioUrl) nextAudioUrl = maybeAudioUrl;
+				const maybeText = extractResponseText(payload).trim();
+				if (maybeText) nextAudioText = maybeText;
+			} else if (contentType.startsWith("audio/") && response.body) {
+				const blob = await response.blob();
+				nextAudioUrl = URL.createObjectURL(blob);
+			} else if (contentType.startsWith("text/")) {
+				const text = (await response.text()).trim();
+				if (text) nextAudioText = text;
+			} else {
+				const blob = await response.blob();
+				const normalizedBlob =
+					blob.type && blob.type !== "application/octet-stream"
+						? blob
+						: new Blob([blob], { type: "audio/mpeg" });
+				nextAudioUrl = URL.createObjectURL(normalizedBlob);
+			}
+			if (!nextAudioUrl && !nextAudioText) {
+				nextAudioText = "Audio request completed.";
+			}
+			setAudioResponseUrl(nextAudioUrl);
+			setAudioResponseText(nextAudioText);
+
+			const endAt = performance.now();
+			const totalElapsedMs =
+				audioStartRef.current == null
+					? 0
+					: Math.max(0, endAt - audioStartRef.current);
+			setAudioElapsedMs(totalElapsedMs);
+			const totalTokens = extractTotalTokens(usage);
+			const totalCostUsd = extractTotalCostUsd(usage);
+			const throughputTokensPerSecond = extractThroughputTokensPerSecond(
+				meta,
+				totalTokens,
+				totalElapsedMs,
+			);
+			setAudioStats({
+				elapsedMs: totalElapsedMs,
+				totalTokens,
+				throughputTokensPerSecond,
+				totalCostUsd,
+			});
+		} catch (requestError) {
+			const message =
+				requestError instanceof Error
+					? requestError.message
+					: "Audio request failed. Please try again.";
+			setAudioError(message);
+		} finally {
+			setAudioIsGenerating(false);
+			audioStartRef.current = null;
+		}
+	};
+
+	const handleGenerateImage = async () => {
+		if (!trimmedImagePrompt || imageIsGenerating || !resolvedImageModelId) return;
+
+		setImageIsGenerating(true);
+		setImageError(null);
+		setImageResponseUrls([]);
+		setImageResponseText("");
+
+		try {
+			const imageDefaults = getDefaultImageRoomParams(resolvedImageModelId);
+			const imageOptions = buildImageRequestOptions(
+				resolvedImageModelId,
+				imageDefaults,
+			);
+			const response = await fetch("/api/chat/image", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					requestBody: {
+						model: resolvedImageModelId,
+						prompt: trimmedImagePrompt,
+						...imageOptions,
+					},
+					appHeaders: PLAYGROUND_APP_HEADERS,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error(await readErrorMessage(response));
+			}
+
+			const contentType = response.headers.get("content-type") ?? "";
+			const payload = contentType.includes("application/json")
+				? await response.json()
+				: { output_text: await response.text() };
+			const urls = extractGenerationUrls(payload);
+			const text = extractResponseText(payload).trim();
+			setImageResponseUrls(urls);
+			setImageResponseText(
+				text ||
+					(urls.length ? "" : JSON.stringify(payload, null, 2) || "Image request completed."),
+			);
+		} catch (requestError) {
+			const message =
+				requestError instanceof Error
+					? requestError.message
+					: "Image request failed. Please try again.";
+			setImageError(message);
+		} finally {
+			setImageIsGenerating(false);
+		}
+	};
+
+	const handleGenerateVideo = async () => {
+		if (!trimmedVideoPrompt || videoIsGenerating || !resolvedVideoModelId) return;
+
+		setVideoIsGenerating(true);
+		setVideoError(null);
+		setVideoResponseUrls([]);
+		setVideoResponseText("");
+
+		try {
+			const videoDefaults = getDefaultVideoRoomParams(resolvedVideoModelId);
+			const videoOptions = buildVideoRequestOptions(
+				resolvedVideoModelId,
+				videoDefaults,
+			);
+			const response = await fetch("/api/chat/video", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					requestBody: {
+						model: resolvedVideoModelId,
+						prompt: trimmedVideoPrompt,
+						...videoOptions,
+					},
+					appHeaders: PLAYGROUND_APP_HEADERS,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error(await readErrorMessage(response));
+			}
+
+			const contentType = response.headers.get("content-type") ?? "";
+			const payload = contentType.includes("application/json")
+				? await response.json()
+				: { output_text: await response.text() };
+			const urls = extractGenerationUrls(payload);
+			const text = extractResponseText(payload).trim();
+			setVideoResponseUrls(urls);
+			setVideoResponseText(
+				text ||
+					(urls.length ? "" : JSON.stringify(payload, null, 2) || "Video request completed."),
+			);
+		} catch (requestError) {
+			const message =
+				requestError instanceof Error
+					? requestError.message
+					: "Video request failed. Please try again.";
+			setVideoError(message);
+		} finally {
+			setVideoIsGenerating(false);
+		}
+	};
+
+	const handleGenerateEmbeddings = async () => {
+		if (
+			!trimmedEmbeddingsPrompt ||
+			embeddingsIsGenerating ||
+			!resolvedEmbeddingsModelId
+		) {
+			return;
+		}
+
+		setEmbeddingsIsGenerating(true);
+		setEmbeddingsError(null);
+		setEmbeddingsVectors([]);
+		setEmbeddingsRawResponse("");
+
+		try {
+			const embeddingDefaults = getDefaultEmbeddingsRoomParams();
+			const embeddingOptions = buildEmbeddingsRequestOptions(
+				resolvedEmbeddingsModelId,
+				embeddingDefaults,
+			);
+			const response = await fetch("/api/chat/embeddings", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					requestBody: {
+						model: resolvedEmbeddingsModelId,
+						input: trimmedEmbeddingsPrompt,
+						meta: true,
+						...embeddingOptions,
+					},
+					appHeaders: PLAYGROUND_APP_HEADERS,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error(await readErrorMessage(response));
+			}
+
+			const payload = await response.json();
+			setEmbeddingsVectors(extractEmbeddingVectors(payload));
+			setEmbeddingsRawResponse(JSON.stringify(payload, null, 2));
+		} catch (requestError) {
+			const message =
+				requestError instanceof Error
+					? requestError.message
+					: "Embeddings request failed. Please try again.";
+			setEmbeddingsError(message);
+		} finally {
+			setEmbeddingsIsGenerating(false);
+		}
+	};
+
+	const handleGenerateModeration = async () => {
+		if (
+			!trimmedModerationPrompt ||
+			moderationIsGenerating ||
+			!resolvedModerationModelId
+		) {
+			return;
+		}
+
+		setModerationIsGenerating(true);
+		setModerationError(null);
+		setModerationResult(null);
+		setModerationRawResponse("");
+
+		try {
+			const response = await fetch("/api/chat/moderation", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					requestBody: {
+						model: resolvedModerationModelId,
+						input: buildModerationInput({ text: trimmedModerationPrompt }),
+						meta: true,
+					},
+					appHeaders: PLAYGROUND_APP_HEADERS,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error(await readErrorMessage(response));
+			}
+
+			const payload = await response.json();
+			setModerationResult(normalizeModerationResult(payload));
+			setModerationRawResponse(JSON.stringify(payload, null, 2));
+		} catch (requestError) {
+			const message =
+				requestError instanceof Error
+					? requestError.message
+					: "Moderation request failed. Please try again.";
+			setModerationError(message);
+		} finally {
+			setModerationIsGenerating(false);
+		}
+	};
 
 	const showEmptyResponse = !isGenerating && !responseText && !error;
 	const showThinkingState = isGenerating && !responseText;
-	const handlePromptKeyDown = (
+	const showEmptyAudioResponse =
+		!audioIsGenerating && !audioResponseUrl && !audioResponseText && !audioError;
+	const showAudioThinkingState = audioIsGenerating && !audioResponseUrl && !audioResponseText;
+	const showImageThinkingState =
+		imageIsGenerating && !imageResponseUrls.length && !imageResponseText;
+	const showEmptyImageResponse =
+		!imageIsGenerating &&
+		!imageResponseUrls.length &&
+		!imageResponseText &&
+		!imageError;
+	const showVideoThinkingState =
+		videoIsGenerating && !videoResponseUrls.length && !videoResponseText;
+	const showEmptyVideoResponse =
+		!videoIsGenerating &&
+		!videoResponseUrls.length &&
+		!videoResponseText &&
+		!videoError;
+	const showEmbeddingsThinkingState =
+		embeddingsIsGenerating &&
+		!embeddingsVectors.length &&
+		!embeddingsRawResponse;
+	const showEmptyEmbeddingsResponse =
+		!embeddingsIsGenerating &&
+		!embeddingsVectors.length &&
+		!embeddingsRawResponse &&
+		!embeddingsError;
+	const showModerationThinkingState =
+		moderationIsGenerating && !moderationResult && !moderationRawResponse;
+	const showEmptyModerationResponse =
+		!moderationIsGenerating &&
+		!moderationResult &&
+		!moderationRawResponse &&
+		!moderationError;
+	const embeddingsFirstVector = embeddingsVectors[0] ?? null;
+	const handleEnterToSubmit = (
 		event: React.KeyboardEvent<HTMLTextAreaElement>,
+		onSubmit: () => void,
 	) => {
 		if (event.key !== "Enter") return;
 		if (event.shiftKey) return;
 		if (event.nativeEvent.isComposing) return;
 		event.preventDefault();
-		void handleGenerate();
+		onSubmit();
+	};
+	const handlePromptKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		handleEnterToSubmit(event, () => void handleGenerate());
+	};
+	const handleAudioPromptKeyDown = (
+		event: React.KeyboardEvent<HTMLTextAreaElement>,
+	) => {
+		handleEnterToSubmit(event, () => void handleGenerateAudio());
+	};
+	const handleImagePromptKeyDown = (
+		event: React.KeyboardEvent<HTMLTextAreaElement>,
+	) => {
+		handleEnterToSubmit(event, () => void handleGenerateImage());
+	};
+	const handleVideoPromptKeyDown = (
+		event: React.KeyboardEvent<HTMLTextAreaElement>,
+	) => {
+		handleEnterToSubmit(event, () => void handleGenerateVideo());
+	};
+	const handleEmbeddingsPromptKeyDown = (
+		event: React.KeyboardEvent<HTMLTextAreaElement>,
+	) => {
+		handleEnterToSubmit(event, () => void handleGenerateEmbeddings());
+	};
+	const handleModerationPromptKeyDown = (
+		event: React.KeyboardEvent<HTMLTextAreaElement>,
+	) => {
+		handleEnterToSubmit(event, () => void handleGenerateModeration());
+	};
+
+	const renderThinkingPanel = () => (
+		<div className="flex h-full flex-col items-center justify-center gap-3 text-black/55 dark:text-white/65">
+			<TerminalSquare className="h-10 w-10" />
+			<div className="flex items-end gap-1.5">
+				<span
+					className="h-2.5 w-2.5 animate-bounce rounded-full bg-current"
+					style={{ animationDelay: "0ms" }}
+				/>
+				<span
+					className="h-2.5 w-2.5 animate-bounce rounded-full bg-current"
+					style={{ animationDelay: "140ms" }}
+				/>
+				<span
+					className="h-2.5 w-2.5 animate-bounce rounded-full bg-current"
+					style={{ animationDelay: "280ms" }}
+				/>
+			</div>
+		</div>
+	);
+	const renderEmptyPanel = (label: string) => (
+		<div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-sm text-black/55 dark:text-white/60">
+			<TerminalSquare className="h-10 w-10" />
+			<p>{label}</p>
+		</div>
+	);
+
+	const renderModeIcon = (targetMode: PlaygroundMode) => {
+		switch (targetMode) {
+			case "text":
+				return <FileText className="h-4 w-4" />;
+			case "audio":
+				return <Mic className="h-4 w-4" />;
+			case "image":
+				return <ImageIcon className="h-4 w-4" />;
+			case "video":
+				return <Clapperboard className="h-4 w-4" />;
+			case "embeddings":
+				return <Fingerprint className="h-4 w-4" />;
+			case "moderation":
+				return <ShieldAlert className="h-4 w-4" />;
+		}
+	};
+
+	const renderInlineRoom = () => {
+		if (!hasModeSupport[mode]) {
+			return (
+				<div className="rounded-xl border border-black/15 bg-black/[0.02] p-6 dark:border-white/20 dark:bg-white/[0.03]">
+					<div className="space-y-2">
+						<h3 className="text-base font-semibold">No Compatible Endpoint</h3>
+						<p className="text-sm text-black/70 dark:text-white/70">
+							No active {mode} endpoint is currently available for this model.
+						</p>
+					</div>
+				</div>
+			);
+		}
+
+		if (mode === "audio") {
+			return (
+				<div className="grid gap-6 md:grid-cols-2">
+					<div className="flex min-h-[440px] flex-col gap-3">
+						<Textarea
+							value={audioPrompt}
+							onChange={(event) => setAudioPrompt(event.target.value)}
+							onKeyDown={handleAudioPromptKeyDown}
+							placeholder="Enter text to convert to speech..."
+							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
+						/>
+						<Button
+							type="button"
+							onClick={handleGenerateAudio}
+							disabled={!hasAudioPrompt || audioIsGenerating || !resolvedAudioModelId}
+							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+						>
+							<Sparkles className="h-4 w-4" />
+							{audioIsGenerating ? "Generating..." : "Generate Audio"}
+						</Button>
+						{audioError ? (
+							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
+								{audioError}
+							</p>
+						) : null}
+					</div>
+
+					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
+						{audioResponseUrl ? (
+							<div className="space-y-4">
+								<audio
+									controls
+									src={audioResponseUrl}
+									className="w-full rounded-md border border-black/20 bg-white p-2 dark:border-white/20 dark:bg-black"
+								/>
+								{audioResponseText ? (
+									<div className="text-sm leading-6 text-black dark:text-white">
+										<Streamdown>{audioResponseText}</Streamdown>
+									</div>
+								) : null}
+							</div>
+						) : audioResponseText ? (
+							<div className="text-sm leading-6 text-black dark:text-white">
+								<Streamdown>{audioResponseText}</Streamdown>
+							</div>
+						) : showAudioThinkingState ? (
+							renderThinkingPanel()
+						) : showEmptyAudioResponse ? (
+							renderEmptyPanel("Audio output appears here.")
+						) : null}
+					</div>
+				</div>
+			);
+		}
+
+		if (mode === "image") {
+			return (
+				<div className="grid gap-6 md:grid-cols-2">
+					<div className="flex min-h-[440px] flex-col gap-3">
+						<Textarea
+							value={imagePrompt}
+							onChange={(event) => setImagePrompt(event.target.value)}
+							onKeyDown={handleImagePromptKeyDown}
+							placeholder="Describe the image you want to generate..."
+							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
+						/>
+						<Button
+							type="button"
+							onClick={handleGenerateImage}
+							disabled={!hasImagePrompt || imageIsGenerating || !resolvedImageModelId}
+							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+						>
+							<Sparkles className="h-4 w-4" />
+							{imageIsGenerating ? "Generating..." : "Generate Image"}
+						</Button>
+						{imageError ? (
+							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
+								{imageError}
+							</p>
+						) : null}
+					</div>
+
+					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
+						{imageResponseUrls.length ? (
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								{imageResponseUrls.map((url, index) => (
+									<a
+										key={`${url}-${index}`}
+										href={url}
+										target="_blank"
+										rel="noreferrer"
+										className="block overflow-hidden rounded-md border border-black/20 dark:border-white/20"
+									>
+										<img
+											src={url}
+											alt={`Generated image ${index + 1}`}
+											className="h-full w-full object-cover"
+										/>
+									</a>
+								))}
+							</div>
+						) : imageResponseText ? (
+							<div className="text-sm leading-6 text-black dark:text-white">
+								<Streamdown>{imageResponseText}</Streamdown>
+							</div>
+						) : showImageThinkingState ? (
+							renderThinkingPanel()
+						) : showEmptyImageResponse ? (
+							renderEmptyPanel("Generated images appear here.")
+						) : null}
+					</div>
+				</div>
+			);
+		}
+
+		if (mode === "video") {
+			return (
+				<div className="grid gap-6 md:grid-cols-2">
+					<div className="flex min-h-[440px] flex-col gap-3">
+						<Textarea
+							value={videoPrompt}
+							onChange={(event) => setVideoPrompt(event.target.value)}
+							onKeyDown={handleVideoPromptKeyDown}
+							placeholder="Describe the video you want to generate..."
+							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
+						/>
+						<Button
+							type="button"
+							onClick={handleGenerateVideo}
+							disabled={!hasVideoPrompt || videoIsGenerating || !resolvedVideoModelId}
+							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+						>
+							<Sparkles className="h-4 w-4" />
+							{videoIsGenerating ? "Generating..." : "Generate Video"}
+						</Button>
+						{videoError ? (
+							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
+								{videoError}
+							</p>
+						) : null}
+					</div>
+
+					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
+						{videoResponseUrls.length ? (
+							<div className="space-y-4">
+								{videoResponseUrls.map((url, index) => (
+									<div key={`${url}-${index}`} className="space-y-2">
+										<video
+											controls
+											src={url}
+											className="w-full rounded-md border border-black/20 dark:border-white/20"
+										/>
+										<a
+											href={url}
+											target="_blank"
+											rel="noreferrer"
+											className="text-xs text-black/70 underline dark:text-white/70"
+										>
+											Open video {index + 1}
+										</a>
+									</div>
+								))}
+							</div>
+						) : videoResponseText ? (
+							<div className="text-sm leading-6 text-black dark:text-white">
+								<Streamdown>{videoResponseText}</Streamdown>
+							</div>
+						) : showVideoThinkingState ? (
+							renderThinkingPanel()
+						) : showEmptyVideoResponse ? (
+							renderEmptyPanel("Generated videos appear here.")
+						) : null}
+					</div>
+				</div>
+			);
+		}
+
+		if (mode === "embeddings") {
+			return (
+				<div className="grid gap-6 md:grid-cols-2">
+					<div className="flex min-h-[440px] flex-col gap-3">
+						<Textarea
+							value={embeddingsPrompt}
+							onChange={(event) => setEmbeddingsPrompt(event.target.value)}
+							onKeyDown={handleEmbeddingsPromptKeyDown}
+							placeholder="Enter text to embed..."
+							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
+						/>
+						<Button
+							type="button"
+							onClick={handleGenerateEmbeddings}
+							disabled={
+								!hasEmbeddingsPrompt ||
+								embeddingsIsGenerating ||
+								!resolvedEmbeddingsModelId
+							}
+							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+						>
+							<Sparkles className="h-4 w-4" />
+							{embeddingsIsGenerating ? "Generating..." : "Generate Embeddings"}
+						</Button>
+						{embeddingsError ? (
+							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
+								{embeddingsError}
+							</p>
+						) : null}
+					</div>
+
+					<div className="min-h-[440px] space-y-4 border-black/15 md:border-l md:pl-6 dark:border-white/20">
+						{embeddingsVectors.length ? (
+							<div className="space-y-2 rounded-md border border-black/15 bg-black/[0.02] p-3 text-sm dark:border-white/20 dark:bg-white/[0.03]">
+								<p>
+									<span className="font-medium">Vectors:</span>{" "}
+									{embeddingsVectors.length.toLocaleString()}
+								</p>
+								<p>
+									<span className="font-medium">Dimensions:</span>{" "}
+									{(embeddingsFirstVector?.length ?? 0).toLocaleString()}
+								</p>
+								{embeddingsFirstVector ? (
+									<p className="font-mono text-xs text-black/70 dark:text-white/70">
+										{embeddingsFirstVector
+											.slice(0, 8)
+											.map((value) => value.toFixed(6))
+											.join(", ")}
+										{embeddingsFirstVector.length > 8 ? ", ..." : ""}
+									</p>
+								) : null}
+							</div>
+						) : null}
+						{embeddingsRawResponse ? (
+							<pre className="max-h-[320px] overflow-auto rounded-md border border-black/15 bg-black/[0.02] p-3 text-xs text-black dark:border-white/20 dark:bg-white/[0.03] dark:text-white">
+								{embeddingsRawResponse}
+							</pre>
+						) : showEmbeddingsThinkingState ? (
+							renderThinkingPanel()
+						) : showEmptyEmbeddingsResponse ? (
+							renderEmptyPanel("Embedding output appears here.")
+						) : null}
+					</div>
+				</div>
+			);
+		}
+
+		if (mode === "moderation") {
+			const flaggedCategories = moderationResult
+				? Object.entries(moderationResult.categories)
+						.filter(([, value]) => value)
+						.map(([key]) => key)
+				: [];
+			return (
+				<div className="grid gap-6 md:grid-cols-2">
+					<div className="flex min-h-[440px] flex-col gap-3">
+						<Textarea
+							value={moderationPrompt}
+							onChange={(event) => setModerationPrompt(event.target.value)}
+							onKeyDown={handleModerationPromptKeyDown}
+							placeholder="Enter text to moderate..."
+							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
+						/>
+						<Button
+							type="button"
+							onClick={handleGenerateModeration}
+							disabled={
+								!hasModerationPrompt ||
+								moderationIsGenerating ||
+								!resolvedModerationModelId
+							}
+							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+						>
+							<Sparkles className="h-4 w-4" />
+							{moderationIsGenerating ? "Generating..." : "Run Moderation"}
+						</Button>
+						{moderationError ? (
+							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
+								{moderationError}
+							</p>
+						) : null}
+					</div>
+
+					<div className="min-h-[440px] space-y-4 border-black/15 md:border-l md:pl-6 dark:border-white/20">
+						{moderationResult ? (
+							<div className="space-y-2 rounded-md border border-black/15 bg-black/[0.02] p-3 text-sm dark:border-white/20 dark:bg-white/[0.03]">
+								<p>
+									<span className="font-medium">Flagged:</span>{" "}
+									{moderationResult.flagged ? "Yes" : "No"}
+								</p>
+								<p>
+									<span className="font-medium">Flagged categories:</span>{" "}
+									{flaggedCategories.length
+										? flaggedCategories.join(", ")
+										: "None"}
+								</p>
+							</div>
+						) : null}
+						{moderationRawResponse ? (
+							<pre className="max-h-[320px] overflow-auto rounded-md border border-black/15 bg-black/[0.02] p-3 text-xs text-black dark:border-white/20 dark:bg-white/[0.03] dark:text-white">
+								{moderationRawResponse}
+							</pre>
+						) : showModerationThinkingState ? (
+							renderThinkingPanel()
+						) : showEmptyModerationResponse ? (
+							renderEmptyPanel("Moderation output appears here.")
+						) : null}
+					</div>
+				</div>
+			);
+		}
+
+		return null;
 	};
 
 	return (
@@ -382,32 +1309,25 @@ export default function ModelPlayground({
 			<div className="space-y-4 text-black dark:text-white">
 				<div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-3 dark:border-white/15">
 					<div className="inline-flex items-center rounded-md border border-black/20 p-1 dark:border-white/25">
-						<button
-							type="button"
-							onClick={() => setMode("text")}
-							className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm font-medium transition-colors ${
-								mode === "text"
-									? "bg-black text-white dark:bg-white dark:text-black"
-									: "text-black/75 hover:bg-black/5 dark:text-white/75 dark:hover:bg-white/10"
-							}`}
-							aria-pressed={mode === "text"}
-						>
-							<FileText className="h-4 w-4" />
-							Text
-						</button>
-						<button
-							type="button"
-							onClick={() => setMode("audio")}
-							className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm font-medium transition-colors ${
-								mode === "audio"
-									? "bg-black text-white dark:bg-white dark:text-black"
-									: "text-black/75 hover:bg-black/5 dark:text-white/75 dark:hover:bg-white/10"
-							}`}
-							aria-pressed={mode === "audio"}
-						>
-							<Mic className="h-4 w-4" />
-							Audio
-						</button>
+						{availableModeConfigs.map((config) => {
+							const isActive = mode === config.mode;
+							return (
+								<button
+									key={config.mode}
+									type="button"
+									onClick={() => setMode(config.mode)}
+									className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm font-medium transition-colors ${
+										isActive
+											? "bg-black text-white dark:bg-white dark:text-black"
+											: "text-black/75 hover:bg-black/5 dark:text-white/75 dark:hover:bg-white/10"
+									}`}
+									aria-pressed={isActive}
+								>
+									{renderModeIcon(config.mode)}
+									{config.label}
+								</button>
+							);
+						})}
 					</div>
 					{mode === "text"
 						? isGenerating ? (
@@ -424,7 +1344,22 @@ export default function ModelPlayground({
 									)} | ${formatCost(stats.totalCostUsd)}`}
 								</div>
 							) : null
-						: null}
+						: mode === "audio"
+							? audioIsGenerating ? (
+									<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
+										<Clock3 className="h-3.5 w-3.5" />
+										{formatDuration(audioElapsedMs)}
+									</div>
+								) : audioStats ? (
+									<div className="text-xs text-black/70 dark:text-white/70">
+										{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
+											audioStats.totalTokens,
+										)} | ${formatThroughput(
+											audioStats.throughputTokensPerSecond,
+										)} | ${formatCost(audioStats.totalCostUsd)}`}
+									</div>
+								) : null
+							: null}
 				</div>
 
 				{mode === "text" ? (
@@ -498,28 +1433,7 @@ export default function ModelPlayground({
 						</div>
 					</div>
 				) : (
-					<div className="rounded-xl border border-black/15 bg-black/[0.02] p-6 dark:border-white/20 dark:bg-white/[0.03]">
-						<div className="space-y-2">
-							<h3 className="text-base font-semibold">Audio Playground</h3>
-							<p className="text-sm text-black/70 dark:text-white/70">
-								Use the audio room for speech generation, transcription, and
-								translation workflows.
-							</p>
-						</div>
-						<div className="mt-4">
-							<Button
-								type="button"
-								asChild
-								variant="outline"
-								className="h-11 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
-							>
-								<Link href={audioRoomHref}>
-									<Mic className="h-4 w-4" />
-									Open Audio Room
-								</Link>
-							</Button>
-						</div>
-					</div>
+					renderInlineRoom()
 				)}
 			</div>
 		</div>

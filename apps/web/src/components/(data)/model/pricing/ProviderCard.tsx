@@ -358,70 +358,84 @@ export default function ProviderCard({
 	type TokenMetricTile = {
 		key: string;
 		title: string;
-		value?: string;
 		tiers?: TokenTier[];
 		unitLabel?: string;
 	};
-	const { tokenMetricTiles, upcomingTokenChanges } = useMemo(() => {
-		const tiles: TokenMetricTile[] = capacityMetrics.map((metric) => ({
-			key: `capacity-${metric.label}`,
-			title: metric.label,
-			value: metric.value,
-		}));
-
-		const pushTokenTierTiles = (triple: TokenTriple | undefined, modality: string) => {
-			if (!triple) return;
-			const labelWithModality = (segment: "Input" | "Output") =>
-				modality ? `${segment} ${modality}` : segment;
-			const cacheReadLabel = modality ? `${modality} Cache Reads` : "Cache Reads";
-			const cacheWriteLabel = modality ? `${modality} Cache Writes` : "Cache Writes";
-			const sections: Array<{
-				key: string;
-				title: string;
-				tiers: TokenTier[];
-			}> = [
-				{ key: "input", title: labelWithModality("Input"), tiers: triple.in },
-				{ key: "output", title: labelWithModality("Output"), tiers: triple.out },
-				{ key: "cache-read", title: cacheReadLabel, tiers: triple.cached },
-				{ key: "cache-write", title: cacheWriteLabel, tiers: triple.write },
-			];
-			for (const section of sections) {
-				if (!section.tiers.length) continue;
-				tiles.push({
-					key: `${modality || "text"}-${section.key}`,
-					title: section.title,
-					tiers: section.tiers,
-					unitLabel: "Per 1M tokens",
-				});
-			}
-		};
-
-		pushTokenTierTiles(sec.textTokens, "");
-		pushTokenTierTiles(sec.audioTokens, "Audio");
-		pushTokenTierTiles(sec.imageTokens, "Image");
-		pushTokenTierTiles(sec.videoTokens, "Video");
-		const upcomingTokenSectionKeys = new Set([
-			"textTokens",
-			"imageTokens",
-			"audioTokens",
-			"videoTokens",
-		]);
-
-		return {
-			tokenMetricTiles: tiles,
-			upcomingTokenChanges:
-				sec.upcomingChanges?.filter((change) =>
-					upcomingTokenSectionKeys.has(change.sectionKey),
-				) ?? [],
-		};
-	}, [
-		capacityMetrics,
-		sec.textTokens,
-		sec.audioTokens,
-		sec.imageTokens,
-		sec.videoTokens,
-		sec.upcomingChanges,
-	]);
+	type TokenMetricGroup = {
+		key: string;
+		title: string;
+		tiles: TokenMetricTile[];
+	};
+	const createTokenTiles = (
+		modalityLabel: "Text" | "Audio" | "Image" | "Video",
+		modalityKey: "text" | "audio" | "image" | "video",
+		triple: TokenTriple | undefined,
+	): TokenMetricTile[] => {
+		if (!triple) return [];
+		const sections: Array<{
+			key: string;
+			title: string;
+			tiers: TokenTier[];
+		}> = [
+			{
+				key: `${modalityKey}-input`,
+				title: `${modalityLabel} Input`,
+				tiers: triple.in,
+			},
+			{
+				key: `${modalityKey}-output`,
+				title: `${modalityLabel} Output`,
+				tiers: triple.out,
+			},
+			{
+				key: `${modalityKey}-cache-read`,
+				title: `${modalityLabel} Cache Reads`,
+				tiers: triple.cached,
+			},
+			{
+				key: `${modalityKey}-cache-write`,
+				title: `${modalityLabel} Cache Writes`,
+				tiers: triple.write,
+			},
+		];
+		return sections
+			.filter((section) => section.tiers.length > 0)
+			.map((section) => ({
+				key: section.key,
+				title: section.title,
+				tiers: section.tiers,
+				unitLabel: "Per 1M tokens",
+			}));
+	};
+	const tokenMetricGroups: TokenMetricGroup[] = [
+		{
+			key: "text",
+			title: "Text",
+			tiles: createTokenTiles("Text", "text", sec.textTokens),
+		},
+		{
+			key: "audio",
+			title: "Audio",
+			tiles: createTokenTiles("Audio", "audio", sec.audioTokens),
+		},
+		{
+			key: "image",
+			title: "Image",
+			tiles: createTokenTiles("Image", "image", sec.imageTokens),
+		},
+		{
+			key: "video",
+			title: "Video",
+			tiles: createTokenTiles("Video", "video", sec.videoTokens),
+		},
+	].filter((group) => group.tiles.length > 0);
+	const showTokenGroupHeaders = tokenMetricGroups.length > 1;
+	const upcomingTokenChanges = [
+		...upcomingFor("textTokens"),
+		...upcomingFor("imageTokens"),
+		...upcomingFor("audioTokens"),
+		...upcomingFor("videoTokens"),
+	];
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
 	const videoAudioRuleHints = planRules.flatMap((rule) => {
@@ -701,6 +715,32 @@ export default function ProviderCard({
 								</div>
 							))}
 						</div>
+						{capacityMetrics.length > 0 ? (
+							<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+								<div
+									className={cn(
+										"grid divide-zinc-200/70 dark:divide-zinc-800",
+										capacityMetrics.length > 1
+											? "grid-cols-2 divide-x"
+											: "grid-cols-1",
+									)}
+								>
+									{capacityMetrics.map((metric) => (
+										<div
+											key={metric.label}
+											className="flex min-w-0 flex-col items-center justify-center px-3 text-center"
+										>
+											<p className="text-[10px] font-medium text-muted-foreground">
+												{metric.label}
+											</p>
+											<div className="text-xs font-semibold leading-tight text-foreground tabular-nums">
+												{metric.value}
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
 					</div>
 				</div>
 			</CardHeader>
@@ -721,34 +761,32 @@ export default function ProviderCard({
 							</div>
 						</div>
 					)}
-					{!isFreePlan && tokenMetricTiles.length > 0 && (
+					{!isFreePlan && tokenMetricGroups.length > 0 && (
 						<div className="space-y-1.5">
-							<div className="w-full overflow-visible sm:overflow-x-auto">
-								<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
-									{tokenMetricTiles.map((tile) => (
-										<div
-											key={tile.key}
-											className="min-w-0 px-1 py-1 sm:min-w-[140px] sm:flex-1 sm:px-3 sm:py-2"
-										>
-											<div className="mb-0.5 text-xs text-muted-foreground">{tile.title}</div>
-											{typeof tile.value === "string" ? (
-												<div className="space-y-0.5">
-													<div className="text-xs font-semibold text-foreground tabular-nums">
-														{tile.value}
-													</div>
-													{tile.unitLabel ? (
-														<div className="text-[11px] text-muted-foreground">
-															{tile.unitLabel}
-														</div>
+							{tokenMetricGroups.map((group) => (
+								<div key={group.key} className="space-y-1.5">
+									{showTokenGroupHeaders ? (
+										<h4 className="text-xs font-semibold tracking-wide text-foreground">
+											{group.title}
+										</h4>
+									) : null}
+									<div className="w-full overflow-visible sm:overflow-x-auto">
+										<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+											{group.tiles.map((tile) => (
+												<div
+													key={tile.key}
+													className="min-w-0 px-1 py-1 sm:min-w-[140px] sm:flex-1 sm:px-3 sm:py-2"
+												>
+													<div className="mb-0.5 text-xs text-muted-foreground">{tile.title}</div>
+													{tile.tiers ? (
+														<TierTiles tiers={tile.tiers} dense unitLabel={tile.unitLabel} />
 													) : null}
 												</div>
-											) : tile.tiers ? (
-												<TierTiles tiers={tile.tiers} dense unitLabel={tile.unitLabel} />
-											) : null}
+											))}
 										</div>
-									))}
+									</div>
 								</div>
-							</div>
+							))}
 						</div>
 					)}
 					{!isFreePlan && upcomingTokenChanges.length > 0 && (

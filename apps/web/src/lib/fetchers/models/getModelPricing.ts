@@ -327,6 +327,45 @@ export default async function getModelPricing(
             : [];
         const entry = providerMap.get(pid)!;
 
+        if (!capabilities.length) {
+            const providerModel: ProviderModel = {
+                id: row.provider_api_model_id,
+                api_provider_id: row.provider_id,
+                provider_model_slug: row.provider_model_slug,
+                model_id: row.api_model_id,
+                endpoint: "unmapped",
+                capability_status: null,
+                is_active_gateway: row.is_active_gateway,
+                input_modalities: Array.isArray(row.input_modalities)
+                    ? row.input_modalities.join(",")
+                    : row.input_modalities ?? "",
+                output_modalities: Array.isArray(row.output_modalities)
+                    ? row.output_modalities.join(",")
+                    : row.output_modalities ?? "",
+                effective_from: row.effective_from,
+                effective_to: row.effective_to,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+                params: null,
+                quantization_scheme: normalizeQuantizationScheme(
+                    row.quantization_scheme ?? null
+                ),
+                context_length: row.context_length ?? null,
+                prompt_training_policy_override:
+                    row.prompt_training_policy_override ?? null,
+                prompt_training_override_notes:
+                    row.prompt_training_override_notes ?? null,
+                prompt_training_override_source_url:
+                    row.prompt_training_override_source_url ?? null,
+                max_input_tokens: null,
+                max_output_tokens: row.max_output_tokens ?? null,
+            };
+
+            providerModels.push(providerModel);
+            entry.provider_models.push(providerModel);
+            continue;
+        }
+
         for (const capability of capabilities) {
             if (!capability?.capability_id) continue;
             const providerModel: ProviderModel = {

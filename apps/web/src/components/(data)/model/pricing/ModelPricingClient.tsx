@@ -73,6 +73,42 @@ const PRICING_METER_PREFERENCE = [
     "output_audio_tokens",
 ] as const;
 const DEFAULT_VISIBLE_PROVIDER_COUNT = 4;
+const PLAN_FREQUENCY_ALIASES: Record<string, string> = {
+    mo: "monthly",
+    month: "monthly",
+    monthly: "monthly",
+    qtr: "quarterly",
+    quarter: "quarterly",
+    quarterly: "quarterly",
+    yr: "yearly",
+    year: "yearly",
+    annual: "yearly",
+    yearly: "yearly",
+    week: "weekly",
+    weekly: "weekly",
+    day: "daily",
+    daily: "daily",
+};
+const PLAN_FREQUENCY_MONTH_MULTIPLIERS: Record<string, number> = {
+    daily: 30,
+    weekly: 4.345,
+    monthly: 1,
+    quarterly: 1 / 3,
+    yearly: 1 / 12,
+};
+const PLAN_FREQUENCY_SORT_ORDER: Record<string, number> = {
+    monthly: 0,
+    quarterly: 1,
+    yearly: 2,
+    weekly: 3,
+    daily: 4,
+};
+
+type SubscriptionPrice = {
+    price: number;
+    currency: string;
+    frequency: string;
+};
 
 function getPreferredPlan(plans: string[]): string {
     if (plans.includes("standard")) return "standard";
@@ -120,17 +156,119 @@ function getProviderModelScopeForPlan(
     const planRules = provider.pricing_rules.filter(
         (r) => (r.pricing_plan || "standard") === plan
     );
+    if (!planRules.length) return provider.provider_models;
     const planModelKeys = new Set(planRules.map((r) => r.model_key));
     const matchingProviderModels = provider.provider_models.filter((pm) =>
         planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
     );
-    return matchingProviderModels;
+    return matchingProviderModels.length > 0
+        ? matchingProviderModels
+        : provider.provider_models;
 }
 
 function hasPricingForPlan(provider: ProviderPricing, plan: string): boolean {
     return provider.pricing_rules.some(
         (rule) => (rule.pricing_plan || "standard") === plan
     );
+}
+
+function isProviderVisibleForPlan(provider: ProviderPricing, plan: string): boolean {
+    if (!provider.pricing_rules.length) return provider.provider_models.length > 0;
+    return hasPricingForPlan(provider, plan);
+}
+
+function normalizePlanFrequency(value: string | null | undefined): string {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
+}
+
+function getFrequencySuffix(value: string): string {
+    const normalized = normalizePlanFrequency(value);
+    if (normalized === "monthly") return "/mo";
+    if (normalized === "quarterly") return "/qtr";
+    if (normalized === "yearly") return "/yr";
+    if (normalized === "weekly") return "/wk";
+    if (normalized === "daily") return "/day";
+    return normalized ? `/${normalized}` : "";
+}
+
+function getFrequencyLabel(value: string): string {
+    const normalized = normalizePlanFrequency(value);
+    if (!normalized) return "Other";
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
+    const raw = Number(price.price);
+    if (!Number.isFinite(raw) || raw < 0) return null;
+    const normalized = normalizePlanFrequency(price.frequency);
+    const multiplier = PLAN_FREQUENCY_MONTH_MULTIPLIERS[normalized];
+    if (typeof multiplier !== "number") return raw;
+    return raw * multiplier;
+}
+
+function getCurrencySortRank(currency: string | null | undefined): number {
+    const normalized = String(currency ?? "").trim().toUpperCase();
+    if (!normalized || normalized === "USD") return 0;
+    return 1;
+}
+
+function formatPlanPriceValue(price: SubscriptionPrice): string {
+    const currency = String(price.currency || "USD").toUpperCase();
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    }).format(price.price);
+}
+
+function sortSubscriptionPlanPrices(prices: SubscriptionPrice[]): SubscriptionPrice[] {
+    return [...prices].sort((a, b) => {
+        const currencyRank = getCurrencySortRank(a.currency) - getCurrencySortRank(b.currency);
+        if (currencyRank !== 0) return currencyRank;
+
+        const aMonthly = toMonthlyEquivalent(a);
+        const bMonthly = toMonthlyEquivalent(b);
+        if (aMonthly != null && bMonthly != null && aMonthly !== bMonthly) {
+            return aMonthly - bMonthly;
+        }
+        if (aMonthly == null && bMonthly != null) return 1;
+        if (aMonthly != null && bMonthly == null) return -1;
+
+        if (a.price !== b.price) return a.price - b.price;
+
+        const aFrequencyOrder =
+            PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(a.frequency)] ?? 99;
+        const bFrequencyOrder =
+            PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(b.frequency)] ?? 99;
+        if (aFrequencyOrder !== bFrequencyOrder) {
+            return aFrequencyOrder - bFrequencyOrder;
+        }
+        return String(a.frequency).localeCompare(String(b.frequency));
+    });
+}
+
+function getPlanSortKey(prices: SubscriptionPrice[]): {
+    currencyRank: number;
+    monthlyEquivalent: number;
+    rawPrice: number;
+} | null {
+    const sorted = sortSubscriptionPlanPrices(
+        prices.filter(
+            (price) =>
+                Number.isFinite(Number(price.price)) &&
+                Number(price.price) >= 0 &&
+                Boolean(String(price.currency ?? "").trim())
+        )
+    );
+    const first = sorted[0];
+    if (!first) return null;
+    return {
+        currencyRank: getCurrencySortRank(first.currency),
+        monthlyEquivalent: toMonthlyEquivalent(first) ?? Number(first.price),
+        rawPrice: Number(first.price),
+    };
 }
 
 function isProviderModelActiveForPlan(
@@ -163,7 +301,8 @@ export default function ModelPricingClient({
     const router = useRouter();
     const searchParams = useSearchParams();
     const hasApiProviders = providers.some(
-        (provider) => provider.pricing_rules.length > 0
+        (provider) =>
+            provider.provider_models.length > 0 || provider.pricing_rules.length > 0
     );
     const hasSubscriptionPlans = subscriptionPlans.length > 0;
     const defaultPricingView: PricingView =
@@ -203,6 +342,24 @@ export default function ModelPricingClient({
 
     const sortedSubscriptionPlans = useMemo(() => {
         return [...subscriptionPlans].sort((a, b) => {
+            const aKey = getPlanSortKey(a.prices ?? []);
+            const bKey = getPlanSortKey(b.prices ?? []);
+            if (aKey && bKey) {
+                if (aKey.currencyRank !== bKey.currencyRank) {
+                    return aKey.currencyRank - bKey.currencyRank;
+                }
+                if (aKey.monthlyEquivalent !== bKey.monthlyEquivalent) {
+                    return aKey.monthlyEquivalent - bKey.monthlyEquivalent;
+                }
+                if (aKey.rawPrice !== bKey.rawPrice) {
+                    return aKey.rawPrice - bKey.rawPrice;
+                }
+            } else if (aKey && !bKey) {
+                return -1;
+            } else if (!aKey && bKey) {
+                return 1;
+            }
+
             const aOrg = a.organisation?.name ?? "";
             const bOrg = b.organisation?.name ?? "";
             if (aOrg !== bOrg) return aOrg.localeCompare(bOrg);
@@ -224,7 +381,9 @@ export default function ModelPricingClient({
     const hasQuantizationOptions = quantizationOptions.length > 0;
 
     const sortedProviders = useMemo(() => {
-        const list = providers.filter((provider) => hasPricingForPlan(provider, plan));
+        const list = providers.filter((provider) =>
+            isProviderVisibleForPlan(provider, plan)
+        );
         const getProviderSortPrice = (provider: ProviderPricing): number | null => {
             const planRules = provider.pricing_rules.filter(
                 (r) => (r.pricing_plan || "standard") === plan
@@ -573,7 +732,11 @@ export default function ModelPricingClient({
                     {hasApiProviders ? (
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-2.5">
-                                {availablePlans.length === 1 ? (
+                                {availablePlans.length === 0 ? (
+                                    <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-muted-foreground dark:border-zinc-800">
+                                        Pricing tiers unavailable
+                                    </span>
+                                ) : availablePlans.length === 1 ? (
                                     <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium dark:border-zinc-800">
                                         {formatPlanLabel(availablePlans[0])} Tier
                                     </span>
@@ -761,52 +924,68 @@ export default function ModelPricingClient({
                 <section className="space-y-4">
                     {sortedSubscriptionPlans.length > 0 ? (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {sortedSubscriptionPlans.map((planItem) => (
-                                <Card key={planItem.plan_id} className="space-y-2 p-4">
-                                    <Link
-                                        href={`/subscription-plans/${planItem.plan_id}`}
-                                        className="text-sm font-semibold transition-colors hover:text-primary"
+                            {sortedSubscriptionPlans.map((planItem) => {
+                                const sortedPrices = sortSubscriptionPlanPrices(
+                                    (planItem.prices ?? []).filter(
+                                        (price) =>
+                                            Number.isFinite(Number(price.price)) &&
+                                            Number(price.price) >= 0
+                                    )
+                                );
+                                return (
+                                    <Card
+                                        key={planItem.plan_id}
+                                        className="group h-full border-border/70 bg-gradient-to-b from-background to-muted/[0.22] p-4 transition-colors hover:border-border"
                                     >
-                                        {planItem.name}
-                                    </Link>
-                                    <p className="text-xs text-muted-foreground">
-                                        {planItem.organisation?.name ?? "Unknown provider"}
-                                    </p>
-                                    <div className="space-y-1">
-                                        {planItem.prices.map((price) => {
-                                            const suffix =
-                                                price.frequency === "monthly"
-                                                    ? "/mo"
-                                                    : price.frequency === "yearly"
-                                                    ? "/yr"
-                                                    : price.frequency === "daily"
-                                                    ? "/day"
-                                                    : "";
-                                            const formatted = new Intl.NumberFormat("en-US", {
-                                                style: "currency",
-                                                currency: price.currency,
-                                                minimumFractionDigits: 0,
-                                                maximumFractionDigits: 2,
-                                            }).format(price.price);
-                                            return (
-                                                <div
-                                                    key={`${price.frequency}:${price.currency}:${price.price}`}
-                                                    className="text-xs font-semibold text-foreground tabular-nums"
-                                                >
-                                                    {formatted}
-                                                    {suffix}
+                                        <div className="space-y-3">
+                                            <div className="flex items-start gap-3">
+                                                <div className="min-w-0 space-y-1">
+                                                    <Link
+                                                        href={`/subscription-plans/${planItem.plan_id}`}
+                                                        className="block text-sm font-semibold leading-tight transition-colors hover:text-primary"
+                                                    >
+                                                        {planItem.name}
+                                                    </Link>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {planItem.organisation?.name ?? "Unknown provider"}
+                                                    </p>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                    {typeof planItem.model_info?.rate_limit === "string" &&
-                                    planItem.model_info.rate_limit.trim() ? (
-                                        <p className="text-xs text-muted-foreground">
-                                            Rate limit: {planItem.model_info.rate_limit}
-                                        </p>
-                                    ) : null}
-                                </Card>
-                            ))}
+                                            </div>
+
+                                            {sortedPrices.length > 0 ? (
+                                                <div className="rounded-md border border-border/70 bg-background/70 p-2">
+                                                    <div className="space-y-1.5">
+                                                        {sortedPrices.map((price) => (
+                                                            <div
+                                                                key={`${price.frequency}:${price.currency}:${price.price}`}
+                                                                className="flex items-center justify-between gap-3 text-xs"
+                                                            >
+                                                                <span className="text-muted-foreground">
+                                                                    {getFrequencyLabel(price.frequency)}
+                                                                </span>
+                                                                <span className="font-semibold tabular-nums text-foreground">
+                                                                    {formatPlanPriceValue(price)}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-md border border-border/70 bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground">
+                                                    No pricing values listed yet.
+                                                </div>
+                                            )}
+
+                                            {typeof planItem.model_info?.rate_limit === "string" &&
+                                            planItem.model_info.rate_limit.trim() ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Rate limit: {planItem.model_info.rate_limit}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     ) : (
                         <Empty className="rounded-lg border p-8">
