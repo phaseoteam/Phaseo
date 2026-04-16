@@ -11,7 +11,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
-	TokenTripleSection,
+	TierTiles,
 	ImageGenSection,
 	VideoGenSection,
 	InputsSection,
@@ -23,6 +23,8 @@ import ProviderModelParameters from "@/components/(data)/model/pricing/ProviderM
 import {
 	buildProviderSections,
 	fmtUSD,
+	type TokenTier,
+	type TokenTriple,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ProviderRuntimeStats } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
@@ -320,16 +322,6 @@ export default function ProviderCard({
 	const textProviderModels = providerModelsInScope.filter(
 		(pm) => pm.endpoint === "text.generate"
 	);
-	const hasTextLikeEndpoint = providerModelsInScope.some(
-		(pm) => pm.endpoint === "text.generate" || pm.endpoint === "text.embed"
-	);
-	const hasTextSection = Boolean(sec.textTokens) || hasTextLikeEndpoint;
-	const textTripleForDisplay = sec.textTokens ?? {
-		in: [],
-		cached: [],
-		write: [],
-		out: [],
-	};
 	const maxFrom = (values: Array<number | null | undefined>) => {
 		const nums = values.filter(
 			(v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0
@@ -363,6 +355,54 @@ export default function ProviderCard({
 				value: string;
 			} => Boolean(metric)
 		);
+	type TokenMetricTile = {
+		key: string;
+		title: string;
+		value?: string;
+		tiers?: TokenTier[];
+		unitLabel?: string;
+	};
+	const tokenMetricTiles: TokenMetricTile[] = capacityMetrics.map((metric) => ({
+		key: `capacity-${metric.label}`,
+		title: metric.label,
+		value: metric.value,
+	}));
+	const pushTokenTierTiles = (triple: TokenTriple | undefined, modality: string) => {
+		if (!triple) return;
+		const labelWithModality = (segment: "Input" | "Output") =>
+			modality ? `${segment} ${modality}` : segment;
+		const cacheReadLabel = modality ? `${modality} Cache Reads` : "Cache Reads";
+		const cacheWriteLabel = modality ? `${modality} Cache Writes` : "Cache Writes";
+		const sections: Array<{
+			key: string;
+			title: string;
+			tiers: TokenTier[];
+		}> = [
+			{ key: "input", title: labelWithModality("Input"), tiers: triple.in },
+			{ key: "output", title: labelWithModality("Output"), tiers: triple.out },
+			{ key: "cache-read", title: cacheReadLabel, tiers: triple.cached },
+			{ key: "cache-write", title: cacheWriteLabel, tiers: triple.write },
+		];
+		for (const section of sections) {
+			if (!section.tiers.length) continue;
+			tokenMetricTiles.push({
+				key: `${modality || "text"}-${section.key}`,
+				title: section.title,
+				tiers: section.tiers,
+				unitLabel: "Per 1M tokens",
+			});
+		}
+	};
+	pushTokenTierTiles(sec.textTokens, "");
+	pushTokenTierTiles(sec.audioTokens, "Audio");
+	pushTokenTierTiles(sec.imageTokens, "Image");
+	pushTokenTierTiles(sec.videoTokens, "Video");
+	const upcomingTokenChanges = [
+		...upcomingFor("textTokens"),
+		...upcomingFor("imageTokens"),
+		...upcomingFor("audioTokens"),
+		...upcomingFor("videoTokens"),
+	];
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
 	const videoAudioRuleHints = planRules.flatMap((rule) => {
@@ -662,18 +702,42 @@ export default function ProviderCard({
 							</div>
 						</div>
 					)}
-					{!isFreePlan && hasTextSection && (
-						<TokenTripleSection
-							title="Text Tokens"
-							triple={textTripleForDisplay}
-							hideHeader={false}
-							leadingTiles={capacityMetrics}
-							minimumSegments={["Input", "Output"]}
+					{!isFreePlan && tokenMetricTiles.length > 0 && (
+						<div className="space-y-1.5">
+							<div className="w-full overflow-visible sm:overflow-x-auto">
+								<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800">
+									{tokenMetricTiles.map((tile) => (
+										<div
+											key={tile.key}
+											className="min-w-0 px-1 py-1 sm:min-w-[140px] sm:flex-1 sm:px-3 sm:py-2"
+										>
+											<div className="mb-0.5 text-xs text-muted-foreground">{tile.title}</div>
+											{typeof tile.value === "string" ? (
+												<div className="space-y-0.5">
+													<div className="text-xs font-semibold text-foreground tabular-nums">
+														{tile.value}
+													</div>
+													{tile.unitLabel ? (
+														<div className="text-[11px] text-muted-foreground">
+															{tile.unitLabel}
+														</div>
+													) : null}
+												</div>
+											) : tile.tiers ? (
+												<TierTiles tiers={tile.tiers} dense unitLabel={tile.unitLabel} />
+											) : null}
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					)}
+					{!isFreePlan && upcomingTokenChanges.length > 0 && (
+						<UpcomingPricingSection
+							rows={upcomingTokenChanges}
+							title="Upcoming Token Pricing"
 							compact
 						/>
-					)}
-					{!isFreePlan && upcomingFor("textTokens").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("textTokens")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && sec.requests && sec.requests.length > 0 && (
 						<RequestsSection rows={sec.requests} />
@@ -682,38 +746,20 @@ export default function ProviderCard({
 						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && imageInputs.length > 0 && (
-						<InputsSection title="Image inputs" rows={imageInputs} />
+						<InputsSection title="Image Inputs" rows={imageInputs} />
 					)}
 					{!isFreePlan && upcomingFor("imageInputs").length > 0 && (
 						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && videoInputs.length > 0 && (
-						<InputsSection title="Video inputs" rows={videoInputs} />
+						<InputsSection title="Video Inputs" rows={videoInputs} />
 					)}
 					{!isFreePlan && upcomingFor("videoInputs").length > 0 && (
 						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
 					)}
-					{!isFreePlan && sec.imageTokens && (
-						<TokenTripleSection title="Image Tokens" triple={sec.imageTokens} compact />
-					)}
-					{!isFreePlan && upcomingFor("imageTokens").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("imageTokens")} title="Upcoming" compact />
-					)}
 					{!isFreePlan && sec.imageGen && <ImageGenSection rows={sec.imageGen} />}
 					{!isFreePlan && upcomingFor("imageGen").length > 0 && (
 						<UpcomingPricingSection rows={upcomingFor("imageGen")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && sec.audioTokens && (
-						<TokenTripleSection title="Audio Tokens" triple={sec.audioTokens} compact />
-					)}
-					{!isFreePlan && upcomingFor("audioTokens").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("audioTokens")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && sec.videoTokens && (
-						<TokenTripleSection title="Video Tokens" triple={sec.videoTokens} compact />
-					)}
-					{!isFreePlan && upcomingFor("videoTokens").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("videoTokens")} title="Upcoming" compact />
 					)}
 					{!isFreePlan && sec.videoGen && (
 						<VideoGenSection

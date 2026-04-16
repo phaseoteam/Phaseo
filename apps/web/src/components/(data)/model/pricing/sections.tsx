@@ -181,9 +181,11 @@ function formatUsdAligned(value: number, decimals: number): string {
 export function TierTiles({
 	tiers,
 	dense = false,
+	unitLabel,
 }: {
 	tiers: TokenTier[];
 	dense?: boolean;
+	unitLabel?: string;
 }) {
 	if (!tiers?.length) {
 		return <div className="text-sm text-muted-foreground">--</div>;
@@ -218,6 +220,9 @@ export function TierTiles({
 					) : null}
 				</div>
 			))}
+			{unitLabel ? (
+				<div className="text-[11px] text-muted-foreground">{unitLabel}</div>
+			) : null}
 		</div>
 	);
 }
@@ -332,7 +337,7 @@ export function ImageGenSection({
 	return (
 		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image Generation</h4>
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image</h4>
 				<span className="text-xs text-muted-foreground">Per image</span>
 			</div>
 					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
@@ -396,7 +401,6 @@ export function VideoGenSection({
 		(byUnit[r.unitLabel] ??= []).push(r);
 	}
 	const unitEntries = Object.entries(byUnit);
-	const hasSingleUnit = unitEntries.length === 1;
 	const audioHintMap = new Map<string, "with-audio" | "without-audio">();
 	for (const hint of audioHints) {
 		audioHintMap.set(
@@ -491,13 +495,20 @@ export function VideoGenSection({
 		: "min-w-0 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2";
 	const wrapperClass = vertical ? "space-y-1" : "space-y-1.5";
 	const itemStackClass = vertical ? "space-y-0.5" : "space-y-1";
+	const unitSummaryForItems = (list: Array<{ unit: string }>): string | null => {
+		const uniqueUnits = Array.from(
+			new Set(
+				list
+					.map((item) => String(item.unit ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+		if (!uniqueUnits.length) return null;
+		return uniqueUnits.join(" / ");
+	};
 
 	return (
 		<div className={wrapperClass}>
-			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold tracking-wide text-foreground">Video Generation</h4>
-				{hasSingleUnit ? <span className="text-xs text-muted-foreground">{unitEntries[0][0]}</span> : null}
-			</div>
 				{showAudioVariants ? (
 						<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
 							{(() => {
@@ -505,49 +516,42 @@ export function VideoGenSection({
 						const withoutAudioItems = items.filter((item) => item.audioMode === "without-audio");
 						const hasExplicitSplit = withAudioItems.length > 0 || withoutAudioItems.length > 0;
 						if (!hasExplicitSplit) {
+							const sortedItems = [...items].sort((a, b) => {
+								const byResolution = compareResolutionLabels(a.resolution, b.resolution);
+								if (byResolution !== 0) return byResolution;
+								return a.price - b.price;
+							});
+							const unitSummary = unitSummaryForItems(sortedItems);
 							return (
-										<div className={columnsWrapClass}>
-										{Array.from(
-										items.reduce((acc, item) => {
-											const list = acc.get(item.resolution) ?? [];
-											list.push(item);
-											acc.set(item.resolution, list);
-											return acc;
-										}, new Map<string, typeof items>()),
-									)
-										.sort(([a], [b]) => compareResolutionLabels(a, b))
-										.map(([resolution, resolutionItems]) => (
-													<div key={resolution} className={resolutionColumnClass}>
-													<div className="mb-0.5 text-xs text-muted-foreground">{resolution}</div>
-													<div className={itemStackClass}>
-													{resolutionItems
-														.sort((a, b) => a.price - b.price)
-														.map((item, index) => (
-															<div key={`${item.unit}-${item.price}-${index}`} className="space-y-0.5">
-																<div className="flex items-baseline gap-1">
-																	<span
-																		className={
-																			item.basePrice != null
-																				? "text-xs font-semibold text-emerald-600 tabular-nums"
-																				: "text-xs font-semibold text-foreground tabular-nums"
-																		}
-																	>
-																		{formatUsdAligned(item.price, sharedDecimals)}
-																	</span>
-																	{hasSingleUnit ? null : (
-																		<span className="text-xs text-muted-foreground/80">({item.unit})</span>
-																	)}
-																</div>
-																{item.basePrice != null ? (
-																	<div className="text-xs text-muted-foreground">
-																		{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-																	</div>
-																) : null}
-															</div>
-														))}
+								<div className={columnsWrapClass}>
+									<div className={resolutionColumnClass}>
+										<div className={itemStackClass}>
+											{sortedItems.map((item, index) => (
+												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
+													<div className="flex items-baseline gap-1">
+														<span
+															className={
+																item.basePrice != null
+																	? "text-xs font-semibold text-emerald-600 tabular-nums"
+																	: "text-xs font-semibold text-foreground tabular-nums"
+															}
+														>
+															{formatUsdAligned(item.price, sharedDecimals)}
+														</span>
+														<span className="text-xs text-muted-foreground">{item.resolution}</span>
+													</div>
+													{item.basePrice != null ? (
+														<div className="text-xs text-muted-foreground">
+															{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+														</div>
+													) : null}
 												</div>
-											</div>
-										))}
+											))}
+										</div>
+										{unitSummary ? (
+											<div className="pt-0.5 text-[11px] text-muted-foreground">{unitSummary}</div>
+										) : null}
+									</div>
 								</div>
 							);
 						}
@@ -556,20 +560,32 @@ export function VideoGenSection({
 									{[
 									{
 										key: "with-audio",
-										title: "With Audio",
+										title: "Video (With Audio)",
 										items: withAudioItems,
 									},
 									{
 										key: "without-audio",
-										title: "No Audio",
+										title: "Video (Without Audio)",
 										items: withoutAudioItems,
 									},
 								].map((column) => (
+									(() => {
+										const sortedColumnItems = [...column.items].sort((a, b) => {
+											const byResolution = compareResolutionLabels(
+												a.resolution,
+												b.resolution,
+											);
+											if (byResolution !== 0) return byResolution;
+											return a.price - b.price;
+										});
+										const unitSummary = unitSummaryForItems(sortedColumnItems);
+										return (
 									<div key={column.key} className={audioColumnClass}>
 									<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
-									{column.items.length ? (
+									{sortedColumnItems.length ? (
+										<>
 										<div className={itemStackClass}>
-										{column.items.map((item, index) => (
+										{sortedColumnItems.map((item, index) => (
 											<div key={`${column.key}-${item.unit}-${item.resolution}-${index}`} className="space-y-0.5">
 												<div className="flex items-baseline gap-1">
 													<span
@@ -582,9 +598,6 @@ export function VideoGenSection({
 														{formatUsdAligned(item.price, sharedDecimals)}
 													</span>
 													<span className="text-xs text-muted-foreground">{item.resolution}</span>
-													{hasSingleUnit ? null : (
-														<span className="text-xs text-muted-foreground/80">({item.unit})</span>
-													)}
 												</div>
 												{item.basePrice != null ? (
 													<div className="text-xs text-muted-foreground">
@@ -594,10 +607,16 @@ export function VideoGenSection({
 											</div>
 										))}
 									</div>
+									{unitSummary ? (
+										<div className="pt-0.5 text-[11px] text-muted-foreground">{unitSummary}</div>
+									) : null}
+									</>
 								) : (
 									<div className="text-xs text-muted-foreground">--</div>
 								)}
 							</div>
+									);
+									})()
 						))}
 							</div>
 						);
@@ -606,23 +625,18 @@ export function VideoGenSection({
 				) : (
 					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
 						<div className={columnsWrapClass}>
-							{Array.from(
-							items.reduce((acc, item) => {
-								const list = acc.get(item.resolution) ?? [];
-								list.push(item);
-								acc.set(item.resolution, list);
-								return acc;
-							}, new Map<string, typeof items>()),
-						)
-							.sort(([a], [b]) => compareResolutionLabels(a, b))
-							.map(([resolution, resolutionItems]) => (
-										<div key={resolution} className={resolutionColumnClass}>
-										<div className="mb-0.5 text-xs text-muted-foreground">{resolution}</div>
+							{(() => {
+								const sortedItems = [...items].sort((a, b) => {
+									const byResolution = compareResolutionLabels(a.resolution, b.resolution);
+									if (byResolution !== 0) return byResolution;
+									return a.price - b.price;
+								});
+								const unitSummary = unitSummaryForItems(sortedItems);
+								return (
+									<div className={resolutionColumnClass}>
 										<div className={itemStackClass}>
-										{resolutionItems
-											.sort((a, b) => a.price - b.price)
-											.map((item, index) => (
-												<div key={`${item.unit}-${item.price}-${index}`} className="space-y-0.5">
+											{sortedItems.map((item, index) => (
+												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
 													<div className="flex items-baseline gap-1">
 														<span
 															className={
@@ -633,9 +647,7 @@ export function VideoGenSection({
 														>
 															{formatUsdAligned(item.price, sharedDecimals)}
 														</span>
-														{hasSingleUnit ? null : (
-															<span className="text-xs text-muted-foreground/80">({item.unit})</span>
-														)}
+														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
 													{item.basePrice != null ? (
 														<div className="text-xs text-muted-foreground">
@@ -644,9 +656,13 @@ export function VideoGenSection({
 													) : null}
 												</div>
 											))}
+										</div>
+										{unitSummary ? (
+											<div className="pt-0.5 text-[11px] text-muted-foreground">{unitSummary}</div>
+										) : null}
 									</div>
-								</div>
-							))}
+								);
+							})()}
 					</div>
 				</div>
 			)}

@@ -41,6 +41,7 @@ async function getVisibleTabKeys(
 			"overview",
 			"playground",
 			"providers",
+			"pricing",
 			"performance",
 			"apps",
 			"activity",

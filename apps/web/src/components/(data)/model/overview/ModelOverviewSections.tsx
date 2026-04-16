@@ -12,6 +12,7 @@ import {
 	Video,
 } from "lucide-react";
 import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
+import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";
 import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmarks";
@@ -181,6 +182,17 @@ export async function ModelProvidersSection({
 				modelId={modelId}
 				includeHidden={includeHidden}
 			/>
+		</Section>
+	);
+}
+
+export async function ModelPricingInsightsOverviewSection({
+	modelId,
+	includeHidden,
+}: ModelSectionSharedProps) {
+	return (
+		<Section id="pricing-insights">
+			<ModelPricingInsightsSection modelId={modelId} includeHidden={includeHidden} />
 		</Section>
 	);
 }
@@ -744,6 +756,10 @@ export default async function ModelOverviewSections({
 						modelId={modelId}
 						includeHidden={includeHidden}
 						surface="overview"
+					/>
+					<ModelPricingInsightsOverviewSection
+						modelId={modelId}
+						includeHidden={includeHidden}
 					/>
 					<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />
 					<ModelQuickstartSection

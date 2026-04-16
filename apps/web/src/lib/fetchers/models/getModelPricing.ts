@@ -92,6 +92,7 @@ export interface ProviderModel {
 export interface ProviderInfo {
     api_provider_id: string;
     api_provider_name: string;
+    colour?: string | null;
     link?: string | null;
     country_code?: string | null;
     prompt_training_policy?: string | null;
@@ -190,6 +191,7 @@ export default async function getModelPricing(
         ),
         data_api_providers (
             api_provider_name,
+            colour,
             link,
             country_code,
             prompt_training_policy,
@@ -221,6 +223,7 @@ export default async function getModelPricing(
         ),
         data_api_providers (
             api_provider_name,
+            colour,
             link,
             country_code,
             prompt_training_policy,
@@ -304,6 +307,7 @@ export default async function getModelPricing(
                 provider: {
                     api_provider_id: pid,
                     api_provider_name: row.data_api_providers?.api_provider_name || pid,
+                    colour: row.data_api_providers?.colour ?? null,
                     link: row.data_api_providers?.link || null,
                     country_code: row.data_api_providers?.country_code || null,
                     prompt_training_policy:

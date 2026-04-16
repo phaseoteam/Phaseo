@@ -24,6 +24,7 @@ const tabs: ModelTab[] = [
 	{ label: "Overview", key: "overview" },
 	{ label: "Playground", key: "playground" },
 	{ label: "Providers", key: "providers" },
+	{ label: "Pricing", key: "pricing" },
 	{ label: "Performance", key: "performance" },
 	{ label: "Apps", key: "apps" },
 	{ label: "Activity", key: "activity" },
@@ -47,8 +48,6 @@ export default function TabBar({
 		: [];
 
 	const lastSegment = pathnameSegments[pathnameSegments.length - 1];
-	const normalizedLastSegment =
-		lastSegment === "pricing" ? "providers" : lastSegment;
 	const visibleKeySet =
 		visibleTabKeys && visibleTabKeys.length > 0
 			? new Set(visibleTabKeys)
@@ -58,9 +57,7 @@ export default function TabBar({
 	);
 	const activeKey = tabs.some((t) => t.key === lastSegment)
 		? (lastSegment as string)
-		: tabs.some((t) => t.key === normalizedLastSegment)
-			? (normalizedLastSegment as string)
-			: (visibleTabs[0]?.key ?? "overview");
+		: (visibleTabs[0]?.key ?? "overview");
 	const hrefFor = (key: string) =>
 		key === "overview" ? `/models/${modelId}` : `/models/${modelId}/${key}`;
 	const desktopContainerRef = React.useRef<HTMLDivElement | null>(null);
