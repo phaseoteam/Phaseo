@@ -1,0 +1,247 @@
+{
+  "key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "anthropic/claude-sonnet-4.5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.3,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 16.5,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.33,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.13,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        },
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "5m"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.6,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        },
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1h"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.6,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 24.75,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.66,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 8.25,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        },
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "5m"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 13.2,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        },
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1h"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-09-29T00:00:00"
+    }
+  ]
+}
