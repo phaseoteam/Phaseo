@@ -362,47 +362,66 @@ export default function ProviderCard({
 		tiers?: TokenTier[];
 		unitLabel?: string;
 	};
-	const tokenMetricTiles: TokenMetricTile[] = capacityMetrics.map((metric) => ({
-		key: `capacity-${metric.label}`,
-		title: metric.label,
-		value: metric.value,
-	}));
-	const pushTokenTierTiles = (triple: TokenTriple | undefined, modality: string) => {
-		if (!triple) return;
-		const labelWithModality = (segment: "Input" | "Output") =>
-			modality ? `${segment} ${modality}` : segment;
-		const cacheReadLabel = modality ? `${modality} Cache Reads` : "Cache Reads";
-		const cacheWriteLabel = modality ? `${modality} Cache Writes` : "Cache Writes";
-		const sections: Array<{
-			key: string;
-			title: string;
-			tiers: TokenTier[];
-		}> = [
-			{ key: "input", title: labelWithModality("Input"), tiers: triple.in },
-			{ key: "output", title: labelWithModality("Output"), tiers: triple.out },
-			{ key: "cache-read", title: cacheReadLabel, tiers: triple.cached },
-			{ key: "cache-write", title: cacheWriteLabel, tiers: triple.write },
-		];
-		for (const section of sections) {
-			if (!section.tiers.length) continue;
-			tokenMetricTiles.push({
-				key: `${modality || "text"}-${section.key}`,
-				title: section.title,
-				tiers: section.tiers,
-				unitLabel: "Per 1M tokens",
-			});
-		}
-	};
-	pushTokenTierTiles(sec.textTokens, "");
-	pushTokenTierTiles(sec.audioTokens, "Audio");
-	pushTokenTierTiles(sec.imageTokens, "Image");
-	pushTokenTierTiles(sec.videoTokens, "Video");
-	const upcomingTokenChanges = [
-		...upcomingFor("textTokens"),
-		...upcomingFor("imageTokens"),
-		...upcomingFor("audioTokens"),
-		...upcomingFor("videoTokens"),
-	];
+	const { tokenMetricTiles, upcomingTokenChanges } = useMemo(() => {
+		const tiles: TokenMetricTile[] = capacityMetrics.map((metric) => ({
+			key: `capacity-${metric.label}`,
+			title: metric.label,
+			value: metric.value,
+		}));
+
+		const pushTokenTierTiles = (triple: TokenTriple | undefined, modality: string) => {
+			if (!triple) return;
+			const labelWithModality = (segment: "Input" | "Output") =>
+				modality ? `${segment} ${modality}` : segment;
+			const cacheReadLabel = modality ? `${modality} Cache Reads` : "Cache Reads";
+			const cacheWriteLabel = modality ? `${modality} Cache Writes` : "Cache Writes";
+			const sections: Array<{
+				key: string;
+				title: string;
+				tiers: TokenTier[];
+			}> = [
+				{ key: "input", title: labelWithModality("Input"), tiers: triple.in },
+				{ key: "output", title: labelWithModality("Output"), tiers: triple.out },
+				{ key: "cache-read", title: cacheReadLabel, tiers: triple.cached },
+				{ key: "cache-write", title: cacheWriteLabel, tiers: triple.write },
+			];
+			for (const section of sections) {
+				if (!section.tiers.length) continue;
+				tiles.push({
+					key: `${modality || "text"}-${section.key}`,
+					title: section.title,
+					tiers: section.tiers,
+					unitLabel: "Per 1M tokens",
+				});
+			}
+		};
+
+		pushTokenTierTiles(sec.textTokens, "");
+		pushTokenTierTiles(sec.audioTokens, "Audio");
+		pushTokenTierTiles(sec.imageTokens, "Image");
+		pushTokenTierTiles(sec.videoTokens, "Video");
+		const upcomingTokenSectionKeys = new Set([
+			"textTokens",
+			"imageTokens",
+			"audioTokens",
+			"videoTokens",
+		]);
+
+		return {
+			tokenMetricTiles: tiles,
+			upcomingTokenChanges:
+				sec.upcomingChanges?.filter((change) =>
+					upcomingTokenSectionKeys.has(change.sectionKey),
+				) ?? [],
+		};
+	}, [
+		capacityMetrics,
+		sec.textTokens,
+		sec.audioTokens,
+		sec.imageTokens,
+		sec.videoTokens,
+		sec.upcomingChanges,
+	]);
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
 	const videoAudioRuleHints = planRules.flatMap((rule) => {

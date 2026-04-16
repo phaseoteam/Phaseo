@@ -503,8 +503,18 @@ export function VideoGenSection({
 					.filter(Boolean),
 			),
 		);
-		if (!uniqueUnits.length) return null;
-		return uniqueUnits.join(" / ");
+		if (uniqueUnits.length !== 1) return null;
+		return uniqueUnits[0];
+	};
+	const formatResolutionLabel = (
+		item: { resolution: string; unit: string },
+		showUnitInline: boolean,
+	): string => {
+		const resolution = String(item.resolution ?? "").trim();
+		const unit = String(item.unit ?? "").trim();
+		if (!showUnitInline) return resolution;
+		if (resolution && unit) return `${resolution} (${unit})`;
+		return resolution || unit;
 	};
 
 	return (
@@ -522,6 +532,7 @@ export function VideoGenSection({
 								return a.price - b.price;
 							});
 							const unitSummary = unitSummaryForItems(sortedItems);
+							const showUnitInline = unitSummary == null;
 							return (
 								<div className={columnsWrapClass}>
 									<div className={resolutionColumnClass}>
@@ -538,7 +549,9 @@ export function VideoGenSection({
 														>
 															{formatUsdAligned(item.price, sharedDecimals)}
 														</span>
-														<span className="text-xs text-muted-foreground">{item.resolution}</span>
+														<span className="text-xs text-muted-foreground">
+															{formatResolutionLabel(item, showUnitInline)}
+														</span>
 													</div>
 													{item.basePrice != null ? (
 														<div className="text-xs text-muted-foreground">
@@ -579,6 +592,7 @@ export function VideoGenSection({
 											return a.price - b.price;
 										});
 										const unitSummary = unitSummaryForItems(sortedColumnItems);
+										const showUnitInline = unitSummary == null;
 										return (
 									<div key={column.key} className={audioColumnClass}>
 									<div className="mb-0.5 text-xs text-muted-foreground">{column.title}</div>
@@ -597,7 +611,9 @@ export function VideoGenSection({
 													>
 														{formatUsdAligned(item.price, sharedDecimals)}
 													</span>
-													<span className="text-xs text-muted-foreground">{item.resolution}</span>
+													<span className="text-xs text-muted-foreground">
+														{formatResolutionLabel(item, showUnitInline)}
+													</span>
 												</div>
 												{item.basePrice != null ? (
 													<div className="text-xs text-muted-foreground">
@@ -632,6 +648,7 @@ export function VideoGenSection({
 									return a.price - b.price;
 								});
 								const unitSummary = unitSummaryForItems(sortedItems);
+								const showUnitInline = unitSummary == null;
 								return (
 									<div className={resolutionColumnClass}>
 										<div className={itemStackClass}>
@@ -647,7 +664,9 @@ export function VideoGenSection({
 														>
 															{formatUsdAligned(item.price, sharedDecimals)}
 														</span>
-														<span className="text-xs text-muted-foreground">{item.resolution}</span>
+														<span className="text-xs text-muted-foreground">
+															{formatResolutionLabel(item, showUnitInline)}
+														</span>
 													</div>
 													{item.basePrice != null ? (
 														<div className="text-xs text-muted-foreground">

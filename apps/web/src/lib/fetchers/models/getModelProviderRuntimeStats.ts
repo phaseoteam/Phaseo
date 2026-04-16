@@ -68,7 +68,6 @@ const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_GATEWAY_REQUEST_PAGES = 4;
 
 function toNumber(value: unknown): number {
 	const num = Number(value);
@@ -237,11 +236,7 @@ async function fetchGatewayRequestRowsForHour(args: {
 }): Promise<GatewayRequestUsageRow[]> {
 	const rows: GatewayRequestUsageRow[] = [];
 
-	for (
-		let page = 0, offset = 0;
-		page < MAX_GATEWAY_REQUEST_PAGES;
-		page += 1, offset += PAGE_SIZE
-	) {
+	for (let offset = 0; ; offset += PAGE_SIZE) {
 		const to = offset + PAGE_SIZE - 1;
 		const { data, error } = await args.client
 			.from("gateway_requests")

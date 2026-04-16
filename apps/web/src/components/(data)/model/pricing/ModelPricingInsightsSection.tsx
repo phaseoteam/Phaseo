@@ -54,7 +54,11 @@ export default async function ModelPricingInsightsSection({
 			modelId,
 			providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 			modelAliases: providersForDisplay.flatMap((p) =>
-				p.provider_models.flatMap((pm) => [pm.model_id, pm.provider_model_slug ?? ""]),
+				p.provider_models.flatMap((pm) =>
+					[pm.model_id, pm.provider_model_slug].filter(
+						(value): value is string => typeof value === "string" && value.trim().length > 0,
+					),
+				),
 			),
 		}),
 		getModelPricingHistoryRules({

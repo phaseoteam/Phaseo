@@ -539,7 +539,7 @@ function formatUsdAdaptive(value: number | null): string {
 }
 
 function formatPct(value: number | null): string {
-	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
+	if (value == null || !Number.isFinite(value)) return "--";
 	return `${value.toFixed(1)}%`;
 }
 
@@ -818,8 +818,7 @@ export default function PricingInsights({
 	}, [effectiveRows]);
 
 	const scopedHistoryRules = useMemo(() => {
-		const scoped = historyRules.filter((rule) => rule.pricingPlan === plan);
-		return scoped.length > 0 ? scoped : historyRules;
+		return historyRules.filter((rule) => rule.pricingPlan === plan);
 	}, [historyRules, plan]);
 
 	const meterOptions = useMemo(() => {
