@@ -1,6 +1,7 @@
 import { revalidateTag } from "next/cache";
 
 const STALE_WHILE_REVALIDATE = "max" as const;
+const EXPIRE_IMMEDIATELY = { expire: 0 } as const;
 
 type RevalidateModelDataTagOptions = {
 	modelId?: string | null;
@@ -56,6 +57,13 @@ const MODEL_API_GLOBAL_TAGS = [
 	"data:top_models",
 	"monitor-models",
 	"page:models",
+] as const;
+
+const MODEL_CANONICAL_RESOLVER_TAGS = [
+	"data:model_aliases",
+	"data:data_api_provider_models",
+	"data:data_model_id_redirects",
+	"data:data_api_models",
 ] as const;
 
 function revalidateTagList(tags: readonly string[]) {
@@ -119,6 +127,9 @@ export function revalidateModelApiInfoTags(
 	options: RevalidateModelDataTagOptions = {}
 ) {
 	revalidateTagList(MODEL_API_GLOBAL_TAGS);
+	for (const tag of MODEL_CANONICAL_RESOLVER_TAGS) {
+		revalidateTag(tag, EXPIRE_IMMEDIATELY);
+	}
 
 	if (options.modelId) {
 		revalidateTag(`model:api:${options.modelId}`, STALE_WHILE_REVALIDATE);
@@ -149,6 +160,24 @@ export function revalidateBenchmarkDataTags(
 ) {
 	revalidateTag("data:benchmarks", STALE_WHILE_REVALIDATE);
 	revalidateTag("data:benchmarks:list", STALE_WHILE_REVALIDATE);
+	if (options.modelId) {
+		revalidateTag(
+			`data:benchmarks:model:${options.modelId}`,
+			STALE_WHILE_REVALIDATE
+		);
+		revalidateTag(
+			`model:benchmarks:highlights:${options.modelId}`,
+			STALE_WHILE_REVALIDATE
+		);
+		revalidateTag(
+			`model:benchmarks:table:${options.modelId}`,
+			STALE_WHILE_REVALIDATE
+		);
+		revalidateTag(
+			`model:benchmarks:comparisons:${options.modelId}`,
+			STALE_WHILE_REVALIDATE
+		);
+	}
 
 	const benchmarkIds = new Set<string>();
 	if (options.benchmarkId) benchmarkIds.add(options.benchmarkId);
