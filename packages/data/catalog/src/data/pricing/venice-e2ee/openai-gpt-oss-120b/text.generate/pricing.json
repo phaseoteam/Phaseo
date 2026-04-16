@@ -1,6 +1,6 @@
 {
-  "key": "venice/e2ee:openai/gpt-oss-120b:text.generate",
-  "api_provider_id": "venice/e2ee",
+  "key": "venice-e2ee:openai/gpt-oss-120b:text.generate",
+  "api_provider_id": "venice-e2ee",
   "provider_slug": "venice-e2ee",
   "api_model_id": "openai/gpt-oss-120b",
   "capability_id": "text.generate",

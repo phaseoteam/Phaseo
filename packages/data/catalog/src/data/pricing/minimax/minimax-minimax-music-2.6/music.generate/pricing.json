@@ -1,0 +1,36 @@
+{
+  "key": "minimax:minimax/music-2.6:music.generate",
+  "api_provider_id": "minimax",
+  "provider_slug": "minimax",
+  "api_model_id": "minimax/music-2.6",
+  "capability_id": "music.generate",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.0,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Introductory promotional window (first 2 weeks)",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-11T00:00:00",
+      "effective_to": "2026-04-25T00:00:00"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "$0.15 per song (up to 5 minutes)",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-25T00:00:00"
+    }
+  ]
+}

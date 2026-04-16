@@ -4,6 +4,8 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPlayground from "@/components/(data)/model/playground/ModelPlayground";
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
@@ -40,7 +42,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Model Playground",
 			description:
-				"Run a quick single-message playground test for this model on AI Stats, including latency, token usage, and billed cost before moving into chat.",
+				"Run multimodal playground tests for this model on AI Stats, including text, image, video, audio, embeddings, and moderation workflows.",
 			path,
 			keywords: [
 				"AI model playground",
@@ -55,7 +57,7 @@ export async function generateMetadata(props: {
 	const organisationName = model.organisation?.name ?? "AI provider";
 	const description = [
 		`Test ${model.name} from ${organisationName} in the AI Stats playground.`,
-		"Send one prompt, view latency and token cost, and continue in the chatroom.",
+		"Run multimodal workflows, inspect usage and billing, and iterate without leaving the model page.",
 	]
 		.filter(Boolean)
 		.join(" ");
@@ -93,11 +95,18 @@ export default async function Page({
 	const modelId = canonicalModelId;
 	const model = await fetchModel(modelId, includeHidden);
 	let requestModelId = modelId;
+	const scopedModelIdentifiers = new Set<string>([modelId]);
 	try {
 		const gatewayMetadata = await getModelGatewayMetadataCached(
 			modelId,
 			includeHidden,
 		);
+		for (const identifier of Object.values(
+			gatewayMetadata.primaryModelIdentifierByEndpoint,
+		)) {
+			const normalized = identifier?.trim();
+			if (normalized) scopedModelIdentifiers.add(normalized);
+		}
 		const textPrimary =
 			gatewayMetadata.primaryModelIdentifierByEndpoint["text.generate"] ??
 			gatewayMetadata.primaryModelIdentifierByEndpoint["chat.generate"] ??
@@ -106,8 +115,21 @@ export default async function Page({
 			(textPrimary?.trim() ||
 				gatewayMetadata.primaryModelIdentifier?.trim() ||
 				modelId);
+		scopedModelIdentifiers.add(requestModelId);
 	} catch (error) {
 		console.warn("[playground] failed to resolve gateway model identifier", {
+			modelId,
+			error,
+		});
+	}
+	let playgroundModels: GatewaySupportedModel[] = [];
+	try {
+		const allGatewayModels = await fetchFrontendGatewayModels();
+		playgroundModels = allGatewayModels.filter((entry) =>
+			scopedModelIdentifiers.has(entry.modelId) && entry.isAvailable,
+		);
+	} catch (error) {
+		console.warn("[playground] failed to load scoped gateway model rows", {
 			modelId,
 			error,
 		});
@@ -123,6 +145,7 @@ export default async function Page({
 				modelId={modelId}
 				requestModelId={requestModelId}
 				modelName={model?.name ?? modelId}
+				gatewayModels={playgroundModels}
 			/>
 		</ModelDetailShell>
 	);

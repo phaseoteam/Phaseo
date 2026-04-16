@@ -1,0 +1,22 @@
+{
+  "key": "mistral:mistral/mistral-moderation:text.moderate",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/mistral-moderation",
+  "capability_id": "text.moderate",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-25T00:00:00"
+    }
+  ]
+}
