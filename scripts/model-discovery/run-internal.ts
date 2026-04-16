@@ -97,8 +97,12 @@ function toNullableString(value: unknown): string | null {
 }
 
 function toNullableDateString(value: unknown): string | null {
-    if (value === null || value === undefined) return null;
-    return toNullableString(value);
+    const normalized = toNullableString(value);
+    if (!normalized) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+    const parsed = Date.parse(normalized);
+    if (!Number.isFinite(parsed)) return normalized;
+    return new Date(parsed).toISOString().slice(0, 10);
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -334,9 +338,9 @@ function readAnnouncedState(filePath: string): AnnouncedInternalModelsState {
     }
 }
 
-function readState(filePath: string): { state: InternalModelsFileState; hasHfState: boolean } {
+function readState(filePath: string): { state: InternalModelsFileState; hasHfState: boolean; sourceVersion: number | null } {
     if (!fs.existsSync(filePath)) {
-        return { state: emptyState(), hasHfState: false };
+        return { state: emptyState(), hasHfState: false, sourceVersion: null };
     }
 
     try {
@@ -345,10 +349,14 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
             | undefined;
 
         if (!parsed?.files || typeof parsed.files !== "object") {
-            return { state: emptyState(), hasHfState: false };
+            return { state: emptyState(), hasHfState: false, sourceVersion: null };
         }
 
         const normalizedFiles = normalizeStateFiles(parsed.files as Record<string, unknown>);
+        const sourceVersion =
+            typeof parsed.version === "number" && Number.isFinite(parsed.version)
+                ? parsed.version
+                : 1;
 
         if (parsed.version === 3 || parsed.version === 2) {
             const hasHfState = parsed.hfOrgs !== undefined && typeof parsed.hfOrgs === "object";
@@ -360,6 +368,7 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
                     hfOrgs: hasHfState ? (parsed.hfOrgs as Record<string, HuggingFaceOrgSnapshot>) : {},
                 },
                 hasHfState,
+                sourceVersion,
             };
         }
 
@@ -372,9 +381,10 @@ function readState(filePath: string): { state: InternalModelsFileState; hasHfSta
                 hfOrgs: {},
             },
             hasHfState: false,
+            sourceVersion,
         };
     } catch {
-        return { state: emptyState(), hasHfState: false };
+        return { state: emptyState(), hasHfState: false, sourceVersion: null };
     }
 }
 
@@ -868,7 +878,7 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         0,
         detectedInternalAddedModels.length - newInternalModels.length
     );
-    const internalUpdatedModels = shouldCheckInternal
+    const detectedInternalUpdatedModels = shouldCheckInternal
         ? diff.changed
             .map((filePath) => {
                 const previousSnapshot = previousState.files[filePath];
@@ -885,6 +895,17 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
             })
             .filter((snapshot): snapshot is InternalModelNotificationModel => Boolean(snapshot))
         : [];
+    const suppressLegacyLifecycleBackfillUpdates =
+        shouldCheckInternal &&
+        previous.sourceVersion !== null &&
+        previous.sourceVersion < 3 &&
+        detectedInternalUpdatedModels.length > 0;
+    const internalUpdatedModels = suppressLegacyLifecycleBackfillUpdates
+        ? []
+        : detectedInternalUpdatedModels;
+    const suppressedLegacyLifecycleUpdates = suppressLegacyLifecycleBackfillUpdates
+        ? detectedInternalUpdatedModels.length
+        : 0;
     const internalNotificationModels = [...newInternalModels, ...internalUpdatedModels];
     const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
     const internalUpdatesCount = shouldCheckInternal ? internalUpdatedModels.length : 0;
@@ -913,6 +934,7 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
             newlyAnnouncedAdded: newInternalModels.length,
             notifiedUpdates: internalUpdatesCount,
             skippedAlreadyAnnounced: skippedAlreadyAnnouncedInternal,
+            suppressedLegacyLifecycleUpdates,
             announcedStatePath: path.relative(repoRoot, announcedStatePath),
         },
     });
@@ -928,6 +950,11 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         }
         if (internalUpdatesCount > 0) {
             console.log(`[internal-model-check] Internal model updates detected: ${internalUpdatesCount}.`);
+        }
+        if (suppressedLegacyLifecycleUpdates > 0) {
+            console.log(
+                `[internal-model-check] Suppressed ${suppressedLegacyLifecycleUpdates} lifecycle update notification(s) while upgrading legacy discovery state.`
+            );
         }
     } else {
         console.log("[internal-model-check] Internal model diff disabled (--skip-internal).");
