@@ -25,9 +25,52 @@ type ModelAppsRollupRpcRow = {
 	last_seen: string | null;
 };
 
+type ModelAppsDailyRollupRow = {
+	app_id: string | null;
+	requests: number | string | bigint | null;
+	success_requests: number | string | bigint | null;
+	total_tokens: number | string | bigint | null;
+};
+
+type ModelAppMetadataRow = {
+	id: string | null;
+	title: string | null;
+	image_url: string | null;
+	url: string | null;
+	last_seen: string | null;
+	is_public: boolean | null;
+};
+
+const BIGINT_ZERO = BigInt(0);
+const BIGINT_MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
+
 function toNumber(value: unknown): number {
 	const parsed = Number(value ?? 0);
 	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function toBigInt(value: unknown): bigint {
+	if (typeof value === "bigint") return value;
+	if (typeof value === "number") {
+		if (!Number.isFinite(value)) return BIGINT_ZERO;
+		return BigInt(Math.trunc(value));
+	}
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		if (!trimmed) return BIGINT_ZERO;
+		try {
+			return BigInt(trimmed);
+		} catch {
+			return BIGINT_ZERO;
+		}
+	}
+	return BIGINT_ZERO;
+}
+
+function bigintToDisplayNumber(value: bigint): number {
+	if (value <= BIGINT_ZERO) return 0;
+	if (value > BIGINT_MAX_SAFE) return Number.MAX_SAFE_INTEGER;
+	return Number(value);
 }
 
 async function getModelAliases(client: ReturnType<typeof createAdminClient>, modelId: string): Promise<string[]> {
@@ -117,13 +160,8 @@ async function fetchModelAppsFromRollupRpc(args: {
 		.map((row: unknown) => mapRpcRowToModelAppUsage(row as ModelAppsRollupRpcRow))
 		.filter((row: ModelAppUsage | null): row is ModelAppUsage => row !== null);
 
-	normalized.sort((a: ModelAppUsage, b: ModelAppUsage) => {
-		if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
-		if (b.totalRequests !== a.totalRequests) return b.totalRequests - a.totalRequests;
-		return a.appId.localeCompare(b.appId);
-	});
-
-	return normalized.slice(0, args.limit);
+	// RPC already applies the deterministic ordering and limit.
+	return normalized;
 }
 
 async function fetchModelAppsFromDailyRollupsFallback(args: {
@@ -134,7 +172,7 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 }): Promise<ModelAppUsage[]> {
 	const aggregate = new Map<
 		string,
-		{ requests: number; success: number; tokens: number }
+		{ requests: bigint; success: bigint; tokens: bigint }
 	>();
 
 	for (let offset = 0; ; offset += PAGE_SIZE) {
@@ -157,17 +195,17 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 
 		if (!Array.isArray(data) || data.length === 0) break;
 
-		for (const row of data) {
-			const appId = String((row as any)?.app_id ?? "").trim();
+		for (const row of data as ModelAppsDailyRollupRow[]) {
+			const appId = String(row?.app_id ?? "").trim();
 			if (!appId) continue;
 			const existing = aggregate.get(appId) ?? {
-				requests: 0,
-				success: 0,
-				tokens: 0,
+				requests: BIGINT_ZERO,
+				success: BIGINT_ZERO,
+				tokens: BIGINT_ZERO,
 			};
-			existing.requests += toNumber((row as any)?.requests);
-			existing.success += toNumber((row as any)?.success_requests);
-			existing.tokens += toNumber((row as any)?.total_tokens);
+			existing.requests += toBigInt(row?.requests);
+			existing.success += toBigInt(row?.success_requests);
+			existing.tokens += toBigInt(row?.total_tokens);
 			aggregate.set(appId, existing);
 		}
 
@@ -177,16 +215,28 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 	if (aggregate.size === 0) return [];
 
 	const appIds = Array.from(aggregate.keys());
-	const { data: appRows, error: appError } = await args.client
-		.from("api_apps")
-		.select("id, title, image_url, url, last_seen, is_public")
-		.in("id", appIds);
+	const appRows: ModelAppMetadataRow[] = [];
+	const APP_IDS_CHUNK_SIZE = 500;
 
-	if (appError) {
-		console.warn("[model-apps] failed to resolve app metadata", {
-			modelId: args.modelId,
-			error: appError,
-		});
+	for (let index = 0; index < appIds.length; index += APP_IDS_CHUNK_SIZE) {
+		const appIdChunk = appIds.slice(index, index + APP_IDS_CHUNK_SIZE);
+		const { data: chunkRows, error: chunkError } = await args.client
+			.from("api_apps")
+			.select("id, title, image_url, url, last_seen, is_public")
+			.in("id", appIdChunk);
+
+		if (chunkError) {
+			console.warn("[model-apps] failed to resolve app metadata", {
+				modelId: args.modelId,
+				error: chunkError,
+				chunkStart: index,
+			});
+			continue;
+		}
+
+		for (const row of chunkRows ?? []) {
+			appRows.push(row as ModelAppMetadataRow);
+		}
 	}
 
 	const appMetaById = new Map<
@@ -200,25 +250,25 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 		}
 	>();
 	for (const row of appRows ?? []) {
-		const id = String((row as any)?.id ?? "").trim();
+		const id = String(row?.id ?? "").trim();
 		if (!id) continue;
-		const isPublic = Boolean((row as any)?.is_public);
+		const isPublic = Boolean(row?.is_public);
 		appMetaById.set(id, {
-			title: String((row as any)?.title ?? id).trim() || id,
+			title: String(row?.title ?? id).trim() || id,
 			imageUrl:
-				typeof (row as any)?.image_url === "string" &&
-				(row as any).image_url.trim().length > 0
-					? (row as any).image_url.trim()
+				typeof row?.image_url === "string" &&
+				row.image_url.trim().length > 0
+					? row.image_url.trim()
 					: null,
 			url:
-				typeof (row as any)?.url === "string" &&
-				(row as any).url.trim().length > 0
-					? (row as any).url.trim()
+				typeof row?.url === "string" &&
+				row.url.trim().length > 0
+					? row.url.trim()
 					: null,
 			lastSeen:
-				typeof (row as any)?.last_seen === "string" &&
-				(row as any).last_seen.trim().length > 0
-					? (row as any).last_seen
+				typeof row?.last_seen === "string" &&
+				row.last_seen.trim().length > 0
+					? row.last_seen
 					: null,
 			isPublic,
 		});
@@ -234,16 +284,18 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 				imageUrl: meta?.imageUrl ?? null,
 				url: meta?.url ?? null,
 				lastSeen: meta?.lastSeen ?? null,
-				totalRequests: Math.max(0, Math.round(usage.requests)),
-				successfulRequests: Math.max(0, Math.round(usage.success)),
-				totalTokens: Math.max(0, Math.round(usage.tokens)),
+				totalRequests: bigintToDisplayNumber(usage.requests),
+				successfulRequests: bigintToDisplayNumber(usage.success),
+				totalTokens: bigintToDisplayNumber(usage.tokens),
 				isPublic: meta?.isPublic ?? false,
+				sortRequests: usage.requests,
+				sortTokens: usage.tokens,
 			};
 		})
 		.filter((entry) => entry.isPublic)
 		.sort((a, b) => {
-			if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
-			if (b.totalRequests !== a.totalRequests) return b.totalRequests - a.totalRequests;
+			if (a.sortTokens !== b.sortTokens) return b.sortTokens > a.sortTokens ? 1 : -1;
+			if (a.sortRequests !== b.sortRequests) return b.sortRequests > a.sortRequests ? 1 : -1;
 			return a.appId.localeCompare(b.appId);
 		})
 		.slice(0, args.limit)
@@ -265,7 +317,8 @@ export async function getModelApps(
 	limit = 24,
 ): Promise<ModelAppUsage[]> {
 	const supabase = createAdminClient();
-	const safeLimit = Math.max(1, Math.min(100, Math.round(limit)));
+	const normalizedLimit = Number.isFinite(limit) ? Math.round(limit) : 24;
+	const safeLimit = Math.max(1, Math.min(100, normalizedLimit));
 	const aliases = await getModelAliases(supabase, modelId);
 
 	const rpcResult = await fetchModelAppsFromRollupRpc({
