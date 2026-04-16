@@ -11,7 +11,6 @@
       "unit_size": 1000000,
       "price_per_unit": 1.25,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "batch",
       "note": null,
       "match": [
@@ -20,7 +19,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -32,7 +31,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.13,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "batch",
       "note": null,
       "match": [
@@ -41,7 +39,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -53,7 +51,6 @@
       "unit_size": 1000000,
       "price_per_unit": 7.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "batch",
       "note": null,
       "match": [
@@ -62,7 +59,7 @@
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -74,7 +71,6 @@
       "unit_size": 1000000,
       "price_per_unit": 2.5,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "batch",
       "note": "High Context",
       "match": [
@@ -83,7 +79,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -95,7 +91,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.26,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "batch",
       "note": "High Context",
       "match": [
@@ -104,7 +99,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,
@@ -116,7 +111,6 @@
       "unit_size": 1000000,
       "price_per_unit": 11.25,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "batch",
       "note": "High Context",
       "match": [
@@ -125,7 +119,7 @@
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
-          "value": 272000.0
+          "value": 272000
         }
       ],
       "priority": 100,

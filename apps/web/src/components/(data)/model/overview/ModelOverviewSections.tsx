@@ -12,7 +12,6 @@ import {
 	Video,
 } from "lucide-react";
 import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
-import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";
 import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmarks";
@@ -27,7 +26,7 @@ import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTok
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
-import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import { getModelAppsCached } from "@/lib/fetchers/models/getModelApps";
 import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,7 +36,6 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card } from "@/components/ui/card";
 import {
 	Empty,
 	EmptyDescription,
@@ -76,137 +74,6 @@ function Section({
 			{children}
 		</section>
 	);
-}
-
-const PLAN_FREQUENCY_ALIASES: Record<string, string> = {
-	mo: "monthly",
-	month: "monthly",
-	monthly: "monthly",
-	qtr: "quarterly",
-	quarter: "quarterly",
-	quarterly: "quarterly",
-	yr: "yearly",
-	year: "yearly",
-	annual: "yearly",
-	yearly: "yearly",
-	week: "weekly",
-	weekly: "weekly",
-	day: "daily",
-	daily: "daily",
-};
-const PLAN_FREQUENCY_MONTH_MULTIPLIERS: Record<string, number> = {
-	daily: 30,
-	weekly: 4.345,
-	monthly: 1,
-	quarterly: 1 / 3,
-	yearly: 1 / 12,
-};
-const PLAN_FREQUENCY_SORT_ORDER: Record<string, number> = {
-	monthly: 0,
-	quarterly: 1,
-	yearly: 2,
-	weekly: 3,
-	daily: 4,
-};
-
-type SubscriptionPrice = {
-	price: number;
-	currency: string;
-	frequency: string;
-};
-
-function normalizePlanFrequency(value: string | null | undefined): string {
-	const normalized = String(value ?? "").trim().toLowerCase();
-	return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
-}
-
-function getFrequencySuffix(value: string): string {
-	const normalized = normalizePlanFrequency(value);
-	if (normalized === "monthly") return "/mo";
-	if (normalized === "quarterly") return "/qtr";
-	if (normalized === "yearly") return "/yr";
-	if (normalized === "weekly") return "/wk";
-	if (normalized === "daily") return "/day";
-	return normalized ? `/${normalized}` : "";
-}
-
-function getFrequencyLabel(value: string): string {
-	const normalized = normalizePlanFrequency(value);
-	if (!normalized) return "Other";
-	return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-}
-
-function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
-	const raw = Number(price.price);
-	if (!Number.isFinite(raw) || raw < 0) return null;
-	const normalized = normalizePlanFrequency(price.frequency);
-	const multiplier = PLAN_FREQUENCY_MONTH_MULTIPLIERS[normalized];
-	if (typeof multiplier !== "number") return raw;
-	return raw * multiplier;
-}
-
-function getCurrencySortRank(currency: string | null | undefined): number {
-	const normalized = String(currency ?? "").trim().toUpperCase();
-	if (!normalized || normalized === "USD") return 0;
-	return 1;
-}
-
-function formatPlanPriceValue(price: SubscriptionPrice): string {
-	const currency = String(price.currency || "USD").toUpperCase();
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
-	}).format(price.price);
-}
-
-function sortSubscriptionPlanPrices(prices: SubscriptionPrice[]): SubscriptionPrice[] {
-	return [...prices].sort((a, b) => {
-		const currencyRank = getCurrencySortRank(a.currency) - getCurrencySortRank(b.currency);
-		if (currencyRank !== 0) return currencyRank;
-
-		const aMonthly = toMonthlyEquivalent(a);
-		const bMonthly = toMonthlyEquivalent(b);
-		if (aMonthly != null && bMonthly != null && aMonthly !== bMonthly) {
-			return aMonthly - bMonthly;
-		}
-		if (aMonthly == null && bMonthly != null) return 1;
-		if (aMonthly != null && bMonthly == null) return -1;
-
-		if (a.price !== b.price) return a.price - b.price;
-
-		const aFrequencyOrder =
-			PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(a.frequency)] ?? 99;
-		const bFrequencyOrder =
-			PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(b.frequency)] ?? 99;
-		if (aFrequencyOrder !== bFrequencyOrder) {
-			return aFrequencyOrder - bFrequencyOrder;
-		}
-		return String(a.frequency).localeCompare(String(b.frequency));
-	});
-}
-
-function getPlanSortKey(prices: SubscriptionPrice[]): {
-	currencyRank: number;
-	monthlyEquivalent: number;
-	rawPrice: number;
-} | null {
-	const sorted = sortSubscriptionPlanPrices(
-		prices.filter(
-			(price) =>
-				Number.isFinite(Number(price.price)) &&
-				Number(price.price) >= 0 &&
-				Boolean(String(price.currency ?? "").trim()),
-		),
-	);
-	const first = sorted[0];
-	if (!first) return null;
-	return {
-		currencyRank: getCurrencySortRank(first.currency),
-		monthlyEquivalent: toMonthlyEquivalent(first) ?? Number(first.price),
-		rawPrice: Number(first.price),
-	};
 }
 
 function formatPercent(value: number | null): string {
@@ -304,17 +171,6 @@ export async function ModelProvidersSection({
 	);
 }
 
-export async function ModelPricingInsightsOverviewSection({
-	modelId,
-	includeHidden,
-}: ModelSectionSharedProps) {
-	return (
-		<Section id="pricing-insights">
-			<ModelPricingInsightsSection modelId={modelId} includeHidden={includeHidden} />
-		</Section>
-	);
-}
-
 export async function ModelPerformanceSection({
 	modelId,
 	includeHidden,
@@ -364,34 +220,10 @@ export async function ModelAppsSection({
 	modelId,
 	includeHidden,
 }: ModelSectionSharedProps) {
-	const subscriptionPlans = await getModelSubscriptionPlansCached(
+	const modelApps = await getModelAppsCached(
 		modelId,
 		includeHidden,
 	).catch(() => []);
-	const sortedSubscriptionPlans = [...subscriptionPlans].sort((a, b) => {
-		const aKey = getPlanSortKey(a.prices ?? []);
-		const bKey = getPlanSortKey(b.prices ?? []);
-		if (aKey && bKey) {
-			if (aKey.currencyRank !== bKey.currencyRank) {
-				return aKey.currencyRank - bKey.currencyRank;
-			}
-			if (aKey.monthlyEquivalent !== bKey.monthlyEquivalent) {
-				return aKey.monthlyEquivalent - bKey.monthlyEquivalent;
-			}
-			if (aKey.rawPrice !== bKey.rawPrice) {
-				return aKey.rawPrice - bKey.rawPrice;
-			}
-		} else if (aKey && !bKey) {
-			return -1;
-		} else if (!aKey && bKey) {
-			return 1;
-		}
-
-		const aOrg = a.organisation?.name ?? "";
-		const bOrg = b.organisation?.name ?? "";
-		if (aOrg !== bOrg) return aOrg.localeCompare(bOrg);
-		return a.name.localeCompare(b.name);
-	});
 
 	return (
 		<Section id="apps">
@@ -400,65 +232,31 @@ export async function ModelAppsSection({
 					Apps Using This Model
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					Products and plans where this model is currently available.
+					Public apps observed in gateway request traffic for this model.
 				</p>
 			</div>
-			{subscriptionPlans.length > 0 ? (
+			{modelApps.length > 0 ? (
 				<div className="grid gap-3 md:grid-cols-2">
-					{sortedSubscriptionPlans.map((plan) => {
-						const sortedPrices = sortSubscriptionPlanPrices(
-							(plan.prices ?? []).filter(
-								(price) =>
-									Number.isFinite(Number(price.price)) &&
-									Number(price.price) >= 0,
-							),
-						);
-						return (
-							<Card
-								key={plan.plan_id}
-								className="h-full border-border/70 bg-gradient-to-b from-background to-muted/[0.2] p-4"
-							>
-								<div className="space-y-3">
-									<div className="flex items-start gap-3">
-										<div className="min-w-0 space-y-1">
-											<Link
-												href={`/subscription-plans/${plan.plan_id}`}
-												className="block text-sm font-semibold leading-tight transition-colors hover:text-primary"
-											>
-												{plan.name}
-											</Link>
-											<p className="text-xs text-muted-foreground">
-												{plan.organisation?.name ?? "Unknown organisation"}
-											</p>
-										</div>
-									</div>
-									{sortedPrices.length > 0 ? (
-										<div className="rounded-md border border-border/70 bg-background/70 p-2">
-											<div className="space-y-1.5">
-												{sortedPrices.map((price) => (
-													<div
-														key={`${price.frequency}:${price.currency}:${price.price}`}
-														className="flex items-center justify-between gap-3 text-xs"
-													>
-														<span className="text-muted-foreground">
-															{getFrequencyLabel(price.frequency)}
-														</span>
-														<span className="font-semibold tabular-nums text-foreground">
-															{formatPlanPriceValue(price)}
-														</span>
-													</div>
-												))}
-											</div>
-										</div>
-									) : (
-										<div className="rounded-md border border-border/70 bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground">
-											No pricing values listed yet.
-										</div>
-									)}
-								</div>
-							</Card>
-						);
-					})}
+					{modelApps.map((app) => (
+						<Link
+							key={app.appId}
+							href={`/apps/${encodeURIComponent(app.appId)}`}
+							className="rounded-lg border border-border/70 px-4 py-3 transition-colors hover:bg-muted/40"
+						>
+							<p className="text-sm font-semibold">{app.title}</p>
+							<p className="text-xs text-muted-foreground">
+								{app.appId}
+							</p>
+							<div className="mt-2 flex flex-wrap items-center gap-2">
+								<Badge variant="outline" className="text-[11px]">
+									{app.totalRequests.toLocaleString()} requests
+								</Badge>
+								<Badge variant="outline" className="text-[11px]">
+									{app.totalTokens.toLocaleString()} tokens
+								</Badge>
+							</div>
+						</Link>
+					))}
 				</div>
 			) : (
 				<Empty className="rounded-lg border p-8">
@@ -468,8 +266,7 @@ export async function ModelAppsSection({
 						</EmptyMedia>
 						<EmptyTitle>No app distribution yet</EmptyTitle>
 						<EmptyDescription>
-							No app or subscription distribution data is available for this
-							model yet.
+							No gateway request app data is available for this model yet.
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -937,10 +734,6 @@ export default async function ModelOverviewSections({
 						modelId={modelId}
 						includeHidden={includeHidden}
 						surface="overview"
-					/>
-					<ModelPricingInsightsOverviewSection
-						modelId={modelId}
-						includeHidden={includeHidden}
 					/>
 					<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />
 					<ModelQuickstartSection

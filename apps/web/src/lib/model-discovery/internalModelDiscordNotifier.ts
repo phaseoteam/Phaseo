@@ -5,6 +5,7 @@ export type InternalModelNotificationModel = {
 	creatorId?: string;
 	creatorName?: string;
 	creatorColor?: string;
+	changeSummaryLines?: string[];
 };
 
 export type DiscordEmbed = {
@@ -86,6 +87,13 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 	const creatorId = trimOrNull(input.creatorId) ?? modelId.split("/")[0] ?? null;
 	const creatorName = trimOrNull(input.creatorName);
 	const creatorColor = trimOrNull(input.creatorColor);
+	const changeSummaryLines = Array.isArray(input.changeSummaryLines)
+		? input.changeSummaryLines
+				.filter((line): line is string => typeof line === "string")
+				.map((line) => line.trim())
+				.filter(Boolean)
+				.slice(0, 8)
+		: [];
 	return {
 		modelId,
 		modelName,
@@ -93,6 +101,7 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 		creatorId: creatorId ?? undefined,
 		creatorName: creatorName ?? undefined,
 		creatorColor: creatorColor ?? undefined,
+		changeSummaryLines: changeSummaryLines.length > 0 ? changeSummaryLines : undefined,
 	};
 }
 
@@ -184,10 +193,16 @@ export function formatSingleModelEmbed(
 		throw new Error("formatSingleModelEmbed requires modelId, modelName, and modelUrl.");
 	}
 
+	const descriptionLines = [
+		`Model ID: \`${safeModel.modelId}\``,
+		`[View Model](${safeModel.modelUrl})`,
+		...(safeModel.changeSummaryLines ? ["", ...safeModel.changeSummaryLines] : []),
+	];
+
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
-		description: `Model ID: \`${safeModel.modelId}\`\n[View Model](${safeModel.modelUrl})`,
+		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
 	};
@@ -202,10 +217,16 @@ function formatPerModelDetailEmbed(
 		throw new Error("formatPerModelDetailEmbed requires modelId, modelName, and modelUrl.");
 	}
 
+	const descriptionLines = [
+		`Model ID: \`${safeModel.modelId}\``,
+		`[View Model](${safeModel.modelUrl})`,
+		...(safeModel.changeSummaryLines ? ["", ...safeModel.changeSummaryLines] : []),
+	];
+
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
-		description: `Model ID: \`${safeModel.modelId}\`\n[View Model](${safeModel.modelUrl})`,
+		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
 	};

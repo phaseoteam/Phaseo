@@ -106,7 +106,12 @@ async function getProviderModelMappingsCached(
 		query = query.in("provider_id", providerIds);
 	}
 
-	const { data } = await query;
+	const { data, error } = await query;
+	if (error) {
+		throw new Error(
+			`Failed to load provider model mappings: ${error.message}`,
+		);
+	}
 	return (data ?? []) as ProviderModelMapping[];
 }
 

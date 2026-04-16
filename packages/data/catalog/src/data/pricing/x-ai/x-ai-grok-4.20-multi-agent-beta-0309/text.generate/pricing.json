@@ -9,9 +9,8 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2.0,
+      "price_per_unit": 2,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -20,7 +19,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000.0
+          "value": 200000
         }
       ],
       "priority": 100,
@@ -32,7 +31,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.2,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -41,7 +39,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000.0
+          "value": 200000
         }
       ],
       "priority": 100,
@@ -51,9 +49,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 6.0,
+      "price_per_unit": 6,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -62,7 +59,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000.0
+          "value": 200000
         }
       ],
       "priority": 100,
@@ -72,9 +69,8 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 4.0,
+      "price_per_unit": 4,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -83,7 +79,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000.0
+          "value": 200000
         }
       ],
       "priority": 100,
@@ -95,7 +91,6 @@
       "unit_size": 1000000,
       "price_per_unit": 0.2,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -104,7 +99,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000.0
+          "value": 200000
         }
       ],
       "priority": 100,
@@ -114,9 +109,8 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 12.0,
+      "price_per_unit": 12,
       "currency": "USD",
-      "tiering_mode": null,
       "pricing_plan": "standard",
       "note": null,
       "match": [
@@ -125,7 +119,7 @@
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 200000.0
+          "value": 200000
         }
       ],
       "priority": 100,
