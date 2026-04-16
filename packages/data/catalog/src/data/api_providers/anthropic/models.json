@@ -1022,13 +1022,6 @@
             "notes": null
           },
           {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
             "param_id": "tool_choice",
             "provider_min": null,
             "provider_max": null,
@@ -1037,13 +1030,6 @@
           },
           {
             "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,

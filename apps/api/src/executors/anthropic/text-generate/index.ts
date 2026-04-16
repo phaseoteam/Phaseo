@@ -37,8 +37,12 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			},
 		);
 
-		// Transform IR â†’ Anthropic Messages format
-		const requestPayload = irToAnthropicMessages(args.ir, args.maxOutputTokens);
+		// Transform IR to Anthropic Messages format
+		const requestPayload = irToAnthropicMessages(
+			args.ir,
+			args.maxOutputTokens,
+			args.providerModelSlug || args.ir.model,
+		);
 
 		const requestBody = {
 			...requestPayload,
@@ -330,9 +334,25 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 /**
  * Transform IR request to Anthropic Messages format
  */
-export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens?: number | null): any {
+function normalizeModelId(model: string | null | undefined): string {
+	return typeof model === "string" ? model.trim().toLowerCase() : "";
+}
+
+function isClaudeOpus47Model(model: string | null | undefined): boolean {
+	const normalized = normalizeModelId(model);
+	if (!normalized) return false;
+	return normalized.includes("claude-opus-4-7") || normalized.includes("claude-opus-4.7");
+}
+
+export function irToAnthropicMessages(
+	ir: IRChatRequest,
+	providerMaxOutputTokens?: number | null,
+	modelHint?: string | null,
+): any {
 	const messages: any[] = [];
 	let system: string | undefined;
+	const resolvedModel = modelHint || ir.model;
+	const isOpus47 = isClaudeOpus47Model(resolvedModel);
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
@@ -388,10 +408,12 @@ export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens
 		max_tokens: maxTokens,
 	};
 
-	// Add generation parameters
-	if (ir.temperature !== undefined) request.temperature = ir.temperature;
-	if (ir.topP !== undefined) request.top_p = ir.topP;
-	if (ir.topK !== undefined) request.top_k = ir.topK;
+	// Sampling params are rejected by Claude Opus 4.7, so omit them on that model.
+	if (!isOpus47) {
+		if (ir.temperature !== undefined) request.temperature = ir.temperature;
+		if (ir.topP !== undefined) request.top_p = ir.topP;
+		if (ir.topK !== undefined) request.top_k = ir.topK;
+	}
 
 	// Add tools
 	if (ir.tools && ir.tools.length > 0) {
@@ -415,14 +437,29 @@ export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens
 	// Add other parameters
 	if (ir.stop) request.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	if (ir.metadata) request.metadata = ir.metadata;
-	if (ir.reasoning) {
-		const isReasoningDisabled = ir.reasoning.enabled === false || ir.reasoning.effort === "none";
+	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
+
+	if (isOpus47) {
+		// Opus 4.7 uses adaptive thinking and rejects legacy thinking budgets.
+		// Always request summarized traces to avoid empty-thinking regressions.
+		request.thinking = {
+			type: "adaptive",
+			display: "summarized",
+		};
+		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+		if (anthropicEffort) {
+			request.output_config = {
+				...(request.output_config ?? {}),
+				effort: anthropicEffort,
+			};
+		}
+	} else if (ir.reasoning) {
 		const hasThinkingControl =
-			isReasoningDisabled ||
+			reasoningDisabled ||
 			ir.reasoning.enabled === true ||
 			typeof ir.reasoning.maxTokens === "number";
 
-		if (isReasoningDisabled) {
+		if (reasoningDisabled) {
 			request.thinking = { type: "disabled" };
 		} else if (hasThinkingControl) {
 			const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
@@ -436,7 +473,7 @@ export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens
 		}
 
 		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning.effort);
-		if (!isReasoningDisabled && anthropicEffort) {
+		if (!reasoningDisabled && anthropicEffort) {
 			request.output_config = {
 				...(request.output_config ?? {}),
 				effort: anthropicEffort,

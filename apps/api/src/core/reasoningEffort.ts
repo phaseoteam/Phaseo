@@ -1,13 +1,17 @@
 import type { IRReasoning } from "./ir";
 
-export type AnthropicReasoningEffort = "low" | "medium" | "high" | "max";
+export type AnthropicReasoningEffort = "low" | "medium" | "high" | "xhigh" | "max";
 
 export function mapIrEffortToAnthropic(
 	effort: IRReasoning["effort"] | string | null | undefined,
+	options?: { preferXHigh?: boolean },
 ): AnthropicReasoningEffort | undefined {
 	if (typeof effort !== "string") return undefined;
 	const normalized = effort.toLowerCase();
-	if (normalized === "xhigh" || normalized === "max") return "max";
+	if (normalized === "xhigh") {
+		return options?.preferXHigh ? "xhigh" : "max";
+	}
+	if (normalized === "max") return "max";
 	if (normalized === "high" || normalized === "medium" || normalized === "low") {
 		return normalized;
 	}

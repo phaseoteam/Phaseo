@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "officeqa-pro",
+  "benchmark_name": "OfficeQA Pro",
+  "category": "professional",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+  "total_models": 1
+}
