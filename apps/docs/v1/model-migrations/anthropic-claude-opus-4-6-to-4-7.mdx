@@ -1,0 +1,94 @@
+---
+title: "Anthropic: Claude Opus 4.6 to 4.7"
+description: "Model migration notes for upgrading Anthropic Claude Opus 4.6 traffic to Claude Opus 4.7."
+---
+
+# Anthropic: Claude Opus 4.6 to 4.7
+
+Use this guide when moving from `anthropic/claude-opus-4.6` to `anthropic/claude-opus-4.7`.
+
+Claude Opus 4.7 introduces request-shape changes that can hard-fail old 4.6 patterns if left unchanged.
+
+## What changed
+
+- New effort level: `xhigh` (Messages API)
+- Extended thinking budgets were removed for Opus 4.7 (`thinking: { type: "enabled", budget_tokens: ... }` now fails)
+- Sampling params are no longer supported on this model when set to non-default values (`temperature`, `top_p`, `top_k`)
+- Thinking content is omitted by default unless you explicitly opt in
+- Updated tokenizer behavior can increase token usage vs Opus 4.6
+
+## AI Stats gateway compatibility behavior
+
+To reduce migration breakage, AI Stats accepts legacy Opus 4.6 fields for Opus 4.7 and normalizes them before sending upstream:
+
+- `temperature`, `top_p`, and `top_k` are accepted but stripped
+- legacy thinking budgets are not forwarded
+- Opus 4.7 thinking is always sent as `thinking: { "type": "adaptive", "display": "summarized" }`
+- `reasoning.effort` is still honored and mapped to `output_config.effort` (`xhigh` supported)
+
+## What to change in your integration
+
+### 1. Update model ID
+
+Move from:
+
+- `anthropic/claude-opus-4.6`
+
+to:
+
+- `anthropic/claude-opus-4.7`
+
+### 2. Move to adaptive thinking with summarized display
+
+For Opus 4.7, use:
+
+- `thinking: { "type": "adaptive", "display": "summarized" }`
+
+Avoid legacy extended-thinking budgets on this model.
+
+### 3. Remove sampling controls
+
+Do not send:
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+Prefer prompt and instruction tuning instead.
+
+### 4. Rebaseline effort controls
+
+If you use reasoning controls, retest with:
+
+- `output_config.effort = "high"` as baseline
+- `output_config.effort = "xhigh"` for hardest coding/agentic paths
+
+If you call AI Stats through OpenAI-style payloads, `reasoning.effort` maps to this same `output_config.effort` value for Opus 4.7.
+
+### 5. Recheck token ceilings
+
+Because tokenization changed, audit:
+
+- `max_tokens` / `max_output_tokens`
+- timeout budgets
+- cost controls and alerts
+
+## What to test
+
+- strict schema output pass rate with your production prompts
+- long-running tool workflows (tool call count, completion rate, latency)
+- response quality deltas at `high` vs `xhigh`
+- token-cost deltas on your highest-volume prompt classes
+
+## Safe rollout
+
+1. Deploy request-shape changes before shifting traffic.
+2. Shadow Opus 4.7 on your production eval suite.
+3. Canary with rollback to Opus 4.6.
+4. Promote once quality, latency, and cost deltas are within target.
+
+## Sources
+
+- [What's new in Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [Anthropic migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.7 System Card (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

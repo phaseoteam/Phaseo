@@ -327,6 +327,38 @@ describe("amazon-bedrock text executor", () => {
 		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
 	});
 
+	it("strips removed Claude Opus 4.7 sampling and budget params in Converse payload", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/model/anthropic.claude-opus-4-7-v1%3A0/converse-stream"),
+			onRequest: (call) => {
+				const payload = call.bodyJson ?? {};
+				expect(payload.inferenceConfig?.temperature).toBeUndefined();
+				expect(payload.inferenceConfig?.topP).toBeUndefined();
+				expect(payload.additionalModelRequestFields?.top_k).toBeUndefined();
+				expect(payload.additionalModelRequestFields?.thinking?.type).toBe("adaptive");
+				expect(payload.additionalModelRequestFields?.thinking?.display).toBe("summarized");
+				expect(payload.additionalModelRequestFields?.thinking?.budget_tokens).toBeUndefined();
+				expect(payload.additionalModelRequestFields?.output_config?.effort).toBe("xhigh");
+			},
+			response: bedrockStreamResponse(basicBedrockTextEvents("opus47 ok")),
+		}]);
+
+		const result = await execute(buildArgs({
+			model: "anthropic.claude-opus-4-7-v1:0",
+			stream: false,
+			temperature: 0.2,
+			topP: 0.9,
+			topK: 40,
+			reasoning: { enabled: true, effort: "xhigh", maxTokens: 32000 },
+			messages: [{ role: "user", content: [{ type: "text", text: "hello opus" }] }],
+		}));
+
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
+	});
+
 	it("normalizes /openai/v1 base URL for Converse Anthropic models", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://bedrock-runtime.us-east-1.amazonaws.com/model/anthropic.claude-3-5-sonnet-v1%3A0/converse-stream",

@@ -6019,6 +6019,7 @@ components:
         - odinw
         - odvbench
         - officeqa
+        - officeqa-pro
         - ojbench
         - ojbench-cpp
         - olympiadbench
@@ -6107,6 +6108,7 @@ components:
         - swe-bench
         - swe-bench-live
         - swe-bench-multilingual
+        - swe-bench-multimodal
         - swe-bench-pro
         - swe-evo
         - swe-lancer

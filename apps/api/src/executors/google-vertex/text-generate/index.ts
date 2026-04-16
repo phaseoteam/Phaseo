@@ -56,7 +56,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let endpoint: string;
 
 	if (route.family === "anthropic") {
-		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens);
+		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath);
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
 		endpoint = `${apiBase}/publishers/anthropic/models/${encodeURIComponent(route.modelForPath)}:rawPredict`;

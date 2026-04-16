@@ -71,7 +71,18 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBeUndefined();
 	});
 
-	it("maps OpenAI xhigh reasoning effort to Anthropic output_config.effort=max", () => {
+	it("maps OpenAI xhigh reasoning effort to Anthropic output_config.effort=xhigh for Opus 4.7", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-opus-4.7",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "xhigh" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.output_config?.effort).toBe("xhigh");
+	});
+
+	it("keeps legacy Anthropic effort mapping for pre-4.7 models", () => {
 		const request = decodeOpenAIChatRequest({
 			model: "anthropic/claude-3-7-sonnet",
 			messages: [{ role: "user", content: "Hello" }],
@@ -103,6 +114,46 @@ describe("irToAnthropicMessages service controls", () => {
 		const payload = irToAnthropicMessages(request);
 		expect(payload.thinking).toEqual({ type: "disabled" });
 		expect(payload.output_config).toBeUndefined();
+	});
+
+	it("uses adaptive summarized thinking for Opus 4.7 and omits thinking budgets", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-opus-4.7",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "high", max_tokens: 32000, enabled: true },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.thinking?.budget_tokens).toBeUndefined();
+		expect(payload.output_config?.effort).toBe("high");
+	});
+
+	it("keeps adaptive summarized thinking for Opus 4.7 even when reasoning is explicitly disabled", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-opus-4.7",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { enabled: false },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.thinking?.budget_tokens).toBeUndefined();
+	});
+
+	it("omits Opus 4.7 sampling params that Anthropic now rejects", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-opus-4.7",
+			messages: [{ role: "user", content: "Hello" }],
+			temperature: 0.2,
+			top_p: 0.8,
+		} as any);
+		(request as any).topK = 20;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.temperature).toBeUndefined();
+		expect(payload.top_p).toBeUndefined();
+		expect(payload.top_k).toBeUndefined();
 	});
 
 	it("adds JSON object structured-output instruction to system prompt", () => {

@@ -12,7 +12,20 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "anthropic/claude-opus-4.7",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models/overview"
+    },
+    {
+      "platform": "model_card",
+      "url": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf"
+    }
+  ],
   "details": [
     {
       "name": "input_context_length",
@@ -27,5 +40,182 @@
       "value": "2025-05-01T00:00:00"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 64.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 87.6,
+      "is_self_reported": true,
+      "other_info": "Verified",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 69.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 46.9,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 54.7,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 79.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 77.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "financeagent-v1.1",
+      "score": 64.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "cybergym",
+      "score": 73.1,
+      "is_self_reported": true,
+      "other_info": "Vulnerability reproduction",
+      "source_link": "https://www.anthropic.com/news/claude-opus-4-7",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 94.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 91.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 80.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-multimodal",
+      "score": 34.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 82.1,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 91,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 79.5,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "screenspot-pro",
+      "score": 87.6,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "officeqa",
+      "score": 86.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "officeqa-pro",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 92,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 75.83,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "rank": null
+    }
+  ]
 }
