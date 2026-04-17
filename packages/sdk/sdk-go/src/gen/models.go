@@ -1925,6 +1925,7 @@ const (
 	ModelIdQwenQwen359b ModelId = "qwen/qwen3.5-9b"
 	ModelIdQwenQwen35Flash ModelId = "qwen/qwen3.5-flash"
 	ModelIdQwenQwen35Plus ModelId = "qwen/qwen3.5-plus"
+	ModelIdQwenQwen3635bA3b ModelId = "qwen/qwen3.6-35b-a3b"
 	ModelIdQwenQwen36Plus ModelId = "qwen/qwen3.6-plus"
 	ModelIdQwenQwq32b ModelId = "qwen/qwq-32b"
 	ModelIdQwenQwq32bPreview ModelId = "qwen/qwq-32b-preview"
