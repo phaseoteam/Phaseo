@@ -21,6 +21,16 @@ function deriveFirstName(name: string): string {
     return trimmed.split(/\s+/)[0] ?? ''
 }
 
+function maskEmailForWebhook(email: string | null): string {
+    if (!email) return 'unknown'
+    const atIndex = email.indexOf('@')
+    if (atIndex <= 0 || atIndex === email.length - 1) return 'unknown'
+    const localPart = email.slice(0, atIndex)
+    const domain = email.slice(atIndex + 1)
+    const maskedLocal = `${localPart[0]}${'*'.repeat(Math.max(1, localPart.length - 1))}`
+    return `${maskedLocal}@${domain}`
+}
+
 async function sendSignupWelcomeEmail(args: {
     email: string
     displayName: string
@@ -72,6 +82,8 @@ async function sendSignupDiscordWebhook(args: {
     const webhookUrl = String(process.env.DISCORD_SIGNUP_WEBHOOK_URL ?? '').trim()
     if (!webhookUrl) return
 
+    const maskedEmail = maskEmailForWebhook(args.email)
+
     const res = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -81,7 +93,7 @@ async function sendSignupDiscordWebhook(args: {
             content: [
                 'New AI Stats signup',
                 `- user_id: \`${args.userId}\``,
-                `- email: \`${args.email ?? 'unknown'}\``,
+                `- email: \`${maskedEmail}\``,
                 `- created_at: \`${args.createdAtIso}\``,
             ].join('\n'),
             allowed_mentions: { parse: [] },
@@ -185,14 +197,20 @@ async function getOrCreatePersonalTeamId(opts: {
             .eq("team_id", teamId)
             .eq("user_id", userId)
             .maybeSingle();
-        if (!membershipErr && membershipRow?.team_id) return true;
+        if (membershipErr) {
+            throw new Error(`membership_lookup_failed:${membershipErr.message}`);
+        }
+        if (membershipRow?.team_id) return true;
 
         const { data: teamRow, error: teamErr } = await supabaseAdmin
             .from("teams")
             .select("id,owner_user_id")
             .eq("id", teamId)
             .maybeSingle();
-        if (teamErr || !teamRow?.id) return false;
+        if (teamErr) {
+            throw new Error(`team_lookup_failed:${teamErr.message}`);
+        }
+        if (!teamRow?.id) return false;
 
         const isOwner = String(teamRow.owner_user_id ?? "") === userId;
         if (!isOwner) return false;
@@ -434,34 +452,40 @@ export async function GET(request: Request) {
 
     // 3) Fire signup notifications once, directly from app code.
     if (createdPersonalTeam) {
+        const notificationTasks: Promise<unknown>[] = []
         if (user.email) {
-            try {
-                await sendSignupWelcomeEmail({
+            notificationTasks.push(
+                sendSignupWelcomeEmail({
                     email: user.email,
                     displayName,
                 })
-            } catch (error) {
-                console.error('Failed sending direct signup welcome email', {
-                    userId: user.id,
-                    teamId,
-                    error: error instanceof Error ? error.message : String(error),
-                })
-            }
+                    .catch((error) => {
+                        console.error('Failed sending direct signup welcome email', {
+                            userId: user.id,
+                            teamId,
+                            error: error instanceof Error ? error.message : String(error),
+                        })
+                    })
+            )
         }
 
-        try {
-            await sendSignupDiscordWebhook({
+        notificationTasks.push(
+            sendSignupDiscordWebhook({
                 userId: user.id,
                 email: user.email ?? null,
                 createdAtIso: String(user.created_at ?? new Date().toISOString()),
             })
-        } catch (error) {
-            console.error('Failed sending direct signup Discord webhook', {
-                userId: user.id,
-                teamId,
-                error: error instanceof Error ? error.message : String(error),
-            })
-        }
+                .catch((error) => {
+                    console.error('Failed sending direct signup Discord webhook', {
+                        userId: user.id,
+                        teamId,
+                        error: error instanceof Error ? error.message : String(error),
+                    })
+                })
+        )
+
+        // Best-effort side effects; don't block auth callback redirect on external providers.
+        void Promise.allSettled(notificationTasks)
     }
 
     // 4) If this team is enterprise + invoice mode but the invoice profile is not

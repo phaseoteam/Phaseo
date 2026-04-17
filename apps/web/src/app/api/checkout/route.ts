@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
         if (requestedTeamId && requestedTeamId !== teamId) {
             return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
         }
-        if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 50) {
-            return NextResponse.json({ error: "Invalid purchase amount. Minimum 50 cents." }, { status: 400 });
+        if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 500) {
+            return NextResponse.json({ error: "Invalid purchase amount. Minimum $5 (500 cents)." }, { status: 400 });
         }
 
         const stripeSecret = process.env.STRIPE_SECRET_KEY;

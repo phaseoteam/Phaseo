@@ -92,9 +92,9 @@ export async function recordUsageAndCharge(args: {
             // 2. Apply reverse calculation: net = gross / (1 + tier_fee_rate)
             // 3. Credit wallet with net amount (after tier-based fee deduction)
             const stripe = getStripe();
-            const minTopUpNanos = 10 * 1_000_000_000;
+            const minTopUpNanos = 1 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
-                console.error("[auto-recharge] Skipped: auto top-up amount below $10", {
+                console.error("[auto-recharge] Skipped: auto top-up amount below $1", {
                     teamId: args.teamId,
                     amount_nanos: chargeResult.auto_top_up_amount_nanos,
                 });

@@ -31,9 +31,9 @@ export async function getTeamIdFromCookie(): Promise<string | undefined> {
             return cookieTeamId;
         }
 
-        // If auth is unavailable here, preserve legacy behavior.
+        // If auth is unavailable here, fail closed and require a fresh resolution path.
         if (authError || !userId) {
-            return cookieTeamId || undefined;
+            return undefined;
         }
 
         // Next preference: user's default team, but only when membership still exists.
@@ -52,6 +52,7 @@ export async function getTeamIdFromCookie(): Promise<string | undefined> {
             .from("team_members")
             .select("team_id")
             .eq("user_id", userId)
+            .order("team_id", { ascending: true })
             .limit(1)
             .maybeSingle();
 
