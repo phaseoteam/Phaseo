@@ -30,6 +30,7 @@ import {
 } from "./retry-policy";
 
 const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
+const ALIBABA_COMPAT_PROVIDER_IDS = new Set<string>(["alibaba-cloud", "alibaba", "qwen"]);
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 const OPENAI_COMPAT_TRANSIENT_RETRY_PROVIDERS = new Set<string>([
 	"baseten",
@@ -397,6 +398,9 @@ function resolvePreferredRoute(
 	args: ExecutorExecuteArgs,
 	defaultRoute: "responses" | "chat",
 ): "responses" | "chat" {
+	// Keep Alibaba/Qwen upstream routing simple and stable: always use chat completions.
+	if (isAlibabaCompatProvider(args.providerId)) return "chat";
+
 	// xAI compatibility currently has stricter /responses validation for structured output.
 	// Route structured requests via chat/completions for better interoperability.
 	if (
@@ -409,6 +413,10 @@ function resolvePreferredRoute(
 	}
 
 	return defaultRoute;
+}
+
+function isAlibabaCompatProvider(providerId: string): boolean {
+	return ALIBABA_COMPAT_PROVIDER_IDS.has(providerId);
 }
 
 function transformResponsesStreamToAnthropic(

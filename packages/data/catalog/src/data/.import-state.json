@@ -10523,6 +10523,14 @@
         "previous_model_id": null
       }
     },
+    "../../packages/data/catalog/src/data/models/qwen/qwen3.6-35b-a3b/model.json": {
+      "hash": "35dbd714e6fa132c91cf86ee995cda7a",
+      "meta": {
+        "model_id": "qwen/qwen3.6-35b-a3b",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
     "../../packages/data/catalog/src/data/models/qwen/qwq-32b/model.json": {
       "hash": "c84d92192449f2c212a35d9623e2a473",
       "meta": {
@@ -11479,7 +11487,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "268452d354c3fcfee9c7d53c6b54b0a0",
+      "hash": "61422eadf151bfc438b46c66ce16e5b6",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -13265,6 +13273,15 @@
         "capability_id": "text.generate",
         "model_id": "qwen/qwen3.5-27b",
         "model_key": "atlascloud:qwen/qwen3.5-27b:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3.6-35b-a3b/text.generate/pricing.json": {
+      "hash": "f370ab57f618b070b422c92b366146ff",
+      "meta": {
+        "api_provider_id": "alibaba-cloud",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3.6-35b-a3b",
+        "model_key": "alibaba-cloud:qwen/qwen3.6-35b-a3b:text.generate"
       }
     },
     "../../packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-35b-a3b/text.generate/pricing.json": {

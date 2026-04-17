@@ -45,6 +45,8 @@ function buildArgs(): ExecutorExecuteArgs {
 }
 
 describe("executeOpenAICompat", () => {
+	const ALIBABA_CHAT_URL = "https://api.alibaba.example/compatible-mode/v1/chat/completions";
+
 	it("keeps upstream stream=true when tools are present", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([{
@@ -72,11 +74,11 @@ describe("executeOpenAICompat", () => {
 		expect(Array.isArray(capturedBody?.tools)).toBe(true);
 	});
 
-	it("routes alibaba-cloud to responses for text models", async () => {
+	it("routes alibaba-cloud to chat completions for text models", async () => {
 		const args = buildArgs();
 		args.providerId = "alibaba-cloud";
-		args.endpoint = "chat.completions";
-		args.protocol = "openai.chat.completions";
+		args.endpoint = "responses";
+		args.protocol = "openai.responses";
 		args.ir = {
 			...args.ir,
 			model: "qwen2.5-72b-instruct",
@@ -85,11 +87,11 @@ describe("executeOpenAICompat", () => {
 
 		let capturedBody: any = null;
 		const mock = installFetchMock([{
-			match: (url) => url === "https://api.alibaba.example/api/v2/apps/protocols/compatible-mode/v1/responses",
+			match: (url) => url === ALIBABA_CHAT_URL,
 			response: jsonResponse({
-				id: "resp_1",
-				object: "response",
-				created_at: 1735689600,
+				id: "chatcmpl_1",
+				object: "chat.completion",
+				created: 1735689600,
 				model: "qwen2.5-72b-instruct",
 				choices: [{
 					index: 0,
@@ -109,10 +111,87 @@ describe("executeOpenAICompat", () => {
 		expect(result.kind).toBe("completed");
 		expect(result.upstream.status).toBe(200);
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.url).toBe(
-			"https://api.alibaba.example/api/v2/apps/protocols/compatible-mode/v1/responses",
-		);
+		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
 		expect(capturedBody?.stream).toBe(true);
+	});
+
+	it("routes alibaba-cloud omni models to chat completions", async () => {
+		const args = buildArgs();
+		args.providerId = "alibaba-cloud";
+		args.endpoint = "responses";
+		args.protocol = "openai.responses";
+		args.ir = {
+			...args.ir,
+			model: "qwen3.5-omni-plus",
+			stream: false,
+		};
+
+		const mock = installFetchMock([{
+			match: (url) => url === ALIBABA_CHAT_URL,
+			response: jsonResponse({
+				id: "chatcmpl_omni_1",
+				object: "chat.completion",
+				created: 1735689600,
+				model: "qwen3.5-omni-plus",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "ok" },
+					finish_reason: "stop",
+				}],
+				usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+			}),
+		}]);
+
+		const result = await executeOpenAICompat(args);
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(result.upstream.status).toBe(200);
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
+	});
+
+	it("routes alibaba-cloud video input requests to chat completions", async () => {
+		const args = buildArgs();
+		args.providerId = "alibaba-cloud";
+		args.endpoint = "chat.completions";
+		args.protocol = "openai.chat.completions";
+		args.ir = {
+			...args.ir,
+			model: "qwen3.6-35b-a3b",
+			stream: false,
+			messages: [{
+				role: "user",
+				content: [
+					{ type: "text", text: "Describe this video." },
+					{ type: "video", source: "url", url: "https://example.com/clip.mp4" },
+				],
+			}],
+		};
+
+		const mock = installFetchMock([{
+			match: (url) => url === ALIBABA_CHAT_URL,
+			response: jsonResponse({
+				id: "chatcmpl_video_1",
+				object: "chat.completion",
+				created: 1735689600,
+				model: "qwen3.6-35b-a3b",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "ok" },
+					finish_reason: "stop",
+				}],
+				usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+			}),
+		}]);
+
+		const result = await executeOpenAICompat(args);
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(result.upstream.status).toBe(200);
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
 	});
 
 	it("retries transient baseten 429 responses once before failing over", async () => {

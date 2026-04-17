@@ -112,6 +112,21 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("trims responses prefix from alibaba-cloud base url override when building chat url", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
+			ALIBABA_BASE_URL: "https://dashscope-intl.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1",
+		} as any);
+
+		expect(openAICompatUrl("alibaba-cloud", "/chat/completions")).toBe(
+			"https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+		);
+		expect(openAICompatUrl("alibaba-cloud", "/responses")).toBe(
+			"https://dashscope-intl.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses",
+		);
+	});
+
 	it("builds arcee chat-completions endpoint with /api/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({

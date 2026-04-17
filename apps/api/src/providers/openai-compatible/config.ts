@@ -32,6 +32,7 @@ const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
 ]);
 
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
+const ALIBABA_COMPAT_PROVIDER_IDS = new Set<string>(["alibaba-cloud", "alibaba", "qwen"]);
 const WEIGHTSANDBIASES_API_KEY_ENVS = ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"] as const;
 const ARCEE_API_KEY_ENVS = ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] as const;
 const ALIBABA_CLOUD_API_KEY_ENVS = ["ALIBABA_CLOUD_API_KEY"] as const;
@@ -693,8 +694,9 @@ export function isOpenAICompatProvider(providerId: string): boolean {
 export function openAICompatUrl(providerId: string, path: string): string {
     const config = resolveOpenAICompatConfig(providerId);
     const suffix = normalizePathSegment(path);
-    const isAlibabaResponsesRoute =
-        providerId === "alibaba-cloud" && suffix === "/responses";
+    const isAlibabaCompatProvider = ALIBABA_COMPAT_PROVIDER_IDS.has(providerId);
+    const isAlibabaResponsesRoute = isAlibabaCompatProvider && suffix === "/responses";
+    const isAlibabaChatRoute = isAlibabaCompatProvider && suffix === "/chat/completions";
     let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
     const configuredPrefix = normalizePathSegment(
         isAlibabaResponsesRoute ? ALIBABA_RESPONSES_PATH_PREFIX : (config.pathPrefix ?? "/v1"),
@@ -718,6 +720,17 @@ export function openAICompatUrl(providerId: string, path: string): string {
                     // Alibaba Responses lives under a different prefix than Chat.
                     // If callers configure base URL ending in chat prefix, trim it before appending responses prefix.
                     const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
+                    base = `${parsed.origin}${trimmedBasePath}`;
+                }
+            } else if (isAlibabaChatRoute) {
+                const responsesPrefix = normalizePathSegment(ALIBABA_RESPONSES_PATH_PREFIX);
+                if (responsesPrefix && (basePath === responsesPrefix || basePath.endsWith(responsesPrefix))) {
+                    // Alibaba Chat and Responses use different prefixes.
+                    // If callers configure base URL ending in responses prefix, trim it before appending chat prefix.
+                    const trimmedBasePath = basePath.slice(0, basePath.length - responsesPrefix.length).replace(
+                        /\/+$/,
+                        "",
+                    );
                     base = `${parsed.origin}${trimmedBasePath}`;
                 }
             }
