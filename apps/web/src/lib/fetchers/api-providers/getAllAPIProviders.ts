@@ -22,6 +22,7 @@ export type ProviderModalitySupport = Record<
 export interface APIProviderCard {
     api_provider_id: string;
     api_provider_name: string;
+    colour?: string | null;
     country_code: string;
     total_models: number;
     active_models: number;
@@ -164,7 +165,7 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     const [providersRes, providerModelsRes, pricingRulesRes, dailyUsageRes, monthlyUsageRes] = await Promise.all([
         supabase
             .from("data_api_providers")
-            .select("api_provider_id, api_provider_name, country_code")
+            .select("api_provider_id, api_provider_name, colour, country_code")
             .order("api_provider_name", { ascending: true }),
         supabase
             .from("data_api_provider_models")
@@ -332,6 +333,10 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             .map((r: any) => ({
                 api_provider_id: r.api_provider_id,
                 api_provider_name: r.api_provider_name ?? r.name ?? "",
+                colour:
+                    typeof r.colour === "string" && r.colour.trim().length > 0
+                        ? r.colour.trim()
+                        : null,
                 country_code: r.country_code ?? "",
                 total_models:
                     totalModelsByProvider.get(r.api_provider_id)?.size ?? 0,
