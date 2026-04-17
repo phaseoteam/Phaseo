@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
         if (requestedTeamId && requestedTeamId !== teamId) {
             return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
         }
-        if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 50) {
-            return NextResponse.json({ error: "Invalid purchase amount. Minimum 50 cents." }, { status: 400 });
+        if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 500) {
+            return NextResponse.json({ error: "Invalid purchase amount. Minimum $5 (500 cents)." }, { status: 400 });
         }
 
         const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         const stripe = getStripe();
 
         const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const paymentAttempt = Date.now();
 
         // allow optional user_id to be passed from client so webhook can directly credit
         const userId = body?.user_id;
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
                     team_id: teamId,
                 },
             },
-            success_url: `${origin}/settings/credits?checkout=success`,
+            success_url: `${origin}/settings/credits?checkout=success&payment_attempt=${paymentAttempt}`,
             cancel_url: `${origin}/settings/credits?checkout=cancelled`,
         });
 

@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { Card } from "@/components/ui/card";
+
+const SUCCESS_BANNER_AUTO_DISMISS_MS = 10_000;
 
 type Banner = {
 	type: "success" | "error" | "info";
@@ -22,7 +24,19 @@ export default function Banner({
 	latestPaymentSuccessAt,
 }: Props) {
 	const [banner, setBanner] = useState<Banner>(null);
+	const [successCountdownSeconds, setSuccessCountdownSeconds] = useState<number | null>(null);
 	const router = useRouter();
+	const dismissBanner = useCallback(() => {
+		// Clear query state when dismissing banner.
+		try {
+			const cleanPath = window.location.pathname;
+			window.history.replaceState(window.history.state, "", cleanPath);
+			router.replace(cleanPath, { scroll: false });
+		} catch {
+			// ignore
+		}
+		setBanner(null);
+	}, [router]);
 
 	// Parse the query string on the client and set the initial banner.
 	useEffect(() => {
@@ -31,6 +45,7 @@ export default function Banner({
 			const params = new URLSearchParams(queryString);
 			const refund = params.get("refund");
 			const checkout = params.get("checkout");
+			const kind = params.get("kind");
 			const paymentAttempt = params.get("payment_attempt");
 
 			if (refund) {
@@ -44,22 +59,22 @@ export default function Banner({
 				return;
 			}
 
+			const attemptTs = Number(paymentAttempt);
+			const successTs = latestPaymentSuccessAt
+				? new Date(latestPaymentSuccessAt).getTime()
+				: NaN;
+			const hasConfirmedPayment =
+				Number.isFinite(attemptTs) &&
+				Number.isFinite(successTs) &&
+				successTs >= attemptTs;
+
 			// If we have a payment_attempt param, show a processing/info
-			// banner. This takes precedence over checkout success/cancelled
-			// because it indicates an in-progress payment attempt.
+			// banner until we have concrete DB-confirmed payment success.
 			if (paymentAttempt) {
-				const attemptTs = Number(paymentAttempt);
-				const successTs = latestPaymentSuccessAt
-					? new Date(latestPaymentSuccessAt).getTime()
-					: NaN;
-				if (
-					Number.isFinite(attemptTs) &&
-					Number.isFinite(successTs) &&
-					successTs >= attemptTs
-				) {
+				if (hasConfirmedPayment) {
 					setBanner({
 						type: "success",
-						message: "Successful payment, happy building.",
+						message: "Payment confirmed. Your credits have been added.",
 					});
 				} else {
 					setBanner({
@@ -71,10 +86,21 @@ export default function Banner({
 				return;
 			}
 
-			if (checkout === "success") {
+			// Save-only flow has no payment credit; checkout success means setup is complete.
+			if (checkout === "success" && kind === "save_only") {
 				setBanner({
 					type: "success",
-					message: "Checkout successful - your credits have been purchased.",
+					message: "Card saved successfully.",
+				});
+				return;
+			}
+
+			// For payment checkouts without payment_attempt marker, avoid success claims.
+			if (checkout === "success") {
+				setBanner({
+					type: "info",
+					message:
+						"Checkout completed. Waiting for payment confirmation. Click Refresh to check the latest status.",
 				});
 			} else if (checkout === "cancelled") {
 				setBanner({
@@ -86,6 +112,34 @@ export default function Banner({
 			// ignore parse errors
 		}
 	}, [queryString, latestPaymentSuccessAt]);
+
+	// Keep a tiny countdown visible while a success banner is auto-dismissing.
+	useEffect(() => {
+		if (!banner || banner.type !== "success") {
+			setSuccessCountdownSeconds(null);
+			return;
+		}
+
+		const startedAt = Date.now();
+		setSuccessCountdownSeconds(Math.ceil(SUCCESS_BANNER_AUTO_DISMISS_MS / 1000));
+		const interval = window.setInterval(() => {
+			const elapsedMs = Date.now() - startedAt;
+			const remainingMs = SUCCESS_BANNER_AUTO_DISMISS_MS - elapsedMs;
+			const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+			setSuccessCountdownSeconds(remainingSeconds);
+		}, 250);
+
+		return () => window.clearInterval(interval);
+	}, [banner]);
+
+	// Auto-dismiss success banners after 10 seconds.
+	useEffect(() => {
+		if (!banner || banner.type !== "success") return;
+		const timer = window.setTimeout(() => {
+			dismissBanner();
+		}, SUCCESS_BANNER_AUTO_DISMISS_MS);
+		return () => window.clearTimeout(timer);
+	}, [banner, dismissBanner]);
 
 	return (
 		<>
@@ -102,28 +156,28 @@ export default function Banner({
 					<div className="flex items-center justify-between">
 						<div className="text-sm">{banner.message}</div>
 						<div className="flex items-center gap-2">
+							<div className="relative">
 							<Button
 								variant="ghost"
 								size="icon"
-								onClick={() => {
-									// Clear query state when dismissing banner.
-									try {
-										const cleanPath = window.location.pathname;
-										window.history.replaceState(
-											window.history.state,
-											"",
-											cleanPath
-										);
-										router.replace(cleanPath, { scroll: false });
-									} catch {
-										// ignore
-									}
-									setBanner(null);
-								}}
-								aria-label="dismiss"
+								onClick={dismissBanner}
+								aria-label={
+									banner.type === "success" && successCountdownSeconds != null
+										? `dismiss (auto closes in ${successCountdownSeconds}s)`
+										: "dismiss"
+								}
 							>
 								<X className="h-4 w-4" />
 							</Button>
+								{banner.type === "success" && successCountdownSeconds != null ? (
+									<span
+										className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-zinc-900 text-white text-[10px] leading-none font-medium tabular-nums flex items-center justify-center px-1"
+										aria-hidden="true"
+									>
+										{successCountdownSeconds}
+									</span>
+								) : null}
+							</div>
 						</div>
 					</div>
 				</Card>

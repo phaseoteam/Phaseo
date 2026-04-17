@@ -84,9 +84,9 @@ export default function CreditsPurchaseDialog({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	// CONFIG
-	// Allow freeform typing. Require a minimum of $10 and a maximum of $1,000,000
+	// Allow freeform typing. Require a minimum of $5 and a maximum of $1,000,000
 	// before enabling the pay button.
-	const MIN = 10;
+	const MIN = 5;
 	const MAX = 1000000;
 	const STEP = 0.01;
 	const FEE_RATE = tierInfo?.current?.feePct
@@ -481,7 +481,7 @@ export default function CreditsPurchaseDialog({
 						{/* Validation messages */}
 						{!Number.isNaN(parsed) && parsed < MIN ? (
 							<div className="text-sm text-red-600">
-								Must buy a minimum of $10 of credits
+								Must buy a minimum of $5 of credits
 							</div>
 						) : !Number.isNaN(parsed) && parsed > MAX ? (
 							<div className="text-sm text-red-600">
