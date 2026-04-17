@@ -192,7 +192,13 @@ export async function getProviderModelTokenTimeseries(
 		topModels?: number;
 	},
 ): Promise<ProviderTokenTimeseries> {
-	const days = Math.max(1, options?.days ?? DEFAULT_DAYS);
+	const requestedDays = options?.days;
+	const days =
+		typeof requestedDays === "number" &&
+		Number.isFinite(requestedDays) &&
+		requestedDays > 0
+			? Math.max(1, Math.round(requestedDays))
+			: DEFAULT_DAYS;
 	if (days >= 30) {
 		cacheLife("days");
 	} else if (days >= 7) {
@@ -208,7 +214,13 @@ export async function getProviderModelTokenTimeseries(
 		return { models: [], points: [] };
 	}
 
-	const topModelsLimit = Math.max(1, options?.topModels ?? DEFAULT_TOP_MODELS);
+	const requestedTopModels = options?.topModels;
+	const topModelsLimit =
+		typeof requestedTopModels === "number" &&
+		Number.isFinite(requestedTopModels) &&
+		requestedTopModels > 0
+			? Math.max(1, Math.round(requestedTopModels))
+			: DEFAULT_TOP_MODELS;
 
 	const now = new Date();
 	const since = new Date(now);

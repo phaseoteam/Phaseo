@@ -174,7 +174,12 @@ export function CookieConsentManager({
       ) : null}
 
       {feedback ? (
-        <div className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950">
+        <div
+          aria-atomic="true"
+          aria-live="polite"
+          className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950"
+          role="status"
+        >
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {feedback.title}
           </p>

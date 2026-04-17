@@ -51,7 +51,7 @@ export async function getProviderRoutingHealth(
 		typeof requestedWindowHours === "number" &&
 		Number.isFinite(requestedWindowHours) &&
 		requestedWindowHours > 0
-			? Math.round(requestedWindowHours)
+			? Math.max(1, Math.round(requestedWindowHours))
 			: 24;
 	if (windowHours >= 24) {
 		cacheLife("hours");

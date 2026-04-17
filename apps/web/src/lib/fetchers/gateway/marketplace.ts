@@ -62,13 +62,14 @@ export async function getPublicMarketplacePresetDetailCached(
 		.from("presets")
 		.select("id, name, description, config, visibility, created_at, source_preset_id")
 		.eq("id", normalizedId)
+		.eq("visibility", "public")
 		.maybeSingle();
 
 	if (presetError) {
 		console.error("[marketplace] failed to load preset detail", presetError);
 		return null;
 	}
-	if (!preset || preset.visibility !== "public") {
+	if (!preset) {
 		return null;
 	}
 
@@ -78,6 +79,7 @@ export async function getPublicMarketplacePresetDetailCached(
 			.from("presets")
 			.select("id, name")
 			.eq("id", preset.source_preset_id)
+			.eq("visibility", "public")
 			.maybeSingle();
 		if (!sourceError && sourceData) {
 			sourcePreset = sourceData as MarketplacePresetLink;

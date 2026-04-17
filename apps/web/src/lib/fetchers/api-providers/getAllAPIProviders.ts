@@ -177,7 +177,7 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         supabase
             .from("data_api_provider_models")
             .select(
-                "provider_id, api_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to, input_modalities, output_modalities"
+                "provider_id, api_model_id, provider_api_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to, input_modalities, output_modalities"
             ),
         supabase
             .from("data_api_pricing_rules")

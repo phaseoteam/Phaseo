@@ -203,14 +203,25 @@ async function shouldRefreshAnalyticsRollup(args: {
 		const cache = getCache();
 		const markerKey = buildRefreshMarkerKey(args);
 		const marker = await cache.get(markerKey, "text");
-		if (marker) return false;
-		await cache.put(markerKey, "1", {
-			expirationTtl: ANALYTICS_REFRESH_COOLDOWN_SECONDS,
-		});
-		return true;
+		return !marker;
 	} catch {
 		// Fail open if cache is unavailable so analytics data still updates.
 		return true;
+	}
+}
+
+async function markAnalyticsRollupRefresh(args: {
+	teamId: string;
+	startIso: string;
+	endIso: string;
+}): Promise<void> {
+	try {
+		const cache = getCache();
+		await cache.put(buildRefreshMarkerKey(args), "1", {
+			expirationTtl: ANALYTICS_REFRESH_COOLDOWN_SECONDS,
+		});
+	} catch {
+		// Ignore marker write failures so successful refreshes still return data.
 	}
 }
 
@@ -267,6 +278,11 @@ async function handleAnalytics(req: Request) {
 			})
 		) {
 			await refreshAnalyticsRollup({
+				teamId,
+				startIso,
+				endIso,
+			});
+			await markAnalyticsRollupRefresh({
 				teamId,
 				startIso,
 				endIso,

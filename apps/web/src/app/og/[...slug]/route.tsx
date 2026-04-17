@@ -37,6 +37,19 @@ const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
 	"http://localhost:3000";
+const MAX_CACHE_TAG_LENGTH = 256;
+
+function cacheTagSafe(tag: string): void {
+	if (tag.length <= MAX_CACHE_TAG_LENGTH) {
+		cacheTag(tag);
+	}
+}
+
+function cacheEntityTag(prefix: string, value: string | undefined): void {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) return;
+	cacheTagSafe(`${prefix}:${normalized}`);
+}
 
 async function loadOrganisation(slug: string): Promise<OgPayload | null> {
 	const supabase = createAdminClient();
@@ -153,28 +166,28 @@ async function loadOgPayloadCached(
 			const [slug] = segments;
 			if (!slug) return null;
 			cacheTag("data:organisations");
-			cacheTag(`data:organisations:${slug}`);
+			cacheEntityTag("data:organisations", slug);
 			return loadOrganisation(slug);
 		}
 		case "models": {
 			const modelId = segments.join("/");
 			if (!modelId) return null;
 			cacheTag("data:models");
-			cacheTag(`data:models:${modelId}`);
+			cacheEntityTag("data:models", modelId);
 			return loadModel(modelId);
 		}
 		case "benchmarks": {
 			const [slug] = segments;
 			if (!slug) return null;
 			cacheTag("data:benchmarks");
-			cacheTag(`data:benchmarks:${slug}`);
+			cacheEntityTag("data:benchmarks", slug);
 			return loadBenchmark(slug);
 		}
 		case "api-providers": {
 			const [slug] = segments;
 			if (!slug) return null;
 			cacheTag("data:api_providers");
-			cacheTag(`data:api_providers:${slug}`);
+			cacheEntityTag("data:api_providers", slug);
 			return loadApiProvider(slug);
 		}
 		case "countries": {
@@ -185,7 +198,7 @@ async function loadOgPayloadCached(
 			const [slug] = segments;
 			if (!slug) return null;
 			cacheTag("data:subscription_plans");
-			cacheTag(`data:subscription_plans:${slug}`);
+			cacheEntityTag("data:subscription_plans", slug);
 			return loadSubscriptionPlan(slug);
 		}
 		default:

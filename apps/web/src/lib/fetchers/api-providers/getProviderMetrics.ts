@@ -351,7 +351,9 @@ export async function getProviderMetrics(
 	"use cache";
 
 	const normalizedHours =
-		Number.isFinite(hours) && hours > 0 ? Math.round(hours) : HOURS_DEFAULT;
+		Number.isFinite(hours) && hours > 0
+			? Math.max(1, Math.round(hours))
+			: HOURS_DEFAULT;
 	if (normalizedHours >= 24 * 7) {
 		cacheLife("days");
 	} else if (normalizedHours >= 24) {
@@ -382,7 +384,12 @@ export async function getProviderMetrics(
 	const client = createAdminClient();
 	let rows: ProviderRollupRow[] = [];
 	try {
-		rows = await fetchProviderRollupRows(client, providerId, hours, now);
+		rows = await fetchProviderRollupRows(
+			client,
+			providerId,
+			normalizedHours,
+			now,
+		);
 	} catch (error) {
 		console.error("Failed to load provider performance rollups:", error);
 		return {
@@ -424,10 +431,15 @@ export async function getProviderMetrics(
 	const modelLabels = await fetchModelLabels(client, modelIds);
 	logUsageFetch("provider_metrics_result", {
 		providerId,
-		hours,
+		hours: normalizedHours,
 		rollupRows: rows.length,
 		modelIds: modelIds.length,
 		modelLabels: modelLabels.size,
 	});
-	return buildProviderMetricsFromRollups(rows, now, hours, modelLabels);
+	return buildProviderMetricsFromRollups(
+		rows,
+		now,
+		normalizedHours,
+		modelLabels,
+	);
 }
