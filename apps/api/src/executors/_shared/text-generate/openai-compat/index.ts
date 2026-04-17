@@ -397,6 +397,9 @@ function resolvePreferredRoute(
 	args: ExecutorExecuteArgs,
 	defaultRoute: "responses" | "chat",
 ): "responses" | "chat" {
+	// Keep Alibaba/Qwen upstream routing simple and stable: always use chat completions.
+	if (isAlibabaCompatProvider(args.providerId)) return "chat";
+
 	// xAI compatibility currently has stricter /responses validation for structured output.
 	// Route structured requests via chat/completions for better interoperability.
 	if (
@@ -409,6 +412,10 @@ function resolvePreferredRoute(
 	}
 
 	return defaultRoute;
+}
+
+function isAlibabaCompatProvider(providerId: string): boolean {
+	return providerId === "alibaba-cloud" || providerId === "alibaba" || providerId === "qwen";
 }
 
 function transformResponsesStreamToAnthropic(
