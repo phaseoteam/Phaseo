@@ -1,5 +1,13 @@
 # @ai-stats/go-sdk
 
+## 1.2.0
+
+### Minor Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes (model IDs added (1) [x-ai/grok-4.3]).
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
 ## 1.1.3
 
 ### Patch Changes
