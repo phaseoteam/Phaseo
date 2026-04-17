@@ -9,9 +9,89 @@ import {
 import { sanitizeReturnUrl } from '@/lib/auth/return-url'
 import { classifyAuthMethodFromSession } from '@/lib/auth/method'
 import { evaluateTeamSsoEnforcementNoop } from '@/lib/auth/ssoEnforcement'
+import { Resend } from 'resend'
 
 function makeSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
+}
+
+function deriveFirstName(name: string): string {
+    const trimmed = name.trim()
+    if (!trimmed) return ''
+    return trimmed.split(/\s+/)[0] ?? ''
+}
+
+async function sendSignupWelcomeEmail(args: {
+    email: string
+    displayName: string
+}) {
+    const apiKey = String(process.env.RESEND_API_KEY ?? '').trim()
+    if (!apiKey) return
+
+    const from = String(process.env.RESEND_FROM_EMAIL ?? '').trim() || 'AI Stats <noreply@phaseo.app>'
+    const subject = String(process.env.RESEND_WELCOME_SUBJECT ?? '').trim() || 'Welcome to AI Stats'
+    const templateId = String(process.env.RESEND_WELCOME_TEMPLATE_ID ?? '').trim() || 'welcome-email'
+    const firstName = deriveFirstName(args.displayName)
+    const dashboardUrl = String(process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? '').trim() || 'https://www.aistats.com'
+    const getStartedUrl = `${dashboardUrl.replace(/\/+$/, '')}/settings/keys`
+    const docsUrl = `${dashboardUrl.replace(/\/+$/, '')}/help`
+    const resend = new Resend(apiKey)
+    const { error } = await resend.emails.send({
+        from,
+        to: args.email,
+        subject,
+        template: {
+            id: templateId,
+            variables: {
+                user_first_name: firstName || '',
+                welcome_heading: firstName ? `Welcome, ${firstName}` : 'Welcome',
+                app_name: 'AI Stats',
+                providers_count: 14,
+                models_count: 300,
+                endpoints_count: 9,
+                gateway_base_url: 'https://api.ai-stats.io',
+                example_model: 'openai/gpt-4.1-mini',
+                dashboard_url: dashboardUrl,
+                quickstart_url: getStartedUrl,
+                docs_url: docsUrl,
+                support_email: 'support@aistats.com',
+            },
+        },
+    })
+
+    if (error) {
+        throw new Error(`resend_error:${error.name}:${error.message}`)
+    }
+}
+
+async function sendSignupDiscordWebhook(args: {
+    userId: string
+    email: string | null
+    createdAtIso: string
+}) {
+    const webhookUrl = String(process.env.DISCORD_SIGNUP_WEBHOOK_URL ?? '').trim()
+    if (!webhookUrl) return
+
+    const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            content: [
+                'New AI Stats signup',
+                `- user_id: \`${args.userId}\``,
+                `- email: \`${args.email ?? 'unknown'}\``,
+                `- created_at: \`${args.createdAtIso}\``,
+            ].join('\n'),
+            allowed_mentions: { parse: [] },
+        }),
+    })
+
+    if (!res.ok) {
+        const detail = await res.text().catch(() => '')
+        throw new Error(`discord_webhook_error:${res.status}:${detail || res.statusText}`)
+    }
 }
 
 function buildHashPreservingAuthErrorResponse(requestUrl: string) {
@@ -86,6 +166,40 @@ async function getOrCreatePersonalTeamId(opts: {
     displayName: string
 }) {
     const { supabaseAdmin, userId, displayName } = opts;
+    let createdPersonalTeam = false;
+    const ensureOwnerMembership = async (teamId: string) => {
+        await supabaseAdmin
+            .from("team_members")
+            .upsert(
+                { team_id: teamId, user_id: userId, role: "owner" },
+                { onConflict: "team_id,user_id", ignoreDuplicates: true }
+            );
+    };
+
+    const hasTeamAccess = async (teamId: string): Promise<boolean> => {
+        if (!teamId) return false;
+
+        const { data: membershipRow, error: membershipErr } = await supabaseAdmin
+            .from("team_members")
+            .select("team_id")
+            .eq("team_id", teamId)
+            .eq("user_id", userId)
+            .maybeSingle();
+        if (!membershipErr && membershipRow?.team_id) return true;
+
+        const { data: teamRow, error: teamErr } = await supabaseAdmin
+            .from("teams")
+            .select("id,owner_user_id")
+            .eq("id", teamId)
+            .maybeSingle();
+        if (teamErr || !teamRow?.id) return false;
+
+        const isOwner = String(teamRow.owner_user_id ?? "") === userId;
+        if (!isOwner) return false;
+
+        await ensureOwnerMembership(teamId);
+        return true;
+    };
 
     // 0) Ensure users row exists (no-op if present)
     await supabaseAdmin
@@ -99,7 +213,27 @@ async function getOrCreatePersonalTeamId(opts: {
         .eq('user_id', userId)
         .maybeSingle();
 
-    if (userRow?.default_team_id) return userRow.default_team_id as string;
+    const defaultTeamId = String(userRow?.default_team_id ?? "").trim();
+    if (defaultTeamId) {
+        if (await hasTeamAccess(defaultTeamId)) {
+            return {
+                teamId: defaultTeamId,
+                createdPersonalTeam,
+            }
+        }
+
+        // Stale or invalid default team pointer: clear it so we can recover.
+        await supabaseAdmin
+            .from("users")
+            .update({ default_team_id: null })
+            .eq("user_id", userId)
+            .eq("default_team_id", defaultTeamId);
+
+        console.warn("auth_callback_default_team_invalid", {
+            userId,
+            defaultTeamId,
+        });
+    }
 
     // 2) Reuse any existing owner team (from previous runs)
     const { data: ownedTeam } = await supabaseAdmin
@@ -111,29 +245,37 @@ async function getOrCreatePersonalTeamId(opts: {
         .maybeSingle();
 
     if (ownedTeam?.id) {
-        // backfill default_team_id if missing
+        await ensureOwnerMembership(ownedTeam.id);
+        // backfill default_team_id
         await supabaseAdmin.from('users')
             .update({ default_team_id: ownedTeam.id })
-            .eq('user_id', userId)
-            .is('default_team_id', null);
-        return ownedTeam.id as string;
+            .eq('user_id', userId);
+        return {
+            teamId: ownedTeam.id as string,
+            createdPersonalTeam,
+        }
     }
 
-    // 3) Reuse a prior "personal" team by slug pattern (if it exists)
+    // 3) Reuse a prior "personal" team by slug pattern (if it exists).
+    // Scope strictly to teams owned by this user to avoid cross-user attribution.
     const baseSlug = `${makeSlug(displayName)}-personal`;
     const { data: personalCandidate } = await supabaseAdmin
         .from('teams')
         .select('id')
+        .eq("owner_user_id", userId)
         .ilike('slug', `${baseSlug}%`)
         .order('created_at', { ascending: true })
         .limit(1);
 
     if (personalCandidate && personalCandidate[0]?.id) {
+        await ensureOwnerMembership(personalCandidate[0].id);
         await supabaseAdmin.from('users')
             .update({ default_team_id: personalCandidate[0].id })
-            .eq('user_id', userId)
-            .is('default_team_id', null);
-        return personalCandidate[0].id as string;
+            .eq('user_id', userId);
+        return {
+            teamId: personalCandidate[0].id as string,
+            createdPersonalTeam,
+        }
     }
 
     // 4) Create the team (slug collision-safe)
@@ -149,6 +291,7 @@ async function getOrCreatePersonalTeamId(opts: {
 
         if (data?.id) {
             teamId = data.id as string;
+            createdPersonalTeam = true;
             break;
         }
         if (error && /duplicate|unique/i.test(error.message)) {
@@ -169,12 +312,7 @@ async function getOrCreatePersonalTeamId(opts: {
     if (!teamId) throw new Error('Could not obtain a team id');
 
     // 5) Ensure membership (no-op if exists)
-    await supabaseAdmin
-        .from('team_members')
-        .upsert({ team_id: teamId, user_id: userId, role: 'owner' }, {
-            onConflict: 'team_id,user_id',
-            ignoreDuplicates: true
-        });
+    await ensureOwnerMembership(teamId);
 
     // 6) Backfill default_team_id (no-op if already set)
     await supabaseAdmin
@@ -183,7 +321,10 @@ async function getOrCreatePersonalTeamId(opts: {
         .eq('user_id', userId)
         .is('default_team_id', null);
 
-    return teamId;
+    return {
+        teamId,
+        createdPersonalTeam,
+    };
 }
 
 export async function GET(request: Request) {
@@ -259,8 +400,15 @@ export async function GET(request: Request) {
 
     // 1) Get or create team id BUT prefer reusing anything that already exists
     let teamId: string;
+    let createdPersonalTeam = false;
     try {
-        teamId = await getOrCreatePersonalTeamId({ supabaseAdmin, userId: user.id, displayName });
+        const provisionedTeam = await getOrCreatePersonalTeamId({
+            supabaseAdmin,
+            userId: user.id,
+            displayName,
+        });
+        teamId = provisionedTeam.teamId;
+        createdPersonalTeam = provisionedTeam.createdPersonalTeam;
     } catch (error) {
         console.error('Failed to provision personal team during auth callback', {
             userId: user.id,
@@ -284,7 +432,39 @@ export async function GET(request: Request) {
         })
     }
 
-    // 3) If this team is enterprise + invoice mode but the invoice profile is not
+    // 3) Fire signup notifications once, directly from app code.
+    if (createdPersonalTeam) {
+        if (user.email) {
+            try {
+                await sendSignupWelcomeEmail({
+                    email: user.email,
+                    displayName,
+                })
+            } catch (error) {
+                console.error('Failed sending direct signup welcome email', {
+                    userId: user.id,
+                    teamId,
+                    error: error instanceof Error ? error.message : String(error),
+                })
+            }
+        }
+
+        try {
+            await sendSignupDiscordWebhook({
+                userId: user.id,
+                email: user.email ?? null,
+                createdAtIso: String(user.created_at ?? new Date().toISOString()),
+            })
+        } catch (error) {
+            console.error('Failed sending direct signup Discord webhook', {
+                userId: user.id,
+                teamId,
+                error: error instanceof Error ? error.message : String(error),
+            })
+        }
+    }
+
+    // 4) If this team is enterprise + invoice mode but the invoice profile is not
     // enabled yet, route directly to billing onboarding.
     try {
         const { data: teamRow } = await supabaseAdmin
@@ -336,3 +516,4 @@ export async function GET(request: Request) {
 
     return NextResponse.redirect(new URL(returnUrl, url));
 }
+

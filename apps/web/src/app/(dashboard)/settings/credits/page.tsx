@@ -249,14 +249,15 @@ async function CreditsSettingsContent(props: {
 		defaultPaymentMethodId,
 	};
 
-	// Latest success timestamp (for the checkout banner's payment_attempt flow)
+	// Latest successful Stripe payment timestamp for payment banner confirmation.
 	let latestPaymentSuccessAt: string | null = null;
 	try {
 		const { data: latestRow, error: latestErr } = await supabase
 			.from("credit_ledger")
 			.select("event_time,status,amount_nanos")
 			.eq("team_id", teamId)
-			.in("status", ["paid", "succeeded"])
+			.eq("ref_type", "Stripe_Payment_Intent")
+			.or("status.ilike.paid,status.ilike.succeeded")
 			.gt("amount_nanos", 0)
 			.order("event_time", { ascending: false })
 			.limit(1)
