@@ -2002,6 +2002,7 @@ const (
 	ModelIdXAiGrok41Thinking ModelId = "x-ai/grok-4.1-thinking"
 	ModelIdXAiGrok420 ModelId = "x-ai/grok-4.20"
 	ModelIdXAiGrok420MultiAgentBeta ModelId = "x-ai/grok-4.20-multi-agent-beta"
+	ModelIdXAiGrok43 ModelId = "x-ai/grok-4.3"
 	ModelIdXAiGrokCodeFast1 ModelId = "x-ai/grok-code-fast-1"
 	ModelIdXAiGrokImagineImage ModelId = "x-ai/grok-imagine-image"
 	ModelIdXAiGrokImagineImagePro ModelId = "x-ai/grok-imagine-image-pro"
