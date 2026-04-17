@@ -163,6 +163,14 @@ export default async function getModelPricing(
         throw new Error("Model not found");
     }
 
+    const nowIso = new Date().toISOString();
+    const activeWindowClause = [
+        "and(effective_from.is.null,effective_to.is.null)",
+        `and(effective_from.is.null,effective_to.gt.${nowIso})`,
+        `and(effective_from.lte.${nowIso},effective_to.is.null)`,
+        `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
+    ].join(",");
+
     const providerModelSelect = `
         provider_api_model_id,
         provider_id,
@@ -449,6 +457,7 @@ export default async function getModelPricing(
                 "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match"
             )
             .in("model_key", modelKeys)
+            .or(activeWindowClause)
             .order("priority", { ascending: false })
             .order("effective_from", { ascending: false });
 
@@ -487,6 +496,7 @@ export default async function getModelPricing(
                     "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match"
                 )
                 .like("model_key", `${prefix}%`)
+                .or(activeWindowClause)
                 .order("priority", { ascending: false })
                 .order("effective_from", { ascending: false });
 

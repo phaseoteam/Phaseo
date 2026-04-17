@@ -350,7 +350,15 @@ export async function getProviderMetrics(
 ): Promise<ProviderMetrics> {
 	"use cache";
 
-	cacheLife("minutes");
+	const normalizedHours =
+		Number.isFinite(hours) && hours > 0 ? Math.round(hours) : HOURS_DEFAULT;
+	if (normalizedHours >= 24 * 7) {
+		cacheLife("days");
+	} else if (normalizedHours >= 24) {
+		cacheLife("hours");
+	} else {
+		cacheLife("minutes");
+	}
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${providerId}`);
 	cacheTag(`data:api_providers:${providerId}`);

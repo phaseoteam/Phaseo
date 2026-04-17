@@ -46,13 +46,23 @@ export async function getProviderRoutingHealth(
 ): Promise<ProviderRoutingHealth | null> {
 	"use cache";
 
-	cacheLife("minutes");
+	const requestedWindowHours = options?.windowHours;
+	const windowHours =
+		typeof requestedWindowHours === "number" &&
+		Number.isFinite(requestedWindowHours) &&
+		requestedWindowHours > 0
+			? Math.round(requestedWindowHours)
+			: 24;
+	if (windowHours >= 24) {
+		cacheLife("hours");
+	} else {
+		cacheLife("minutes");
+	}
 	cacheTag("data:gateway_provider_health_states");
 	cacheTag(`data:gateway_provider_health_states:provider:${providerId}`);
 	cacheTag(`data:api_providers:${providerId}`);
 
 	if (!providerId) return null;
-	const windowHours = options?.windowHours ?? 24;
 	const maxPairs = options?.maxPairs ?? 24;
 	const nowMs = Date.now();
 	const sinceIso = new Date(nowMs - windowHours * 60 * 60 * 1000).toISOString();

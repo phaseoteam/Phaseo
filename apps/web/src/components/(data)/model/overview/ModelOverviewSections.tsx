@@ -742,16 +742,6 @@ export default async function ModelOverviewSections({
 			<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
 			{isLimitedAvailabilityModel || !hasApiProviders ? null : (
 				<>
-					<ModelPerformanceSection
-						modelId={modelId}
-						includeHidden={includeHidden}
-						surface="overview"
-					/>
-					<ModelPricingInsightsOverviewSection
-						modelId={modelId}
-						includeHidden={includeHidden}
-					/>
-					<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />
 					<ModelQuickstartSection
 						modelId={modelId}
 						includeHidden={includeHidden}

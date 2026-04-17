@@ -1,6 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
-import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 
 const DEFAULT_DAYS = 30;
 const PAGE_SIZE = 1000;
@@ -40,6 +39,16 @@ export type ModelPricingHistoryRule = {
 	effectiveTo: string | null;
 	note: string | null;
 	match: unknown[];
+};
+
+export type ModelPricingHistoryProviderInput = {
+	providerId: string;
+	providerName: string;
+	models: Array<{
+		apiProviderId: string;
+		modelId: string;
+		endpoint: string;
+	}>;
 };
 
 function extractModelIdFromModelKey(modelKey: string): string {
@@ -103,6 +112,7 @@ function intersectsWindow(
 async function fetchRulesByModelKeys(
 	client: ReturnType<typeof createAdminClient>,
 	modelKeys: string[],
+	activeWindowClause: string,
 ): Promise<PricingRuleRow[]> {
 	if (!modelKeys.length) return [];
 	const rows: PricingRuleRow[] = [];
@@ -113,6 +123,7 @@ async function fetchRulesByModelKeys(
 			.from("data_api_pricing_rules")
 			.select(RULE_SELECT)
 			.in("model_key", modelKeys)
+			.or(activeWindowClause)
 			.order("priority", { ascending: false })
 			.order("effective_from", { ascending: false })
 			.range(from, to);
@@ -131,6 +142,7 @@ async function fetchRulesByModelKeys(
 async function fetchRulesByPrefix(
 	client: ReturnType<typeof createAdminClient>,
 	prefix: string,
+	activeWindowClause: string,
 ): Promise<PricingRuleRow[]> {
 	const rows: PricingRuleRow[] = [];
 
@@ -140,6 +152,7 @@ async function fetchRulesByPrefix(
 			.from("data_api_pricing_rules")
 			.select(RULE_SELECT)
 			.like("model_key", `${prefix}%`)
+			.or(activeWindowClause)
 			.order("priority", { ascending: false })
 			.order("effective_from", { ascending: false })
 			.range(from, to);
@@ -157,7 +170,7 @@ async function fetchRulesByPrefix(
 
 export async function getModelPricingHistoryRules(args: {
 	modelId: string;
-	providers: ProviderPricing[];
+	providers: ModelPricingHistoryProviderInput[];
 	days?: number;
 }): Promise<ModelPricingHistoryRule[]> {
 	"use cache";
@@ -172,19 +185,27 @@ export async function getModelPricingHistoryRules(args: {
 		: DEFAULT_DAYS;
 	const nowMs = Date.now();
 	const windowStartMs = nowMs - days * 24 * 60 * 60 * 1000;
+	const nowIso = new Date(nowMs).toISOString();
+	const windowStartIso = new Date(windowStartMs).toISOString();
+	const activeWindowClause = [
+		"and(effective_from.is.null,effective_to.is.null)",
+		`and(effective_from.is.null,effective_to.gte.${windowStartIso})`,
+		`and(effective_from.lte.${nowIso},effective_to.is.null)`,
+		`and(effective_from.lte.${nowIso},effective_to.gte.${windowStartIso})`,
+	].join(",");
 
 	const providerNameById = new Map<string, string>();
 	const providerByKey = new Map<string, string>();
 	const providerByPrefix = new Map<string, string>();
 	for (const provider of args.providers) {
-		const providerId = provider.provider.api_provider_id;
+		const providerId = provider.providerId;
 		providerNameById.set(
 			providerId,
-			provider.provider.api_provider_name || providerId,
+			provider.providerName || providerId,
 		);
-		for (const model of provider.provider_models) {
-			const key = `${model.api_provider_id}:${model.model_id}:${model.endpoint}`;
-			const prefix = `${model.api_provider_id}:${model.model_id}:`;
+		for (const model of provider.models) {
+			const key = `${model.apiProviderId}:${model.modelId}:${model.endpoint}`;
+			const prefix = `${model.apiProviderId}:${model.modelId}:`;
 			providerByKey.set(key, providerId);
 			providerByPrefix.set(prefix, providerId);
 		}
@@ -195,7 +216,11 @@ export async function getModelPricingHistoryRules(args: {
 	if (!modelKeys.length || !prefixes.length) return [];
 	const client = createAdminClient();
 
-	const primaryRows = await fetchRulesByModelKeys(client, modelKeys);
+	const primaryRows = await fetchRulesByModelKeys(
+		client,
+		modelKeys,
+		activeWindowClause,
+	);
 	const knownPrefixes = new Set<string>();
 	for (const row of primaryRows) {
 		const modelKey = String(row.model_key ?? "");
@@ -208,7 +233,7 @@ export async function getModelPricingHistoryRules(args: {
 	const fallbackRows = (
 		await Promise.all(
 			missingPrefixes.map((prefix) =>
-				fetchRulesByPrefix(client, prefix).catch((error) => {
+				fetchRulesByPrefix(client, prefix, activeWindowClause).catch((error) => {
 					console.warn("[pricing] failed to fetch fallback history rules", {
 						modelId: args.modelId,
 						prefix,

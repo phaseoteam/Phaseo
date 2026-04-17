@@ -60,7 +60,13 @@ export function CookieConsentManager({
     if (typeof window === "undefined") return "pending"
     return readAnalyticsConsent()
   })
-  const shouldLoadGa = Boolean(gaMeasurementId && consent === "accepted")
+  const [feedback, setFeedback] = useState<{
+    message: string
+    title: string
+  } | null>(null)
+  // Load GA with denied-by-default consent mode so we can still verify install
+  // health and collect modeled/cookieless signals until explicit consent.
+  const shouldLoadGa = Boolean(gaMeasurementId)
 
   useEffect(() => {
     if (consent !== "pending") return
@@ -71,6 +77,12 @@ export function CookieConsentManager({
     if (consent === "pending") return
     applyGaConsent(consent ?? "denied", gaMeasurementId)
   }, [consent, gaMeasurementId])
+
+  useEffect(() => {
+    if (!feedback) return
+    const timeoutId = window.setTimeout(() => setFeedback(null), 3500)
+    return () => window.clearTimeout(timeoutId)
+  }, [feedback])
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
@@ -99,6 +111,18 @@ export function CookieConsentManager({
     persistAnalyticsConsent(next)
     setConsent(next)
     applyGaConsent(next, gaMeasurementId)
+    if (next === "accepted") {
+      setFeedback({
+        title: "Thanks for helping us improve your experience.",
+        message: "This can always be changed in Settings.",
+      })
+      return
+    }
+
+    setFeedback({
+      title: "Analytics cookies declined.",
+      message: "This can always be changed in Settings.",
+    })
   }
 
   return (
@@ -116,36 +140,47 @@ export function CookieConsentManager({
             window.gtag = window.gtag || gtag;
             gtag('js', new Date());
             gtag('consent', 'default', ${JSON.stringify(GA_DENIED_CONSENT)});
-            gtag('consent', 'update', ${JSON.stringify(GA_GRANTED_CONSENT)});
             gtag('config', '${gaMeasurementId}', { anonymize_ip: true });
           `}</Script>
         </>
       ) : null}
 
       {consent === null ? (
-        <div className="fixed bottom-3 left-2 right-2 z-[100] w-auto rounded-lg border border-zinc-200 bg-white p-3 shadow-lg sm:bottom-4 sm:left-auto sm:right-4 sm:w-[320px] sm:max-w-[calc(100vw-2rem)] dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <div className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Cookie Preferences
           </p>
-          <p className="mt-1 text-[10px] leading-relaxed text-zinc-600 dark:text-zinc-300">
-            Manage analytics cookies. See our{" "}
+          <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+            We use analytics cookies to measure traffic and improve AI Stats.
+            You can change your mind anytime in Settings, and read more in our{" "}
             <Link className="underline" href="/privacy">
               Privacy Policy
             </Link>
             .
           </p>
-          <div className="mt-2.5 flex items-center gap-2">
-            <Button className="h-8 flex-1 px-2.5 text-xs" onClick={() => updateConsent("accepted")}>
-              Accept
-            </Button>
+          <div className="mt-4 flex items-center gap-3">
             <Button
-              className="h-8 flex-1 px-2.5 text-xs"
+              className="h-10 flex-1 px-3 text-sm"
               onClick={() => updateConsent("denied")}
               variant="outline"
             >
-              Deny
+              Decline
+            </Button>
+            <Button className="h-10 flex-1 px-3 text-sm" onClick={() => updateConsent("accepted")}>
+              Accept
             </Button>
           </div>
+        </div>
+      ) : null}
+
+      {feedback ? (
+        <div className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {feedback.title}
+          </p>
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+            {feedback.message}
+          </p>
         </div>
       ) : null}
     </>

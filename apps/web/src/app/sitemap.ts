@@ -98,13 +98,12 @@ const staticRoutes: Array<{
     ];
 
 const MODEL_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "weekly", priority: 0.78 },
-    { suffix: "/quickstart", changeFrequency: "weekly", priority: 0.65 },
-    { suffix: "/benchmarks", changeFrequency: "weekly", priority: 0.65 },
-    { suffix: "/providers", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/family", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/timeline", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/performance", changeFrequency: "weekly", priority: 0.6 },
+    { suffix: "", changeFrequency: "monthly", priority: 0.78 },
+    { suffix: "/quickstart", changeFrequency: "monthly", priority: 0.65 },
+    { suffix: "/benchmarks", changeFrequency: "monthly", priority: 0.65 },
+    { suffix: "/providers", changeFrequency: "monthly", priority: 0.6 },
+    { suffix: "/family", changeFrequency: "monthly", priority: 0.6 },
+    { suffix: "/performance", changeFrequency: "monthly", priority: 0.6 },
 ];
 
 const PROVIDER_SUFFIXES: RouteSuffix[] = [
@@ -114,13 +113,10 @@ const PROVIDER_SUFFIXES: RouteSuffix[] = [
 
 const ORGANISATION_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.7 },
-    { suffix: "/models", changeFrequency: "weekly", priority: 0.6 },
 ];
 
 const PLAN_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.7 },
-    { suffix: "/features", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/models", changeFrequency: "weekly", priority: 0.6 },
 ];
 
 const BENCHMARK_SUFFIXES: RouteSuffix[] = [
@@ -129,7 +125,6 @@ const BENCHMARK_SUFFIXES: RouteSuffix[] = [
 
 const COUNTRY_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.65 },
-    { suffix: "/models", changeFrequency: "weekly", priority: 0.55 },
 ];
 
 const MARKETPLACE_PRESET_SUFFIXES: RouteSuffix[] = [
