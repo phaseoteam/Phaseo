@@ -5392,6 +5392,7 @@ components:
         - qwen/qwen3.5-9b
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
+        - qwen/qwen3.6-35b-a3b
         - qwen/qwen3.6-plus
         - qwen/qwq-32b
         - qwen/qwq-32b-preview
