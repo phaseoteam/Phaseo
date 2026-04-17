@@ -22,14 +22,6 @@
   "details": [],
   "benchmarks": [
     {
-      "benchmark_id": "swe-bench-pro",
-      "score": null,
-      "is_self_reported": true,
-      "other_info": null,
-      "source_link": "https://openai.com/index/introducing-gpt-5-3-codex-spark/",
-      "rank": null
-    },
-    {
       "benchmark_id": "terminal-bench-2.0",
       "score": 58.4,
       "is_self_reported": true,
