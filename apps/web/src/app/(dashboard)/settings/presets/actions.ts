@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
@@ -163,6 +163,18 @@ function normalizeVisibility(value?: PresetVisibility): PresetVisibility {
 	return "team";
 }
 
+function revalidatePresetDataCache(presetId?: string | null): void {
+	revalidateTag("data:presets", "max");
+	revalidateTag("data:presets:public", "max");
+	if (presetId) {
+		revalidateTag(`data:presets:${presetId}`, "max");
+	}
+	revalidatePath("/gateway/marketplace");
+	if (presetId) {
+		revalidatePath(`/gateway/marketplace/${presetId}`);
+	}
+}
+
 async function generateUniquePresetName(
 	supabase: Awaited<ReturnType<typeof createClient>>,
 	teamId: string,
@@ -251,6 +263,7 @@ export async function createPresetAction(input: CreatePresetInput) {
 	}
 
 	revalidatePath("/settings/presets");
+	revalidatePresetDataCache(data?.id ?? null);
 
 	return {
 		id: data?.id,
@@ -324,6 +337,10 @@ export async function forkPresetAction(sourcePresetId: string) {
 	}
 
 	revalidatePath("/settings/presets");
+	revalidatePresetDataCache(sourcePresetId);
+	if (data?.id) {
+		revalidatePresetDataCache(data.id);
+	}
 
 	return { id: data?.id, name: uniqueName };
 }
@@ -395,6 +412,7 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 	}
 
 	revalidatePath("/settings/presets");
+	revalidatePresetDataCache(id);
 
 	return { success: true };
 }
@@ -439,6 +457,7 @@ export async function deletePresetAction(id: string, confirmName?: string) {
 	}
 
 	revalidatePath("/settings/presets");
+	revalidatePresetDataCache(id);
 
 	return { success: true };
 }

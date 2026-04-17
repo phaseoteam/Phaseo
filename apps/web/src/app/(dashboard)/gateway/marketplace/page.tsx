@@ -30,8 +30,11 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+	getPublicMarketplacePresetsCached,
+	type MarketplacePreset,
+} from "@/lib/fetchers/gateway/marketplace";
 import { buildMetadata } from "@/lib/seo";
-import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Gateway Marketplace - AI Stats",
@@ -45,24 +48,8 @@ export const metadata: Metadata = buildMetadata({
 	],
 });
 
-type MarketplacePreset = {
-	id: string;
-	name: string;
-	description: string | null;
-	created_at: string;
-	source_preset_id: string | null;
-};
-
 export default async function GatewayMarketplacePage() {
-	const supabase = await createClient();
-
-	const { data } = await supabase
-		.from("presets")
-		.select("id, name, description, created_at, source_preset_id")
-		.eq("visibility", "public")
-		.order("created_at", { ascending: false });
-
-	const presets = data ?? [];
+	const presets = await getPublicMarketplacePresetsCached();
 	const featured = presets.slice(0, 6);
 	const community = presets.slice(6, 14);
 	const trending = presets.slice(0, 3);

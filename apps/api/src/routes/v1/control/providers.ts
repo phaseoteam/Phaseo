@@ -37,7 +37,7 @@ type Provider = {
 };
 
 async function handleProviders(req: Request) {
-    const auth = await guardAuth(req, { useKvCache: false });
+    const auth = await guardAuth(req);
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }

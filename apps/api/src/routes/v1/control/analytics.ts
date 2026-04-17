@@ -6,12 +6,14 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime, json } from "../../utils";
-import { getSupabaseAdmin } from "@/runtime/env";
+import { getCache, getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 
 const COMPLETED_DAYS_WINDOW = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ANALYTICS_REFRESH_MARKER_PREFIX = "gateway:analytics:rollup-refresh";
+const ANALYTICS_REFRESH_COOLDOWN_SECONDS = 600;
 
 function startOfUtcDay(date: Date): Date {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -167,9 +169,9 @@ function toRoundedUsage(value: number): number {
 }
 
 async function refreshAnalyticsRollup(args: {
-    teamId: string;
-    startIso: string;
-    endIso: string;
+	teamId: string;
+	startIso: string;
+	endIso: string;
 }): Promise<void> {
     const supabase = getSupabaseAdmin();
     const { error } = await supabase.rpc("refresh_gateway_activity_rollup_daily", {
@@ -179,7 +181,37 @@ async function refreshAnalyticsRollup(args: {
     });
     if (error) {
         throw new Error(error.message || "Failed to refresh analytics rollup");
-    }
+	}
+}
+
+function buildRefreshMarkerKey(args: {
+	teamId: string;
+	startIso: string;
+	endIso: string;
+}): string {
+	const startDay = args.startIso.slice(0, 10);
+	const endDay = args.endIso.slice(0, 10);
+	return `${ANALYTICS_REFRESH_MARKER_PREFIX}:${args.teamId}:${startDay}:${endDay}`;
+}
+
+async function shouldRefreshAnalyticsRollup(args: {
+	teamId: string;
+	startIso: string;
+	endIso: string;
+}): Promise<boolean> {
+	try {
+		const cache = getCache();
+		const markerKey = buildRefreshMarkerKey(args);
+		const marker = await cache.get(markerKey, "text");
+		if (marker) return false;
+		await cache.put(markerKey, "1", {
+			expirationTtl: ANALYTICS_REFRESH_COOLDOWN_SECONDS,
+		});
+		return true;
+	} catch {
+		// Fail open if cache is unavailable so analytics data still updates.
+		return true;
+	}
 }
 
 async function loadAnalyticsRollupRows(args: {
@@ -207,10 +239,10 @@ async function loadAnalyticsRollupRows(args: {
 }
 
 async function handleAnalytics(req: Request) {
-    const auth = await guardAuth(req, { useKvCache: false });
-    if (!auth.ok) {
-        return (auth as GuardErr).response;
-    }
+	const auth = await guardAuth(req);
+	if (!auth.ok) {
+		return (auth as GuardErr).response;
+	}
     const authValue = auth.value;
     const url = new URL(req.url);
     const teamScope = resolveScopedTeamId({
@@ -224,17 +256,25 @@ async function handleAnalytics(req: Request) {
     const range = parseDateParam(url.searchParams.get("date"), todayStart);
     if (range.ok === false) return range.response;
     const startIso = range.start.toISOString();
-    const endIso = range.end.toISOString();
+	const endIso = range.end.toISOString();
 
-    try {
-        await refreshAnalyticsRollup({
-            teamId,
-            startIso,
-            endIso,
-        });
-        const rows = await loadAnalyticsRollupRows({
-            teamId,
-            startIso,
+	try {
+		if (
+			await shouldRefreshAnalyticsRollup({
+				teamId,
+				startIso,
+				endIso,
+			})
+		) {
+			await refreshAnalyticsRollup({
+				teamId,
+				startIso,
+				endIso,
+			});
+		}
+		const rows = await loadAnalyticsRollupRows({
+			teamId,
+			startIso,
             endIso,
         });
 

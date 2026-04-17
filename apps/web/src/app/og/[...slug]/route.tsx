@@ -1,11 +1,11 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { cacheLife, cacheTag } from "next/cache";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { formatCountryName } from "@/lib/fetchers/countries/utils";
 import { resolveLogo } from "@/lib/logos";
-import { applyHiddenFilter, resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type OgEntity =
 	| "organisations"
@@ -38,10 +38,8 @@ const ASSET_BASE_URL =
 	process.env.WEBSITE_URL ??
 	"http://localhost:3000";
 
-async function loadOrganisation(
-	supabase: SupabaseClient,
-	slug: string
-): Promise<OgPayload | null> {
+async function loadOrganisation(slug: string): Promise<OgPayload | null> {
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_organisations")
 		.select("organisation_id, name")
@@ -57,17 +55,14 @@ async function loadOrganisation(
 	};
 }
 
-async function loadModel(
-	supabase: SupabaseClient,
-	modelId: string
-): Promise<OgPayload | null> {
-	const includeHidden = await resolveIncludeHidden();
+async function loadModel(modelId: string): Promise<OgPayload | null> {
+	const supabase = createAdminClient();
 	const { data, error } = await applyHiddenFilter(
 		supabase
 			.from("data_models")
 			.select("model_id, name, organisation_id, status, hidden")
 			.eq("model_id", modelId),
-		includeHidden
+		false
 	).single();
 
 	if (error || !data) return null;
@@ -80,10 +75,8 @@ async function loadModel(
 	};
 }
 
-async function loadBenchmark(
-	supabase: SupabaseClient,
-	slug: string
-): Promise<OgPayload | null> {
+async function loadBenchmark(slug: string): Promise<OgPayload | null> {
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_benchmarks")
 		.select("id, name")
@@ -98,10 +91,8 @@ async function loadBenchmark(
 	};
 }
 
-async function loadApiProvider(
-	supabase: SupabaseClient,
-	slug: string
-): Promise<OgPayload | null> {
+async function loadApiProvider(slug: string): Promise<OgPayload | null> {
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_api_providers")
 		.select("api_provider_id, api_provider_name")
@@ -117,10 +108,8 @@ async function loadApiProvider(
 	};
 }
 
-async function loadSubscriptionPlan(
-	supabase: SupabaseClient,
-	slug: string
-): Promise<OgPayload | null> {
+async function loadSubscriptionPlan(slug: string): Promise<OgPayload | null> {
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_subscription_plans")
 		.select("plan_id, name, organisation_id")
@@ -148,6 +137,60 @@ async function loadCountry(slug: string): Promise<OgPayload | null> {
 		name,
 		flagEmoji,
 	};
+}
+
+async function loadOgPayloadCached(
+	kind: OgEntity,
+	segments: string[],
+): Promise<OgPayload | null> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("og:payload");
+
+	switch (kind) {
+		case "organisations": {
+			const [slug] = segments;
+			if (!slug) return null;
+			cacheTag("data:organisations");
+			cacheTag(`data:organisations:${slug}`);
+			return loadOrganisation(slug);
+		}
+		case "models": {
+			const modelId = segments.join("/");
+			if (!modelId) return null;
+			cacheTag("data:models");
+			cacheTag(`data:models:${modelId}`);
+			return loadModel(modelId);
+		}
+		case "benchmarks": {
+			const [slug] = segments;
+			if (!slug) return null;
+			cacheTag("data:benchmarks");
+			cacheTag(`data:benchmarks:${slug}`);
+			return loadBenchmark(slug);
+		}
+		case "api-providers": {
+			const [slug] = segments;
+			if (!slug) return null;
+			cacheTag("data:api_providers");
+			cacheTag(`data:api_providers:${slug}`);
+			return loadApiProvider(slug);
+		}
+		case "countries": {
+			const [slug] = segments;
+			return slug ? loadCountry(slug) : null;
+		}
+		case "subscription-plans": {
+			const [slug] = segments;
+			if (!slug) return null;
+			cacheTag("data:subscription_plans");
+			cacheTag(`data:subscription_plans:${slug}`);
+			return loadSubscriptionPlan(slug);
+		}
+		default:
+			return null;
+	}
 }
 
 function isoToFlagEmoji(iso2: string): string {
@@ -199,41 +242,6 @@ function getLogoUrl(logoId: string | undefined): string | undefined {
 	return absoluteAsset(src);
 }
 
-async function buildPayload(
-	kind: OgEntity,
-	segments: string[],
-	supabase: SupabaseClient
-): Promise<OgPayload | null> {
-	switch (kind) {
-		case "organisations": {
-			const [slug] = segments;
-			return slug ? loadOrganisation(supabase, slug) : null;
-		}
-		case "models": {
-			const modelId = segments.join("/");
-			return modelId ? loadModel(supabase, modelId) : null;
-		}
-		case "benchmarks": {
-			const [slug] = segments;
-			return slug ? loadBenchmark(supabase, slug) : null;
-		}
-		case "api-providers": {
-			const [slug] = segments;
-			return slug ? loadApiProvider(supabase, slug) : null;
-		}
-		case "countries": {
-			const [slug] = segments;
-			return slug ? loadCountry(slug) : null;
-		}
-		case "subscription-plans": {
-			const [slug] = segments;
-			return slug ? loadSubscriptionPlan(supabase, slug) : null;
-		}
-		default:
-			return null;
-	}
-}
-
 function normaliseSegments(
 	request: NextRequest,
 	slugParam?: string | string[]
@@ -258,19 +266,6 @@ function getTitleFontSize(name: string): number {
 	return 72;
 }
 
-function createOgSupabaseClient() {
-	return createSupabaseClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL!,
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-		{
-			auth: {
-				persistSession: false,
-				autoRefreshToken: false,
-			},
-		}
-	);
-}
-
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ slug: string[] }> }
@@ -292,8 +287,7 @@ export async function GET(
 	const kind = kindRaw as OgEntity;
 	const isCountry = kind === "countries";
 
-	const supabase = createOgSupabaseClient();
-	const payload = await buildPayload(kind, segments, supabase);
+	const payload = await loadOgPayloadCached(kind, segments);
 
 	if (!payload) {
 		return new Response("Not found", {
