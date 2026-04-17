@@ -9,7 +9,7 @@ import { Building2, KeyRound } from "lucide-react";
 const OAUTH = ["google", "github", "gitlab"] as const;
 type OAuthProvider = (typeof OAUTH)[number];
 type Provider = OAuthProvider | "email";
-type SignupNotice = "exists" | "check-email" | null;
+type SignupNotice = "check-email" | null;
 
 export async function Login({
 	signupNotice = null,
@@ -36,11 +36,9 @@ export async function Login({
 		: null;
 
 	const signupNoticeText =
-		signupNotice === "exists"
-			? "That email is already registered. Sign in below or reset your password."
-			: signupNotice === "check-email"
-				? "Account created. Check your email to verify, then sign in."
-				: null;
+		signupNotice === "check-email"
+			? "If an account exists for that email, check your inbox for next steps."
+			: null;
 	const authErrorText = authError === "auth-failed" ? "Invalid email or password. Please try again." : null;
 
 	return (
