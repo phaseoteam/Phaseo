@@ -161,6 +161,13 @@ function toShareMap(rows: unknown): Map<string, number> {
 
 export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     const supabase = createAdminClient();
+    const nowIso = new Date().toISOString();
+    const activeWindowClause = [
+        "and(effective_from.is.null,effective_to.is.null)",
+        `and(effective_from.is.null,effective_to.gt.${nowIso})`,
+        `and(effective_from.lte.${nowIso},effective_to.is.null)`,
+        `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
+    ].join(",");
 
     const [providersRes, providerModelsRes, pricingRulesRes, dailyUsageRes, monthlyUsageRes] = await Promise.all([
         supabase
@@ -174,7 +181,9 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             ),
         supabase
             .from("data_api_pricing_rules")
-            .select("model_key, pricing_plan, price_per_unit, effective_from, effective_to"),
+            .select("model_key, effective_from, effective_to")
+            .ilike("model_key", "%:free:%")
+            .or(activeWindowClause),
         supabase.rpc("get_public_market_share", {
             p_dimension: "provider",
             p_time_range: "today",

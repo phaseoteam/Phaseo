@@ -7,6 +7,10 @@ import {
 	requireTeamMembership,
 } from "@/utils/serverActionAuth";
 
+// Raw fallback can pull large request windows; keep it opt-in to protect DB egress.
+const ENABLE_GATEWAY_USAGE_RAW_FALLBACK =
+	process.env.ENABLE_GATEWAY_USAGE_RAW_FALLBACK === "1";
+
 async function requireAuthedTeamContext(
 	supabase: Awaited<ReturnType<typeof createClient>>
 ) {
@@ -1239,7 +1243,7 @@ export async function fetchChartData(
 		toIso: string,
 	): Promise<any[]> => {
 		const pageSize = 1000;
-		const maxPages = 200;
+		const maxPages = 20;
 		const merged = new Map<
 			string,
 			{
@@ -1259,6 +1263,7 @@ export async function fetchChartData(
 				.from("gateway_requests")
 				.select("created_at, provider, model_id, usage, cost_nanos")
 				.eq("team_id", teamId)
+				.eq("success", true)
 				.gte("created_at", fromIso)
 				.lte("created_at", toIso)
 				.order("created_at", { ascending: true })
@@ -1354,14 +1359,14 @@ export async function fetchChartData(
 		console.error("Error fetching usage rollup (prev):", prevError);
 	}
 	let currentRows = (rows ?? []) as any[];
-	if (currentRows.length === 0) {
+	if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && currentRows.length === 0) {
 		currentRows = await fetchGatewayRequestFallbackRows(
 			params.timeRange.from,
 			params.timeRange.to,
 		);
 	}
 	let previousRows = (prevRows ?? []) as any[];
-	if (previousRows.length === 0) {
+	if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && previousRows.length === 0) {
 		previousRows = await fetchGatewayRequestFallbackRows(prevFrom, prevTo);
 	}
 

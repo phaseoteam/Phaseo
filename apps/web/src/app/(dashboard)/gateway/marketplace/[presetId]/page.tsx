@@ -13,6 +13,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getPublicMarketplacePresetDetailCached } from "@/lib/fetchers/gateway/marketplace";
 import { buildMetadata } from "@/lib/seo";
 import { createClient } from "@/utils/supabase/server";
 import CopyPresetButton from "@/components/(gateway)/marketplace/CopyPresetButton";
@@ -36,20 +37,10 @@ export async function generateMetadata({
 export default async function PresetMarketplaceDetailPage({
 	params,
 }: PresetDetailPageProps) {
-	const supabase = await createClient();
 	const { presetId } = await params;
+	const detail = await getPublicMarketplacePresetDetailCached(presetId);
 
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	const { data: preset } = await supabase
-		.from("presets")
-		.select("id, name, description, config, visibility, created_at, source_preset_id")
-		.eq("id", presetId)
-		.maybeSingle();
-
-	if (!preset || preset.visibility !== "public") {
+	if (!detail) {
 		return (
 			<div className="space-y-4">
 				<Link
@@ -71,13 +62,11 @@ export default async function PresetMarketplaceDetailPage({
 		);
 	}
 
-	const sourcePreset = preset.source_preset_id
-		? await supabase
-				.from("presets")
-				.select("id, name")
-				.eq("id", preset.source_preset_id)
-				.maybeSingle()
-		: null;
+	const supabase = await createClient();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+	const { preset, sourcePreset } = detail;
 
 	return (
 		<div className="space-y-6">
@@ -98,14 +87,14 @@ export default async function PresetMarketplaceDetailPage({
 					<p className="text-sm text-muted-foreground">
 						{preset.description ?? "No description yet."}
 					</p>
-					{sourcePreset?.data && (
+					{sourcePreset && (
 						<div className="text-xs text-muted-foreground">
 							Forked from{" "}
 							<Link
-								href={`/gateway/marketplace/${sourcePreset.data.id}`}
+								href={`/gateway/marketplace/${sourcePreset.id}`}
 								className="underline"
 							>
-								{sourcePreset.data.name}
+								{sourcePreset.name}
 							</Link>
 						</div>
 					)}

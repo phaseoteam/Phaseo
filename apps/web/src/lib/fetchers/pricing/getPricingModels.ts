@@ -37,6 +37,8 @@ interface PricingRuleRow {
     match: any[] | null;
 }
 
+const MODEL_KEY_BATCH_SIZE = 250;
+
 function getNormalizedMeterPrice(meter: Pick<PricingMeter, "price_per_unit" | "unit_size">) {
     const rawPrice = Number(meter.price_per_unit ?? 0);
     const unitSize = Number(meter.unit_size ?? 1) || 1;
@@ -102,19 +104,6 @@ export default async function getPricingModels(
             return [];
         }
 
-        const { data: pricingRules, error: prError } = await supabase
-            .from("data_api_pricing_rules")
-            .select(
-                "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
-            )
-            .or(activeWindowClause)
-            .order("priority", { ascending: false });
-
-        if (prError) {
-            console.error("[pricing-models] failed to load pricing rules", prError);
-            return [];
-        }
-
         const modelNameMap = new Map<string, string>();
         const visibleModelIds = new Set<string>();
         const modelIds = Array.from(
@@ -159,7 +148,32 @@ export default async function getPricingModels(
             });
         }
 
-        for (const rule of (pricingRules ?? []) as PricingRuleRow[]) {
+        const comboKeys = Array.from(comboMap.keys()).filter(Boolean);
+        if (comboKeys.length === 0) {
+            return [];
+        }
+
+        const pricingRules: PricingRuleRow[] = [];
+        for (let i = 0; i < comboKeys.length; i += MODEL_KEY_BATCH_SIZE) {
+            const batch = comboKeys.slice(i, i + MODEL_KEY_BATCH_SIZE);
+            const { data: batchRows, error: prError } = await supabase
+                .from("data_api_pricing_rules")
+                .select(
+                    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
+                )
+                .in("model_key", batch)
+                .or(activeWindowClause)
+                .order("priority", { ascending: false });
+
+            if (prError) {
+                console.error("[pricing-models] failed to load pricing rules", prError);
+                return [];
+            }
+
+            pricingRules.push(...((batchRows ?? []) as PricingRuleRow[]));
+        }
+
+        for (const rule of pricingRules) {
             const parsed = parseModelKey(rule.model_key);
             if (!parsed) continue;
             const comboKey = `${parsed.provider_id}:${parsed.api_model_id}:${rule.capability_id}`;

@@ -7,8 +7,8 @@ import type {
 
 const STATIC_TTL_MIN = 300; // 5 minutes
 const STATIC_TTL_MAX = 900; // 15 minutes
-const DYNAMIC_TTL_MIN = 60; // 1 minute (KV minimum)
-const DYNAMIC_TTL_MAX = 300; // 5 minutes
+const DYNAMIC_TTL_MIN = 120; // 2 minutes
+const DYNAMIC_TTL_MAX = 600; // 10 minutes
 const BALANCE_TTL_CAP_USD = 250;
 const MIN_TTL_SECONDS = 60; // Cloudflare KV minimum
 const MAX_TTL_SECONDS = 900; // 15 minutes
@@ -76,8 +76,8 @@ function resolveBalanceUsd(context: GatewayContextData): number | null {
 
 /**
  * Map wallet balance to TTL with a fast drop-off near low balances.
- * - 0 USD => 60s
- * - 250+ USD => 300s
+ * - 0 USD => 120s
+ * - 250+ USD => 600s
  * - Uses logarithmic normalization + power curve for steeper lower-tier decay.
  */
 export function computeBalanceAwareTtlSeconds(balanceUsd: number): number {
@@ -98,7 +98,7 @@ export function computeAdaptiveTtlForDynamic(context: GatewayContextData): numbe
 
 	// If key, limits, or credit are not OK, revalidate aggressively.
 	if (!context.key.ok || !context.keyLimit.ok || !context.credit.ok) {
-		return DYNAMIC_TTL_MIN;
+		return clampTtl(60);
 	}
 
 	// Credit balance curve: high balances can tolerate longer cache windows,

@@ -8,9 +8,11 @@ import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const RANKINGS_CACHE = {
-    stale: 60 * 5,
-    revalidate: 60 * 15,
-    expire: 60 * 60 * 2,
+    // Keep public rankings aggressively cached and rely on tag invalidation
+    // for intentional refreshes to avoid repeated high-volume Supabase reads.
+    stale: 60 * 60,
+    revalidate: 60 * 60 * 6,
+    expire: 60 * 60 * 24 * 7,
 };
 
 // Type definitions for API responses
@@ -156,6 +158,15 @@ export type DailyAppRollup = {
     unique_models: number;
     success_rate: number | null;
 };
+
+function getDefaultWeeklySinceIso(): string {
+    const now = new Date();
+    const since = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    since.setUTCDate(since.getUTCDate() - 7);
+    return since.toISOString();
+}
 
 function hasValidAppId(appId: unknown): appId is string {
     const normalizedId = String(appId ?? "").trim();
@@ -786,17 +797,18 @@ export async function getTrendingApps(
     };
 }
 
-export async function getWeeklyModelProviderTokens(
-    sinceIso?: string,
-): Promise<{ data: WeeklyModelProviderTokens[] }> {
+export async function getWeeklyModelProviderTokens(): Promise<{
+    data: WeeklyModelProviderTokens[];
+}> {
     cacheLife(RANKINGS_CACHE);
     cacheTag("public-rankings");
 
     const supabase = createAdminClient();
+    const sinceIso = getDefaultWeeklySinceIso();
     const { data, error } = await supabase.rpc(
         "get_usage_tokens_weekly_model_provider",
         {
-            p_since: sinceIso ?? null,
+            p_since: sinceIso,
         },
     );
 

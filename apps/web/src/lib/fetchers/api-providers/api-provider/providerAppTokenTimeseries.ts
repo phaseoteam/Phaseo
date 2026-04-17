@@ -196,15 +196,33 @@ export async function getProviderAppTokenTimeseries(
 		topApps?: number;
 	},
 ): Promise<ProviderAppTokenTimeseries> {
-	cacheLife("minutes");
+	const requestedDays = options?.days;
+	const days =
+		typeof requestedDays === "number" &&
+		Number.isFinite(requestedDays) &&
+		requestedDays > 0
+			? Math.max(1, Math.round(requestedDays))
+			: DEFAULT_DAYS;
+	if (days >= 30) {
+		cacheLife("days");
+	} else if (days >= 7) {
+		cacheLife("hours");
+	} else {
+		cacheLife("minutes");
+	}
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
 	cacheTag(`data:api_providers:${apiProviderId}`);
 
 	if (!apiProviderId) return { apps: [], points: [] };
 
-	const days = Math.max(1, options?.days ?? DEFAULT_DAYS);
-	const topAppsLimit = Math.max(1, options?.topApps ?? DEFAULT_TOP_APPS);
+	const requestedTopApps = options?.topApps;
+	const topAppsLimit =
+		typeof requestedTopApps === "number" &&
+		Number.isFinite(requestedTopApps) &&
+		requestedTopApps > 0
+			? Math.max(1, Math.round(requestedTopApps))
+			: DEFAULT_TOP_APPS;
 
 	const now = new Date();
 	const since = new Date(now);

@@ -58,10 +58,9 @@ export default async function ModelsTablePage() {
 	// Ensure request-scoped rendering before time-dependent calculations.
 	await headers();
 	const includeHidden = await resolveIncludeHidden();
-	const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 	const [monitorResult, weeklyUsageResult] = await Promise.all([
 		getMonitorModels({}, includeHidden),
-		getWeeklyModelProviderTokens(sinceIso),
+		getWeeklyModelProviderTokens(),
 	]);
 	const {
 		models: modelData,

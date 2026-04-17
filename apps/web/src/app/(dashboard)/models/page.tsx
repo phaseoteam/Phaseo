@@ -877,12 +877,11 @@ async function ModelsPageContent() {
 	cacheTag("page:models");
 
 	const includeHidden = false;
-	const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 	const [monitorResult, rankingsResult, weeklyUsageResult, allModels] =
 		await Promise.all([
 			getMonitorModels({}, includeHidden),
 			getModelRankingsRows("week", "tokens", 3000),
-			getWeeklyModelProviderTokens(sinceIso),
+			getWeeklyModelProviderTokens(),
 			getAllModelsCached(includeHidden),
 		]);
 	const models = withGatewayMetadata(

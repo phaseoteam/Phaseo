@@ -291,7 +291,7 @@ async function handleModels(req: Request, scope: ModelVisibilityScope) {
         );
     }
 
-    const auth = await guardAuth(req, { useKvCache: false });
+    const auth = await guardAuth(req);
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
