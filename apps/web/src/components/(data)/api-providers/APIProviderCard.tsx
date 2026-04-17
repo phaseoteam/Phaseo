@@ -9,9 +9,11 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
@@ -68,13 +70,19 @@ export default function APIProviderCard({ api_provider }: Props) {
 	const dailyTokens = Number(api_provider.total_daily_tokens ?? 0);
 	const monthlyTokens = Number(api_provider.total_monthly_tokens ?? 0);
 	const modalitySupport = api_provider.modality_support;
+	const rowStyle: CSSProperties & Record<string, string | undefined> = {
+		"--provider-accent": api_provider.colour ?? undefined,
+	};
 	const supportedModalities = MODALITIES.filter(({ key }) => {
 		const counts = modalitySupport[key];
 		return (counts?.input ?? 0) + (counts?.output ?? 0) > 0;
 	});
 
 	return (
-		<div className="group px-3 py-3 transition-colors hover:bg-muted/20 md:px-4 md:py-4">
+		<div
+			className="group px-3 py-3 transition-colors hover:bg-muted/20 md:px-4 md:py-4"
+			style={rowStyle}
+		>
 			<div className="space-y-3">
 				<div className="flex items-start justify-between gap-3">
 					<div className="min-w-0">
@@ -169,14 +177,28 @@ export default function APIProviderCard({ api_provider }: Props) {
 							</div>
 						</div>
 					</div>
-					<Link
-						href={`/api-providers/${id}`}
-						prefetch={false}
-						className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-background hover:text-foreground"
-						aria-label={`Open ${name} provider page`}
+					<Button
+						asChild
+						size="icon"
+						variant="ghost"
+						className="h-8 w-8 shrink-0 focus-visible:ring-0 focus-visible:border-transparent"
 					>
-						<ArrowUpRight className="h-4 w-4" />
-					</Link>
+						<Link
+							href={`/api-providers/${id}`}
+							prefetch={false}
+							aria-label={`Open ${name} provider page`}
+							className="group/open"
+						>
+							<ArrowUpRight
+								className={cn(
+									"h-4 w-4 text-muted-foreground transition-colors",
+									api_provider.colour
+										? "group-hover:text-[var(--provider-accent)]"
+										: "group-hover:text-primary",
+								)}
+							/>
+						</Link>
+					</Button>
 				</div>
 			</div>
 		</div>
