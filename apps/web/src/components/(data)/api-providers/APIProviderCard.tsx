@@ -181,7 +181,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 						asChild
 						size="icon"
 						variant="ghost"
-						className="h-8 w-8 shrink-0 focus-visible:ring-0 focus-visible:border-transparent"
+						className="h-8 w-8 shrink-0 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary"
 					>
 						<Link
 							href={`/api-providers/${id}`}

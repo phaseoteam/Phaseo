@@ -333,7 +333,10 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             .map((r: any) => ({
                 api_provider_id: r.api_provider_id,
                 api_provider_name: r.api_provider_name ?? r.name ?? "",
-                colour: r.colour ?? null,
+                colour:
+                    typeof r.colour === "string" && r.colour.trim().length > 0
+                        ? r.colour.trim()
+                        : null,
                 country_code: r.country_code ?? "",
                 total_models:
                     totalModelsByProvider.get(r.api_provider_id)?.size ?? 0,
