@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export default async function Page({ searchParams }: SignInPageProps) {
 	const params = (await searchParams) ?? {};
 	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
-	const signupNotice = signup === "exists" || signup === "check-email" ? signup : null;
+	const signupNotice = signup === "exists" || signup === "check-email" ? "check-email" : null;
 	const authErrorParam = Array.isArray(params.error) ? params.error[0] : params.error;
 	const authError = authErrorParam === "auth-failed" ? "auth-failed" : null;
 	const returnUrlParam = Array.isArray(params.returnUrl)

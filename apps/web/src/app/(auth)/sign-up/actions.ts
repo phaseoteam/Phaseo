@@ -62,7 +62,8 @@ export async function handleEmailSignup(formData: FormData) {
 		})
 		const message = (error.message ?? '').toLowerCase()
 		if (message.includes('already registered') || message.includes('already exists')) {
-			redirect('/sign-in?signup=exists')
+			// Keep outward response identical to avoid account enumeration.
+			redirect('/sign-in?signup=check-email')
 		}
 		redirect(`/error?message=${encodeURIComponent(error.message || 'Authentication failed')}`)
 	}
