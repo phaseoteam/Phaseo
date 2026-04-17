@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import {
     DEFAULT_AUTH_ERROR_MESSAGE,
     buildAuthErrorRedirectUrl,
@@ -485,7 +485,9 @@ export async function GET(request: Request) {
         )
 
         // Best-effort side effects; don't block auth callback redirect on external providers.
-        void Promise.allSettled(notificationTasks)
+        after(async () => {
+            await Promise.allSettled(notificationTasks)
+        })
     }
 
     // 4) If this team is enterprise + invoice mode but the invoice profile is not
