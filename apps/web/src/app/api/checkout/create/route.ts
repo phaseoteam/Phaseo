@@ -21,14 +21,17 @@ export async function POST(req: NextRequest) {
         const requestOrigin = req.headers.get("origin") || req.headers.get("referer") || "http://localhost:3000";
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || requestOrigin.replace(/\/$/, "");
 
-        const successUrl = `${baseUrl}/settings/credits?checkout=success&kind=${kind}`;
+        const settingsCreditsUrl = `${baseUrl}/settings/credits`;
+        const successUrl = `${settingsCreditsUrl}?checkout=success&kind=${kind}`;
         const cancelUrl = `${baseUrl}/settings/credits/?checkout=cancelled`;
 
         const stripe = getStripe();
 
         // 1) One-off payment (do NOT save card)
         if (kind === "oneoff") {
-            if (!amount_pence || amount_pence < 1000) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+            if (!amount_pence || amount_pence < 500) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+            const paymentAttempt = Date.now();
+            const paymentSuccessUrl = `${settingsCreditsUrl}?checkout=success&kind=${kind}&payment_attempt=${paymentAttempt}`;
 
             const session = await stripe.checkout.sessions.create({
                 mode: "payment",
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
                     },
                 },
                 // Do NOT set setup_future_usage here (keeps it strictly one-off)
-                success_url: successUrl,
+                success_url: paymentSuccessUrl,
                 cancel_url: cancelUrl,
                 // optional niceties:
                 allow_promotion_codes: false,
@@ -74,7 +77,9 @@ export async function POST(req: NextRequest) {
 
         // 2) One-off but ALSO save for future (charge now + store card)
         if (kind === "pay_and_save") {
-            if (!amount_pence || amount_pence < 1000) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+            if (!amount_pence || amount_pence < 500) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+            const paymentAttempt = Date.now();
+            const paymentSuccessUrl = `${settingsCreditsUrl}?checkout=success&kind=${kind}&payment_attempt=${paymentAttempt}`;
 
             const session = await stripe.checkout.sessions.create({
                 mode: "payment",
@@ -98,7 +103,7 @@ export async function POST(req: NextRequest) {
                         ...(teamId ? { team_id: teamId } : {}),
                     },
                 },
-                success_url: successUrl,
+                success_url: paymentSuccessUrl,
                 cancel_url: cancelUrl,
             });
 
