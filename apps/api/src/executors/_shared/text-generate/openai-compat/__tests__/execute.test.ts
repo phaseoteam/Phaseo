@@ -45,6 +45,8 @@ function buildArgs(): ExecutorExecuteArgs {
 }
 
 describe("executeOpenAICompat", () => {
+	const ALIBABA_CHAT_URL = "https://api.alibaba.example/compatible-mode/v1/chat/completions";
+
 	it("keeps upstream stream=true when tools are present", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([{
@@ -75,8 +77,8 @@ describe("executeOpenAICompat", () => {
 	it("routes alibaba-cloud to chat completions for text models", async () => {
 		const args = buildArgs();
 		args.providerId = "alibaba-cloud";
-		args.endpoint = "chat.completions";
-		args.protocol = "openai.chat.completions";
+		args.endpoint = "responses";
+		args.protocol = "openai.responses";
 		args.ir = {
 			...args.ir,
 			model: "qwen2.5-72b-instruct",
@@ -85,7 +87,7 @@ describe("executeOpenAICompat", () => {
 
 		let capturedBody: any = null;
 		const mock = installFetchMock([{
-			match: (url) => url === "https://api.alibaba.example/compatible-mode/v1/chat/completions",
+			match: (url) => url === ALIBABA_CHAT_URL,
 			response: jsonResponse({
 				id: "chatcmpl_1",
 				object: "chat.completion",
@@ -109,9 +111,7 @@ describe("executeOpenAICompat", () => {
 		expect(result.kind).toBe("completed");
 		expect(result.upstream.status).toBe(200);
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.url).toBe(
-			"https://api.alibaba.example/compatible-mode/v1/chat/completions",
-		);
+		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
 		expect(capturedBody?.stream).toBe(true);
 	});
 
@@ -127,7 +127,7 @@ describe("executeOpenAICompat", () => {
 		};
 
 		const mock = installFetchMock([{
-			match: (url) => url === "https://api.alibaba.example/compatible-mode/v1/chat/completions",
+			match: (url) => url === ALIBABA_CHAT_URL,
 			response: jsonResponse({
 				id: "chatcmpl_omni_1",
 				object: "chat.completion",
@@ -148,9 +148,7 @@ describe("executeOpenAICompat", () => {
 		expect(result.kind).toBe("completed");
 		expect(result.upstream.status).toBe(200);
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.url).toBe(
-			"https://api.alibaba.example/compatible-mode/v1/chat/completions",
-		);
+		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
 	});
 
 	it("routes alibaba-cloud video input requests to chat completions", async () => {
@@ -172,7 +170,7 @@ describe("executeOpenAICompat", () => {
 		};
 
 		const mock = installFetchMock([{
-			match: (url) => url === "https://api.alibaba.example/compatible-mode/v1/chat/completions",
+			match: (url) => url === ALIBABA_CHAT_URL,
 			response: jsonResponse({
 				id: "chatcmpl_video_1",
 				object: "chat.completion",
@@ -193,9 +191,7 @@ describe("executeOpenAICompat", () => {
 		expect(result.kind).toBe("completed");
 		expect(result.upstream.status).toBe(200);
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.url).toBe(
-			"https://api.alibaba.example/compatible-mode/v1/chat/completions",
-		);
+		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
 	});
 
 	it("retries transient baseten 429 responses once before failing over", async () => {

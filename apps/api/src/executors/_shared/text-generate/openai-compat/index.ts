@@ -30,6 +30,7 @@ import {
 } from "./retry-policy";
 
 const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
+const ALIBABA_COMPAT_PROVIDER_IDS = new Set<string>(["alibaba-cloud", "alibaba", "qwen"]);
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 const OPENAI_COMPAT_TRANSIENT_RETRY_PROVIDERS = new Set<string>([
 	"baseten",
@@ -415,7 +416,7 @@ function resolvePreferredRoute(
 }
 
 function isAlibabaCompatProvider(providerId: string): boolean {
-	return providerId === "alibaba-cloud" || providerId === "alibaba" || providerId === "qwen";
+	return ALIBABA_COMPAT_PROVIDER_IDS.has(providerId);
 }
 
 function transformResponsesStreamToAnthropic(
