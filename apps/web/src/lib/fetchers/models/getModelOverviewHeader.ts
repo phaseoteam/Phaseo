@@ -116,9 +116,9 @@ export async function fetchModelOverviewHeader(
 			normalizeId(providerByModelRes.data?.[0]?.api_model_id) ??
 			modelId;
 		const fallbackOrganisationId =
-			organisationFromModelId(providerByApiRes.data?.[0]?.model_id) ??
 			organisationFromModelId(modelId) ??
-			organisationFromModelId(resolvedApiModelId);
+			organisationFromModelId(resolvedApiModelId) ??
+			organisationFromModelId(providerByApiRes.data?.[0]?.model_id);
 		const resolvedOrganisationId =
 			normalizeId(apiModelRes.data?.organisation_id) ?? fallbackOrganisationId;
 		if (!resolvedApiModelId || !resolvedOrganisationId) {
