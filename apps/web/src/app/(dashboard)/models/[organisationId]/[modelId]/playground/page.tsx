@@ -3,6 +3,7 @@ import { permanentRedirect } from "next/navigation";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPlayground from "@/components/(data)/model/playground/ModelPlayground";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { buildMetadata } from "@/lib/seo";
@@ -56,6 +57,12 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "playground"));
 	}
 	const modelId = canonicalModelId;
+	const modelDisplayName = await getModelOverviewHeader(
+		modelId,
+		includeHidden,
+	)
+		.then((header) => header.name?.trim() || modelId)
+		.catch(() => modelId);
 	let requestModelId = modelId;
 	const scopedModelIdentifiers = new Set<string>([modelId]);
 	try {
@@ -106,7 +113,7 @@ export default async function Page({
 			<ModelPlayground
 				modelId={modelId}
 				requestModelId={requestModelId}
-				modelName={modelId}
+				modelName={modelDisplayName}
 				gatewayModels={playgroundModels}
 			/>
 		</ModelDetailShell>

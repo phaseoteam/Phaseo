@@ -30,7 +30,7 @@ const tabs: ModelTab[] = [
 	{ label: "Activity", key: "activity" },
 	{ label: "Quickstart", key: "quickstart" },
 	{ label: "Benchmarks", key: "benchmarks" },
-	{ label: "Family", key: "family", hidden: true },
+	{ label: "Family", key: "family" },
 	{ label: "Timeline", key: "timeline" },
 ];
 

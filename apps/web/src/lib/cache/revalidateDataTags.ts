@@ -139,9 +139,14 @@ export function revalidateModelApiInfoTags(
 		revalidateTag(`model:canonical:${options.modelId}`, EXPIRE_IMMEDIATELY);
 		revalidateTag(`model:api:${options.modelId}`, STALE_WHILE_REVALIDATE);
 		revalidateTag(
+			`model:pricing-history:${options.modelId}`,
+			STALE_WHILE_REVALIDATE
+		);
+		revalidateTag(
 			`model:performance:${options.modelId}`,
 			STALE_WHILE_REVALIDATE
 		);
+		revalidateTag(`data:model_apps:${options.modelId}`, STALE_WHILE_REVALIDATE);
 		revalidateTag(
 			`data:gateway_requests:model:${options.modelId}`,
 			STALE_WHILE_REVALIDATE

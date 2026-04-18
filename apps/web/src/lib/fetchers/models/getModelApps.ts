@@ -348,6 +348,7 @@ export async function getModelAppsCached(
 	cacheTag("data:apps");
 	cacheTag("data:public_apps");
 	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`model:api:${modelId}`);
 	cacheTag(`data:model_apps:${modelId}`);
 	return getModelApps(modelId, includeHidden, limit);
 }

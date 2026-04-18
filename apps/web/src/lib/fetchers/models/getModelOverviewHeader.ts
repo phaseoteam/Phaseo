@@ -9,6 +9,7 @@ export interface ModelOverviewHeader {
 	organisation_id: string;
 	organisation: { name: string; country_code: string };
 	family_id?: string;
+	status?: string | null;
 	hidden?: boolean;
 }
 
@@ -45,6 +46,7 @@ export async function fetchModelOverviewHeader(
 			`
             model_id,
             name,
+            status,
             organisation_id,
             hidden,
             organisation:data_organisations!data_models_organisation_id_fkey ( name, country_code ),
@@ -143,6 +145,7 @@ export async function fetchModelOverviewHeader(
 				name: organisationName ?? "Unknown",
 				country_code: organisationCountryCode,
 			},
+			status: null,
 			hidden: false,
 		};
 	}
@@ -161,6 +164,7 @@ export async function fetchModelOverviewHeader(
 		organisation_id: data.organisation_id,
 		organisation: rawOrg as { name: string; country_code: string },
 		family_id: data.family_id || undefined,
+		status: (data as any).status ?? null,
 		hidden: Boolean((data as any).hidden),
 	};
 }

@@ -23,7 +23,13 @@ function isModelNotFoundError(error: unknown): boolean {
 	return false;
 }
 
-function getVisibleTabKeys(): string[] {
+function getVisibleTabKeys(modelStatus?: string | null): string[] {
+	const isLimitedAvailabilityModel =
+		modelStatus === "Announced" || modelStatus === "Withheld";
+	if (isLimitedAvailabilityModel) {
+		return ["overview"];
+	}
+
 	return [
 		"overview",
 		"playground",
@@ -56,7 +62,7 @@ export default async function ModelDetailShell({
 		return <ModelNotFoundState modelId={modelId} />;
 	}
 
-	const visibleTabKeys = getVisibleTabKeys();
+	const visibleTabKeys = getVisibleTabKeys(header.status);
 	if (tab && !visibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
