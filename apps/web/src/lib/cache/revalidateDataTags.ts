@@ -130,9 +130,9 @@ export function revalidateModelApiInfoTags(
 	const hasModelScope = Boolean(options.modelId);
 	if (!hasModelScope) {
 		revalidateTagList(MODEL_API_GLOBAL_TAGS);
-	}
-	for (const tag of MODEL_CANONICAL_RESOLVER_TAGS) {
-		revalidateTag(tag, EXPIRE_IMMEDIATELY);
+		for (const tag of MODEL_CANONICAL_RESOLVER_TAGS) {
+			revalidateTag(tag, EXPIRE_IMMEDIATELY);
+		}
 	}
 
 	if (options.modelId) {
