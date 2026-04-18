@@ -18,6 +18,8 @@ export type ResolveCanonicalModelIdResult = {
 	source: ResolveModelIdSource;
 };
 
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
 function isMissingRelationError(error: unknown): boolean {
 	const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
 	return (
@@ -27,108 +29,126 @@ function isMissingRelationError(error: unknown): boolean {
 	);
 }
 
-async function modelExistsVisible(
-	supabase: Awaited<ReturnType<typeof createClient>>,
-	modelId: string,
-	includeHidden: boolean,
-): Promise<boolean> {
-	if (!modelId) return false;
-	const { data, error } = await applyHiddenFilter(
-		supabase.from("data_models").select("model_id, hidden"),
-		includeHidden,
-	)
-		.eq("model_id", modelId)
-		.maybeSingle();
-
-	if (error) return false;
-	return Boolean(data?.model_id);
+function normalizeId(value: unknown): string | null {
+	const id = String(value ?? "").trim();
+	return id.length > 0 ? id : null;
 }
 
-async function apiModelExists(
-	supabase: Awaited<ReturnType<typeof createClient>>,
-	apiModelId: string,
-): Promise<boolean> {
-	if (!apiModelId) return false;
-	const { data, error } = await supabase
-		.from("data_api_models")
-		.select("api_model_id")
-		.eq("api_model_id", apiModelId)
-		.maybeSingle();
-	if (error) return false;
-	return Boolean(data?.api_model_id);
-}
-
-async function providerMappingExistsForApiModel(
-	supabase: Awaited<ReturnType<typeof createClient>>,
-	apiModelId: string,
-): Promise<boolean> {
-	if (!apiModelId) return false;
-	const { data, error } = await supabase
-		.from("data_api_provider_models")
-		.select("provider_api_model_id")
-		.eq("api_model_id", apiModelId)
-		.limit(1);
-	if (error) return false;
-	return Array.isArray(data) && data.length > 0;
-}
-
-async function resolveApiModelIdFromInternalModelId(
-	supabase: Awaited<ReturnType<typeof createClient>>,
-	internalModelId: string,
-): Promise<string | null> {
-	if (!internalModelId) return null;
-	const { data, error } = await supabase
-		.from("data_api_provider_models")
-		.select("api_model_id")
-		.eq("model_id", internalModelId)
-		.not("api_model_id", "is", null);
-	if (error) return null;
-	return (
-		Array.from(
-			new Set(
-				(data ?? [])
-					.map((row: any) => String(row?.api_model_id ?? "").trim())
-					.filter(Boolean),
-			),
-		)[0] ?? null
+function uniqueIds(ids: Array<string | null | undefined>): string[] {
+	return Array.from(
+		new Set(ids.map((id) => normalizeId(id)).filter((id): id is string => Boolean(id))),
 	);
 }
 
-async function resolveVisibleInternalModelIdForApiModel(
-	supabase: Awaited<ReturnType<typeof createClient>>,
-	apiModelId: string,
-	includeHidden: boolean,
-): Promise<string | null> {
-	if (!apiModelId) return null;
+function warnIfUnexpectedTableError(
+	context: string,
+	modelId: string,
+	error: unknown,
+): void {
+	if (isMissingRelationError(error)) return;
+	console.warn(`[resolveCanonicalModelId] ${context} failed`, { modelId, error });
+}
 
-	if (await modelExistsVisible(supabase, apiModelId, includeHidden)) {
-		return apiModelId;
-	}
+async function getVisibleModelIds(
+	supabase: SupabaseClient,
+	modelIds: Array<string | null | undefined>,
+	includeHidden: boolean,
+): Promise<Set<string>> {
+	const ids = uniqueIds(modelIds);
+	if (ids.length === 0) return new Set<string>();
+
+	const { data, error } = await applyHiddenFilter(
+		supabase.from("data_models").select("model_id"),
+		includeHidden,
+	)
+		.in("model_id", ids);
+
+	if (error) return new Set<string>();
+
+	return new Set(
+		(data ?? [])
+			.map((row: { model_id?: unknown }) => normalizeId(row?.model_id))
+			.filter((id: string | null): id is string => Boolean(id)),
+	);
+}
+
+async function apiModelExists(
+	supabase: SupabaseClient,
+	apiModelId: string,
+): Promise<boolean> {
+	const id = normalizeId(apiModelId);
+	if (!id) return false;
+	const { data, error } = await supabase
+		.from("data_api_models")
+		.select("api_model_id")
+		.eq("api_model_id", id)
+		.maybeSingle();
+	if (error) return false;
+	return normalizeId(data?.api_model_id) === id;
+}
+
+async function getMappedApiModelIdForInternalModel(
+	supabase: SupabaseClient,
+	internalModelId: string,
+): Promise<string | null> {
+	const id = normalizeId(internalModelId);
+	if (!id) return null;
+	const { data, error } = await supabase
+		.from("data_api_provider_models")
+		.select("api_model_id")
+		.eq("model_id", id)
+		.not("api_model_id", "is", null)
+		.limit(1);
+	if (error) return null;
+	return normalizeId(data?.[0]?.api_model_id);
+}
+
+async function getMappedInternalModelIdsForApiModel(
+	supabase: SupabaseClient,
+	apiModelId: string,
+): Promise<string[]> {
+	const id = normalizeId(apiModelId);
+	if (!id) return [];
 
 	const { data, error } = await supabase
 		.from("data_api_provider_models")
 		.select("model_id")
-		.eq("api_model_id", apiModelId)
+		.eq("api_model_id", id)
 		.not("model_id", "is", null);
+	if (error) return [];
+	return uniqueIds((data ?? []).map((row: { model_id?: unknown }) => normalizeId(row?.model_id)));
+}
 
-	if (error) return null;
+async function resolveVisibleInternalModelIdForCanonical(
+	supabase: SupabaseClient,
+	canonicalModelId: string,
+	includeHidden: boolean,
+): Promise<string | null> {
+	const canonical = normalizeId(canonicalModelId);
+	if (!canonical) return null;
 
-	const candidates = Array.from(
-		new Set(
-			(data ?? [])
-				.map((row: any) => String(row?.model_id ?? "").trim())
-				.filter(Boolean),
-		),
+	const directVisible = await getVisibleModelIds(
+		supabase,
+		[canonical],
+		includeHidden,
 	);
-
-	for (const candidate of candidates) {
-		if (includeHidden) return candidate;
-		if (await modelExistsVisible(supabase, candidate, includeHidden)) {
-			return candidate;
-		}
+	if (directVisible.has(canonical)) {
+		return canonical;
 	}
 
-	return null;
+	const candidates = await getMappedInternalModelIdsForApiModel(
+		supabase,
+		canonical,
+	);
+	if (candidates.length === 0) return null;
+	if (includeHidden) return candidates[0] ?? null;
+
+	const visibleCandidates = await getVisibleModelIds(
+		supabase,
+		candidates,
+		includeHidden,
+	);
+	return candidates.find((candidate) => visibleCandidates.has(candidate)) ?? null;
 }
 
 async function resolveCanonicalModelIdUncached(
@@ -149,12 +169,15 @@ async function resolveCanonicalModelIdUncached(
 	const buildResult = async (
 		canonicalModelId: string,
 		source: ResolveModelIdSource,
+		internalModelIdHint?: string | null,
 	): Promise<ResolveCanonicalModelIdResult> => {
-		const internalModelId = await resolveVisibleInternalModelIdForApiModel(
-			supabase,
-			canonicalModelId,
-			includeHidden,
-		);
+		const internalModelId =
+			normalizeId(internalModelIdHint) ??
+			(await resolveVisibleInternalModelIdForCanonical(
+				supabase,
+				canonicalModelId,
+				includeHidden,
+			));
 		return {
 			requestedModelId: modelId,
 			canonicalModelId,
@@ -163,72 +186,119 @@ async function resolveCanonicalModelIdUncached(
 		};
 	};
 
-	if (await modelExistsVisible(supabase, modelId, includeHidden)) {
-		return buildResult(modelId, "direct");
+	const directVisible = await getVisibleModelIds(supabase, [modelId], includeHidden);
+	if (directVisible.has(modelId)) {
+		return buildResult(modelId, "direct", modelId);
 	}
 
-	try {
-		const { data: redirectRow, error: redirectError } = await supabase
-			.from("data_model_id_redirects")
-			.select("model_id")
-			.eq("legacy_model_id", modelId)
-			.maybeSingle();
+	const [redirectRes, aliasRes, apiModelRes, providerByApiRes, providerByModelRes] =
+		await Promise.all([
+			supabase
+				.from("data_model_id_redirects")
+				.select("model_id")
+				.eq("legacy_model_id", modelId)
+				.maybeSingle(),
+			supabase
+				.from("data_api_model_aliases")
+				.select("api_model_id")
+				.eq("alias_slug", modelId)
+				.eq("is_enabled", true)
+				.maybeSingle(),
+			supabase
+				.from("data_api_models")
+				.select("api_model_id")
+				.eq("api_model_id", modelId)
+				.maybeSingle(),
+			supabase
+				.from("data_api_provider_models")
+				.select("model_id")
+				.eq("api_model_id", modelId)
+				.not("model_id", "is", null)
+				.limit(1),
+			supabase
+				.from("data_api_provider_models")
+				.select("api_model_id")
+				.eq("model_id", modelId)
+				.not("api_model_id", "is", null)
+				.limit(1),
+		]);
 
-		if (!redirectError && redirectRow?.model_id) {
-			const candidate = String(redirectRow.model_id).trim();
-			const mappedApiModelId = await resolveApiModelIdFromInternalModelId(
-				supabase,
-				candidate,
-			);
-			if (mappedApiModelId) {
-				return buildResult(mappedApiModelId, "redirect");
-			}
-			if (await apiModelExists(supabase, candidate)) {
-				return buildResult(candidate, "redirect");
-			}
-			if (await modelExistsVisible(supabase, candidate, includeHidden)) {
-				return buildResult(candidate, "redirect");
-			}
-		}
-	} catch (error) {
-		if (!isMissingRelationError(error)) {
-			console.warn("[resolveCanonicalModelId] redirect lookup failed", {
-				modelId,
-				error,
-			});
-		}
+	if (redirectRes.error) {
+		warnIfUnexpectedTableError("redirect lookup", modelId, redirectRes.error);
 	}
-
-	const { data: aliasRow, error: aliasError } = await supabase
-		.from("data_api_model_aliases")
-		.select("api_model_id")
-		.eq("alias_slug", modelId)
-		.eq("is_enabled", true)
-		.maybeSingle();
-
-	if (!aliasError && aliasRow?.api_model_id) {
-		const candidate = String(aliasRow.api_model_id).trim();
-		const internalModelId = await resolveVisibleInternalModelIdForApiModel(
-			supabase,
-			candidate,
-			includeHidden,
+	if (aliasRes.error) {
+		warnIfUnexpectedTableError("alias lookup", modelId, aliasRes.error);
+	}
+	if (apiModelRes.error) {
+		warnIfUnexpectedTableError("api model lookup", modelId, apiModelRes.error);
+	}
+	if (providerByApiRes.error) {
+		warnIfUnexpectedTableError(
+			"provider mapping (by api model) lookup",
+			modelId,
+			providerByApiRes.error,
 		);
-		if (internalModelId || (await apiModelExists(supabase, candidate))) {
-			return buildResult(candidate, "alias");
+	}
+	if (providerByModelRes.error) {
+		warnIfUnexpectedTableError(
+			"provider mapping (by internal model) lookup",
+			modelId,
+			providerByModelRes.error,
+		);
+	}
+
+	const redirectCandidate = normalizeId(redirectRes.data?.model_id);
+	if (redirectCandidate) {
+		const [
+			mappedApiModelId,
+			redirectCandidateVisible,
+			redirectCandidateIsApiModel,
+		] = await Promise.all([
+			getMappedApiModelIdForInternalModel(supabase, redirectCandidate),
+			getVisibleModelIds(supabase, [redirectCandidate], includeHidden),
+			redirectCandidate === modelId
+				? Promise.resolve(normalizeId(apiModelRes.data?.api_model_id) === modelId)
+				: apiModelExists(supabase, redirectCandidate),
+		]);
+
+		if (mappedApiModelId) {
+			return buildResult(mappedApiModelId, "redirect");
+		}
+		if (redirectCandidateIsApiModel) {
+			return buildResult(redirectCandidate, "redirect");
+		}
+		if (redirectCandidateVisible.has(redirectCandidate)) {
+			return buildResult(redirectCandidate, "redirect", redirectCandidate);
 		}
 	}
 
-	if (await apiModelExists(supabase, modelId)) {
+	const aliasCandidate = normalizeId(aliasRes.data?.api_model_id);
+	if (aliasCandidate) {
+		const [internalModelId, aliasApiExists] = await Promise.all([
+			resolveVisibleInternalModelIdForCanonical(
+				supabase,
+				aliasCandidate,
+				includeHidden,
+			),
+			aliasCandidate === modelId
+				? Promise.resolve(normalizeId(apiModelRes.data?.api_model_id) === modelId)
+				: apiModelExists(supabase, aliasCandidate),
+		]);
+		if (internalModelId || aliasApiExists) {
+			return buildResult(aliasCandidate, "alias", internalModelId);
+		}
+	}
+
+	if (normalizeId(apiModelRes.data?.api_model_id) === modelId) {
 		return buildResult(modelId, "api_model");
 	}
 
-	if (await providerMappingExistsForApiModel(supabase, modelId)) {
+	if ((providerByApiRes.data?.length ?? 0) > 0) {
 		return buildResult(modelId, "provider_mapping");
 	}
 
-	const mappedApiModelId = await resolveApiModelIdFromInternalModelId(
-		supabase,
-		modelId,
+	const mappedApiModelId = normalizeId(
+		providerByModelRes.data?.[0]?.api_model_id,
 	);
 	if (mappedApiModelId) {
 		return buildResult(mappedApiModelId, "legacy_internal_mapping");
@@ -249,15 +319,16 @@ async function resolveCanonicalModelIdCached(
 	"use cache";
 
 	cacheLife({
-		stale: 60 * 5,
-		revalidate: 60 * 60,
-		expire: 60 * 60 * 24,
+		stale: 60 * 60 * 24,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 30,
 	});
 	cacheTag("data:models");
 	cacheTag("data:model_aliases");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:data_model_id_redirects");
 	cacheTag("data:data_api_models");
+	cacheTag(`model:canonical:${requestedModelId}`);
 
 	return resolveCanonicalModelIdUncached(requestedModelId, includeHidden);
 }

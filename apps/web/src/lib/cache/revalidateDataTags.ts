@@ -127,13 +127,21 @@ export function revalidateModelDataOnlyTags(
 export function revalidateModelApiInfoTags(
 	options: RevalidateModelDataTagOptions = {}
 ) {
-	revalidateTagList(MODEL_API_GLOBAL_TAGS);
+	const hasModelScope = Boolean(options.modelId);
+	if (!hasModelScope) {
+		revalidateTagList(MODEL_API_GLOBAL_TAGS);
+	}
 	for (const tag of MODEL_CANONICAL_RESOLVER_TAGS) {
 		revalidateTag(tag, EXPIRE_IMMEDIATELY);
 	}
 
 	if (options.modelId) {
+		revalidateTag(`model:canonical:${options.modelId}`, EXPIRE_IMMEDIATELY);
 		revalidateTag(`model:api:${options.modelId}`, STALE_WHILE_REVALIDATE);
+		revalidateTag(
+			`model:performance:${options.modelId}`,
+			STALE_WHILE_REVALIDATE
+		);
 		revalidateTag(
 			`data:gateway_requests:model:${options.modelId}`,
 			STALE_WHILE_REVALIDATE

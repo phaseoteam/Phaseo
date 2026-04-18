@@ -7,8 +7,8 @@ export interface ModelOverviewHeader {
 	model_id: string;
 	name: string;
 	organisation_id: string;
-	organisation: { name: string; country_code: string }; // not nullable
-	family_id?: string; // optional, may be undefined
+	organisation: { name: string; country_code: string };
+	family_id?: string;
 	hidden?: boolean;
 }
 
@@ -20,6 +20,18 @@ function isMissingRelationError(error: unknown): boolean {
 		text.includes("relation") ||
 		text.includes("schema cache")
 	);
+}
+
+function normalizeId(value: unknown): string | null {
+	const normalized = String(value ?? "").trim();
+	return normalized.length > 0 ? normalized : null;
+}
+
+function organisationFromModelId(modelId: string | null | undefined): string | null {
+	const normalized = normalizeId(modelId);
+	if (!normalized || !normalized.includes("/")) return null;
+	const [organisationId] = normalized.split("/", 1);
+	return normalizeId(organisationId);
 }
 
 export async function fetchModelOverviewHeader(
@@ -43,51 +55,70 @@ export async function fetchModelOverviewHeader(
 	);
 	const { data, error } = await query.eq("model_id", modelId).maybeSingle();
 
-	console.log("[fetch] HIT DB for model header", modelId);
-
 	if (error) throw error;
 	if (!data) {
-		const { data: internalVisibility } = await supabase
-			.from("data_models")
-			.select("hidden")
-			.eq("model_id", modelId)
-			.maybeSingle();
-		if (!includeHidden && internalVisibility?.hidden) {
+		const [internalVisibilityRes, apiModelRes, providerByApiRes, providerByModelRes] =
+			await Promise.all([
+				supabase
+					.from("data_models")
+					.select("hidden")
+					.eq("model_id", modelId)
+					.maybeSingle(),
+				supabase
+					.from("data_api_models")
+					.select("api_model_id, display_name, organisation_id")
+					.eq("api_model_id", modelId)
+					.maybeSingle(),
+				supabase
+					.from("data_api_provider_models")
+					.select("model_id")
+					.eq("api_model_id", modelId)
+					.not("model_id", "is", null)
+					.limit(1),
+				supabase
+					.from("data_api_provider_models")
+					.select("api_model_id")
+					.eq("model_id", modelId)
+					.not("api_model_id", "is", null)
+					.limit(1),
+			]);
+
+		if (internalVisibilityRes.error) {
+			throw new Error(internalVisibilityRes.error.message ?? `Model not found: ${modelId}`);
+		}
+		if (!includeHidden && internalVisibilityRes.data?.hidden) {
 			throw new Error(`Model not found: ${modelId}`);
 		}
 
-		const { data: apiModelRow, error: apiModelError } = await supabase
-			.from("data_api_models")
-			.select("api_model_id, display_name, organisation_id")
-			.eq("api_model_id", modelId)
-			.maybeSingle();
-
-		const { count: providerMappingCount, error: providerMappingError } =
-			await supabase
-				.from("data_api_provider_models")
-				.select("provider_api_model_id", { count: "exact", head: true })
-				.eq("api_model_id", modelId);
-
-		if (providerMappingError) {
-			throw new Error(`Model not found: ${modelId}`);
+		if (providerByApiRes.error) {
+			throw new Error(providerByApiRes.error.message ?? `Model not found: ${modelId}`);
+		}
+		if (providerByModelRes.error) {
+			throw new Error(providerByModelRes.error.message ?? `Model not found: ${modelId}`);
 		}
 
-		if (apiModelError && !isMissingRelationError(apiModelError)) {
-			throw new Error(`Model not found: ${modelId}`);
+		if (apiModelRes.error && !isMissingRelationError(apiModelRes.error)) {
+			throw new Error(apiModelRes.error.message ?? `Model not found: ${modelId}`);
 		}
 
-		const hasApiModel = Boolean(apiModelRow?.api_model_id);
-		const hasProviderMapping = (providerMappingCount ?? 0) > 0;
+		const hasApiModel = Boolean(normalizeId(apiModelRes.data?.api_model_id));
+		const hasProviderMapping =
+			(providerByApiRes.data?.length ?? 0) > 0 ||
+			(providerByModelRes.data?.length ?? 0) > 0;
 		if (!hasApiModel && !hasProviderMapping) {
 			throw new Error(`Model not found: ${modelId}`);
 		}
 
-		const fallbackOrganisationId = modelId.includes("/")
-			? modelId.split("/")[0].trim()
-			: "";
-		const resolvedApiModelId = apiModelRow?.api_model_id ?? modelId;
+		const resolvedApiModelId =
+			normalizeId(apiModelRes.data?.api_model_id) ??
+			normalizeId(providerByModelRes.data?.[0]?.api_model_id) ??
+			modelId;
+		const fallbackOrganisationId =
+			organisationFromModelId(providerByApiRes.data?.[0]?.model_id) ??
+			organisationFromModelId(modelId) ??
+			organisationFromModelId(resolvedApiModelId);
 		const resolvedOrganisationId =
-			apiModelRow?.organisation_id ?? fallbackOrganisationId;
+			normalizeId(apiModelRes.data?.organisation_id) ?? fallbackOrganisationId;
 		if (!resolvedApiModelId || !resolvedOrganisationId) {
 			throw new Error(`Model not found: ${modelId}`);
 		}
@@ -100,14 +131,13 @@ export async function fetchModelOverviewHeader(
 				.select("name, country_code")
 				.eq("organisation_id", resolvedOrganisationId)
 				.maybeSingle();
-			organisationName =
-				organisationRow?.name ?? resolvedOrganisationId;
+			organisationName = organisationRow?.name ?? resolvedOrganisationId;
 			organisationCountryCode = organisationRow?.country_code ?? "";
 		}
 
 		return {
 			model_id: resolvedApiModelId,
-			name: apiModelRow?.display_name ?? resolvedApiModelId,
+			name: normalizeId(apiModelRes.data?.display_name) ?? resolvedApiModelId,
 			organisation_id: resolvedOrganisationId,
 			organisation: {
 				name: organisationName ?? "Unknown",
@@ -143,11 +173,16 @@ export default async function getModelOverviewHeader(
 ): Promise<ModelOverviewHeader> {
 	"use cache";
 
-	cacheLife("days");
+	cacheLife({
+		stale: 60 * 60 * 24,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 30,
+	});
 	cacheTag("data:models");
+	cacheTag("data:organisations");
+	cacheTag("data:data_api_models");
+	cacheTag("data:data_api_provider_models");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(`model:header:${modelId}`);
-
-	console.log("[cache] COMPUTE getModelOverviewHeader", modelId);
 	return fetchModelOverviewHeader(modelId, includeHidden);
 }

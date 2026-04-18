@@ -2,78 +2,41 @@ import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPlayground from "@/components/(data)/model/playground/ModelPlayground";
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
+	getModelMetadataIdentity,
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
-
-async function fetchModel(modelId: string, includeHidden: boolean) {
-	try {
-		return await getModelOverviewCached(modelId, includeHidden);
-	} catch (error) {
-		console.warn("[seo] failed to load model overview for playground metadata", {
-			modelId,
-			error,
-		});
-		return null;
-	}
-}
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const includeHidden = false;
-	const { canonicalModelId: modelId } = await resolveModelRouteIds(
+	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
 		params,
-		includeHidden,
+		false,
 	);
-	const model = await fetchModel(modelId, includeHidden);
 	const path = getModelPath(modelId, "playground");
 	const imagePath = `/og/models/${modelId}`;
 
-	if (!model) {
-		return buildMetadata({
-			title: "Model Playground",
-			description:
-				"Run multimodal playground tests for this model on AI Stats, including text, image, video, audio, embeddings, and moderation workflows.",
-			path,
-			keywords: [
-				"AI model playground",
-				"single prompt test",
-				"AI billing",
-				"AI Stats",
-			],
-			imagePath,
-		});
-	}
-
-	const organisationName = model.organisation?.name ?? "AI provider";
-	const description = [
-		`Test ${model.name} from ${organisationName} in the AI Stats playground.`,
-		"Run multimodal workflows, inspect usage and billing, and iterate without leaving the model page.",
-	]
-		.filter(Boolean)
-		.join(" ");
-
 	return buildMetadata({
-		title: `${model.name} Playground - Single Prompt Test`,
-		description,
+		title: `${modelName} Playground - Single Prompt Test`,
+		description:
+			`Run multimodal playground tests for ${modelName} on AI Stats, including text, image, video, audio, embeddings, and moderation workflows.`,
 		path,
 		keywords: [
-			model.name,
-			`${model.name} playground`,
-			`${model.name} quick test`,
-			`${organisationName} AI`,
+			modelName,
+			`${modelName} playground`,
+			`${modelName} quick test`,
+			organisationName ? `${organisationName} AI` : null,
 			"AI model playground",
 			"AI Stats chat",
-		],
+		].filter(Boolean) as string[],
 		imagePath,
 	});
 }
@@ -93,7 +56,6 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "playground"));
 	}
 	const modelId = canonicalModelId;
-	const model = await fetchModel(modelId, includeHidden);
 	let requestModelId = modelId;
 	const scopedModelIdentifiers = new Set<string>([modelId]);
 	try {
@@ -144,7 +106,7 @@ export default async function Page({
 			<ModelPlayground
 				modelId={modelId}
 				requestModelId={requestModelId}
-				modelName={model?.name ?? modelId}
+				modelName={modelId}
 				gatewayModels={playgroundModels}
 			/>
 		</ModelDetailShell>

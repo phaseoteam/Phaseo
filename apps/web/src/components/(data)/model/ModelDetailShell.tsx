@@ -8,10 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Scale } from "lucide-react";
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
-import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { ModelCreatorModelsSection } from "@/components/(data)/model/overview/ModelOverviewSections";
-import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import { redirect } from "next/navigation";
 
 interface ModelDetailShellProps {
@@ -27,41 +23,20 @@ function isModelNotFoundError(error: unknown): boolean {
 	return false;
 }
 
-async function getVisibleTabKeys(
-	modelId: string,
-	includeHidden: boolean,
-	hasInternalModelData: boolean,
-	modelStatus: ModelOverviewPage["status"] | undefined,
-): Promise<string[]> {
-	const isLimitedAvailabilityModel =
-		modelStatus === "Announced" || modelStatus === "Withheld";
-	const baseTabs: string[] = isLimitedAvailabilityModel
-		? ["overview"]
-		: [
-			"overview",
-			"playground",
-			"providers",
-			"pricing",
-			"performance",
-			"apps",
-			"activity",
-			"quickstart",
-		];
-
-	const visibleTabs = [...baseTabs];
-
-	if (hasInternalModelData) {
-		visibleTabs.push("timeline");
-		const benchmarkHighlights = await getModelBenchmarkHighlights(
-			modelId,
-			includeHidden
-		).catch(() => []);
-		if (benchmarkHighlights.length > 0) {
-			visibleTabs.push("benchmarks");
-		}
-	}
-
-	return visibleTabs;
+function getVisibleTabKeys(): string[] {
+	return [
+		"overview",
+		"playground",
+		"providers",
+		"pricing",
+		"performance",
+		"apps",
+		"activity",
+		"quickstart",
+		"benchmarks",
+		"family",
+		"timeline",
+	];
 }
 
 export default async function ModelDetailShell({
@@ -81,17 +56,7 @@ export default async function ModelDetailShell({
 		return <ModelNotFoundState modelId={modelId} />;
 	}
 
-	const modelOverview: ModelOverviewPage | null = await getModelOverviewCached(
-		modelId,
-		includeHidden,
-	).catch(() => null);
-	const hasInternalModelData = Boolean(modelOverview);
-	const visibleTabKeys = await getVisibleTabKeys(
-		modelId,
-		includeHidden,
-		hasInternalModelData,
-		modelOverview?.status,
-	);
+	const visibleTabKeys = getVisibleTabKeys();
 	if (tab && !visibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
@@ -152,15 +117,6 @@ export default async function ModelDetailShell({
 				<TabBar modelId={modelId} visibleTabKeys={visibleTabKeys} />
 
 				<div className="mt-6 min-h-full">{children}</div>
-				{modelOverview ? (
-					<div className="mt-10">
-						<ModelCreatorModelsSection
-							modelId={modelId}
-							includeHidden={includeHidden}
-							model={modelOverview}
-						/>
-					</div>
-				) : null}
 			</div>
 		</main>
 	);
