@@ -22,7 +22,10 @@ import ModelLinks, {
 	hasModelLinks,
 } from "@/components/(data)/model/overview/ModelLinks";
 import { getModelOverviewCached, type ModelOverviewPage } from "@/lib/fetchers/models/getModel";
-import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModelPerformance";
+import {
+	getModelPerformanceActivitySnapshotCached,
+	getModelPerformanceMetricsCached,
+} from "@/lib/fetchers/models/getModelPerformance";
 import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
@@ -291,18 +294,17 @@ export async function ModelActivitySection({
 	modelId,
 	includeHidden,
 }: ModelSectionSharedProps) {
-	const performanceMetrics = await getModelPerformanceMetricsCached(
+	const activitySnapshot = await getModelPerformanceActivitySnapshotCached(
 		modelId,
 		includeHidden,
-		24,
 	).catch(() => null);
 
-	const usageSummary = performanceMetrics?.summary ?? null;
+	const usageSummary = activitySnapshot?.summary ?? null;
 	const providerWithTelemetry =
-		performanceMetrics?.providerPerformance.filter(
+		activitySnapshot?.providerPerformance.filter(
 			(provider) => provider.requests > 0,
 		).length ?? 0;
-	const totalProviders = performanceMetrics?.providerPerformance.length ?? 0;
+	const totalProviders = activitySnapshot?.providerPerformance.length ?? 0;
 
 	return (
 		<Section id="activity">
@@ -345,8 +347,8 @@ export async function ModelActivitySection({
 							Tokens (Cumulative)
 						</p>
 						<p className="text-xl font-semibold">
-							{performanceMetrics?.cumulativeTokens != null
-								? performanceMetrics.cumulativeTokens.toLocaleString()
+							{activitySnapshot?.cumulativeTokens != null
+								? activitySnapshot.cumulativeTokens.toLocaleString()
 								: "N/A"}
 						</p>
 					</div>

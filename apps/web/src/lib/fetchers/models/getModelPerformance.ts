@@ -97,6 +97,24 @@ export interface ModelPerformanceMetrics {
 	releaseDate?: string | null;
 }
 
+export interface ModelPerformanceActivitySnapshot {
+	summary: ModelPerformanceSummary;
+	providerPerformance: ModelProviderPerformance[];
+	cumulativeTokens?: number | null;
+}
+
+async function fetchPerformanceOverviewPayload(client: any, modelId: string) {
+	const { data, error } = await client.rpc("get_model_performance_overview", {
+		p_model_id: modelId,
+	});
+
+	if (error) {
+		throw new Error(error.message ?? "Failed to load model performance");
+	}
+
+	return (data?.[0] ?? {}) as RpcModelPerformanceResponse;
+}
+
 export async function getModelPerformanceMetrics(
 	modelId: string,
 	includeHidden: boolean,
@@ -108,18 +126,9 @@ export async function getModelPerformanceMetrics(
 
 	console.log(`[perf] querying model_id="${modelId}"`);
 
-	const { data, error } = await client.rpc("get_model_performance_overview", {
-		p_model_id: modelId,
-	});
-
+	const payload = await fetchPerformanceOverviewPayload(client, modelId);
 	const dur = Date.now() - t0;
-	console.log(`[perf] rpc dur=${dur}ms error=${!!error}`);
-
-	if (error) {
-		throw new Error(error.message ?? "Failed to load model performance");
-	}
-
-	const payload = (data?.[0] ?? {}) as RpcModelPerformanceResponse;
+	console.log(`[perf] rpc dur=${dur}ms error=false`);
 
 	const last24 = payload.last_24h;
 	const hourlyCnt = payload.hourly_24h?.length ?? 0;
@@ -152,6 +161,8 @@ export async function getModelPerformanceMetrics(
 
 	const mapDur = Date.now() - t0 - dur;
 	console.log(`[perf] mapped hourlyReqs=[${hourly.map(h => h.requests).join(",")}]`);
+	void hours;
+	void mapDur;
 
 	return {
 		summary,
@@ -167,6 +178,25 @@ export async function getModelPerformanceMetrics(
 	};
 }
 
+export async function getModelPerformanceActivitySnapshot(
+	modelId: string,
+	includeHidden: boolean,
+): Promise<ModelPerformanceActivitySnapshot> {
+	const client = createAdminClient();
+	void includeHidden;
+
+	const payload = await fetchPerformanceOverviewPayload(client, modelId);
+	const providerPerformance = (payload.provider_uptime_24h ?? []).map(
+		mapProviderPerformance,
+	);
+
+	return {
+		summary: mapSummary(payload.last_24h),
+		providerPerformance,
+		cumulativeTokens: toNumber(payload.cumulative_tokens?.total_tokens),
+	};
+}
+
 export async function getModelPerformanceMetricsCached(
 	modelId: string,
 	includeHidden: boolean,
@@ -174,11 +204,34 @@ export async function getModelPerformanceMetricsCached(
 ): Promise<ModelPerformanceMetrics> {
 	"use cache";
 
-	cacheLife("days");
+	cacheLife({
+		stale: 60 * 60,
+		revalidate: 60 * 60 * 6,
+		expire: 60 * 60 * 24,
+	});
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
+	cacheTag(`model:performance:${modelId}`);
 
 	return getModelPerformanceMetrics(modelId, includeHidden, hours);
+}
+
+export async function getModelPerformanceActivitySnapshotCached(
+	modelId: string,
+	includeHidden: boolean,
+): Promise<ModelPerformanceActivitySnapshot> {
+	"use cache";
+
+	cacheLife({
+		stale: 60 * 15,
+		revalidate: 60 * 60,
+		expire: 60 * 60 * 6,
+	});
+	cacheTag("data:gateway_usage_rollups");
+	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
+	cacheTag(`model:performance:${modelId}`);
+
+	return getModelPerformanceActivitySnapshot(modelId, includeHidden);
 }
 
 function toNumber(value: any): number | null {
