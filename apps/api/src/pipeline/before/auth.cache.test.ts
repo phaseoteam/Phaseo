@@ -6,12 +6,14 @@ type KeyRow = {
     team_id: string;
     status: string;
     hash: string;
+    expires_at?: string | null;
 };
 
 const runtime = vi.hoisted(() => {
     const store = new Map<string, string>();
     const backgroundTasks: Promise<unknown>[] = [];
     const dbRow = { value: null as KeyRow | null };
+    const updatePayloads: Array<Record<string, unknown>> = [];
 
     const maybeSingle = vi.fn(async () => ({
         data: dbRow.value,
@@ -45,9 +47,12 @@ const runtime = vi.hoisted(() => {
                         maybeSingle,
                     }),
                 }),
-                update: () => ({
+                update: (payload: Record<string, unknown>) => {
+                    updatePayloads.push(payload);
+                    return {
                     eq: updateEq,
-                }),
+                    };
+                },
             };
         }),
     };
@@ -60,11 +65,14 @@ const runtime = vi.hoisted(() => {
         updateEq,
         cache,
         supabase,
+        updatePayloads,
         bindings: {
             SUPABASE_URL: "https://example.supabase.co",
             SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
             GATEWAY_CACHE: cache as unknown as KVNamespace,
             KEY_PEPPER: "pepper_test_value",
+            KEY_PEPPER_ACTIVE: undefined as string | undefined,
+            KEY_PEPPER_PREVIOUS: undefined as string | undefined,
         },
     };
 });
@@ -89,7 +97,8 @@ function buildRequest(token: string): Request {
 }
 
 function hashSecret(secret: string): string {
-    return createHmac("sha256", runtime.bindings.KEY_PEPPER).update(secret).digest("hex");
+    const pepper = runtime.bindings.KEY_PEPPER_ACTIVE ?? runtime.bindings.KEY_PEPPER;
+    return createHmac("sha256", pepper).update(secret).digest("hex");
 }
 
 async function flushBackground(): Promise<void> {
@@ -104,6 +113,10 @@ describe("authenticate hot-path caching", () => {
         runtime.store.clear();
         runtime.backgroundTasks.length = 0;
         runtime.dbRow.value = null;
+        runtime.updatePayloads.length = 0;
+        runtime.bindings.KEY_PEPPER = "pepper_test_value";
+        runtime.bindings.KEY_PEPPER_ACTIVE = undefined;
+        runtime.bindings.KEY_PEPPER_PREVIOUS = undefined;
         runtime.cache.get.mockClear();
         runtime.cache.put.mockClear();
         runtime.cache.delete.mockClear();
@@ -162,5 +175,51 @@ describe("authenticate hot-path caching", () => {
         expect(second.ok).toBe(true);
         expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
         expect(runtime.cache.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("accepts KEY_PEPPER_PREVIOUS and migrates hash to KEY_PEPPER_ACTIVE", async () => {
+        runtime.bindings.KEY_PEPPER = "";
+        runtime.bindings.KEY_PEPPER_ACTIVE = "pepper_active";
+        runtime.bindings.KEY_PEPPER_PREVIOUS = "pepper_previous";
+
+        const kid = "KIDPEPPERROTATE";
+        const secret = "secret_prev";
+        const hash = createHmac("sha256", runtime.bindings.KEY_PEPPER_PREVIOUS).update(secret).digest("hex");
+        const token = `aistats_v1_sk_${kid}_${secret}`;
+        runtime.dbRow.value = {
+            id: "key_3",
+            team_id: "team_3",
+            status: "active",
+            hash,
+        };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(token), { useKvCache: false });
+        await flushBackground();
+
+        expect(result.ok).toBe(true);
+        const migratedHash = createHmac("sha256", runtime.bindings.KEY_PEPPER_ACTIVE).update(secret).digest("hex");
+        expect(runtime.updatePayloads).toContainEqual(
+            expect.objectContaining({ hash: migratedHash }),
+        );
+    });
+
+    it("rejects expired keys when expires_at has passed", async () => {
+        const kid = "KIDEXPIRED001";
+        const secret = "secret_expired";
+        const hash = hashSecret(secret);
+        const token = `aistats_v1_sk_${kid}_${secret}`;
+        runtime.dbRow.value = {
+            id: "key_4",
+            team_id: "team_4",
+            status: "active",
+            hash,
+            expires_at: new Date(Date.now() - 5_000).toISOString(),
+        };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(token), { useKvCache: false });
+
+        expect(result).toEqual({ ok: false, reason: "key_expired" });
     });
 });

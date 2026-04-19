@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { decodeJWT } from "@/lib/oauth/jwt";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { json, withRuntime } from "@/routes/utils";
 
 import {
@@ -159,10 +160,14 @@ authRouter.post(
 				{ "Cache-Control": "no-store" },
 			);
 		}
-		const pepper = String(bindings.KEY_PEPPER ?? "").trim();
+		const pepper = resolveActiveKeyPepper(bindings);
 		if (!pepper) {
 			return json(
-				{ ok: false, error: "server_misconfig", message: "KEY_PEPPER is not configured" },
+				{
+					ok: false,
+					error: "server_misconfig",
+					message: "KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured",
+				},
 				503,
 				{ "Cache-Control": "no-store" },
 			);

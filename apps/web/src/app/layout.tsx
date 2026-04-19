@@ -13,6 +13,7 @@ import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { CookieConsentManager } from "@/components/analytics/CookieConsentManager";
 import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
+import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -80,6 +81,7 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<TooltipProvider>
+						<SiteNoticeSlot />
 						<NuqsAdapter>{children}</NuqsAdapter>
 						<TailwindIndicator />
 					</TooltipProvider>

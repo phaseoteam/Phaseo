@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { hmacSecret } from "@/lib/keygen";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
+import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
 
 const KEY_PREFIX = "aistats_v1_sk_";
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -45,7 +46,10 @@ function deriveBase62Token(input: string, length: number): string {
 
 function resolveSeed(): string {
 	const seed = String(
-		process.env.CHAT_ROUTE_KEY_SEED ?? process.env.KEY_PEPPER ?? "",
+		process.env.CHAT_ROUTE_KEY_SEED ??
+			process.env.KEY_PEPPER_ACTIVE ??
+			process.env.KEY_PEPPER ??
+			"",
 	).trim();
 	if (!seed) {
 		throw new ChatGatewayAuthError(
@@ -58,15 +62,15 @@ function resolveSeed(): string {
 }
 
 function resolvePepper(): string {
-	const pepper = String(process.env.KEY_PEPPER ?? "").trim();
-	if (!pepper) {
+	try {
+		return resolveActiveKeyPepper();
+	} catch {
 		throw new ChatGatewayAuthError(
 			503,
 			"key_pepper_missing",
 			"Gateway key pepper is not configured",
 		);
 	}
-	return pepper;
 }
 
 function deriveTeamScopedGatewayKey(args: { teamId: string }): {

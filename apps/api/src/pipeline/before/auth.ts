@@ -4,6 +4,11 @@
 
 import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
+import {
+	resolveActiveKeyPepper,
+	resolveKeyPepperCandidates,
+	type KeyPepperCandidate,
+} from "@/lib/security/keyPepper";
 
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
@@ -70,6 +75,31 @@ function decodeBase64Url(s: string): Uint8Array | null {
         for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
         return out;
     } catch { return null; }
+}
+
+async function secretMatchesStoredHash(secret: string, storedHash: string, pepper: string): Promise<boolean> {
+    const digestUtf8 = await hmacUtf8(secret, pepper);
+    if (ctEqualHex(digestUtf8, storedHash)) {
+        return true;
+    }
+
+    const hex = decodeHex(pepper);
+    if (hex) {
+        const digestHex = await hmacHexWithKeyBytes(secret, hex);
+        if (ctEqualHex(digestHex, storedHash)) {
+            return true;
+        }
+    }
+
+    const b64 = decodeBase64Url(pepper);
+    if (b64) {
+        const digestB64 = await hmacHexWithKeyBytes(secret, b64);
+        if (ctEqualHex(digestB64, storedHash)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -156,6 +186,7 @@ type KeyRow = {
     team_id: string;
     status: string;
     hash: string;
+    expires_at?: string | null;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -206,6 +237,13 @@ function writeKeyLookupL1(kid: string, versionToken: string, value: KeyLookupL1V
 function isValidKidFormat(kid: string): boolean {
     // Generated keys are base62 (12 chars); allow a wider safe range for compatibility.
     return /^[A-Za-z0-9]{6,64}$/.test(kid);
+}
+
+function isExpiredKey(expiresAt?: string | null): boolean {
+    if (!expiresAt) return false;
+    const ts = Date.parse(expiresAt);
+    if (!Number.isFinite(ts)) return false;
+    return ts <= Date.now();
 }
 
 async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
@@ -307,7 +345,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     if (!keyRow) {
         const { data, error } = await supabase
             .from("keys")
-            .select("id, team_id, status, hash")
+            .select("*")
             .eq("kid", parsed.kid)
             .maybeSingle();
 
@@ -326,23 +364,42 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     if (!keyRow || keyRow.status !== "active") {
         return { ok: false, reason: "key_not_found_or_revoked" };
     }
+    if (isExpiredKey(keyRow.expires_at)) {
+        return { ok: false, reason: "key_expired" };
+    }
 
     const stored = String(keyRow.hash).toLowerCase().trim();
-    const pepper = (bindings.KEY_PEPPER ?? "").trim();
-    if (!pepper) return { ok: false, reason: "server_misconfig_missing_pepper" };
+    const activePepper = resolveActiveKeyPepper(bindings);
+    const pepperCandidates = resolveKeyPepperCandidates(bindings);
+    if (!activePepper || pepperCandidates.length === 0) {
+        return { ok: false, reason: "server_misconfig_missing_pepper" };
+    }
 
-    const success = async (): Promise<AuthSuccess | AuthFailure> => {
+    const success = async (nextHash?: string): Promise<AuthSuccess | AuthFailure> => {
         let teamId = keyRow.team_id;
         const internal = isInternalRequestAuthorized(req, bindings);
+        const hasHashMigration = Boolean(nextHash) && nextHash !== stored;
 
-        // Fire-and-forget update of last_used_at timestamp.
+        // Fire-and-forget update of last_used_at timestamp (+ hash migration when needed).
         dispatchBackground((async () => {
             configureRuntime(bindings);
             try {
+                const updatePayload: Record<string, unknown> = {
+                    last_used_at: new Date().toISOString(),
+                };
+                if (hasHashMigration) {
+                    updatePayload.hash = nextHash;
+                }
                 await supabase
                     .from("keys")
-                    .update({ last_used_at: new Date().toISOString() })
+                    .update(updatePayload)
                     .eq("id", keyRow.id);
+                if (useKvCache && hasHashMigration) {
+                    await cacheKey(parsed.kid, {
+                        ...keyRow,
+                        hash: String(nextHash),
+                    });
+                }
             } finally {
                 clearRuntime();
             }
@@ -359,30 +416,24 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         } as AuthSuccess;
     };
 
-    // 4a. Normal path: UTF-8 pepper (Node-compatible).
-    const digestUtf8 = await hmacUtf8(parsed.secret, pepper);
-    if (ctEqualHex(digestUtf8, stored)) {
-        return success();
-    }
-
-    // 4b. Optional fallback paths (only if you later migrate pepper encoding).
-    const hex = decodeHex(pepper);
-    if (hex) {
-        const d = await hmacHexWithKeyBytes(parsed.secret, hex);
-        if (ctEqualHex(d, stored)) {
-            return success();
-        }
-    }
-    const b64 = decodeBase64Url(pepper);
-    if (b64) {
-        const d = await hmacHexWithKeyBytes(parsed.secret, b64);
-        if (ctEqualHex(d, stored)) {
-            return success();
+    let matchedPepper: KeyPepperCandidate | null = null;
+    for (const candidate of pepperCandidates) {
+        if (await secretMatchesStoredHash(parsed.secret, stored, candidate.value)) {
+            matchedPepper = candidate;
+            break;
         }
     }
 
-    // 5. If all checks fail - reject.
-    return { ok: false, reason: "invalid_secret" };
+    if (!matchedPepper) {
+        return { ok: false, reason: "invalid_secret" };
+    }
+
+    if (matchedPepper.source === "previous") {
+        const nextHash = await hmacUtf8(parsed.secret, activePepper);
+        return success(nextHash);
+    }
+
+    return success();
 }
 
 /* -------------------- OAuth JWT Authentication -------------------- */
