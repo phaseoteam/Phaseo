@@ -64,7 +64,7 @@ const schema = z.object({
 	default_team_id: z
 		.string()
 		.trim()
-		.min(1, "Team ID cannot be empty.")
+		.min(1, "Workspace ID cannot be empty.")
 		.optional()
 		.nullable(),
 	obfuscate_info: z.boolean(),
@@ -422,7 +422,7 @@ export default function AccountSettingsClient({
 
 						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
 							<Label htmlFor="defaultTeam" className="text-sm font-medium sm:pt-2">
-								Default team
+								Default workspace
 							</Label>
 							<div className="grid max-w-2xl gap-1.5">
 								{teams && teams.length > 0 ? (
@@ -431,7 +431,7 @@ export default function AccountSettingsClient({
 										onValueChange={(v) => setDefaultTeamId(v || null)}
 									>
 										<SelectTrigger id="defaultTeam" className="w-full">
-											<SelectValue placeholder="Select default team" />
+											<SelectValue placeholder="Select default workspace" />
 										</SelectTrigger>
 										<SelectContent>
 											{teams.map((t) => (

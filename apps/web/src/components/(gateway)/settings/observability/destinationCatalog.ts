@@ -503,7 +503,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 			{
 				key: "workspace_slug",
 				label: "Workspace Slug (Optional)",
-				placeholder: "my-team",
+				placeholder: "my-workspace",
 				required: false,
 			},
 		],

@@ -183,7 +183,7 @@ export default function PresetForm({
 			return;
 		}
 		if (!currentUserId || !currentTeamId) {
-			toast.error("You must be signed in and on a team to create a preset.");
+			toast.error("You must be signed in and in a workspace to create a preset.");
 			return;
 		}
 
@@ -276,7 +276,7 @@ export default function PresetForm({
 						/>
 					</InputGroup>
 					<p className="text-xs text-muted-foreground">
-						Unique within your team — we’ll prefix it with @ for you
+						Unique within your workspace - we'll prefix it with @ for you
 					</p>
 				</div>
 
@@ -303,13 +303,13 @@ export default function PresetForm({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="private">Only me</SelectItem>
-								<SelectItem value="team">Share with team</SelectItem>
+								<SelectItem value="team">Share with workspace</SelectItem>
 								<SelectItem value="public">Make public (future marketplace)</SelectItem>
 							</SelectContent>
 						</Select>
 						<p className="text-xs text-muted-foreground">
-							Private presets are only visible to you. Team presets can be used by
-							anyone on the team. Public presets are planned for a future marketplace.
+							Private presets are only visible to you. Workspace presets can be used by
+							anyone in the workspace. Public presets are planned for a future marketplace.
 						</p>
 					</div>
 

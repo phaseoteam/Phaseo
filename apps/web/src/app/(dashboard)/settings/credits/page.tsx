@@ -146,7 +146,7 @@ async function CreditsSettingsContent(props: {
 			.maybeSingle();
 
 		if (teamErr) {
-			console.log("[WARN] fetching team billing mode:", String(teamErr));
+			console.log("[WARN] fetching workspace billing mode:", String(teamErr));
 		} else {
 			billingMode = teamRow?.billing_mode === "invoice" ? "invoice" : "wallet";
 			teamTier = String(teamRow?.tier ?? "basic").toLowerCase() === "enterprise"
@@ -415,7 +415,7 @@ async function CreditsSettingsContent(props: {
 					</CardHeader>
 					<CardContent className="flex flex-wrap items-center justify-between gap-3">
 						<p className="text-sm text-muted-foreground">
-							This team is in invoice mode, but billing day and terms are not fully configured yet.
+							This workspace is in invoice mode, but billing day and terms are not fully configured yet.
 						</p>
 						<Button asChild size="sm">
 							<Link href="/settings/credits/onboarding">Finish setup</Link>
@@ -432,7 +432,7 @@ async function CreditsSettingsContent(props: {
 						</CardHeader>
 						<CardContent className="space-y-2 text-sm text-muted-foreground">
 							<p>
-								Post-usage invoicing is enabled for this team. Wallet
+								Post-usage invoicing is enabled for this workspace. Wallet
 								top-ups and auto top-up are not used in invoice mode.
 							</p>
 							<p>

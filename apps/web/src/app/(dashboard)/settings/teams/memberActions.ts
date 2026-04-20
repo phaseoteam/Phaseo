@@ -5,6 +5,13 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { requireTeamMembership } from "@/utils/serverActionAuth";
 
+function revalidateWorkspacePaths() {
+    revalidatePath("/settings/teams");
+    revalidatePath("/settings/workspaces");
+    revalidatePath("/settings/workspaces/members");
+    revalidatePath("/settings/workspaces/settings");
+}
+
 /**
  * Server action: update a member's role.
  * Performs a supabase upsert on the `team_members` table and revalidates.
@@ -13,8 +20,13 @@ export async function updateMemberRole(teamId: string, userId: string, newRole?:
     if (!teamId || !userId) {
         throw new Error('Missing teamId or userId');
     }
+    const normalizedRole = (newRole ?? "").toLowerCase();
+    if (normalizedRole !== "admin" && normalizedRole !== "member") {
+        throw new Error("Invalid role. Allowed roles are admin and member.");
+    }
 
     const supabase = await createClient();
+    const admin = createAdminClient();
     const {
         data: { user: authUser },
         error: authError,
@@ -24,17 +36,27 @@ export async function updateMemberRole(teamId: string, userId: string, newRole?:
     }
     await requireTeamMembership(supabase, authUser.id, teamId, ["owner", "admin"]);
 
+    const { data: teamData, error: teamError } = await admin
+        .from("teams")
+        .select("owner_user_id")
+        .eq("id", teamId)
+        .maybeSingle();
+    if (teamError) throw teamError;
+    if (teamData?.owner_user_id === userId) {
+        throw new Error("The workspace owner role is fixed and cannot be changed.");
+    }
+
     const { data, error } = await supabase
         .from("team_members")
-        .upsert({ team_id: teamId, user_id: userId, role: newRole ?? null }, { onConflict: "team_id,user_id" })
+        .upsert({ team_id: teamId, user_id: userId, role: normalizedRole }, { onConflict: "team_id,user_id" })
         .select("team_id, user_id, role")
         .maybeSingle();
 
     if (error) throw error;
 
-    // revalidate server-rendered pages that depend on teams
+    // Revalidate both legacy and renamed workspace settings routes.
     try {
-        revalidatePath("/settings/teams");
+        revalidateWorkspacePaths();
     } catch {
         // ignore revalidation errors
     }
@@ -94,7 +116,7 @@ export async function removeMember(teamId: string, userId: string) {
                 teamId,
                 userId,
                 ok: false as const,
-                message: "You don't have permission to remove this member.",
+                message: "You don't have permission to remove this member from the workspace.",
             };
         }
 
@@ -134,7 +156,7 @@ export async function removeMember(teamId: string, userId: string) {
             teamId,
             userId,
             ok: false as const,
-            message: "You can't remove the owner.",
+            message: "You can't remove the workspace owner.",
         };
     }
 
@@ -147,7 +169,7 @@ export async function removeMember(teamId: string, userId: string) {
     if (error) throw error;
 
     try {
-        revalidatePath("/settings/teams");
+        revalidateWorkspacePaths();
     } catch {
         // no-op
     }

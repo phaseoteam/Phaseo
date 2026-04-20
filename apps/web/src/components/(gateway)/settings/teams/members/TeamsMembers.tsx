@@ -162,8 +162,8 @@ export default function TeamsMembers({
 			activeTeam && personalTeamId && activeTeam.id !== personalTeamId
 		);
 
-	const confirmActionTitle = canLeaveTeam ? "Leave team" : "Revoke access";
-	const confirmActionButton = canLeaveTeam ? "Leave team" : "Revoke access";
+	const confirmActionTitle = canLeaveTeam ? "Leave workspace" : "Revoke access";
+	const confirmActionButton = canLeaveTeam ? "Leave workspace" : "Revoke access";
 	const confirmActionLoading = canLeaveTeam ? "Leaving..." : "Revoking...";
 
 	const currentUserRole = React.useMemo(() => {
@@ -180,19 +180,23 @@ export default function TeamsMembers({
 	const selectedMemberRoleRank = selectedMember
 		? roleRank(selectedMember.role)
 		: Number.POSITIVE_INFINITY;
+	const selectedMemberRole = (selectedMember?.role ?? "").toLowerCase();
+	const isSelectedOwner = selectedMemberRole === "owner";
 	const isSelectedHigherRole =
 		Boolean(selectedMember && currentUserRole) &&
 		selectedMemberRoleRank < currentUserRoleRank;
 
 	const canModifyRoles =
 		currentUserRole === "owner" || currentUserRole === "admin";
+	const canEditSelectedRole =
+		canModifyRoles && Boolean(selectedMember) && !isSelectedOwner;
 	const canRevokeSelectedMember =
 		Boolean(selectedMember) &&
 		!isSelfSelected &&
 		canModifyRoles &&
 		!isSelectedHigherRole;
 	const confirmActionDescription = canLeaveTeam
-		? `Are you sure you want to leave ${activeTeam?.name ?? "this team"}?`
+		? `Are you sure you want to leave ${activeTeam?.name ?? "this workspace"}?`
 		: isSelectedHigherRole
 		? "You can't revoke access for someone with a higher role than yours."
 		: `Are you sure you want to revoke access for ${
@@ -211,7 +215,7 @@ export default function TeamsMembers({
 	}, [selectedMember]);
 
 	const saveRole = async () => {
-		if (!activeTeam || !selectedMember || !canModifyRoles) return;
+		if (!activeTeam || !selectedMember || !canEditSelectedRole) return;
 		try {
 			setLoading(true);
 			if (onUpdateMemberRole) {
@@ -249,7 +253,7 @@ export default function TeamsMembers({
 		}
 		const targetLabel =
 			selectedMember.display_name ?? selectedMember.user_id ?? "member";
-		const teamLabel = activeTeam?.name ?? "this team";
+		const teamLabel = activeTeam?.name ?? "this workspace";
 		try {
 			setLoading(true);
 			if (onRemoveMember) {
@@ -293,9 +297,9 @@ export default function TeamsMembers({
 		<Card className="h-full">
 			<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div>
-					<CardTitle className="text-base">Team members</CardTitle>
+					<CardTitle className="text-base">Workspace members</CardTitle>
 					<CardDescription>
-						Manage and review members in the selected team.
+						Manage and review members in the selected workspace.
 					</CardDescription>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -305,7 +309,7 @@ export default function TeamsMembers({
 						onValueChange={(v) => setActiveTeamId(v)}
 					>
 						<SelectTrigger className="w-full sm:w-[200px]">
-							<SelectValue placeholder="Select team…" />
+							<SelectValue placeholder="Select workspace…" />
 						</SelectTrigger>
 						<SelectContent>
 							{teams.map((t) => (
@@ -321,7 +325,7 @@ export default function TeamsMembers({
 			<CardContent>
 				{!activeTeam ? (
 					<div className="text-sm text-muted-foreground">
-						No teams available.
+						No workspaces available.
 					</div>
 				) : count === 0 ? (
 					<div className="text-sm text-muted-foreground">
@@ -413,7 +417,16 @@ export default function TeamsMembers({
 
 					<div className="mt-2">
 						<Label className="mb-2">User Role</Label>
-						{canModifyRoles ? (
+						{!canModifyRoles ? (
+							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
+								Members cannot change roles. If you would like a
+								change, please contact your workspace owner or admin.
+							</div>
+						) : isSelectedOwner ? (
+							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
+								The workspace owner role is fixed and cannot be edited.
+							</div>
+						) : (
 							<Select
 								value={selectedRole}
 								onValueChange={(v) => setSelectedRole(v)}
@@ -422,9 +435,6 @@ export default function TeamsMembers({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value={"owner"}>
-										Owner
-									</SelectItem>
 									<SelectItem value={"admin"}>
 										Admin
 									</SelectItem>
@@ -433,11 +443,6 @@ export default function TeamsMembers({
 									</SelectItem>
 								</SelectContent>
 							</Select>
-						) : (
-							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
-								Members cannot change roles. If you would like a
-								change, please contact your team owner or admin.
-							</div>
 						)}
 					</div>
 
@@ -474,7 +479,7 @@ export default function TeamsMembers({
 							</DialogClose>
 							<Button
 								onClick={saveRole}
-								disabled={loading || !canModifyRoles}
+								disabled={loading || !canEditSelectedRole}
 							>
 								{loading ? "Saving..." : "Save"}
 							</Button>

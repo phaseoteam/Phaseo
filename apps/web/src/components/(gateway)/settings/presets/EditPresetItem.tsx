@@ -326,13 +326,13 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="private">Only me</SelectItem>
-											<SelectItem value="team">Share with team</SelectItem>
+											<SelectItem value="team">Share with workspace</SelectItem>
 											<SelectItem value="public">Make public (future marketplace)</SelectItem>
 										</SelectContent>
 									</Select>
 									<p className="text-xs text-muted-foreground">
-										Private presets are only visible to you. Team presets can be used by
-										anyone on the team. Public presets are planned for a future marketplace.
+										Private presets are only visible to you. Workspace presets can be used by
+										anyone in the workspace. Public presets are planned for a future marketplace.
 									</p>
 								</div>
 

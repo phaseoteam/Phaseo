@@ -121,7 +121,7 @@ async function KeysContent() {
 		<div className="space-y-6">
 			<SettingsPageHeader
 				title="API Keys"
-				description="Create and manage gateway API keys for this team."
+				description="Create and manage gateway API keys for this workspace."
 				actions={
 					<div className="flex items-center gap-2">
 						<Button asChild variant="outline" size="sm">

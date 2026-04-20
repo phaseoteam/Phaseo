@@ -39,7 +39,7 @@ export default async function BillingOnboardingPage() {
 			<div className="space-y-6">
 				<SettingsPageHeader
 					title="Billing onboarding"
-					description="Sign in to continue setting up team billing."
+					description="Sign in to continue setting up workspace billing."
 				/>
 			</div>
 		);
@@ -52,7 +52,7 @@ export default async function BillingOnboardingPage() {
 			<div className="space-y-6">
 				<SettingsPageHeader
 					title="Billing onboarding"
-					description="Select a team to continue setup."
+					description="Select a workspace to continue setup."
 				/>
 			</div>
 		);
@@ -79,7 +79,7 @@ export default async function BillingOnboardingPage() {
 			<div className="space-y-6">
 				<SettingsPageHeader
 					title="Billing onboarding"
-					description="Could not load the active team."
+					description="Could not load the active workspace."
 				/>
 			</div>
 		);
@@ -114,7 +114,7 @@ export default async function BillingOnboardingPage() {
 		<div className="space-y-6">
 			{canManageBilling ? (
 				<EnterpriseBillingOnboardingClient
-					teamName={String(team.name ?? "Team")}
+					teamName={String(team.name ?? "Workspace")}
 					teamTier={String(team.tier ?? "basic")}
 					currentBillingMode={currentBillingMode}
 					invoiceProfileEnabled={Boolean(invoiceProfile?.enabled)}
@@ -125,7 +125,7 @@ export default async function BillingOnboardingPage() {
 			) : (
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
-						Only owners and admins can change billing setup for this team.
+						Only owners and admins can change billing setup for this workspace.
 					</CardContent>
 				</Card>
 			)}

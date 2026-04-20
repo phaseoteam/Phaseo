@@ -43,10 +43,10 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/account"],
 			},
             {
-				href: "/settings/teams",
-				label: "Team",
+				href: "/settings/workspaces",
+				label: "Workspaces",
 				icon: Users,
-				match: ["/settings/teams"],
+				match: ["/settings/workspaces", "/settings/teams"],
 			},
         ],
     },

@@ -83,7 +83,7 @@ async function ManagementApiKeysContent() {
 			<SettingsPageHeader
 				title="Management API Keys"
 				meta={<Badge variant="outline">Beta</Badge>}
-				description="Manage elevated keys for automated team and key management."
+				description="Manage elevated keys for automated workspace and key management."
 				actions={
 					<CreateManagementKeyDialog
 						currentUserId={user?.id}

@@ -42,7 +42,7 @@ export async function createByokKeyAction(
     // Get team_id from session/user (example)
     const cookieStore = await cookies();
     const activeTeamId = cookieStore.get('activeTeamId')?.value;
-    if (!activeTeamId) throw new Error("No active team selected");
+    if (!activeTeamId) throw new Error("No active workspace selected");
     await requireTeamMembership(supabase, user.id, activeTeamId, ["owner", "admin"]);
 
     const basePayload = {
@@ -241,7 +241,7 @@ export async function updateByokFallbackAction(enabled: boolean) {
     const { supabase, user } = await requireAuthenticatedUser();
     const teamId = await getTeamIdFromCookie();
     if (!teamId) {
-        throw new Error("Missing team id");
+        throw new Error("Missing workspace id");
     }
     await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 

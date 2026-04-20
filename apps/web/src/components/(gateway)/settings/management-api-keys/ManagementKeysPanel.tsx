@@ -70,10 +70,10 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 									<Shield className="h-5 w-5" />
 								</EmptyMedia>
 								<EmptyTitle className="text-base">
-									No management keys for this team
+									No management keys for this workspace
 								</EmptyTitle>
 								<EmptyDescription>
-									Generate one to manage teams and resources programmatically.
+									Generate one to manage workspaces and resources programmatically.
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>

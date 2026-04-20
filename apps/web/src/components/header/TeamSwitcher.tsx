@@ -101,7 +101,7 @@ export default function TeamSwitcher({
 	useEffect(() => {
 		const { date, day, minutes } = getLondonInfo();
 		console.log(
-			"[team-switcher] London",
+			"[workspace-switcher] London",
 			date.toISOString(),
 			`day=${day}`,
 			`minuteOfDay=${minutes}`,
@@ -117,12 +117,12 @@ export default function TeamSwitcher({
 
 	return (
 		<div className="flex items-center gap-2">
-			{/* Team Dropdown */}
+			{/* Workspace Dropdown */}
 			<DropdownMenu open={isTeamMenuOpen} onOpenChange={setIsTeamMenuOpen}>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
-						aria-label="Open team switcher"
+						aria-label="Open workspace switcher"
 						className={cn(
 							"inline-flex items-center gap-2 rounded-lg px-3 h-10 leading-none cursor-pointer",
 							"border border-transparent text-sm font-medium text-foreground",
@@ -134,7 +134,7 @@ export default function TeamSwitcher({
 							className="max-w-32 truncate text-sm font-medium select-none"
 							title={activeTeam ? activeTeam.name : undefined}
 						>
-							{activeTeam ? activeTeam.name : "Personal Team"}
+							{activeTeam ? activeTeam.name : "Personal Workspace"}
 						</span>
 						<ChevronDown
 							className={cn(
@@ -179,12 +179,12 @@ export default function TeamSwitcher({
 											void navigator.clipboard
 												.writeText(t.id)
 												.then(() => {
-													toast.success("Team UUID copied to clipboard.", {
+													toast.success("Workspace UUID copied to clipboard.", {
 														position: "bottom-right",
 													});
 												})
 												.catch(() => {
-													toast.error("Failed to copy team UUID.", {
+													toast.error("Failed to copy workspace UUID.", {
 														position: "bottom-right",
 													});
 												});
@@ -193,23 +193,23 @@ export default function TeamSwitcher({
 										const previous = activeTeamId;
 										setActiveTeamId(t.id);
 										toast.promise(SwapTeam(t.id), {
-											loading: "Swapping team...",
+											loading: "Switching workspace...",
 											success: (res) => {
 												if (res?.ok) {
 													router.refresh();
-													return `Successfully swapped to ${t.name} team`;
+													return `Switched to ${t.name} workspace`;
 												} else {
 													setActiveTeamId(
 														previous
 													);
 													throw new Error(
-														"Failed to swap team"
+														"Failed to switch workspace"
 													);
 												}
 											},
 											error: () => {
 												setActiveTeamId(previous);
-												return `Failed to swap to ${t.name} team, please try again`;
+												return `Failed to switch to ${t.name} workspace, please try again`;
 											},
 										});
 									}}
@@ -236,16 +236,16 @@ export default function TeamSwitcher({
 							className="rounded-md py-1.5 text-sm cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70 focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						>
 							<Link
-								href="/settings/teams"
+								href="/settings/workspaces"
 								className="flex w-full items-center"
 								onClick={(e) => {
 									e.preventDefault();
 									setIsTeamMenuOpen(false);
-									navigateWithViewTransition("/settings/teams");
+									navigateWithViewTransition("/settings/workspaces");
 								}}
 							>
 								<Users className="mr-2 h-4 w-4" />
-								<span>Manage Teams</span>
+								<span>Manage Workspaces</span>
 							</Link>
 						</DropdownMenuItem>
 					</div>

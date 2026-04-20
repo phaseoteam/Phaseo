@@ -100,14 +100,14 @@ export default function HeaderClient({
 		const result = await SwapTeam(nextTeamId);
 		if (!result?.ok) {
 			setActiveTeamId(previousTeamId);
-			toast.error(`Failed to swap to ${teamName} team`, {
+			toast.error(`Failed to switch to ${teamName} workspace`, {
 				position: "bottom-right",
 			});
 			return false;
 		}
 
 		router.refresh();
-		toast.success(`Successfully swapped to ${teamName} team`, {
+		toast.success(`Switched to ${teamName} workspace`, {
 			position: "bottom-right",
 		});
 		return true;
@@ -156,7 +156,7 @@ export default function HeaderClient({
 										>
 											<Users className="h-4 w-4" />
 											<span className="min-w-0 flex-1 truncate">
-												{activeTeam?.name ?? "Team"}
+												{activeTeam?.name ?? "Workspace"}
 											</span>
 											<ChevronDown
 												className={cn(
@@ -202,7 +202,7 @@ export default function HeaderClient({
 										})}
 										<DropdownMenuSeparator />
 										<Link
-											href="/settings/teams"
+											href="/settings/workspaces"
 											prefetch={false}
 											className={cn(
 												"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
@@ -210,7 +210,7 @@ export default function HeaderClient({
 											)}
 											onClick={() => setIsMobileTeamDialogOpen(false)}
 										>
-											<span>Manage Teams</span>
+											<span>Manage Workspaces</span>
 										</Link>
 									</PopoverContent>
 								</Popover>
@@ -295,9 +295,9 @@ export default function HeaderClient({
 							</DropdownMenuItem>
 							{teams.length === 0 && (
 								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href="/settings/teams" prefetch={false}>
+									<Link href="/settings/workspaces" prefetch={false}>
 										<Users className="h-4 w-4" />
-										<span>Teams</span>
+										<span>Workspaces</span>
 									</Link>
 								</DropdownMenuItem>
 							)}

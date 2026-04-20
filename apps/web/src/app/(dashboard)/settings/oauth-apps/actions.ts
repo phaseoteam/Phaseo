@@ -66,7 +66,7 @@ export async function createOAuthAppAction(
 			.single();
 
 		if (!membership) {
-			return { error: "You don't have permission to create OAuth apps for this team" };
+			return { error: "You don't have permission to create OAuth apps for this workspace" };
 		}
 
 		// Validate inputs
@@ -382,7 +382,7 @@ export async function listOAuthAppsAction(
 			.single();
 
 		if (!membership) {
-			return { error: "You don't have permission to view OAuth apps for this team" };
+			return { error: "You don't have permission to view OAuth apps for this workspace" };
 		}
 
 		// Fetch apps with stats

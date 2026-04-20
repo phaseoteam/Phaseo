@@ -51,7 +51,7 @@ export default function TeamsPanel({
 	if (!teams.length) {
 		return (
 			<div className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
-				No teams available yet. Create a team to manage members,
+				No workspaces available yet. Create a workspace to manage members,
 				requests, and invites.
 			</div>
 		);

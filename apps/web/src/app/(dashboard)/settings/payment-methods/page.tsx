@@ -120,7 +120,7 @@ async function PaymentMethodsContent() {
         <CardContent className="space-y-4">
           {!customerId ? (
             <p className="text-sm text-muted-foreground">
-              Add a payment method on the Credits page to link this team to a Stripe customer.
+              Add a payment method on the Credits page to link this workspace to a Stripe customer.
             </p>
           ) : (
             <PaymentMethodsManager initialData={initialData} />

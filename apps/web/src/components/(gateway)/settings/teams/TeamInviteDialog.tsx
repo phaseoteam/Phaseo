@@ -62,6 +62,7 @@ interface Props {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	currentUserId?: string | null;
+	canManageInvite?: boolean;
 	appBaseUrl?: string;
 }
 
@@ -70,9 +71,11 @@ export default function TeamInviteDialog({
 	open,
 	onOpenChange,
 	currentUserId,
+	canManageInvite = false,
 	appBaseUrl,
 }: Props) {
-	const isOwner = !!currentUserId && currentUserId === invite.creator_user_id;
+	const isCreator = !!currentUserId && currentUserId === invite.creator_user_id;
+	const canManage = canManageInvite || isCreator;
 
 	const [revealed, setRevealed] = useState<string | null>(null);
 	const [revealing, setRevealing] = useState(false);
@@ -162,6 +165,10 @@ export default function TeamInviteDialog({
 			: null;
 
 	async function handleReveal() {
+		if (!canManage) {
+			setRevealError("Only workspace owners or admins can reveal this invite.");
+			return;
+		}
 		if (revealed) {
 			setShowPlain((s) => !s);
 			return;
@@ -285,7 +292,7 @@ export default function TeamInviteDialog({
 												type="button"
 												variant="outline"
 												onClick={handleReveal}
-												disabled={revealing}
+												disabled={revealing || !canManage}
 											>
 												{revealed ? (
 													<>
@@ -395,7 +402,7 @@ export default function TeamInviteDialog({
 				<DialogFooter className="mt-2">
 					<div className="flex w-full items-center justify-between">
 						<div>
-							{isOwner && (
+							{canManage && (
 								<Popover
 									open={confirmOpen}
 									onOpenChange={setConfirmOpen}

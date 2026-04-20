@@ -24,7 +24,7 @@ export async function updateRoutingSettings({
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
 	if (!teamId) {
-		throw new Error("Missing team id");
+		throw new Error("Missing workspace id");
 	}
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 

@@ -132,7 +132,7 @@ export default function PresetsPanel({
 								<EmptyMedia variant="icon">
 									<AtSign className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No presets for this team</EmptyTitle>
+								<EmptyTitle className="text-base">No presets for this workspace</EmptyTitle>
 								<EmptyDescription>
 									Create one to standardize request settings across apps.
 								</EmptyDescription>
