@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-3-haiku",
   "organisation_id": "anthropic",
   "name": "Claude 3 Haiku",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "anthropic/claude-2-1-2023-11-22",
   "announced_date": "2024-03-04T00:00:00",
   "release_date": "2024-03-13T00:00:00",
