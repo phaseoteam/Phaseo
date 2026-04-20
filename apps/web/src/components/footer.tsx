@@ -316,6 +316,16 @@ export default function Footer() {
 									variant="ghost"
 									className="h-8 w-full justify-start px-2"
 								>
+									<Link href="/announcements" aria-label="Announcements">
+										<Megaphone className="h-4 w-4" />
+										<span className="text-xs">Announcements</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
 									<Link
 										href="https://docs.ai-stats.phaseo.app/v1/changelog"
 										target="_blank"
@@ -636,6 +646,16 @@ export default function Footer() {
 								<Link href="/about" aria-label="About AI Stats">
 									<Info className="h-4 w-4" />
 									<span className="text-xs">About</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link href="/announcements" aria-label="Announcements">
+									<Megaphone className="h-4 w-4" />
+									<span className="text-xs">Announcements</span>
 								</Link>
 							</Button>
 							<Button
