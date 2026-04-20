@@ -132,7 +132,8 @@ export async function rotateApiKeyAction(input: RotateApiKeyInput) {
     if (oldKeyErr) throw oldKeyErr;
     if (!oldKey?.team_id) throw new Error("Key not found");
     await requireTeamMembership(supabase, user.id, oldKey.team_id, ["owner", "admin"]);
-    await enforceTeamKeyLimit(supabase as any, oldKey.team_id);
+    // Rotation is an in-place replacement flow, so skip the hard team key cap check.
+    // The previous key can remain temporarily for overlap based on expires_at.
 
     const previousKeyExpiresAtRaw = input.previousKeyExpiresAt;
     let previousKeyExpiresAt: string | null = null;
@@ -179,6 +180,7 @@ export async function rotateApiKeyAction(input: RotateApiKeyInput) {
         .select("id")
         .maybeSingle();
     if (insertErr) throw insertErr;
+    if (!newKey?.id) throw new Error("Failed to create rotated key");
 
     const updatePayload: Record<string, unknown> = {};
     if (previousKeyExpiresAtRaw !== undefined) {
@@ -191,7 +193,20 @@ export async function rotateApiKeyAction(input: RotateApiKeyInput) {
             .update(updatePayload)
             .eq("id", id)
             .eq("team_id", oldKey.team_id);
-        if (updateErr) throw updateErr;
+        if (updateErr) {
+            // Best-effort compensation: avoid leaving an extra key when old key expiry update fails.
+            const { error: rollbackErr } = await supabase
+                .from("keys")
+                .delete()
+                .eq("id", newKey.id)
+                .eq("team_id", oldKey.team_id);
+            if (rollbackErr) {
+                throw new Error(
+                    `Key rotation failed and rollback also failed: ${updateErr.message}; rollback: ${rollbackErr.message}`
+                );
+            }
+            throw updateErr;
+        }
         await invalidateGatewayKeyCache(id);
     }
 

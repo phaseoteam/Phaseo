@@ -46,10 +46,14 @@ function isActiveAt(notice: SiteNotice, now: Date): boolean {
 	return true;
 }
 
-export function getActiveSiteNotice(now: Date = new Date()): SiteNotice | null {
+export function getActiveSiteNotice(
+	isAuthenticated: boolean,
+	now: Date = new Date()
+): SiteNotice | null {
 	for (const notice of SITE_NOTICES) {
 		if (!notice.enabled) continue;
 		if (!isActiveAt(notice, now)) continue;
+		if (!shouldShowSiteNotice(notice, isAuthenticated)) continue;
 		return notice;
 	}
 	return null;
