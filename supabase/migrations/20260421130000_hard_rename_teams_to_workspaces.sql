@@ -33,29 +33,53 @@ declare
   column_row record;
 begin
   for column_row in
-    select table_schema, table_name
-    from information_schema.columns
-    where table_schema = 'public'
-      and column_name = 'team_id'
+    select
+      n.nspname as table_schema,
+      c.relname as table_name
+    from pg_attribute a
+    join pg_class c on c.oid = a.attrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relkind in ('r', 'p')
+      and a.attname = 'team_id'
+      and a.attnum > 0
+      and not a.attisdropped
   loop
-    execute format(
-      'alter table %I.%I rename column team_id to workspace_id',
-      column_row.table_schema,
-      column_row.table_name
-    );
+    begin
+      execute format(
+        'alter table %I.%I rename column team_id to workspace_id',
+        column_row.table_schema,
+        column_row.table_name
+      );
+    exception
+      when undefined_column then
+        null;
+    end;
   end loop;
 
   for column_row in
-    select table_schema, table_name
-    from information_schema.columns
-    where table_schema = 'public'
-      and column_name = 'default_team_id'
+    select
+      n.nspname as table_schema,
+      c.relname as table_name
+    from pg_attribute a
+    join pg_class c on c.oid = a.attrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relkind in ('r', 'p')
+      and a.attname = 'default_team_id'
+      and a.attnum > 0
+      and not a.attisdropped
   loop
-    execute format(
-      'alter table %I.%I rename column default_team_id to default_workspace_id',
-      column_row.table_schema,
-      column_row.table_name
-    );
+    begin
+      execute format(
+        'alter table %I.%I rename column default_team_id to default_workspace_id',
+        column_row.table_schema,
+        column_row.table_name
+      );
+    exception
+      when undefined_column then
+        null;
+    end;
   end loop;
 end $$;
 
