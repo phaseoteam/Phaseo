@@ -13,12 +13,24 @@ import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import { VERCEL_SECURITY_NOTICE_HREF } from "@/lib/siteNotice";
 
 const QUICKSTART_DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
+const KEYS_SECURITY_NOTICE_STARTS_AT = "2026-04-21T00:00:00.000Z";
+const KEYS_SECURITY_NOTICE_ENDS_AT = "2026-04-23T00:00:00.000Z";
 
 export const metadata = {
 	title: "API Keys - Settings",
 };
 
+function shouldShowSecurityNotice(now: Date = new Date()): boolean {
+	const start = Date.parse(KEYS_SECURITY_NOTICE_STARTS_AT);
+	const end = Date.parse(KEYS_SECURITY_NOTICE_ENDS_AT);
+	const nowTs = now.getTime();
+	if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+	return nowTs >= start && nowTs < end;
+}
+
 function SecurityNoticeBanner() {
+	if (!shouldShowSecurityNotice()) return null;
+
 	return (
 		<Alert
 			variant="destructive"
@@ -26,20 +38,21 @@ function SecurityNoticeBanner() {
 		>
 			<ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
 			<AlertTitle className="text-amber-800 dark:text-amber-300">
-				Security notice: rotate your API keys
+				Security notice: all API keys were removed
 			</AlertTitle>
 			<AlertDescription className="text-amber-700 dark:text-amber-400">
-				This is a precautionary response to a third-party security incident at
-				Vercel, not a direct breach of AI Stats. We have updated backend key
-				configuration and are asking all users to rotate API keys as soon as
-				possible.{" "}
+				Unfortunately, due to the security incident, we removed all keys. Please
+				regenerate any keys you require, and we apologise for the inconvenience.
+				This is a protective measure we are actively working to prevent from
+				ever being required again, and it should be the only time we ever need
+				to do this.{" "}
 				<Link
 					href={VERCEL_SECURITY_NOTICE_HREF}
 					target="_blank"
 					rel="noreferrer"
 					className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
 				>
-					Read Vercel&apos;s security notice (April 19, 2026)
+					Read the full security update
 					<ArrowUpRight className="h-3.5 w-3.5" />
 				</Link>
 			</AlertDescription>
