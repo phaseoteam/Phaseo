@@ -384,7 +384,11 @@ export async function getModelOverviewCached(
 ): Promise<ModelOverviewPage | null> {
     "use cache";
 
-    cacheLife("weeks");
+    cacheLife({
+        stale: 60 * 60 * 24,
+        revalidate: 60 * 60 * 24 * 7,
+        expire: 60 * 60 * 24 * 30,
+    });
 
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);

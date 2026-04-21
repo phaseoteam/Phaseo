@@ -123,4 +123,3 @@ export default async function Page({
 		</ModelDetailShell>
 	);
 }
-

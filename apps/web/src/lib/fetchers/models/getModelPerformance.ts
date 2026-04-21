@@ -204,7 +204,11 @@ export async function getModelPerformanceMetricsCached(
 ): Promise<ModelPerformanceMetrics> {
 	"use cache";
 
-	cacheLife("hours");
+	cacheLife({
+		stale: 60 * 60,
+		revalidate: 60 * 60 * 6,
+		expire: 60 * 60 * 24,
+	});
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
 	cacheTag(`model:performance:${modelId}`);
@@ -218,6 +222,11 @@ export async function getModelPerformanceActivitySnapshotCached(
 ): Promise<ModelPerformanceActivitySnapshot> {
 	"use cache";
 
+	cacheLife({
+		stale: 60 * 15,
+		revalidate: 60 * 60,
+		expire: 60 * 60 * 6,
+	});
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
 	cacheTag(`model:performance:${modelId}`);
