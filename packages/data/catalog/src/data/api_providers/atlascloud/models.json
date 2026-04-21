@@ -330,6 +330,27 @@
     ]
   },
   {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "atlascloud:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/kimi-k2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-04-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "moonshotai/kimi-k2-instruct",
     "provider_api_model_id": "atlascloud:moonshotai/kimi-k2-instruct",
     "provider_model_slug": "moonshotai/Kimi-K2-Instruct",

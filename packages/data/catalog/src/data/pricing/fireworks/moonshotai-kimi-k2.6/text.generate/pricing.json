@@ -1,7 +1,7 @@
 {
-  "key": "novita:moonshotai/kimi-k2.6:text.generate",
-  "api_provider_id": "novita",
-  "provider_slug": "novita",
+  "key": "fireworks:moonshotai/kimi-k2.6:text.generate",
+  "api_provider_id": "fireworks",
+  "provider_slug": "fireworks",
   "api_model_id": "moonshotai/kimi-k2.6",
   "capability_id": "text.generate",
   "rules": [
