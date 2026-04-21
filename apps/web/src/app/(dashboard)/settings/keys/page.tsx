@@ -20,7 +20,7 @@ export const metadata = {
 	title: "API Keys - Settings",
 };
 
-function shouldShowSecurityNotice(now: Date = new Date()): boolean {
+function shouldShowSecurityNotice(now: Date): boolean {
 	const start = Date.parse(KEYS_SECURITY_NOTICE_STARTS_AT);
 	const end = Date.parse(KEYS_SECURITY_NOTICE_ENDS_AT);
 	const nowTs = now.getTime();
@@ -28,8 +28,8 @@ function shouldShowSecurityNotice(now: Date = new Date()): boolean {
 	return nowTs >= start && nowTs < end;
 }
 
-function SecurityNoticeBanner() {
-	if (!shouldShowSecurityNotice()) return null;
+function SecurityNoticeBanner({ show }: { show: boolean }) {
+	if (!show) return null;
 
 	return (
 		<Alert
@@ -63,7 +63,6 @@ function SecurityNoticeBanner() {
 export default function KeysPage() {
 	return (
 		<div className="space-y-6">
-			<SecurityNoticeBanner />
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<KeysContent />
 			</Suspense>
@@ -78,6 +77,7 @@ async function KeysContent() {
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
+	const showSecurityNotice = shouldShowSecurityNotice(new Date());
 
 	const initialTeamId = await getWorkspaceIdFromCookie();
 
@@ -165,6 +165,7 @@ async function KeysContent() {
 
 	return (
 		<div className="space-y-6">
+			<SecurityNoticeBanner show={showSecurityNotice} />
 			<SettingsPageHeader
 				title="API Keys"
 				description="Create and manage gateway API keys for this workspace."
