@@ -86,6 +86,7 @@ end $$;
 do $$
 declare
   fn_row record;
+  column_row record;
 begin
   for fn_row in
     select *
