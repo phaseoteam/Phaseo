@@ -497,6 +497,7 @@ function buildPlaygroundCodeSnippets({
 	prompt: string;
 }): PlaygroundCodeSnippet[] {
 	const resolvedPrompt = resolvePromptForSnippet(prompt, modelName);
+	const resolvedPromptStringLiteral = JSON.stringify(resolvedPrompt);
 	const endpointPath = "/responses";
 	const endpointUrl = `${BASE_URL}${endpointPath}`;
 	const payload = {
@@ -850,7 +851,7 @@ var responseClient = client.GetResponseClient();
 var result = await responseClient.CreateResponseAsync(new ResponseCreationOptions
 {
     Model = "${modelId}",
-    Input = "${resolvedPrompt.replace(/"/g, '\\"')}",
+    Input = ${resolvedPromptStringLiteral},
 });
 
 Console.WriteLine(result.Value.OutputText);`,
@@ -882,7 +883,7 @@ func main() {
     response, err := client.Responses.New(context.Background(), openai.ResponseNewParams{
         Model: openai.String("${modelId}"),
         Input: openai.ResponseNewParamsInputUnion{
-            OfString: openai.String("${resolvedPrompt.replace(/"/g, '\\"')}"),
+            OfString: openai.String(${resolvedPromptStringLiteral}),
         },
     })
     if err != nil {
