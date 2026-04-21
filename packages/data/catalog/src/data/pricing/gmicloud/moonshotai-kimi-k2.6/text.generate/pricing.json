@@ -14,7 +14,8 @@
       "pricing_plan": "standard",
       "note": "Current 10% promotional discount from $0.95/M list input rate",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-20T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -25,7 +26,8 @@
       "pricing_plan": "standard",
       "note": "Current 10% promotional discount from $0.16/M list cache-read rate",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-20T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -36,7 +38,8 @@
       "pricing_plan": "standard",
       "note": "Current 10% promotional discount from $4.00/M list output rate",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-20T00:00:00"
     }
   ]
 }
