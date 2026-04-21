@@ -452,8 +452,7 @@ jobs:
               if: ${{ env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=preview --git-branch="$GITHUB_HEAD_REF" --token=$VERCEL_TOKEN
-                  vercel build --token=$VERCEL_TOKEN
-                  vercel deploy --prebuilt --archive=tgz --token=$VERCEL_TOKEN
+                  vercel deploy --yes --archive=tgz --logs --token=$VERCEL_TOKEN
 
     deploy:
         runs-on: ubuntu-latest
@@ -507,8 +506,7 @@ jobs:
               if: ${{ matrix.target == 'web' && env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-                  vercel build --prod --token=$VERCEL_TOKEN
-                  vercel deploy --prebuilt --archive=tgz --prod --token=$VERCEL_TOKEN
+                  vercel deploy --yes --archive=tgz --prod --logs --token=$VERCEL_TOKEN
             # ---------- API (Cloudflare Workers) ----------
             # Install deps so wrangler can resolve imports
 
