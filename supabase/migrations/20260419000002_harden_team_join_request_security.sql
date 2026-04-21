@@ -2,9 +2,9 @@
 
 -- Tighten insert policy so users can only create pending requests for themselves
 -- using a valid invite that belongs to the same team.
-create or replace function public.is_active_invite_for_workspace(
+create or replace function public.is_active_invite_for_team(
   p_invite_id uuid,
-  p_workspace_id uuid
+  p_team_id uuid
 )
 returns boolean
 language sql
@@ -14,20 +14,20 @@ set search_path = public
 as $$
   select exists (
     select 1
-    from public.workspace_invites ti
+    from public.team_invites ti
     where ti.id = p_invite_id
-      and ti.workspace_id = p_workspace_id
+      and ti.team_id = p_team_id
       and (ti.expires_at is null or ti.expires_at > now())
       and (ti.max_uses is null or coalesce(ti.uses_count, 0) < ti.max_uses)
   );
 $$;
 
-revoke all on function public.is_active_invite_for_workspace(uuid, uuid) from public;
-grant execute on function public.is_active_invite_for_workspace(uuid, uuid) to authenticated;
+revoke all on function public.is_active_invite_for_team(uuid, uuid) from public;
+grant execute on function public.is_active_invite_for_team(uuid, uuid) to authenticated;
 
-drop policy if exists workspace_join_requests_insert on public.workspace_join_requests;
-create policy workspace_join_requests_insert
-  on public.workspace_join_requests
+drop policy if exists team_join_requests_insert on public.team_join_requests;
+create policy team_join_requests_insert
+  on public.team_join_requests
   for insert
   to authenticated
   with check (
@@ -36,34 +36,34 @@ create policy workspace_join_requests_insert
     and status = 'pending'::join_request_status
     and decided_by is null
     and decided_at is null
-    and not public.is_workspace_member(workspace_id)
-    and public.is_active_invite_for_workspace(invite_id, workspace_id)
+    and not public.is_team_member(team_id)
+    and public.is_active_invite_for_team(invite_id, team_id)
   );
 
 -- Only admins can update pending requests, and only to final decided states.
-drop policy if exists workspace_join_requests_update on public.workspace_join_requests;
-create policy workspace_join_requests_update
-  on public.workspace_join_requests
+drop policy if exists team_join_requests_update on public.team_join_requests;
+create policy team_join_requests_update
+  on public.team_join_requests
   for update
   to authenticated
   using (
-    public.is_workspace_admin(workspace_id)
+    public.is_team_admin(team_id)
     and status = 'pending'::join_request_status
   )
   with check (
-    public.is_workspace_admin(workspace_id)
+    public.is_team_admin(team_id)
     and status in ('approved'::join_request_status, 'denied'::join_request_status)
     and decided_by = auth.uid()
     and decided_at is not null
   );
 
 -- One pending request per (team, requester) to prevent spam/races.
-create unique index if not exists workspace_join_requests_pending_unique
-  on public.workspace_join_requests (workspace_id, requester_user_id)
+create unique index if not exists team_join_requests_pending_unique
+  on public.team_join_requests (team_id, requester_user_id)
   where status = 'pending'::join_request_status;
 
 -- Guard cross-team invite linkage and state transitions at the table level.
-create or replace function public.enforce_workspace_join_request_write_rules()
+create or replace function public.enforce_team_join_request_write_rules()
 returns trigger
 language plpgsql
 security definer
@@ -73,9 +73,9 @@ begin
   if new.invite_id is not null then
     if not exists (
       select 1
-      from public.workspace_invites ti
+      from public.team_invites ti
       where ti.id = new.invite_id
-        and ti.workspace_id = new.workspace_id
+        and ti.team_id = new.team_id
     ) then
       raise exception using
         errcode = '23514',
@@ -118,11 +118,11 @@ begin
       detail = 'Decided join requests must include decided_by and decided_at.';
   end if;
 
-  if new.workspace_id <> old.workspace_id or new.requester_user_id <> old.requester_user_id then
+  if new.team_id <> old.team_id or new.requester_user_id <> old.requester_user_id then
     raise exception using
       errcode = '23514',
       message = 'join_request_immutable_fields_modified',
-      detail = 'workspace_id and requester_user_id are immutable.';
+      detail = 'team_id and requester_user_id are immutable.';
   end if;
 
   if new.invite_id is distinct from old.invite_id then
@@ -136,21 +136,21 @@ begin
 end;
 $$;
 
-drop trigger if exists workspace_join_requests_write_rules_guard on public.workspace_join_requests;
-create trigger workspace_join_requests_write_rules_guard
+drop trigger if exists team_join_requests_write_rules_guard on public.team_join_requests;
+create trigger team_join_requests_write_rules_guard
 before insert or update
-on public.workspace_join_requests
+on public.team_join_requests
 for each row
-execute function public.enforce_workspace_join_request_write_rules();
+execute function public.enforce_team_join_request_write_rules();
 
 -- Atomic approval flow: verifies admin rights, locks request, enforces invite-team
 -- consistency, increments invite uses, upserts membership, and marks request approved.
-create or replace function public.approve_workspace_join_request(
+create or replace function public.approve_team_join_request(
   p_request_id uuid
 )
 returns table (
   id uuid,
-  workspace_id uuid,
+  team_id uuid,
   requester_user_id uuid,
   invite_id uuid
 )
@@ -160,8 +160,8 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_req public.workspace_join_requests%rowtype;
-  v_role public.workspace_role := 'member'::public.workspace_role;
+  v_req public.team_join_requests%rowtype;
+  v_role public.team_role := 'member'::public.team_role;
 begin
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Unauthorized';
@@ -169,8 +169,8 @@ begin
 
   select *
     into v_req
-  from public.workspace_join_requests
-  where workspace_join_requests.id = p_request_id
+  from public.team_join_requests
+  where team_join_requests.id = p_request_id
   for update;
 
   if not found then
@@ -181,15 +181,15 @@ begin
     raise exception using errcode = '23514', message = 'Request already decided';
   end if;
 
-  if not public.is_workspace_admin(v_req.workspace_id) then
+  if not public.is_team_admin(v_req.team_id) then
     raise exception using errcode = '42501', message = 'Only owners or admins may approve join requests.';
   end if;
 
   if v_req.invite_id is not null then
-    update public.workspace_invites ti
+    update public.team_invites ti
       set uses_count = coalesce(ti.uses_count, 0) + 1
     where ti.id = v_req.invite_id
-      and ti.workspace_id = v_req.workspace_id
+      and ti.team_id = v_req.team_id
       and (ti.expires_at is null or ti.expires_at > now())
       and (ti.max_uses is null or coalesce(ti.uses_count, 0) < ti.max_uses)
     returning ti.role into v_role;
@@ -199,18 +199,18 @@ begin
     end if;
   end if;
 
-  insert into public.workspace_members (workspace_id, user_id, role)
-  values (v_req.workspace_id, v_req.requester_user_id, v_role)
-  on conflict (workspace_id, user_id) do nothing;
+  insert into public.team_members (team_id, user_id, role)
+  values (v_req.team_id, v_req.requester_user_id, v_role)
+  on conflict (team_id, user_id) do nothing;
 
   return query
-  update public.workspace_join_requests r
+  update public.team_join_requests r
      set status = 'approved'::public.join_request_status,
          decided_by = v_user_id,
          decided_at = now()
    where r.id = v_req.id
      and r.status = 'pending'::public.join_request_status
-  returning r.id, r.workspace_id, r.requester_user_id, r.invite_id;
+  returning r.id, r.team_id, r.requester_user_id, r.invite_id;
 
   if not found then
     raise exception using errcode = '23514', message = 'Request already decided';
@@ -219,12 +219,12 @@ end;
 $$;
 
 -- Atomic reject flow: verifies admin rights, locks request, and marks denied once.
-create or replace function public.reject_workspace_join_request(
+create or replace function public.reject_team_join_request(
   p_request_id uuid
 )
 returns table (
   id uuid,
-  workspace_id uuid
+  team_id uuid
 )
 language plpgsql
 security definer
@@ -232,7 +232,7 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_req public.workspace_join_requests%rowtype;
+  v_req public.team_join_requests%rowtype;
 begin
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Unauthorized';
@@ -240,8 +240,8 @@ begin
 
   select *
     into v_req
-  from public.workspace_join_requests
-  where workspace_join_requests.id = p_request_id
+  from public.team_join_requests
+  where team_join_requests.id = p_request_id
   for update;
 
   if not found then
@@ -252,18 +252,18 @@ begin
     raise exception using errcode = '23514', message = 'Request already decided';
   end if;
 
-  if not public.is_workspace_admin(v_req.workspace_id) then
+  if not public.is_team_admin(v_req.team_id) then
     raise exception using errcode = '42501', message = 'Only owners or admins may reject join requests.';
   end if;
 
   return query
-  update public.workspace_join_requests r
+  update public.team_join_requests r
      set status = 'denied'::public.join_request_status,
          decided_by = v_user_id,
          decided_at = now()
    where r.id = v_req.id
      and r.status = 'pending'::public.join_request_status
-  returning r.id, r.workspace_id;
+  returning r.id, r.team_id;
 
   if not found then
     raise exception using errcode = '23514', message = 'Request already decided';
@@ -271,8 +271,8 @@ begin
 end;
 $$;
 
-revoke all on function public.approve_workspace_join_request(uuid) from public;
-grant execute on function public.approve_workspace_join_request(uuid) to authenticated;
+revoke all on function public.approve_team_join_request(uuid) from public;
+grant execute on function public.approve_team_join_request(uuid) to authenticated;
 
-revoke all on function public.reject_workspace_join_request(uuid) from public;
-grant execute on function public.reject_workspace_join_request(uuid) to authenticated;
+revoke all on function public.reject_team_join_request(uuid) from public;
+grant execute on function public.reject_team_join_request(uuid) to authenticated;
