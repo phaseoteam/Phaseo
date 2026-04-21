@@ -3654,6 +3654,32 @@
     ]
   },
   {
+    "api_model_id": "openai/gpt-image-2",
+    "provider_api_model_id": "openai:openai/gpt-image-2",
+    "provider_model_slug": "gpt-image-2",
+    "internal_model_id": "openai/gpt-image-2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-21T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/gpt-image-1-mini",
     "provider_api_model_id": "openai:openai/gpt-image-1-mini",
     "provider_model_slug": "gpt-image-1-mini",
