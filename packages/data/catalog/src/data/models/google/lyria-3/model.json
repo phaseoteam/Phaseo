@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": null,
-  "output_types": "audio",
+  "output_types": "audio_music",
   "api_model_id": "google/lyria-3",
   "links": [],
   "details": [],

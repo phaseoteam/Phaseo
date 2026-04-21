@@ -1,0 +1,18 @@
+{
+  "model_id": "bytedance/seedance-1.5-pro",
+  "organisation_id": "bytedance",
+  "name": "Seedance 1.5 Pro",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "video",
+  "api_model_id": "bytedance/seedance-1.5-pro",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

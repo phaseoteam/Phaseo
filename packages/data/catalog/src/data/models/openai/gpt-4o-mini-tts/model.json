@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": "text",
-  "output_types": "audio",
+  "output_types": "audio_tts",
   "api_model_id": "openai/gpt-4o-mini-tts",
   "family_id": "openai/gpt-4o",
   "links": [],

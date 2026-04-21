@@ -1,13 +1,18 @@
 // app/(auth)/sign-in/actions.ts
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import {
+	configuredAuthOriginsFromEnv,
 	resolveAuthCallbackUrl,
 	resolveAuthOrigin,
+	resolveLocalDevAuthOrigin,
+	stripTrailingSlash,
 } from "@/lib/auth/authOrigin";
+import { sanitizeReturnUrl } from "@/lib/auth/return-url";
+import { finalizePostLogin } from "@/lib/auth/post-login";
 import {
 	buildStartSsoRequest,
 	mapSsoAuthErrorMessage,
@@ -22,16 +27,63 @@ const cookieOpts = {
 	maxAge: 60 * 60 * 24 * 180, // 6 months
 };
 
+const OAUTH_PROVIDERS = ["google", "github", "gitlab"] as const;
+type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
+
 export type { StartSsoInput } from "@/lib/auth/sso";
 
 async function setAuthProviderCookie(provider: string): Promise<void> {
 	await (await cookies()).set("auth_provider", provider, cookieOpts);
 }
 
+async function resolveSafeReturnUrl(formData: FormData): Promise<string | undefined> {
+	const fromForm = sanitizeReturnUrl(formData.get("returnUrl"), "/");
+	if (fromForm !== "/") return fromForm;
+
+	const headerStore = await headers();
+	const referer = headerStore.get("referer");
+	if (!referer) return undefined;
+
+	try {
+		const refererUrl = new URL(referer);
+		const refererOrigin = stripTrailingSlash(refererUrl.origin);
+		const configuredOrigins = configuredAuthOriginsFromEnv();
+		const isAllowedRefererOrigin =
+			configuredOrigins.length > 0
+				? configuredOrigins.includes(refererOrigin)
+				: process.env.NODE_ENV !== "production" &&
+					refererOrigin ===
+						resolveLocalDevAuthOrigin({
+							originHeader: headerStore.get("origin"),
+							hostHeader:
+								headerStore.get("x-forwarded-host") ?? headerStore.get("host"),
+						});
+		if (!isAllowedRefererOrigin) return undefined;
+
+		const fromReferer = sanitizeReturnUrl(refererUrl.searchParams.get("returnUrl"), "/");
+		return fromReferer === "/" ? undefined : fromReferer;
+	} catch {
+		return undefined;
+	}
+}
+
+function buildRedirect(pathname: string, params: Record<string, string | undefined>) {
+	const url = new URL(pathname, "http://localhost");
+	for (const [key, value] of Object.entries(params)) {
+		if (value) url.searchParams.set(key, value);
+	}
+	return `${url.pathname}${url.search}`;
+}
+
 export async function handleOAuthRedirect(formData: FormData) {
 	const supabase = await createClient();
-	const provider = String(formData.get("provider") ?? "google").toLowerCase();
-	const redirectTo = await resolveAuthCallbackUrl(formData.get("returnUrl"));
+	const rawProvider = String(formData.get("provider") ?? "google").toLowerCase();
+	if (!(OAUTH_PROVIDERS as readonly string[]).includes(rawProvider)) {
+		redirect("/error?message=Authentication failed");
+	}
+	const provider = rawProvider as OAuthProvider;
+	const safeReturnUrl = await resolveSafeReturnUrl(formData);
+	const redirectTo = await resolveAuthCallbackUrl(safeReturnUrl);
 
 	await setAuthProviderCookie(provider);
 
@@ -50,24 +102,50 @@ export async function handlePasswordSignIn(formData: FormData) {
 	const supabase = await createClient();
 	const email = String(formData.get("email") ?? "").trim();
 	const password = String(formData.get("password") ?? "");
+	const safeReturnUrl = await resolveSafeReturnUrl(formData);
 
-	const { error } = await supabase.auth.signInWithPassword({ email, password });
+	const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 	if (error) {
-		redirect("/sign-in?error=auth-failed");
+		redirect(
+			buildRedirect("/sign-in", {
+				error: "auth-failed",
+				returnUrl: safeReturnUrl,
+			}),
+		);
 	}
 
 	await setAuthProviderCookie("email");
-
-	const callbackUrl = new URL(
-		await resolveAuthCallbackUrl(formData.get("returnUrl")),
-	);
-	callbackUrl.searchParams.set("type", "email");
-	redirect(callbackUrl.toString());
+	let redirectPath = safeReturnUrl ?? "/";
+	try {
+		const result = await finalizePostLogin({
+			supabaseUser: supabase,
+			user: data.user,
+			session: data.session,
+			returnUrl: safeReturnUrl ?? "/",
+			source: "server_action",
+		});
+		redirectPath = result.redirectPath;
+	} catch (postLoginError) {
+		console.error("Failed to finalize post-login state after password sign-in", {
+			error:
+				postLoginError instanceof Error
+					? postLoginError.message
+					: String(postLoginError),
+		});
+		redirect(
+			`/error?message=${encodeURIComponent(
+				"Your account was authenticated, but we could not finish setting up your workspace. Please contact support.",
+			)}`,
+		);
+	}
+	redirect(redirectPath);
 }
 
 export async function startSsoSignIn(input: StartSsoInput) {
 	const supabase = await createClient();
-	const redirectTo = await resolveAuthCallbackUrl(input.returnUrl);
+	const returnUrl = sanitizeReturnUrl(input.returnUrl, "/");
+	const safeReturnUrl = returnUrl === "/" ? undefined : returnUrl;
+	const redirectTo = await resolveAuthCallbackUrl(safeReturnUrl);
 
 	try {
 		const request = buildStartSsoRequest(input, redirectTo);

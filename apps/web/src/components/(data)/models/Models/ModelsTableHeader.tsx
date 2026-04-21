@@ -34,6 +34,17 @@ interface ModelsTableHeaderProps {
 	allStatuses: string[];
 }
 
+function formatModalityLabel(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "audio_stt") return "STT";
+	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_music") return "Music";
+	return value
+		.replace(/[_-]+/g, " ")
+		.trim()
+		.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function ModelsTableHeader({
 	allEndpoints,
 	allModalities,
@@ -380,7 +391,7 @@ export default function ModelsTableHeader({
 													htmlFor={`input-modality-${modality}`}
 													className="text-sm"
 												>
-													{modality}
+													{formatModalityLabel(modality)}
 												</label>
 											</div>
 										))}
@@ -424,7 +435,7 @@ export default function ModelsTableHeader({
 													htmlFor={`output-modality-${modality}`}
 													className="text-sm"
 												>
-													{modality}
+													{formatModalityLabel(modality)}
 												</label>
 											</div>
 										))}

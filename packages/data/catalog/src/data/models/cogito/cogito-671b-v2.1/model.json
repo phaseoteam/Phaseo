@@ -1,0 +1,18 @@
+{
+  "model_id": "cogito/cogito-671b-v2.1",
+  "organisation_id": "cogito",
+  "name": "Cogito 671b V2.1",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "cogito/cogito-671b-v2.1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

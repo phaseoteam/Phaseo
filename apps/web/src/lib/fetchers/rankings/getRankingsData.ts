@@ -7,13 +7,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 
-const RANKINGS_CACHE = {
-    // Keep public rankings aggressively cached and rely on tag invalidation
-    // for intentional refreshes to avoid repeated high-volume Supabase reads.
-    stale: 60 * 60,
-    revalidate: 60 * 60 * 6,
-    expire: 60 * 60 * 24 * 7,
-};
 
 // Type definitions for API responses
 export type RankingModel = {
@@ -269,7 +262,7 @@ export async function getRankings(
     metric: string = "tokens",
     limit: number = 50
 ): Promise<RankingsResponse> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-rankings");
 
     console.log("[getRankings] Starting fetch with params:", { timeRange, metric, limit });
@@ -333,7 +326,7 @@ export async function getRankings(
  * Get performance data for scatter chart
  */
 export async function getPerformanceData(hours: number = 24): Promise<{ data: PerformanceData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-performance");
 
     console.log("[getPerformanceData] Starting fetch with hours:", hours);
@@ -359,7 +352,7 @@ export async function getMarketShare(
     dimension: "organization" | "provider" = "organization",
     timeRange: string = "week"
 ): Promise<{ data: MarketShareData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-market-share");
 
     console.log("[getMarketShare] Starting fetch with params:", { dimension, timeRange });
@@ -387,7 +380,7 @@ export async function getTimeseriesData(
     bucketSize: string = "hour",
     topN: number = 10
 ): Promise<{ data: TimeseriesData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-timeseries");
 
     const supabase = createAdminClient();
@@ -617,7 +610,7 @@ export async function getMarketShareTimeseries(
     bucketSize: string = "week",
     topN: number = 8
 ): Promise<{ data: MarketShareTimeseriesData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-market-share-timeseries");
 
     const supabase = createAdminClient();
@@ -641,7 +634,7 @@ export async function getMarketShareTimeseries(
 export async function getReliabilityMetrics(
     timeRange: string = "week"
 ): Promise<{ data: ReliabilityData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-reliability");
 
     const supabase = createAdminClient();
@@ -659,7 +652,7 @@ export async function getGeographicDistribution(
     timeRange: string = "week",
     limit: number = 20
 ): Promise<{ data: GeographyData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-geography");
 
     const supabase = createAdminClient();
@@ -677,7 +670,7 @@ export async function getGeographicDistribution(
 export async function getMultimodalBreakdown(
     timeRange: string = "week"
 ): Promise<{ data: MultimodalData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-multimodal");
 
     const supabase = createAdminClient();
@@ -695,7 +688,7 @@ export async function getTopApps(
     timeRange: string = "week",
     limit: number = 20
 ): Promise<{ data: TopAppData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-top-apps");
 
     const supabase = createAdminClient();
@@ -735,7 +728,7 @@ export async function getModelRankingsRows(
     metric: string = "tokens",
     limit: number = 50
 ): Promise<RankingModel[]> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-rankings");
 
     const supabase = createAdminClient();
@@ -760,7 +753,7 @@ export async function getTrendingApps(
     limit: number = 20,
     minWeekTokens: number = 0
 ): Promise<{ data: TrendingAppData[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-top-apps");
 
     const supabase = createAdminClient();
@@ -800,7 +793,7 @@ export async function getTrendingApps(
 export async function getWeeklyModelProviderTokens(): Promise<{
     data: WeeklyModelProviderTokens[];
 }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-rankings");
 
     const supabase = createAdminClient();
@@ -823,7 +816,7 @@ export async function getWeeklyModelProviderTokens(): Promise<{
 export async function getDailyAppRollup(
     sinceIso?: string,
 ): Promise<{ data: DailyAppRollup[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-top-apps");
 
     const supabase = createAdminClient();
@@ -847,7 +840,7 @@ export async function getTopModelsWithMetadata(
     timeRange: string = "week",
     limit: number = 6
 ): Promise<{ data: TopModelWithMetadata[] }> {
-    cacheLife(RANKINGS_CACHE);
+    cacheLife("hours");
     cacheTag("public-rankings");
 
     const supabase = createAdminClient();

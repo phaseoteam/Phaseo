@@ -1,9 +1,9 @@
 [
   {
-    "api_model_id": "deepseek/deepseek-v3.1",
-    "provider_api_model_id": "baseten:deepseek/deepseek-v3.1",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1",
-    "internal_model_id": "deepseek/deepseek-v3.1",
+    "api_model_id": "deepseek/deepseek-v3-0324",
+    "provider_api_model_id": "baseten:deepseek/deepseek-v3-0324",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324",
+    "internal_model_id": "deepseek/deepseek-v3-2025-03-24",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -21,10 +21,10 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-v3-0324",
-    "provider_api_model_id": "baseten:deepseek/deepseek-v3-0324",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324",
-    "internal_model_id": "deepseek/deepseek-v3-2025-03-24",
+    "api_model_id": "deepseek/deepseek-v3.1",
+    "provider_api_model_id": "baseten:deepseek/deepseek-v3.1",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1",
+    "internal_model_id": "deepseek/deepseek-v3.1",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
@@ -84,27 +84,6 @@
     ]
   },
   {
-    "api_model_id": "moonshotai/kimi-k2.5",
-    "provider_api_model_id": "baseten:moonshotai/kimi-k2.5",
-    "provider_model_slug": "moonshotai/Kimi-K2.5",
-    "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262000,
-    "max_output_tokens": 262000,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "moonshotai/kimi-k2-0905",
     "provider_api_model_id": "baseten:moonshotai/kimi-k2-0905",
     "provider_model_slug": "moonshotai/Kimi-K2-Instruct-0905",
@@ -138,6 +117,48 @@
     "max_output_tokens": 163800,
     "effective_from": null,
     "effective_to": "2026-03-10T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "baseten:moonshotai/kimi-k2.5",
+    "provider_model_slug": "moonshotai/Kimi-K2.5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "baseten:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/Kimi-K2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-04-20T00:00:00",
+    "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",

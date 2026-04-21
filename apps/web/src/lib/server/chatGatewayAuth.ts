@@ -9,6 +9,7 @@ import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
 const KEY_PREFIX = "aistats_v1_sk_";
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const DEFAULT_GATEWAY_API_URL = "http://localhost:8787";
+const FORCE_CHAT_HASH_SYNC_FLAG = "CHAT_ROUTE_FORCE_HASH_SYNC";
 
 type ChatGatewayContext = {
 	userId: string;
@@ -71,6 +72,11 @@ function resolvePepper(): string {
 			"Gateway key pepper is not configured",
 		);
 	}
+}
+
+function shouldForceChatHashSync(): boolean {
+	const raw = String(process.env[FORCE_CHAT_HASH_SYNC_FLAG] ?? "").trim().toLowerCase();
+	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
 function deriveTeamScopedGatewayKey(args: { teamId: string }): {
@@ -212,9 +218,15 @@ async function ensureManagedGatewayKey(args: {
 	if (String(existing.status) !== "active") {
 		updates.status = "active";
 	}
-	const storedHash = String(existing.hash ?? "").toLowerCase().trim();
-	if (storedHash !== expectedHash) {
-		updates.hash = expectedHash;
+
+	// Do not rewrite hash by default: during pepper rotations, Vercel and
+	// Cloudflare can briefly diverge. Forcing hash rewrites on each request can
+	// create auth flapping. Only sync hashes when explicitly requested.
+	if (shouldForceChatHashSync()) {
+		const storedHash = String(existing.hash ?? "").toLowerCase().trim();
+		if (storedHash !== expectedHash) {
+			updates.hash = expectedHash;
+		}
 	}
 
 	if (Object.keys(updates).length > 0) {

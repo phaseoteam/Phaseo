@@ -14,10 +14,12 @@ const DARK = "github-dark" as const;
 
 export type ShikiLang =
     | "bash"
+    | "js"
     | "ts"
     | "python"
     | "json"
     | "go"
+    | "java"
     | "csharp"
     | "php"
     | "ruby"
@@ -31,10 +33,12 @@ export const getShikiHighlighter = cache(async (): Promise<Highlighter> => {
         themes: [bundledThemes[LIGHT], bundledThemes[DARK]],
         langs: [
             bundledLanguages.bash,
+            bundledLanguages.js,
             bundledLanguages.ts,
             bundledLanguages.python,
             bundledLanguages.json,
             bundledLanguages.go,
+            bundledLanguages.java,
             bundledLanguages.csharp,
             bundledLanguages.php,
             bundledLanguages.ruby,

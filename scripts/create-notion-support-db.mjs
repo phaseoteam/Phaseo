@@ -184,7 +184,6 @@ if (!databaseId) {
 }
 
 writeEnvValue(envPath, "NOTION_SUPPORT_DATABASE_ID", databaseId);
-writeEnvValue(envPath, "NOTION_SUPPORT_STATUS_DEFAULT", "New");
 
 console.log("Created Notion database:", data?.url || data?.id);
 console.log("Saved NOTION_SUPPORT_DATABASE_ID to .env.local");

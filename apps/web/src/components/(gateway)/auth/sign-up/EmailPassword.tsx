@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
-import { Eye, EyeOff } from "lucide-react";
+import { Check, Eye, EyeOff, X } from "lucide-react";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
 
@@ -168,16 +168,36 @@ export default function EmailPassword({
 						<div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
 							<p className="mb-2 font-medium text-foreground">Password requirements</p>
 							<ul className="space-y-1">
-								<li className={checkItemClass(checks.hasLower)}>
+								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasLower)}`}>
+									{checks.hasLower ? (
+										<Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									) : (
+										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									)}
 									Contains a lowercase letter
 								</li>
-								<li className={checkItemClass(checks.hasUpper)}>
+								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasUpper)}`}>
+									{checks.hasUpper ? (
+										<Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									) : (
+										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									)}
 									Contains an uppercase letter
 								</li>
-								<li className={checkItemClass(checks.hasNumber)}>
+								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasNumber)}`}>
+									{checks.hasNumber ? (
+										<Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									) : (
+										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									)}
 									Contains a number
 								</li>
-								<li className={checkItemClass(checks.hasSymbol)}>
+								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasSymbol)}`}>
+									{checks.hasSymbol ? (
+										<Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									) : (
+										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									)}
 									Contains a symbol
 								</li>
 							</ul>

@@ -8,16 +8,15 @@ export function sanitizeReturnUrl(
 	const raw = candidate.trim();
 	if (!raw) return fallback;
 	if (/[\u0000-\u001F\u007F]/.test(raw)) return fallback;
-	if (!raw.startsWith("/")) return fallback;
-
 	let decoded = raw;
 	try {
 		decoded = decodeURIComponent(raw);
 	} catch {
-		return fallback;
+		decoded = raw;
 	}
 
 	const normalized = decoded.replace(/\\/g, "/");
+	if (/[\u0000-\u001F\u007F]/.test(normalized)) return fallback;
 	if (!normalized.startsWith("/")) return fallback;
 	if (normalized.startsWith("//")) return fallback;
 

@@ -1,6 +1,8 @@
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
 	ModelCreatorModelsSection,
+	ModelCreatorModelsSkeleton,
+	ModelOverviewSectionsSkeleton,
 } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
@@ -12,6 +14,50 @@ import {
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import { permanentRedirect } from "next/navigation";
+import { Suspense } from "react";
+
+async function ModelOverviewSectionsContent({
+	modelId,
+	includeHidden,
+	modelPromise,
+}: {
+	modelId: string;
+	includeHidden: boolean;
+	modelPromise: ReturnType<typeof getModelOverviewCached>;
+}) {
+	const model = await modelPromise;
+
+	return (
+		<ModelOverviewSections
+			modelId={modelId}
+			model={model}
+			includeHidden={includeHidden}
+		/>
+	);
+}
+
+async function ModelCreatorModelsSectionContent({
+	modelId,
+	includeHidden,
+	modelPromise,
+}: {
+	modelId: string;
+	includeHidden: boolean;
+	modelPromise: ReturnType<typeof getModelOverviewCached>;
+}) {
+	const model = await modelPromise;
+	if (!model) return null;
+
+	return (
+		<div className="mt-10">
+			<ModelCreatorModelsSection
+				modelId={modelId}
+				includeHidden={includeHidden}
+				model={model}
+			/>
+		</div>
+	);
+}
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
@@ -56,25 +102,24 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId));
 	}
 	const modelId = canonicalModelId;
-
-	const model = await getModelOverviewCached(modelId, includeHidden);
+	const modelPromise = getModelOverviewCached(modelId, includeHidden);
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
-			<ModelOverviewSections
-				modelId={modelId}
-				model={model}
-				includeHidden={includeHidden}
-			/>
-			{model ? (
-				<div className="mt-10">
-					<ModelCreatorModelsSection
-						modelId={modelId}
-						includeHidden={includeHidden}
-						model={model}
-					/>
-				</div>
-			) : null}
+			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
+				<ModelOverviewSectionsContent
+					modelId={modelId}
+					includeHidden={includeHidden}
+					modelPromise={modelPromise}
+				/>
+			</Suspense>
+			<Suspense fallback={<ModelCreatorModelsSkeleton />}>
+				<ModelCreatorModelsSectionContent
+					modelId={modelId}
+					includeHidden={includeHidden}
+					modelPromise={modelPromise}
+				/>
+			</Suspense>
 		</ModelDetailShell>
 	);
 }

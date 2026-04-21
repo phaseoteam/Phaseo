@@ -1,0 +1,18 @@
+{
+  "model_id": "cohere/command-r-plus",
+  "organisation_id": "cohere",
+  "name": "Command R Plus",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "cohere/command-r-plus",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemma-3-270m",
+  "organisation_id": "google",
+  "name": "Gemma 3 270m",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "google/gemma-3-270m",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

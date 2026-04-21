@@ -18,9 +18,12 @@ import {
 	AudioLines,
 	CircleDot,
 	FileText,
+	Mic,
+	Music2,
 	Route,
 	Sparkles,
 	Text as TextIcon,
+	Volume2,
 	ImageIcon,
 	Video,
 	CalendarDays,
@@ -61,8 +64,10 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"text",
 	"image",
 	"video",
+	"audio_stt",
+	"audio_tts",
+	"audio_music",
 	"audio",
-	"music",
 	"file",
 	"moderations",
 	"rerank",
@@ -106,7 +111,22 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
-	if (normalized.includes("music")) return "music";
+	if (normalized.includes("music")) return "audio_music";
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return "audio_stt";
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return "audio_tts";
+	}
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("moderat")) return "moderations";
@@ -175,6 +195,10 @@ function toggleInList(current: string[], value: string): string[] {
 }
 
 function toTitleCase(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "audio_stt") return "STT";
+	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -206,7 +230,22 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return AudioLines;
+	if (normalized.includes("music")) return Music2;
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return Mic;
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return Volume2;
+	}
 	if (normalized.includes("audio")) return AudioLines;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;

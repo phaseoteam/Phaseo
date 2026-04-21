@@ -39,6 +39,7 @@ const MODEL_DATA_GLOBAL_TAGS = [
 	"data:sign-in:supported-models-stats",
 	"landing:db-stats",
 	"page:models",
+	"models:list-base",
 	"public-rankings",
 ] as const;
 
@@ -56,6 +57,7 @@ const MODEL_API_GLOBAL_TAGS = [
 	"data:top_apps",
 	"data:top_models",
 	"monitor-models",
+	"models:monitor",
 	"page:models",
 ] as const;
 

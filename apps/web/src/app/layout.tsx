@@ -14,6 +14,7 @@ import { CookieConsentManager } from "@/components/analytics/CookieConsentManage
 import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
+import { Suspense } from "react";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -81,7 +82,9 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<TooltipProvider>
-						<SiteNoticeSlot />
+						<Suspense fallback={null}>
+							<SiteNoticeSlot />
+						</Suspense>
 						<NuqsAdapter>{children}</NuqsAdapter>
 						<TailwindIndicator />
 					</TooltipProvider>

@@ -1,0 +1,18 @@
+{
+  "model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
+  "organisation_id": "baidu",
+  "name": "Ernie 4.5 VL 28b A3b Thinking",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
