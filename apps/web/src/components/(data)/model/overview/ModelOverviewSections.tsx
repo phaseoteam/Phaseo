@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import {
 	Activity,
 	AlertTriangle,
@@ -8,7 +8,10 @@ import {
 	Braces,
 	FileText,
 	ImageIcon,
+	Mic,
+	Music2,
 	Shield,
+	Volume2,
 	Video,
 } from "lucide-react";
 import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
@@ -22,7 +25,10 @@ import ModelLinks, {
 	hasModelLinks,
 } from "@/components/(data)/model/overview/ModelLinks";
 import { getModelOverviewCached, type ModelOverviewPage } from "@/lib/fetchers/models/getModel";
-import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModelPerformance";
+import {
+	getModelPerformanceActivitySnapshotCached,
+	getModelPerformanceMetricsCached,
+} from "@/lib/fetchers/models/getModelPerformance";
 import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
@@ -30,6 +36,7 @@ import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import { getModelAppsCached } from "@/lib/fetchers/models/getModelApps";
 import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Carousel,
 	CarouselContent,
@@ -91,6 +98,22 @@ function parseTypes(types: unknown): string[] {
 			.replace(/^_+|_+$/g, "");
 		if (normalized === "embedding") return "embeddings";
 		if (normalized === "moderation") return "moderations";
+		if (normalized.includes("music")) return "audio_music";
+		if (
+			normalized.includes("transcrib") ||
+			normalized.includes("speech_to_text") ||
+			normalized.includes("stt")
+		) {
+			return "audio_stt";
+		}
+		if (
+			normalized.includes("text_to_speech") ||
+			normalized.includes("audio_speech") ||
+			normalized.includes("speech_synth") ||
+			normalized.includes("tts")
+		) {
+			return "audio_tts";
+		}
 		return normalized;
 	};
 
@@ -144,6 +167,9 @@ function isProviderModelActiveNow(
 const KNOWN_MODALITY_META = [
 	{ key: "text", label: "Text", icon: FileText },
 	{ key: "image", label: "Image", icon: ImageIcon },
+	{ key: "audio_stt", label: "STT", icon: Mic },
+	{ key: "audio_tts", label: "TTS", icon: Volume2 },
+	{ key: "audio_music", label: "Music", icon: Music2 },
 	{ key: "audio", label: "Audio", icon: AudioLines },
 	{ key: "video", label: "Video", icon: Video },
 	{ key: "embeddings", label: "Embeddings", icon: Braces },
@@ -151,6 +177,9 @@ const KNOWN_MODALITY_META = [
 ];
 
 function formatTypeLabel(value: string): string {
+	if (value === "audio_stt") return "STT";
+	if (value === "audio_tts") return "TTS";
+	if (value === "audio_music") return "Music";
 	return value
 		.split(/[_\s-]+/)
 		.filter(Boolean)
@@ -291,18 +320,17 @@ export async function ModelActivitySection({
 	modelId,
 	includeHidden,
 }: ModelSectionSharedProps) {
-	const performanceMetrics = await getModelPerformanceMetricsCached(
+	const activitySnapshot = await getModelPerformanceActivitySnapshotCached(
 		modelId,
 		includeHidden,
-		24,
 	).catch(() => null);
 
-	const usageSummary = performanceMetrics?.summary ?? null;
+	const usageSummary = activitySnapshot?.summary ?? null;
 	const providerWithTelemetry =
-		performanceMetrics?.providerPerformance.filter(
+		activitySnapshot?.providerPerformance.filter(
 			(provider) => provider.requests > 0,
 		).length ?? 0;
-	const totalProviders = performanceMetrics?.providerPerformance.length ?? 0;
+	const totalProviders = activitySnapshot?.providerPerformance.length ?? 0;
 
 	return (
 		<Section id="activity">
@@ -345,8 +373,8 @@ export async function ModelActivitySection({
 							Tokens (Cumulative)
 						</p>
 						<p className="text-xl font-semibold">
-							{performanceMetrics?.cumulativeTokens != null
-								? performanceMetrics.cumulativeTokens.toLocaleString()
+							{activitySnapshot?.cumulativeTokens != null
+								? activitySnapshot.cumulativeTokens.toLocaleString()
 								: "N/A"}
 						</p>
 					</div>
@@ -700,11 +728,128 @@ export async function ModelCreatorModelsSection({
 	);
 }
 
-export default async function ModelOverviewSections({
+function ProvidersSectionSkeleton() {
+	return (
+		<Section id="providers-loading" showDivider={false}>
+			<div className="space-y-4">
+				<div className="space-y-2">
+					<Skeleton className="h-6 w-44" />
+					<Skeleton className="h-4 w-72" />
+				</div>
+				<div className="grid gap-3 md:grid-cols-3">
+					<Skeleton className="h-9 w-full" />
+					<Skeleton className="h-9 w-full" />
+					<Skeleton className="h-9 w-full" />
+				</div>
+				<div className="space-y-2">
+					<Skeleton className="h-9 w-full" />
+					<Skeleton className="h-9 w-full" />
+					<Skeleton className="h-9 w-full" />
+				</div>
+			</div>
+		</Section>
+	);
+}
+
+function QuickstartSectionSkeleton() {
+	return (
+		<Section id="quickstart-loading">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">Quickstart</h2>
+				<p className="text-sm text-muted-foreground">
+					Start calling this model with endpoint-specific examples.
+				</p>
+			</div>
+			<div className="flex flex-wrap gap-2">
+				<Skeleton className="h-8 w-24" />
+				<Skeleton className="h-8 w-28" />
+				<Skeleton className="h-8 w-20" />
+			</div>
+			<div className="space-y-2">
+				<Skeleton className="h-4 w-1/2" />
+				<Skeleton className="h-4 w-full" />
+				<Skeleton className="h-4 w-full" />
+				<Skeleton className="h-4 w-5/6" />
+			</div>
+		</Section>
+	);
+}
+
+function BenchmarksSectionSkeleton() {
+	return (
+		<Section id="benchmarks-loading">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">Benchmarks</h2>
+				<p className="text-sm text-muted-foreground">
+					Headline benchmark standings and comparison context.
+				</p>
+			</div>
+			<div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+				{Array.from({ length: 3 }).map((_, index) => (
+					<div key={index} className="space-y-3 py-1">
+						<Skeleton className="h-5 w-2/3" />
+						<Skeleton className="h-4 w-full" />
+						<Skeleton className="h-4 w-3/4" />
+					</div>
+				))}
+			</div>
+		</Section>
+	);
+}
+
+function AboutSectionSkeleton() {
+	return (
+		<Section id="about-loading">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">About</h2>
+				<p className="text-sm text-muted-foreground">
+					Key dates, capabilities, and model metadata.
+				</p>
+			</div>
+			<div className="space-y-3">
+				<Skeleton className="h-4 w-1/3" />
+				<Skeleton className="h-4 w-5/6" />
+				<Skeleton className="h-4 w-2/3" />
+			</div>
+		</Section>
+	);
+}
+
+export function ModelCreatorModelsSkeleton() {
+	return (
+		<Section id="other-models-loading">
+			<div className="space-y-1">
+				<Skeleton className="h-6 w-72" />
+				<Skeleton className="h-4 w-56" />
+			</div>
+			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				{Array.from({ length: 4 }).map((_, index) => (
+					<div key={index} className="space-y-3 py-1">
+						<Skeleton className="h-4 w-3/4" />
+						<Skeleton className="h-3 w-full" />
+						<Skeleton className="h-3 w-1/3" />
+					</div>
+				))}
+			</div>
+		</Section>
+	);
+}
+
+export function ModelOverviewSectionsSkeleton() {
+	return (
+		<div className="space-y-10">
+			<ProvidersSectionSkeleton />
+			<QuickstartSectionSkeleton />
+			<BenchmarksSectionSkeleton />
+			<AboutSectionSkeleton />
+		</div>
+	);
+}
+
+async function ModelQuickstartOverviewGate({
 	modelId,
-	model,
 	includeHidden,
-}: ModelOverviewSectionsProps) {
+}: ModelSectionSharedProps) {
 	const providerPricing = await getModelPricingCached(
 		modelId,
 		includeHidden,
@@ -716,6 +861,23 @@ export default async function ModelOverviewSections({
 				isProviderModelActiveNow(providerModel),
 			),
 	);
+
+	if (!hasApiProviders) return null;
+
+	return (
+		<ModelQuickstartSection
+			modelId={modelId}
+			includeHidden={includeHidden}
+			surface="overview"
+		/>
+	);
+}
+
+export default function ModelOverviewSections({
+	modelId,
+	model,
+	includeHidden,
+}: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
 	const modelStatus = model?.status ?? null;
 	const isWithheldModel = modelStatus === "Withheld";
@@ -736,26 +898,41 @@ export default async function ModelOverviewSections({
 								? "This model was announced with preliminary details but is currently withheld and may never become publicly accessible. Information on this page is provisional and can change at any moment."
 								: "This model has been announced and may never become generally accessible. Information on this page can change at any moment as the provider updates release plans, routing availability, and technical details."}
 						</AlertDescription>
-					</Alert>
-				</Section>
-			) : null}
-			<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
-			{isLimitedAvailabilityModel || !hasApiProviders ? null : (
-				<>
-					<ModelQuickstartSection
+						</Alert>
+					</Section>
+				) : null}
+			<Suspense
+				fallback={
+					<ProvidersSectionSkeleton />
+				}
+			>
+				<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+			</Suspense>
+			{isLimitedAvailabilityModel ? null : (
+				<Suspense
+					fallback={
+						<QuickstartSectionSkeleton />
+					}
+				>
+					<ModelQuickstartOverviewGate
 						modelId={modelId}
 						includeHidden={includeHidden}
-						surface="overview"
 					/>
-				</>
+				</Suspense>
 			)}
 			{hasInternalModelData ? (
 				<>
-					<ModelBenchmarksSection
-						modelId={modelId}
-						includeHidden={includeHidden}
-						hideWhenEmpty
-					/>
+					<Suspense
+						fallback={
+							<BenchmarksSectionSkeleton />
+						}
+					>
+						<ModelBenchmarksSection
+							modelId={modelId}
+							includeHidden={includeHidden}
+							hideWhenEmpty
+						/>
+					</Suspense>
 					<ModelAboutSection model={model!} />
 				</>
 			) : null}

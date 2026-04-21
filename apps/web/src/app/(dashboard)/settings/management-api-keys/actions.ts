@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { makeKeyV2, hmacSecret } from "@/lib/keygen";
 import { enforceTeamKeyLimit } from "@/lib/server/teamLimits";
+import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
@@ -55,10 +56,7 @@ export async function createManagementKeyAction(
 	// Generate secure key
 	const { kid, secret, plaintext, prefix } = makeKeyV2();
 
-	const pepper = process.env.KEY_PEPPER;
-	if (!pepper) {
-		throw new Error("Server configuration error: KEY_PEPPER not set");
-	}
+	const pepper = resolveActiveKeyPepper();
 
 	const hash = hmacSecret(secret, pepper);
 

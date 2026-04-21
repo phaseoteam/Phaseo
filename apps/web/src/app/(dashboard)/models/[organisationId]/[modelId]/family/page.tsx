@@ -16,81 +16,42 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { CSSProperties } from "react";
 import {
 	getModelPath,
+	getModelMetadataIdentity,
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import { permanentRedirect } from "next/navigation";
 
-async function fetchModel(modelId: string, includeHidden: boolean) {
-	try {
-		return await getModelOverviewCached(modelId, includeHidden);
-	} catch (error) {
-		console.warn("[seo] failed to load model overview for metadata", {
-			modelId,
-			error,
-		});
-		return null;
-	}
-}
-
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const includeHidden = false;
-	const { canonicalModelId: modelId } = await resolveModelRouteIds(
+	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
 		params,
-		includeHidden,
+		false,
 	);
-	const model = await fetchModel(modelId, includeHidden);
 	const path = getModelPath(modelId, "family");
 	const imagePath = `/og/models/${modelId}`;
 
-	if (!model) {
-		return buildMetadata({
-			title: "Model Family Overview",
-			description:
-				"Explore this model's family on AI Stats, including related variants, benchmark context, provider coverage, pricing information, and release timeline connections.",
-			path,
-			keywords: [
-				"AI model family",
-				"related models",
-				"AI benchmarks",
-				"AI providers",
-				"AI Stats",
-			],
-			imagePath,
-		});
-	}
-
-	const organisationName = model.organisation?.name ?? "AI provider";
-
-	const description = [
-		`${model.name} family by ${organisationName} on AI Stats.`,
-		"Explore related models in this family, including variants, benchmarks, providers, and launch milestones.",
-	]
-		.filter(Boolean)
-		.join(" ");
-
 	return buildMetadata({
-		title: `${model.name} Family - Related Models & Variants`,
-		description,
+		title: `${modelName} Family - Related Models & Variants`,
+		description:
+			`Explore ${modelName}'s family on AI Stats, including related variants, benchmark context, provider coverage, pricing information, and release timeline connections.`,
 		path,
 		keywords: [
-			model.name,
-			`${model.name} family`,
-			`${model.name} related models`,
-			`${organisationName} AI`,
+			modelName,
+			`${modelName} family`,
+			`${modelName} related models`,
+			organisationName ? `${organisationName} AI` : null,
 			"AI Stats",
 			"AI model family",
-		],
+		].filter(Boolean) as string[],
 		imagePath,
 	});
 }
@@ -167,19 +128,6 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "family"));
 	}
 	const modelId = canonicalModelId;
-	const model = await fetchModel(modelId, includeHidden);
-
-	if (!model) {
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="family"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
 
 	let header: Awaited<ReturnType<typeof getModelOverviewHeader>> | null = null;
 	try {

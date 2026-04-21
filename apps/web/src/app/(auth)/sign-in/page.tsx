@@ -31,9 +31,7 @@ export default async function Page({ searchParams }: SignInPageProps) {
 		typeof returnUrlParam === "string" ? returnUrlParam : null,
 		"/"
 	);
-	const returnUrl = sanitizedReturnUrl.startsWith("/oauth/consent?")
-		? sanitizedReturnUrl
-		: undefined;
+	const returnUrl = sanitizedReturnUrl === "/" ? undefined : sanitizedReturnUrl;
 
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">

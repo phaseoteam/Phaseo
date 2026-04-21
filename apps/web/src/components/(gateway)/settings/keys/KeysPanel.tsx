@@ -32,12 +32,21 @@ import UsageItem from "./UsageItem";
 import EditKeyItem from "./EditKeyItem";
 import DeleteKeyItem from "./DeleteKeyItem";
 import KeyLimitsItem from "./KeyLimitsItem";
+import RotateKeyItem from "./RotateKeyItem";
 
-type KeyState = "active" | "disabled" | "limited";
+type KeyState = "active" | "disabled" | "limited" | "expired";
 
 const NANOS_PER_USD = 1_000_000_000;
 
 function getKeyState(k: any): KeyState {
+	const expiresRaw = typeof k?.expires_at === "string" ? k.expires_at : "";
+	if (expiresRaw) {
+		const expiresAtMs = Date.parse(expiresRaw);
+		if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+			return "expired";
+		}
+	}
+
 	const status = String(k?.status ?? "").toLowerCase();
 	const isDisabled = status === "paused" || status === "disabled" || status === "revoked";
 	if (isDisabled) return "disabled";
@@ -58,6 +67,8 @@ function stateMeta(state: KeyState) {
 			return { label: "Disabled", Icon: Ban, className: "text-zinc-400" };
 		case "limited":
 			return { label: "Limits Reached", Icon: OctagonAlert, className: "text-red-600" };
+		case "expired":
+			return { label: "Expired", Icon: Ban, className: "text-amber-600" };
 	}
 }
 
@@ -107,7 +118,7 @@ function getKeyUsageVisuals(k: any, state: KeyState) {
 
 	const reqPct = dailyLimit > 0 ? (currentUsage / dailyLimit) * 100 : null;
 	const reqTone =
-		state === "disabled"
+		state === "disabled" || state === "expired"
 			? ("muted" as const)
 			: dailyLimit > 0 && reqPct !== null
 				? reqPct >= 100
@@ -119,7 +130,7 @@ function getKeyUsageVisuals(k: any, state: KeyState) {
 	const spendPct =
 		dailySpendLimit > 0 ? (currentDailySpend / dailySpendLimit) * 100 : null;
 	const spendTone =
-		state === "disabled"
+		state === "disabled" || state === "expired"
 			? ("muted" as const)
 			: dailySpendLimit > 0 && spendPct !== null
 				? spendPct >= 100
@@ -340,6 +351,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 													<DropdownMenuContent side="bottom" align="end">
 														<UsageItem k={k} />
 														<EditKeyItem k={k} />
+														<RotateKeyItem k={k} />
 														<KeyLimitsItem k={k} />
 														<DeleteKeyItem k={k} />
 													</DropdownMenuContent>
@@ -555,6 +567,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 														>
 															<UsageItem k={k} />
 															<EditKeyItem k={k} />
+															<RotateKeyItem k={k} />
 															<KeyLimitsItem k={k} />
 															<DeleteKeyItem k={k} />
 														</DropdownMenuContent>

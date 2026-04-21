@@ -385,9 +385,9 @@ export async function getModelOverviewCached(
     "use cache";
 
     cacheLife({
-        stale: 60 * 60,
-        revalidate: 60 * 60 * 24,
-        expire: 60 * 60 * 24 * 7,
+        stale: 60 * 60 * 24,
+        revalidate: 60 * 60 * 24 * 7,
+        expire: 60 * 60 * 24 * 30,
     });
 
     cacheTag("data:models");

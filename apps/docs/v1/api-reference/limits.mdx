@@ -1,0 +1,57 @@
+---
+title: "Limits"
+description: "Understand provider-driven rate limits and how to build resilient retry behavior."
+icon: "gauge"
+---
+
+The Gateway does not currently enforce a separate platform-level request cap. Most throttling comes from upstream providers.
+
+## How limits work
+
+- Requests can be rate-limited by the routed provider for the selected model.
+- BYOK traffic uses the limits tied to your provider account.
+- Gateway routing and fallback can reduce failures, but limits can still surface as `429`.
+
+## Handling `429` responses
+
+- Respect `Retry-After` when present.
+- Use exponential backoff with jitter.
+- Set a maximum retry count and fail gracefully.
+
+```ts
+async function retryWithBackoff(run: () => Promise<Response>, maxRetries = 4) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const response = await run();
+    if (response.status !== 429) return response;
+
+    const retryAfterHeader = response.headers.get("retry-after");
+    const retryAfterMs = retryAfterHeader
+      ? Number(retryAfterHeader) * 1000
+      : Math.min(1000 * 2 ** attempt, 8000);
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs));
+  }
+
+  throw new Error("Rate limit retries exhausted");
+}
+```
+
+## Monitoring
+
+- Track `429` rates by endpoint and model.
+- Watch fallback frequency to identify provider pressure.
+- Use dashboard metrics and your app logs together for incident triage.
+
+## Related pages
+
+- [Authentication](./authentication.mdx)
+- [Parameters](./parameters.mdx)
+- [Errors and Debugging](./errors.mdx)
+
+<Visibility for="agents">
+If you are implementing retries as an agent:
+
+- Use repository skills for safe retry loops and timeout control.
+- Keep retry policy configuration centralized (attempt count, base delay, max delay).
+- Never retry non-idempotent requests without explicit product approval.
+</Visibility>

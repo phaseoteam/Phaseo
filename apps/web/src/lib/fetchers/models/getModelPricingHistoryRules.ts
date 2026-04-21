@@ -179,6 +179,8 @@ export async function getModelPricingHistoryRules(args: {
 	cacheTag("data:data_api_pricing_rules");
 	cacheTag("data:data_api_provider_models");
 	cacheTag(`data:models:${args.modelId}`);
+	cacheTag(`model:api:${args.modelId}`);
+	cacheTag(`model:pricing-history:${args.modelId}`);
 
 	const days = Number.isFinite(args.days) && (args.days ?? 0) > 0
 		? Math.round(args.days as number)

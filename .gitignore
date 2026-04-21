@@ -38,3 +38,4 @@ packages/sdk/sdk-java/target/
 packages/sdk/sdk-rust/target/
 packages/sdk/sdk-php/vendor/
 packages/sdk/sdk-ruby/*.gem
+.vercel

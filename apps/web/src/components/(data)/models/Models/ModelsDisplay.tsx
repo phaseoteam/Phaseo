@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
+import {
+	useCallback,
+	useDeferredValue,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
@@ -16,15 +23,19 @@ import {
 	ArrowDownCircle,
 	ArrowUpCircle,
 	ArrowUpDown,
+	ChevronUp,
 	AudioLines,
 	Binary,
 	CircleDot,
 	Database,
 	FileText,
+	Mic,
+	Music2,
 	Route,
 	Sparkles,
 	Text as TextIcon,
 	Type as TypeIcon,
+	Volume2,
 	ImageIcon,
 	Video,
 	CalendarDays,
@@ -76,6 +87,7 @@ import type {
 interface ModelsDisplayProps {
 	models: ModelsPageModel[];
 	facets: ModelsFilterFacets;
+	showPrimaryHeader?: boolean;
 }
 
 type PreparedModel = {
@@ -121,6 +133,9 @@ const CONTEXT_LENGTH_STOPS = [
 	1_000_000,
 ] as const;
 
+const SCROLL_TOP_VISIBILITY_THRESHOLD = 320;
+const SCROLL_TOP_ANIMATION_DURATION_MS = 700;
+
 function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
 	if (
@@ -150,7 +165,22 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
-	if (normalized.includes("music")) return "music";
+	if (normalized.includes("music")) return "audio_music";
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return "audio_stt";
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return "audio_tts";
+	}
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("moderat")) return "moderations";
@@ -302,6 +332,10 @@ function normalizedModalitySet(
 }
 
 function toTitleCase(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "audio_stt") return "STT";
+	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -324,7 +358,22 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return AudioLines;
+	if (normalized.includes("music")) return Music2;
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return Mic;
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return Volume2;
+	}
 	if (normalized.includes("audio")) return AudioLines;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;
@@ -419,7 +468,11 @@ function FilterCheckboxList({
 	);
 }
 
-export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
+export default function ModelsDisplay({
+	models,
+	facets,
+	showPrimaryHeader = true,
+}: ModelsDisplayProps) {
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -511,6 +564,66 @@ export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 	});
 	const [sort, setSort] = useQueryState("sort", sortParser);
 	const selectedSort = normalizeSortOption(sort);
+	const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+	const scrollTopAnimationFrameRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		const updateVisibility = () => {
+			const shouldShow = window.scrollY > SCROLL_TOP_VISIBILITY_THRESHOLD;
+			setShowScrollTopButton((current) =>
+				current === shouldShow ? current : shouldShow,
+			);
+		};
+
+		updateVisibility();
+		window.addEventListener("scroll", updateVisibility, { passive: true });
+		return () => window.removeEventListener("scroll", updateVisibility);
+	}, []);
+
+	useEffect(
+		() => () => {
+			if (scrollTopAnimationFrameRef.current !== null) {
+				window.cancelAnimationFrame(scrollTopAnimationFrameRef.current);
+				scrollTopAnimationFrameRef.current = null;
+			}
+		},
+		[],
+	);
+
+	const handleScrollToTop = useCallback(() => {
+		if (scrollTopAnimationFrameRef.current !== null) {
+			window.cancelAnimationFrame(scrollTopAnimationFrameRef.current);
+			scrollTopAnimationFrameRef.current = null;
+		}
+
+		// Prefer the browser's native smooth scroll (typically less janky with virtualization).
+		if ("scrollBehavior" in document.documentElement.style) {
+			window.scrollTo({ top: 0, behavior: "smooth" });
+			return;
+		}
+
+		const startY = window.scrollY;
+		if (startY <= 0) return;
+		const startTime = performance.now();
+		const duration = SCROLL_TOP_ANIMATION_DURATION_MS;
+
+		const easeInOutCubic = (t: number): number =>
+			t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+		const animate = (now: number) => {
+			const elapsed = now - startTime;
+			const progress = Math.min(1, elapsed / duration);
+			const eased = easeInOutCubic(progress);
+			window.scrollTo(0, Math.round(startY * (1 - eased)));
+			if (progress < 1) {
+				scrollTopAnimationFrameRef.current = window.requestAnimationFrame(animate);
+				return;
+			}
+			scrollTopAnimationFrameRef.current = null;
+		};
+
+		scrollTopAnimationFrameRef.current = window.requestAnimationFrame(animate);
+	}, []);
 
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -1133,12 +1246,16 @@ export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
 					<div className="sm:hidden space-y-2">
 						<div className="flex items-center justify-between gap-2">
-							<h1 className="font-bold text-xl leading-8">Models</h1>
+							{showPrimaryHeader ? (
+								<h1 className="font-bold text-xl leading-8">Models</h1>
+							) : (
+								<div />
+							)}
 							<div className="flex items-center justify-end gap-2 min-w-0">
 								<span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
 									{shownCountLabel}
 								</span>
-								{viewSwitcher}
+								{showPrimaryHeader ? viewSwitcher : null}
 							</div>
 						</div>
 
@@ -1185,7 +1302,9 @@ export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 					<div className="hidden sm:block">
 						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(260px,460px)_auto] sm:items-center sm:gap-3">
 							<div className="min-w-0 sm:flex sm:h-8 sm:items-center">
-								<h1 className="font-bold text-xl leading-8">Models</h1>
+								{showPrimaryHeader ? (
+									<h1 className="font-bold text-xl leading-8">Models</h1>
+								) : null}
 							</div>
 
 							<div className="relative w-full sm:justify-self-center">
@@ -1204,7 +1323,7 @@ export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 							</div>
 
 							<div className="flex items-center justify-end gap-2 sm:justify-self-end">
-								{viewSwitcher}
+								{showPrimaryHeader ? viewSwitcher : null}
 							</div>
 						</div>
 
@@ -1279,6 +1398,20 @@ export default function ModelsDisplay({ models, facets }: ModelsDisplayProps) {
 					</ScrollArea>
 				</SheetContent>
 			</Sheet>
+
+			<button
+				type="button"
+				aria-label="Scroll to top"
+				onClick={handleScrollToTop}
+				className={cn(
+					"group fixed bottom-9 right-9 z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-sm backdrop-blur transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95",
+					showScrollTopButton
+						? "translate-y-0 opacity-100"
+						: "pointer-events-none translate-y-3 opacity-0",
+				)}
+			>
+				<ChevronUp className="h-6 w-6 transition-transform duration-500 ease-out group-hover:-translate-y-1" />
+			</button>
 		</div>
 	);
 }

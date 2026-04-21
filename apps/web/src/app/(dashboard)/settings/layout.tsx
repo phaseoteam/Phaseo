@@ -2,6 +2,7 @@ import SettingsPageSkeleton from "@/components/(gateway)/settings/SettingsPageSk
 import SettingsSidebar from "@/components/(gateway)/settings/Sidebar";
 import SettingsTopTabsServer from "@/components/(gateway)/settings/SettingsTopTabsServer";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import {
@@ -28,7 +29,15 @@ export default async function SettingsLayout({
 	const supabase = await createClient();
 	const { data: authData } = await supabase.auth.getUser();
 	if (!authData.user) {
-		redirect("/sign-in");
+		const headerStore = await headers();
+		const requestedPath =
+			headerStore.get("x-invoke-path") ??
+			headerStore.get("next-url") ??
+			"/settings";
+		const safeReturnUrl = requestedPath.startsWith("/")
+			? requestedPath
+			: "/settings";
+		redirect(`/sign-in?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
 	}
 	const userId = authData.user?.id ?? null;
 	const teamId = await getTeamIdFromCookie();
@@ -59,9 +68,8 @@ export default async function SettingsLayout({
 
 			<SidebarProvider defaultOpen className="flex flex-1 min-h-0">
 				<Sidebar
-					// Use shadcn's fixed desktop sidebar so it does not move when the page scrolls.
-					// Offset by the sticky site header height.
-					className="top-16 h-auto bg-white dark:bg-zinc-950"
+					// Keep desktop sidebar fixed under sticky chrome (notice + header).
+					className="top-[calc(var(--site-header-height,4rem)+var(--site-notice-height,0px))] bottom-0 h-auto bg-white dark:bg-zinc-950"
 				>
 					<SettingsSidebar showBroadcast={showBroadcast} />
 				</Sidebar>

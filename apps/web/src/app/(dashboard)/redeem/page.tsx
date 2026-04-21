@@ -21,7 +21,7 @@ export default async function RedeemPage() {
 	} = await supabase.auth.getUser();
 
 	if (authError || !user) {
-		redirect("/sign-in?redirect=/redeem");
+		redirect("/sign-in?returnUrl=%2Fredeem");
 	}
 
 	const activeTeamId = await getTeamIdFromCookie();

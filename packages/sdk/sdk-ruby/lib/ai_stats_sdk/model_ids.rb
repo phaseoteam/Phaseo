@@ -159,6 +159,9 @@ module AIStatsSdk
     # Model ID: anthropic/claude-instant-1.2
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.2
     ANTHROPIC_CLAUDE_INSTANT_1_2 = "anthropic/claude-instant-1.2"
+    # Model ID: anthropic/claude-mythos-preview
+    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview
+    ANTHROPIC_CLAUDE_MYTHOS_PREVIEW = "anthropic/claude-mythos-preview"
     # Model ID: anthropic/claude-opus-4
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4
     ANTHROPIC_CLAUDE_OPUS_4 = "anthropic/claude-opus-4"
@@ -642,6 +645,9 @@ module AIStatsSdk
     # Model ID: google/gemini-3.1-flash-lite-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-preview
     GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW = "google/gemini-3.1-flash-lite-preview"
+    # Model ID: google/gemini-3.1-flash-tts-preview
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-tts-preview
+    GOOGLE_GEMINI_3_1_FLASH_TTS_PREVIEW = "google/gemini-3.1-flash-tts-preview"
     # Model ID: google/gemini-3.1-pro-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-pro-preview
     GOOGLE_GEMINI_3_1_PRO_PREVIEW = "google/gemini-3.1-pro-preview"
@@ -708,6 +714,12 @@ module AIStatsSdk
     # Model ID: google/gemma-3n-e4b
     # Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b
     GOOGLE_GEMMA_3N_E4B = "google/gemma-3n-e4b"
+    # Model ID: google/gemma-4-26b-a4b
+    # Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b
+    GOOGLE_GEMMA_4_26B_A4B = "google/gemma-4-26b-a4b"
+    # Model ID: google/gemma-4-31b
+    # Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b
+    GOOGLE_GEMMA_4_31B = "google/gemma-4-31b"
     # Model ID: google/image-generation-002
     # Model page: https://ai-stats.phaseo.app/models/google/image-generation-002
     GOOGLE_IMAGE_GENERATION_002 = "google/image-generation-002"
@@ -1200,6 +1212,9 @@ module AIStatsSdk
     # Model ID: minimax/music-2.5
     # Model page: https://ai-stats.phaseo.app/models/minimax/music-2.5
     MINIMAX_MUSIC_2_5 = "minimax/music-2.5"
+    # Model ID: minimax/music-2.6
+    # Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6
+    MINIMAX_MUSIC_2_6 = "minimax/music-2.6"
     # Model ID: minimax/s2v-01
     # Model page: https://ai-stats.phaseo.app/models/minimax/s2v-01
     MINIMAX_S2V_01 = "minimax/s2v-01"
@@ -1410,6 +1425,9 @@ module AIStatsSdk
     # Model ID: moonshotai/kimi-k2.5
     # Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.5
     MOONSHOTAI_KIMI_K2_5 = "moonshotai/kimi-k2.5"
+    # Model ID: moonshotai/kimi-k2.6
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6
+    MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6"
     # Model ID: moonshotai/kimi-linear-48b
     # Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-linear-48b
     MOONSHOTAI_KIMI_LINEAR_48B = "moonshotai/kimi-linear-48b"
@@ -2292,9 +2310,6 @@ module AIStatsSdk
     # Model ID: qwen/qwen3-tts-12hz-1.7b-voicedesign
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-voicedesign
     QWEN_QWEN3_TTS_12HZ_1_7B_VOICEDESIGN = "qwen/qwen3-tts-12hz-1.7b-voicedesign"
-    # Model ID: qwen/qwen3-tts-tokenizer-12hz
-    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-tokenizer-12hz
-    QWEN_QWEN3_TTS_TOKENIZER_12HZ = "qwen/qwen3-tts-tokenizer-12hz"
     # Model ID: qwen/qwen3-vl-235b-a22b-instruct
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct
     QWEN_QWEN3_VL_235B_A22B_INSTRUCT = "qwen/qwen3-vl-235b-a22b-instruct"
@@ -2373,6 +2388,15 @@ module AIStatsSdk
     # Model ID: qwen/qwen3.5-plus
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-plus
     QWEN_QWEN3_5_PLUS = "qwen/qwen3.5-plus"
+    # Model ID: qwen/qwen3.6-35b-a3b
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-35b-a3b
+    QWEN_QWEN3_6_35B_A3B = "qwen/qwen3.6-35b-a3b"
+    # Model ID: qwen/qwen3.6-max-preview
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-max-preview
+    QWEN_QWEN3_6_MAX_PREVIEW = "qwen/qwen3.6-max-preview"
+    # Model ID: qwen/qwen3.6-plus
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus
+    QWEN_QWEN3_6_PLUS = "qwen/qwen3.6-plus"
     # Model ID: qwen/qwq-32b
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
     QWEN_QWQ_32B = "qwen/qwq-32b"
@@ -2454,6 +2478,90 @@ module AIStatsSdk
     # Model ID: vercel/v0-1.5-sm
     # Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-sm
     VERCEL_V0_1_5_SM = "vercel/v0-1.5-sm"
+    # Model ID: voyage/rerank-1
+    # Model page: https://ai-stats.phaseo.app/models/voyage/rerank-1
+    VOYAGE_RERANK_1 = "voyage/rerank-1"
+    # Model ID: voyage/rerank-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2
+    VOYAGE_RERANK_2 = "voyage/rerank-2"
+    # Model ID: voyage/rerank-2-lite
+    # Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2-lite
+    VOYAGE_RERANK_2_LITE = "voyage/rerank-2-lite"
+    # Model ID: voyage/rerank-lite-1
+    # Model page: https://ai-stats.phaseo.app/models/voyage/rerank-lite-1
+    VOYAGE_RERANK_LITE_1 = "voyage/rerank-lite-1"
+    # Model ID: voyage/voyage-01
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-01
+    VOYAGE_VOYAGE_01 = "voyage/voyage-01"
+    # Model ID: voyage/voyage-02
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-02
+    VOYAGE_VOYAGE_02 = "voyage/voyage-02"
+    # Model ID: voyage/voyage-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-2
+    VOYAGE_VOYAGE_2 = "voyage/voyage-2"
+    # Model ID: voyage/voyage-3
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3
+    VOYAGE_VOYAGE_3 = "voyage/voyage-3"
+    # Model ID: voyage/voyage-3-large
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3-large
+    VOYAGE_VOYAGE_3_LARGE = "voyage/voyage-3-large"
+    # Model ID: voyage/voyage-3-lite
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3-lite
+    VOYAGE_VOYAGE_3_LITE = "voyage/voyage-3-lite"
+    # Model ID: voyage/voyage-3.5
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3.5
+    VOYAGE_VOYAGE_3_5 = "voyage/voyage-3.5"
+    # Model ID: voyage/voyage-3.5-lite
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3.5-lite
+    VOYAGE_VOYAGE_3_5_LITE = "voyage/voyage-3.5-lite"
+    # Model ID: voyage/voyage-4
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4
+    VOYAGE_VOYAGE_4 = "voyage/voyage-4"
+    # Model ID: voyage/voyage-4-large
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4-large
+    VOYAGE_VOYAGE_4_LARGE = "voyage/voyage-4-large"
+    # Model ID: voyage/voyage-4-lite
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4-lite
+    VOYAGE_VOYAGE_4_LITE = "voyage/voyage-4-lite"
+    # Model ID: voyage/voyage-code-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-code-2
+    VOYAGE_VOYAGE_CODE_2 = "voyage/voyage-code-2"
+    # Model ID: voyage/voyage-code-3
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-code-3
+    VOYAGE_VOYAGE_CODE_3 = "voyage/voyage-code-3"
+    # Model ID: voyage/voyage-context-3
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-context-3
+    VOYAGE_VOYAGE_CONTEXT_3 = "voyage/voyage-context-3"
+    # Model ID: voyage/voyage-finance-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-finance-2
+    VOYAGE_VOYAGE_FINANCE_2 = "voyage/voyage-finance-2"
+    # Model ID: voyage/voyage-large-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-large-2
+    VOYAGE_VOYAGE_LARGE_2 = "voyage/voyage-large-2"
+    # Model ID: voyage/voyage-large-2-instruct
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-large-2-instruct
+    VOYAGE_VOYAGE_LARGE_2_INSTRUCT = "voyage/voyage-large-2-instruct"
+    # Model ID: voyage/voyage-law-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-law-2
+    VOYAGE_VOYAGE_LAW_2 = "voyage/voyage-law-2"
+    # Model ID: voyage/voyage-lite-01
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-01
+    VOYAGE_VOYAGE_LITE_01 = "voyage/voyage-lite-01"
+    # Model ID: voyage/voyage-lite-01-instruct
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-01-instruct
+    VOYAGE_VOYAGE_LITE_01_INSTRUCT = "voyage/voyage-lite-01-instruct"
+    # Model ID: voyage/voyage-lite-02-instruct
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-02-instruct
+    VOYAGE_VOYAGE_LITE_02_INSTRUCT = "voyage/voyage-lite-02-instruct"
+    # Model ID: voyage/voyage-multilingual-2
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multilingual-2
+    VOYAGE_VOYAGE_MULTILINGUAL_2 = "voyage/voyage-multilingual-2"
+    # Model ID: voyage/voyage-multimodal-3
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3
+    VOYAGE_VOYAGE_MULTIMODAL_3 = "voyage/voyage-multimodal-3"
+    # Model ID: voyage/voyage-multimodal-3.5
+    # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5
+    VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5"
     # Model ID: x-ai/grok-0
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-0
     X_AI_GROK_0 = "x-ai/grok-0"
@@ -2514,6 +2622,9 @@ module AIStatsSdk
     # Model ID: x-ai/grok-4.20-multi-agent-beta
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta
     X_AI_GROK_4_20_MULTI_AGENT_BETA = "x-ai/grok-4.20-multi-agent-beta"
+    # Model ID: x-ai/grok-4.3
+    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
+    X_AI_GROK_4_3 = "x-ai/grok-4.3"
     # Model ID: x-ai/grok-code-fast-1
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
     X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1"

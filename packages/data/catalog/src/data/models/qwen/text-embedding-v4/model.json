@@ -1,8 +1,8 @@
 {
-  "model_id": "qwen/qwen3-tts-tokenizer-12hz",
+  "model_id": "qwen/text-embedding-v4",
   "organisation_id": "qwen",
-  "name": "Qwen 3 TTS Tokenizer 12Hz",
-  "status": null,
+  "name": "Text Embedding V4",
+  "status": "Available",
   "previous_model_id": null,
   "announced_date": null,
   "release_date": null,
@@ -11,7 +11,7 @@
   "license": null,
   "input_types": null,
   "output_types": null,
-  "api_model_id": "qwen/qwen3-tts-tokenizer-12hz",
+  "api_model_id": "qwen/text-embedding-v4",
   "links": [],
   "details": [],
   "benchmarks": []

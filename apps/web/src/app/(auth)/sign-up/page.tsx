@@ -27,9 +27,7 @@ export default async function Page({ searchParams }: SignUpPageProps) {
 		typeof returnUrlParam === "string" ? returnUrlParam : null,
 		"/"
 	);
-	const returnUrl = sanitizedReturnUrl.startsWith("/oauth/consent?")
-		? sanitizedReturnUrl
-		: undefined;
+	const returnUrl = sanitizedReturnUrl === "/" ? undefined : sanitizedReturnUrl;
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
 			{/* LEFT COL */}

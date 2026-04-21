@@ -43,8 +43,11 @@ import {
 	Globe,
 	ImageDown,
 	ImageUp,
+	Mic,
+	Music2,
 	ShieldAlert,
 	ShieldCheck,
+	Volume2,
 	Video,
 	Wrench,
 	XCircle,
@@ -61,6 +64,9 @@ const MODALITY_DISPLAY_ORDER = [
 	"text",
 	"image",
 	"video",
+	"audio_stt",
+	"audio_tts",
+	"audio_music",
 	"audio",
 	"moderations",
 	"rerank",
@@ -98,6 +104,24 @@ const modalityIcons: Record<string, ModalityConfig> = {
 		output: AudioLines,
 		color: "text-pink-600",
 		label: "Audio",
+	},
+	audio_stt: {
+		input: Mic,
+		output: Mic,
+		color: "text-rose-600",
+		label: "STT",
+	},
+	audio_tts: {
+		input: Volume2,
+		output: Volume2,
+		color: "text-orange-600",
+		label: "TTS",
+	},
+	audio_music: {
+		input: Music2,
+		output: Music2,
+		color: "text-fuchsia-600",
+		label: "Music",
 	},
 	moderations: {
 		input: ShieldCheck,
@@ -144,14 +168,35 @@ const modalityIcons: Record<string, ModalityConfig> = {
 };
 
 function normalizeModality(value: string): string {
-	const normalized = String(value ?? "").trim().toLowerCase();
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
-	if (normalized === "vision") return "image";
-	if (normalized === "speech") return "audio";
-	if (normalized === "moderation") return "moderations";
-	if (normalized === "embedding") return "embeddings";
-	if (normalized === "rerank" || normalized === "re rank") return "rerank";
-	return normalized;
+	if (normalized.includes("vision") || normalized.includes("image")) return "image";
+	if (normalized.includes("video")) return "video";
+	if (normalized.includes("music")) return "audio_music";
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return "audio_stt";
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return "audio_tts";
+	}
+	if (normalized.includes("speech") || normalized.includes("audio")) return "audio";
+	if (normalized.includes("moderat")) return "moderations";
+	if (normalized.includes("embedding")) return "embeddings";
+	if (normalized.includes("rerank") || normalized.includes("re rank")) return "rerank";
+	if (normalized.includes("text")) return "text";
+	return normalized.replace(/\s+/g, "_");
 }
 
 function normalizeStatusValue(value: string): string {
@@ -283,8 +328,8 @@ export interface ModelData {
 	};
 	endpoint: string;
 	gatewayStatus: string;
-	inputModalities: string[]; // text, image, video, audio, file, embeddings
-	outputModalities: string[]; // text, image, video, audio
+	inputModalities: string[]; // text, image, video, audio/audio_stt/audio_tts/audio_music, file, embeddings
+	outputModalities: string[]; // text, image, video, audio/audio_stt/audio_tts/audio_music
 	context: number; // context window in tokens
 	maxOutput: number; // max output tokens
 	quantization?: string; // quantization level
@@ -798,6 +843,8 @@ export function MonitorDataTable({
 						"text-orange-600": "border-orange-600 bg-orange-50",
 						"text-red-600": "border-red-600 bg-red-50",
 						"text-pink-600": "border-pink-600 bg-pink-50",
+						"text-rose-600": "border-rose-600 bg-rose-50",
+						"text-fuchsia-600": "border-fuchsia-600 bg-fuchsia-50",
 						"text-gray-600": "border-gray-600 bg-gray-50",
 						"text-indigo-600": "border-indigo-600 bg-indigo-50",
 						"text-cyan-600": "border-cyan-600 bg-cyan-50",

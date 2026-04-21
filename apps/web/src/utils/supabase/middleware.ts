@@ -28,7 +28,7 @@ export async function updateSession(request: NextRequest) {
     if (!user && pathname.startsWith('/settings')) {
         const url = request.nextUrl.clone()
         url.pathname = '/sign-in'
-        url.searchParams.set('redirectTo', request.nextUrl.pathname + request.nextUrl.search)
+        url.searchParams.set('returnUrl', request.nextUrl.pathname + request.nextUrl.search)
         return NextResponse.redirect(url)
     }
 

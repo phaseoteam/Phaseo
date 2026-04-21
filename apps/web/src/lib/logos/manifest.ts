@@ -347,6 +347,9 @@ export const logoManifest = {
 	typescript: {
 		color: "/languages/typescript.svg",
 	},
+	javascript: {
+		color: "/languages/javascript.svg",
+	},
 	python: {
 		color: "/languages/python.svg",
 	},

@@ -226,8 +226,27 @@ export async function getGatewaySupportedModels(
     cacheLife("days");
     cacheTag("gateway-supported-models");
 
-    const client = createAdminClient();
-    const rows = await fetchActiveGatewayModels(client, includeHidden, new Date());
+    let client: ReturnType<typeof createAdminClient> | null = null;
+    try {
+        client = createAdminClient();
+    } catch (error) {
+        console.warn(
+            "[getGatewaySupportedModels] admin client unavailable; returning no models.",
+            error instanceof Error ? error.message : String(error),
+        );
+        return [];
+    }
+
+    let rows: ActiveGatewayModelRow[] = [];
+    try {
+        rows = await fetchActiveGatewayModels(client, includeHidden, new Date());
+    } catch (error) {
+        console.warn(
+            "[getGatewaySupportedModels] failed to fetch supported models; returning empty list.",
+            error instanceof Error ? error.message : String(error),
+        );
+        return [];
+    }
     const seen = new Set<string>();
     const models: GatewaySupportedModel[] = [];
     const nowIso = new Date().toISOString();

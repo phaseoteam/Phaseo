@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { makeKeyV2, hmacSecret } from '@/lib/keygen';
 import { invalidateGatewayKeyCache } from '@/lib/gateway/invalidateKeyCache';
 import { enforceTeamKeyLimit } from "@/lib/server/teamLimits";
+import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
 import {
     requireActingUser,
     requireAuthenticatedUser,
@@ -19,6 +20,12 @@ export type KeyLimitPayload = {
     weeklyCostNanos?: number | null;
     monthlyCostNanos?: number | null;
     softBlocked?: boolean;
+};
+
+export type RotateApiKeyInput = {
+    id: string;
+    newName?: string;
+    previousKeyExpiresAt?: string | null;
 };
 
 export async function createApiKeyAction(
@@ -37,8 +44,7 @@ export async function createApiKeyAction(
     await enforceTeamKeyLimit(supabase as any, teamId);
     const { kid, secret, plaintext, prefix } = makeKeyV2();
 
-    const pepper = process.env.KEY_PEPPER!;
-    if (!pepper) throw new Error("KEY_PEPPER not set");
+    const pepper = resolveActiveKeyPepper();
 
     const hash = hmacSecret(secret, pepper); // HMAC(secret), not the whole token
 
@@ -109,6 +115,108 @@ export async function updateApiKeyAction(
 
     revalidatePath("/settings/keys")
     return { success: true }
+}
+
+export async function rotateApiKeyAction(input: RotateApiKeyInput) {
+    const id = input?.id;
+    if (!id || typeof id !== "string") throw new Error("Missing id");
+
+    const { supabase, user } = await requireAuthenticatedUser();
+    const { data: oldKey, error: oldKeyErr } = await supabase
+        .from("keys")
+        .select(
+            "id,team_id,name,scopes,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,soft_blocked"
+        )
+        .eq("id", id)
+        .maybeSingle();
+    if (oldKeyErr) throw oldKeyErr;
+    if (!oldKey?.team_id) throw new Error("Key not found");
+    await requireTeamMembership(supabase, user.id, oldKey.team_id, ["owner", "admin"]);
+    // Rotation is an in-place replacement flow, so skip the hard team key cap check.
+    // The previous key can remain temporarily for overlap based on expires_at.
+
+    const previousKeyExpiresAtRaw = input.previousKeyExpiresAt;
+    let previousKeyExpiresAt: string | null = null;
+    if (previousKeyExpiresAtRaw !== undefined) {
+        if (previousKeyExpiresAtRaw === null || String(previousKeyExpiresAtRaw).trim() === "") {
+            previousKeyExpiresAt = null;
+        } else {
+            const parsed = new Date(previousKeyExpiresAtRaw);
+            if (Number.isNaN(parsed.getTime())) {
+                throw new Error("Invalid expiry time");
+            }
+            previousKeyExpiresAt = parsed.toISOString();
+        }
+    }
+
+    const { kid, secret, plaintext, prefix } = makeKeyV2();
+    const pepper = resolveActiveKeyPepper();
+    const hash = hmacSecret(secret, pepper);
+    const newName = typeof input.newName === "string" && input.newName.trim().length > 0
+        ? input.newName.trim()
+        : `${oldKey.name} (rotated)`;
+
+    const insertObj = {
+        team_id: oldKey.team_id,
+        name: newName,
+        kid,
+        hash,
+        prefix,
+        status: "active",
+        scopes: oldKey.scopes ?? "[]",
+        created_by: user.id,
+        daily_limit_requests: Number(oldKey.daily_limit_requests ?? 0) || 0,
+        weekly_limit_requests: Number(oldKey.weekly_limit_requests ?? 0) || 0,
+        monthly_limit_requests: Number(oldKey.monthly_limit_requests ?? 0) || 0,
+        daily_limit_cost_nanos: Number(oldKey.daily_limit_cost_nanos ?? 0) || 0,
+        weekly_limit_cost_nanos: Number(oldKey.weekly_limit_cost_nanos ?? 0) || 0,
+        monthly_limit_cost_nanos: Number(oldKey.monthly_limit_cost_nanos ?? 0) || 0,
+        soft_blocked: Boolean(oldKey.soft_blocked),
+    };
+
+    const { data: newKey, error: insertErr } = await supabase
+        .from("keys")
+        .insert(insertObj)
+        .select("id")
+        .maybeSingle();
+    if (insertErr) throw insertErr;
+    if (!newKey?.id) throw new Error("Failed to create rotated key");
+
+    const updatePayload: Record<string, unknown> = {};
+    if (previousKeyExpiresAtRaw !== undefined) {
+        updatePayload.expires_at = previousKeyExpiresAt;
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+        const { error: updateErr } = await supabase
+            .from("keys")
+            .update(updatePayload)
+            .eq("id", id)
+            .eq("team_id", oldKey.team_id);
+        if (updateErr) {
+            // Best-effort compensation: avoid leaving an extra key when old key expiry update fails.
+            const { error: rollbackErr } = await supabase
+                .from("keys")
+                .delete()
+                .eq("id", newKey.id)
+                .eq("team_id", oldKey.team_id);
+            if (rollbackErr) {
+                throw new Error(
+                    `Key rotation failed and rollback also failed: ${updateErr.message}; rollback: ${rollbackErr.message}`
+                );
+            }
+            throw updateErr;
+        }
+        await invalidateGatewayKeyCache(id);
+    }
+
+    revalidatePath("/settings/keys");
+    return {
+        id: newKey?.id as string | undefined,
+        plaintext,
+        prefix,
+        previousKeyExpiresAt,
+    };
 }
 
 export async function deleteApiKeyAction(id: string, confirmName?: string) {

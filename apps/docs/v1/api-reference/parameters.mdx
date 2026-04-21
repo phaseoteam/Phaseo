@@ -1,0 +1,85 @@
+---
+title: "Parameters"
+description: "Common request parameters across API endpoints, including routing and debug controls."
+icon: "sliders-horizontal"
+---
+
+Parameter support varies by endpoint and model. Use this page as a quick reference, then confirm details on each endpoint page.
+
+## Common request parameters
+
+| Parameter | Type | Typical usage |
+| --- | --- | --- |
+| `model` | string | Required model id (for example `openai/gpt-5-nano`). |
+| `stream` | boolean | Enable SSE token streaming on text endpoints. |
+| `temperature` | number | Control output randomness when supported. |
+| `top_p` | number | Nucleus sampling control where supported. |
+| `max_tokens` / `max_output_tokens` | integer | Cap output length and cost. |
+| `stop` | string or string[] | Define explicit stop sequences. |
+| `tools`, `tool_choice` | object / string | Tool-calling controls on compatible endpoints. |
+| `response_format` | string or object | Ask for plain text, JSON, or schema-constrained responses. |
+| `meta`, `usage` | boolean | Include extra metadata and usage details in responses. |
+
+## Provider routing parameters
+
+The `provider` object lets you influence routing behavior:
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `order` | string[] | Preferred provider order. |
+| `only` | string[] | Restrict routing to specific providers. |
+| `ignore` | string[] | Exclude specific providers. |
+| `include_alpha` | boolean | Allow alpha providers in routing decisions. |
+
+## Provider-specific options
+
+Use `provider_options` when you need provider-native configuration (for example cache controls). Keep these isolated so you can preserve portability between providers.
+
+## Debug parameters
+
+Use `debug` for controlled troubleshooting:
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `enabled` | boolean | Enable debug mode for the request. |
+| `return_upstream_request` | boolean | Include transformed upstream request payload. |
+| `return_upstream_response` | boolean | Include upstream response payload where available. |
+| `trace` | boolean | Return routing/debug traces. |
+| `trace_level` | `summary` or `full` | Control trace verbosity. |
+
+`debug` data may contain sensitive request context. Use only in development or controlled environments.
+
+## Example
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarize this changelog.",
+  "stream": false,
+  "temperature": 0.3,
+  "max_output_tokens": 300,
+  "provider": {
+    "order": ["openai", "anthropic"],
+    "ignore": ["some-provider"]
+  },
+  "debug": {
+    "enabled": true,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+## Related pages
+
+- [Streaming](./streaming.mdx)
+- [Limits](./limits.mdx)
+- [Errors and Debugging](./errors.mdx)
+
+<Visibility for="agents">
+If you are implementing parameter handling as an agent:
+
+- Use repository skills for schema validation and request-shape checks.
+- Preserve unknown provider-specific keys in pass-through flows when allowed.
+- Validate endpoint compatibility before setting advanced fields like tools, streaming, or debug options together.
+</Visibility>

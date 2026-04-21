@@ -5071,6 +5071,7 @@ components:
         - moonshotai/kimi-k2-2025-07-11
         - moonshotai/kimi-k2-thinking
         - moonshotai/kimi-k2.5
+        - moonshotai/kimi-k2.6
         - moonshotai/kimi-linear-48b
         - moonshotai/kimi-vl-a3b
         - moonshotai/kimi-vl-a3b-thinking
@@ -5365,7 +5366,6 @@ components:
         - qwen/qwen3-tts-12hz-0.6b-customvoice
         - qwen/qwen3-tts-12hz-1.7b-base
         - qwen/qwen3-tts-12hz-1.7b-voicedesign
-        - qwen/qwen3-tts-tokenizer-12hz
         - qwen/qwen3-vl-235b-a22b-instruct
         - qwen/qwen3-vl-235b-a22b-thinking
         - qwen/qwen3-vl-2b-instruct
@@ -5393,6 +5393,7 @@ components:
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
         - qwen/qwen3.6-35b-a3b
+        - qwen/qwen3.6-max-preview
         - qwen/qwen3.6-plus
         - qwen/qwq-32b
         - qwen/qwq-32b-preview
