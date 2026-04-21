@@ -1,0 +1,42 @@
+---
+title: Welcome to Local Announcements
+description: This local MDX-powered announcements section lives directly inside the web app.
+publishedAt: 2026-04-19
+author: AI Stats Team
+tags:
+  - Announcements
+  - MDX
+  - Web
+coverImage: /announcements/welcome-grid.svg
+draft: false
+---
+
+This is your new announcements section, fully local to the repository.
+
+You can write normal markdown, embed local images, and include JSX components directly in each post.
+
+![Announcement preview image](/announcements/welcome-grid.svg)
+
+## Built for quick writing
+
+- Add a new `.mdx` file in `apps/web/src/content/announcements`.
+- Add images to `apps/web/public/announcements`.
+- Open `/announcements` in the app.
+
+<Callout title="Tip" tone="success">
+Keep frontmatter short and clear. Your `description` is used on the announcements index cards.
+</Callout>
+
+## React in MDX
+
+You can render interactive components from inside MDX:
+
+<Counter initial={2} />
+
+You can also use JSX expressions inline:
+
+<ul>
+	{["Local files", "Image support", "React components"].map((feature) => (
+		<li key={feature}>{feature}</li>
+	))}
+</ul>

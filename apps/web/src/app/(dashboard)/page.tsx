@@ -9,6 +9,9 @@ import HomeOpenSourceSection from "@/components/landingPage/Home/HomeOpenSourceS
 import HomeModelUpdatesSection, {
 	HomeModelUpdatesSectionFallback,
 } from "@/components/landingPage/Home/HomeModelUpdatesSection";
+import HomeAnnouncementsSection, {
+	HomeAnnouncementsSectionFallback,
+} from "@/components/landingPage/Home/HomeAnnouncementsSection";
 import ExploreModelsProviderTicker from "@/components/landingPage/Home/ExploreModelsProviderTicker";
 import HomeQuickstartSection from "@/components/landingPage/Home/HomeQuickstartSection";
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
@@ -162,6 +165,10 @@ export default function Page() {
 				</Suspense>
 
 				<HomeOpenSourceSection />
+
+				<Suspense fallback={<HomeAnnouncementsSectionFallback />}>
+					<HomeAnnouncementsSection />
+				</Suspense>
 			</div>
 		</div>
 	);
