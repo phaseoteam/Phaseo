@@ -44,13 +44,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid payment intent id" }, { status: 400 });
         }
 
-        const { teamId, customerId } = await requireActiveTeamStripeCustomer();
+        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer();
         const supabase = createAdminClient();
 
         const { data: purchase, error: purchaseErr } = await supabase
             .from("credit_ledger")
             .select("ref_type,ref_id,kind,status")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("ref_type", "Stripe_Payment_Intent")
             .eq("ref_id", paymentIntentId)
             .maybeSingle();

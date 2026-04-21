@@ -78,7 +78,7 @@ async function handleOrganisations(req: Request) {
         }));
 
         const cacheOptions = {
-            scope: `organisations:${auth.value.teamId}`,
+            scope: `organisations:${auth.value.workspaceId}`,
             ttlSeconds: 300,
             staleSeconds: 600,
         };

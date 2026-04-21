@@ -4,7 +4,7 @@
 
 create table if not exists public.provisioning_keys (
   id uuid not null default gen_random_uuid(),
-  team_id uuid not null,
+  workspace_id uuid not null,
   name text not null,
   hash text not null unique,
   prefix text not null,
@@ -17,10 +17,10 @@ create table if not exists public.provisioning_keys (
   soft_blocked boolean not null default false,
   constraint provisioning_keys_pkey primary key (id),
   constraint provisioning_keys_created_by_fkey foreign key (created_by) references public.users(user_id),
-  constraint provisioning_keys_team_id_fkey foreign key (team_id) references public.teams(id)
+  constraint provisioning_keys_workspace_id_fkey foreign key (workspace_id) references public.workspaces(id)
 );
-create index if not exists provisioning_keys_team_id_idx
-  on public.provisioning_keys (team_id);
+create index if not exists provisioning_keys_workspace_id_idx
+  on public.provisioning_keys (workspace_id);
 create index if not exists provisioning_keys_hash_idx
   on public.provisioning_keys (hash);
 create index if not exists provisioning_keys_prefix_idx

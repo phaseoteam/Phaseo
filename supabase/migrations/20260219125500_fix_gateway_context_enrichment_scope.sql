@@ -1,5 +1,5 @@
 create or replace function public.gateway_fetch_request_context(
-  team_id uuid,
+  workspace_id uuid,
   model text,
   endpoint text,
   api_key_id uuid
@@ -98,14 +98,14 @@ begin
     into preset_data
     from public.presets p
     where p.name = preset_name
-      and p.team_id = gateway_fetch_request_context.team_id
+      and p.workspace_id = gateway_fetch_request_context.workspace_id
       and (
         p.visibility = 'public'
         or p.visibility = 'team'
         or p.created_by in (
           select u.user_id
           from public.users u
-          where u.id = gateway_fetch_request_context.team_id
+          where u.id = gateway_fetch_request_context.workspace_id
         )
       )
     limit 1;
@@ -147,7 +147,7 @@ begin
   -- validate key row, status, and team
   select
     (k.status = 'active'),
-    (k.team_id = gateway_fetch_request_context.team_id),
+    (k.workspace_id = gateway_fetch_request_context.workspace_id),
     k.soft_blocked,
     k.daily_limit_requests,   k.weekly_limit_requests,   k.monthly_limit_requests,
     k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos
@@ -165,7 +165,7 @@ begin
     raise exception using errcode = '22023', message = 'api_key_not_found', detail = 'key id does not exist';
   end if;
   if not v_key_team_ok then
-    raise exception using errcode = '22023', message = 'api_key_wrong_team', detail = 'key does not belong to provided team_id';
+    raise exception using errcode = '22023', message = 'api_key_wrong_team', detail = 'key does not belong to provided workspace_id';
   end if;
   if not v_key_active then
     raise exception using errcode = '22023', message = 'api_key_inactive', detail = 'key status is not active';
@@ -183,7 +183,7 @@ begin
           jsonb_build_object('ok', false, 'reason', 'insufficient_funds', 'balance_nanos', coalesce(w.balance_nanos, 0))
       end
       from public.wallets w
-      where w.team_id = gateway_fetch_request_context.team_id
+      where w.workspace_id = gateway_fetch_request_context.workspace_id
       limit 1
     ), jsonb_build_object('ok', false, 'reason', 'wallet_missing'));
 
@@ -200,7 +200,7 @@ begin
     used_day_cost, used_wk_cost, used_mo_cost
   from public.gateway_requests gr
   where gr.key_id  = gateway_fetch_request_context.api_key_id
-    and gr.team_id = gateway_fetch_request_context.team_id
+    and gr.workspace_id = gateway_fetch_request_context.workspace_id
     and gr.success is true;
 
   if v_soft_blocked then within_limits := false; limit_reason := 'key_limit_soft_blocked'; end if;
@@ -254,9 +254,9 @@ begin
     team_created_at,
     team_tier,
     team_balance_nanos
-  from public.teams t
-  left join public.wallets w on w.team_id = t.id
-  where t.id = gateway_fetch_request_context.team_id
+  from public.workspaces t
+  left join public.wallets w on w.workspace_id = t.id
+  where t.id = gateway_fetch_request_context.workspace_id
   limit 1;
 
   -- Team spend & request aggregates
@@ -277,12 +277,12 @@ begin
     team_requests_1h,
     team_requests_24h
   from public.gateway_requests gr
-  where gr.team_id = gateway_fetch_request_context.team_id
+  where gr.workspace_id = gateway_fetch_request_context.workspace_id
     and gr.success is true;
 
   -- Calculate tier dynamically based on rolling 30-day spend with grace period
   -- This updates the team's tier in the database if it changed
-  team_tier := calculate_tier_with_grace(gateway_fetch_request_context.team_id, team_spend_30d_nanos);
+  team_tier := calculate_tier_with_grace(gateway_fetch_request_context.workspace_id, team_spend_30d_nanos);
 
   team_enrichment := jsonb_build_object(
     'tier', team_tier,
@@ -384,7 +384,7 @@ begin
               )
             )
             from public.byok_keys bk
-            where bk.team_id    = gateway_fetch_request_context.team_id
+            where bk.workspace_id    = gateway_fetch_request_context.workspace_id
               and bk.provider_id = pr.provider_id
               and bk.enabled     = true
           ), '[]'::jsonb)
@@ -444,7 +444,7 @@ begin
   from provider_rows pr;
 
   return jsonb_build_object(
-    'team_id', gateway_fetch_request_context.team_id,
+    'workspace_id', gateway_fetch_request_context.workspace_id,
     'resolved_model', resolved_model,
     'preset', preset_data,
     'key_ok', key_status,

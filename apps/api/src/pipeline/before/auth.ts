@@ -169,7 +169,7 @@ function parseV2(token: string) {
 export type AuthFailure = { ok: false; reason: string };
 export type AuthSuccess = {
     ok: true;
-    teamId: string;
+    workspaceId: string;
     apiKeyId: string;
     apiKeyRef: string;
     apiKeyKid: string;
@@ -183,7 +183,7 @@ type AuthenticateOptions = {
 
 type KeyRow = {
     id: string;
-    team_id: string;
+    workspace_id: string;
     status: string;
     hash: string;
     expires_at?: string | null;
@@ -262,7 +262,7 @@ async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
             return "missing";
         }
         const row = cached as Partial<KeyRow>;
-        if (!row.id || !row.team_id || !row.status || !row.hash) return null;
+        if (!row.id || !row.workspace_id || !row.status || !row.hash) return null;
         const value = row as KeyRow;
         writeKeyLookupL1(kid, versionToken, value);
         return value;
@@ -300,7 +300,7 @@ async function cacheKey(kid: string, row: KeyRow) {
  * Steps:
  *  1. Parse and validate the token format.
  *  2a. If JWT: Validate signature, claims, and check revocation
- *  2b. If API Key: Look up key metadata (id, team_id, status, stored hash) in Supabase.
+ *  2b. If API Key: Look up key metadata (id, workspace_id, status, stored hash) in Supabase.
  *  3. Compute HMAC(secret + pepper) and compare against stored hash (API key only).
  *  4. On success, update last_used_at and return team + key reference.
  *
@@ -376,7 +376,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
 
     const success = async (nextHash?: string): Promise<AuthSuccess | AuthFailure> => {
-        let teamId = keyRow.team_id;
+        let workspaceId = keyRow.workspace_id;
         const internal = isInternalRequestAuthorized(req, bindings);
         const hasHashMigration = Boolean(nextHash) && nextHash !== stored;
 
@@ -410,7 +410,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             apiKeyId: keyRow.id,
             apiKeyRef: `kid_${parsed.kid}`,
             apiKeyKid: parsed.kid,
-            teamId,
+            workspaceId,
             userId: null,
             internal,
         } as AuthSuccess;
@@ -512,7 +512,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
             .select("revoked_at")
             .eq("user_id", claims.user_id)
             .eq("client_id", claims.client_id)
-            .eq("team_id", claims.team_id)
+            .eq("workspace_id", claims.workspace_id)
             .maybeSingle();
 
         if (authError) {
@@ -534,7 +534,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
                     .update({ last_used_at: new Date().toISOString() })
                     .eq("user_id", claims.user_id)
                     .eq("client_id", claims.client_id)
-                    .eq("team_id", claims.team_id);
+                    .eq("workspace_id", claims.workspace_id);
             } catch (error) {
                 console.error("Error updating OAuth last_used_at:", error);
             } finally {
@@ -545,7 +545,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
         // Return success with OAuth-specific context
         return {
             ok: true,
-            teamId: claims.team_id,
+            workspaceId: claims.workspace_id,
             apiKeyId: claims.client_id, // Use client_id as key reference for OAuth
             apiKeyRef: `oauth_${claims.client_id}`,
             apiKeyKid: claims.client_id,
@@ -588,7 +588,7 @@ function isGatewayOAuthJwt(token: string): boolean {
     if (!payload) return false;
     return (
         typeof payload.user_id === "string" &&
-        typeof payload.team_id === "string" &&
+        typeof payload.workspace_id === "string" &&
         typeof payload.client_id === "string"
     );
 }

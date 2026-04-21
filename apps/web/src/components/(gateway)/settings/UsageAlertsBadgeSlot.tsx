@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { getDeprecationWarningsForTeam } from "@/lib/fetchers/usage/deprecationWarnings";
 
 function Badge({ count }: { count: number }) {
@@ -21,10 +21,10 @@ export default async function UsageAlertsBadgeSlot() {
 	} = await supabase.auth.getUser();
 	if (!user) return null;
 
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) return null;
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) return null;
 
-	const warnings = await getDeprecationWarningsForTeam(teamId);
+	const warnings = await getDeprecationWarningsForTeam(workspaceId);
 	const count = warnings.filter((w) => w.countAsAlert).length;
 	return <Badge count={count} />;
 }

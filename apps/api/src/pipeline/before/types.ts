@@ -197,7 +197,7 @@ export type ContextFetchTelemetry = {
  * Includes team info, gate checks, providers, and pricing
  */
 export type GatewayContextData = {
-    teamId: string;
+    workspaceId: string;
     endpoint?: Endpoint;
     resolvedModel?: string | null;
     preset?: PresetData | null;
@@ -298,7 +298,7 @@ export type PipelineContext = {
     rawBody: any;
     body: any;
     model: string;
-    teamId: string;
+    workspaceId: string;
     stream: boolean;
     strictness?: "off" | "warn" | "error";
     requestPath?: string;

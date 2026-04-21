@@ -80,7 +80,7 @@ describe('JWT Utilities', () => {
         exp: now + 3600,
         iat: now,
         user_id: 'user123',
-        team_id: 'team456',
+        workspace_id: 'team456',
         client_id: 'oauth789',
       };
 
@@ -95,7 +95,7 @@ describe('JWT Utilities', () => {
         exp: now - 100, // Expired
         iat: now - 3700,
         user_id: 'user123',
-        team_id: 'team456',
+        workspace_id: 'team456',
         client_id: 'oauth789',
       };
 
@@ -110,7 +110,7 @@ describe('JWT Utilities', () => {
         exp: now + 3600,
         iat: now + 120, // Future (beyond 60s skew)
         user_id: 'user123',
-        team_id: 'team456',
+        workspace_id: 'team456',
         client_id: 'oauth789',
       };
 
@@ -125,7 +125,7 @@ describe('JWT Utilities', () => {
         exp: now + 3600,
         iat: now,
         user_id: 'user123',
-        team_id: 'team456',
+        workspace_id: 'team456',
         client_id: 'oauth789',
       };
 
@@ -141,7 +141,7 @@ describe('JWT Utilities', () => {
         exp: now + 3600,
         iat: now,
         user_id: 'user123',
-        team_id: 'team456',
+        workspace_id: 'team456',
         client_id: 'oauth789',
       };
 
@@ -155,7 +155,7 @@ describe('JWT Utilities', () => {
         iss: expectedIssuer,
         exp: now + 3600,
         iat: now,
-        // Missing user_id, team_id, client_id
+        // Missing user_id, workspace_id, client_id
       };
 
       const result = validateClaims(claims, expectedIssuer);
@@ -170,7 +170,7 @@ describe('JWT Utilities', () => {
         exp: now + 3600,
         iat: now,
         user_id: 'user123',
-        team_id: 'team456',
+        workspace_id: 'team456',
         client_id: 'oauth789',
       };
 

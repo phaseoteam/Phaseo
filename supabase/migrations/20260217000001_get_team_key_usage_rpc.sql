@@ -1,5 +1,5 @@
-create or replace function public.get_team_key_usage(
-  p_team_id uuid,
+create or replace function public.get_workspace_key_usage(
+  p_workspace_id uuid,
   p_day_start timestamptz
 )
 returns table(
@@ -19,10 +19,10 @@ as $$
     coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= p_day_start), 0)::bigint as daily_cost_nanos,
     max(gr.created_at) as last_used_at
   from public.gateway_requests gr
-  where gr.team_id = p_team_id
+  where gr.workspace_id = p_workspace_id
     and gr.key_id is not null
     and gr.success is true
-    and public.is_team_member(p_team_id)
+    and public.is_workspace_member(p_workspace_id)
   group by gr.key_id;
 $$;
-grant execute on function public.get_team_key_usage(uuid, timestamptz) to authenticated;
+grant execute on function public.get_workspace_key_usage(uuid, timestamptz) to authenticated;

@@ -24,7 +24,7 @@ describe("video-jobs", () => {
 
 	it("reads metadata from DB", async () => {
 		getAsyncOperationMock.mockResolvedValue({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			kind: "video",
 			internalId: "vid_1",
 			provider: "openai",
@@ -78,7 +78,7 @@ describe("video-jobs", () => {
 		}, "native_vid_5");
 
 		expect(upsertAsyncOperationMock).toHaveBeenCalledWith(expect.objectContaining({
-			teamId: "team_5",
+			workspaceId: "team_5",
 			kind: "video",
 			internalId: "vid_5",
 			nativeId: "native_vid_5",

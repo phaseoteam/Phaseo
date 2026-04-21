@@ -18,7 +18,7 @@ describe("music-jobs", () => {
 
 	it("reads metadata from DB", async () => {
 		getAsyncOperationMock.mockResolvedValue({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			kind: "music",
 			internalId: "mus_1",
 			provider: "suno",
@@ -58,7 +58,7 @@ describe("music-jobs", () => {
 		});
 
 		expect(upsertAsyncOperationMock).toHaveBeenCalledWith(expect.objectContaining({
-			teamId: "team_3",
+			workspaceId: "team_3",
 			kind: "music",
 			internalId: "mus_3",
 			provider: "elevenlabs",

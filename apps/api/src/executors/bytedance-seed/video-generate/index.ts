@@ -260,7 +260,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservationGateError: { status: number; type: string; message: string } | null = null;
 	try {
 		const reserved = await reserveVideoGenerationCredits({
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: `req_${args.requestId}`,
 			providerId: args.providerId,
 			model,
@@ -297,7 +297,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	} catch (reserveErr) {
 		console.error("bytedance_video_reservation_failed_pre_submit", {
 			error: reserveErr,
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			requestId: args.requestId,
 		});
 		reservationGateError = {
@@ -311,14 +311,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				reservationId,
 				releaseRefId: args.requestId,
 			});
 		} catch (releaseErr) {
 			console.error("bytedance_video_reservation_release_failed", {
 				error: releaseErr,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: args.requestId,
 				reservationId,
 			});
@@ -423,7 +423,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const status = toVideoStatus(json?.status ?? json?.data?.status ?? json?.output?.status);
 	if (encodedId) {
 		try {
-			await saveVideoJobMeta(args.teamId, args.requestId, {
+			await saveVideoJobMeta(args.workspaceId, args.requestId, {
 				provider: args.providerId,
 				providerTaskId: taskId ?? encodedId,
 				requestId: args.requestId,
@@ -448,7 +448,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} catch (error) {
 			console.error("bytedance_video_job_meta_store_failed", {
 				error,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: encodedId,
 				requestId: args.requestId,
 				reservationId,

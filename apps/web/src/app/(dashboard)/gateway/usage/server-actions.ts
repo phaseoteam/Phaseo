@@ -1,10 +1,10 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
-	requireTeamMembership,
+	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 // Raw fallback can pull large request windows; keep it opt-in to protect DB egress.
@@ -20,11 +20,11 @@ async function requireAuthedTeamContext(
 	} = await supabase.auth.getUser();
 	if (error || !user?.id) throw new Error("Unauthorized");
 
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing team id");
 
-	await requireTeamMembership(supabase, user.id, teamId);
-	return { user, teamId };
+	await requireWorkspaceMembership(supabase, user.id, workspaceId);
+	return { user, workspaceId };
 }
 
 export interface PaginatedRequestsParams {
@@ -76,9 +76,9 @@ export async function fetchPaginatedRequests(
 	params: PaginatedRequestsParams
 ): Promise<PaginatedRequestsResult> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return {
 			data: [],
 			total: 0,
@@ -121,7 +121,7 @@ export async function fetchPaginatedRequests(
 		`,
 			{ count: "exact" }
 		)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.gte("created_at", params.timeRange.from)
 		.lte("created_at", params.timeRange.to);
 
@@ -177,7 +177,7 @@ export async function fetchPaginatedRequests(
 			`,
 				{ count: "exact" },
 			)
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.gte("created_at", params.timeRange.from)
 			.lte("created_at", params.timeRange.to);
 
@@ -954,9 +954,9 @@ export async function fetchFunStats(
 	timeRange: { from: string; to: string }
 ): Promise<FunStatsResult> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return {
 			topModel: null,
 			topProvider: null,
@@ -966,11 +966,11 @@ export async function fetchFunStats(
 	}
 
 	const { data: rows } = await supabase
-		.from("gateway_usage_rollup_15m_team_provider_model")
+		.from("gateway_usage_rollup_15m_workspace_provider_model")
 		.select(
 			"canonical_model_id, provider, requests, total_cost_nanos, latency_sum_ms, latency_samples",
 		)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.gte("bucket_15m", timeRange.from)
 		.lte("bucket_15m", timeRange.to);
 
@@ -1056,16 +1056,16 @@ export async function fetchFunStats(
  */
 export async function fetchAppNames(appIds: string[]): Promise<Map<string, string>> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
-	if (!teamId || appIds.length === 0) {
+	if (!workspaceId || appIds.length === 0) {
 		return new Map();
 	}
 
 	const { data: apps } = await supabase
 		.from("api_apps")
 		.select("id, title")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.in("id", appIds);
 
 	const appMap = new Map<string, string>();
@@ -1087,9 +1087,9 @@ export async function investigateGeneration(
 	requestId: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return {
 			success: false,
 			error: "Not authenticated",
@@ -1106,7 +1106,7 @@ export async function investigateGeneration(
 	const { data, error } = await supabase
 		.from("gateway_requests")
 		.select("*")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("request_id", requestId.trim())
 		.single();
 
@@ -1137,6 +1137,7 @@ export interface ChartDataParams {
 	timeRange: { from: string; to: string };
 	range: "1h" | "1d" | "1w" | "1m" | "1y";
 	keyFilter?: string | null;
+	forceLive?: boolean;
 }
 
 export interface ProviderMetrics {
@@ -1170,9 +1171,9 @@ export async function fetchChartData(
 	params: ChartDataParams
 ): Promise<ChartDataResult> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return {
 			requestsChart: [],
 			tokensChart: [],
@@ -1262,7 +1263,7 @@ export async function fetchChartData(
 			let query = supabase
 				.from("gateway_requests")
 				.select("created_at, provider, model_id, usage, cost_nanos")
-				.eq("team_id", teamId)
+				.eq("workspace_id", workspaceId)
 				.eq("success", true)
 				.gte("created_at", fromIso)
 				.lte("created_at", toIso)
@@ -1324,11 +1325,27 @@ export async function fetchChartData(
 		);
 	};
 
+	const mergeUsageRows = (baseRows: any[], liveRows: any[]): any[] => {
+		const toKey = (row: any) =>
+			`${row?.bucket ?? ""}::${row?.provider ?? "unknown"}::${row?.model_id ?? "unknown"}`;
+		const merged = new Map<string, any>();
+		for (const row of baseRows) {
+			merged.set(toKey(row), row);
+		}
+		for (const row of liveRows) {
+			// Prefer live values for overlapping bucket/provider/model keys.
+			merged.set(toKey(row), row);
+		}
+		return Array.from(merged.values()).sort(
+			(a, b) => new Date(a.bucket).getTime() - new Date(b.bucket).getTime(),
+		);
+	};
+
 	// Fetch current period data (aggregated)
 	const { data: rows, error: rollupError } = await supabase.rpc(
 		"get_usage_chart_rollup",
 		{
-			p_team: teamId,
+			p_team: workspaceId,
 			p_from: params.timeRange.from,
 			p_to: params.timeRange.to,
 			p_bucket: bucketKey,
@@ -1348,7 +1365,7 @@ export async function fetchChartData(
 	const { data: prevRows, error: prevError } = await supabase.rpc(
 		"get_usage_chart_rollup",
 		{
-			p_team: teamId,
+			p_team: workspaceId,
 			p_from: prevFrom,
 			p_to: prevTo,
 			p_bucket: bucketKey,
@@ -1359,7 +1376,17 @@ export async function fetchChartData(
 		console.error("Error fetching usage rollup (prev):", prevError);
 	}
 	let currentRows = (rows ?? []) as any[];
-	if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && currentRows.length === 0) {
+	if (params.forceLive) {
+		const liveRows = await fetchGatewayRequestFallbackRows(
+			params.timeRange.from,
+			params.timeRange.to,
+		);
+		if (liveRows.length > 0) {
+			currentRows = mergeUsageRows(currentRows, liveRows);
+		} else if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && currentRows.length === 0) {
+			currentRows = liveRows;
+		}
+	} else if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && currentRows.length === 0) {
 		currentRows = await fetchGatewayRequestFallbackRows(
 			params.timeRange.from,
 			params.timeRange.to,
@@ -1596,10 +1623,10 @@ export async function fetchSessionRollups(
 	params: SessionRollupParams,
 ): Promise<SessionRollupRow[]> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
 	const { data, error } = await supabase.rpc("get_gateway_sessions_rollup", {
-		p_team: teamId,
+		p_team: workspaceId,
 		p_from: params.timeRange.from,
 		p_to: params.timeRange.to,
 		p_limit: params.limit ?? 100,
@@ -1650,10 +1677,10 @@ export async function fetchJobsRollups(
 	params: JobsRollupParams = {},
 ): Promise<JobsRollupRow[]> {
 	const supabase = await createClient();
-	const { teamId } = await requireAuthedTeamContext(supabase);
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
 	const { data, error } = await supabase.rpc("get_gateway_jobs_rollup", {
-		p_team: teamId,
+		p_team: workspaceId,
 		p_limit: params.limit ?? 100,
 		p_offset: params.offset ?? 0,
 		p_kind: params.kind ?? null,

@@ -217,7 +217,7 @@ async function resolveProviderPollingKey(args: {
 	let key = bindings[defaultEnvKey] ?? null;
 	if (job.meta?.keySource === "byok" && job.meta.byokKeyId) {
 		const byok = await loadByokKey({
-			teamId: job.teamId,
+			workspaceId: job.workspaceId,
 			providerId,
 			metaList: [{
 				id: job.meta.byokKeyId,
@@ -428,7 +428,7 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 			: { Authorization: `Bearer ${googleAuth.value}` }),
 	};
 	console.info("video_reconcile_google_poll_start", {
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		providerId,
 		operationName,
@@ -451,7 +451,7 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 			.then((text) => text.slice(0, 1200))
 			.catch(() => "");
 		console.error("video_reconcile_google_poll_failed", {
-			teamId: job.teamId,
+			workspaceId: job.workspaceId,
 			videoId: job.videoId,
 			providerId,
 			operationName,
@@ -501,7 +501,7 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 			? generatedVideo.mimeType.trim()
 			: null;
 	console.info("video_reconcile_google_poll_success", {
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		providerId,
 		operationName,

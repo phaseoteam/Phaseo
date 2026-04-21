@@ -6,6 +6,7 @@
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
 import { ensureAppId } from "../after/apps";
 import type { Endpoint } from "@core/types";
+import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 
 function supaAdmin() {
     return getSupabaseAdmin();
@@ -37,16 +38,45 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, label: string, attempts
 
 async function insertGatewayRequest(row: any) {
     const client = supaAdmin();
-    const { error } = await client.from("gateway_requests").insert(row);
+    const { data, error } = await client
+        .from("gateway_requests")
+        .insert(row)
+        .select("id, created_at, workspace_id")
+        .single();
     if (error) {
         const err = new Error(`[audit] insert gateway_requests error: ${error?.message ?? "unknown"}`);
         (err as any).cause = error;
         throw err;
     }
+    return data as { id: string; created_at: string; workspace_id: string };
+}
+
+async function syncInsertedRequestRollup(
+    insertedRow: { id: string; created_at: string; workspace_id: string } | null | undefined,
+    context: string,
+) {
+    if (!insertedRow?.id || !insertedRow?.created_at || !insertedRow?.workspace_id) {
+        return;
+    }
+    try {
+        await syncWorkspaceUsageRollupForRequest({
+            requestRowId: insertedRow.id,
+            requestCreatedAt: insertedRow.created_at,
+            workspaceId: insertedRow.workspace_id,
+            context,
+        });
+    } catch (error) {
+        console.error("[audit] failed to sync workspace usage rollup", {
+            context,
+            requestRowId: insertedRow.id,
+            workspaceId: insertedRow.workspace_id,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
 }
 
 function buildSupaRow(args: {
-    requestId: string; teamId?: string | null;
+    requestId: string; workspaceId?: string | null;
     endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
     stream?: boolean; byok?: boolean;
     nativeResponseId?: string | null;
@@ -71,7 +101,7 @@ function buildSupaRow(args: {
 }) {
     return {
         request_id: args.requestId,
-        team_id: args.teamId ?? null,
+        workspace_id: args.workspaceId ?? null,
         app_id: args.appId ?? null,
         endpoint: args.endpoint,
         model_id: args.model ?? null,
@@ -112,7 +142,7 @@ function stripPricingFromUsage(usage: any): any {
 }
 
 export async function auditSuccess(args: {
-    requestId: string; teamId: string;
+    requestId: string; workspaceId: string;
     provider: string; model: string; endpoint: Endpoint;
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
@@ -152,7 +182,7 @@ export async function auditSuccess(args: {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
         const appId = await ensureAppId({
-            teamId: args.teamId,
+            workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,
             referer: args.referer ?? null,
             appId: args.appId ?? null,
@@ -161,7 +191,7 @@ export async function auditSuccess(args: {
         if (!appId) {
             console.error("[audit] ensureAppId returned null", {
                 requestId: args.requestId,
-                teamId: args.teamId,
+                workspaceId: args.workspaceId,
                 appTitle: args.appTitle ?? null,
                 referer: args.referer ?? null,
                 appIdHeader: args.appId ?? null,
@@ -170,7 +200,7 @@ export async function auditSuccess(args: {
         }
         const row = buildSupaRow({
             requestId: args.requestId,
-            teamId: args.teamId,
+            workspaceId: args.workspaceId,
             endpoint: args.endpoint,
             model: args.model,
             canonicalModel: args.model,
@@ -207,7 +237,11 @@ export async function auditSuccess(args: {
 
         let supabaseError: Error | null = null;
         try {
-            await retryWithBackoff(() => insertGatewayRequest(row), "supabase_audit_success_insert");
+            const insertedRow = await retryWithBackoff(
+                () => insertGatewayRequest(row),
+                "supabase_audit_success_insert",
+            );
+            await syncInsertedRequestRollup(insertedRow, "audit_success");
         } catch (err) {
             supabaseError = err instanceof Error ? err : new Error(String(err));
         }
@@ -222,7 +256,7 @@ export async function auditSuccess(args: {
 type AuditFailureBefore = {
     stage: "before";
     requestId: string;
-    teamId?: string | null;
+    workspaceId?: string | null;
     endpoint: Endpoint;
     model?: string | null;
     statusCode: number;
@@ -257,7 +291,7 @@ type AuditFailureBefore = {
 type AuditFailureExecute = {
     stage: "execute";
     requestId: string;
-    teamId: string;
+    workspaceId: string;
     endpoint: Endpoint;
     model: string;
     provider?: string | null;
@@ -297,14 +331,10 @@ type AuditFailureExecute = {
 export async function auditFailure(args: AuditFailureBefore | AuditFailureExecute) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
-        const runSupabase = async (row: any, label: string) => {
-            await retryWithBackoff(() => insertGatewayRequest(row), label);
-        };
-
         if (args.stage === "before") {
-            const resolvedAppId = args.teamId
+            const resolvedAppId = args.workspaceId
                 ? await ensureAppId({
-                    teamId: args.teamId,
+                    workspaceId: args.workspaceId,
                     appTitle: args.appTitle ?? null,
                     referer: args.referer ?? null,
                     appId: args.appId ?? null,
@@ -313,7 +343,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 : null;
             const row = buildSupaRow({
                 requestId: args.requestId,
-                teamId: args.teamId ?? null,
+                workspaceId: args.workspaceId ?? null,
                 endpoint: args.endpoint,
                 model: args.model ?? null,
                 canonicalModel: args.model ?? null,
@@ -346,9 +376,13 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         });
 
             let supabaseError: Error | null = null;
-            if (args.teamId) {
+            if (args.workspaceId) {
                 try {
-                    await runSupabase(row, "supabase_audit_failure_before_insert");
+                    const insertedRow = await retryWithBackoff(
+                        () => insertGatewayRequest(row),
+                        "supabase_audit_failure_before_insert",
+                    );
+                    await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
                 } catch (err) {
                     supabaseError = err instanceof Error ? err : new Error(String(err));
                 }
@@ -360,7 +394,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
 
         // stage === "execute"
         const resolvedAppId = await ensureAppId({
-            teamId: args.teamId,
+            workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,
             referer: args.referer ?? null,
             appId: args.appId ?? null,
@@ -368,7 +402,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         });
         const row = buildSupaRow({
             requestId: args.requestId,
-            teamId: args.teamId,
+            workspaceId: args.workspaceId,
             endpoint: args.endpoint,
             model: args.model,
             canonicalModel: args.model,
@@ -401,9 +435,13 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         });
 
         let supabaseError: Error | null = null;
-        if (args.teamId) {
+        if (args.workspaceId) {
             try {
-                await runSupabase(row, "supabase_audit_failure_execute_insert");
+                const insertedRow = await retryWithBackoff(
+                    () => insertGatewayRequest(row),
+                    "supabase_audit_failure_execute_insert",
+                );
+                await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
             } catch (err) {
                 supabaseError = err instanceof Error ? err : new Error(String(err));
             }

@@ -76,13 +76,13 @@ export default function TeamSwitcher({
 		return teams.length ? teams[0].id : undefined;
 	};
 
-	const [activeTeamId, setActiveTeamId] = useState<string | undefined>(() =>
+	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(() =>
 		getInitialTeamId(initialActiveTeamId)
 	);
 	const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-	const activeTeam = teams.find((t) => t.id === activeTeamId) ?? teams[0];
+	const activeTeam = teams.find((t) => t.id === activeWorkspaceId) ?? teams[0];
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
 			? theme
@@ -154,7 +154,7 @@ export default function TeamSwitcher({
 				>
 					<div>
 						{teams.slice(0, 5).map((t) => {
-							const isActive = t.id === activeTeamId;
+							const isActive = t.id === activeWorkspaceId;
 							return (
 								<DropdownMenuItem
 									key={t.id}
@@ -190,7 +190,7 @@ export default function TeamSwitcher({
 												});
 											return;
 										}
-										const previous = activeTeamId;
+										const previous = activeWorkspaceId;
 										setActiveTeamId(t.id);
 										toast.promise(SwapTeam(t.id), {
 											loading: "Switching workspace...",
@@ -371,15 +371,15 @@ export default function TeamSwitcher({
 						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 					>
 						<Link
-							href={`/settings/usage?team_id=${encodeURIComponent(
-								activeTeamId ?? "",
+							href={`/settings/usage?workspace_id=${encodeURIComponent(
+								activeWorkspaceId ?? "",
 							)}`}
 							onClick={(e) => {
 								e.preventDefault();
 								setIsProfileMenuOpen(false);
 								navigateWithViewTransition(
-									`/settings/usage?team_id=${encodeURIComponent(
-										activeTeamId ?? "",
+									`/settings/usage?workspace_id=${encodeURIComponent(
+										activeWorkspaceId ?? "",
 									)}`,
 								);
 							}}

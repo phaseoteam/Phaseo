@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type KeyRow = {
     id: string;
-    team_id: string;
+    workspace_id: string;
     status: string;
     hash: string;
     expires_at?: string | null;
@@ -133,7 +133,7 @@ describe("authenticate hot-path caching", () => {
         const token = `aistats_v1_sk_${kid}_${secret}`;
         const row: KeyRow = {
             id: "key_1",
-            team_id: "team_1",
+            workspace_id: "team_1",
             status: "active",
             hash,
         };
@@ -159,7 +159,7 @@ describe("authenticate hot-path caching", () => {
         const token = `aistats_v1_sk_${kid}_${secret}`;
         runtime.dbRow.value = {
             id: "key_2",
-            team_id: "team_2",
+            workspace_id: "team_2",
             status: "active",
             hash,
         };
@@ -188,7 +188,7 @@ describe("authenticate hot-path caching", () => {
         const token = `aistats_v1_sk_${kid}_${secret}`;
         runtime.dbRow.value = {
             id: "key_3",
-            team_id: "team_3",
+            workspace_id: "team_3",
             status: "active",
             hash,
         };
@@ -211,7 +211,7 @@ describe("authenticate hot-path caching", () => {
         const token = `aistats_v1_sk_${kid}_${secret}`;
         runtime.dbRow.value = {
             id: "key_4",
-            team_id: "team_4",
+            workspace_id: "team_4",
             status: "active",
             hash,
             expires_at: new Date(Date.now() - 5_000).toISOString(),

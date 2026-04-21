@@ -1,7 +1,7 @@
 import type { AuthMethod } from "@/lib/auth/method";
 
 export type TeamSsoEnforcementContext = {
-	teamId: string;
+	workspaceId: string;
 	userId: string;
 	authMethod: AuthMethod;
 	source: "auth_callback" | "server_action";

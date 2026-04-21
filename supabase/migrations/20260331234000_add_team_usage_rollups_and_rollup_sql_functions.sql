@@ -1,9 +1,9 @@
 -- Team-scoped rollups for usage charts and provider top-models.
 -- Goal: eliminate long-range gateway_requests scans in charting/rendering paths.
 
-create table if not exists public.gateway_usage_rollup_15m_team_provider_model (
+create table if not exists public.gateway_usage_rollup_15m_workspace_provider_model (
   bucket_15m timestamptz not null,
-  team_id uuid not null references public.teams (id) on delete cascade,
+  workspace_id uuid not null references public.workspaces (id) on delete cascade,
   key_id uuid null references public.keys (id) on delete set null,
   provider text not null,
   canonical_model_id text not null,
@@ -17,25 +17,25 @@ create table if not exists public.gateway_usage_rollup_15m_team_provider_model (
   throughput_samples bigint not null
 );
 
-create unique index if not exists gateway_usage_rollup_15m_team_provider_model_uniq
-  on public.gateway_usage_rollup_15m_team_provider_model (
+create unique index if not exists gateway_usage_rollup_15m_workspace_provider_model_uniq
+  on public.gateway_usage_rollup_15m_workspace_provider_model (
     bucket_15m,
-    team_id,
+    workspace_id,
     coalesce(key_id, '00000000-0000-0000-0000-000000000000'::uuid),
     provider,
     canonical_model_id
   );
 
 create index if not exists gateway_usage_rollup_15m_team_bucket_idx
-  on public.gateway_usage_rollup_15m_team_provider_model (team_id, bucket_15m desc);
+  on public.gateway_usage_rollup_15m_workspace_provider_model (workspace_id, bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_team_key_bucket_idx
-  on public.gateway_usage_rollup_15m_team_provider_model (team_id, key_id, bucket_15m desc);
+  on public.gateway_usage_rollup_15m_workspace_provider_model (workspace_id, key_id, bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_team_provider_bucket_idx
-  on public.gateway_usage_rollup_15m_team_provider_model (team_id, provider, bucket_15m desc);
+  on public.gateway_usage_rollup_15m_workspace_provider_model (workspace_id, provider, bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_team_model_bucket_idx
-  on public.gateway_usage_rollup_15m_team_provider_model (team_id, canonical_model_id, bucket_15m desc);
+  on public.gateway_usage_rollup_15m_workspace_provider_model (workspace_id, canonical_model_id, bucket_15m desc);
 
-create or replace function public.refresh_gateway_usage_rollups_team_scope(
+create or replace function public.refresh_gateway_usage_rollups_workspace_scope(
   p_since timestamptz default now() - interval '3 hours'
 )
 returns void
@@ -47,7 +47,7 @@ begin
   v_since_15m := date_trunc('minute', p_since)
     - make_interval(mins => (extract(minute from p_since)::int % 15));
 
-  delete from public.gateway_usage_rollup_15m_team_provider_model
+  delete from public.gateway_usage_rollup_15m_workspace_provider_model
   where bucket_15m >= v_since_15m;
 
   with normalized_15m as (
@@ -56,7 +56,7 @@ begin
         date_trunc('minute', gr.created_at)
         - make_interval(mins => (extract(minute from gr.created_at)::int % 15))
       ) as bucket_15m,
-      gr.team_id,
+      gr.workspace_id,
       gr.key_id,
       coalesce(nullif(gr.provider, ''), 'unknown') as provider,
       coalesce(
@@ -72,11 +72,11 @@ begin
       gr.throughput
     from public.gateway_requests gr
     where gr.created_at >= v_since_15m
-      and gr.team_id is not null
+      and gr.workspace_id is not null
   )
-  insert into public.gateway_usage_rollup_15m_team_provider_model (
+  insert into public.gateway_usage_rollup_15m_workspace_provider_model (
     bucket_15m,
-    team_id,
+    workspace_id,
     key_id,
     provider,
     canonical_model_id,
@@ -91,7 +91,7 @@ begin
   )
   select
     n15.bucket_15m,
-    n15.team_id,
+    n15.workspace_id,
     n15.key_id,
     n15.provider,
     n15.canonical_model_id,
@@ -106,17 +106,17 @@ begin
   from normalized_15m n15
   group by
     n15.bucket_15m,
-    n15.team_id,
+    n15.workspace_id,
     n15.key_id,
     n15.provider,
     n15.canonical_model_id;
 end;
 $$;
 
-comment on function public.refresh_gateway_usage_rollups_team_scope(timestamptz) is
+comment on function public.refresh_gateway_usage_rollups_workspace_scope(timestamptz) is
   'Incrementally refreshes team/key/provider/model 15-minute usage rollups from gateway_requests.';
 
-select public.refresh_gateway_usage_rollups_team_scope(now() - interval '90 days');
+select public.refresh_gateway_usage_rollups_workspace_scope(now() - interval '90 days');
 
 create extension if not exists pg_cron with schema extensions;
 
@@ -147,13 +147,13 @@ end $$;
 select cron.schedule(
   'refresh-gateway-usage-rollups-team-15m',
   '*/15 * * * *',
-  $$select public.refresh_gateway_usage_rollups_team_scope(now() - interval '3 hours');$$
+  $$select public.refresh_gateway_usage_rollups_workspace_scope(now() - interval '3 hours');$$
 );
 
 select cron.schedule(
   'refresh-gateway-usage-rollups-team-nightly-catchup',
   '16 3 * * *',
-  $$select public.refresh_gateway_usage_rollups_team_scope(now() - interval '2 days');$$
+  $$select public.refresh_gateway_usage_rollups_workspace_scope(now() - interval '2 days');$$
 );
 
 create or replace function public.get_usage_chart_rollup(
@@ -179,8 +179,8 @@ with base as (
         r.requests,
         r.total_tokens,
         r.total_cost_nanos
-    from public.gateway_usage_rollup_15m_team_provider_model r
-    where r.team_id = p_team
+    from public.gateway_usage_rollup_15m_workspace_provider_model r
+    where r.workspace_id = p_team
       and r.bucket_15m >= p_from
       and r.bucket_15m <= p_to
       and (p_key_id is null or r.key_id = p_key_id)
@@ -280,6 +280,6 @@ begin
 end;
 $$ language plpgsql stable;
 
-grant execute on function public.refresh_gateway_usage_rollups_team_scope(timestamptz) to service_role;
+grant execute on function public.refresh_gateway_usage_rollups_workspace_scope(timestamptz) to service_role;
 grant execute on function public.get_usage_chart_rollup(uuid, timestamptz, timestamptz, text, uuid) to authenticated, service_role;
 grant execute on function public.get_top_models_stats_tokens(text, timestamptz, int) to authenticated, service_role;

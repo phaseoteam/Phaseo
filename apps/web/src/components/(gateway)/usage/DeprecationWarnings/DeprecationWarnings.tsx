@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	type DeprecationWarning,
 	getDeprecationWarningsForTeam,
@@ -311,10 +311,10 @@ export default async function DeprecationWarnings({
 	id = "lifecycle-alerts",
 	showHeader = true,
 }: DeprecationWarningsProps = {}) {
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) return null;
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) return null;
 
-	const rawWarnings = warnings ?? (await getDeprecationWarningsForTeam(teamId));
+	const rawWarnings = warnings ?? (await getDeprecationWarningsForTeam(workspaceId));
 	if (!rawWarnings.length) return null;
 
 	const deprecatedRows = sortByRetirementDateAsc(

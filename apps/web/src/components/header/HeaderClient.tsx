@@ -70,11 +70,11 @@ export default function HeaderClient({
 		dark: { label: "Dark", icon: Moon },
 		system: { label: "System", icon: Monitor },
 	} as const;
-	const [activeTeamId, setActiveTeamId] = useState<string | undefined>(
+	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(
 		currentTeamId ?? teams[0]?.id,
 	);
 	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
-	const activeTeam = teams.find((team) => team.id === activeTeamId) ?? teams[0];
+	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
 
 	useEffect(() => {
 		setActiveTeamId(currentTeamId ?? teams[0]?.id);
@@ -92,9 +92,9 @@ export default function HeaderClient({
 	}
 
 	async function handleTeamSwitch(nextTeamId: string, teamName: string) {
-		if (nextTeamId === activeTeamId) return true;
+		if (nextTeamId === activeWorkspaceId) return true;
 
-		const previousTeamId = activeTeamId;
+		const previousTeamId = activeWorkspaceId;
 		setActiveTeamId(nextTeamId);
 
 		const result = await SwapTeam(nextTeamId);
@@ -173,7 +173,7 @@ export default function HeaderClient({
 										className="w-52 rounded-xl p-1"
 									>
 										{teams.slice(0, 5).map((team) => {
-											const isActive = team.id === activeTeamId;
+											const isActive = team.id === activeWorkspaceId;
 											return (
 												<button
 													key={team.id}
@@ -272,8 +272,8 @@ export default function HeaderClient({
 
 							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 								<Link
-									href={`/settings/usage?team_id=${encodeURIComponent(
-										activeTeamId ?? "",
+									href={`/settings/usage?workspace_id=${encodeURIComponent(
+										activeWorkspaceId ?? "",
 									)}`}
 									prefetch={false}
 								>

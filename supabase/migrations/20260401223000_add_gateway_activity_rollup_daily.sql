@@ -3,7 +3,7 @@
 
 create table if not exists public.gateway_activity_rollup_daily (
   day_bucket date not null,
-  team_id uuid not null references public.teams (id) on delete cascade,
+  workspace_id uuid not null references public.workspaces (id) on delete cascade,
   model_id text not null,
   endpoint text not null,
   provider text not null,
@@ -14,17 +14,17 @@ create table if not exists public.gateway_activity_rollup_daily (
   completion_tokens bigint not null default 0,
   reasoning_tokens bigint not null default 0,
   updated_at timestamptz not null default now(),
-  primary key (day_bucket, team_id, model_id, endpoint, provider)
+  primary key (day_bucket, workspace_id, model_id, endpoint, provider)
 );
 
 create index if not exists gateway_activity_rollup_daily_team_day_idx
-  on public.gateway_activity_rollup_daily (team_id, day_bucket desc);
+  on public.gateway_activity_rollup_daily (workspace_id, day_bucket desc);
 
 create index if not exists gateway_activity_rollup_daily_team_day_provider_idx
-  on public.gateway_activity_rollup_daily (team_id, day_bucket desc, provider);
+  on public.gateway_activity_rollup_daily (workspace_id, day_bucket desc, provider);
 
 create or replace function public.refresh_gateway_activity_rollup_daily(
-  p_team_id uuid,
+  p_workspace_id uuid,
   p_start timestamptz,
   p_end timestamptz
 )
@@ -37,8 +37,8 @@ declare
   v_start_day date;
   v_end_day date;
 begin
-  if p_team_id is null then
-    raise exception 'team_id_required';
+  if p_workspace_id is null then
+    raise exception 'workspace_id_required';
   end if;
   if p_start is null or p_end is null then
     raise exception 'start_end_required';
@@ -55,13 +55,13 @@ begin
   end if;
 
   delete from public.gateway_activity_rollup_daily
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and day_bucket >= v_start_day
     and day_bucket < v_end_day;
 
   insert into public.gateway_activity_rollup_daily (
     day_bucket,
-    team_id,
+    workspace_id,
     model_id,
     endpoint,
     provider,
@@ -75,7 +75,7 @@ begin
   )
   select
     (gr.created_at at time zone 'UTC')::date as day_bucket,
-    gr.team_id,
+    gr.workspace_id,
     coalesce(nullif(gr.model_id, ''), 'unknown/unknown') as model_id,
     coalesce(nullif(gr.endpoint, ''), 'unknown') as endpoint,
     coalesce(nullif(gr.provider, ''), 'unknown') as provider,
@@ -148,13 +148,13 @@ begin
     )::bigint as reasoning_tokens,
     now() as updated_at
   from public.gateway_requests gr
-  where gr.team_id = p_team_id
+  where gr.workspace_id = p_workspace_id
     and gr.success is true
     and gr.created_at >= p_start
     and gr.created_at < p_end
   group by
     (gr.created_at at time zone 'UTC')::date,
-    gr.team_id,
+    gr.workspace_id,
     coalesce(nullif(gr.model_id, ''), 'unknown/unknown'),
     coalesce(nullif(gr.endpoint, ''), 'unknown'),
     coalesce(nullif(gr.provider, ''), 'unknown');

@@ -3,7 +3,7 @@
 -- duplicate concurrent reserve attempts remain idempotent.
 
 create or replace function public.gateway_wallet_reserve_once(
-  p_team_id uuid,
+  p_workspace_id uuid,
   p_reservation_id text,
   p_amount_nanos bigint,
   p_hold_ref_id text default null
@@ -29,8 +29,8 @@ declare
   v_before_balance bigint;
   v_before_reserved bigint;
 begin
-  if p_team_id is null then
-    raise exception 'missing_team_id';
+  if p_workspace_id is null then
+    raise exception 'missing_workspace_id';
   end if;
   if coalesce(trim(p_reservation_id), '') = '' then
     raise exception 'missing_reservation_id';
@@ -42,7 +42,7 @@ begin
   select *
   into v_reservation
   from public.gateway_wallet_reservations
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and reservation_id = p_reservation_id
   for update;
 
@@ -51,7 +51,7 @@ begin
       raise exception 'reservation_amount_mismatch';
     end if;
     if v_reservation.status = 'held' then
-      select * into v_wallet from public.wallets where team_id = p_team_id;
+      select * into v_wallet from public.wallets where workspace_id = p_workspace_id;
       return query
       select
         false,
@@ -80,7 +80,7 @@ begin
   select *
   into v_wallet
   from public.wallets
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   for update;
 
   if not found then
@@ -103,7 +103,7 @@ begin
   end if;
 
   insert into public.gateway_wallet_reservations (
-    team_id,
+    workspace_id,
     reservation_id,
     amount_nanos,
     status,
@@ -111,7 +111,7 @@ begin
     created_at,
     updated_at
   ) values (
-    p_team_id,
+    p_workspace_id,
     p_reservation_id,
     p_amount_nanos,
     'held',
@@ -119,7 +119,7 @@ begin
     now(),
     now()
   )
-  on conflict (team_id, reservation_id) do nothing
+  on conflict (workspace_id, reservation_id) do nothing
   returning *
   into v_reservation;
 
@@ -127,7 +127,7 @@ begin
     select *
     into v_reservation
     from public.gateway_wallet_reservations
-    where team_id = p_team_id
+    where workspace_id = p_workspace_id
       and reservation_id = p_reservation_id
     for update;
 
@@ -171,12 +171,12 @@ begin
   update public.wallets
   set reserved_nanos = reserved_nanos + p_amount_nanos,
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   returning *
   into v_wallet;
 
   insert into public.credit_ledger (
-    team_id,
+    workspace_id,
     event_time,
     kind,
     amount_nanos,
@@ -189,7 +189,7 @@ begin
     created_at,
     status
   ) values (
-    p_team_id,
+    p_workspace_id,
     now(),
     'hold',
     0,

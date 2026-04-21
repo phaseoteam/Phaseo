@@ -18,7 +18,7 @@ function buildArgs(
 	return {
 		ir,
 		requestId: "req_minimax_music_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "minimax",
 		endpoint: "music.generate",
 		protocol: "minimax.music",

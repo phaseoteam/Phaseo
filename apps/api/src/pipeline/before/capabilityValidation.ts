@@ -162,7 +162,7 @@ function validateParameterSupport(args: {
 	rawBody: any;
 	body: any;
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	providers: ProviderCandidate[];
 	model: string;
 }): ParameterSupportResult {
@@ -179,7 +179,7 @@ function validateParameterSupport(args: {
 			response: err("validation_error", {
 				details,
 				request_id: args.requestId,
-				team_id: args.teamId,
+				workspace_id: args.workspaceId,
 			}),
 		};
 	}
@@ -222,11 +222,11 @@ function validateResponseFormat(args: {
 	body: any;
 	providers: ProviderCandidate[];
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	model: string;
 }): StageValidationResult {
 	void args.requestId;
-	void args.teamId;
+	void args.workspaceId;
 	void args.model;
 	return { ok: true, providers: args.providers, body: args.body };
 }
@@ -239,7 +239,7 @@ function filterProvidersByTokenLimits(args: {
 	body: any;
 	providers: ProviderCandidate[];
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	model: string;
 }): StageValidationResult {
 	const requestedMaxTokens = getRequestedMaxTokens(args.body);
@@ -270,7 +270,7 @@ function filterProvidersByTokenLimits(args: {
 					params: { requested: requestedMaxTokens, model: args.model },
 				}],
 				request_id: args.requestId,
-				team_id: args.teamId,
+				workspace_id: args.workspaceId,
 			}),
 		};
 	}
@@ -285,11 +285,11 @@ function validateStructuredOutputs(args: {
 	body: any;
 	providers: ProviderCandidate[];
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	model: string;
 }): StageValidationResult {
 	void args.requestId;
-	void args.teamId;
+	void args.workspaceId;
 	void args.model;
 	return { ok: true, providers: args.providers, body: args.body };
 }
@@ -303,7 +303,7 @@ export function validateCapabilities(args: {
 	rawBody: any;
 	body: any;
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	providers: ProviderCandidate[];
 	model: string;
 }): ValidationResult {
@@ -316,7 +316,7 @@ export function validateCapabilities(args: {
 		rawBody: args.rawBody,
 		body: args.body,
 		requestId: args.requestId,
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		providers: args.providers,
 		model: args.model,
 	});
@@ -340,7 +340,7 @@ export function validateCapabilities(args: {
 		endpoint: args.endpoint,
 		body: paramResult.body,
 		requestId: args.requestId,
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		model: args.model,
 		providers: preferredProviders,
 		requestedParams: paramResult.requestedParams,
@@ -353,7 +353,7 @@ export function validateCapabilities(args: {
 		body: docsResult.body,
 		providers: docsResult.providers,
 		requestId: args.requestId,
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		model: args.model,
 	});
 	if ("response" in formatResult) return { ok: false, response: formatResult.response };
@@ -364,7 +364,7 @@ export function validateCapabilities(args: {
 		body: formatResult.body,
 		providers: formatResult.providers,
 		requestId: args.requestId,
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		model: args.model,
 	});
 	if ("response" in structuredResult) return { ok: false, response: structuredResult.response };
@@ -375,7 +375,7 @@ export function validateCapabilities(args: {
 		body: structuredResult.body,
 		providers: structuredResult.providers,
 		requestId: args.requestId,
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		model: args.model,
 	});
 	if ("response" in tokenResult) return { ok: false, response: tokenResult.response };

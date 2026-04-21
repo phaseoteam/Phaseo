@@ -7,7 +7,7 @@ create index if not exists credit_ledger_refund_claim_state_idx
     on public.credit_ledger (refund_claim_state)
     where ref_type = 'Stripe_Payment_Intent';
 create or replace function public.stripe_claim_self_serve_refund(
-    p_team_id uuid,
+    p_workspace_id uuid,
     p_payment_intent_id text,
     p_user_id uuid
 )
@@ -31,7 +31,7 @@ begin
     select *
     into v_purchase
     from public.credit_ledger
-    where team_id = p_team_id
+    where workspace_id = p_workspace_id
       and ref_type = 'Stripe_Payment_Intent'
       and ref_id = p_payment_intent_id
       and kind in ('top_up', 'top_up_one_off', 'auto_top_up')
@@ -61,7 +61,7 @@ begin
     select exists (
         select 1
         from public.credit_ledger cl
-        where cl.team_id = p_team_id
+        where cl.workspace_id = p_workspace_id
           and cl.kind = 'refund'
           and cl.source_ref_type = 'Stripe_Payment_Intent'
           and cl.source_ref_id = p_payment_intent_id
@@ -83,7 +83,7 @@ begin
     select coalesce(sum(gr.cost_nanos), 0)::bigint
     into v_usage_nanos
     from public.gateway_requests gr
-    where gr.team_id = p_team_id
+    where gr.workspace_id = p_workspace_id
       and gr.success is true
       and gr.created_at >= v_purchase.event_time;
 

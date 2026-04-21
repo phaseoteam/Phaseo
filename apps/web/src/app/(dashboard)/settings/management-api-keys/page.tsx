@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import CreateManagementKeyDialog from "@/components/(gateway)/settings/management-api-keys/CreateManagementKeyDialog";
 import ManagementKeysPanel from "@/components/(gateway)/settings/management-api-keys/ManagementKeysPanel";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert } from "lucide-react";
@@ -50,11 +50,11 @@ async function ManagementApiKeysContent() {
 		.select("*");
 
 	const { data: teamUsers } = await supabase
-		.from("team_members")
-		.select("team_id, teams(id, name)")
+		.from("workspace_members")
+		.select("workspace_id, teams:workspaces(id, name)")
 		.eq("user_id", user?.id);
 
-	const initialTeamId = await getTeamIdFromCookie();
+	const initialTeamId = await getWorkspaceIdFromCookie();
 
 	const teams: any[] = [];
 
@@ -74,7 +74,7 @@ async function ManagementApiKeysContent() {
 	const teamsWithKeys = teams.map((t) => ({
 		...t,
 		keys: keysArray.filter(
-			(k: any) => (k.team_id ?? null) === (t.id ?? null)
+			(k: any) => (k.workspace_id ?? null) === (t.id ?? null)
 		),
 	}));
 

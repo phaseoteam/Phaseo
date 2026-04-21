@@ -1,13 +1,13 @@
 -- Improve request/job linkage and provide rollup RPCs for Jobs/Sessions UI.
 
 create index if not exists gateway_requests_team_request_created_idx
-  on public.gateway_requests (team_id, request_id, created_at desc);
+  on public.gateway_requests (workspace_id, request_id, created_at desc);
 
 create index if not exists gateway_async_operations_team_kind_updated_idx
-  on public.gateway_async_operations (team_id, kind, updated_at desc);
+  on public.gateway_async_operations (workspace_id, kind, updated_at desc);
 
 create index if not exists gateway_async_operations_team_kind_status_updated_idx
-  on public.gateway_async_operations (team_id, kind, status, updated_at desc);
+  on public.gateway_async_operations (workspace_id, kind, status, updated_at desc);
 
 create or replace function public.get_gateway_sessions_rollup(
   p_team uuid,
@@ -37,7 +37,7 @@ as $$
   with filtered as (
     select gr.*
     from public.gateway_requests gr
-    where gr.team_id = p_team
+    where gr.workspace_id = p_team
       and gr.created_at >= p_from
       and gr.created_at <= p_to
       and gr.session_id is not null
@@ -111,7 +111,7 @@ as $$
   with filtered_ops as (
     select op.*
     from public.gateway_async_operations op
-    where op.team_id = p_team
+    where op.workspace_id = p_team
       and (p_kind is null or op.kind = p_kind)
       and (p_status is null or op.status = p_status)
       and (p_session_id is null or op.session_id = p_session_id)
@@ -119,18 +119,18 @@ as $$
   ),
   request_lookup as (
     select
-      gr.team_id,
+      gr.workspace_id,
       gr.request_id,
       gr.created_at,
       gr.endpoint,
       gr.model_id,
       gr.cost_nanos,
       row_number() over (
-        partition by gr.team_id, gr.request_id
+        partition by gr.workspace_id, gr.request_id
         order by gr.created_at desc
       ) as rn
     from public.gateway_requests gr
-    where gr.team_id = p_team
+    where gr.workspace_id = p_team
   )
   select
     op.id as job_id,
@@ -152,7 +152,7 @@ as $$
     coalesce(req.cost_nanos, 0)::numeric / 1e9 as request_cost_usd
   from filtered_ops op
   left join request_lookup req
-    on req.team_id = op.team_id
+    on req.workspace_id = op.workspace_id
    and req.request_id = op.request_id
    and req.rn = 1
   order by op.updated_at desc

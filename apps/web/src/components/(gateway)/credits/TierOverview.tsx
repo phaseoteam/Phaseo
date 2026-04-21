@@ -18,10 +18,10 @@ function money(amount: number, currency: string = "USD") {
 }
 
 interface Props {
-	teamId?: string;
+	workspaceId?: string;
 }
 
-export default async function TierOverview({ teamId }: Props) {
+export default async function TierOverview({ workspaceId }: Props) {
 	const supabase = await createClient();
 
 	// Fetch spending data
@@ -29,15 +29,15 @@ export default async function TierOverview({ teamId }: Props) {
 	let mtdCents = 0;
 	let teamTier: "basic" | "enterprise" = "basic";
 
-	if (teamId) {
+	if (workspaceId) {
 		try {
 			const [{ data: prev }, { data: mtd }, { data: team }] = await Promise.all([
-				supabase.rpc("monthly_spend_prev_cents", { p_team: teamId }).single(),
-				supabase.rpc("mtd_spend_cents", { p_team: teamId }).single(),
+				supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+				supabase.rpc("mtd_spend_cents", { p_team: workspaceId }).single(),
 				supabase
-					.from("teams")
+					.from("workspaces")
 					.select("tier")
-					.eq("id", teamId)
+					.eq("id", workspaceId)
 					.maybeSingle(),
 			]);
 

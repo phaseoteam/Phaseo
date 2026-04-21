@@ -10,7 +10,7 @@ function buildArgs(ir: IRChatRequest, overrides: Partial<ExecutorExecuteArgs> = 
 	return {
 		ir,
 		requestId: "req_bedrock_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "amazon-bedrock",
 		endpoint: "chat.completions",
 		protocol: "openai.chat.completions",

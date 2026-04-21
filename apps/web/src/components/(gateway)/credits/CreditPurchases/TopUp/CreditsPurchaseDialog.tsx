@@ -230,7 +230,7 @@ export default function CreditsPurchaseDialog({
 				(window as any).__USER_ID__ || document?.body?.dataset?.userId;
 			const customerId =
 				stripeInfo?.customer?.id ?? wallet?.stripe_customer_id ?? null;
-			const teamId = wallet?.team_id ?? null;
+			const workspaceId = wallet?.workspace_id ?? null;
 
 			if (selectedPm && selectedPm !== "new") {
 				const response = await ChargeSavedPayment({
@@ -241,7 +241,7 @@ export default function CreditsPurchaseDialog({
 					kind: mode,
 					user_id: clientUserId ?? null,
 					event_type: "top_up",
-					team_id: teamId,
+					workspace_id: workspaceId,
 				} as any);
 
 				const { data, status, ok } = response;
@@ -327,7 +327,7 @@ export default function CreditsPurchaseDialog({
 					save_payment_method: mode === "pay_and_save",
 					customerId,
 					user_id: clientUserId ?? null,
-					team_id: teamId,
+					workspace_id: workspaceId,
 				}),
 			});
 

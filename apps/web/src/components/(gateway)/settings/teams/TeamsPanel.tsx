@@ -15,7 +15,7 @@ interface Props {
 	membersByTeam: Record<string, any[]>;
 	requestsByTeam: Record<string, any[]>;
 	invitesByTeam?: Record<string, any[]>;
-	activeTeamId?: string | undefined | null;
+	activeWorkspaceId?: string | undefined | null;
 	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 	personalTeamId?: string | null;
@@ -27,7 +27,7 @@ export default function TeamsPanel({
 	membersByTeam,
 	requestsByTeam,
 	invitesByTeam,
-	activeTeamId,
+	activeWorkspaceId,
 	onTeamChange,
 	currentUserId,
 	personalTeamId,
@@ -39,13 +39,13 @@ export default function TeamsPanel({
 		return teams.filter((team) => allowed.has(team.id));
 	}, [teams, manageableTeamIds]);
 	const canManageActiveTeam = Boolean(
-		activeTeamId && manageableTeamIds?.includes(activeTeamId)
+		activeWorkspaceId && manageableTeamIds?.includes(activeWorkspaceId)
 	);
 
-	// activeTeamId is controlled by parent; compute a fallback value for rendering
+	// activeWorkspaceId is controlled by parent; compute a fallback value for rendering
 	const fallbackActiveTeamId =
-		(activeTeamId && teams.find((t) => t.id === activeTeamId)
-			? activeTeamId
+		(activeWorkspaceId && teams.find((t) => t.id === activeWorkspaceId)
+			? activeWorkspaceId
 			: teams[0]?.id) || undefined;
 
 	if (!teams.length) {
@@ -63,7 +63,7 @@ export default function TeamsPanel({
 				teams={teams}
 				membersByTeam={membersByTeam}
 				currentUserId={currentUserId}
-				activeTeamId={fallbackActiveTeamId}
+				activeWorkspaceId={fallbackActiveTeamId}
 				onTeamChange={onTeamChange}
 				personalTeamId={personalTeamId}
 			/>
@@ -72,13 +72,13 @@ export default function TeamsPanel({
 					<TeamsRequests
 						teams={manageableTeams}
 						requestsByTeam={requestsByTeam}
-						activeTeamId={activeTeamId ?? undefined}
+						activeWorkspaceId={activeWorkspaceId ?? undefined}
 						onTeamChange={onTeamChange}
 					/>
 					<TeamsInvites
 						teams={manageableTeams}
 						invitesByTeam={invitesByTeam}
-						activeTeamId={activeTeamId ?? undefined}
+						activeWorkspaceId={activeWorkspaceId ?? undefined}
 						onTeamChange={onTeamChange}
 						membersByTeam={membersByTeam}
 						currentUserId={currentUserId}

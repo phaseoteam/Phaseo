@@ -3,11 +3,11 @@
 -- Secrets are intended to be encrypted before storing in destination_config.
 
 -- -------------------------
--- team_broadcast_destinations
+-- workspace_broadcast_destinations
 -- -------------------------
-create table if not exists public.team_broadcast_destinations (
+create table if not exists public.workspace_broadcast_destinations (
   id uuid primary key default gen_random_uuid(),
-  team_id uuid not null references public.teams(id) on delete cascade,
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
   enabled boolean not null default false,
   destination_id text not null,
   name text not null,
@@ -20,10 +20,10 @@ create table if not exists public.team_broadcast_destinations (
   created_at timestamptz not null default (now() at time zone 'utc'),
   updated_at timestamptz not null default (now() at time zone 'utc')
 );
-alter table public.team_broadcast_destinations
-  drop constraint if exists team_broadcast_destinations_destination_id_check;
-alter table public.team_broadcast_destinations
-  add constraint team_broadcast_destinations_destination_id_check
+alter table public.workspace_broadcast_destinations
+  drop constraint if exists workspace_broadcast_destinations_destination_id_check;
+alter table public.workspace_broadcast_destinations
+  add constraint workspace_broadcast_destinations_destination_id_check
   check (
     destination_id in (
       'arize',
@@ -44,25 +44,25 @@ alter table public.team_broadcast_destinations
       'webhook'
     )
   );
-alter table public.team_broadcast_destinations
-  drop constraint if exists team_broadcast_destinations_sampling_rate_check;
-alter table public.team_broadcast_destinations
-  add constraint team_broadcast_destinations_sampling_rate_check
+alter table public.workspace_broadcast_destinations
+  drop constraint if exists workspace_broadcast_destinations_sampling_rate_check;
+alter table public.workspace_broadcast_destinations
+  add constraint workspace_broadcast_destinations_sampling_rate_check
   check (sampling_rate >= 0 and sampling_rate <= 1);
-alter table public.team_broadcast_destinations
-  drop constraint if exists team_broadcast_destinations_group_join_operator_check;
-alter table public.team_broadcast_destinations
-  add constraint team_broadcast_destinations_group_join_operator_check
+alter table public.workspace_broadcast_destinations
+  drop constraint if exists workspace_broadcast_destinations_group_join_operator_check;
+alter table public.workspace_broadcast_destinations
+  add constraint workspace_broadcast_destinations_group_join_operator_check
   check (group_join_operator in ('and', 'or'));
-create index if not exists team_broadcast_destinations_team_id_idx
-  on public.team_broadcast_destinations (team_id);
-create index if not exists team_broadcast_destinations_team_enabled_idx
-  on public.team_broadcast_destinations (team_id, enabled);
+create index if not exists workspace_broadcast_destinations_workspace_id_idx
+  on public.workspace_broadcast_destinations (workspace_id);
+create index if not exists workspace_broadcast_destinations_team_enabled_idx
+  on public.workspace_broadcast_destinations (workspace_id, enabled);
 -- -------------------------
 -- broadcast_destination_keys
 -- -------------------------
 create table if not exists public.broadcast_destination_keys (
-  destination_id uuid not null references public.team_broadcast_destinations(id) on delete cascade,
+  destination_id uuid not null references public.workspace_broadcast_destinations(id) on delete cascade,
   key_id uuid not null references public.keys(id) on delete cascade,
   created_at timestamptz not null default (now() at time zone 'utc'),
   primary key (destination_id, key_id)
@@ -74,7 +74,7 @@ create index if not exists broadcast_destination_keys_key_id_idx
 -- -------------------------
 create table if not exists public.broadcast_destination_rule_groups (
   id uuid primary key default gen_random_uuid(),
-  destination_id uuid not null references public.team_broadcast_destinations(id) on delete cascade,
+  destination_id uuid not null references public.workspace_broadcast_destinations(id) on delete cascade,
   name text not null,
   match_operator text not null default 'and',
   position integer not null default 0,
@@ -143,32 +143,32 @@ create index if not exists broadcast_destination_rules_group_id_idx
 -- -------------------------
 -- RLS
 -- -------------------------
-alter table public.team_broadcast_destinations enable row level security;
-drop policy if exists team_broadcast_destinations_select_own_team on public.team_broadcast_destinations;
-drop policy if exists team_broadcast_destinations_insert_own_team on public.team_broadcast_destinations;
-drop policy if exists team_broadcast_destinations_update_own_team on public.team_broadcast_destinations;
-drop policy if exists team_broadcast_destinations_delete_own_team on public.team_broadcast_destinations;
-create policy team_broadcast_destinations_select_own_team
-  on public.team_broadcast_destinations
+alter table public.workspace_broadcast_destinations enable row level security;
+drop policy if exists workspace_broadcast_destinations_select_own_team on public.workspace_broadcast_destinations;
+drop policy if exists workspace_broadcast_destinations_insert_own_team on public.workspace_broadcast_destinations;
+drop policy if exists workspace_broadcast_destinations_update_own_team on public.workspace_broadcast_destinations;
+drop policy if exists workspace_broadcast_destinations_delete_own_team on public.workspace_broadcast_destinations;
+create policy workspace_broadcast_destinations_select_own_team
+  on public.workspace_broadcast_destinations
   for select
   to authenticated
-  using (public.is_team_member(team_id));
-create policy team_broadcast_destinations_insert_own_team
-  on public.team_broadcast_destinations
+  using (public.is_workspace_member(workspace_id));
+create policy workspace_broadcast_destinations_insert_own_team
+  on public.workspace_broadcast_destinations
   for insert
   to authenticated
-  with check (public.is_team_admin(team_id));
-create policy team_broadcast_destinations_update_own_team
-  on public.team_broadcast_destinations
+  with check (public.is_workspace_admin(workspace_id));
+create policy workspace_broadcast_destinations_update_own_team
+  on public.workspace_broadcast_destinations
   for update
   to authenticated
-  using (public.is_team_admin(team_id))
-  with check (public.is_team_admin(team_id));
-create policy team_broadcast_destinations_delete_own_team
-  on public.team_broadcast_destinations
+  using (public.is_workspace_admin(workspace_id))
+  with check (public.is_workspace_admin(workspace_id));
+create policy workspace_broadcast_destinations_delete_own_team
+  on public.workspace_broadcast_destinations
   for delete
   to authenticated
-  using (public.is_team_admin(team_id));
+  using (public.is_workspace_admin(workspace_id));
 alter table public.broadcast_destination_keys enable row level security;
 drop policy if exists broadcast_destination_keys_select_own_team on public.broadcast_destination_keys;
 drop policy if exists broadcast_destination_keys_insert_own_team on public.broadcast_destination_keys;
@@ -181,9 +181,9 @@ create policy broadcast_destination_keys_select_own_team
   using (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_keys.destination_id
-        and public.is_team_member(d.team_id)
+        and public.is_workspace_member(d.workspace_id)
     )
   );
 create policy broadcast_destination_keys_insert_own_team
@@ -193,11 +193,11 @@ create policy broadcast_destination_keys_insert_own_team
   with check (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       join public.keys k on k.id = broadcast_destination_keys.key_id
       where d.id = broadcast_destination_keys.destination_id
-        and d.team_id = k.team_id
-        and public.is_team_admin(d.team_id)
+        and d.workspace_id = k.workspace_id
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 create policy broadcast_destination_keys_update_own_team
@@ -207,17 +207,17 @@ create policy broadcast_destination_keys_update_own_team
   using (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_keys.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   )
   with check (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_keys.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 create policy broadcast_destination_keys_delete_own_team
@@ -227,9 +227,9 @@ create policy broadcast_destination_keys_delete_own_team
   using (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_keys.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 alter table public.broadcast_destination_rule_groups enable row level security;
@@ -244,9 +244,9 @@ create policy broadcast_destination_rule_groups_select_own_team
   using (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_rule_groups.destination_id
-        and public.is_team_member(d.team_id)
+        and public.is_workspace_member(d.workspace_id)
     )
   );
 create policy broadcast_destination_rule_groups_insert_own_team
@@ -256,9 +256,9 @@ create policy broadcast_destination_rule_groups_insert_own_team
   with check (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_rule_groups.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 create policy broadcast_destination_rule_groups_update_own_team
@@ -268,17 +268,17 @@ create policy broadcast_destination_rule_groups_update_own_team
   using (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_rule_groups.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   )
   with check (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_rule_groups.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 create policy broadcast_destination_rule_groups_delete_own_team
@@ -288,9 +288,9 @@ create policy broadcast_destination_rule_groups_delete_own_team
   using (
     exists (
       select 1
-      from public.team_broadcast_destinations d
+      from public.workspace_broadcast_destinations d
       where d.id = broadcast_destination_rule_groups.destination_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 alter table public.broadcast_destination_rules enable row level security;
@@ -306,9 +306,9 @@ create policy broadcast_destination_rules_select_own_team
     exists (
       select 1
       from public.broadcast_destination_rule_groups g
-      join public.team_broadcast_destinations d on d.id = g.destination_id
+      join public.workspace_broadcast_destinations d on d.id = g.destination_id
       where g.id = broadcast_destination_rules.rule_group_id
-        and public.is_team_member(d.team_id)
+        and public.is_workspace_member(d.workspace_id)
     )
   );
 create policy broadcast_destination_rules_insert_own_team
@@ -319,9 +319,9 @@ create policy broadcast_destination_rules_insert_own_team
     exists (
       select 1
       from public.broadcast_destination_rule_groups g
-      join public.team_broadcast_destinations d on d.id = g.destination_id
+      join public.workspace_broadcast_destinations d on d.id = g.destination_id
       where g.id = broadcast_destination_rules.rule_group_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 create policy broadcast_destination_rules_update_own_team
@@ -332,18 +332,18 @@ create policy broadcast_destination_rules_update_own_team
     exists (
       select 1
       from public.broadcast_destination_rule_groups g
-      join public.team_broadcast_destinations d on d.id = g.destination_id
+      join public.workspace_broadcast_destinations d on d.id = g.destination_id
       where g.id = broadcast_destination_rules.rule_group_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   )
   with check (
     exists (
       select 1
       from public.broadcast_destination_rule_groups g
-      join public.team_broadcast_destinations d on d.id = g.destination_id
+      join public.workspace_broadcast_destinations d on d.id = g.destination_id
       where g.id = broadcast_destination_rules.rule_group_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );
 create policy broadcast_destination_rules_delete_own_team
@@ -354,8 +354,8 @@ create policy broadcast_destination_rules_delete_own_team
     exists (
       select 1
       from public.broadcast_destination_rule_groups g
-      join public.team_broadcast_destinations d on d.id = g.destination_id
+      join public.workspace_broadcast_destinations d on d.id = g.destination_id
       where g.id = broadcast_destination_rules.rule_group_id
-        and public.is_team_admin(d.team_id)
+        and public.is_workspace_admin(d.workspace_id)
     )
   );

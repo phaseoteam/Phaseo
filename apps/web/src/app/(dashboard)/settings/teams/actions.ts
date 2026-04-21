@@ -76,17 +76,17 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 async function ensureNotPersonalTeam(
     supabase: SupabaseClient,
     userId: string,
-    teamId: string,
+    workspaceId: string,
     message: string,
 ) {
     const { data: userRow, error } = await supabase
         .from("users")
-        .select("default_team_id")
+        .select("default_workspace_id")
         .eq("user_id", userId)
         .maybeSingle();
 
     if (error) throw error;
-    if (userRow?.default_team_id === teamId) {
+    if (userRow?.default_workspace_id === workspaceId) {
         throw new Error(message);
     }
 }
@@ -94,13 +94,13 @@ async function ensureNotPersonalTeam(
 async function ensureTeamOwnerOrAdmin(
     supabase: SupabaseClient,
     userId: string,
-    teamId: string,
+    workspaceId: string,
     message = "Unauthorized",
 ) {
     const { data: membership, error } = await supabase
-        .from("team_members")
+        .from("workspace_members")
         .select("role")
-        .eq("team_id", teamId)
+        .eq("workspace_id", workspaceId)
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -137,9 +137,9 @@ function revalidateWorkspacePaths() {
 	revalidatePath("/settings/workspaces/settings");
 }
 
-export async function getTeamSsoSettingsAction(teamId: string) {
-	if (!teamId || typeof teamId !== "string") {
-		throw new Error("Missing teamId");
+export async function getTeamSsoSettingsAction(workspaceId: string) {
+	if (!workspaceId || typeof workspaceId !== "string") {
+		throw new Error("Missing workspaceId");
 	}
 
 	const supabase = await createClient();
@@ -152,16 +152,16 @@ export async function getTeamSsoSettingsAction(teamId: string) {
 	await ensureTeamOwnerOrAdmin(
 		supabase,
 		user.id,
-		teamId,
+		workspaceId,
 		"Only owners or admins may view SSO settings.",
 	);
 
 	const { data, error } = await supabase
-		.from("team_settings")
+		.from("workspace_settings")
 		.select(
 			"sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
 		)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.maybeSingle();
 
 	if (error) throw error;
@@ -170,11 +170,11 @@ export async function getTeamSsoSettingsAction(teamId: string) {
 }
 
 export async function updateTeamSsoSettingsAction(
-	teamId: string,
+	workspaceId: string,
 	input: TeamSsoSettingsInput,
 ) {
-	if (!teamId || typeof teamId !== "string") {
-		throw new Error("Missing teamId");
+	if (!workspaceId || typeof workspaceId !== "string") {
+		throw new Error("Missing workspaceId");
 	}
 
 	const supabase = await createClient();
@@ -187,14 +187,14 @@ export async function updateTeamSsoSettingsAction(
 	await ensureTeamOwnerOrAdmin(
 		supabase,
 		user.id,
-		teamId,
+		workspaceId,
 		"Only owners or admins may update SSO settings.",
 	);
 
 	const normalized = normalizeTeamSsoSettingsInput(input);
 
 	const payload = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		sso_enabled: normalized.ssoEnabled,
 		sso_enforced: normalized.ssoEnforced,
 		sso_mode: normalized.ssoMode,
@@ -204,12 +204,12 @@ export async function updateTeamSsoSettingsAction(
 	};
 
 	const { error } = await supabase
-		.from("team_settings")
-		.upsert(payload, { onConflict: "team_id" });
+		.from("workspace_settings")
+		.upsert(payload, { onConflict: "workspace_id" });
 	if (error) throw error;
 
 	revalidateWorkspacePaths();
-	return { success: true as const, teamId, settings: toTeamSsoSettingsResponse(payload) };
+	return { success: true as const, workspaceId, settings: toTeamSsoSettingsResponse(payload) };
 }
 
 export async function createTeamAction(name: string, userId: string) {
@@ -229,7 +229,7 @@ export async function createTeamAction(name: string, userId: string) {
     const baseSlug = makeSlug(name);
 
     const { data, error } = await supabase
-        .from("teams")
+        .from("workspaces")
         .insert({ name, slug: baseSlug, owner_user_id: userId })
         .select("id")
         .single();
@@ -238,14 +238,14 @@ export async function createTeamAction(name: string, userId: string) {
     const newTeamId = data?.id as string;
 
     await supabase
-        .from("team_members")
-        .upsert({ team_id: newTeamId, user_id: userId, role: "owner" }, { onConflict: "team_id,user_id", ignoreDuplicates: true });
+        .from("workspace_members")
+        .upsert({ workspace_id: newTeamId, user_id: userId, role: "owner" }, { onConflict: "workspace_id,user_id", ignoreDuplicates: true });
 
     // Create wallet row now; Stripe customer is provisioned lazily when billing
     // flows are first used for this workspace.
     await supabase.from("wallets").upsert(
-        { team_id: newTeamId },
-        { onConflict: "team_id", ignoreDuplicates: true },
+        { workspace_id: newTeamId },
+        { onConflict: "workspace_id", ignoreDuplicates: true },
     );
 
     // Upsert a Linear Customer for this workspace. Non-blocking: failures shouldn't block team creation.
@@ -268,8 +268,8 @@ export async function createTeamAction(name: string, userId: string) {
     return { id: newTeamId };
 }
 
-export async function updateTeamAction(teamId: string, name: string) {
-    if (!teamId || typeof teamId !== "string") throw new Error("Missing teamId");
+export async function updateTeamAction(workspaceId: string, name: string) {
+    if (!workspaceId || typeof workspaceId !== "string") throw new Error("Missing workspaceId");
     if (!name || typeof name !== "string") throw new Error("Missing name");
 
     const supabase = await createClient();
@@ -278,18 +278,18 @@ export async function updateTeamAction(teamId: string, name: string) {
     await ensureNotPersonalTeam(
         supabase,
         user.id,
-        teamId,
+        workspaceId,
         "Personal workspace cannot be renamed."
     );
-    const { data, error } = await supabase.from("teams").update({ name }).eq("id", teamId).select("id").single();
+    const { data, error } = await supabase.from("workspaces").update({ name }).eq("id", workspaceId).select("id").single();
     if (error) throw error;
 
     revalidateWorkspacePaths();
     return { id: data?.id as string };
 }
 
-export async function deleteTeamAction(teamId: string) {
-    if (!teamId || typeof teamId !== "string") throw new Error("Missing teamId");
+export async function deleteTeamAction(workspaceId: string) {
+    if (!workspaceId || typeof workspaceId !== "string") throw new Error("Missing workspaceId");
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -298,33 +298,33 @@ export async function deleteTeamAction(teamId: string) {
     await ensureNotPersonalTeam(
         supabase,
         user.id,
-        teamId,
+        workspaceId,
         "Personal workspace cannot be deleted."
     );
 
-    const { data: team } = await supabase.from("teams").select("id, owner_user_id").eq("id", teamId).maybeSingle();
+    const { data: team } = await supabase.from("workspaces").select("id, owner_user_id").eq("id", workspaceId).maybeSingle();
     if (!team) throw new Error("Workspace not found");
     if (team.owner_user_id !== user.id) throw new Error("Only the owner may delete a workspace");
 
     const admin = createAdminClient();
-    await admin.from("team_members").delete().eq("team_id", teamId);
-    await admin.from("team_invites").delete().eq("team_id", teamId);
-    await admin.from("team_join_requests").delete().eq("team_id", teamId);
-    await admin.from("teams").delete().eq("id", teamId);
+    await admin.from("workspace_members").delete().eq("workspace_id", workspaceId);
+    await admin.from("workspace_invites").delete().eq("workspace_id", workspaceId);
+    await admin.from("workspace_join_requests").delete().eq("workspace_id", workspaceId);
+    await admin.from("workspaces").delete().eq("id", workspaceId);
 
     revalidateWorkspacePaths();
     return { success: true } as const;
 }
 
 export async function createTeamInviteAction(
-    teamId: string,
+    workspaceId: string,
     creatorUserId: string,
     role: string,
     token: string,
     expiresInDays = 7,
     maxUses?: number | null,
 ) {
-    if (!teamId) throw new Error("Missing teamId");
+    if (!workspaceId) throw new Error("Missing workspaceId");
     if (!creatorUserId) throw new Error("Missing creatorUserId");
     if (!token || token.length < 6) throw new Error("Invalid token");
 
@@ -335,7 +335,7 @@ export async function createTeamInviteAction(
     await ensureTeamOwnerOrAdmin(
         supabase,
         user.id,
-        teamId,
+        workspaceId,
         "Only workspace owners or admins may create invites."
     );
 
@@ -351,9 +351,9 @@ export async function createTeamInviteAction(
     const expires_at = new Date(Date.now() + Number(expiresInDays) * 86_400_000).toISOString();
 
     const { data, error } = await admin
-        .from("team_invites")
+        .from("workspace_invites")
         .insert({
-            team_id: teamId,
+            workspace_id: workspaceId,
             creator_user_id: creatorUserId,
             role: normalizedRole,
             token_encrypted,
@@ -379,8 +379,8 @@ export async function revealTeamInviteAction(inviteId: string) {
 
     const admin = createAdminClient();
     const { data: invite, error: inviteError } = await admin
-        .from("team_invites")
-        .select("id, creator_user_id, team_id, token_encrypted, key_version")
+        .from("workspace_invites")
+        .select("id, creator_user_id, workspace_id, token_encrypted, key_version")
         .eq("id", inviteId)
         .maybeSingle();
 
@@ -388,9 +388,9 @@ export async function revealTeamInviteAction(inviteId: string) {
     if (!invite) throw new Error("Invite not found");
 
     const { data: actorMembership, error: actorMembershipError } = await admin
-        .from("team_members")
+        .from("workspace_members")
         .select("user_id")
-        .eq("team_id", invite.team_id)
+        .eq("workspace_id", invite.workspace_id)
         .eq("user_id", user.id)
         .maybeSingle();
     if (actorMembershipError) throw actorMembershipError;
@@ -402,7 +402,7 @@ export async function revealTeamInviteAction(inviteId: string) {
         await ensureTeamOwnerOrAdmin(
             supabase,
             user.id,
-            invite.team_id,
+            invite.workspace_id,
             "Only workspace owners or admins may reveal invites."
         );
     }
@@ -426,8 +426,8 @@ export async function revokeTeamInviteAction(inviteId: string) {
 
     const admin = createAdminClient();
     const { data: invite, error: inviteError } = await admin
-        .from("team_invites")
-        .select("id, creator_user_id, team_id")
+        .from("workspace_invites")
+        .select("id, creator_user_id, workspace_id")
         .eq("id", inviteId)
         .maybeSingle();
 
@@ -435,9 +435,9 @@ export async function revokeTeamInviteAction(inviteId: string) {
     if (!invite) throw new Error("Invite not found");
 
     const { data: actorMembership, error: actorMembershipError } = await admin
-        .from("team_members")
+        .from("workspace_members")
         .select("user_id")
-        .eq("team_id", invite.team_id)
+        .eq("workspace_id", invite.workspace_id)
         .eq("user_id", user.id)
         .maybeSingle();
     if (actorMembershipError) throw actorMembershipError;
@@ -449,12 +449,12 @@ export async function revokeTeamInviteAction(inviteId: string) {
         await ensureTeamOwnerOrAdmin(
             supabase,
             user.id,
-            invite.team_id,
+            invite.workspace_id,
             "Only workspace owners or admins may revoke invites."
         );
     }
 
-    const { data, error } = await admin.from("team_invites").delete().eq("id", inviteId).select("id").maybeSingle();
+    const { data, error } = await admin.from("workspace_invites").delete().eq("id", inviteId).select("id").maybeSingle();
     if (error) throw error;
 
     revalidateWorkspacePaths();
@@ -474,8 +474,8 @@ export async function acceptTeamInviteAction(token: string, userId: string) {
 
     const nowIso = new Date().toISOString();
     const { data: inv, error: invErr } = await admin
-        .from("team_invites")
-        .select("id, team_id, expires_at, max_uses, uses_count")
+        .from("workspace_invites")
+        .select("id, workspace_id, expires_at, max_uses, uses_count")
         .eq("token_fingerprint", fp)
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .maybeSingle();
@@ -486,9 +486,9 @@ export async function acceptTeamInviteAction(token: string, userId: string) {
         return { success: false as const, error: "Invalid or expired invite" };
 
     const { data: existingMembership } = await admin
-        .from("team_members")
-        .select("team_id")
-        .eq("team_id", inv.team_id)
+        .from("workspace_members")
+        .select("workspace_id")
+        .eq("workspace_id", inv.workspace_id)
         .eq("user_id", userId)
         .maybeSingle();
     if (existingMembership) {
@@ -496,9 +496,9 @@ export async function acceptTeamInviteAction(token: string, userId: string) {
     }
 
     const { data: existing } = await admin
-        .from("team_join_requests")
+        .from("workspace_join_requests")
         .select("id")
-        .eq("team_id", inv.team_id)
+        .eq("workspace_id", inv.workspace_id)
         .eq("requester_user_id", userId)
         .eq("status", "pending")
         .maybeSingle();
@@ -506,8 +506,8 @@ export async function acceptTeamInviteAction(token: string, userId: string) {
     if (existing) return { success: false as const, error: "You already have a pending request" };
 
     const { data: created, error: insErr } = await admin
-        .from("team_join_requests")
-        .insert({ team_id: inv.team_id, invite_id: inv.id, requester_user_id: userId, status: "pending" })
+        .from("workspace_join_requests")
+        .insert({ workspace_id: inv.workspace_id, invite_id: inv.id, requester_user_id: userId, status: "pending" })
         .select("id")
         .maybeSingle();
 
@@ -526,7 +526,7 @@ export async function approveJoinRequest(requestId: string) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user?.id) throw new Error("Unauthorized");
 
-    const { data, error } = await supabase.rpc("approve_team_join_request", {
+    const { data, error } = await supabase.rpc("approve_workspace_join_request", {
         p_request_id: requestId,
     });
     if (error) throw error;
@@ -535,7 +535,7 @@ export async function approveJoinRequest(requestId: string) {
     if (!row?.id) throw new Error("Join request not found");
 
     revalidateWorkspacePaths();
-    return { success: true as const, id: row.id, teamId: row.team_id };
+    return { success: true as const, id: row.id, workspaceId: row.workspace_id };
 }
 
 export async function rejectJoinRequest(requestId: string) {
@@ -545,7 +545,7 @@ export async function rejectJoinRequest(requestId: string) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user?.id) throw new Error("Unauthorized");
 
-    const { data, error } = await supabase.rpc("reject_team_join_request", {
+    const { data, error } = await supabase.rpc("reject_workspace_join_request", {
         p_request_id: requestId,
     });
     if (error) throw error;
@@ -554,5 +554,5 @@ export async function rejectJoinRequest(requestId: string) {
     if (!row?.id) throw new Error("Join request not found");
 
     revalidateWorkspacePaths();
-    return { success: true as const, id: row.id, teamId: row.team_id };
+    return { success: true as const, id: row.id, workspaceId: row.workspace_id };
 }

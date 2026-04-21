@@ -7,10 +7,10 @@ import { revalidatePath } from "next/cache";
 import { encryptSecret } from "@/lib/byok/crypto";
 import { validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
 import { cookies } from "next/headers";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
     requireAuthenticatedUser,
-    requireTeamMembership,
+    requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 function base64ToPgBytea(b64: string): string {
@@ -39,14 +39,14 @@ export async function createByokKeyAction(
     // Derive metadata & ciphertext
     const enc = encryptSecret(value);
 
-    // Get team_id from session/user (example)
+    // Get workspace_id from session/user (example)
     const cookieStore = await cookies();
-    const activeTeamId = cookieStore.get('activeTeamId')?.value;
-    if (!activeTeamId) throw new Error("No active workspace selected");
-    await requireTeamMembership(supabase, user.id, activeTeamId, ["owner", "admin"]);
+    const activeWorkspaceId = cookieStore.get('activeWorkspaceId')?.value;
+    if (!activeWorkspaceId) throw new Error("No active workspace selected");
+    await requireWorkspaceMembership(supabase, user.id, activeWorkspaceId, ["owner", "admin"]);
 
     const basePayload = {
-        team_id: activeTeamId,
+        workspace_id: activeWorkspaceId,
         provider_id: providerId,
         name,
         enabled,
@@ -68,7 +68,7 @@ export async function createByokKeyAction(
     const { data: existingRows, error: existingError } = await supabase
         .from("byok_keys")
         .select("id, created_at")
-        .eq("team_id", activeTeamId)
+        .eq("workspace_id", activeWorkspaceId)
         .eq("provider_id", providerId)
         .order("created_at", { ascending: false });
     if (existingError) throw existingError;
@@ -82,14 +82,14 @@ export async function createByokKeyAction(
                 .from("byok_keys")
                 .delete()
                 .in("id", duplicateIds)
-                .eq("team_id", activeTeamId);
+                .eq("workspace_id", activeWorkspaceId);
             if (cleanupError) throw cleanupError;
         }
 
         const { error: updateError } = await supabase
             .from("byok_keys")
             .update({
-                team_id: activeTeamId,
+                workspace_id: activeWorkspaceId,
                 provider_id: providerId,
                 name,
                 enabled,
@@ -103,7 +103,7 @@ export async function createByokKeyAction(
                 suffix: basePayload.suffix,
             })
             .eq("id", primary.id)
-            .eq("team_id", activeTeamId);
+            .eq("workspace_id", activeWorkspaceId);
         if (updateError) throw updateError;
 
         revalidatePath("/settings/byok");
@@ -124,7 +124,7 @@ export async function createByokKeyAction(
         const { data: row, error: fetchConflictError } = await supabase
             .from("byok_keys")
             .select("id")
-            .eq("team_id", activeTeamId)
+            .eq("workspace_id", activeWorkspaceId)
             .eq("provider_id", providerId)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -136,7 +136,7 @@ export async function createByokKeyAction(
         const { error: conflictUpdateError } = await supabase
             .from("byok_keys")
             .update({
-                team_id: activeTeamId,
+                workspace_id: activeWorkspaceId,
                 provider_id: providerId,
                 name,
                 enabled,
@@ -150,7 +150,7 @@ export async function createByokKeyAction(
                 suffix: basePayload.suffix,
             })
             .eq("id", row.id)
-            .eq("team_id", activeTeamId);
+            .eq("workspace_id", activeWorkspaceId);
         if (conflictUpdateError) throw conflictUpdateError;
 
         revalidatePath("/settings/byok");
@@ -169,12 +169,12 @@ export async function updateByokKeyAction(
     const { supabase, user } = await requireAuthenticatedUser();
     const { data: row, error: rowError } = await supabase
         .from("byok_keys")
-        .select("team_id,provider_id")
+        .select("workspace_id,provider_id")
         .eq("id", id)
         .maybeSingle();
     if (rowError) throw rowError;
-    if (!row?.team_id) throw new Error("BYOK key not found");
-    await requireTeamMembership(supabase, user.id, row.team_id, ["owner", "admin"]);
+    if (!row?.workspace_id) throw new Error("BYOK key not found");
+    await requireWorkspaceMembership(supabase, user.id, row.workspace_id, ["owner", "admin"]);
 
     const patch: any = {};
     if (typeof updates.name === "string") patch.name = updates.name;
@@ -209,7 +209,7 @@ export async function updateByokKeyAction(
         .from("byok_keys")
         .update(patch)
         .eq("id", id)
-        .eq("team_id", row.team_id);
+        .eq("workspace_id", row.workspace_id);
     if (error) throw error;
 
     revalidatePath("/settings/byok");
@@ -221,17 +221,17 @@ export async function deleteByokKeyAction(id: string) {
     const { supabase, user } = await requireAuthenticatedUser();
     const { data: row, error: rowError } = await supabase
         .from("byok_keys")
-        .select("team_id")
+        .select("workspace_id")
         .eq("id", id)
         .maybeSingle();
     if (rowError) throw rowError;
-    if (!row?.team_id) throw new Error("BYOK key not found");
-    await requireTeamMembership(supabase, user.id, row.team_id, ["owner", "admin"]);
+    if (!row?.workspace_id) throw new Error("BYOK key not found");
+    await requireWorkspaceMembership(supabase, user.id, row.workspace_id, ["owner", "admin"]);
     const { error } = await supabase
         .from("byok_keys")
         .delete()
         .eq("id", id)
-        .eq("team_id", row.team_id);
+        .eq("workspace_id", row.workspace_id);
     if (error) throw error;
     revalidatePath("/settings/byok");
     return { success: true };
@@ -239,22 +239,22 @@ export async function deleteByokKeyAction(id: string) {
 
 export async function updateByokFallbackAction(enabled: boolean) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const teamId = await getTeamIdFromCookie();
-    if (!teamId) {
+    const workspaceId = await getWorkspaceIdFromCookie();
+    if (!workspaceId) {
         throw new Error("Missing workspace id");
     }
-    await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const payload = {
-        team_id: teamId,
+        workspace_id: workspaceId,
         byok_fallback_enabled: enabled,
         updated_at: new Date().toISOString(),
     };
 
     const { data: existing, error: fetchError } = await supabase
-        .from("team_settings")
-        .select("team_id")
-        .eq("team_id", teamId)
+        .from("workspace_settings")
+        .select("workspace_id")
+        .eq("workspace_id", workspaceId)
         .maybeSingle();
 
     if (fetchError) {
@@ -263,10 +263,10 @@ export async function updateByokFallbackAction(enabled: boolean) {
 
     const { error } = existing
         ? await supabase
-              .from("team_settings")
+              .from("workspace_settings")
               .update(payload)
-              .eq("team_id", teamId)
-        : await supabase.from("team_settings").insert({
+              .eq("workspace_id", workspaceId)
+        : await supabase.from("workspace_settings").insert({
               ...payload,
               routing_mode: "balanced",
           });

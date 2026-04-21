@@ -6,7 +6,7 @@
 import type { GatewayBindings } from "@/runtime/env";
 
 export type AuthContext = {
-	teamId?: string;
+	workspaceId?: string;
 	userId?: string;
 	apiKeyId?: string;
 	apiKeyRef?: string | null;

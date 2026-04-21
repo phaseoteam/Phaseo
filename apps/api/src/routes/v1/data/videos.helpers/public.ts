@@ -72,7 +72,7 @@ export function resolveVideoDownloadSigningSecret(): string | null {
 
 export async function issueSignedVideoDownloadUrl(args: {
 	requestUrl: string;
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	index?: number;
 	ttlSeconds?: number | null;
@@ -84,7 +84,7 @@ export async function issueSignedVideoDownloadUrl(args: {
 	const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
 	const disposition = args.disposition === "inline" ? "inline" : "attachment";
 	const tokenPayload = base64UrlEncodeText(JSON.stringify({
-		team_id: args.teamId,
+		workspace_id: args.workspaceId,
 		video_id: args.videoId,
 		index: typeof args.index === "number" && Number.isFinite(args.index) ? Math.max(0, Math.trunc(args.index)) : 0,
 		disposition,
@@ -102,7 +102,7 @@ export async function issueSignedVideoDownloadUrl(args: {
 }
 
 export async function verifySignedVideoDownloadRequest(requestUrl: string): Promise<{
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	index: number;
 	disposition: "attachment" | "inline";
@@ -125,13 +125,13 @@ export async function verifySignedVideoDownloadRequest(requestUrl: string): Prom
 	} catch {
 		return null;
 	}
-	const teamId = normalizeText(payload.team_id);
+	const workspaceId = normalizeText(payload.workspace_id);
 	const videoId = normalizeText(payload.video_id);
 	const indexRaw = toFiniteNumber(payload.index);
 	const disposition = payload.disposition === "inline" ? "inline" : "attachment";
-	if (!teamId || !videoId) return null;
+	if (!workspaceId || !videoId) return null;
 	return {
-		teamId,
+		workspaceId,
 		videoId,
 		index: indexRaw != null ? Math.max(0, Math.trunc(indexRaw)) : 0,
 		disposition,
@@ -245,13 +245,13 @@ export async function toPublicVideoResponse(args: {
 	const firstOutput = outputs[0] ?? null;
 	const outputRaw = Array.isArray(args.payload.output) ? (args.payload.output[0] as Record<string, unknown> | undefined) : undefined;
 	let download: { download_url: string; expires_at: number } | null = null;
-	if (status === "completed" && includeSignedUrls && args.record?.teamId) {
+	if (status === "completed" && includeSignedUrls && args.record?.workspaceId) {
 		const signedPerOutput = await Promise.all(
 			outputsWithSigned.map(async (item: any) => ({
 				index: typeof item?.index === "number" ? item.index : 0,
 				signed: await issueSignedVideoDownloadUrl({
 					requestUrl: args.requestUrl,
-					teamId: args.record?.teamId ?? "",
+					workspaceId: args.record?.workspaceId ?? "",
 					videoId: args.id,
 					index: typeof item?.index === "number" ? item.index : 0,
 				}),
@@ -277,7 +277,7 @@ export async function toPublicVideoResponse(args: {
 		if (!download) {
 			download = await issueSignedVideoDownloadUrl({
 				requestUrl: args.requestUrl,
-				teamId: args.record?.teamId ?? "",
+				workspaceId: args.record?.workspaceId ?? "",
 				videoId: args.id,
 				index: 0,
 			});

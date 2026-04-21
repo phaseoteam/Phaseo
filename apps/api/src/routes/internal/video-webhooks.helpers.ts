@@ -305,7 +305,7 @@ export async function processOpenAiVideoWebhook(args: {
 		await markProviderEventProcessed({
 			provider: OPENAI_PROVIDER_ID,
 			providerEventId: eventId,
-			teamId: job.teamId,
+			workspaceId: job.workspaceId,
 			internalId: job.videoId,
 		});
 		return;
@@ -313,7 +313,7 @@ export async function processOpenAiVideoWebhook(args: {
 
 	const data = payload?.data ?? {};
 	await finalizeVideoJob({
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		providerId: OPENAI_PROVIDER_ID,
 		status: isCompleted ? "completed" : "failed",
@@ -330,7 +330,7 @@ export async function processOpenAiVideoWebhook(args: {
 		},
 	});
 	dispatchVideoWebhookEventInBackground({
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		eventType: isCompleted ? "video.completed" : "video.failed",
 	});
@@ -338,7 +338,7 @@ export async function processOpenAiVideoWebhook(args: {
 	await markProviderEventProcessed({
 		provider: OPENAI_PROVIDER_ID,
 		providerEventId: eventId,
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		internalId: job.videoId,
 	});
 }
@@ -365,7 +365,7 @@ export async function processAlibabaVideoWebhook(args: {
 		await markProviderEventProcessed({
 			provider: ALIBABA_PROVIDER_ID,
 			providerEventId: eventId,
-			teamId: job.teamId,
+			workspaceId: job.workspaceId,
 			internalId: job.videoId,
 		});
 		return;
@@ -373,7 +373,7 @@ export async function processAlibabaVideoWebhook(args: {
 
 	const requestOptions = extractAlibabaOptions(payload);
 	await finalizeVideoJob({
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		providerId: ALIBABA_PROVIDER_ID,
 		status: terminal,
@@ -390,7 +390,7 @@ export async function processAlibabaVideoWebhook(args: {
 		},
 	});
 	dispatchVideoWebhookEventInBackground({
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		eventType: terminal === "completed" ? "video.completed" : "video.failed",
 	});
@@ -398,7 +398,7 @@ export async function processAlibabaVideoWebhook(args: {
 	await markProviderEventProcessed({
 		provider: ALIBABA_PROVIDER_ID,
 		providerEventId: eventId,
-		teamId: job.teamId,
+		workspaceId: job.workspaceId,
 		internalId: job.videoId,
 	});
 }

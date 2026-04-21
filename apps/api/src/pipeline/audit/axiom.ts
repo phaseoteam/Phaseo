@@ -13,7 +13,7 @@ export type AxiomArgs = {
 
     // Core identifiers
     requestId: string;
-    teamId: string;
+    workspaceId: string;
     keyId?: string | null;
 
     // Request facts
@@ -314,7 +314,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         // IDENTITY & CORE
         // ====================================================================
         request_id: a.requestId,
-        team_id: a.teamId,
+        workspace_id: a.workspaceId,
         key_id: a.keyId ?? null,
 
         // app

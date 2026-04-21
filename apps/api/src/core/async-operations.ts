@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 export type AsyncOperationKind = "video" | "batch" | "music";
 
 export type AsyncOperationRecord = {
-	teamId: string;
+	workspaceId: string;
 	kind: AsyncOperationKind;
 	internalId: string;
 	requestId: string | null;
@@ -24,7 +24,7 @@ export type AsyncOperationRecord = {
 };
 
 type AsyncOperationRow = {
-	team_id: string;
+	workspace_id: string;
 	kind: AsyncOperationKind;
 	internal_id: string;
 	request_id: string | null;
@@ -61,7 +61,7 @@ function normalizeMeta(value: unknown): Record<string, unknown> {
 
 function mapRow(row: AsyncOperationRow): AsyncOperationRecord {
 	return {
-		teamId: row.team_id,
+		workspaceId: row.workspace_id,
 		kind: row.kind,
 		internalId: row.internal_id,
 		requestId: row.request_id ?? null,
@@ -79,7 +79,7 @@ function mapRow(row: AsyncOperationRow): AsyncOperationRecord {
 }
 
 export async function upsertAsyncOperation(args: {
-	teamId: string;
+	workspaceId: string;
 	kind: AsyncOperationKind;
 	internalId: string;
 	requestId?: string | null;
@@ -91,13 +91,13 @@ export async function upsertAsyncOperation(args: {
 	status?: string | null;
 	meta?: Record<string, unknown> | null;
 }): Promise<void> {
-	const teamId = normalizeText(args.teamId);
+	const workspaceId = normalizeText(args.workspaceId);
 	const internalId = normalizeText(args.internalId);
-	if (!teamId || !internalId) return;
+	if (!workspaceId || !internalId) return;
 
 	const now = new Date().toISOString();
 	const payload = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		kind: args.kind,
 		internal_id: internalId,
 		request_id: normalizeText(args.requestId) ?? null,
@@ -113,7 +113,7 @@ export async function upsertAsyncOperation(args: {
 
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
-		.upsert(payload, { onConflict: "team_id,kind,internal_id" });
+		.upsert(payload, { onConflict: "workspace_id,kind,internal_id" });
 	if (error) throw error;
 }
 
@@ -128,7 +128,7 @@ export async function listAsyncOperations(args: {
 	let query = getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
 		.eq("kind", args.kind)
 		.order("updated_at", { ascending: true })
@@ -160,21 +160,21 @@ export async function listAsyncOperations(args: {
 }
 
 export async function listTeamAsyncOperations(args: {
-	teamId: string;
+	workspaceId: string;
 	kind: AsyncOperationKind;
 	limit?: number;
 	statuses?: string[];
 }): Promise<AsyncOperationRecord[]> {
-	const teamId = normalizeText(args.teamId);
-	if (!teamId) return [];
+	const workspaceId = normalizeText(args.workspaceId);
+	if (!workspaceId) return [];
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
 
 	let query = getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", args.kind)
 		.order("updated_at", { ascending: false })
 		.limit(limit);
@@ -194,20 +194,20 @@ export async function listTeamAsyncOperations(args: {
 }
 
 export async function getAsyncOperation(
-	teamIdRaw: string,
+	workspaceIdRaw: string,
 	kind: AsyncOperationKind,
 	internalIdRaw: string,
 ): Promise<AsyncOperationRecord | null> {
-	const teamId = normalizeText(teamIdRaw);
+	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
-	if (!teamId || !internalId) return null;
+	if (!workspaceId || !internalId) return null;
 
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", kind)
 		.eq("internal_id", internalId)
 		.maybeSingle();
@@ -228,7 +228,7 @@ export async function findAsyncOperationByNativeId(
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
-			"team_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
 		.eq("kind", kind)
 		.eq("provider", provider)
@@ -252,18 +252,18 @@ export async function findAsyncOperationByNativeId(
 }
 
 export async function isAsyncOperationBilled(
-	teamIdRaw: string,
+	workspaceIdRaw: string,
 	kind: AsyncOperationKind,
 	internalIdRaw: string,
 ): Promise<boolean> {
-	const teamId = normalizeText(teamIdRaw);
+	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
-	if (!teamId || !internalId) return false;
+	if (!workspaceId || !internalId) return false;
 
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select("billed_at")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", kind)
 		.eq("internal_id", internalId)
 		.maybeSingle();
@@ -272,19 +272,19 @@ export async function isAsyncOperationBilled(
 }
 
 export async function markAsyncOperationBilled(
-	teamIdRaw: string,
+	workspaceIdRaw: string,
 	kind: AsyncOperationKind,
 	internalIdRaw: string,
 ): Promise<boolean> {
-	const teamId = normalizeText(teamIdRaw);
+	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
-	if (!teamId || !internalId) return false;
+	if (!workspaceId || !internalId) return false;
 
 	const now = new Date().toISOString();
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.update({ billed_at: now, updated_at: now })
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", kind)
 		.eq("internal_id", internalId)
 		.is("billed_at", null)
@@ -295,16 +295,16 @@ export async function markAsyncOperationBilled(
 }
 
 export async function setAsyncOperationStatus(args: {
-	teamId: string;
+	workspaceId: string;
 	kind: AsyncOperationKind;
 	internalId: string;
 	status: string;
 	metaPatch?: Record<string, unknown>;
 }): Promise<void> {
-	const teamId = normalizeText(args.teamId);
+	const workspaceId = normalizeText(args.workspaceId);
 	const internalId = normalizeText(args.internalId);
 	const status = normalizeText(args.status);
-	if (!teamId || !internalId || !status) return;
+	if (!workspaceId || !internalId || !status) return;
 
 	const now = new Date().toISOString();
 	const patch: Record<string, unknown> = {
@@ -316,7 +316,7 @@ export async function setAsyncOperationStatus(args: {
 		const { data: existing, error: readError } = await getSupabaseAdmin()
 			.from("gateway_async_operations")
 			.select("meta")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.eq("kind", args.kind)
 			.eq("internal_id", internalId)
 			.maybeSingle();
@@ -331,27 +331,27 @@ export async function setAsyncOperationStatus(args: {
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.update(patch)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", args.kind)
 		.eq("internal_id", internalId);
 	if (error) throw error;
 }
 
 export async function patchAsyncOperationMeta(args: {
-	teamId: string;
+	workspaceId: string;
 	kind: AsyncOperationKind;
 	internalId: string;
 	metaPatch: Record<string, unknown>;
 }): Promise<void> {
-	const teamId = normalizeText(args.teamId);
+	const workspaceId = normalizeText(args.workspaceId);
 	const internalId = normalizeText(args.internalId);
-	if (!teamId || !internalId) return;
+	if (!workspaceId || !internalId) return;
 	if (!args.metaPatch || typeof args.metaPatch !== "object" || Array.isArray(args.metaPatch)) return;
 
 	const { data: existing, error: readError } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select("meta")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", args.kind)
 		.eq("internal_id", internalId)
 		.maybeSingle();
@@ -370,7 +370,7 @@ export async function patchAsyncOperationMeta(args: {
 			meta: mergedMeta,
 			updated_at: now,
 		})
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("kind", args.kind)
 		.eq("internal_id", internalId);
 	if (error) throw error;

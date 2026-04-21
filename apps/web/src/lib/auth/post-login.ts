@@ -20,8 +20,9 @@ type FinalizePostLoginInput = {
 
 export type FinalizePostLoginResult = {
 	redirectPath: string;
-	teamId?: string;
+	workspaceId?: string;
 	userId: string;
+	createdPersonalTeam: boolean;
 };
 
 function makeSlug(name: string) {
@@ -138,12 +139,12 @@ async function sendSignupDiscordWebhook(args: {
 
 async function ensureWalletRow(
 	supabaseAdmin: ReturnType<typeof createAdminClient>,
-	teamId: string,
+	workspaceId: string,
 ) {
 	await supabaseAdmin.from("wallets").upsert(
-		{ team_id: teamId },
+		{ workspace_id: workspaceId },
 		{
-			onConflict: "team_id",
+			onConflict: "workspace_id",
 			ignoreDuplicates: true,
 		},
 	);
@@ -157,31 +158,31 @@ async function getOrCreatePersonalTeamId(opts: {
 	const { supabaseAdmin, userId, displayName } = opts;
 	let createdPersonalTeam = false;
 
-	const ensureOwnerMembership = async (teamId: string) => {
-		await supabaseAdmin.from("team_members").upsert(
-			{ team_id: teamId, user_id: userId, role: "owner" },
-			{ onConflict: "team_id,user_id", ignoreDuplicates: true },
+	const ensureOwnerMembership = async (workspaceId: string) => {
+		await supabaseAdmin.from("workspace_members").upsert(
+			{ workspace_id: workspaceId, user_id: userId, role: "owner" },
+			{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
 		);
 	};
 
-	const hasTeamAccess = async (teamId: string): Promise<boolean> => {
-		if (!teamId) return false;
+	const hasTeamAccess = async (workspaceId: string): Promise<boolean> => {
+		if (!workspaceId) return false;
 
 		const { data: membershipRow, error: membershipErr } = await supabaseAdmin
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", teamId)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", workspaceId)
 			.eq("user_id", userId)
 			.maybeSingle();
 		if (membershipErr) {
 			throw new Error(`membership_lookup_failed:${membershipErr.message}`);
 		}
-		if (membershipRow?.team_id) return true;
+		if (membershipRow?.workspace_id) return true;
 
 		const { data: teamRow, error: teamErr } = await supabaseAdmin
-			.from("teams")
+			.from("workspaces")
 			.select("id,owner_user_id")
-			.eq("id", teamId)
+			.eq("id", workspaceId)
 			.maybeSingle();
 		if (teamErr) {
 			throw new Error(`team_lookup_failed:${teamErr.message}`);
@@ -191,7 +192,7 @@ async function getOrCreatePersonalTeamId(opts: {
 		const isOwner = String(teamRow.owner_user_id ?? "") === userId;
 		if (!isOwner) return false;
 
-		await ensureOwnerMembership(teamId);
+		await ensureOwnerMembership(workspaceId);
 		return true;
 	};
 
@@ -201,30 +202,30 @@ async function getOrCreatePersonalTeamId(opts: {
 
 	const { data: userRow } = await supabaseAdmin
 		.from("users")
-		.select("default_team_id")
+		.select("default_workspace_id")
 		.eq("user_id", userId)
 		.maybeSingle();
 
-	const defaultTeamId = String(userRow?.default_team_id ?? "").trim();
-	if (defaultTeamId) {
-		if (await hasTeamAccess(defaultTeamId)) {
-			return { teamId: defaultTeamId, createdPersonalTeam };
+	const defaultWorkspaceId = String(userRow?.default_workspace_id ?? "").trim();
+	if (defaultWorkspaceId) {
+		if (await hasTeamAccess(defaultWorkspaceId)) {
+			return { workspaceId: defaultWorkspaceId, createdPersonalTeam };
 		}
 
 		await supabaseAdmin
 			.from("users")
-			.update({ default_team_id: null })
+			.update({ default_workspace_id: null })
 			.eq("user_id", userId)
-			.eq("default_team_id", defaultTeamId);
+			.eq("default_workspace_id", defaultWorkspaceId);
 
 		console.warn("post_login_default_team_invalid", {
 			userId,
-			defaultTeamId,
+			defaultWorkspaceId,
 		});
 	}
 
 	const { data: ownedTeam } = await supabaseAdmin
-		.from("teams")
+		.from("workspaces")
 		.select("id")
 		.eq("owner_user_id", userId)
 		.order("created_at", { ascending: true })
@@ -235,17 +236,17 @@ async function getOrCreatePersonalTeamId(opts: {
 		await ensureOwnerMembership(ownedTeam.id);
 		await supabaseAdmin
 			.from("users")
-			.update({ default_team_id: ownedTeam.id })
+			.update({ default_workspace_id: ownedTeam.id })
 			.eq("user_id", userId);
 		return {
-			teamId: ownedTeam.id as string,
+			workspaceId: ownedTeam.id as string,
 			createdPersonalTeam,
 		};
 	}
 
 	const baseSlug = `${makeSlug(displayName)}-personal`;
 	const { data: personalCandidate } = await supabaseAdmin
-		.from("teams")
+		.from("workspaces")
 		.select("id")
 		.eq("owner_user_id", userId)
 		.ilike("slug", `${baseSlug}%`)
@@ -256,26 +257,26 @@ async function getOrCreatePersonalTeamId(opts: {
 		await ensureOwnerMembership(personalCandidate[0].id);
 		await supabaseAdmin
 			.from("users")
-			.update({ default_team_id: personalCandidate[0].id })
+			.update({ default_workspace_id: personalCandidate[0].id })
 			.eq("user_id", userId);
 		return {
-			teamId: personalCandidate[0].id as string,
+			workspaceId: personalCandidate[0].id as string,
 			createdPersonalTeam,
 		};
 	}
 
 	let slugAttempt = baseSlug;
-	let teamId: string | null = null;
+	let workspaceId: string | null = null;
 
-	for (let i = 0; i < 3 && !teamId; i += 1) {
+	for (let i = 0; i < 3 && !workspaceId; i += 1) {
 		const { data, error } = await supabaseAdmin
-			.from("teams")
+			.from("workspaces")
 			.insert({ name: "Personal", slug: slugAttempt, owner_user_id: userId })
 			.select("id")
 			.single();
 
 		if (data?.id) {
-			teamId = data.id as string;
+			workspaceId = data.id as string;
 			createdPersonalTeam = true;
 			break;
 		}
@@ -286,29 +287,29 @@ async function getOrCreatePersonalTeamId(opts: {
 		}
 
 		const { data: fallback } = await supabaseAdmin
-			.from("teams")
+			.from("workspaces")
 			.select("id")
 			.eq("owner_user_id", userId)
 			.order("created_at", { ascending: true })
 			.limit(1)
 			.maybeSingle();
-		if (fallback?.id) teamId = fallback.id as string;
+		if (fallback?.id) workspaceId = fallback.id as string;
 	}
 
-	if (!teamId) {
+	if (!workspaceId) {
 		throw new Error("Could not obtain a team id");
 	}
 
-	await ensureOwnerMembership(teamId);
+	await ensureOwnerMembership(workspaceId);
 
 	await supabaseAdmin
 		.from("users")
-		.update({ default_team_id: teamId })
+		.update({ default_workspace_id: workspaceId })
 		.eq("user_id", userId)
-		.is("default_team_id", null);
+		.is("default_workspace_id", null);
 
 	return {
-		teamId,
+		workspaceId,
 		createdPersonalTeam,
 	};
 }
@@ -334,7 +335,11 @@ export async function finalizePostLogin(
 		aalData?.currentLevel === "aal1" &&
 		aalData?.nextLevel === "aal2"
 	) {
-		return { redirectPath: "/auth/verify-mfa", userId: user.id };
+		return {
+			redirectPath: "/auth/verify-mfa",
+			userId: user.id,
+			createdPersonalTeam: false,
+		};
 	}
 
 	const displayName =
@@ -350,14 +355,14 @@ export async function finalizePostLogin(
 		userId: user.id,
 		displayName,
 	});
-	const teamId = provisionedTeam.teamId;
+	const workspaceId = provisionedTeam.workspaceId;
 
 	try {
-		await ensureWalletRow(supabaseAdmin, teamId);
+		await ensureWalletRow(supabaseAdmin, workspaceId);
 	} catch (error) {
 		console.error("Failed to ensure wallet row during post-login finalize", {
 			source: input.source,
-			teamId,
+			workspaceId,
 			error: error instanceof Error ? error.message : String(error),
 		});
 	}
@@ -374,7 +379,7 @@ export async function finalizePostLogin(
 					console.error("Failed sending direct signup welcome email", {
 						source: input.source,
 						userId: user.id,
-						teamId,
+						workspaceId,
 						error: error instanceof Error ? error.message : String(error),
 					});
 				}),
@@ -390,7 +395,7 @@ export async function finalizePostLogin(
 				console.error("Failed sending direct signup Discord webhook", {
 					source: input.source,
 					userId: user.id,
-					teamId,
+					workspaceId,
 					error: error instanceof Error ? error.message : String(error),
 				});
 			}),
@@ -407,9 +412,9 @@ export async function finalizePostLogin(
 
 	try {
 		const { data: teamRow } = await supabaseAdmin
-			.from("teams")
+			.from("workspaces")
 			.select("tier,billing_mode")
-			.eq("id", teamId)
+			.eq("id", workspaceId)
 			.maybeSingle();
 
 		const isEnterprise =
@@ -419,23 +424,24 @@ export async function finalizePostLogin(
 
 		if (isEnterprise && isInvoiceMode) {
 			const { data: profileRow } = await supabaseAdmin
-				.from("team_invoice_profiles")
+				.from("workspace_invoice_profiles")
 				.select("enabled")
-				.eq("team_id", teamId)
+				.eq("workspace_id", workspaceId)
 				.maybeSingle();
 
 			if (!profileRow?.enabled) {
 				return {
 					redirectPath: "/settings/credits/onboarding",
-					teamId,
+					workspaceId,
 					userId: user.id,
+					createdPersonalTeam: provisionedTeam.createdPersonalTeam,
 				};
 			}
 		}
 	} catch (error) {
 		console.error("Failed invoice onboarding check during post-login finalize", {
 			source: input.source,
-			teamId,
+			workspaceId,
 			error: error instanceof Error ? error.message : String(error),
 		});
 	}
@@ -447,7 +453,7 @@ export async function finalizePostLogin(
 				await input.supabaseUser.auth.getSession()
 			).data.session;
 		await evaluateTeamSsoEnforcementNoop({
-			teamId,
+			workspaceId,
 			userId: user.id,
 			authMethod: classifyAuthMethodFromSession(session),
 			source: input.source,
@@ -455,7 +461,7 @@ export async function finalizePostLogin(
 	} catch (error) {
 		console.error("Failed deferred SSO enforcement hook during post-login finalize", {
 			source: input.source,
-			teamId,
+			workspaceId,
 			userId: user.id,
 			error: error instanceof Error ? error.message : String(error),
 		});
@@ -463,7 +469,8 @@ export async function finalizePostLogin(
 
 	return {
 		redirectPath: input.returnUrl,
-		teamId,
+		workspaceId,
 		userId: user.id,
+		createdPersonalTeam: provisionedTeam.createdPersonalTeam,
 	};
 }

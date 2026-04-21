@@ -94,7 +94,7 @@ async function OAuthAppDetailContent({ params }: OAuthAppDetailPageProps) {
 				full_name,
 				email
 			),
-			teams:team_id (
+			teams:workspaces (
 				id,
 				name
 			)

@@ -29,7 +29,7 @@ function buildArgs(): ExecutorExecuteArgs {
 			}],
 		},
 		requestId: "req_shared_openai_compat_stream_tools",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "deepinfra",
 		endpoint: "chat.completions",
 		protocol: "openai.chat.completions",

@@ -13,7 +13,7 @@ function baseArgs(overrides?: Partial<ExecutorExecuteArgs>): ExecutorExecuteArgs
 			responseFormat: "url",
 		},
 		requestId: "req_bfl_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "black-forest-labs",
 		endpoint: "images.generations",
 		capability: "image.generate",

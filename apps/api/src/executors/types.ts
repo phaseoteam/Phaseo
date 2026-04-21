@@ -36,7 +36,7 @@ export type ExecutorExecuteArgs = {
 	ir: any;
 
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	providerId: string;
 	endpoint: Endpoint;
 	protocol?: Protocol;

@@ -24,7 +24,7 @@ function buildArgs(ir: IRVideoGenerationRequest, providerId = "atlascloud"): Exe
 	return {
 		ir,
 		requestId: "req_atlas_video_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId,
 		endpoint: "video.generation",
 		protocol: "openai",

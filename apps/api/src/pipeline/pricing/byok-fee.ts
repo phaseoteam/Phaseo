@@ -14,7 +14,7 @@ type ByokCounterRow = {
 };
 
 type ByokFeeArgs = {
-	teamId: string;
+	workspaceId: string;
 	isByok: boolean;
 	baseCostNanos: number;
 	pricedUsage: any;
@@ -78,15 +78,15 @@ function utcMonthStartIso(nowIso: string): string {
 	return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)).toISOString();
 }
 
-async function resolveByokCounter(teamId: string): Promise<ByokCounterResolution> {
+async function resolveByokCounter(workspaceId: string): Promise<ByokCounterResolution> {
 	const supabase = getSupabaseAdmin();
 	const nowIso = new Date().toISOString();
 	let lastError: unknown = null;
 
 	for (let attempt = 1; attempt <= COUNTER_RPC_MAX_ATTEMPTS; attempt++) {
 		try {
-			const { data, error } = await supabase.rpc("increment_team_byok_monthly_request_count", {
-				p_team_id: teamId,
+			const { data, error } = await supabase.rpc("increment_workspace_byok_monthly_request_count", {
+				p_workspace_id: workspaceId,
 				p_now: nowIso,
 			});
 			if (error) throw error;
@@ -113,9 +113,9 @@ async function resolveByokCounter(teamId: string): Promise<ByokCounterResolution
 	const monthStartIso = utcMonthStartIso(nowIso);
 	try {
 		const { data, error } = await supabase
-			.from("team_byok_monthly_usage")
+			.from("workspace_byok_monthly_usage")
 			.select("month_start,request_count")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.eq("month_start", monthStartIso)
 			.maybeSingle();
 		if (error) throw error;
@@ -128,7 +128,7 @@ async function resolveByokCounter(teamId: string): Promise<ByokCounterResolution
 		};
 	} catch (fallbackErr) {
 		console.error("byok_monthly_counter_fallback_failed", {
-			teamId,
+			workspaceId,
 			error: fallbackErr,
 			lastRpcError: lastError,
 		});
@@ -215,12 +215,12 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 		};
 	}
 
-	const counter = await resolveByokCounter(args.teamId);
+	const counter = await resolveByokCounter(args.workspaceId);
 	const requestCount = counter.requestCount;
 	const monthStart = counter.monthStart;
 	if (counter.source === "unavailable") {
 		console.error("byok_monthly_counter_failed", {
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			failureMode: "charge",
 		});
 	}

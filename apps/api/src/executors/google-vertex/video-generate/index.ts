@@ -200,7 +200,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	try {
 		const reserved = await reserveVideoGenerationCredits({
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: `req_${args.requestId}`,
 			providerId: args.providerId,
 			model: modelForMeta,
@@ -233,7 +233,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	} catch (reserveErr) {
 		console.error("google_vertex_video_reservation_failed_pre_submit", {
 			error: reserveErr,
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			requestId: args.requestId,
 		});
 		reservationGateError = {
@@ -247,14 +247,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				reservationId,
 				releaseRefId: args.requestId,
 			});
 		} catch (releaseErr) {
 			console.error("google_vertex_video_reservation_release_failed", {
 				error: releaseErr,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: args.requestId,
 				reservationId,
 			});
@@ -359,7 +359,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const json = await res.json().catch(() => ({}));
 	console.info("google_vertex_video_create_response", {
 		requestId: args.requestId,
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		providerId: args.providerId,
 		model,
 		modelForMeta,
@@ -388,7 +388,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					? (json as any).operationName
 					: String(irResponse.nativeId);
 		try {
-			await saveVideoJobMeta(args.teamId, args.requestId, {
+			await saveVideoJobMeta(args.workspaceId, args.requestId, {
 				provider: args.providerId,
 				providerTaskId: operationName,
 				requestId: args.requestId,
@@ -413,7 +413,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} catch (err) {
 			console.error("google_vertex_video_job_meta_store_failed", {
 				error: err,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: String(irResponse.nativeId),
 				requestId: args.requestId,
 				reservationId,

@@ -87,7 +87,7 @@ export default function ConsentForm({
 			const result = await approveAuthorizationAction({
 				authorization_id: authorizationId,
 				client_id: clientId,
-				team_id: selectedTeamId,
+				workspace_id: selectedTeamId,
 				scopes: requestedScopes,
 				redirect_uri: redirectUri,
 				state: state,

@@ -395,7 +395,7 @@ async function attemptProviderWithIR(
 		ctx.endpoint,
 		candidate.providerId,
 		baseModel,
-		ctx.teamId,
+		ctx.workspaceId,
 		ctx.requestId,
 		routed.health,
 	);
@@ -474,7 +474,7 @@ async function attemptProviderWithIR(
 			({
 				ir: normalizedIr,
 				requestId: ctx.requestId,
-				teamId: ctx.teamId,
+				workspaceId: ctx.workspaceId,
 				providerId: candidate.providerId,
 				endpoint: ctx.endpoint,
 				protocol: ctx.protocol as any,

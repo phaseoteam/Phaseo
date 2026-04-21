@@ -297,7 +297,7 @@ export async function handleFailureAudit(
         await auditFailure({
             stage: "execute",
             requestId: ctx.requestId,
-            teamId: ctx.teamId,
+            workspaceId: ctx.workspaceId,
             endpoint: ctx.endpoint,
             model: ctx.model,
             provider: result.provider ?? null,
@@ -448,7 +448,7 @@ export async function handleSuccessAudit(
     try {
         await auditSuccess({
             requestId: ctx.requestId,
-            teamId: ctx.teamId,
+            workspaceId: ctx.workspaceId,
             provider: result.provider,
             model: ctx.model,
             endpoint: ctx.endpoint,

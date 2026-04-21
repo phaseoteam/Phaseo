@@ -34,7 +34,7 @@ type NormalizedResponseCreate = {
 
 type WsState = {
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	apiKeyId: string;
 	internal?: boolean;
 	closed: boolean;
@@ -165,7 +165,7 @@ async function resolveOpenAIGatewayKey(state: WsState, model: string): Promise<{
 }> {
 	const capability = resolveCapabilityFromEndpoint("responses");
 	const ctx = await guardContext({
-		teamId: state.teamId,
+		workspaceId: state.workspaceId,
 		apiKeyId: state.apiKeyId,
 		endpoint: "responses",
 		capability,
@@ -265,7 +265,7 @@ async function maybeChargeCompletedResponse(state: WsState, payload: any): Promi
 		await chargeWithRetry(async () => {
 			await recordUsageAndCharge({
 				requestId: chargeRequestId,
-				teamId: state.teamId,
+				workspaceId: state.workspaceId,
 				cost_nanos: Math.round(totalNanos),
 			});
 		});
@@ -275,7 +275,7 @@ async function maybeChargeCompletedResponse(state: WsState, payload: any): Promi
 			requestId: state.requestId,
 			chargeRequestId,
 			responseId,
-			teamId: state.teamId,
+			workspaceId: state.workspaceId,
 			totalNanos,
 			error,
 		});
@@ -337,7 +337,7 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 	if (auth.ok === false) return auth.response;
 	const state: WsState = {
 		requestId: auth.value.requestId,
-		teamId: auth.value.teamId,
+		workspaceId: auth.value.workspaceId,
 		apiKeyId: auth.value.apiKeyId,
 		internal: auth.value.internal,
 		closed: false,

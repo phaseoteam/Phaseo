@@ -105,7 +105,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId, teamId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+        const { customerId, workspaceId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const returnUrl = resolveSafeReturnUrl(request, body?.returnUrl);
 
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
             setup_intent_data: {
                 metadata: {
                     purpose: "auto_topup_setup",
-                    team_id: teamId,
+                    workspace_id: workspaceId,
                 },
             },
         });
@@ -174,7 +174,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId, teamId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+        const { customerId, workspaceId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const paymentMethodId = typeof body?.paymentMethodId === "string" ? body.paymentMethodId.trim() : "";
         if (!paymentMethodId) {
@@ -200,7 +200,7 @@ export async function DELETE(request: Request) {
         const { data: wallet } = await supabase
             .from("wallets")
             .select("auto_top_up_enabled, auto_top_up_account_id")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .maybeSingle();
 
         if (wallet?.auto_top_up_account_id === paymentMethodId) {
@@ -210,7 +210,7 @@ export async function DELETE(request: Request) {
                     auto_top_up_account_id: nextDefaultId,
                     auto_top_up_enabled: nextDefaultId ? (wallet?.auto_top_up_enabled ?? false) : false,
                 })
-                .eq("team_id", teamId);
+                .eq("workspace_id", workspaceId);
             revalidatePath("/settings/credits");
         }
 

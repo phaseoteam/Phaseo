@@ -78,7 +78,7 @@ function toIsoDaysAgo(daysAgo: number) {
 }
 
 export async function getDeprecationWarningsForTeam(
-	teamId: string,
+	workspaceId: string,
 ): Promise<DeprecationWarning[]> {
 	const supabase = await createClient();
 	const includeHidden = await resolveIncludeHidden();
@@ -128,9 +128,9 @@ export async function getDeprecationWarningsForTeam(
 
 	// Use RPC to avoid fetching thousands of request rows.
 	const { data: recentModels, error: recentErr } = await supabase.rpc(
-		"get_team_model_last_used",
+		"get_workspace_model_last_used",
 		{
-			p_team_id: teamId,
+			p_workspace_id: workspaceId,
 			p_since: recentUsageCutoff,
 		},
 	);
@@ -139,7 +139,7 @@ export async function getDeprecationWarningsForTeam(
 		// This can happen if migrations haven't been applied yet or RPC permissions are misconfigured.
 		// Don't spam opaque objects (`{}`) into console; emit a concise message.
 		console.warn(
-			"Failed to fetch recent model usage (RPC get_team_model_last_used):",
+			"Failed to fetch recent model usage (RPC get_workspace_model_last_used):",
 			(recentErr as any)?.message ?? String(recentErr),
 		);
 	}

@@ -46,7 +46,7 @@ function createCtx(overrides?: Partial<any>): any {
 		endpoint: "images.generations",
 		capability: "image.generate",
 		requestId: "req_test_1",
-		teamId: "team_test_1",
+		workspaceId: "team_test_1",
 		model: "openai/gpt-image-1-mini",
 		body: {},
 		meta: {

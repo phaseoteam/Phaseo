@@ -3,20 +3,20 @@
 import { cookies } from "next/headers";
 import {
     requireAuthenticatedUser,
-    requireTeamMembership,
+    requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
-export async function SwapTeam(teamId: string) {
+export async function SwapTeam(workspaceId: string) {
     try {
-        if (!teamId || typeof teamId !== 'string') {
-            return { ok: false, error: 'teamId required' };
+        if (!workspaceId || typeof workspaceId !== 'string') {
+            return { ok: false, error: 'workspaceId required' };
         }
         const { supabase, user } = await requireAuthenticatedUser();
-        await requireTeamMembership(supabase, user.id, teamId);
+        await requireWorkspaceMembership(supabase, user.id, workspaceId);
         const cookieStore: any = await cookies();
         await cookieStore.set({
-            name: 'activeTeamId',
-            value: teamId,
+            name: 'activeWorkspaceId',
+            value: workspaceId,
             httpOnly: true,
             path: '/',
             secure: process.env.NODE_ENV === 'production',

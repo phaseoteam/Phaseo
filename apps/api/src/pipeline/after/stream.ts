@@ -299,7 +299,7 @@ export async function handleStreamResponse(
                 if (!usageForSticky) return;
                 try {
                     await maybeWriteStickyRoutingFromUsage({
-                        teamId: ctx.teamId,
+                        workspaceId: ctx.workspaceId,
                         endpoint: ctx.endpoint,
                         model: stickyRoutingModel,
                         body: ctx.body,
@@ -408,7 +408,7 @@ export async function handleStreamResponse(
                 }
 
                 const pricedWithByok = await applyByokServiceFee({
-                    teamId: ctx.teamId,
+                    workspaceId: ctx.workspaceId,
                     isByok,
                     baseCostNanos: totalNanosOverride,
                     pricedUsage: usageWithToolMetrics,
@@ -469,7 +469,7 @@ export async function handleStreamResponse(
                     }
                 );
                 const pricedWithByok = await applyByokServiceFee({
-                    teamId: ctx.teamId,
+                    workspaceId: ctx.workspaceId,
                     isByok,
                     baseCostNanos: 0,
                     pricedUsage: fallbackUsageWithToolMetrics ?? usageWithToolMetrics,
@@ -522,7 +522,7 @@ export async function handleStreamResponse(
                 output_tool_call_count: cachedOutputToolCallCount,
             });
             const pricedWithByok = await applyByokServiceFee({
-                teamId: ctx.teamId,
+                workspaceId: ctx.workspaceId,
                 isByok,
                 baseCostNanos: totalNanos,
                 pricedUsage: usageWithToolMetrics,

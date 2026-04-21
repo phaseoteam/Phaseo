@@ -13,7 +13,7 @@ import { createClient } from "@/utils/supabase/server";
 interface ApproveAuthorizationInput {
 	authorization_id?: string;
 	client_id?: string;
-	team_id: string;
+	workspace_id: string;
 	scopes?: string[];
 	redirect_uri?: string;
 	state?: string;
@@ -105,9 +105,9 @@ export async function approveAuthorizationAction(
 
 		// Verify user is a member of the selected team
 		const { data: membership, error: membershipError } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", input.team_id)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", input.workspace_id)
 			.eq("user_id", user.id)
 			.single();
 
@@ -135,7 +135,7 @@ export async function approveAuthorizationAction(
 			.select("id, revoked_at")
 			.eq("user_id", user.id)
 			.eq("client_id", resolvedClientId)
-			.eq("team_id", input.team_id)
+			.eq("workspace_id", input.workspace_id)
 			.maybeSingle();
 
 		if (existingAuth) {
@@ -164,7 +164,7 @@ export async function approveAuthorizationAction(
 				.insert({
 					user_id: user.id,
 					client_id: resolvedClientId,
-					team_id: input.team_id,
+					workspace_id: input.workspace_id,
 					scopes,
 				});
 

@@ -27,7 +27,7 @@ create policy presets_select_visible
   using (
     visibility = 'public'
     or created_by = auth.uid()
-    or (visibility = 'team' and public.is_team_member(team_id))
+    or (visibility = 'team' and public.is_workspace_member(workspace_id))
   );
 create policy presets_insert_owned
   on public.presets
@@ -35,7 +35,7 @@ create policy presets_insert_owned
   to authenticated
   with check (
     created_by = auth.uid()
-    and public.is_team_member(team_id)
+    and public.is_workspace_member(workspace_id)
     and visibility in ('private', 'team', 'public')
   );
 create policy presets_update_owned

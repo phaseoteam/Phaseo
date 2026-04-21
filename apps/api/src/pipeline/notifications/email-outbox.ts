@@ -9,7 +9,7 @@ type OutboxRow = {
 	template: string;
 	to_email: string;
 	subject: string | null;
-	team_id: string | null;
+	workspace_id: string | null;
 	user_id: string | null;
 	payload: Record<string, unknown> | null;
 	attempts: number;
@@ -114,7 +114,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 	const { data, error } = await supabase
 		.from("email_outbox")
 		.select(
-			"id,created_at,kind,template,to_email,subject,team_id,user_id,payload,attempts,last_error,sent_at",
+			"id,created_at,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at",
 		)
 		.is("sent_at", null)
 		.lt("attempts", 5)

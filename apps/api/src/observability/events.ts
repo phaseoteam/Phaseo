@@ -46,7 +46,7 @@ type EventArgs = {
     } | null;
     protocolOverride?: string | null;
     requestId?: string | null;
-    teamId?: string | null;
+    workspaceId?: string | null;
     model?: string | null;
     endpoint?: string | null;
     mappedRequest?: string | null;
@@ -426,7 +426,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const ctx = args.ctx;
         const bindings = getBindings();
         const requestId = args.requestId ?? ctx?.requestId ?? null;
-        const teamId = args.teamId ?? ctx?.teamId ?? "unknown";
+        const workspaceId = args.workspaceId ?? ctx?.workspaceId ?? "unknown";
         if (!requestId) return;
 
         // Guard against duplicate wide-event emission for the same request context.
@@ -507,7 +507,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             provider: args.result?.provider ?? args.provider ?? null,
             testing_mode: Boolean(ctx?.testingMode),
             provider_capabilities_beta: Boolean(ctx?.providerCapabilitiesBeta),
-            team_settings: ctx?.teamSettings ?? null,
+            workspace_settings: ctx?.teamSettings ?? null,
             gates: {
                 key: keyGate,
                 key_limit: keyLimitGate,
@@ -540,7 +540,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             request_stage: args.success ? "after" : (args.errorStage ?? null),
             request_id: requestId,
             generation_id: requestId,
-            team_id: teamId,
+            workspace_id: workspaceId,
             protocol_in: args.protocolOverride ?? ctx?.protocol ?? null,
             app_title: args.appTitle ?? ctx?.meta?.appTitle ?? null,
             referer: args.referer ?? ctx?.meta?.referer ?? null,

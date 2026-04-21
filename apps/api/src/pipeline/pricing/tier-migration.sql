@@ -17,26 +17,26 @@ BEGIN
     -- Add tier column (basic or enterprise)
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_name = 'teams' AND column_name = 'tier') THEN
-        ALTER TABLE public.teams ADD COLUMN tier text DEFAULT 'basic';
+        ALTER TABLE public.workspaces ADD COLUMN tier text DEFAULT 'basic';
     END IF;
 
     -- Add tier updated timestamp
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_name = 'teams' AND column_name = 'tier_updated_at') THEN
-        ALTER TABLE public.teams ADD COLUMN tier_updated_at timestamptz DEFAULT now();
+        ALTER TABLE public.workspaces ADD COLUMN tier_updated_at timestamptz DEFAULT now();
     END IF;
 
     -- Add consecutive low-spend months counter
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_name = 'teams' AND column_name = 'consecutive_low_spend_months') THEN
-        ALTER TABLE public.teams ADD COLUMN consecutive_low_spend_months int DEFAULT 0;
+        ALTER TABLE public.workspaces ADD COLUMN consecutive_low_spend_months int DEFAULT 0;
     END IF;
 END $$;
 
 -- 2. Create tier history table for audit trail
-CREATE TABLE IF NOT EXISTS public.team_tier_history (
+CREATE TABLE IF NOT EXISTS public.workspace_tier_history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    team_id uuid NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+    workspace_id uuid NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     old_tier text,
     new_tier text NOT NULL,
     reason text,
@@ -47,11 +47,11 @@ CREATE TABLE IF NOT EXISTS public.team_tier_history (
     created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_tier_history_team_id ON public.team_tier_history(team_id);
-CREATE INDEX IF NOT EXISTS idx_tier_history_changed_at ON public.team_tier_history(changed_at);
+CREATE INDEX IF NOT EXISTS idx_tier_history_workspace_id ON public.workspace_tier_history(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_tier_history_changed_at ON public.workspace_tier_history(changed_at);
 
 -- 3. Function to calculate previous calendar month's spend for a team
-CREATE OR REPLACE FUNCTION calculate_team_previous_month_spend(p_team_id uuid)
+CREATE OR REPLACE FUNCTION calculate_workspace_previous_month_spend(p_workspace_id uuid)
 RETURNS numeric AS $$
 DECLARE
     v_spend_nanos bigint;
@@ -67,7 +67,7 @@ BEGIN
     SELECT COALESCE(SUM(cost_nanos), 0)
     INTO v_spend_nanos
     FROM public.gateway_requests
-    WHERE team_id = p_team_id
+    WHERE workspace_id = p_workspace_id
       AND success = true
       AND created_at >= v_prev_month_start
       AND created_at < v_prev_month_end;
@@ -80,7 +80,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. Function to update a single team's tier
-CREATE OR REPLACE FUNCTION update_team_tier(p_team_id uuid)
+CREATE OR REPLACE FUNCTION update_workspace_tier(p_workspace_id uuid)
 RETURNS jsonb AS $$
 DECLARE
     v_current_tier text;
@@ -94,15 +94,15 @@ BEGIN
     -- Get current tier and consecutive low-spend months
     SELECT tier, consecutive_low_spend_months
     INTO v_current_tier, v_consecutive_low
-    FROM public.teams
-    WHERE id = p_team_id;
+    FROM public.workspaces
+    WHERE id = p_workspace_id;
 
     IF v_current_tier IS NULL THEN
-        RAISE EXCEPTION 'Team not found: %', p_team_id;
+        RAISE EXCEPTION 'Team not found: %', p_workspace_id;
     END IF;
 
     -- Calculate previous month's spend
-    v_prev_month_spend := calculate_team_previous_month_spend(p_team_id);
+    v_prev_month_spend := calculate_workspace_previous_month_spend(p_workspace_id);
 
     -- Determine new tier based on logic:
     -- - If spent >$10k in previous month → Enterprise
@@ -131,17 +131,17 @@ BEGIN
     END IF;
 
     -- Update team record
-    UPDATE public.teams
+    UPDATE public.workspaces
     SET
         tier = v_new_tier,
         tier_updated_at = CASE WHEN v_changed THEN now() ELSE tier_updated_at END,
         consecutive_low_spend_months = v_consecutive_low
-    WHERE id = p_team_id;
+    WHERE id = p_workspace_id;
 
     -- Record tier change in history if changed
     IF v_changed THEN
-        INSERT INTO public.team_tier_history (
-            team_id,
+        INSERT INTO public.workspace_tier_history (
+            workspace_id,
             old_tier,
             new_tier,
             reason,
@@ -149,7 +149,7 @@ BEGIN
             threshold_usd,
             consecutive_low_months
         ) VALUES (
-            p_team_id,
+            p_workspace_id,
             v_current_tier,
             v_new_tier,
             v_reason,
@@ -160,7 +160,7 @@ BEGIN
     END IF;
 
     RETURN jsonb_build_object(
-        'team_id', p_team_id,
+        'workspace_id', p_workspace_id,
         'old_tier', v_current_tier,
         'new_tier', v_new_tier,
         'changed', v_changed,
@@ -174,10 +174,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 5. Function to clean up dormant Enterprise teams (run monthly via cron)
 -- Purpose: Handle teams that stopped making requests while on Enterprise tier
 -- Active teams are handled by per-request tier calculation in context.sql
-CREATE OR REPLACE FUNCTION cleanup_dormant_enterprise_teams()
+CREATE OR REPLACE FUNCTION cleanup_dormant_enterprise_workspaces()
 RETURNS jsonb AS $$
 DECLARE
-    v_team_id uuid;
+    v_workspace_id uuid;
     v_spend_30d_nanos bigint;
     v_threshold_nanos bigint := 10000000000000; -- $10k in nanos
     v_tier text;
@@ -187,8 +187,8 @@ DECLARE
     v_result text;
 BEGIN
     -- Process only Enterprise teams
-    FOR v_team_id, v_tier IN
-        SELECT id, tier FROM public.teams
+    FOR v_workspace_id, v_tier IN
+        SELECT id, tier FROM public.workspaces
         WHERE tier = 'enterprise'
         ORDER BY id
     LOOP
@@ -198,18 +198,18 @@ BEGIN
         SELECT COALESCE(SUM(cost_nanos), 0)
         INTO v_spend_30d_nanos
         FROM public.gateway_requests
-        WHERE team_id = v_team_id
+        WHERE workspace_id = v_workspace_id
           AND success = true
           AND created_at >= now() - interval '30 days';
 
         -- Use the tier calculation function (handles grace period logic)
-        v_result := calculate_tier_with_grace(v_team_id, v_spend_30d_nanos);
+        v_result := calculate_tier_with_grace(v_workspace_id, v_spend_30d_nanos);
 
         -- Track if tier changed (downgraded to basic)
         IF v_result = 'basic' THEN
             v_updated_count := v_updated_count + 1;
             v_results := array_append(v_results, jsonb_build_object(
-                'team_id', v_team_id,
+                'workspace_id', v_workspace_id,
                 'old_tier', 'enterprise',
                 'new_tier', 'basic',
                 'spend_30d_usd', ROUND((v_spend_30d_nanos::numeric / 1000000000.0)::numeric, 2)
@@ -228,7 +228,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 6. Function to calculate tier based on rolling 30-day spend with grace period
 CREATE OR REPLACE FUNCTION calculate_tier_with_grace(
-    p_team_id uuid,
+    p_workspace_id uuid,
     p_spend_30d_nanos bigint
 ) RETURNS text AS $$
 DECLARE
@@ -246,8 +246,8 @@ BEGIN
     INTO
         v_stored_tier,
         v_consecutive_low
-    FROM public.teams
-    WHERE id = p_team_id;
+    FROM public.workspaces
+    WHERE id = p_workspace_id;
 
     -- Determine new tier based on 30-day spend
     IF p_spend_30d_nanos >= v_threshold_nanos THEN
@@ -286,17 +286,17 @@ BEGIN
     END IF;
 
     -- Update team tier and grace counter
-    UPDATE public.teams
+    UPDATE public.workspaces
     SET
         tier = v_new_tier,
         tier_updated_at = CASE WHEN v_tier_changed THEN now() ELSE tier_updated_at END,
         consecutive_low_spend_months = v_consecutive_low
-    WHERE id = p_team_id;
+    WHERE id = p_workspace_id;
 
     -- Log tier change if it happened
     IF v_tier_changed THEN
-        INSERT INTO public.team_tier_history (
-            team_id,
+        INSERT INTO public.workspace_tier_history (
+            workspace_id,
             old_tier,
             new_tier,
             reason,
@@ -304,7 +304,7 @@ BEGIN
             threshold_usd,
             consecutive_low_months
         ) VALUES (
-            p_team_id,
+            p_workspace_id,
             v_stored_tier,
             v_new_tier,
             v_reason,
@@ -319,7 +319,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 7. Function to get team tier info for UI
-CREATE OR REPLACE FUNCTION get_team_tier_info(p_team_id uuid)
+CREATE OR REPLACE FUNCTION get_workspace_tier_info(p_workspace_id uuid)
 RETURNS jsonb AS $$
 DECLARE
     v_tier text;
@@ -335,11 +335,11 @@ BEGIN
     -- Get team tier data
     SELECT tier, tier_updated_at, consecutive_low_spend_months
     INTO v_tier, v_tier_updated_at, v_consecutive_low
-    FROM public.teams
-    WHERE id = p_team_id;
+    FROM public.workspaces
+    WHERE id = p_workspace_id;
 
     IF v_tier IS NULL THEN
-        RAISE EXCEPTION 'Team not found: %', p_team_id;
+        RAISE EXCEPTION 'Team not found: %', p_workspace_id;
     END IF;
 
     -- Determine markup percentage
@@ -351,14 +351,14 @@ BEGIN
     SELECT COALESCE(SUM(cost_nanos), 0)
     INTO v_current_month_nanos
     FROM public.gateway_requests
-    WHERE team_id = p_team_id
+    WHERE workspace_id = p_workspace_id
       AND success = true
       AND created_at >= v_current_month_start;
 
     v_current_month_spend := ROUND((v_current_month_nanos::numeric / 1000000000.0)::numeric, 2);
 
     -- Get previous month spend
-    v_prev_month_spend := calculate_team_previous_month_spend(p_team_id);
+    v_prev_month_spend := calculate_workspace_previous_month_spend(p_workspace_id);
 
     RETURN jsonb_build_object(
         'tier', v_tier,
@@ -380,21 +380,21 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. Grant execute permissions
-GRANT EXECUTE ON FUNCTION calculate_team_previous_month_spend(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION update_team_tier(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION cleanup_dormant_enterprise_teams() TO service_role;
+GRANT EXECUTE ON FUNCTION calculate_workspace_previous_month_spend(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_workspace_tier(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION cleanup_dormant_enterprise_workspaces() TO service_role;
 GRANT EXECUTE ON FUNCTION calculate_tier_with_grace(uuid, bigint) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION get_team_tier_info(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_workspace_tier_info(uuid) TO authenticated;
 
 -- 9. Create index for efficient spend calculations
 CREATE INDEX IF NOT EXISTS idx_gateway_requests_team_success_created
-ON public.gateway_requests(team_id, success, created_at)
+ON public.gateway_requests(workspace_id, success, created_at)
 WHERE success = true;
 
 -- 10. Comments
 COMMENT ON FUNCTION calculate_tier_with_grace(uuid, bigint) IS 'Calculate team tier based on rolling 30-day spend with 3-check grace period for downgrades. Called automatically before each request in context.sql.';
-COMMENT ON FUNCTION cleanup_dormant_enterprise_teams() IS 'Monthly cleanup job to downgrade dormant Enterprise teams. Handles teams that stopped making requests while on Enterprise tier.';
-COMMENT ON FUNCTION get_team_tier_info(uuid) IS 'Get comprehensive tier information for display in UI dashboard';
+COMMENT ON FUNCTION cleanup_dormant_enterprise_workspaces() IS 'Monthly cleanup job to downgrade dormant Enterprise teams. Handles teams that stopped making requests while on Enterprise tier.';
+COMMENT ON FUNCTION get_workspace_tier_info(uuid) IS 'Get comprehensive tier information for display in UI dashboard';
 
 -- ============================================================================
 -- SUPABASE pg_cron SETUP (Required for dormant account cleanup)
@@ -406,7 +406,7 @@ COMMENT ON FUNCTION get_team_tier_info(uuid) IS 'Get comprehensive tier informat
 -- SELECT cron.schedule(
 --     'cleanup-dormant-enterprise-teams',
 --     '0 0 1 * *',  -- Midnight UTC on 1st of each month
---     $$SELECT cleanup_dormant_enterprise_teams()$$
+--     $$SELECT cleanup_dormant_enterprise_workspaces()$$
 -- );
 --
 -- To check scheduled jobs:

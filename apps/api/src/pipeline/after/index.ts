@@ -148,7 +148,7 @@ function dispatchNonStreamSuccessSideEffects(args: {
         try {
             try {
                 await maybeWriteStickyRoutingFromUsage({
-                    teamId: ctx.teamId,
+                    workspaceId: ctx.workspaceId,
                     endpoint: ctx.endpoint,
                     model: getBaseModel(ctx.model),
                     body: ctx.body,
@@ -297,7 +297,7 @@ async function handleNonStreamResponse(
     ));
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByok = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
-        teamId: ctx.teamId,
+        workspaceId: ctx.workspaceId,
         isByok,
         baseCostNanos: totalNanos,
         pricedUsage,

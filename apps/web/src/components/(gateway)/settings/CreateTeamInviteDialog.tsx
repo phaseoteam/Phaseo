@@ -47,19 +47,19 @@ function generateCode(length = 10) {
 export default function CreateTeamInviteDialog({
 	currentUserId,
 	teams,
-	defaultTeamId,
+	defaultWorkspaceId,
 }: {
 	currentUserId?: string;
 	teams: { id: string; name: string }[];
-	defaultTeamId?: string;
+	defaultWorkspaceId?: string;
 }) {
 	const preferredTeamId = useMemo(() => {
 		if (!teams?.length) return undefined;
-		if (defaultTeamId && teams.some((team) => team.id === defaultTeamId)) {
-			return defaultTeamId;
+		if (defaultWorkspaceId && teams.some((team) => team.id === defaultWorkspaceId)) {
+			return defaultWorkspaceId;
 		}
 		return teams[0]?.id;
-	}, [teams, defaultTeamId]);
+	}, [teams, defaultWorkspaceId]);
 
 	const [open, setOpen] = useState(false);
 	const [selectedTeam, setSelectedTeam] = useState<string | undefined>(

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import RedeemCreditCodeCard from "@/components/(gateway)/credits/RedeemCreditCodeCard";
 
 export const metadata: Metadata = {
@@ -24,14 +24,14 @@ export default async function RedeemPage() {
 		redirect("/sign-in?returnUrl=%2Fredeem");
 	}
 
-	const activeTeamId = await getTeamIdFromCookie();
+	const activeWorkspaceId = await getWorkspaceIdFromCookie();
 	const teamOptions: TeamOption[] = [];
 	const invoiceTeamIds = new Set<string>();
 
 	try {
 		const { data: rows, error: teamErr } = await supabase
-			.from("team_members")
-			.select("team_id, teams(id, name, billing_mode)")
+			.from("workspace_members")
+			.select("workspace_id, teams:workspaces(id, name, billing_mode)")
 			.eq("user_id", user.id);
 
 		if (teamErr) {
@@ -41,7 +41,7 @@ export default async function RedeemPage() {
 				const team = Array.isArray((row as any)?.teams)
 					? (row as any).teams[0]
 					: (row as any)?.teams;
-				const id = String(team?.id ?? (row as any)?.team_id ?? "").trim();
+				const id = String(team?.id ?? (row as any)?.workspace_id ?? "").trim();
 				if (!id) continue;
 				const name = String(team?.name ?? "Team").trim() || "Team";
 				if (!teamOptions.some((entry) => entry.id === id)) {
@@ -56,8 +56,8 @@ export default async function RedeemPage() {
 		console.log("[WARN] /redeem unexpected team fetch error:", String(err));
 	}
 
-	if (activeTeamId && !teamOptions.some((entry) => entry.id === activeTeamId)) {
-		teamOptions.unshift({ id: activeTeamId, name: "Current Team" });
+	if (activeWorkspaceId && !teamOptions.some((entry) => entry.id === activeWorkspaceId)) {
+		teamOptions.unshift({ id: activeWorkspaceId, name: "Current Team" });
 	}
 
 	return (
@@ -66,7 +66,7 @@ export default async function RedeemPage() {
 				<RedeemCreditCodeCard
 					teams={teamOptions}
 					invoiceTeamIds={Array.from(invoiceTeamIds)}
-					defaultTeamId={activeTeamId ?? null}
+					defaultWorkspaceId={activeWorkspaceId ?? null}
 					title="Redeem Promo Code"
 					description="Enter your promo code below to receive credits."
 					submitLabel="Redeem Code"

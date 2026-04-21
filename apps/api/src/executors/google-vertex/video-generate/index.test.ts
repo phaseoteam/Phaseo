@@ -22,7 +22,7 @@ function buildArgs(ir: IRVideoGenerationRequest): ExecutorExecuteArgs {
 	return {
 		ir,
 		requestId: "req_google_vertex_video_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "google-vertex",
 		endpoint: "video.generation",
 		protocol: "google.vertex.video",

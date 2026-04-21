@@ -8,7 +8,7 @@ import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
-	requireTeamMembership,
+	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 export type ManagementKeyLimitPayload = {
@@ -24,7 +24,7 @@ export type ManagementKeyLimitPayload = {
 export type CreateManagementKeyInput = {
 	name: string;
 	creatorUserId: string;
-	teamId: string;
+	workspaceId: string;
 	scopes?: string;
 };
 
@@ -36,7 +36,7 @@ export type UpdateManagementKeyInput = {
 export async function createManagementKeyAction(
 	input: CreateManagementKeyInput
 ) {
-	const { name, creatorUserId, teamId, scopes = "[]" } = input;
+	const { name, creatorUserId, workspaceId, scopes = "[]" } = input;
 
 	if (!name || typeof name !== "string") {
 		throw new Error("Name is required");
@@ -44,14 +44,14 @@ export async function createManagementKeyAction(
 	if (!creatorUserId || typeof creatorUserId !== "string") {
 		throw new Error("Creator user ID is required");
 	}
-	if (!teamId || typeof teamId !== "string") {
+	if (!workspaceId || typeof workspaceId !== "string") {
 		throw new Error("Workspace ID is required");
 	}
 
 	const { supabase, user } = await requireAuthenticatedUser();
 	requireActingUser(creatorUserId, user.id);
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
-	await enforceTeamKeyLimit(supabase as any, teamId);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+	await enforceTeamKeyLimit(supabase as any, workspaceId);
 
 	// Generate secure key
 	const { kid, secret, plaintext, prefix } = makeKeyV2();
@@ -61,7 +61,7 @@ export async function createManagementKeyAction(
 	const hash = hmacSecret(secret, pepper);
 
 	const insertObj = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		name: name.trim(),
 		kid,
 		hash,
@@ -104,12 +104,12 @@ export async function updateManagementKeyAction(
 	const { supabase, user } = await requireAuthenticatedUser();
 	const { data: keyRow, error: keyErr } = await supabase
 		.from("management_keys")
-		.select("team_id")
+		.select("workspace_id")
 		.eq("id", id)
 		.maybeSingle();
 	if (keyErr) throw keyErr;
-	if (!keyRow?.team_id) throw new Error("Management API key not found");
-	await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
+	if (!keyRow?.workspace_id) throw new Error("Management API key not found");
+	await requireWorkspaceMembership(supabase, user.id, keyRow.workspace_id, ["owner", "admin"]);
 
 	const updateObj: Record<string, unknown> = {};
 
@@ -132,7 +132,7 @@ export async function updateManagementKeyAction(
 		.from("management_keys")
 		.update(updateObj)
 		.eq("id", id)
-		.eq("team_id", keyRow.team_id);
+		.eq("workspace_id", keyRow.workspace_id);
 
 	if (error) {
 		console.error("Failed to update management API key:", error);
@@ -155,12 +155,12 @@ export async function updateManagementKeyLimitsAction(
 	const { supabase, user } = await requireAuthenticatedUser();
 	const { data: keyRow, error: keyErr } = await supabase
 		.from("management_keys")
-		.select("team_id")
+		.select("workspace_id")
 		.eq("id", id)
 		.maybeSingle();
 	if (keyErr) throw keyErr;
-	if (!keyRow?.team_id) throw new Error("Management API key not found");
-	await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
+	if (!keyRow?.workspace_id) throw new Error("Management API key not found");
+	await requireWorkspaceMembership(supabase, user.id, keyRow.workspace_id, ["owner", "admin"]);
 
 	const updateObj: Record<string, unknown> = {
 		daily_limit_requests: payload.dailyRequests ?? null,
@@ -181,7 +181,7 @@ export async function updateManagementKeyLimitsAction(
 		.from("management_keys")
 		.update(updateObj)
 		.eq("id", id)
-		.eq("team_id", keyRow.team_id);
+		.eq("workspace_id", keyRow.workspace_id);
 
 	if (error) {
 		console.error("Failed to update management API key limits:", error);
@@ -206,12 +206,12 @@ export async function deleteManagementKeyAction(
 	const { supabase, user } = await requireAuthenticatedUser();
 	const { data: keyRow, error: keyErr } = await supabase
 		.from("management_keys")
-		.select("team_id, name")
+		.select("workspace_id, name")
 		.eq("id", id)
 		.maybeSingle();
 	if (keyErr) throw keyErr;
-	if (!keyRow?.team_id) throw new Error("Management API key not found");
-	await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
+	if (!keyRow?.workspace_id) throw new Error("Management API key not found");
+	await requireWorkspaceMembership(supabase, user.id, keyRow.workspace_id, ["owner", "admin"]);
 
 	// If confirmation is required, verify the name matches
 	if (confirmName) {
@@ -226,7 +226,7 @@ export async function deleteManagementKeyAction(
 		.from("management_keys")
 		.delete()
 		.eq("id", id)
-		.eq("team_id", keyRow.team_id);
+		.eq("workspace_id", keyRow.workspace_id);
 
 	if (error) {
 		console.error("Failed to delete management API key:", error);
@@ -250,8 +250,8 @@ export async function getManagementKeyById(id: string) {
 		.select("*")
 		.eq("id", id)
 		.maybeSingle();
-	if (data?.team_id) {
-		await requireTeamMembership(supabase, user.id, data.team_id, ["owner", "admin"]);
+	if (data?.workspace_id) {
+		await requireWorkspaceMembership(supabase, user.id, data.workspace_id, ["owner", "admin"]);
 	}
 
 	if (error) {
@@ -262,18 +262,18 @@ export async function getManagementKeyById(id: string) {
 	return data;
 }
 
-export async function listManagementKeysByTeam(teamId: string) {
-	if (!teamId || typeof teamId !== "string") {
+export async function listManagementKeysByTeam(workspaceId: string) {
+	if (!workspaceId || typeof workspaceId !== "string") {
 		throw new Error("Valid workspace ID is required");
 	}
 
 	const { supabase, user } = await requireAuthenticatedUser();
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const { data, error } = await supabase
 		.from("management_keys")
 		.select("*")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.order("created_at", { ascending: false });
 
 	if (error) {

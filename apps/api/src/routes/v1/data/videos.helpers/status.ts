@@ -196,12 +196,12 @@ export async function requireOwnedVideoJob(
 	auth: VideoRouteAuth,
 	videoId: string,
 ): Promise<{ record: VideoJobRecord; meta: VideoJobMeta | null } | Response> {
-	const record = await getVideoJobRecord(auth.teamId, videoId);
+	const record = await getVideoJobRecord(auth.workspaceId, videoId);
 	if (record) return { record, meta: record.meta };
 	return err("not_found", {
 		reason: "video_not_found_or_not_owned",
 		request_id: auth.requestId,
-		team_id: auth.teamId,
+		workspace_id: auth.workspaceId,
 		video_id: videoId,
 	});
 }
@@ -210,7 +210,7 @@ export async function refreshOwnedVideoJob(
 	auth: VideoRouteAuth,
 	videoId: string,
 ): Promise<{ record: VideoJobRecord; meta: VideoJobMeta | null } | null> {
-	const record = await getVideoJobRecord(auth.teamId, videoId);
+	const record = await getVideoJobRecord(auth.workspaceId, videoId);
 	if (!record) return null;
 	return { record, meta: record.meta };
 }
@@ -451,7 +451,7 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		video_params: { ...baseVideoParams, ...pricingVideoParams },
 	};
 	await finalizeVideoJob({
-		teamId: args.auth.teamId,
+		workspaceId: args.auth.workspaceId,
 		videoId: args.videoId,
 		providerId: args.providerId,
 		status: args.status,
@@ -466,7 +466,7 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		},
 	});
 	dispatchVideoWebhookEventInBackground({
-		teamId: args.auth.teamId,
+		workspaceId: args.auth.workspaceId,
 		videoId: args.videoId,
 		eventType: args.status === "completed" ? "video.completed" : "video.failed",
 	});

@@ -24,7 +24,7 @@ function buildArgs(ir: IRVideoGenerationRequest): ExecutorExecuteArgs {
 	return {
 		ir,
 		requestId: "req_xai_video_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "x-ai",
 		endpoint: "video.generation",
 		protocol: "xai.video",

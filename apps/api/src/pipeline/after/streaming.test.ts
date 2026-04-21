@@ -58,7 +58,7 @@ async function drain(response: Response): Promise<string> {
 function baseCtx(overrides?: Record<string, unknown>): any {
 	return {
 		requestId: "req_streaming_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		endpoint: "responses",
 		protocol: "openai.responses",
 		meta: {},

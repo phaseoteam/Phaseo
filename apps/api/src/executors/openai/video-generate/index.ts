@@ -234,7 +234,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	try {
 		const reserved = await reserveVideoGenerationCredits({
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: `req_${args.requestId}`,
 			providerId: args.providerId,
 			model,
@@ -267,7 +267,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	} catch (reserveErr) {
 		console.error("openai_video_reservation_failed_pre_submit", {
 			error: reserveErr,
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			requestId: args.requestId,
 		});
 		reservationGateError = {
@@ -281,14 +281,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				reservationId,
 				releaseRefId: args.requestId,
 			});
 		} catch (releaseErr) {
 			console.error("openai_video_reservation_release_failed", {
 				error: releaseErr,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: args.requestId,
 				reservationId,
 			});
@@ -434,7 +434,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const nativeVideoId = irResponse.nativeId ?? json?.id;
 	if (nativeVideoId) {
 		try {
-			await saveVideoJobMeta(args.teamId, args.requestId, {
+			await saveVideoJobMeta(args.workspaceId, args.requestId, {
 				provider: args.providerId,
 				providerTaskId: String(nativeVideoId),
 				requestId: args.requestId,
@@ -456,7 +456,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} catch (err) {
 			console.error("openai_video_job_meta_store_failed", {
 				error: err,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: String(nativeVideoId),
 				requestId: args.requestId,
 				reservationId,

@@ -21,7 +21,7 @@ import {
 
 interface Invite {
 	id: string;
-	team_id: string;
+	workspace_id: string;
 	creator_user_id: string;
 	role: string;
 	token_encrypted: string;
@@ -42,7 +42,7 @@ interface Props {
 	teams: Team[];
 	invitesByTeam?: Record<string, Invite[]>;
 	membersByTeam?: Record<string, any[]>;
-	activeTeamId?: string | undefined;
+	activeWorkspaceId?: string | undefined;
 	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 }
@@ -53,7 +53,7 @@ export default function TeamsInvites({
 	onTeamChange,
 	membersByTeam,
 	currentUserId,
-	activeTeamId: controlledActiveId,
+	activeWorkspaceId: controlledActiveId,
 }: Props) {
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
@@ -62,7 +62,7 @@ export default function TeamsInvites({
 		null
 	);
 
-	const activeTeamId = controlledActiveId ?? localActiveTeamId;
+	const activeWorkspaceId = controlledActiveId ?? localActiveTeamId;
 	const setActiveTeamId = React.useCallback(
 		(id?: string) => {
 			if (onTeamChange) onTeamChange(id);
@@ -76,22 +76,22 @@ export default function TeamsInvites({
 			setActiveTeamId(undefined);
 			return;
 		}
-		if (!activeTeamId) {
+		if (!activeWorkspaceId) {
 			setActiveTeamId(teams[0].id);
 			return;
 		}
-		if (!teams.find((t) => t.id === activeTeamId)) {
+		if (!teams.find((t) => t.id === activeWorkspaceId)) {
 			setActiveTeamId(teams[0].id);
 		}
-	}, [teams, activeTeamId, setActiveTeamId]);
+	}, [teams, activeWorkspaceId, setActiveTeamId]);
 
 	const mergedInvites = React.useMemo(
 		() => invitesByTeam || {},
 		[invitesByTeam]
 	);
 	const activeInvites = React.useMemo(() => {
-		if (!activeTeamId) return [];
-		const invites = (mergedInvites[activeTeamId] || []).slice();
+		if (!activeWorkspaceId) return [];
+		const invites = (mergedInvites[activeWorkspaceId] || []).slice();
 		// sort by expiry date ascending (soonest first). null expiry (no expiry) go last
 		invites.sort((a, b) => {
 			if (!a.expires_at && !b.expires_at) return 0;
@@ -103,9 +103,9 @@ export default function TeamsInvites({
 			return db - da;
 		});
 		return invites;
-	}, [activeTeamId, mergedInvites]);
+	}, [activeWorkspaceId, mergedInvites]);
 
-	const activeTeam = teams.find((t) => t.id === activeTeamId);
+	const activeTeam = teams.find((t) => t.id === activeWorkspaceId);
 	const counts = React.useMemo(() => {
 		let active = 0;
 		let expired = 0;
@@ -123,7 +123,7 @@ export default function TeamsInvites({
 		if (!selectedInvite || !currentUserId) return false;
 		if (selectedInvite.creator_user_id === currentUserId) return true;
 
-		const teamMembers = membersByTeam?.[selectedInvite.team_id] ?? [];
+		const teamMembers = membersByTeam?.[selectedInvite.workspace_id] ?? [];
 		const currentMembership = teamMembers.find(
 			(member: any) => member?.user_id === currentUserId,
 		);
@@ -144,7 +144,7 @@ export default function TeamsInvites({
 					<Badge variant="outline">{counts.total} total</Badge>
 					<Badge variant="secondary">{counts.active} active</Badge>
 					<Select
-						value={activeTeamId}
+						value={activeWorkspaceId}
 						onValueChange={(v) => setActiveTeamId(v)}
 					>
 						<SelectTrigger className="w-full sm:w-[200px]">

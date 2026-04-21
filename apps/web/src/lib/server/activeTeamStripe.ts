@@ -1,11 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
-import { requireTeamMembership } from "@/utils/serverActionAuth";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 import { getStripe } from "@/lib/stripe";
 
 type ActiveTeamStripeCustomer = {
-    teamId: string;
+    workspaceId: string;
     customerId: string;
     userId: string;
 };
@@ -26,7 +26,7 @@ function deriveCustomerName(user: { email?: string | null; user_metadata?: Recor
 }
 
 async function findOrCreateStripeCustomer(args: {
-    teamId: string;
+    workspaceId: string;
     userId: string;
     email?: string | null;
     name?: string;
@@ -36,7 +36,7 @@ async function findOrCreateStripeCustomer(args: {
 
     try {
         const search = await stripe.customers.search({
-            query: `metadata['team_id']:'${args.teamId}'`,
+            query: `metadata['workspace_id']:'${args.workspaceId}'`,
             limit: 1,
         });
         if (search.data.length > 0) {
@@ -52,7 +52,7 @@ async function findOrCreateStripeCustomer(args: {
             customerId = list.data[0].id;
             try {
                 await stripe.customers.update(customerId, {
-                    metadata: { team_id: args.teamId, user_id: args.userId },
+                    metadata: { workspace_id: args.workspaceId, user_id: args.userId },
                 });
             } catch {
                 // Best-effort metadata patch only.
@@ -64,7 +64,7 @@ async function findOrCreateStripeCustomer(args: {
         const created = await stripe.customers.create({
             email: args.email ?? undefined,
             name: args.name,
-            metadata: { team_id: args.teamId, user_id: args.userId },
+            metadata: { workspace_id: args.workspaceId, user_id: args.userId },
         });
         customerId = created.id;
     }
@@ -85,13 +85,13 @@ export async function requireActiveTeamStripeCustomer(
         throw new Error("unauthorized");
     }
 
-    const teamId = await getTeamIdFromCookie();
-    if (!teamId) {
+    const workspaceId = await getWorkspaceIdFromCookie();
+    if (!workspaceId) {
         throw new Error("missing_team");
     }
 
     try {
-        await requireTeamMembership(supabase, user.id, teamId);
+        await requireWorkspaceMembership(supabase, user.id, workspaceId);
     } catch (error) {
         if (
             error instanceof Error &&
@@ -104,8 +104,8 @@ export async function requireActiveTeamStripeCustomer(
 
     const { data: wallet, error: walletErr } = await supabase
         .from("wallets")
-        .select("team_id, stripe_customer_id")
-        .eq("team_id", teamId)
+        .select("workspace_id, stripe_customer_id")
+        .eq("workspace_id", workspaceId)
         .maybeSingle();
 
     if (walletErr) throw walletErr;
@@ -115,7 +115,7 @@ export async function requireActiveTeamStripeCustomer(
 
     if (!wallet?.stripe_customer_id && options.createIfMissing) {
         const customerId = await findOrCreateStripeCustomer({
-            teamId,
+            workspaceId,
             userId: user.id,
             email: user.email ?? undefined,
             name: deriveCustomerName(user),
@@ -125,25 +125,25 @@ export async function requireActiveTeamStripeCustomer(
         const { error: upsertError } = await admin
             .from("wallets")
             .upsert(
-                { team_id: teamId, stripe_customer_id: customerId },
-                { onConflict: "team_id", ignoreDuplicates: false }
+                { workspace_id: workspaceId, stripe_customer_id: customerId },
+                { onConflict: "workspace_id", ignoreDuplicates: false }
             );
 
         if (upsertError) throw upsertError;
 
         return {
-            teamId,
+            workspaceId,
             customerId,
             userId: user.id,
         };
     }
 
-    if (!wallet?.team_id || !wallet?.stripe_customer_id) {
+    if (!wallet?.workspace_id || !wallet?.stripe_customer_id) {
         throw new Error("missing_stripe_customer");
     }
 
     return {
-        teamId: String(wallet.team_id),
+        workspaceId: String(wallet.workspace_id),
         customerId: String(wallet.stripe_customer_id),
         userId: user.id,
     };

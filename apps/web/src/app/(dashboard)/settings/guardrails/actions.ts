@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
-	requireTeamMembership,
+	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 export type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
@@ -24,12 +24,12 @@ export async function updateGlobalGuardrailsSettings(
 	payload: GlobalGuardrailsSettingsPayload,
 ) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const update: any = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		updated_at: new Date().toISOString(),
 	};
 
@@ -64,8 +64,8 @@ export async function updateGlobalGuardrailsSettings(
 	}
 
 	const { error } = await supabase
-		.from("team_settings")
-		.upsert(update, { onConflict: "team_id" });
+		.from("workspace_settings")
+		.upsert(update, { onConflict: "workspace_id" });
 	if (error) throw error;
 
 	revalidatePath("/settings/guardrails");
@@ -101,14 +101,14 @@ export type GuardrailUpsertPayload = {
 
 export async function createGuardrail(payload: GuardrailUpsertPayload) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	if (!payload.name?.trim()) throw new Error("Name is required");
 
 	const row: any = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		name: payload.name.trim(),
 		description: payload.description ?? null,
 		enabled: payload.enabled ?? true,
@@ -157,7 +157,7 @@ export async function createGuardrail(payload: GuardrailUpsertPayload) {
 	row.monthly_limit_cost_nanos = budgets.monthlyCostNanos ?? 0;
 
 	const { data, error } = await supabase
-		.from("team_guardrails")
+		.from("workspace_guardrails")
 		.insert(row)
 		.select("id")
 		.maybeSingle();
@@ -170,9 +170,9 @@ export async function createGuardrail(payload: GuardrailUpsertPayload) {
 export async function updateGuardrail(id: string, payload: GuardrailUpsertPayload) {
 	if (!id) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	if (!payload.name?.trim()) throw new Error("Name is required");
 
@@ -225,10 +225,10 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 	row.monthly_limit_cost_nanos = budgets.monthlyCostNanos ?? 0;
 
 	const { error } = await supabase
-		.from("team_guardrails")
+		.from("workspace_guardrails")
 		.update(row)
 		.eq("id", id)
-		.eq("team_id", teamId);
+		.eq("workspace_id", workspaceId);
 	if (error) throw error;
 
 	revalidatePath("/settings/guardrails");
@@ -238,15 +238,15 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 export async function deleteGuardrail(id: string) {
 	if (!id) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const { error } = await supabase
-		.from("team_guardrails")
+		.from("workspace_guardrails")
 		.delete()
 		.eq("id", id)
-		.eq("team_id", teamId);
+		.eq("workspace_id", workspaceId);
 	if (error) throw error;
 
 	revalidatePath("/settings/guardrails");
@@ -256,18 +256,18 @@ export async function deleteGuardrail(id: string) {
 export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 	if (!guardrailId) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	// Ensure guardrail belongs to team.
 	const { data: guardrailRow, error: guardrailErr } = await supabase
-		.from("team_guardrails")
-		.select("id, team_id")
+		.from("workspace_guardrails")
+		.select("id, workspace_id")
 		.eq("id", guardrailId)
 		.maybeSingle();
 	if (guardrailErr) throw guardrailErr;
-	if (!guardrailRow?.id || guardrailRow.team_id !== teamId) {
+	if (!guardrailRow?.id || guardrailRow.workspace_id !== workspaceId) {
 		throw new Error("Guardrail not found");
 	}
 
@@ -275,10 +275,16 @@ export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 	if (keyIds.length) {
 		const { data: keyRows, error: keyErr } = await supabase
 			.from("keys")
-			.select("id, team_id")
+			.select("id, workspace_id, status")
 			.in("id", keyIds);
 		if (keyErr) throw keyErr;
-		const bad = (keyRows ?? []).some((k) => k.team_id !== teamId);
+		const keyRowMap = new Map((keyRows ?? []).map((k) => [k.id, k]));
+		const bad = keyIds.some((keyId) => {
+			const row = keyRowMap.get(keyId);
+			if (!row) return true;
+			if (row.workspace_id !== workspaceId) return true;
+			return String((row as any).status ?? "").toLowerCase() === "deleted";
+		});
 		if (bad) throw new Error("One or more keys do not belong to this workspace");
 	}
 

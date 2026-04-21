@@ -6,7 +6,7 @@ export type AppDetails = {
 	title: string;
 	url: string | null;
 	image_url: string | null;
-	team_id: string;
+	workspace_id: string;
 	is_active: boolean;
 	is_public: boolean;
 	last_seen: string;

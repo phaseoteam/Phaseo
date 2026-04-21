@@ -36,7 +36,7 @@ function encodePrefixedId(prefix: string, value: string): string {
 
 function makeBaseJob(overrides: Partial<VideoJobRecord>): VideoJobRecord {
 	return {
-		teamId: "team_1",
+		workspaceId: "team_1",
 		videoId: "vid_1",
 		nativeId: null,
 		provider: null,
@@ -128,7 +128,7 @@ describe("video-reconciliation provider polling", () => {
 
 		expect(loadByokKeyMock).toHaveBeenCalledWith(
 			expect.objectContaining({
-				teamId: "team_1",
+				workspaceId: "team_1",
 				providerId: "x-ai",
 			}),
 		);

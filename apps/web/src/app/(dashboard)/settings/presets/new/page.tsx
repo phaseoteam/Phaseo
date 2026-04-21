@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
 import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft } from "lucide-react";
@@ -65,7 +65,7 @@ async function NewPresetContent() {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const initialTeamId = await getTeamIdFromCookie();
+	const initialTeamId = await getWorkspaceIdFromCookie();
 
 	const [models, providers] = await Promise.all([
 		getAllModelsCached(await resolveIncludeHidden()),

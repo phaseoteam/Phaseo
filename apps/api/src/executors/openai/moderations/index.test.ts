@@ -9,7 +9,7 @@ function buildArgs(ir: IRModerationsRequest, providerModelSlug: string | null = 
 	return {
 		ir,
 		requestId: "req_openai_moderations_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "openai",
 		endpoint: "moderations",
 		protocol: "openai.moderations",

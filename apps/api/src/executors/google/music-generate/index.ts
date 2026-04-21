@@ -427,7 +427,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 
 		try {
-			await saveMusicJobMeta(args.teamId, args.requestId, {
+			await saveMusicJobMeta(args.workspaceId, args.requestId, {
 				provider: args.providerId,
 				model,
 				status: irResponse.status,
@@ -440,7 +440,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} catch (storeErr) {
 			console.error("google_music_job_meta_store_failed", {
 				error: storeErr,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				musicId: args.requestId,
 			});
 		}

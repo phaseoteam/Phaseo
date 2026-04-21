@@ -202,7 +202,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservationGateError: { status: number; type: string; message: string } | null = null;
 	try {
 		const reserved = await reserveVideoGenerationCredits({
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: `req_${args.requestId}`,
 			providerId: args.providerId,
 			model,
@@ -236,7 +236,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	} catch (reserveErr) {
 		console.error("wan_video_reservation_failed_pre_submit", {
 			error: reserveErr,
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			requestId: args.requestId,
 		});
 		reservationGateError = {
@@ -250,14 +250,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				reservationId,
 				releaseRefId: args.requestId,
 			});
 		} catch (releaseErr) {
 			console.error("wan_video_reservation_release_failed", {
 				error: releaseErr,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: args.requestId,
 				reservationId,
 			});
@@ -386,7 +386,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						? json.id
 						: String(irResponse.nativeId);
 		try {
-			await saveVideoJobMeta(args.teamId, args.requestId, {
+			await saveVideoJobMeta(args.workspaceId, args.requestId, {
 				provider: args.providerId,
 				providerTaskId: taskId,
 				requestId: args.requestId,
@@ -409,7 +409,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} catch (err) {
 			console.error("wan_video_job_meta_store_failed", {
 				error: err,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: String(irResponse.nativeId),
 				requestId: args.requestId,
 				reservationId,

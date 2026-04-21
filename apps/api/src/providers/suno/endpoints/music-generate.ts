@@ -197,7 +197,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
 	if (res.ok && normalized?.id) {
 		try {
-			await saveMusicJobMeta(args.teamId, String(normalized.id), {
+			await saveMusicJobMeta(args.workspaceId, String(normalized.id), {
 				provider: "suno",
 				model: String(model ?? typedPayload.model ?? ""),
 				duration: typeof typedPayload.duration === "number" ? typedPayload.duration : null,
@@ -209,7 +209,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		} catch (err) {
 			console.error("suno_music_job_meta_store_failed", {
 				error: err,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				musicId: normalized.id,
 			});
 		}

@@ -3,7 +3,7 @@
 
 CREATE TABLE public.api_apps (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   app_key text NOT NULL,
   title text NOT NULL,
   url text NOT NULL,
@@ -14,11 +14,11 @@ CREATE TABLE public.api_apps (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT api_apps_pkey PRIMARY KEY (id),
-  CONSTRAINT api_apps_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+  CONSTRAINT api_apps_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id)
 );
 CREATE TABLE public.byok_keys (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   provider_id text NOT NULL,
   name text NOT NULL,
   enabled boolean NOT NULL DEFAULT true,
@@ -37,12 +37,12 @@ CREATE TABLE public.byok_keys (
   verification_status text NOT NULL DEFAULT 'unknown'::text,
   error_message text,
   CONSTRAINT byok_keys_pkey PRIMARY KEY (id),
-  CONSTRAINT byok_keys_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
+  CONSTRAINT byok_keys_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id),
   CONSTRAINT byok_keys_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.credit_ledger (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   event_time timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   kind text NOT NULL,
   amount_nanos bigint NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE public.credit_ledger (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   status text,
   CONSTRAINT credit_ledger_pkey PRIMARY KEY (id),
-  CONSTRAINT credit_ledger_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+  CONSTRAINT credit_ledger_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id)
 );
 CREATE TABLE public.data_api_model_aliases (
   alias_slug text NOT NULL,
@@ -268,7 +268,7 @@ CREATE TABLE public.data_subscription_plans (
 CREATE TABLE public.gateway_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   request_id text NOT NULL,
   app_id uuid,
   endpoint text NOT NULL,
@@ -290,12 +290,12 @@ CREATE TABLE public.gateway_requests (
   key_id uuid,
   throughput numeric,
   CONSTRAINT gateway_requests_pkey PRIMARY KEY (id),
-  CONSTRAINT gateway_requests_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
+  CONSTRAINT gateway_requests_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id),
   CONSTRAINT gateway_requests_key_id_fkey FOREIGN KEY (key_id) REFERENCES public.keys(id)
 );
 CREATE TABLE public.keys (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   name text NOT NULL,
   hash text NOT NULL UNIQUE,
   prefix text NOT NULL,
@@ -314,13 +314,13 @@ CREATE TABLE public.keys (
   monthly_limit_cost_nanos bigint NOT NULL DEFAULT 0,
   CONSTRAINT keys_pkey PRIMARY KEY (id),
   CONSTRAINT keys_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
-  CONSTRAINT keys_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+  CONSTRAINT keys_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id)
 );
-CREATE TABLE public.team_invites (
+CREATE TABLE public.workspace_invites (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   creator_user_id uuid NOT NULL,
-  role USER-DEFINED NOT NULL DEFAULT 'member'::team_role,
+  role USER-DEFINED NOT NULL DEFAULT 'member'::workspace_role,
   expires_at timestamp with time zone NOT NULL DEFAULT (now() + '7 days'::interval),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   max_uses integer,
@@ -330,35 +330,35 @@ CREATE TABLE public.team_invites (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   token_fingerprint text,
   key_version smallint NOT NULL DEFAULT 1,
-  CONSTRAINT team_invites_pkey PRIMARY KEY (id),
-  CONSTRAINT team_invites_inviter_user_id_fkey FOREIGN KEY (creator_user_id) REFERENCES public.users(user_id),
-  CONSTRAINT team_invites_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+  CONSTRAINT workspace_invites_pkey PRIMARY KEY (id),
+  CONSTRAINT workspace_invites_inviter_user_id_fkey FOREIGN KEY (creator_user_id) REFERENCES public.users(user_id),
+  CONSTRAINT workspace_invites_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id)
 );
-CREATE TABLE public.team_join_requests (
+CREATE TABLE public.workspace_join_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  team_id uuid NOT NULL,
+  workspace_id uuid NOT NULL,
   invite_id uuid,
   requester_user_id uuid NOT NULL,
   status USER-DEFINED NOT NULL DEFAULT 'pending'::join_request_status,
   decided_by uuid,
   decided_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT team_join_requests_pkey PRIMARY KEY (id),
-  CONSTRAINT team_join_requests_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(user_id),
-  CONSTRAINT team_join_requests_invite_id_fkey FOREIGN KEY (invite_id) REFERENCES public.team_invites(id),
-  CONSTRAINT team_join_requests_requester_user_id_fkey FOREIGN KEY (requester_user_id) REFERENCES public.users(user_id),
-  CONSTRAINT team_join_requests_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+  CONSTRAINT workspace_join_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT workspace_join_requests_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES public.users(user_id),
+  CONSTRAINT workspace_join_requests_invite_id_fkey FOREIGN KEY (invite_id) REFERENCES public.workspace_invites(id),
+  CONSTRAINT workspace_join_requests_requester_user_id_fkey FOREIGN KEY (requester_user_id) REFERENCES public.users(user_id),
+  CONSTRAINT workspace_join_requests_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id)
 );
-CREATE TABLE public.team_members (
-  team_id uuid NOT NULL,
+CREATE TABLE public.workspace_members (
+  workspace_id uuid NOT NULL,
   user_id uuid NOT NULL,
   role USER-DEFINED NOT NULL,
   joined_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
-  CONSTRAINT team_members_pkey PRIMARY KEY (team_id, user_id),
-  CONSTRAINT team_members_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
-  CONSTRAINT team_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+  CONSTRAINT workspace_members_pkey PRIMARY KEY (workspace_id, user_id),
+  CONSTRAINT workspace_members_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id),
+  CONSTRAINT workspace_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.teams (
+CREATE TABLE public.workspaces (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
   slug text NOT NULL UNIQUE,
@@ -389,17 +389,17 @@ CREATE TABLE public.user_recovery_codes (
 CREATE TABLE public.users (
   user_id uuid NOT NULL,
   display_name text,
-  default_team_id uuid,
+  default_workspace_id uuid,
   obfuscate_info boolean NOT NULL DEFAULT false,
   created_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   updated_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   role USER-DEFINED NOT NULL DEFAULT 'user'::user_role,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
-  CONSTRAINT users_default_team_id_fkey FOREIGN KEY (default_team_id) REFERENCES public.teams(id),
+  CONSTRAINT users_default_workspace_id_fkey FOREIGN KEY (default_workspace_id) REFERENCES public.workspaces(id),
   CONSTRAINT users_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.wallets (
-  team_id uuid NOT NULL UNIQUE,
+  workspace_id uuid NOT NULL UNIQUE,
   stripe_customer_id text NOT NULL,
   balance_nanos bigint NOT NULL DEFAULT '0'::bigint,
   auto_top_up_enabled boolean NOT NULL DEFAULT false,
@@ -407,6 +407,6 @@ CREATE TABLE public.wallets (
   auto_top_up_amount bigint NOT NULL DEFAULT '0'::bigint,
   updated_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   auto_top_up_account_id text,
-  CONSTRAINT wallets_pkey PRIMARY KEY (team_id),
-  CONSTRAINT wallets_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id)
+  CONSTRAINT wallets_pkey PRIMARY KEY (workspace_id),
+  CONSTRAINT wallets_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id)
 );

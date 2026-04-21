@@ -18,8 +18,8 @@ export async function userHasPaidTeamAccess(
 	userId: string
 ): Promise<boolean> {
 	const { data: memberships, error: membershipsError } = await admin
-		.from("team_members")
-		.select("team_id, role")
+		.from("workspace_members")
+		.select("workspace_id, role")
 		.eq("user_id", userId);
 
 	if (membershipsError) throw membershipsError;
@@ -31,7 +31,7 @@ export async function userHasPaidTeamAccess(
 					const role = String(row?.role ?? "").toLowerCase();
 					return role === "owner" || role === "admin";
 				})
-				.map((row: any) => String(row?.team_id ?? ""))
+				.map((row: any) => String(row?.workspace_id ?? ""))
 				.filter(Boolean)
 		)
 	);
@@ -46,18 +46,18 @@ export async function userHasPaidTeamAccess(
 		admin
 			.from("credit_ledger")
 			.select("id", { count: "exact", head: true })
-			.in("team_id", adminTeamIds)
+			.in("workspace_id", adminTeamIds)
 			.in("kind", [...TOP_UP_LEDGER_KINDS])
 			.in("status", [...SUCCESS_PAYMENT_STATUSES])
 			.gt("amount_nanos", 0),
 		admin
-			.from("team_invoices")
+			.from("workspace_invoices")
 			.select("id", { count: "exact", head: true })
-			.in("team_id", adminTeamIds)
+			.in("workspace_id", adminTeamIds)
 			.eq("status", "paid")
 			.gt("amount_nanos", 0),
 		admin
-			.from("teams")
+			.from("workspaces")
 			.select("id", { count: "exact", head: true })
 			.in("id", adminTeamIds)
 			.eq("tier", "enterprise"),
@@ -76,12 +76,12 @@ export async function userHasPaidTeamAccess(
 
 export async function enforceTeamKeyLimit(
 	supabase: DbClient,
-	teamId: string
+	workspaceId: string
 ): Promise<void> {
 	const { data: teamRow, error: teamError } = await supabase
-		.from("teams")
+		.from("workspaces")
 		.select("tier")
-		.eq("id", teamId)
+		.eq("id", workspaceId)
 		.maybeSingle();
 
 	if (teamError) throw teamError;
@@ -98,12 +98,13 @@ export async function enforceTeamKeyLimit(
 		supabase
 			.from("keys")
 			.select("id", { count: "exact", head: true })
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
+			.neq("status", "deleted")
 			.neq("name", CHAT_MANAGED_KEY_NAME),
 		supabase
 			.from("management_keys")
 			.select("id", { count: "exact", head: true })
-			.eq("team_id", teamId),
+			.eq("workspace_id", workspaceId),
 	]);
 
 	if (apiKeyCountError) throw apiKeyCountError;

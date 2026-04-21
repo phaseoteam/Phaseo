@@ -21,8 +21,8 @@ WITH base AS (
         r.requests,
         r.total_tokens,
         r.total_cost_nanos
-    FROM public.gateway_usage_rollup_15m_team_provider_model r
-    WHERE r.team_id = p_team
+    FROM public.gateway_usage_rollup_15m_workspace_provider_model r
+    WHERE r.workspace_id = p_team
       AND r.bucket_15m >= p_from
       AND r.bucket_15m <= p_to
       AND (p_key_id IS NULL OR r.key_id = p_key_id)

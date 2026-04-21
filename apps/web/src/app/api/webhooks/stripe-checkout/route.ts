@@ -29,7 +29,7 @@ function readPaymentMethodId(pi: Stripe.PaymentIntent): string | null {
 }
 
 function readTeamIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | null {
-    const raw = typeof pi.metadata?.team_id === "string" ? pi.metadata.team_id.trim() : "";
+    const raw = typeof pi.metadata?.workspace_id === "string" ? pi.metadata.workspace_id.trim() : "";
     return raw.length > 0 ? raw : null;
 }
 
@@ -45,7 +45,7 @@ function readCustomerIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | nul
 }
 
 type WalletAttributionRow = {
-    team_id: string;
+    workspace_id: string;
     stripe_customer_id: string | null;
     balance_nanos?: number | null;
 };
@@ -59,8 +59,8 @@ async function resolveWalletForTopUpPaymentIntent(args: {
 }): Promise<WalletAttributionRow | null> {
     const { supabase, paymentIntentId, stripeCustomerId, metadataTeamId, includeBalance = false } = args;
     const walletSelect = includeBalance
-        ? "team_id,stripe_customer_id,balance_nanos"
-        : "team_id,stripe_customer_id";
+        ? "workspace_id,stripe_customer_id,balance_nanos"
+        : "workspace_id,stripe_customer_id";
 
     if (stripeCustomerId) {
         const { data: byCustomerWalletRaw, error: byCustomerErr } = await supabase
@@ -70,7 +70,7 @@ async function resolveWalletForTopUpPaymentIntent(args: {
             .maybeSingle();
         if (byCustomerErr) throw byCustomerErr;
         const byCustomerWallet = (byCustomerWalletRaw ?? null) as WalletAttributionRow | null;
-        if (byCustomerWallet?.team_id) {
+        if (byCustomerWallet?.workspace_id) {
             return byCustomerWallet;
         }
     }
@@ -80,18 +80,18 @@ async function resolveWalletForTopUpPaymentIntent(args: {
     const { data: byTeamWalletRaw, error: byTeamErr } = await supabase
         .from("wallets")
         .select(walletSelect as any)
-        .eq("team_id", metadataTeamId)
+        .eq("workspace_id", metadataTeamId)
         .maybeSingle();
     if (byTeamErr) throw byTeamErr;
     const byTeamWallet = (byTeamWalletRaw ?? null) as WalletAttributionRow | null;
-    if (!byTeamWallet?.team_id) return null;
+    if (!byTeamWallet?.workspace_id) return null;
 
     const resolvedWallet = byTeamWallet;
     if (!stripeCustomerId || resolvedWallet.stripe_customer_id === stripeCustomerId) {
         if (!stripeCustomerId) {
-            console.warn("[stripe-webhook] Resolved wallet without customer via metadata team_id fallback", {
+            console.warn("[stripe-webhook] Resolved wallet without customer via metadata workspace_id fallback", {
                 paymentIntentId,
-                teamId: resolvedWallet.team_id,
+                workspaceId: resolvedWallet.workspace_id,
             });
         }
         return resolvedWallet;
@@ -100,7 +100,7 @@ async function resolveWalletForTopUpPaymentIntent(args: {
     const updateQuery = supabase
         .from("wallets")
         .update({ stripe_customer_id: stripeCustomerId })
-        .eq("team_id", resolvedWallet.team_id);
+        .eq("workspace_id", resolvedWallet.workspace_id);
     if (resolvedWallet.stripe_customer_id) {
         updateQuery.eq("stripe_customer_id", resolvedWallet.stripe_customer_id);
     } else {
@@ -111,7 +111,7 @@ async function resolveWalletForTopUpPaymentIntent(args: {
     if (backfillErr) {
         console.warn("[stripe-webhook] Failed to refresh wallet stripe_customer_id from metadata fallback", {
             paymentIntentId,
-            teamId: resolvedWallet.team_id,
+            workspaceId: resolvedWallet.workspace_id,
             existingCustomerId: resolvedWallet.stripe_customer_id,
             newCustomerId: stripeCustomerId,
             error: backfillErr.message,
@@ -121,7 +121,7 @@ async function resolveWalletForTopUpPaymentIntent(args: {
 
     console.log("[stripe-webhook] Refreshed wallet stripe_customer_id from metadata fallback", {
         paymentIntentId,
-        teamId: resolvedWallet.team_id,
+        workspaceId: resolvedWallet.workspace_id,
         previousCustomerId: resolvedWallet.stripe_customer_id,
         newCustomerId: stripeCustomerId,
     });
@@ -253,16 +253,16 @@ async function upsertTeamInvoiceFromStripeInvoice(args: {
     if (!stripeInvoiceId) return;
 
     const { data: existing } = await supabase
-        .from("team_invoices")
-        .select("team_id,period_start,period_end")
+        .from("workspace_invoices")
+        .select("workspace_id,period_start,period_end")
         .eq("stripe_invoice_id", stripeInvoiceId)
         .maybeSingle();
 
-    const teamId =
-        existing?.team_id ??
-        invoiceMetadataValue(invoice, "team_id");
-    if (!teamId) {
-        console.warn("[stripe-webhook] invoice event missing team_id metadata", {
+    const workspaceId =
+        existing?.workspace_id ??
+        invoiceMetadataValue(invoice, "workspace_id");
+    if (!workspaceId) {
+        console.warn("[stripe-webhook] invoice event missing workspace_id metadata", {
             stripeInvoiceId,
             eventStatus: invoice.status ?? null,
         });
@@ -283,7 +283,7 @@ async function upsertTeamInvoiceFromStripeInvoice(args: {
     if (!periodStart || !periodEnd) {
         console.warn("[stripe-webhook] invoice event missing period metadata", {
             stripeInvoiceId,
-            teamId,
+            workspaceId,
         });
         return;
     }
@@ -291,7 +291,7 @@ async function upsertTeamInvoiceFromStripeInvoice(args: {
     const status = forceStatus ?? mapStripeInvoiceStatus(invoice.status);
     const amountNanos = Number(invoice.amount_due ?? invoice.total ?? 0) * 10_000_000;
     const row = {
-        team_id: teamId,
+        workspace_id: workspaceId,
         period_start: periodStart,
         period_end: periodEnd,
         amount_nanos: Math.max(0, Number.isFinite(amountNanos) ? amountNanos : 0),
@@ -305,8 +305,8 @@ async function upsertTeamInvoiceFromStripeInvoice(args: {
         updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("team_invoices").upsert([row], {
-        onConflict: "team_id,period_start,period_end",
+    const { error } = await supabase.from("workspace_invoices").upsert([row], {
+        onConflict: "workspace_id,period_start,period_end",
     });
     if (error) throw error;
 }
@@ -369,7 +369,7 @@ export async function POST(req: Request) {
                     includeBalance: true,
                 });
 
-                if (!wallet?.team_id) break;
+                if (!wallet?.workspace_id) break;
 
                 const beforeBalanceNanos = Number(wallet.balance_nanos ?? 0);
 
@@ -378,7 +378,7 @@ export async function POST(req: Request) {
                     .upsert(
                         [
                             {
-                                team_id: wallet.team_id,
+                                workspace_id: wallet.workspace_id,
                                 kind: toLedgerKind(purpose),
                                 amount_nanos: 0,
                                 before_balance_nanos: beforeBalanceNanos,
@@ -418,7 +418,7 @@ export async function POST(req: Request) {
                     metadataTeamId,
                 });
 
-                if (!wallet?.team_id) break;
+                if (!wallet?.workspace_id) break;
 
                 const grossCents = Number(pi.amount_received ?? pi.amount ?? 0);
                 // Stripe amounts are in cents; convert to nanos (1 USD = 1e9 nanos).
@@ -426,9 +426,9 @@ export async function POST(req: Request) {
 
                 // Fetch the team's CURRENT tier from database (includes instant upgrades)
                 const { data: teamData, error: teamErr } = await supabase
-                    .from('teams')
+                    .from('workspaces')
                     .select('tier')
-                    .eq('id', wallet.team_id)
+                    .eq('id', wallet.workspace_id)
                     .single();
 
                 if (teamErr) {
@@ -439,7 +439,7 @@ export async function POST(req: Request) {
                 const tier = teamData?.tier ?? 'basic';
                 const feePct = 5.0;
 
-                console.log(`[stripe-webhook] Team ${wallet.team_id} tier: ${tier}, fee: ${feePct}%`);
+                console.log(`[stripe-webhook] Team ${wallet.workspace_id} tier: ${tier}, fee: ${feePct}%`);
 
                 if (paymentMethodId && stripeCustomerId) {
                     try {
@@ -457,7 +457,7 @@ export async function POST(req: Request) {
                 const { netNanos, feeNanos } = computeNetAndFeeFromGross(grossNanos, feePct);
                 const kind = toLedgerKind(purpose);
                 const { data: appliedRows, error: applyErr } = await supabase.rpc("stripe_apply_payment_intent_credit", {
-                    p_team_id: wallet.team_id,
+                    p_workspace_id: wallet.workspace_id,
                     p_payment_intent_id: pi.id,
                     p_kind: kind,
                     p_amount_nanos: netNanos,
@@ -509,13 +509,13 @@ export async function POST(req: Request) {
 
                 const { data: piLedger } = await supabase
                     .from("credit_ledger")
-                    .select("team_id, amount_nanos")
+                    .select("workspace_id, amount_nanos")
                     .eq("ref_type", "Stripe_Payment_Intent")
                     .eq("ref_id", piId)
                     .maybeSingle();
 
-                const teamId = piLedger?.team_id ?? null;
-                if (!teamId) {
+                const workspaceId = piLedger?.workspace_id ?? null;
+                if (!workspaceId) {
                     console.warn("[stripe-webhook] refund.created: no matching payment ledger entry", {
                         refundId: refund.id,
                         paymentIntentId: piId,
@@ -540,7 +540,7 @@ export async function POST(req: Request) {
                 const { data: currentWallet } = await supabase
                     .from("wallets")
                     .select("balance_nanos")
-                    .eq("team_id", teamId)
+                    .eq("workspace_id", workspaceId)
                     .maybeSingle();
                 const currentBalance = Number(currentWallet?.balance_nanos ?? 0);
 
@@ -548,7 +548,7 @@ export async function POST(req: Request) {
                 await supabase.from("credit_ledger").upsert(
                     [
                         {
-                            team_id: teamId,
+                            workspace_id: workspaceId,
                             kind: "refund",
                             amount_nanos: negativeNetNanos,
                             before_balance_nanos: currentBalance,
@@ -583,7 +583,7 @@ export async function POST(req: Request) {
                 if (mappedStatus === "Succeeded") {
                     const { data: refRow } = await supabase
                         .from("credit_ledger")
-                        .select("team_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
+                        .select("workspace_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
                         .eq("ref_type", "Stripe_Refund")
                         .eq("ref_id", refund.id)
                         .maybeSingle();
@@ -594,19 +594,19 @@ export async function POST(req: Request) {
                     const alreadyApplied = priorStatus === "succeeded" && priorBefore !== priorAfter;
 
                     if (!alreadyApplied) {
-                        const applyTeamId = refRow?.team_id ?? teamId;
+                        const applyTeamId = refRow?.workspace_id ?? workspaceId;
                         const applyDeltaNanos = Number(refRow?.amount_nanos ?? negativeNetNanos);
 
                         if (applyTeamId && applyDeltaNanos < 0) {
                             const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
-                                p_team_id: applyTeamId,
+                                p_workspace_id: applyTeamId,
                                 p_delta_nanos: applyDeltaNanos,
                             });
 
                             if (deltaErr) {
                                 console.error("[stripe-webhook] wallet_apply_delta failed for refund.created", {
                                     refundId: refund.id,
-                                    teamId: applyTeamId,
+                                    workspaceId: applyTeamId,
                                     error: deltaErr.message,
                                 });
                                 throw deltaErr;
@@ -638,7 +638,7 @@ export async function POST(req: Request) {
                 const status = refund.status as string | undefined;
                 const { data: existingRefundRow } = await supabase
                     .from("credit_ledger")
-                    .select("team_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
+                    .select("workspace_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
                     .eq("ref_type", "Stripe_Refund")
                     .eq("ref_id", refund.id)
                     .maybeSingle();
@@ -665,31 +665,31 @@ export async function POST(req: Request) {
                     .eq("ref_id", refund.id);
 
                 if (status === "succeeded" && !alreadyApplied) {
-                    let teamId = existingRefundRow?.team_id ?? null;
+                    let workspaceId = existingRefundRow?.workspace_id ?? null;
                     let refundNetNegativeNanos = Number(existingRefundRow?.amount_nanos ?? 0);
 
-                    if (!teamId) {
+                    if (!workspaceId) {
                         const { data: fallbackRow } = await supabase
                             .from("credit_ledger")
-                            .select("team_id, amount_nanos")
+                            .select("workspace_id, amount_nanos")
                             .eq("ref_type", "Stripe_Refund")
                             .eq("ref_id", refund.id)
                             .maybeSingle();
-                        teamId = fallbackRow?.team_id ?? null;
+                        workspaceId = fallbackRow?.workspace_id ?? null;
                         refundNetNegativeNanos = Number(fallbackRow?.amount_nanos ?? 0);
                     }
 
-                    if (teamId && refundNetNegativeNanos < 0) {
+                    if (workspaceId && refundNetNegativeNanos < 0) {
                         // Use atomic RPC to prevent race conditions with concurrent balance changes
                         const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
-                            p_team_id: teamId,
+                            p_workspace_id: workspaceId,
                             p_delta_nanos: refundNetNegativeNanos,
                         });
 
                         if (deltaErr) {
                             console.error("[stripe-webhook] wallet_apply_delta failed for refund", {
                                 refundId: refund.id,
-                                teamId,
+                                workspaceId,
                                 error: deltaErr.message,
                             });
                             throw deltaErr;

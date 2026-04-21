@@ -235,7 +235,7 @@ async function resolveProviderScopedModelToApiModel(args: {
 }
 
 async function fetchTestingProviderSnapshots(args: {
-    teamId: string;
+    workspaceId: string;
     model: string;
     requestedModel: string;
     endpoint: string;
@@ -344,7 +344,7 @@ async function fetchTestingProviderSnapshots(args: {
         const { data: byokRows, error: byokError } = await supabase
             .from("byok_keys")
             .select("id,provider_id,fingerprint_sha256,key_version,always_use")
-            .eq("team_id", args.teamId)
+            .eq("workspace_id", args.workspaceId)
             .eq("enabled", true)
             .in("provider_id", providerIds);
         if (!byokError && byokRows?.length) {
@@ -412,7 +412,7 @@ async function fetchTestingProviderSnapshots(args: {
 }
 
 export async function fetchGatewayContext(args: {
-    teamId: string;
+    workspaceId: string;
     model: string;
     endpoint: string;
     apiKeyId: string;
@@ -446,11 +446,11 @@ export async function fetchGatewayContext(args: {
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
     const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
-    const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.apiKeyId}:${versionToken}`;
+    const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     const staticCacheKey = isPreset
-        ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.model}:${args.endpoint}`
-        : `${STATIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.endpoint}:${args.model}`;
-    const compositionCacheKey = `${CONTEXT_CACHE_PREFIX}:compose:${testingModeCacheSegment}:${args.teamId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
+        ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.model}:${args.endpoint}`
+        : `${STATIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.endpoint}:${args.model}`;
+    const compositionCacheKey = `${CONTEXT_CACHE_PREFIX}:compose:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
 
     // Try split cache first (parallel read of dynamic and static segments).
     if (shouldUseCache) {
@@ -497,7 +497,7 @@ export async function fetchGatewayContext(args: {
     const dbLoader = (async (): Promise<GatewayContextData> => {
         async function fetchParsedContext(model: string, endpointCapability: string): Promise<GatewayContextData> {
             const rpcArgs = {
-                team_id: args.teamId,
+                workspace_id: args.workspaceId,
                 model,
                 endpoint: endpointCapability,
                 api_key_id: args.apiKeyId,
@@ -624,7 +624,7 @@ export async function fetchGatewayContext(args: {
         if (args.includeTestingMode) {
             try {
                 const testingProviders = await fetchTestingProviderSnapshots({
-                    teamId: args.teamId,
+                    workspaceId: args.workspaceId,
                     model: parsed.resolvedModel ?? args.model,
                     requestedModel: args.model,
                     endpoint: args.endpoint,
@@ -717,15 +717,15 @@ export async function fetchGatewayContext(args: {
 
             const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
                 supabase
-                    .from("team_settings")
+                    .from("workspace_settings")
                     .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,cache_aware_routing_enabled")
-                    .eq("team_id", args.teamId)
+                    .eq("workspace_id", args.workspaceId)
                     .maybeSingle(),
                 providerStatusQuery,
                 supabase
-                    .from("teams")
+                    .from("workspaces")
                     .select("billing_mode")
-                    .eq("id", args.teamId)
+                    .eq("id", args.workspaceId)
                     .maybeSingle(),
             ]);
 

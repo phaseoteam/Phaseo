@@ -45,7 +45,7 @@ export default function TeamsSettingsContainer({
 			? initialTeamId
 			: teams[0]?.id;
 
-	const [activeTeamId, setActiveTeamId] = React.useState<string | undefined>(
+	const [activeWorkspaceId, setActiveTeamId] = React.useState<string | undefined>(
 		getInitial()
 	);
 
@@ -56,26 +56,26 @@ export default function TeamsSettingsContainer({
 	}, [teams, manageableTeamIds]);
 
 	const canManageActiveTeam = Boolean(
-		activeTeamId && manageableTeamIds?.includes(activeTeamId)
+		activeWorkspaceId && manageableTeamIds?.includes(activeWorkspaceId)
 	);
 
 	const inviteableTeams = React.useMemo(() => {
 		if (!manageableTeams.length) return [];
-		if (!activeTeamId) return manageableTeams;
+		if (!activeWorkspaceId) return manageableTeams;
 		const idx = manageableTeams.findIndex(
-			(team) => team.id === activeTeamId
+			(team) => team.id === activeWorkspaceId
 		);
 		if (idx <= 0) return manageableTeams;
 		const ordered = manageableTeams.slice();
 		const [active] = ordered.splice(idx, 1);
 		ordered.unshift(active);
 		return ordered;
-	}, [manageableTeams, activeTeamId]);
+	}, [manageableTeams, activeWorkspaceId]);
 
 	// Keep client state in sync with server-provided initialTeamId when it changes
 	React.useEffect(() => {
 		const next = getInitial();
-		if (next !== activeTeamId) setActiveTeamId(next);
+		if (next !== activeWorkspaceId) setActiveTeamId(next);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [initialTeamId, teams?.length]);
 
@@ -94,7 +94,7 @@ export default function TeamsSettingsContainer({
 								<CreateTeamInviteDialog
 									currentUserId={currentUserId ?? undefined}
 									teams={inviteableTeams}
-									defaultTeamId={activeTeamId}
+									defaultWorkspaceId={activeWorkspaceId}
 								/>
 							) : null}
 						</>
@@ -106,7 +106,7 @@ export default function TeamsSettingsContainer({
 				<TeamSettingsPanel
 					teams={teams}
 					membersByTeam={membersByTeam}
-					teamId={activeTeamId}
+					workspaceId={activeWorkspaceId}
 					onTeamChange={(id) => setActiveTeamId(id)}
 					currentUserId={currentUserId}
 					personalTeamId={personalTeamId}
@@ -119,7 +119,7 @@ export default function TeamsSettingsContainer({
 					membersByTeam={membersByTeam}
 					requestsByTeam={requestsByTeam}
 					invitesByTeam={invitesByTeam}
-					activeTeamId={activeTeamId}
+					activeWorkspaceId={activeWorkspaceId}
 					onTeamChange={(id) => setActiveTeamId(id)}
 					currentUserId={currentUserId}
 					personalTeamId={personalTeamId}

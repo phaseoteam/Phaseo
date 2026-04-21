@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";
 import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
 import { Button } from "@/components/ui/button";
@@ -89,12 +89,12 @@ async function OAuthAppsContent() {
 		);
 	}
 
-	const initialTeamId = (await getTeamIdFromCookie()) ?? null;
+	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
 
 	const { data: oauthApps } = await supabase
 		.from("oauth_apps_with_stats")
 		.select("*")
-		.eq("team_id", initialTeamId)
+		.eq("workspace_id", initialTeamId)
 		.order("created_at", { ascending: false });
 
 	return (

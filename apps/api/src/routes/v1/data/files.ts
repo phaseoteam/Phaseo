@@ -95,7 +95,7 @@ async function handleUpload(req: Request) {
 	if (upstream.ok && payload) {
 		const fileId = toText(payload?.id);
 		if (fileId) {
-			await saveBatchFileMeta(auth.teamId, fileId, {
+			await saveBatchFileMeta(auth.workspaceId, fileId, {
 				provider: OPENAI_PROVIDER_ID,
 				status: toText(payload?.status) ?? "uploaded",
 				purpose: toText(payload?.purpose),
@@ -106,7 +106,7 @@ async function handleUpload(req: Request) {
 			}).catch((storeErr) => {
 				console.error("file_job_meta_store_failed", {
 					error: storeErr,
-					teamId: auth.teamId,
+					workspaceId: auth.workspaceId,
 					fileId,
 				});
 			});
@@ -125,7 +125,7 @@ async function handleList(req: Request) {
 	return err("not_supported", {
 		reason: "file_list_not_supported_with_shared_gateway_key",
 		request_id: requestId,
-		team_id: auth.teamId,
+		workspace_id: auth.workspaceId,
 	});
 }
 
@@ -141,15 +141,15 @@ async function handleRetrieve(req: Request, id: string) {
 		return err("validation_error", {
 			reason: "missing_file_id",
 			request_id: requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 		});
 	}
-	const owned = await getBatchFileMeta(auth.teamId, fileId);
+	const owned = await getBatchFileMeta(auth.workspaceId, fileId);
 	if (!owned) {
 		return err("not_found", {
 			reason: "file_not_found_or_not_owned",
 			request_id: requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 			file_id: fileId,
 		});
 	}
@@ -160,7 +160,7 @@ async function handleRetrieve(req: Request, id: string) {
 	});
 	const payload = await parseUpstreamJson(upstream);
 	if (upstream.ok && payload) {
-		await saveBatchFileMeta(auth.teamId, fileId, {
+		await saveBatchFileMeta(auth.workspaceId, fileId, {
 			provider: OPENAI_PROVIDER_ID,
 			status: toText(payload?.status) ?? owned.status ?? "available",
 			purpose: toText(payload?.purpose) ?? owned.purpose ?? null,
@@ -171,7 +171,7 @@ async function handleRetrieve(req: Request, id: string) {
 		}).catch((storeErr) => {
 			console.error("file_job_meta_refresh_failed", {
 				error: storeErr,
-				teamId: auth.teamId,
+				workspaceId: auth.workspaceId,
 				fileId,
 			});
 		});
@@ -191,15 +191,15 @@ async function handleRetrieveContent(req: Request, id: string) {
 		return err("validation_error", {
 			reason: "missing_file_id",
 			request_id: requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 		});
 	}
-	const owned = await getBatchFileMeta(auth.teamId, fileId);
+	const owned = await getBatchFileMeta(auth.workspaceId, fileId);
 	if (!owned) {
 		return err("not_found", {
 			reason: "file_not_found_or_not_owned",
 			request_id: requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 			file_id: fileId,
 		});
 	}

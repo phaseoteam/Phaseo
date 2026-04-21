@@ -20,17 +20,17 @@ function orderedMetas(meta: ByokKeyMeta[]): ByokKeyMeta[] {
 }
 
 export async function loadByokKey(options: {
-    teamId: string;
+    workspaceId: string;
     providerId: string;
     metaList: ByokKeyMeta[];
 }): Promise<ByokResolution | null> {
-    const { teamId, providerId, metaList } = options;
+    const { workspaceId, providerId, metaList } = options;
     if (!metaList.length) {
-        // console.log(`[DEBUG BYOK] No byokMeta provided for team ${teamId}, provider ${providerId}`);
+        // console.log(`[DEBUG BYOK] No byokMeta provided for team ${workspaceId}, provider ${providerId}`);
         return null;
     }
 
-    // console.log(`[DEBUG BYOK] Loading BYOK for team ${teamId}, provider ${providerId}, meta count: ${metaList.length}`);
+    // console.log(`[DEBUG BYOK] Loading BYOK for team ${workspaceId}, provider ${providerId}, meta count: ${metaList.length}`);
 
     const supabase = getSupabaseAdmin();
     const ordered = orderedMetas(metaList);
@@ -42,7 +42,7 @@ export async function loadByokKey(options: {
                 .from("byok_keys")
                 .select("id, key_version, enc_iv, enc_value, enc_tag, enc_iv_b64, enc_ct_b64, enc_tag_b64, enc_b64")
                 .eq("id", meta.id)
-                .eq("team_id", teamId)
+                .eq("workspace_id", workspaceId)
                 .eq("provider_id", providerId)
                 .eq("enabled", true)
                 .maybeSingle();
@@ -62,7 +62,7 @@ export async function loadByokKey(options: {
                 enc_ct_b64: (data as any).enc_ct_b64,
                 enc_tag_b64: (data as any).enc_tag_b64,
                 enc_b64: (data as any).enc_b64,
-                team_id: teamId,
+                workspace_id: workspaceId,
                 provider_id: providerId,
             });
 
@@ -90,7 +90,7 @@ export async function loadByokKey(options: {
         }
     }
 
-    // console.log(`[DEBUG BYOK] No BYOK keys found for team ${teamId}, provider ${providerId}`);
+    // console.log(`[DEBUG BYOK] No BYOK keys found for team ${workspaceId}, provider ${providerId}`);
     return null;
 }
 

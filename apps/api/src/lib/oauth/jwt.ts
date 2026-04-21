@@ -9,7 +9,7 @@
  * 2. Fetch JWKS (with caching) to get public key
  * 3. Verify JWT signature using public key
  * 4. Validate standard claims (exp, iat, iss, aud)
- * 5. Extract custom claims (user_id, team_id, client_id)
+ * 5. Extract custom claims (user_id, workspace_id, client_id)
  */
 
 export interface JWTClaims {
@@ -23,7 +23,7 @@ export interface JWTClaims {
 
 	// Custom claims
 	user_id: string;
-	team_id: string;
+	workspace_id: string;
 	client_id: string;
 	scope?: string;
 
@@ -115,8 +115,8 @@ export function validateClaims(
 	if (!claims.user_id || typeof claims.user_id !== "string") {
 		return { valid: false, error: "Missing user_id claim" };
 	}
-	if (!claims.team_id || typeof claims.team_id !== "string") {
-		return { valid: false, error: "Missing team_id claim" };
+	if (!claims.workspace_id || typeof claims.workspace_id !== "string") {
+		return { valid: false, error: "Missing workspace_id claim" };
 	}
 	if (!claims.client_id || typeof claims.client_id !== "string") {
 		return { valid: false, error: "Missing client_id claim" };

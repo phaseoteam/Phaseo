@@ -19,7 +19,7 @@ export async function recordUsageAndChargeOnce(args: {
 	try {
 		await recordUsageAndCharge({
 			requestId: ctx.requestId,
-			teamId: ctx.teamId,
+			workspaceId: ctx.workspaceId,
 			cost_nanos: costNanos,
 		});
 		meta.__usageChargeRecorded = true;
@@ -27,7 +27,7 @@ export async function recordUsageAndChargeOnce(args: {
 		console.error("recordUsageAndCharge failed", {
 			error: chargeErr,
 			requestId: ctx.requestId,
-			teamId: ctx.teamId,
+			workspaceId: ctx.workspaceId,
 			endpoint,
 			cost_nanos: costNanos,
 		});

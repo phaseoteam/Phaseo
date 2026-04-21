@@ -120,14 +120,14 @@ function normalizeProgressBucket(progress: number | null | undefined): number | 
 }
 
 export async function dispatchVideoWebhookEvent(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	eventType: VideoWebhookEventType;
 	progress?: number | null;
 	force?: boolean;
 	baseUrl?: string | null;
 }): Promise<boolean> {
-	const record = await getVideoJobRecord(args.teamId, args.videoId);
+	const record = await getVideoJobRecord(args.workspaceId, args.videoId);
 	if (!record) return false;
 	const meta = record.meta;
 	const webhook = extractWebhookConfig(meta);
@@ -143,7 +143,7 @@ export async function dispatchVideoWebhookEvent(args: {
 	const download = status === "completed"
 		? await issueSignedVideoDownloadUrl({
 			baseUrl,
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: args.videoId,
 			index: 0,
 		})
@@ -174,7 +174,7 @@ export async function dispatchVideoWebhookEvent(args: {
 	if (!res.ok) {
 		const preview = await res.text().catch(() => "");
 		console.error("video_user_webhook_failed", {
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: args.videoId,
 			eventType: args.eventType,
 			status: res.status,
@@ -182,7 +182,7 @@ export async function dispatchVideoWebhookEvent(args: {
 		});
 		return false;
 	}
-	await patchVideoJobMeta(args.teamId, args.videoId, {
+	await patchVideoJobMeta(args.workspaceId, args.videoId, {
 		webhookDeliveries: {
 			...deliveries,
 			[deliveryKey]: new Date().toISOString(),
@@ -194,7 +194,7 @@ export async function dispatchVideoWebhookEvent(args: {
 }
 
 export function dispatchVideoWebhookEventInBackground(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	eventType: VideoWebhookEventType;
 	progress?: number | null;
@@ -205,7 +205,7 @@ export function dispatchVideoWebhookEventInBackground(args: {
 		dispatchVideoWebhookEvent(args).catch((error) => {
 			console.error("video_user_webhook_background_failed", {
 				error,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: args.videoId,
 				eventType: args.eventType,
 			});
@@ -214,7 +214,7 @@ export function dispatchVideoWebhookEventInBackground(args: {
 }
 
 export function dispatchVideoProgressWebhookInBackground(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	progress: number;
 	force?: boolean;

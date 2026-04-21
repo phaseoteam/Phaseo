@@ -84,14 +84,14 @@ function parseBatchFileMeta(value: unknown): BatchFileMeta | null {
 }
 
 export async function saveBatchJobMeta(
-	teamId: string,
+	workspaceId: string,
 	batchId: string,
 	meta: BatchJobMeta,
 ): Promise<void> {
-	if (!teamId || !batchId) return;
+	if (!workspaceId || !batchId) return;
 	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now() };
 	await upsertAsyncOperation({
-		teamId,
+		workspaceId,
 		kind: "batch",
 		internalId: batchId,
 		requestId: payload.requestId ?? null,
@@ -105,9 +105,9 @@ export async function saveBatchJobMeta(
 	});
 }
 
-export async function getBatchJobMeta(teamId: string, batchId: string): Promise<BatchJobMeta | null> {
-	if (!teamId || !batchId) return null;
-	const record = await getAsyncOperation(teamId, "batch", batchId);
+export async function getBatchJobMeta(workspaceId: string, batchId: string): Promise<BatchJobMeta | null> {
+	if (!workspaceId || !batchId) return null;
+	const record = await getAsyncOperation(workspaceId, "batch", batchId);
 	if (!record) return null;
 	const merged = {
 		...(record.meta ?? {}),
@@ -119,14 +119,14 @@ export async function getBatchJobMeta(teamId: string, batchId: string): Promise<
 }
 
 export async function saveBatchFileMeta(
-	teamId: string,
+	workspaceId: string,
 	fileId: string,
 	meta: BatchFileMeta,
 ): Promise<void> {
-	if (!teamId || !fileId) return;
+	if (!workspaceId || !fileId) return;
 	const payload = { ...meta, resource: "file", createdAt: meta.createdAt ?? Date.now() };
 	await upsertAsyncOperation({
-		teamId,
+		workspaceId,
 		kind: "batch",
 		internalId: `${BATCH_FILE_INTERNAL_PREFIX}${fileId}`,
 		nativeId: fileId,
@@ -137,9 +137,9 @@ export async function saveBatchFileMeta(
 	});
 }
 
-export async function getBatchFileMeta(teamId: string, fileId: string): Promise<BatchFileMeta | null> {
-	if (!teamId || !fileId) return null;
-	const record = await getAsyncOperation(teamId, "batch", `${BATCH_FILE_INTERNAL_PREFIX}${fileId}`);
+export async function getBatchFileMeta(workspaceId: string, fileId: string): Promise<BatchFileMeta | null> {
+	if (!workspaceId || !fileId) return null;
+	const record = await getAsyncOperation(workspaceId, "batch", `${BATCH_FILE_INTERNAL_PREFIX}${fileId}`);
 	if (!record) return null;
 	const merged = {
 		...(record.meta ?? {}),
@@ -149,10 +149,10 @@ export async function getBatchFileMeta(teamId: string, fileId: string): Promise<
 	return parseBatchFileMeta(merged);
 }
 
-export async function isBatchJobBilled(teamId: string, batchId: string): Promise<boolean> {
-	return isAsyncOperationBilled(teamId, "batch", batchId);
+export async function isBatchJobBilled(workspaceId: string, batchId: string): Promise<boolean> {
+	return isAsyncOperationBilled(workspaceId, "batch", batchId);
 }
 
-export async function markBatchJobBilled(teamId: string, batchId: string): Promise<boolean> {
-	return markAsyncOperationBilled(teamId, "batch", batchId);
+export async function markBatchJobBilled(workspaceId: string, batchId: string): Promise<boolean> {
+	return markAsyncOperationBilled(workspaceId, "batch", batchId);
 }

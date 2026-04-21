@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import RoutingSettingsClient from "@/components/(gateway)/settings/routing/RoutingSettingsClient";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
@@ -27,9 +27,9 @@ export default function RoutingSettingsPage() {
 
 async function RoutingSettingsContent() {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Select a workspace to manage routing preferences.
@@ -38,11 +38,11 @@ async function RoutingSettingsContent() {
 	}
 
 	const [{ data: teamRow }, { data: settingsRow }] = await Promise.all([
-		supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle(),
+		supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
 		supabase
-			.from("team_settings")
+			.from("workspace_settings")
 			.select("routing_mode, beta_channel_enabled, alpha_channel_enabled")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.maybeSingle(),
 	]);
 

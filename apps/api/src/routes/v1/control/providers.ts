@@ -78,7 +78,7 @@ async function handleProviders(req: Request) {
         }));
 
         const cacheOptions = {
-            scope: `providers:${auth.value.teamId}`,
+            scope: `providers:${auth.value.workspaceId}`,
             ttlSeconds: 300,
             staleSeconds: 600,
         };

@@ -574,8 +574,8 @@ async function incrHalf(endpoint: Endpoint, provider: string, model: string, ok:
     }, HALF_STATE_TTL_SECONDS);
 }
 
-function allowSample(teamId: string, requestId: string, p: number) {
-    const s = `${teamId}|${requestId}`;
+function allowSample(workspaceId: string, requestId: string, p: number) {
+    const s = `${workspaceId}|${requestId}`;
     let h = 2166136261 >>> 0;
     for (let i = 0; i < s.length; i++) {
         h ^= s.charCodeAt(i);
@@ -589,7 +589,7 @@ export async function admitThroughBreaker(
     endpoint: Endpoint,
     provider: string,
     model: string,
-    teamId: string,
+    workspaceId: string,
     requestId: string,
     snapshot?: ProviderHealth
 ): Promise<"blocked" | "probe" | "closed"> {
@@ -621,7 +621,7 @@ export async function admitThroughBreaker(
             await ensureHalfOpen(endpoint, provider, model);
             const half = await readHalf(endpoint, provider, model);
             if (!half) return "blocked";
-            return allowSample(teamId, requestId, half.p) ? "probe" : "blocked";
+            return allowSample(workspaceId, requestId, half.p) ? "probe" : "blocked";
         }
         return "closed";
     }
@@ -655,7 +655,7 @@ export async function admitThroughBreaker(
         await ensureHalfOpen(endpoint, provider, model);
         const half = await readHalf(endpoint, provider, model);
         if (!half) return "blocked";
-        return allowSample(teamId, requestId, half.p) ? "probe" : "blocked";
+        return allowSample(workspaceId, requestId, half.p) ? "probe" : "blocked";
     }
     return "closed";
 }

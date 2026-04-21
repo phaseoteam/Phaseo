@@ -2,7 +2,7 @@
 -- apply payment-intent top-ups atomically and idempotently.
 
 create or replace function public.stripe_apply_payment_intent_credit(
-    p_team_id uuid,
+    p_workspace_id uuid,
     p_payment_intent_id text,
     p_kind text,
     p_amount_nanos bigint,
@@ -24,8 +24,8 @@ declare
     v_after bigint;
     v_kind text;
 begin
-    if p_team_id is null then
-        raise exception 'missing_team_id';
+    if p_workspace_id is null then
+        raise exception 'missing_workspace_id';
     end if;
 
     if coalesce(trim(p_payment_intent_id), '') = '' then
@@ -49,7 +49,7 @@ begin
       and ref_id = p_payment_intent_id
     for update;
 
-    if found and v_existing.team_id is not null and v_existing.team_id <> p_team_id then
+    if found and v_existing.workspace_id is not null and v_existing.workspace_id <> p_workspace_id then
         raise exception 'payment_intent_team_mismatch';
     end if;
 
@@ -65,7 +65,7 @@ begin
 
     if not found then
         insert into public.credit_ledger (
-            team_id,
+            workspace_id,
             kind,
             amount_nanos,
             before_balance_nanos,
@@ -75,7 +75,7 @@ begin
             status,
             event_time
         ) values (
-            p_team_id,
+            p_workspace_id,
             v_kind,
             0,
             0,
@@ -90,7 +90,7 @@ begin
     update public.wallets
     set balance_nanos = balance_nanos + p_amount_nanos,
         updated_at = now()
-    where team_id = p_team_id
+    where workspace_id = p_workspace_id
     returning balance_nanos - p_amount_nanos, balance_nanos
     into v_before, v_after;
 
@@ -99,7 +99,7 @@ begin
     end if;
 
     update public.credit_ledger
-    set team_id = p_team_id,
+    set workspace_id = p_workspace_id,
         kind = v_kind,
         amount_nanos = p_amount_nanos,
         before_balance_nanos = v_before,

@@ -18,6 +18,7 @@ import { captureWalletReservation, releaseWalletReservation } from "@core/wallet
 import { VIDEO_RESERVATION_PREFIX } from "@core/video-reservations";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { computeVideoPricedUsage } from "@core/video-pricing";
+import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 
 const VIDEO_CAPTURE_REQUEST_ID_PREFIX = "video_capture";
 const GATEWAY_REQUEST_SYNC_MAX_ATTEMPTS = 3;
@@ -241,7 +242,7 @@ function wait(ms: number): Promise<void> {
 }
 
 async function syncGatewayRequestFromVideoFinalization(args: {
-	teamId: string;
+	workspaceId: string;
 	requestId?: string | null;
 	costNanos?: number | null;
 	costUsd?: number | null;
@@ -260,7 +261,7 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 			const { data: rows, error: readError } = await supabase
 				.from("gateway_requests")
 				.select("id,created_at,usage,pricing_lines")
-				.eq("team_id", args.teamId)
+				.eq("workspace_id", args.workspaceId)
 				.eq("request_id", requestId)
 				.order("created_at", { ascending: false })
 				.limit(1);
@@ -272,7 +273,7 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 					continue;
 				}
 				console.warn("video_gateway_request_sync_not_found", {
-					teamId: args.teamId,
+					workspaceId: args.workspaceId,
 					requestId,
 					attempt,
 				});
@@ -316,12 +317,12 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 				.from("gateway_requests")
 				.update(updatePatch)
 				.eq("id", row.id)
-				.eq("team_id", args.teamId)
+				.eq("workspace_id", args.workspaceId)
 				.select("id");
 			if (updateError) throw updateError;
 			if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
 				console.warn("video_gateway_request_sync_no_rows_updated", {
-					teamId: args.teamId,
+					workspaceId: args.workspaceId,
 					requestId,
 					gatewayRequestId: row.id,
 					attempt,
@@ -332,11 +333,28 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 				}
 				return "not_found";
 			}
+			try {
+				await syncWorkspaceUsageRollupForRequest({
+					requestRowId: row.id,
+					requestCreatedAt: row.created_at,
+					workspaceId: args.workspaceId,
+					context: "video_finalization",
+				});
+			} catch (syncError) {
+				console.error("video_gateway_request_rollup_sync_failed", {
+					error: syncError,
+					workspaceId: args.workspaceId,
+					requestId,
+					gatewayRequestId: row.id,
+					attempt,
+				});
+				return "error";
+			}
 			return "updated";
 		} catch (error) {
 			if (attempt < GATEWAY_REQUEST_SYNC_MAX_ATTEMPTS) {
 				console.warn("video_gateway_request_sync_retrying_after_error", {
-					teamId: args.teamId,
+					workspaceId: args.workspaceId,
 					requestId,
 					attempt,
 					error,
@@ -346,7 +364,7 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 			}
 			console.error("video_gateway_request_sync_failed", {
 				error,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId,
 				attempt,
 			});
@@ -357,7 +375,7 @@ async function syncGatewayRequestFromVideoFinalization(args: {
 }
 
 export type FinalizeVideoJobArgs = {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	providerId: string;
 	status: "queued" | "in_progress" | "completed" | "failed";
@@ -394,7 +412,7 @@ function isTerminalStatus(status: string): boolean {
 }
 
 async function chargeVideoCompletion(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	providerId: string;
 	model: string;
@@ -402,12 +420,12 @@ async function chargeVideoCompletion(args: {
 	requestOptions?: Record<string, unknown>;
 	isByok?: boolean;
 }): Promise<{ charged: boolean; pricedUsage?: Record<string, unknown>; reason?: string }> {
-	const { teamId, videoId, providerId, model, seconds, requestOptions, isByok = false } = args;
+	const { workspaceId, videoId, providerId, model, seconds, requestOptions, isByok = false } = args;
 	if (!videoId || !model || !Number.isFinite(seconds) || seconds <= 0) {
 		return { charged: false, reason: "invalid_billing_inputs" };
 	}
 
-	const alreadyBilled = await isVideoJobBilled(teamId, videoId);
+	const alreadyBilled = await isVideoJobBilled(workspaceId, videoId);
 	if (alreadyBilled) return { charged: false, reason: "already_billed" };
 
 	const modelCandidates = normalizeVideoModelForPricing(providerId, model);
@@ -449,7 +467,7 @@ async function chargeVideoCompletion(args: {
 		},
 	});
 	const byokAdjusted = await applyByokServiceFee({
-		teamId,
+		workspaceId,
 		isByok,
 		baseCostNanos: Number((pricedBase as any)?.pricing?.total_nanos ?? 0) || 0,
 		pricedUsage: pricedBase,
@@ -464,21 +482,21 @@ async function chargeVideoCompletion(args: {
 	const chargeRequestId = `${VIDEO_CAPTURE_REQUEST_ID_PREFIX}:${videoId}`;
 	await recordUsageAndCharge({
 		requestId: chargeRequestId,
-		teamId,
+		workspaceId,
 		cost_nanos: totalNanos,
 	});
 	return { charged: true, pricedUsage };
 }
 
 export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<FinalizeVideoJobResult> {
-	const existingJob = await getVideoJobRecord(args.teamId, args.videoId);
+	const existingJob = await getVideoJobRecord(args.workspaceId, args.videoId);
 	const currentStatus = String(existingJob?.status ?? "").toLowerCase();
 	const finalizedAtIso = new Date().toISOString();
 	let nextStatus = args.status;
 	if (isTerminalStatus(currentStatus)) {
 		if (currentStatus !== args.status) {
 			console.warn("video_finalize_stale_terminal_status_ignored", {
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: args.videoId,
 				currentStatus,
 				incomingStatus: args.status,
@@ -487,7 +505,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		nextStatus = currentStatus as FinalizeVideoJobArgs["status"];
 	} else if (currentStatus && toStatusRank(args.status) < toStatusRank(currentStatus)) {
 		console.warn("video_finalize_status_downgrade_ignored", {
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: args.videoId,
 			currentStatus,
 			incomingStatus: args.status,
@@ -511,10 +529,10 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		}
 		: { ...(args.metaPatch ?? {}) };
 	if (currentStatus !== nextStatus || Object.keys(metaPatch).length > 0) {
-		await setVideoJobStatus(args.teamId, args.videoId, nextStatus, metaPatch);
+		await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, metaPatch);
 	}
 
-	const videoMeta = await getVideoJobMeta(args.teamId, args.videoId);
+	const videoMeta = await getVideoJobMeta(args.workspaceId, args.videoId);
 	const reservationId = String(videoMeta?.reservationId ?? `${VIDEO_RESERVATION_PREFIX}${args.videoId}`).trim();
 	const requestIdForAudit = normalizeOptionalText(videoMeta?.requestId);
 	const secondsForAudit = resolveVideoUsageSeconds(videoMeta, args.seconds);
@@ -534,11 +552,11 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 	if (nextStatus === "failed") {
 		try {
 			const released = await releaseWalletReservation({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				reservationId,
 				releaseRefId: args.videoId,
 			});
-			await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+			await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 				finalizedAt: finalizedAtIso,
 				...(typeof durationMs === "number" ? { durationMs } : {}),
 				charged: false,
@@ -547,7 +565,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				billingReason: released.status,
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -562,10 +580,10 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				released.status === "not_found"
 			) {
 				if (shouldMarkVideoJobBilled(syncResult)) {
-					await markVideoJobBilled(args.teamId, args.videoId);
+					await markVideoJobBilled(args.workspaceId, args.videoId);
 				} else {
 					console.warn("video_mark_billed_deferred_until_gateway_sync", {
-						teamId: args.teamId,
+						workspaceId: args.workspaceId,
 						videoId: args.videoId,
 						requestId: requestIdForAudit,
 						syncResult,
@@ -578,7 +596,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				reason: released.status,
 			};
 		} catch (releaseErr) {
-			await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+			await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 				finalizedAt: finalizedAtIso,
 				...(typeof durationMs === "number" ? { durationMs } : {}),
 				charged: false,
@@ -587,7 +605,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				billingReason: "release_failed",
 			});
 			await syncGatewayRequestFromVideoFinalization({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -598,7 +616,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			});
 			console.error("video_release_failed", {
 				error: releaseErr,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: args.videoId,
 			});
 			return {
@@ -619,14 +637,14 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 
 	try {
 		const captured = await captureWalletReservation({
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			reservationId,
 			captureRefId: args.videoId,
 		});
 		if (captured.status === "captured" && (captured.applied || captured.alreadyApplied)) {
 			const costNanos = Math.max(0, Number(captured.amountNanos ?? 0) || 0);
 			const costUsd = nanosToUsd(costNanos) ?? 0;
-			await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+			await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 				finalizedAt: finalizedAtIso,
 				...(typeof durationMs === "number" ? { durationMs } : {}),
 				charged: true,
@@ -636,7 +654,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				pricingBreakdown: buildPricingBreakdownMeta({ costNanos, costUsd }),
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: requestIdForAudit,
 				costNanos,
 				costUsd,
@@ -646,10 +664,10 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				durationMs: durationMs ?? null,
 			});
 			if (shouldMarkVideoJobBilled(syncResult)) {
-				await markVideoJobBilled(args.teamId, args.videoId);
+				await markVideoJobBilled(args.workspaceId, args.videoId);
 			} else {
 				console.warn("video_mark_billed_deferred_until_gateway_sync", {
-					teamId: args.teamId,
+					workspaceId: args.workspaceId,
 					videoId: args.videoId,
 					requestId: requestIdForAudit,
 					syncResult,
@@ -662,7 +680,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			};
 		}
 		if (captured.status === "released") {
-			await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+			await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 				finalizedAt: finalizedAtIso,
 				...(typeof durationMs === "number" ? { durationMs } : {}),
 				charged: false,
@@ -671,7 +689,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				billingReason: captured.status,
 			});
 			const syncResult = await syncGatewayRequestFromVideoFinalization({
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				requestId: requestIdForAudit,
 				costNanos: 0,
 				costUsd: 0,
@@ -681,10 +699,10 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				durationMs: durationMs ?? null,
 			});
 			if (shouldMarkVideoJobBilled(syncResult)) {
-				await markVideoJobBilled(args.teamId, args.videoId);
+				await markVideoJobBilled(args.workspaceId, args.videoId);
 			} else {
 				console.warn("video_mark_billed_deferred_until_gateway_sync", {
-					teamId: args.teamId,
+					workspaceId: args.workspaceId,
 					videoId: args.videoId,
 					requestId: requestIdForAudit,
 					syncResult,
@@ -699,7 +717,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		const shouldFallbackToLegacyDebit =
 			captured.status === "not_found" || captured.status === "unknown";
 		if (!shouldFallbackToLegacyDebit) {
-			await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+			await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 				finalizedAt: finalizedAtIso,
 				...(typeof durationMs === "number" ? { durationMs } : {}),
 				charged: false,
@@ -712,7 +730,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			};
 		}
 	} catch (captureErr) {
-		await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+		await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 			finalizedAt: finalizedAtIso,
 			...(typeof durationMs === "number" ? { durationMs } : {}),
 			charged: false,
@@ -720,7 +738,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		});
 		console.error("video_capture_reservation_failed", {
 			error: captureErr,
-			teamId: args.teamId,
+			workspaceId: args.workspaceId,
 			videoId: args.videoId,
 		});
 		return {
@@ -766,7 +784,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		}),
 	};
 	if (!model) {
-		await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+		await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 			finalizedAt: finalizedAtIso,
 			...(typeof durationMs === "number" ? { durationMs } : {}),
 			charged: false,
@@ -779,7 +797,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		};
 	}
 	if (seconds == null) {
-		await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+		await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 			finalizedAt: finalizedAtIso,
 			...(typeof durationMs === "number" ? { durationMs } : {}),
 			charged: false,
@@ -793,7 +811,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 	}
 
 	const charge = await chargeVideoCompletion({
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		videoId: args.videoId,
 		providerId: args.providerId,
 		model,
@@ -803,7 +821,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 	});
 	const fallbackCostNanos = extractPricedTotalNanos(charge.pricedUsage);
 	const fallbackCostUsd = extractPricedCostUsd(charge.pricedUsage);
-	await setVideoJobStatus(args.teamId, args.videoId, nextStatus, {
+	await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, {
 		finalizedAt: finalizedAtIso,
 		...(typeof durationMs === "number" ? { durationMs } : {}),
 		charged: charge.charged,
@@ -826,7 +844,7 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			: {}),
 	});
 	const syncResult = await syncGatewayRequestFromVideoFinalization({
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		requestId: requestIdForAudit,
 		costNanos: typeof fallbackCostNanos === "number" ? fallbackCostNanos : null,
 		costUsd: typeof fallbackCostUsd === "number" ? fallbackCostUsd : null,
@@ -838,10 +856,10 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 	});
 	if ((charge.charged || charge.reason === "zero_cost" || charge.reason === "already_billed")) {
 		if (shouldMarkVideoJobBilled(syncResult)) {
-			await markVideoJobBilled(args.teamId, args.videoId);
+			await markVideoJobBilled(args.workspaceId, args.videoId);
 		} else {
 			console.warn("video_mark_billed_deferred_until_gateway_sync", {
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				videoId: args.videoId,
 				requestId: requestIdForAudit,
 				syncResult,

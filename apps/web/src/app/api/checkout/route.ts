@@ -11,13 +11,13 @@ export async function POST(req: NextRequest) {
         const purchaseAmount = Number(body?.purchase_amount_cents);
         const totalAmount = Number(body?.total_amount_cents) || purchaseAmount;
         const requestedTeamId =
-            typeof body?.team_id === "string" && body.team_id.trim().length > 0
-                ? body.team_id.trim()
+            typeof body?.workspace_id === "string" && body.workspace_id.trim().length > 0
+                ? body.workspace_id.trim()
                 : null;
-        const { teamId, customerId } = await requireActiveTeamStripeCustomer({
+        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer({
             createIfMissing: true,
         });
-        if (requestedTeamId && requestedTeamId !== teamId) {
+        if (requestedTeamId && requestedTeamId !== workspaceId) {
             return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
         }
         if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 500) {
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
                 description: 'Credits purchase',
                 metadata: {
                     purpose: "top_up_one_off",
-                    team_id: teamId,
+                    workspace_id: workspaceId,
                 },
             },
             success_url: `${origin}/settings/credits?checkout=success&payment_attempt=${paymentAttempt}`,

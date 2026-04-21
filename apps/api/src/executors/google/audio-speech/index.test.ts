@@ -9,7 +9,7 @@ function buildArgs(ir: IRAudioSpeechRequest): ExecutorExecuteArgs {
 	return {
 		ir,
 		requestId: "req_google_tts_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "google-ai-studio",
 		endpoint: "audio.speech",
 		protocol: "google.audio",

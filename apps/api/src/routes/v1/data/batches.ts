@@ -61,17 +61,17 @@ function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 	};
 }
 
-async function persistBatchFileOwnership(teamId: string, payload: any): Promise<void> {
+async function persistBatchFileOwnership(workspaceId: string, payload: any): Promise<void> {
 	const outputFileId = toText(payload?.output_file_id);
 	if (outputFileId) {
-		await saveBatchFileMeta(teamId, outputFileId, {
+		await saveBatchFileMeta(workspaceId, outputFileId, {
 			provider: OPENAI_PROVIDER_ID,
 			status: "available",
 		});
 	}
 	const errorFileId = toText(payload?.error_file_id);
 	if (errorFileId) {
-		await saveBatchFileMeta(teamId, errorFileId, {
+		await saveBatchFileMeta(workspaceId, errorFileId, {
 			provider: OPENAI_PROVIDER_ID,
 			status: "available",
 		});
@@ -130,7 +130,7 @@ async function handleCreate(req: Request) {
 	} catch {
 		return err("invalid_json", {
 			request_id: requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 		});
 	}
 
@@ -146,7 +146,7 @@ async function handleCreate(req: Request) {
 		const batchId = toText(upstreamJson?.id);
 		const keySource = "gateway" as const;
 		if (batchId) {
-			await saveBatchJobMeta(auth.teamId, batchId, batchMetaFromPayload(upstreamJson, {
+			await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
 				provider: OPENAI_PROVIDER_ID,
 				requestId,
 				sessionId:
@@ -166,7 +166,7 @@ async function handleCreate(req: Request) {
 			})).catch((lookupErr) => {
 				console.error("batch_job_meta_store_failed", {
 					error: lookupErr,
-					teamId: auth.teamId,
+					workspaceId: auth.workspaceId,
 					batchId,
 				});
 			});
@@ -174,7 +174,7 @@ async function handleCreate(req: Request) {
 
 		const inputFileId = toText(payload.input_file_id);
 		if (inputFileId) {
-			await saveBatchFileMeta(auth.teamId, inputFileId, {
+			await saveBatchFileMeta(auth.workspaceId, inputFileId, {
 				provider: OPENAI_PROVIDER_ID,
 				status: "uploaded",
 				keySource,
@@ -182,15 +182,15 @@ async function handleCreate(req: Request) {
 			}).catch((lookupErr) => {
 				console.error("batch_input_file_meta_store_failed", {
 					error: lookupErr,
-					teamId: auth.teamId,
+					workspaceId: auth.workspaceId,
 					fileId: inputFileId,
 				});
 			});
 		}
-		await persistBatchFileOwnership(auth.teamId, upstreamJson).catch((lookupErr) => {
+		await persistBatchFileOwnership(auth.workspaceId, upstreamJson).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
-				teamId: auth.teamId,
+				workspaceId: auth.workspaceId,
 			});
 		});
 	}
@@ -207,15 +207,15 @@ async function handleRetrieve(req: Request, id: string) {
 	}
 	const batchId = String(id ?? "").trim();
 	if (!batchId) {
-		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, team_id: auth.teamId });
+		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, workspace_id: auth.workspaceId });
 	}
 	let meta = null;
 	try {
-		meta = await getBatchJobMeta(auth.teamId, batchId);
+		meta = await getBatchJobMeta(auth.workspaceId, batchId);
 	} catch (lookupErr) {
 		console.error("batch_job_meta_lookup_failed", {
 			error: lookupErr,
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			batchId,
 		});
 	}
@@ -224,7 +224,7 @@ async function handleRetrieve(req: Request, id: string) {
 			reason: "batch_not_found_or_not_owned",
 			request_id: requestId,
 			batch_id: batchId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 		});
 	}
 
@@ -235,20 +235,20 @@ async function handleRetrieve(req: Request, id: string) {
 	const upstreamJson = await parseUpstreamJson(upstream);
 
 	if (upstream.ok && upstreamJson) {
-		await saveBatchJobMeta(auth.teamId, batchId, batchMetaFromPayload(upstreamJson, {
+		await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
 			...meta,
 			provider: OPENAI_PROVIDER_ID,
 		})).catch((lookupErr) => {
 			console.error("batch_job_meta_refresh_failed", {
 				error: lookupErr,
-				teamId: auth.teamId,
+				workspaceId: auth.workspaceId,
 				batchId,
 			});
 		});
-		await persistBatchFileOwnership(auth.teamId, upstreamJson).catch((lookupErr) => {
+		await persistBatchFileOwnership(auth.workspaceId, upstreamJson).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
-				teamId: auth.teamId,
+				workspaceId: auth.workspaceId,
 				batchId,
 			});
 		});
@@ -266,16 +266,16 @@ async function handleCancel(req: Request, id: string) {
 	}
 	const batchId = String(id ?? "").trim();
 	if (!batchId) {
-		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, team_id: auth.teamId });
+		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, workspace_id: auth.workspaceId });
 	}
 
-	const meta = await getBatchJobMeta(auth.teamId, batchId);
+	const meta = await getBatchJobMeta(auth.workspaceId, batchId);
 	if (!meta) {
 		return err("not_found", {
 			reason: "batch_not_found_or_not_owned",
 			request_id: requestId,
 			batch_id: batchId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 		});
 	}
 
@@ -288,14 +288,14 @@ async function handleCancel(req: Request, id: string) {
 	const upstreamJson = await parseUpstreamJson(upstream);
 
 	if (upstream.ok && upstreamJson) {
-		await saveBatchJobMeta(auth.teamId, batchId, batchMetaFromPayload(upstreamJson, {
+		await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
 			...meta,
 			provider: OPENAI_PROVIDER_ID,
 			status: "cancelling",
 		})).catch((lookupErr) => {
 			console.error("batch_job_meta_cancel_refresh_failed", {
 				error: lookupErr,
-				teamId: auth.teamId,
+				workspaceId: auth.workspaceId,
 				batchId,
 			});
 		});

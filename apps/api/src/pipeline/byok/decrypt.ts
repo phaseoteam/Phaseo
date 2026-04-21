@@ -242,7 +242,7 @@ export async function decryptBYOK(row: {
     enc_tag_b64?: string;
     enc_b64?: string;
 
-    team_id: string;
+    workspace_id: string;
     provider_id: string;
 }) {
     const ver = typeof row.key_version === "number" ? row.key_version : parseInt(row.key_version);
@@ -287,7 +287,7 @@ export async function decryptBYOK(row: {
         throw new Error("Invalid BYOK row format: missing enc_iv/enc_value/enc_tag or legacy enc_*_b64 triplet");
     }
 
-    const aad = te.encode(`${row.team_id}|${row.provider_id}|v${ver}`);
+    const aad = te.encode(`${row.workspace_id}|${row.provider_id}|v${ver}`);
 
     const ptBuf = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv: viewToArrayBuffer(ivBytes), additionalData: viewToArrayBuffer(aad), tagLength: 128 },

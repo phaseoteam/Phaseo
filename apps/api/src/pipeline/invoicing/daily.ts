@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
 type DueInvoiceRun = {
-	team_id: string;
+	workspace_id: string;
 	stripe_customer_id: string;
 	billing_day: number;
 	payment_terms_days: number;
@@ -64,7 +64,7 @@ async function upsertInvoiceRow(args: {
 	const supabase = getSupabaseAdmin();
 	const nowIso = new Date().toISOString();
 	const row = {
-		team_id: args.run.team_id,
+		workspace_id: args.run.workspace_id,
 		period_start: args.run.period_start,
 		period_end: args.run.period_end,
 		amount_nanos: Math.max(0, Number(args.run.amount_nanos ?? 0)),
@@ -78,8 +78,8 @@ async function upsertInvoiceRow(args: {
 		updated_at: nowIso,
 	};
 
-	const { error } = await supabase.from("team_invoices").upsert([row], {
-		onConflict: "team_id,period_start,period_end",
+	const { error } = await supabase.from("workspace_invoices").upsert([row], {
+		onConflict: "workspace_id,period_start,period_end",
 	});
 	if (error) throw error;
 }
@@ -88,7 +88,7 @@ async function createAndFinalizeStripeInvoice(args: { run: DueInvoiceRun; stripe
 	const { run, stripe } = args;
 	const cents = nanosToCents(Number(run.amount_nanos ?? 0));
 	if (cents <= 0) return null;
-	const idempotencyBase = `enterprise-invoice:${run.team_id}:${run.period_start}:${run.period_end}`;
+	const idempotencyBase = `enterprise-invoice:${run.workspace_id}:${run.period_start}:${run.period_end}`;
 
 	const created = await stripe.invoices.create({
 		customer: run.stripe_customer_id,
@@ -99,7 +99,7 @@ async function createAndFinalizeStripeInvoice(args: { run: DueInvoiceRun; stripe
 		description: `AI Stats usage (${run.period_start} - ${run.period_end})`,
 		metadata: {
 			source: "ai_stats_enterprise_invoice_job",
-			team_id: run.team_id,
+			workspace_id: run.workspace_id,
 			period_start: run.period_start,
 			period_end: run.period_end,
 			billing_day: String(run.billing_day),
@@ -116,7 +116,7 @@ async function createAndFinalizeStripeInvoice(args: { run: DueInvoiceRun; stripe
 		description: `AI Stats usage ${run.period_start} to ${run.period_end}`,
 		metadata: {
 			source: "ai_stats_enterprise_invoice_job",
-			team_id: run.team_id,
+			workspace_id: run.workspace_id,
 		},
 	}, {
 		idempotencyKey: `${idempotencyBase}:item`,
@@ -202,7 +202,7 @@ export async function runEnterpriseInvoicingJob(args?: {
 		} catch (err: any) {
 			summary.failed += 1;
 			console.error("[enterprise-invoice-job] failed for team", {
-				teamId: run.team_id,
+				workspaceId: run.workspace_id,
 				periodStart: run.period_start,
 				periodEnd: run.period_end,
 				error: err?.message ?? String(err),

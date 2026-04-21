@@ -25,19 +25,19 @@ export async function requireAuthenticatedUser(): Promise<{
 	};
 }
 
-export async function requireTeamMembership(
+export async function requireWorkspaceMembership(
 	supabase: SupabaseServerClient,
 	userId: string,
-	teamId: string,
+	workspaceId: string,
 	roles?: Array<"owner" | "admin" | "member">,
 ): Promise<void> {
-	if (!userId || !teamId) throw new Error("Unauthorized");
+	if (!userId || !workspaceId) throw new Error("Unauthorized");
 
 	let q = supabase
-		.from("team_members")
+		.from("workspace_members")
 		.select("role")
 		.eq("user_id", userId)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.limit(1)
 		.maybeSingle();
 
@@ -49,7 +49,7 @@ export async function requireTeamMembership(
 	if (error || !data) throw new Error("Unauthorized");
 
 	await evaluateTeamSsoEnforcementNoop({
-		teamId,
+		workspaceId,
 		userId,
 		authMethod: "unknown",
 		source: "server_action",

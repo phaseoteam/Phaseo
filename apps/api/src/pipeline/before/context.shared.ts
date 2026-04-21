@@ -154,7 +154,7 @@ export function computeStaticTtl(): number {
 
 type DynamicContextCacheEntry = Pick<
 	GatewayContextData,
-	| "teamId"
+	| "workspaceId"
 	| "key"
 	| "keyLimit"
 	| "credit"
@@ -164,20 +164,20 @@ type DynamicContextCacheEntry = Pick<
 >;
 type StaticContextCacheEntry = Pick<
 	GatewayContextData,
-	"teamId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode"
+	"workspaceId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode"
 >;
 
 export function isDynamicContextLike(value: unknown): value is DynamicContextCacheEntry {
 	if (!value || typeof value !== "object") return false;
 	const ctx = value as DynamicContextCacheEntry;
-	return Boolean(ctx.teamId && ctx.key && ctx.keyLimit && ctx.credit);
+	return Boolean(ctx.workspaceId && ctx.key && ctx.keyLimit && ctx.credit);
 }
 
 export function isStaticContextLike(value: unknown): value is StaticContextCacheEntry {
 	if (!value || typeof value !== "object") return false;
 	const ctx = value as StaticContextCacheEntry;
 	return Boolean(
-		ctx.teamId &&
+		ctx.workspaceId &&
 			Array.isArray(ctx.providers) &&
 			ctx.pricing &&
 			typeof ctx.pricing === "object",
@@ -190,7 +190,7 @@ export function mergeCachedContext(args: {
 	endpoint: string;
 }): GatewayContextData {
 	return {
-		teamId: args.dynamic.teamId,
+		workspaceId: args.dynamic.workspaceId,
 		endpoint: args.endpoint as any,
 		resolvedModel: args.static.resolvedModel ?? null,
 		preset: args.static.preset ?? null,
@@ -212,7 +212,7 @@ export function splitContextForCache(value: GatewayContextData): {
 } {
 	return {
 		dynamic: {
-			teamId: value.teamId,
+			workspaceId: value.workspaceId,
 			key: value.key,
 			keyLimit: value.keyLimit,
 			credit: value.credit,
@@ -221,7 +221,7 @@ export function splitContextForCache(value: GatewayContextData): {
 			teamSettings: value.teamSettings ?? null,
 		},
 		static: {
-			teamId: value.teamId,
+			workspaceId: value.workspaceId,
 			resolvedModel: value.resolvedModel ?? null,
 			preset: value.preset ?? null,
 			providers: value.providers ?? [],

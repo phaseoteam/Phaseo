@@ -41,7 +41,7 @@ export type UserPayload = {
 	id: string;
 	displayName?: string | null;
 	email?: string | null;
-	defaultTeamId?: string | null;
+	defaultWorkspaceId?: string | null;
 	obfuscateInfo: boolean;
 	createdAt: string;
 };
@@ -61,7 +61,7 @@ const schema = z.object({
 		.max(60, "Display name must be 60 characters or fewer.")
 		.optional()
 		.nullable(),
-	default_team_id: z
+	default_workspace_id: z
 		.string()
 		.trim()
 		.min(1, "Workspace ID cannot be empty.")
@@ -102,10 +102,10 @@ export default function AccountSettingsClient({
 
 	// Force a default team: if the user has no default and teams exist,
 	// select the first team automatically. If there are no teams, we'll
-	// display a disabled 'Personal' input (defaultTeamId remains null).
+	// display a disabled 'Personal' input (defaultWorkspaceId remains null).
 	const initialDefaultTeam =
-		user.defaultTeamId ?? (teams && teams.length > 0 ? teams[0].id : null);
-	const [defaultTeamId, setDefaultTeamId] = React.useState<string | null>(
+		user.defaultWorkspaceId ?? (teams && teams.length > 0 ? teams[0].id : null);
+	const [defaultWorkspaceId, setDefaultTeamId] = React.useState<string | null>(
 		initialDefaultTeam
 	);
 	const [obfuscateInfo, setObfuscateInfo] = React.useState<boolean>(
@@ -182,7 +182,7 @@ export default function AccountSettingsClient({
 	const initial = React.useMemo(
 		() => ({
 			display_name: user.displayName ?? null,
-			default_team_id: user.defaultTeamId ?? null,
+			default_workspace_id: user.defaultWorkspaceId ?? null,
 			obfuscate_info: !!user.obfuscateInfo,
 		}),
 		[user]
@@ -190,7 +190,7 @@ export default function AccountSettingsClient({
 
 	const current = {
 		display_name: displayName,
-		default_team_id: defaultTeamId,
+		default_workspace_id: defaultWorkspaceId,
 		obfuscate_info: obfuscateInfo,
 	};
 	const hasChanges = JSON.stringify(initial) !== JSON.stringify(current);
@@ -427,7 +427,7 @@ export default function AccountSettingsClient({
 							<div className="grid max-w-2xl gap-1.5">
 								{teams && teams.length > 0 ? (
 									<Select
-										value={defaultTeamId ?? ""}
+										value={defaultWorkspaceId ?? ""}
 										onValueChange={(v) => setDefaultTeamId(v || null)}
 									>
 										<SelectTrigger id="defaultTeam" className="w-full">

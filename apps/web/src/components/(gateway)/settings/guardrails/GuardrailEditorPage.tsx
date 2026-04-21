@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import GuardrailEditorPageClient from "./GuardrailEditorPageClient";
 
@@ -17,9 +17,9 @@ export default async function GuardrailEditorPage(props: {
 	guardrailId?: string;
 }) {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Select a workspace to manage guardrails.
@@ -34,11 +34,12 @@ export default async function GuardrailEditorPage(props: {
 		activeProviderModelsResult,
 		guardrailResult,
 	] = await Promise.all([
-		supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle(),
+		supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
 		supabase
 			.from("keys")
 			.select("id, name, prefix, status, created_at")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
+			.neq("status", "deleted")
 			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false }),
 		supabase
@@ -51,11 +52,11 @@ export default async function GuardrailEditorPage(props: {
 			.eq("is_active_gateway", true),
 		props.mode === "edit" && props.guardrailId
 			? supabase
-					.from("team_guardrails")
+					.from("workspace_guardrails")
 					.select(
-						"id, team_id, enabled, name, description, privacy_enable_paid_may_train, privacy_enable_free_may_train, privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging, privacy_zdr_only, provider_restriction_mode, provider_restriction_provider_ids, provider_restriction_enforce_allowed, allowed_api_model_ids, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, created_at, updated_at",
+						"id, workspace_id, enabled, name, description, privacy_enable_paid_may_train, privacy_enable_free_may_train, privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging, privacy_zdr_only, provider_restriction_mode, provider_restriction_provider_ids, provider_restriction_enforce_allowed, allowed_api_model_ids, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, created_at, updated_at",
 					)
-					.eq("team_id", teamId)
+					.eq("workspace_id", workspaceId)
 					.eq("id", props.guardrailId)
 					.maybeSingle()
 			: Promise.resolve({ data: null, error: null } as any),

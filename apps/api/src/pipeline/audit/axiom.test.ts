@@ -5,7 +5,7 @@ describe("buildAxiomEvent", () => {
 	it("maps sanitized gateway/provider envelopes from extra_json", () => {
 		const event = buildAxiomEvent({
 			requestId: "req_123",
-			teamId: "team_123",
+			workspaceId: "team_123",
 			provider: "openai",
 			model: "openai/gpt-5-mini",
 			endpoint: "chat.completions",

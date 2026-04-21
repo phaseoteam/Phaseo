@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { revalidateAppDataTags } from "@/lib/cache/revalidateDataTags";
-import { requireTeamMembership } from "@/utils/serverActionAuth";
+import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 
 const PROTECTED_APP_TITLES = new Set([
 	"ai stats chat",
@@ -56,7 +56,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 
 	const { data: existingApp, error: existingAppError } = await supabase
 		.from("api_apps")
-		.select("id, team_id, title, app_key")
+		.select("id, workspace_id, title, app_key")
 		.eq("id", appId)
 		.maybeSingle();
 
@@ -68,10 +68,10 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 		throw new Error("App not found");
 	}
 
-	if (!existingApp.team_id) {
+	if (!existingApp.workspace_id) {
 		throw new Error("App not found");
 	}
-	await requireTeamMembership(supabase, user.id, existingApp.team_id);
+	await requireWorkspaceMembership(supabase, user.id, existingApp.workspace_id);
 
 	if (isProtectedApp(existingApp.title, existingApp.app_key)) {
 		throw new Error("This app is managed by AI Stats and cannot be edited");
@@ -121,7 +121,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 		.from("api_apps")
 		.update(updateObj)
 		.eq("id", appId)
-		.eq("team_id", existingApp.team_id);
+		.eq("workspace_id", existingApp.workspace_id);
 
 	if (error) {
 		throw new Error(error.message ?? "Failed to update app");
@@ -157,22 +157,22 @@ export async function mergeAppsAction(
 
 	const { data: apps, error: appError } = await supabase
 		.from("api_apps")
-		.select("id, team_id, title, app_key")
+		.select("id, workspace_id, title, app_key")
 		.in("id", [sourceAppId, targetAppId]);
 
 	if (appError || !apps || apps.length !== 2) {
 		throw new Error("Apps must belong to your workspace");
 	}
 
-	const teamId = apps[0].team_id;
-	if (!apps.every((app) => app.team_id === teamId)) {
+	const workspaceId = apps[0].workspace_id;
+	if (!apps.every((app) => app.workspace_id === workspaceId)) {
 		throw new Error("Apps must belong to the same workspace");
 	}
 
-	if (!teamId) {
+	if (!workspaceId) {
 		throw new Error("Apps must belong to your workspace");
 	}
-	await requireTeamMembership(supabase, user.id, teamId);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	if (apps.some((app) => isProtectedApp(app.title, app.app_key))) {
 		throw new Error("AI Stats managed apps cannot be merged");
@@ -183,7 +183,7 @@ export async function mergeAppsAction(
 		.from("gateway_requests")
 		.update({ app_id: targetAppId })
 		.eq("app_id", sourceAppId)
-		.eq("team_id", teamId);
+		.eq("workspace_id", workspaceId);
 
 	if (updateError) {
 		throw new Error(updateError.message ?? "Failed to move request history");

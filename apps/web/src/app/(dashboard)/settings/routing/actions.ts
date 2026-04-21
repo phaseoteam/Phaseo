@@ -1,11 +1,11 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath } from "next/cache";
 import {
 	requireAuthenticatedUser,
-	requireTeamMembership,
+	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 export type RoutingMode = "balanced" | "price" | "latency" | "throughput";
@@ -22,14 +22,14 @@ export async function updateRoutingSettings({
 	alphaChannelEnabled,
 }: UpdateRoutingSettingsInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) {
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) {
 		throw new Error("Missing workspace id");
 	}
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const payload = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		routing_mode: mode,
 		...(typeof betaChannelEnabled === "boolean"
 			? { beta_channel_enabled: betaChannelEnabled }
@@ -44,8 +44,8 @@ export async function updateRoutingSettings({
 	};
 
 	const { error } = await supabase
-		.from("team_settings")
-		.upsert(payload, { onConflict: "team_id" });
+		.from("workspace_settings")
+		.upsert(payload, { onConflict: "workspace_id" });
 
 	if (error) {
 		throw error;

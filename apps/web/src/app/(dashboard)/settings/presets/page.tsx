@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
 import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import PresetsPanel from "@/components/(gateway)/settings/presets/PresetsPanel";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
@@ -82,16 +82,16 @@ async function PresetsContent() {
 	} = await supabase.auth.getUser();
 
 	const { data: teamUsers } = await supabase
-		.from("team_members")
-		.select("team_id, teams(id, name)")
+		.from("workspace_members")
+		.select("workspace_id, teams:workspaces(id, name)")
 		.eq("user_id", user?.id);
 
-	const initialTeamId = (await getTeamIdFromCookie()) ?? null;
+	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
 
 	const { data: presets } = await supabase
 		.from("presets")
 		.select("*")
-		.eq("team_id", initialTeamId);
+		.eq("workspace_id", initialTeamId);
 
 	const [models, providers] = await Promise.all([
 		getAllModelsCached(await resolveIncludeHidden()),

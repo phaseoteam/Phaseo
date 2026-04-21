@@ -110,7 +110,7 @@ async function handleCreateCouncilRun(req: Request) {
 	const run: CouncilRunRecord = {
 		id: crypto.randomUUID(),
 		feature: "council",
-		workspace_id: authResult.auth.teamId,
+		workspace_id: authResult.auth.workspaceId,
 		user_id: authResult.auth.userId ?? null,
 		status: "queued",
 		conversation_id: parsed.data.conversation_id ?? null,
@@ -173,7 +173,7 @@ async function handleGetCouncilRun(req: Request) {
 	}
 
 	const run = await getCouncilRun(runId);
-	if (!run || run.workspace_id !== authResult.auth.teamId) {
+	if (!run || run.workspace_id !== authResult.auth.workspaceId) {
 		return json(
 			{ ok: false, error: "not_found" },
 			404,
@@ -198,7 +198,7 @@ async function handleCouncilRunEvents(req: Request) {
 	}
 
 	const run = await getCouncilRun(runId);
-	if (!run || run.workspace_id !== authResult.auth.teamId) {
+	if (!run || run.workspace_id !== authResult.auth.workspaceId) {
 		return json(
 			{ ok: false, error: "not_found" },
 			404,
@@ -206,7 +206,7 @@ async function handleCouncilRunEvents(req: Request) {
 		);
 	}
 
-	const workspaceId = authResult.auth.teamId;
+	const workspaceId = authResult.auth.workspaceId;
 	const pollIntervalMs = 1_000;
 	const maxStreamDurationMs = 25_000;
 	const heartbeatIntervalMs = 10_000;

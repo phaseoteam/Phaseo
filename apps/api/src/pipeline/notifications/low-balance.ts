@@ -8,11 +8,11 @@ type LowBalanceSettings = {
 };
 
 export async function enqueueLowBalanceEmail(args: {
-	teamId: string;
+	workspaceId: string;
 	balanceNanos: number;
 	settings: LowBalanceSettings;
 }): Promise<void> {
-	const { teamId, balanceNanos, settings } = args;
+	const { workspaceId, balanceNanos, settings } = args;
 	if (!settings.enabled) return;
 	if (!Number.isFinite(settings.thresholdNanos) || settings.thresholdNanos <= 0) {
 		return;
@@ -41,9 +41,9 @@ export async function enqueueLowBalanceEmail(args: {
 
 	// Resolve team name + owner email.
 	const { data: teamRow } = await supabase
-		.from("teams")
+		.from("workspaces")
 		.select("id,name,owner_user_id")
-		.eq("id", teamId)
+		.eq("id", workspaceId)
 		.maybeSingle();
 
 	const teamName = (teamRow as any)?.name ?? "your team";
@@ -67,10 +67,10 @@ export async function enqueueLowBalanceEmail(args: {
 		template: "low_balance",
 		to_email: ownerEmail,
 		subject: "Low balance alert",
-		team_id: teamId,
+		workspace_id: workspaceId,
 		user_id: ownerUserId,
 		payload: {
-			team_id: teamId,
+			workspace_id: workspaceId,
 			team_name: teamName,
 			balance_nanos: balanceNanos,
 			balance_usd: Number(balanceUsd.toFixed(2)),
@@ -80,11 +80,11 @@ export async function enqueueLowBalanceEmail(args: {
 	} as any);
 
 	await supabase
-		.from("team_settings")
+		.from("workspace_settings")
 		.update({
 			low_balance_email_last_sent_at: new Date().toISOString(),
 			low_balance_email_last_sent_balance_nanos: balanceNanos,
 			updated_at: new Date().toISOString(),
 		})
-		.eq("team_id", teamId);
+		.eq("workspace_id", workspaceId);
 }

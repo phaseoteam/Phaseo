@@ -173,7 +173,7 @@ videosRoutes.get("/", withRuntime(async (req) => {
 	const limit = parseVideoListLimit(url);
 	const statuses = parseVideoListStatuses(url);
 	const records = await listTeamVideoJobs({
-		teamId: authValue.teamId,
+		workspaceId: authValue.workspaceId,
 		limit,
 		statuses: statuses.length > 0 ? statuses : undefined,
 	});
@@ -254,14 +254,14 @@ videosRoutes.post("/:videoId/cancel", withRuntime(async (req) => {
 		return err("validation_error", {
 			reason: "missing_video_id",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 		});
 	}
 	return new Response(JSON.stringify({
 		error: "not_implemented_yet",
 		reason: "video_cancel_temporarily_disabled",
 		request_id: authValue.requestId,
-		team_id: authValue.teamId,
+		workspace_id: authValue.workspaceId,
 		video_id: id,
 	}), {
 		status: 501,
@@ -278,7 +278,7 @@ videosRoutes.delete("/:videoId", withRuntime(async (req) => {
 		return err("validation_error", {
 			reason: "missing_video_id",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 		});
 	}
 	const ownedVideo = await requireOwnedVideoJob(authValue, id);
@@ -288,12 +288,12 @@ videosRoutes.delete("/:videoId", withRuntime(async (req) => {
 		return err("validation_error", {
 			reason: "video_delete_requires_terminal_status",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 			status: publicStatus,
 		});
 	}
-	await setVideoJobStatus(authValue.teamId, id, ownedVideo.record.status === "cancelled" ? "cancelled" : (ownedVideo.record.status === "completed" ? "completed" : (ownedVideo.record.status === "expired" ? "expired" : "failed")), {
+	await setVideoJobStatus(authValue.workspaceId, id, ownedVideo.record.status === "cancelled" ? "cancelled" : (ownedVideo.record.status === "completed" ? "completed" : (ownedVideo.record.status === "expired" ? "expired" : "failed")), {
 		tombstoned: true,
 		tombstonedAt: new Date().toISOString(),
 	});

@@ -14,7 +14,7 @@ function buildArgs(overrides?: Partial<IREmbeddingsRequest>): ExecutorExecuteArg
 	return {
 		ir,
 		requestId: "req_google_embed_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "google-ai-studio",
 		endpoint: "embeddings",
 		protocol: "openai.embeddings",

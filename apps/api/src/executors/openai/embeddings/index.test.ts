@@ -23,7 +23,7 @@ function buildArgs({
 	return {
 		ir: request,
 		requestId: "req_openai_embeddings_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId,
 		endpoint: "embeddings",
 		protocol: "openai.embeddings",

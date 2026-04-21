@@ -25,7 +25,7 @@ async function handleInvalidateKey(req: Request) {
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
-    const { teamId } = auth.value;
+    const { workspaceId } = auth.value;
 
     const bindings = getBindings();
     const controlSecret = bindings.GATEWAY_CONTROL_SECRET?.trim();
@@ -56,7 +56,7 @@ async function handleInvalidateKey(req: Request) {
         const supabase = getSupabaseAdmin();
         const { data, error } = await supabase
             .from("keys")
-            .select("id, kid, status, team_id")
+            .select("id, kid, status, workspace_id")
             .eq("id", keyId)
             .maybeSingle();
 
@@ -68,7 +68,7 @@ async function handleInvalidateKey(req: Request) {
             return json({ ok: false, error: "Key not found" }, 404);
         }
 
-        if (data.team_id !== teamId) {
+        if (data.workspace_id !== workspaceId) {
             return json(
                 { ok: false, error: "forbidden", message: "Key does not belong to the authenticated team" },
                 403,
@@ -91,7 +91,7 @@ async function handleInvalidateKey(req: Request) {
                 key: {
                     id: data.id,
                     kid: data.kid ?? null,
-                    team_id: data.team_id,
+                    workspace_id: data.workspace_id,
                     status: data.status,
                 },
                 cache_version: {

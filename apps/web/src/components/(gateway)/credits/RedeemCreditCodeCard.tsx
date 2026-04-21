@@ -31,7 +31,7 @@ type ResultTone = "success" | "error";
 type Props = {
 	teams: TeamOption[];
 	invoiceTeamIds?: string[];
-	defaultTeamId?: string | null;
+	defaultWorkspaceId?: string | null;
 	disabled?: boolean;
 	disabledReason?: string | null;
 	title?: string;
@@ -47,7 +47,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 	const {
 		teams,
 		invoiceTeamIds = [],
-		defaultTeamId = null,
+		defaultWorkspaceId = null,
 		disabled = false,
 		disabledReason = null,
 		title = "Redeem Credit Code",
@@ -60,7 +60,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 	} = props;
 	const [code, setCode] = useState("");
 	const [selectedTeamId, setSelectedTeamId] = useState<string>(
-		defaultTeamId ?? teams[0]?.id ?? ""
+		defaultWorkspaceId ?? teams[0]?.id ?? ""
 	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [buttonState, setButtonState] = useState<ButtonState>("idle");
@@ -77,8 +77,8 @@ export default function RedeemCreditCodeCard(props: Props) {
 	}, [teams]);
 	const invoiceTeamIdSet = useMemo(() => {
 		const set = new Set<string>();
-		for (const teamId of invoiceTeamIds) {
-			const safeTeamId = String(teamId ?? "").trim();
+		for (const workspaceId of invoiceTeamIds) {
+			const safeTeamId = String(workspaceId ?? "").trim();
 			if (safeTeamId) set.add(safeTeamId);
 		}
 		return set;
@@ -90,14 +90,14 @@ export default function RedeemCreditCodeCard(props: Props) {
 		: disabledReason;
 
 	useEffect(() => {
-		if (defaultTeamId && teamOptions.some((team) => team.id === defaultTeamId)) {
-			setSelectedTeamId(defaultTeamId);
+		if (defaultWorkspaceId && teamOptions.some((team) => team.id === defaultWorkspaceId)) {
+			setSelectedTeamId(defaultWorkspaceId);
 			return;
 		}
 		if (teamOptions.length > 0 && !teamOptions.some((team) => team.id === selectedTeamId)) {
 			setSelectedTeamId(teamOptions[0].id);
 		}
-	}, [defaultTeamId, teamOptions, selectedTeamId]);
+	}, [defaultWorkspaceId, teamOptions, selectedTeamId]);
 
 	async function onRedeem() {
 		if (isSubmitting) return;
@@ -129,7 +129,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 		try {
 			const result = await redeemCreditCodeAction({
 				code: normalizedCode,
-				teamId: selectedTeamId,
+				workspaceId: selectedTeamId,
 			});
 			const elapsedMs = Date.now() - startedAt;
 			if (elapsedMs < 400) {

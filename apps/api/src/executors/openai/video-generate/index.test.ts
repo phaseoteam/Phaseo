@@ -18,7 +18,7 @@ function buildArgs(ir: IRVideoGenerationRequest): ExecutorExecuteArgs {
 	return {
 		ir,
 		requestId: "req_openai_video_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "openai",
 		endpoint: "video.generation",
 		protocol: "openai.video",

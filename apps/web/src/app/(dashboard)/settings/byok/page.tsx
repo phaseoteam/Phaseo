@@ -8,7 +8,7 @@ import ResetWindowHover from "@/components/(gateway)/settings/byok/ResetWindowHo
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export const metadata = { title: "BYOK - Settings" };
 
@@ -104,7 +104,7 @@ export default function BYOKPage() {
 
 async function ByokProvidersSection() {
 	const supabase = await createClient();
-	const currentTeam = await getTeamIdFromCookie();
+	const currentTeam = await getWorkspaceIdFromCookie();
 	if (!currentTeam) {
 		return (
 			<div className="rounded-xl border border-dashed border-zinc-300/70 p-6 text-sm text-muted-foreground">
@@ -127,12 +127,12 @@ async function ByokProvidersSection() {
 		supabase
 			.from("byok_keys")
 			.select("id,provider_id,name,prefix,suffix,created_at,enabled,always_use")
-			.eq("team_id", currentTeam)
+			.eq("workspace_id", currentTeam)
 			.order("created_at", { ascending: false }),
 		supabase
-			.from("team_byok_monthly_usage")
+			.from("workspace_byok_monthly_usage")
 			.select("month_start,request_count")
-			.eq("team_id", currentTeam)
+			.eq("workspace_id", currentTeam)
 			.gte("month_start", monthStartIso)
 			.lt("month_start", nextMonthStartIso)
 			.order("month_start", { ascending: false })

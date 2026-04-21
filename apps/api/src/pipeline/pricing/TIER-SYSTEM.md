@@ -65,9 +65,9 @@ tier                              text        DEFAULT 'basic'
 tier_updated_at                   timestamptz DEFAULT now()
 consecutive_low_spend_months      int         DEFAULT 0
 
--- team_tier_history table (audit trail)
+-- workspace_tier_history table (audit trail)
 id                                uuid
-team_id                           uuid
+workspace_id                           uuid
 old_tier                          text
 new_tier                          text
 reason                            text
@@ -79,14 +79,14 @@ changed_at                        timestamptz
 
 ### Key Functions
 
-1. **`calculate_tier_with_grace(team_id, spend_30d_nanos)`**
+1. **`calculate_tier_with_grace(workspace_id, spend_30d_nanos)`**
    - Called automatically before EVERY request in `context.sql`
    - Takes rolling 30-day spend as input
    - Calculates tier with grace period logic
    - Updates team tier in database if it changed
    - Returns: Current effective tier ('basic' or 'enterprise')
 
-2. **`cleanup_dormant_enterprise_teams()`**
+2. **`cleanup_dormant_enterprise_workspaces()`**
    - Runs monthly via pg_cron (1st of each month)
    - Checks only Enterprise teams
    - Calculates rolling 30-day spend for each
@@ -94,7 +94,7 @@ changed_at                        timestamptz
    - Downgrades dormant teams after 3 consecutive checks below threshold
    - Returns: `{total_teams_checked, teams_downgraded, downgraded_teams}`
 
-3. **`get_team_tier_info(team_id)`**
+3. **`get_workspace_tier_info(workspace_id)`**
    - UI helper function
    - Returns comprehensive tier info for dashboard display
    - Includes 30-day spend, thresholds, and grace period status
@@ -111,13 +111,13 @@ The tier is calculated **before** the request is processed:
 -- Calculate team 30-day spend from gateway_requests
 SELECT COALESCE(SUM(cost_nanos), 0) INTO team_spend_30d_nanos
 FROM gateway_requests
-WHERE team_id = gateway_fetch_request_context.team_id
+WHERE workspace_id = gateway_fetch_request_context.workspace_id
   AND success = true
   AND created_at >= now() - interval '30 days';
 
 -- Calculate tier with grace period (updates database if changed)
 team_tier := calculate_tier_with_grace(
-    gateway_fetch_request_context.team_id,
+    gateway_fetch_request_context.workspace_id,
     team_spend_30d_nanos
 );
 
@@ -160,9 +160,9 @@ When auto-recharge triggers:
 ```typescript
 // Fetch current tier (includes instant upgrades)
 const { data: teamData } = await supabase
-    .from('teams')
+    .from('workspaces')
     .select('tier')
-    .eq('id', wallet.team_id)
+    .eq('id', wallet.workspace_id)
     .single();
 
 const tier = teamData?.tier ?? 'basic';
@@ -175,7 +175,7 @@ const { netNanos, feeNanos } = computeNetAndFeeFromGross(grossNanos, feePct);
 await supabase
     .from('wallets')
     .update({ balance_nanos: afterBalanceNanos })
-    .eq('team_id', wallet.team_id);
+    .eq('workspace_id', wallet.workspace_id);
 ```
 
 ## Deployment Checklist
@@ -210,7 +210,7 @@ In Supabase SQL Editor (as admin):
 SELECT cron.schedule(
     'cleanup-dormant-enterprise-teams',
     '0 0 1 * *',  -- Midnight UTC on 1st of each month
-    $$SELECT cleanup_dormant_enterprise_teams()$$
+    $$SELECT cleanup_dormant_enterprise_workspaces()$$
 );
 
 -- Verify it's scheduled
@@ -251,7 +251,7 @@ SELECT
     t.tier,
     ROUND((SUM(gr.cost_nanos)::numeric / 1000000000.0)::numeric, 2) as current_month_spend
 FROM teams t
-LEFT JOIN gateway_requests gr ON gr.team_id = t.id
+LEFT JOIN gateway_requests gr ON gr.workspace_id = t.id
     AND gr.success = true
     AND gr.created_at >= date_trunc('month', now())
 GROUP BY t.id, t.tier
@@ -269,10 +269,10 @@ UPDATE teams SET tier = 'enterprise', tier_updated_at = now() WHERE id = '...';
 1. Create test team on Basic tier
 2. Make gateway requests totaling $10,000+
 3. Verify tier changes to Enterprise immediately
-4. Check `team_tier_history` for audit entry
+4. Check `workspace_tier_history` for audit entry
 
 ```sql
-SELECT * FROM team_tier_history WHERE team_id = '...' ORDER BY changed_at DESC;
+SELECT * FROM workspace_tier_history WHERE workspace_id = '...' ORDER BY changed_at DESC;
 ```
 
 ### Test Monthly Downgrades
@@ -313,7 +313,7 @@ FROM teams
 WHERE tier = 'enterprise' AND consecutive_low_spend_months >= 2;
 
 -- Recent tier changes
-SELECT * FROM team_tier_history
+SELECT * FROM workspace_tier_history
 WHERE changed_at >= now() - interval '7 days'
 ORDER BY changed_at DESC;
 
@@ -323,7 +323,7 @@ SELECT
     old_tier,
     new_tier,
     COUNT(*) as changes
-FROM team_tier_history
+FROM workspace_tier_history
 GROUP BY month, old_tier, new_tier
 ORDER BY month DESC;
 ```
@@ -333,8 +333,8 @@ ORDER BY month DESC;
 ### Team not upgrading to Enterprise
 
 **Check**:
-1. Current month spend: `SELECT get_team_tier_info('team_id');`
-2. Tier upgrade log: `SELECT * FROM team_tier_history WHERE team_id = '...' ORDER BY changed_at DESC;`
+1. Current month spend: `SELECT get_workspace_tier_info('workspace_id');`
+2. Tier upgrade log: `SELECT * FROM workspace_tier_history WHERE workspace_id = '...' ORDER BY changed_at DESC;`
 3. Gateway request records: Ensure `success = true` and `cost_nanos > 0`
 
 **Fix**: Manually upgrade if needed:
@@ -394,6 +394,6 @@ SELECT cron.schedule('monthly-tier-downgrade-check', '0 0 1 * *', $$SELECT updat
 ## Support
 
 For questions or issues:
-- Check tier history: `SELECT * FROM team_tier_history WHERE team_id = '...';`
+- Check tier history: `SELECT * FROM workspace_tier_history WHERE workspace_id = '...';`
 - Review logs: Look for `[tier-upgrade]` and `[stripe-webhook]` prefixes
 - Manual override: Contact admin to adjust tier manually if needed

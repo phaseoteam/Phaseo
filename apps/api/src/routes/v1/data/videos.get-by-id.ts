@@ -63,7 +63,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		return err("validation_error", {
 			reason: "missing_video_id",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 		});
 	}
 	const ownedVideo = await requireOwnedVideoJob(authValue, id);
@@ -74,7 +74,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		return err("not_found", {
 			reason: "video_deleted",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 		});
 	}
@@ -82,7 +82,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	if (vertexOperationName) {
 		logGoogleVideoTrace("vertex_status_request_start", {
 			requestId: authValue.requestId,
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			operationName: vertexOperationName,
 			provider: videoMeta?.provider ?? "google-vertex",
@@ -178,7 +178,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		}
 		logGoogleVideoTrace("vertex_status_request_non_json_response", {
 			requestId: authValue.requestId,
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			operationName: vertexOperationName,
 			upstreamStatus: res.status,
@@ -191,7 +191,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	if (operationName) {
 		logGoogleVideoTrace("status_request_start", {
 			requestId: authValue.requestId,
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			operationName,
 			provider: videoMeta?.provider ?? "google-ai-studio",
@@ -328,7 +328,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		}
 		logGoogleVideoTrace("status_request_non_json_response", {
 			requestId: authValue.requestId,
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			operationName,
 			upstreamStatus: res.status,
@@ -728,7 +728,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		return err("not_ready", {
 			reason: "atlas_prediction_id_missing",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 		});
 	}
@@ -737,7 +737,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		return err("not_supported", {
 			reason: "video_status_unsupported",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 			provider: openAiCompatProviderId,
 		});
@@ -794,7 +794,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	const enriched = enrichVideoPayloadWithJobMetrics(statusJson as Record<string, unknown>, videoRecord, videoMeta);
 	if (openAiStatus === "in_progress" && typeof (enriched as any).progress === "number") {
 		dispatchVideoWebhookEventInBackground({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			eventType: "video.progress",
 			progress: (enriched as any).progress,

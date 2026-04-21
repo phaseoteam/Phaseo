@@ -25,7 +25,7 @@ function toPositiveNumber(value: unknown): number | null {
 }
 
 export async function reserveVideoGenerationCredits(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	providerId: string;
 	model: string;
@@ -68,7 +68,7 @@ export async function reserveVideoGenerationCredits(args: {
 		},
 	});
 	const byokAdjusted = await applyByokServiceFee({
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		isByok: Boolean(args.isByok),
 		baseCostNanos: Number((pricedBase as any)?.pricing?.total_nanos ?? 0) || 0,
 		pricedUsage: pricedBase,
@@ -86,7 +86,7 @@ export async function reserveVideoGenerationCredits(args: {
 	}
 
 	const reserved = await reserveWalletCredits({
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		reservationId,
 		amountNanos: totalNanos,
 		holdRefId: args.videoId,

@@ -1,5 +1,5 @@
 -- Move API app attribution identity to deterministic URL-based keys.
--- This keeps one app row per (team_id, url) and removes random app fan-out.
+-- This keeps one app row per (workspace_id, url) and removes random app fan-out.
 
 begin;
 
@@ -21,17 +21,17 @@ where url is distinct from btrim(url);
 with ranked as (
   select
     id,
-    team_id,
+    workspace_id,
     url,
     row_number() over (
-      partition by team_id, url
+      partition by workspace_id, url
       order by
         coalesce(last_seen, created_at) desc,
         created_at asc,
         id asc
     ) as rn,
     first_value(id) over (
-      partition by team_id, url
+      partition by workspace_id, url
       order by
         coalesce(last_seen, created_at) desc,
         created_at asc,
@@ -52,10 +52,10 @@ where gr.app_id = d.drop_id;
 with ranked as (
   select
     id,
-    team_id,
+    workspace_id,
     url,
     row_number() over (
-      partition by team_id, url
+      partition by workspace_id, url
       order by
         coalesce(last_seen, created_at) desc,
         created_at asc,
@@ -74,7 +74,7 @@ set app_key = url,
     updated_at = now()
 where app_key is distinct from url;
 
-create unique index if not exists api_apps_team_id_url_key
-  on public.api_apps (team_id, url);
+create unique index if not exists api_apps_workspace_id_url_key
+  on public.api_apps (workspace_id, url);
 
 commit;

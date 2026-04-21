@@ -23,7 +23,7 @@ export async function rankProviders(
     const routed = await routeProviders(candidates, {
         endpoint: ctx.endpoint,
         model: ctx.model,
-        teamId: ctx.teamId,
+        workspaceId: ctx.workspaceId,
         body: ctx.body,
         routingMode: ctx.routingMode ?? ctx.teamSettings?.routingMode ?? null,
         betaChannelEnabled: ctx.teamSettings?.betaChannelEnabled ?? false,
