@@ -3661,7 +3661,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": "text,image",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-21T00:00:00",
