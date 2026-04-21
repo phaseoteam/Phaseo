@@ -130,6 +130,13 @@ function toTeamSsoSettingsResponse(
 	};
 }
 
+function revalidateWorkspacePaths() {
+	revalidatePath("/settings/teams");
+	revalidatePath("/settings/workspaces");
+	revalidatePath("/settings/workspaces/members");
+	revalidatePath("/settings/workspaces/settings");
+}
+
 export async function getTeamSsoSettingsAction(teamId: string) {
 	if (!teamId || typeof teamId !== "string") {
 		throw new Error("Missing teamId");
@@ -201,8 +208,7 @@ export async function updateTeamSsoSettingsAction(
 		.upsert(payload, { onConflict: "team_id" });
 	if (error) throw error;
 
-	revalidatePath("/settings/teams");
-	revalidatePath("/settings/teams/settings");
+	revalidateWorkspacePaths();
 	return { success: true as const, teamId, settings: toTeamSsoSettingsResponse(payload) };
 }
 
@@ -216,7 +222,7 @@ export async function createTeamAction(name: string, userId: string) {
     const hasPaidTeamAccess = await userHasPaidTeamAccess(admin as any, userId);
     if (!hasPaidTeamAccess) {
         throw new Error(
-            "Additional team workspaces unlock after your first credit deposit. Free accounts can use the personal team only."
+            "Additional workspaces unlock after your first credit deposit. Free accounts can use the personal workspace only."
         );
     }
 
@@ -236,13 +242,13 @@ export async function createTeamAction(name: string, userId: string) {
         .upsert({ team_id: newTeamId, user_id: userId, role: "owner" }, { onConflict: "team_id,user_id", ignoreDuplicates: true });
 
     // Create wallet row now; Stripe customer is provisioned lazily when billing
-    // flows are first used for this team.
+    // flows are first used for this workspace.
     await supabase.from("wallets").upsert(
         { team_id: newTeamId },
         { onConflict: "team_id", ignoreDuplicates: true },
     );
 
-    // Upsert a Linear Customer for this team. Non-blocking: failures shouldn't block team creation.
+    // Upsert a Linear Customer for this workspace. Non-blocking: failures shouldn't block team creation.
     try {
         // Build an external id so we can reference this customer later
         const externalId = `cus-${newTeamId}`;
@@ -258,7 +264,7 @@ export async function createTeamAction(name: string, userId: string) {
         } catch { }
     }
 
-    revalidatePath("/settings/teams");
+    revalidateWorkspacePaths();
     return { id: newTeamId };
 }
 
@@ -273,12 +279,12 @@ export async function updateTeamAction(teamId: string, name: string) {
         supabase,
         user.id,
         teamId,
-        "Personal team cannot be renamed."
+        "Personal workspace cannot be renamed."
     );
     const { data, error } = await supabase.from("teams").update({ name }).eq("id", teamId).select("id").single();
     if (error) throw error;
 
-    revalidatePath("/settings/teams");
+    revalidateWorkspacePaths();
     return { id: data?.id as string };
 }
 
@@ -293,12 +299,12 @@ export async function deleteTeamAction(teamId: string) {
         supabase,
         user.id,
         teamId,
-        "Personal team cannot be deleted."
+        "Personal workspace cannot be deleted."
     );
 
     const { data: team } = await supabase.from("teams").select("id, owner_user_id").eq("id", teamId).maybeSingle();
-    if (!team) throw new Error("Team not found");
-    if (team.owner_user_id !== user.id) throw new Error("Only owner may delete team");
+    if (!team) throw new Error("Workspace not found");
+    if (team.owner_user_id !== user.id) throw new Error("Only the owner may delete a workspace");
 
     const admin = createAdminClient();
     await admin.from("team_members").delete().eq("team_id", teamId);
@@ -306,7 +312,7 @@ export async function deleteTeamAction(teamId: string) {
     await admin.from("team_join_requests").delete().eq("team_id", teamId);
     await admin.from("teams").delete().eq("id", teamId);
 
-    revalidatePath("/settings/teams");
+    revalidateWorkspacePaths();
     return { success: true } as const;
 }
 
@@ -330,8 +336,13 @@ export async function createTeamInviteAction(
         supabase,
         user.id,
         teamId,
-        "Only owners or admins may create team invites."
+        "Only workspace owners or admins may create invites."
     );
+
+    const normalizedRole = String(role || "member").toLowerCase();
+    if (!["admin", "member"].includes(normalizedRole)) {
+        throw new Error("Invalid role");
+    }
 
     const admin = createAdminClient();
 
@@ -344,7 +355,7 @@ export async function createTeamInviteAction(
         .insert({
             team_id: teamId,
             creator_user_id: creatorUserId,
-            role: role || "member",
+            role: normalizedRole,
             token_encrypted,
             token_fingerprint,
             token_preview: previewFromToken(token),
@@ -376,11 +387,24 @@ export async function revealTeamInviteAction(inviteId: string) {
     if (inviteError) throw inviteError;
     if (!invite) throw new Error("Invite not found");
 
-    if (invite.creator_user_id !== user.id) {
-        const { data: team, error: teamErr } = await admin.from("teams").select("owner_user_id").eq("id", invite.team_id).maybeSingle();
-        if (teamErr) throw teamErr;
-        if (!team) throw new Error("Team not found");
-        if (team.owner_user_id !== user.id) throw new Error("Unauthorized");
+    const { data: actorMembership, error: actorMembershipError } = await admin
+        .from("team_members")
+        .select("user_id")
+        .eq("team_id", invite.team_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+    if (actorMembershipError) throw actorMembershipError;
+
+    const isCreatorAndCurrentMember =
+        invite.creator_user_id === user.id && Boolean(actorMembership);
+
+    if (!isCreatorAndCurrentMember) {
+        await ensureTeamOwnerOrAdmin(
+            supabase,
+            user.id,
+            invite.team_id,
+            "Only workspace owners or admins may reveal invites."
+        );
     }
 
     if (!invite.token_encrypted) throw new Error("Token reveal not available; encryption not configured");
@@ -410,17 +434,30 @@ export async function revokeTeamInviteAction(inviteId: string) {
     if (inviteError) throw inviteError;
     if (!invite) throw new Error("Invite not found");
 
-    if (invite.creator_user_id !== user.id) {
-        const { data: team, error: teamErr } = await admin.from("teams").select("owner_user_id").eq("id", invite.team_id).maybeSingle();
-        if (teamErr) throw teamErr;
-        if (!team) throw new Error("Team not found");
-        if (team.owner_user_id !== user.id) throw new Error("Unauthorized");
+    const { data: actorMembership, error: actorMembershipError } = await admin
+        .from("team_members")
+        .select("user_id")
+        .eq("team_id", invite.team_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+    if (actorMembershipError) throw actorMembershipError;
+
+    const isCreatorAndCurrentMember =
+        invite.creator_user_id === user.id && Boolean(actorMembership);
+
+    if (!isCreatorAndCurrentMember) {
+        await ensureTeamOwnerOrAdmin(
+            supabase,
+            user.id,
+            invite.team_id,
+            "Only workspace owners or admins may revoke invites."
+        );
     }
 
     const { data, error } = await admin.from("team_invites").delete().eq("id", inviteId).select("id").maybeSingle();
     if (error) throw error;
 
-    revalidatePath("/settings/teams");
+    revalidateWorkspacePaths();
     return { success: true as const, id: data?.id };
 }
 
@@ -447,6 +484,16 @@ export async function acceptTeamInviteAction(token: string, userId: string) {
     if (!inv) return { success: false as const, error: "Invalid or expired invite" };
     if (inv.max_uses != null && (inv.uses_count ?? 0) >= inv.max_uses)
         return { success: false as const, error: "Invalid or expired invite" };
+
+    const { data: existingMembership } = await admin
+        .from("team_members")
+        .select("team_id")
+        .eq("team_id", inv.team_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+    if (existingMembership) {
+        return { success: false as const, error: "You are already a member of this workspace" };
+    }
 
     const { data: existing } = await admin
         .from("team_join_requests")
@@ -479,68 +526,16 @@ export async function approveJoinRequest(requestId: string) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user?.id) throw new Error("Unauthorized");
 
-    const admin = createAdminClient();
-
-    const decided_at = new Date().toISOString();
-
-    // fetch the join request first to get team, requester and invite
-    const { data: req, error: reqErr } = await admin
-        .from("team_join_requests")
-        .select("id, team_id, requester_user_id, invite_id, status")
-        .eq("id", requestId)
-        .maybeSingle();
-    if (reqErr) throw reqErr;
-    if (!req) throw new Error("Join request not found");
-    if (!req.team_id) throw new Error("Join request missing team reference");
-    await ensureTeamOwnerOrAdmin(
-        supabase,
-        user.id,
-        req.team_id,
-        "Only owners or admins may approve join requests."
-    );
-    if (req.status !== "pending") throw new Error("Request already decided");
-
-    const { data, error } = await admin
-        .from("team_join_requests")
-        .update({ status: "approved", decided_by: user.id, decided_at })
-        .eq("id", requestId)
-        .select("id, team_id, requester_user_id, invite_id")
-        .maybeSingle();
-
+    const { data, error } = await supabase.rpc("approve_team_join_request", {
+        p_request_id: requestId,
+    });
     if (error) throw error;
 
-    // ensure the requester is added to team_members
-    const teamId = data?.team_id as string | undefined;
-    const requesterId = data?.requester_user_id as string | undefined;
-    const inviteId = data?.invite_id as string | null | undefined;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.id) throw new Error("Join request not found");
 
-    if (teamId && requesterId) {
-        // determine role (default to 'member') and increment invite uses_count if applicable
-        let role: string = "member";
-        if (inviteId) {
-            const { data: invite, error: inviteErr } = await admin
-                .from("team_invites")
-                .select("id, role, uses_count")
-                .eq("id", inviteId)
-                .maybeSingle();
-            if (inviteErr) throw inviteErr;
-            if (invite) {
-                role = invite.role || "member";
-                const newUses = (invite.uses_count ?? 0) + 1;
-                const { error: updErr } = await admin.from("team_invites").update({ uses_count: newUses }).eq("id", inviteId);
-                if (updErr) throw updErr;
-            }
-        }
-
-        // upsert membership (ignore duplicate)
-        const { error: memErr } = await admin
-            .from("team_members")
-            .upsert({ team_id: teamId, user_id: requesterId, role }, { onConflict: "team_id,user_id", ignoreDuplicates: true });
-        if (memErr) throw memErr;
-    }
-
-    revalidatePath("/settings/teams");
-    return { success: true as const, id: data?.id, teamId: data?.team_id };
+    revalidateWorkspacePaths();
+    return { success: true as const, id: row.id, teamId: row.team_id };
 }
 
 export async function rejectJoinRequest(requestId: string) {
@@ -550,34 +545,14 @@ export async function rejectJoinRequest(requestId: string) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user?.id) throw new Error("Unauthorized");
 
-    const admin = createAdminClient();
-
-    const decided_at = new Date().toISOString();
-
-    const { data: req, error: reqErr } = await admin
-        .from("team_join_requests")
-        .select("team_id")
-        .eq("id", requestId)
-        .maybeSingle();
-    if (reqErr) throw reqErr;
-    if (!req) throw new Error("Join request not found");
-    if (!req.team_id) throw new Error("Join request missing team reference");
-    await ensureTeamOwnerOrAdmin(
-        supabase,
-        user.id,
-        req.team_id,
-        "Only owners or admins may reject join requests."
-    );
-
-    const { data, error } = await admin
-        .from("team_join_requests")
-        .update({ status: "denied", decided_by: user.id, decided_at })
-        .eq("id", requestId)
-        .select("id, team_id")
-        .maybeSingle();
-
+    const { data, error } = await supabase.rpc("reject_team_join_request", {
+        p_request_id: requestId,
+    });
     if (error) throw error;
 
-    revalidatePath("/settings/teams");
-    return { success: true as const, id: data?.id, teamId: data?.team_id };
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.id) throw new Error("Join request not found");
+
+    revalidateWorkspacePaths();
+    return { success: true as const, id: row.id, teamId: row.team_id };
 }

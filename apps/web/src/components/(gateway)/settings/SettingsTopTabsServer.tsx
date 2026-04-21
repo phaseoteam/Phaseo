@@ -75,15 +75,15 @@ const OAUTH_TABS: Tab[] = [
 	{ href: "/settings/authorized-apps", label: "OAuth Integrations" },
 ];
 
-const TEAM_TABS: Tab[] = [
+const WORKSPACE_TABS: Tab[] = [
 	{
-		href: "/settings/teams/members",
+		href: "/settings/workspaces/members",
 		label: "Members",
 		match: ["/settings/teams/members"],
 	},
 	{
-		href: "/settings/teams/settings",
-		label: "Team Settings",
+		href: "/settings/workspaces/settings",
+		label: "Workspace Settings",
 		match: ["/settings/teams/settings"],
 	},
 ];
@@ -121,9 +121,12 @@ function resolveTabs(
 		return OAUTH_TABS;
 	}
 
-	// Team
-	if (pathname.startsWith("/settings/teams")) {
-		return TEAM_TABS;
+	// Workspace
+	if (
+		pathname.startsWith("/settings/workspaces") ||
+		pathname.startsWith("/settings/teams")
+	) {
+		return WORKSPACE_TABS;
 	}
 
 	if (pathname.startsWith("/settings/credits") || pathname.startsWith("/settings/payment-methods") || pathname.startsWith("/settings/tiers")) {
@@ -165,8 +168,11 @@ export default function SettingsTopTabsServer(props: {
 			return { exact: true, len: t.href.length };
 		}
 
-		// Treat the team index route as members, since `/settings/teams` will redirect.
-		if (pathname === "/settings/teams" && t.href === "/settings/teams/members") {
+		// Treat index routes as members; both old and new paths are valid.
+		if (
+			(pathname === "/settings/workspaces" || pathname === "/settings/teams") &&
+			t.href === "/settings/workspaces/members"
+		) {
 			return { exact: true, len: t.href.length };
 		}
 

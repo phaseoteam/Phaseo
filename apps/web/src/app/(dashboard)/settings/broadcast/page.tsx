@@ -32,7 +32,7 @@ async function BroadcastSettingsContent() {
 	if (!teamId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a team to manage broadcast settings.
+				Select a workspace to manage broadcast settings.
 			</div>
 		);
 	}

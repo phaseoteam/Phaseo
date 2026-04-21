@@ -51,7 +51,7 @@ export default function CreateManagementKeyDialog({
 		if (!currentUserId || selectedTeamId === undefined) {
 			setPlainKey(null);
 			setLoading(false);
-			alert("Missing user or team context. Make sure you are signed in.");
+			alert("Missing user or workspace context. Make sure you are signed in.");
 			return;
 		}
 		try {

@@ -83,8 +83,8 @@ export default function TeamsSettingsContainer({
 		<div className="space-y-6">
 			{hideTitle ? null : (
 				<SettingsPageHeader
-					title="Teams"
-					description="Manage teams, members, and team-level access controls."
+					title="Workspaces"
+					description="Manage workspaces, members, and workspace-level access controls."
 					actions={
 						<>
 							<CreateTeamDialog

@@ -63,7 +63,7 @@ async function UsageAlertsContent() {
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground">
-							You have no upcoming deprecations or recent retirements for models used by this team.
+							You have no upcoming deprecations or recent retirements for models used by this workspace.
 						</p>
 					</CardContent>
 				</Card>

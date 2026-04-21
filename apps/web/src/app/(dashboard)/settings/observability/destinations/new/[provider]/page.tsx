@@ -34,7 +34,7 @@ export default async function NewBroadcastDestinationPage({
 	if (!teamId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a team to add a destination.
+				Select a workspace to add a destination.
 			</div>
 		);
 	}

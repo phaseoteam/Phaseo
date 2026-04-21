@@ -108,7 +108,7 @@ async function ByokProvidersSection() {
 	if (!currentTeam) {
 		return (
 			<div className="rounded-xl border border-dashed border-zinc-300/70 p-6 text-sm text-muted-foreground">
-				Select a team to manage BYOK settings.
+				Select a workspace to manage BYOK settings.
 			</div>
 		);
 	}

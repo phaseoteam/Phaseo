@@ -407,7 +407,7 @@ async function getDestinationForTeam(
 ): Promise<{ supabase: any; row: BroadcastDestinationRow }> {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const { data, error } = await supabase
@@ -427,7 +427,7 @@ async function getDestinationForTeam(
 export async function createBroadcastDestinationAction(args: CreateBroadcastDestinationInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const destinationId = normalizeDestinationId(String(args.destinationId ?? "").trim());
@@ -731,7 +731,7 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 }) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const destinationId = String(args.destinationId ?? "").trim();

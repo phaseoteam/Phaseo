@@ -25,7 +25,7 @@ export async function updateGlobalGuardrailsSettings(
 ) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const update: any = {
@@ -102,7 +102,7 @@ export type GuardrailUpsertPayload = {
 export async function createGuardrail(payload: GuardrailUpsertPayload) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	if (!payload.name?.trim()) throw new Error("Name is required");
@@ -171,7 +171,7 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 	if (!id) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	if (!payload.name?.trim()) throw new Error("Name is required");
@@ -239,7 +239,7 @@ export async function deleteGuardrail(id: string) {
 	if (!id) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const { error } = await supabase
@@ -257,7 +257,7 @@ export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 	if (!guardrailId) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id");
+	if (!teamId) throw new Error("Missing workspace id");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	// Ensure guardrail belongs to team.
@@ -271,7 +271,7 @@ export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 		throw new Error("Guardrail not found");
 	}
 
-	// Ensure all keys belong to the team.
+	// Ensure all keys belong to the workspace.
 	if (keyIds.length) {
 		const { data: keyRows, error: keyErr } = await supabase
 			.from("keys")
@@ -279,7 +279,7 @@ export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 			.in("id", keyIds);
 		if (keyErr) throw keyErr;
 		const bad = (keyRows ?? []).some((k) => k.team_id !== teamId);
-		if (bad) throw new Error("One or more keys do not belong to this team");
+		if (bad) throw new Error("One or more keys do not belong to this workspace");
 	}
 
 	// Replace associations.

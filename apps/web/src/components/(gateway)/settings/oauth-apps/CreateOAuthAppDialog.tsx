@@ -43,7 +43,7 @@ export default function CreateOAuthAppDialog({
 
 	const handleCreate = async () => {
 		if (!currentTeamId) {
-			setError("Select a team before creating an OAuth app");
+			setError("Select a workspace before creating an OAuth app");
 			return;
 		}
 		setLoading(true);

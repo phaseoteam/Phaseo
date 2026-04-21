@@ -81,7 +81,7 @@ const DEFAULTS: Settings = {
 };
 
 const schema = z.object({
-	teamName: z.string().trim().min(1, "Team name is required").max(60),
+	teamName: z.string().trim().min(1, "Workspace name is required").max(60),
 });
 
 function normalizeMode(value: unknown): TeamSsoMode {
@@ -139,6 +139,7 @@ export default function TeamSettingsPanel({
 	const hasTeamControl =
 		roleForCurrentUser === "owner" || roleForCurrentUser === "admin";
 	const canEdit = hasTeamControl && !isPersonalTeam;
+	const canDeleteWorkspace = roleForCurrentUser === "owner" && !isPersonalTeam;
 	const currentTeamBalance =
 		fallbackTeamId && walletBalances ? walletBalances[fallbackTeamId] ?? 0 : 0;
 
@@ -182,7 +183,7 @@ export default function TeamSettingsPanel({
 	async function handleSave() {
 		if (!teamId) return;
 		if (isPersonalTeam) {
-			toast.error("Personal team settings cannot be edited.");
+			toast.error("Personal workspace settings cannot be edited.");
 			return;
 		}
 
@@ -221,7 +222,7 @@ export default function TeamSettingsPanel({
 					setInitial(normalized);
 				})(),
 				{
-					loading: "Saving team settings...",
+					loading: "Saving workspace settings...",
 					success: "Saved.",
 					error: (error: any) =>
 						error?.message || "Could not save settings",
@@ -239,15 +240,15 @@ export default function TeamSettingsPanel({
 	async function handleDeleteTeam() {
 		if (!teamId) return;
 		if (isPersonalTeam) {
-			toast.error("Personal team cannot be deleted.");
+			toast.error("Personal workspace cannot be deleted.");
 			return;
 		}
 		setDeleting(true);
 		try {
 			await toast.promise(deleteTeamAction(teamId), {
-				loading: "Deleting team...",
-				success: "Team deleted",
-				error: (error: any) => error?.message || "Could not delete team",
+				loading: "Deleting workspace...",
+				success: "Workspace deleted",
+				error: (error: any) => error?.message || "Could not delete workspace",
 			});
 			setDeleteDialogOpen(false);
 		} finally {
@@ -274,10 +275,10 @@ export default function TeamSettingsPanel({
 							) : null}
 						</CardTitle>
 						<CardDescription>
-							Configure your team's basics and enterprise SSO scaffold.
+							Configure your workspace basics and enterprise SSO scaffold.
 							{isPersonalTeam ? (
 								<span className="mt-1 block text-xs text-muted-foreground">
-									Your personal team is immutable and always serves as your
+									Your personal workspace is immutable and always serves as your
 									default.
 								</span>
 							) : null}
@@ -288,7 +289,7 @@ export default function TeamSettingsPanel({
 						onValueChange={(value) => onTeamChange?.(value)}
 					>
 						<SelectTrigger className="w-full sm:w-[240px]">
-							<SelectValue placeholder="Select team..." />
+							<SelectValue placeholder="Select workspace..." />
 						</SelectTrigger>
 						<SelectContent>
 							{teams.map((team) => (
@@ -304,7 +305,7 @@ export default function TeamSettingsPanel({
 
 				<CardContent className="grid max-w-2xl gap-6 pt-6">
 					<div className="grid gap-2">
-						<Label htmlFor="teamName">Team name</Label>
+						<Label htmlFor="teamName">Workspace name</Label>
 						<Input
 							id="teamName"
 							value={settings.teamName}
@@ -330,7 +331,7 @@ export default function TeamSettingsPanel({
 						</div>
 
 						<div className="rounded-md border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
-							Status: Coming soon. This section prepares team-level SSO settings
+							Status: Coming soon. This section prepares workspace-level SSO settings
 							for future enforcement.
 						</div>
 
@@ -339,7 +340,7 @@ export default function TeamSettingsPanel({
 								<div className="min-w-0">
 									<p className="text-sm font-medium">Enable SSO configuration</p>
 									<p className="text-xs text-muted-foreground">
-										Turn on team SSO settings storage.
+										Turn on workspace SSO settings storage.
 									</p>
 								</div>
 								<Switch
@@ -355,7 +356,7 @@ export default function TeamSettingsPanel({
 								<div className="min-w-0">
 									<p className="text-sm font-medium">Require SSO for members</p>
 									<p className="text-xs text-muted-foreground">
-										Future policy target: SSO-required by team.
+										Future policy target: SSO-required by workspace.
 									</p>
 								</div>
 								<Switch
@@ -439,18 +440,18 @@ export default function TeamSettingsPanel({
 							<AlertDialogTrigger asChild>
 								<Button
 									variant="destructive"
-									disabled={!canEdit || loading}
+									disabled={!canDeleteWorkspace || loading}
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
-									Delete team
+									Delete workspace
 								</Button>
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>Delete team?</AlertDialogTitle>
+									<AlertDialogTitle>Delete workspace?</AlertDialogTitle>
 									<AlertDialogDescription>
-										This will permanently remove the team and all related data.
-										Type <span className="font-semibold">DELETE TEAM</span> to
+										This will permanently remove the workspace and all related data.
+										Type <span className="font-semibold">DELETE WORKSPACE</span> to
 										confirm.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
@@ -503,7 +504,7 @@ function ConfirmDeleteTeam({
 }) {
 	const [text, setText] = React.useState("");
 	const [ackCredits, setAckCredits] = React.useState(false);
-	const ok = text.trim().toUpperCase() === "DELETE TEAM";
+	const ok = text.trim().toUpperCase() === "DELETE WORKSPACE";
 	const balance =
 		typeof remainingBalance === "number" ? Math.max(remainingBalance, 0) : 0;
 	const hasCredits = balance > 0.001;
@@ -521,7 +522,7 @@ function ConfirmDeleteTeam({
 				<Label htmlFor="confirmDeleteTeam">Confirmation</Label>
 				<Input
 					id="confirmDeleteTeam"
-					placeholder='Type "DELETE TEAM" to confirm'
+					placeholder='Type "DELETE WORKSPACE" to confirm'
 					value={text}
 					onChange={(event) => setText(event.target.value)}
 					autoFocus
@@ -530,9 +531,9 @@ function ConfirmDeleteTeam({
 			{hasCredits ? (
 				<div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950 dark:text-amber-200">
 					<p>
-						This team still has{" "}
+						This workspace still has{" "}
 						<span className="font-semibold">{formattedBalance}</span> in credits.
-						Deleting the team will permanently forfeit this balance.
+						Deleting the workspace will permanently forfeit this balance.
 					</p>
 					<label className="flex items-center gap-2 text-xs font-medium">
 						<input
@@ -563,7 +564,7 @@ function ConfirmDeleteTeam({
 								Deleting...
 							</>
 						) : (
-							"Yes, delete this team"
+							"Yes, delete this workspace"
 						)}
 					</Button>
 					<AlertDialogAction className="hidden" />

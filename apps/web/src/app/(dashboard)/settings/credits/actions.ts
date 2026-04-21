@@ -29,7 +29,7 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
     const { supabase, user } = await requireAuthenticatedUser();
     // read team id from the shared helper
     const teamId = await getTeamIdFromCookie();
-    if (!teamId) throw new Error("Missing team id cookie");
+    if (!teamId) throw new Error("Missing workspace id cookie");
     await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
     const {
@@ -67,7 +67,7 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
 export async function DisableAutoTopUpServer() {
     const { supabase, user } = await requireAuthenticatedUser();
     const teamId = await getTeamIdFromCookie();
-    if (!teamId) throw new Error("Missing team id cookie");
+    if (!teamId) throw new Error("Missing workspace id cookie");
     await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
     const { data, error } = await supabase
@@ -96,7 +96,7 @@ export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs)
 	const { enabled, thresholdUsd } = args;
 	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing team id cookie");
+	if (!teamId) throw new Error("Missing workspace id cookie");
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	if (enabled) {
@@ -159,7 +159,7 @@ const INTERNAL_HEADER = "x-internal-payments-token";
 export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
     const { supabase, user } = await requireAuthenticatedUser();
     const teamId = args.team_id ?? (await getTeamIdFromCookie());
-    if (!teamId) throw new Error("Missing team id");
+    if (!teamId) throw new Error("Missing workspace id");
     await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
     const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
@@ -203,7 +203,7 @@ function clampInt(value: number, min: number, max: number, fallback: number) {
 export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingArgs) {
     const { supabase, user } = await requireAuthenticatedUser();
     const teamId = await getTeamIdFromCookie();
-    if (!teamId) throw new Error("Missing team id cookie");
+    if (!teamId) throw new Error("Missing workspace id cookie");
     await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
     const { data: teamRow, error: teamErr } = await supabase
@@ -222,10 +222,10 @@ export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingA
     const alreadyInvoice = currentMode === "invoice";
 
     if (teamTier !== "enterprise") {
-        throw new Error("Invoiced billing is available for Enterprise teams only.");
+        throw new Error("Invoiced billing is available for Enterprise workspaces only.");
     }
     if (!alreadyInvoice && onboardingStatus !== "pre_invoice") {
-        throw new Error("This team is not authorized for invoiced billing yet.");
+        throw new Error("This workspace is not authorized for invoiced billing yet.");
     }
 
     const { data: existingProfile, error: profileReadErr } = await supabase
@@ -337,7 +337,7 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 		return {
 			ok: false as const,
 			status: "team_forbidden",
-			message: "You do not have access to that team.",
+			message: "You do not have access to that workspace.",
 		};
 	}
 

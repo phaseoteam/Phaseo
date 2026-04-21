@@ -284,7 +284,7 @@ export default function TeamsRequests({
 							Join requests
 						</CardTitle>
 						<CardDescription>
-							Approve or ignore requests to join this team.
+							Approve or ignore requests to join this workspace.
 						</CardDescription>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
@@ -297,7 +297,7 @@ export default function TeamsRequests({
 							onValueChange={(v) => setActiveTeamId(v)}
 						>
 							<SelectTrigger className="w-full sm:w-[200px]">
-								<SelectValue placeholder="Select team…" />
+								<SelectValue placeholder="Select workspace…" />
 							</SelectTrigger>
 							<SelectContent>
 								{teams.map((t) => (
@@ -313,7 +313,7 @@ export default function TeamsRequests({
 				<CardContent>
 					{!activeTeam ? (
 						<div className="text-sm text-muted-foreground">
-							No teams available.
+							No workspaces available.
 						</div>
 					) : active.length === 0 ? (
 						<div className="text-sm text-muted-foreground">

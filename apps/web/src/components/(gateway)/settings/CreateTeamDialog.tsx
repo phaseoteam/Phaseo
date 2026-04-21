@@ -49,7 +49,7 @@ export default function CreateTeamDialog({
 			setName("");
 		} catch (err: any) {
 			const message =
-				err?.message ?? "Could not create team right now. Please try again.";
+				err?.message ?? "Could not create workspace right now. Please try again.";
 			toast.error(message);
 		} finally {
 			setLoading(false);
@@ -66,7 +66,7 @@ export default function CreateTeamDialog({
 						className="flex items-center rounded-r-none border-r-0"
 					>
 						<Plus className="h-4 w-4" />
-						<span className="mr-2 select-none">Create Team</span>
+						<span className="mr-2 select-none">Create Workspace</span>
 					</Button>
 				</DialogTrigger>
 				<DropdownMenu
@@ -108,16 +108,16 @@ export default function CreateTeamDialog({
 
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Create Team</DialogTitle>
+					<DialogTitle>Create Workspace</DialogTitle>
 					<DialogDescription>
-						Enter a name for your new team.
+						Enter a name for your new workspace.
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onCreate} className="space-y-4">
 					<Input
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="Team Name"
+						placeholder="Workspace Name"
 					/>
 					<DialogFooter>
 						<DialogClose asChild>

@@ -53,7 +53,7 @@ export default function AppsSettingsPage() {
 		<div className="space-y-6">
 			<SettingsPageHeader
 				title="Apps"
-				description="Manage application metadata and public visibility for your team."
+				description="Manage application metadata and public visibility for your workspace."
 				actions={
 					<Button asChild variant="outline" size="sm">
 						<Link

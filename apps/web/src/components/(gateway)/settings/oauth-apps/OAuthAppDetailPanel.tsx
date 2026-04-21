@@ -376,7 +376,7 @@ export default function OAuthAppDetailPanel({
 											{auth.users?.full_name || auth.users?.email || "Unknown User"}
 										</div>
 										<div className="text-xs text-muted-foreground">
-											{auth.teams?.name || "Unknown Team"}
+											{auth.teams?.name || "Unknown Workspace"}
 										</div>
 									</div>
 									<div className="text-xs text-muted-foreground">

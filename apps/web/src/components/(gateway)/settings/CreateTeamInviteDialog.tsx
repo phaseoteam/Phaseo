@@ -129,15 +129,15 @@ export default function CreateTeamInviteDialog({
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Create Team Invite</DialogTitle>
+					<DialogTitle>Create Workspace Invite</DialogTitle>
 					<DialogDescription>
-						Create an invite code to share with your team.
+						Create an invite code to share with your workspace.
 					</DialogDescription>
 				</DialogHeader>
 
 				{!generatedCode ? (
 					<form onSubmit={onCreate} className="space-y-2">
-						<label className="block text-sm">Team</label>
+						<label className="block text-sm">Workspace</label>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button
@@ -148,7 +148,7 @@ export default function CreateTeamInviteDialog({
 										? teams.find(
 												(x) => x.id === selectedTeam
 										  )?.name
-										: "Select a team"}
+										: "Select a workspace"}
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent>
@@ -172,19 +172,12 @@ export default function CreateTeamInviteDialog({
 									variant="outline"
 									className="w-full justify-between"
 								>
-									{role === "owner"
-										? "Owner"
-										: role === "admin"
+									{role === "admin"
 										? "Admin"
 										: "Member"}
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="start">
-								<DropdownMenuItem
-									onClick={() => setRole("owner")}
-								>
-									Owner
-								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => setRole("admin")}
 								>

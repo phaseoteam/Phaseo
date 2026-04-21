@@ -52,7 +52,7 @@ export default function CreateKeyDialog({
 			// surface an error so users understand why nothing happens
 			setPlainKey(null);
 			setLoading(false);
-			alert("Missing user or team context. Make sure you are signed in.");
+			alert("Missing user or workspace context. Make sure you are signed in.");
 			return;
 		}
 		try {
@@ -115,7 +115,7 @@ export default function CreateKeyDialog({
 				<DialogHeader>
 					<DialogTitle>Create API Key</DialogTitle>
 					<DialogDescription>
-						Create a new API key for a team.
+						Create a new API key for a workspace.
 					</DialogDescription>
 					<DialogDescription className="mt-2 text-sm text-red-600">
 						The key will be shown only <strong>once</strong> - copy
@@ -188,7 +188,7 @@ export default function CreateKeyDialog({
 						<div className="flex items-center gap-2">
 							<div className="text-sm text-muted-foreground font-bold">
 								This key will not be shown again and gives
-								anyone access to your credits for your team.
+								anyone access to your credits for your workspace.
 								Keep this code secret at all times.
 							</div>
 						</div>

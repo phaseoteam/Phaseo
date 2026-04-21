@@ -308,7 +308,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 								<EmptyMedia variant="icon">
 									<Key className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No keys for this team</EmptyTitle>
+								<EmptyTitle className="text-base">No keys for this workspace</EmptyTitle>
 								<EmptyDescription>
 									Create an API key to manage access and usage limits.
 								</EmptyDescription>

@@ -43,9 +43,9 @@ async function GuardrailsSettingsContent() {
 					<EmptyMedia variant="icon">
 						<Shield className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>Select a team</EmptyTitle>
+					<EmptyTitle>Select a workspace</EmptyTitle>
 					<EmptyDescription>
-						Choose a team to view and manage its guardrails.
+						Choose a workspace to view and manage its guardrails.
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>

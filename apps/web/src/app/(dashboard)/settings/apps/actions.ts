@@ -161,16 +161,16 @@ export async function mergeAppsAction(
 		.in("id", [sourceAppId, targetAppId]);
 
 	if (appError || !apps || apps.length !== 2) {
-		throw new Error("Apps must belong to your team");
+		throw new Error("Apps must belong to your workspace");
 	}
 
 	const teamId = apps[0].team_id;
 	if (!apps.every((app) => app.team_id === teamId)) {
-		throw new Error("Apps must belong to the same team");
+		throw new Error("Apps must belong to the same workspace");
 	}
 
 	if (!teamId) {
-		throw new Error("Apps must belong to your team");
+		throw new Error("Apps must belong to your workspace");
 	}
 	await requireTeamMembership(supabase, user.id, teamId);
 

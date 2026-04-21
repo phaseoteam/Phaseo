@@ -216,7 +216,7 @@ export async function createPresetAction(input: CreatePresetInput) {
 		throw new Error("Creator user ID is required");
 	}
 	if (!teamId || typeof teamId !== "string") {
-		throw new Error("Team ID is required");
+		throw new Error("Workspace ID is required");
 	}
 
 	validatePresetName(name);
@@ -233,7 +233,7 @@ export async function createPresetAction(input: CreatePresetInput) {
 		.maybeSingle();
 
 	if (existing) {
-		throw new Error(`Preset "${name}" already exists in this team`);
+		throw new Error(`Preset "${name}" already exists in this workspace`);
 	}
 
 	const sanitizedConfig = sanitizeConfig(config);
@@ -381,7 +381,7 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 			.maybeSingle();
 
 		if (duplicate) {
-			throw new Error(`Preset "${name}" already exists in this team`);
+			throw new Error(`Preset "${name}" already exists in this workspace`);
 		}
 
 		updateObj.name = name.trim();
@@ -488,7 +488,7 @@ export async function getPresetById(id: string) {
 
 export async function listPresetsByTeam(teamId: string) {
 	if (!teamId || typeof teamId !== "string") {
-		throw new Error("Valid team ID is required");
+		throw new Error("Valid workspace ID is required");
 	}
 
 	const { supabase, user } = await requireAuthenticatedUser();

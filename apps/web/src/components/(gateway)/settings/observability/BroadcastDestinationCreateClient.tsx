@@ -561,7 +561,7 @@ export default function BroadcastDestinationCreateClient(props: {
 								</DropdownMenuContent>
 							</DropdownMenu>
 						) : (
-							<p className="text-xs text-muted-foreground">No keys found for this team.</p>
+							<p className="text-xs text-muted-foreground">No keys found for this workspace.</p>
 						)}
 						{keys.length ? (
 							<p className="text-xs text-muted-foreground">

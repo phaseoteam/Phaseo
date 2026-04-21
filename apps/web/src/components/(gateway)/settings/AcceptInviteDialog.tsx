@@ -55,9 +55,9 @@ export default function AcceptInviteDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Request to Join a Team</DialogTitle>
+					<DialogTitle>Request to Join a Workspace</DialogTitle>
 					<DialogDescription>
-						Enter an invite code to request to join a team.
+						Enter an invite code to request to join a workspace.
 					</DialogDescription>
 				</DialogHeader>
 

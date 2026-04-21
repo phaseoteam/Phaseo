@@ -14,7 +14,7 @@ export default function PrivacySettingsPage() {
 		<div className="space-y-6">
 			<SettingsPageHeader
 				title="Privacy"
-				description="Configure privacy defaults and provider restrictions for your team."
+				description="Configure privacy defaults and provider restrictions for your workspace."
 			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<PrivacySettingsContent />
@@ -30,7 +30,7 @@ async function PrivacySettingsContent() {
 	if (!teamId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a team to manage privacy settings.
+				Select a workspace to manage privacy settings.
 			</div>
 		);
 	}

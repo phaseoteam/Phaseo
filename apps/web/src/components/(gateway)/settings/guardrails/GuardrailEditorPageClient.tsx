@@ -464,7 +464,7 @@ export default function GuardrailEditorPageClient(props: {
 						<Badge variant="outline">Alpha</Badge>
 					</div>
 					<p className="text-sm text-muted-foreground">
-						{props.teamName ? `Team: ${props.teamName}. ` : null}
+						{props.teamName ? `Workspace: ${props.teamName}. ` : null}
 						Guardrails are applied to one or more API keys.
 					</p>
 				</div>

@@ -45,7 +45,7 @@ export async function createManagementKeyAction(
 		throw new Error("Creator user ID is required");
 	}
 	if (!teamId || typeof teamId !== "string") {
-		throw new Error("Team ID is required");
+		throw new Error("Workspace ID is required");
 	}
 
 	const { supabase, user } = await requireAuthenticatedUser();
@@ -264,7 +264,7 @@ export async function getManagementKeyById(id: string) {
 
 export async function listManagementKeysByTeam(teamId: string) {
 	if (!teamId || typeof teamId !== "string") {
-		throw new Error("Valid team ID is required");
+		throw new Error("Valid workspace ID is required");
 	}
 
 	const { supabase, user } = await requireAuthenticatedUser();

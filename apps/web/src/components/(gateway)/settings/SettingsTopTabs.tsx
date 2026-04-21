@@ -85,15 +85,27 @@ function getTabSet(
 		return null;
 	}
 
-	// Team
-	if (pathname.startsWith("/settings/teams")) {
+	// Workspace
+	if (
+		pathname.startsWith("/settings/workspaces") ||
+		pathname.startsWith("/settings/teams")
+	) {
 		return [
 			{
-				href: "/settings/teams/members",
+				href: "/settings/workspaces/members",
 				label: "Members",
-				match: ["/settings/teams", "/settings/teams/members"],
+				match: [
+					"/settings/workspaces",
+					"/settings/workspaces/members",
+					"/settings/teams",
+					"/settings/teams/members",
+				],
 			},
-			{ href: "/settings/teams/settings", label: "Team Settings" },
+			{
+				href: "/settings/workspaces/settings",
+				label: "Workspace Settings",
+				match: ["/settings/teams/settings"],
+			},
 		];
 	}
 

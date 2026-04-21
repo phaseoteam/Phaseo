@@ -119,13 +119,25 @@ export default function TeamsInvites({
 		return { active, expired, total: activeInvites.length };
 	}, [activeInvites]);
 
+	const selectedInviteCanManage = React.useMemo(() => {
+		if (!selectedInvite || !currentUserId) return false;
+		if (selectedInvite.creator_user_id === currentUserId) return true;
+
+		const teamMembers = membersByTeam?.[selectedInvite.team_id] ?? [];
+		const currentMembership = teamMembers.find(
+			(member: any) => member?.user_id === currentUserId,
+		);
+		const role = String(currentMembership?.role ?? "").toLowerCase();
+		return role === "owner" || role === "admin";
+	}, [selectedInvite, currentUserId, membersByTeam]);
+
 	return (
 		<Card className="h-full">
 			<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<CardTitle className="text-base">Invites</CardTitle>
 					<CardDescription>
-						View and manage invites for this team.
+						View and manage invites for this workspace.
 					</CardDescription>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -136,7 +148,7 @@ export default function TeamsInvites({
 						onValueChange={(v) => setActiveTeamId(v)}
 					>
 						<SelectTrigger className="w-full sm:w-[200px]">
-							<SelectValue placeholder="Select team…" />
+							<SelectValue placeholder="Select workspace…" />
 						</SelectTrigger>
 						<SelectContent>
 							{teams.map((t) => (
@@ -152,7 +164,7 @@ export default function TeamsInvites({
 			<CardContent>
 				{!activeTeam ? (
 					<div className="text-sm text-muted-foreground">
-						No teams available.
+						No workspaces available.
 					</div>
 				) : activeInvites.length === 0 ? (
 					<div className="text-sm text-muted-foreground">
@@ -261,6 +273,7 @@ export default function TeamsInvites({
 						if (!v) setSelectedInvite(null);
 					}}
 					currentUserId={currentUserId}
+					canManageInvite={selectedInviteCanManage}
 				/>
 			)}
 		</Card>
