@@ -15,15 +15,15 @@ import {
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Announcements - Local MDX Blog",
+	title: "Announcements",
 	description:
-		"Read AI Stats announcements published from local MDX files. Add new posts directly in the web app repository with support for images and JSX components.",
+		"Official AI Stats announcements, release notes, and security updates.",
 	path: "/announcements",
 	keywords: [
 		"AI Stats announcements",
-		"MDX blog",
 		"product announcements",
 		"release notes",
+		"security updates",
 	],
 });
 
@@ -31,14 +31,15 @@ export default async function AnnouncementsPage() {
 	const posts = await getAnnouncementPosts();
 
 	return (
-		<div className="container mx-auto mt-10 mb-20 max-w-6xl px-4 sm:px-6 lg:px-8">
+		<div className="container mx-auto mt-10 mb-20 max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div className="space-y-6">
 				<div className="space-y-2">
 					<h1 className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-4xl">
 						Announcements
 					</h1>
 					<p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-						Local MDX announcement posts rendered directly inside the web app.
+						Official product announcements, release notes, and security updates
+						from AI Stats.
 					</p>
 				</div>
 
@@ -46,18 +47,11 @@ export default async function AnnouncementsPage() {
 					<Card className="border-dashed">
 						<CardContent className="space-y-3 py-8 text-sm text-zinc-600 dark:text-zinc-400">
 							<p>No announcements yet.</p>
-							<p>
-								Add your first post in{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-800">
-									apps/web/src/content/announcements
-								</code>{" "}
-								using a <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-800">.mdx</code>{" "}
-								file.
-							</p>
+							<p>New updates will appear here as they are published.</p>
 						</CardContent>
 					</Card>
 				) : (
-					<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+					<div className="grid grid-cols-1 gap-4">
 						{posts.map((post) => (
 							<Card
 								key={post.slug}

@@ -13,6 +13,10 @@ const ANNOUNCEMENTS_CONTENT_ROOT = path.join(
 	"announcements"
 );
 const SUPPORTED_EXTENSIONS = [".mdx", ".md"] as const;
+const EXCLUDED_ANNOUNCEMENT_SLUGS = new Set([
+	"readme",
+	"welcome-to-announcements",
+]);
 
 type AnnouncementFrontmatterInput = {
 	title?: unknown;
@@ -174,6 +178,10 @@ const loadAnnouncements = cache(async (): Promise<AnnouncementPost[]> => {
 
 			const filePath = path.join(ANNOUNCEMENTS_CONTENT_ROOT, entry.name);
 			const slug = entry.name.slice(0, -extension.length);
+			if (EXCLUDED_ANNOUNCEMENT_SLUGS.has(slug.toLowerCase())) {
+				return null;
+			}
+
 			const raw = await fs.readFile(filePath, "utf8");
 			const { frontmatter, content } = parseDocument(raw);
 

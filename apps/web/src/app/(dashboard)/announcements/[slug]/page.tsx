@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { compileMDX } from "next-mdx-remote/rsc";
+import { ArrowLeft } from "lucide-react";
 import remarkGfm from "remark-gfm";
 import { announcementMdxComponents } from "@/components/announcements/announcementMdxComponents";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	formatAnnouncementDate,
 	getAnnouncementParams,
@@ -66,14 +68,14 @@ export default async function AnnouncementPostPage({
 	});
 
 	return (
-		<div className="container mx-auto mt-10 mb-20 max-w-6xl px-4 sm:px-6 lg:px-8">
-			<article className="mx-auto w-full max-w-4xl space-y-6">
-				<Link
-					href="/announcements"
-					className="inline-flex text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-				>
-					{"<-"} Back to announcements
-				</Link>
+		<div className="container mx-auto mt-10 mb-20 max-w-7xl px-4 sm:px-6 lg:px-8">
+			<article className="mx-auto w-full max-w-5xl space-y-6">
+				<Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+					<Link href="/announcements">
+						<ArrowLeft className="h-4 w-4" />
+						Back to announcements
+					</Link>
+				</Button>
 
 				<header className="space-y-4">
 					<div className="flex flex-wrap items-center gap-2">
@@ -103,9 +105,9 @@ export default async function AnnouncementPostPage({
 					/>
 				) : null}
 
-				<div className="rounded-2xl border border-zinc-200 bg-white px-6 py-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:px-10 md:py-8">
-					{content}
-				</div>
+				<hr className="border-zinc-200 dark:border-zinc-800" />
+
+				<div>{content}</div>
 			</article>
 		</div>
 	);
