@@ -146,8 +146,18 @@ begin
     where schemaname = 'public'
       and indexname like '%team%'
   loop
-    next_name := replace(idx_row.indexname, 'team', 'workspace');
+    next_name := left(replace(idx_row.indexname, 'team', 'workspace'), 63);
     if next_name <> idx_row.indexname then
+      if exists (
+        select 1
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = idx_row.schemaname
+          and c.relname = next_name
+      ) then
+        next_name := left(next_name, 55) || '_' || substr(md5(idx_row.indexname), 1, 7);
+      end if;
+
       execute format(
         'alter index %I.%I rename to %I',
         idx_row.schemaname,
@@ -174,8 +184,17 @@ begin
     where n.nspname = 'public'
       and con.conname like '%team%'
   loop
-    next_name := replace(con_row.constraint_name, 'team', 'workspace');
+    next_name := left(replace(con_row.constraint_name, 'team', 'workspace'), 63);
     if next_name <> con_row.constraint_name then
+      if exists (
+        select 1
+        from pg_constraint existing
+        where existing.conrelid = format('%I.%I', con_row.schema_name, con_row.table_name)::regclass
+          and existing.conname = next_name
+      ) then
+        next_name := left(next_name, 55) || '_' || substr(md5(con_row.constraint_name), 1, 7);
+      end if;
+
       execute format(
         'alter table %I.%I rename constraint %I to %I',
         con_row.schema_name,
@@ -204,8 +223,21 @@ begin
       and not t.tgisinternal
       and t.tgname like '%team%'
   loop
-    next_name := replace(trig_row.trigger_name, 'team', 'workspace');
+    next_name := left(replace(trig_row.trigger_name, 'team', 'workspace'), 63);
     if next_name <> trig_row.trigger_name then
+      if exists (
+        select 1
+        from pg_trigger existing
+        join pg_class c on c.oid = existing.tgrelid
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = trig_row.schema_name
+          and c.relname = trig_row.table_name
+          and not existing.tgisinternal
+          and existing.tgname = next_name
+      ) then
+        next_name := left(next_name, 55) || '_' || substr(md5(trig_row.trigger_name), 1, 7);
+      end if;
+
       execute format(
         'alter trigger %I on %I.%I rename to %I',
         trig_row.trigger_name,
