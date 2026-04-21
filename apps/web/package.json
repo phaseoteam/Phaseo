@@ -102,7 +102,7 @@
 		"nuqs": "^2.4.3",
 		"octokit": "^5.0.5",
 		"postgres": "^3.4.9",
-		"posthog-js": "^1.360.2",
+		"posthog-js": "^1.369.4",
 		"posthog-node": "^5.28.0",
 		"radix-ui": "^1.4.3",
 		"react": "19.2.5",
