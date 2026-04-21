@@ -13,6 +13,15 @@
   "output_types": "text",
   "api_model_id": "qwen/qwen3.6-max-preview",
   "links": [],
-  "details": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    }
+  ],
   "benchmarks": []
 }

@@ -9,17 +9,17 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.2,
+      "price_per_unit": 1.3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
       "match": [
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000
+          "value": 128000
         }
       ],
       "priority": 100
@@ -28,17 +28,55 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 6,
+      "price_per_unit": 7.8,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
       "match": [
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000
+          "value": 128000
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.625,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.13,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
         }
       ],
       "priority": 100
@@ -47,24 +85,24 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2.4,
+      "price_per_unit": 2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
       "match": [
         {
           "path": "input_tokens",
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000
+          "value": 128000
         },
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 128000
+          "value": 256000
         }
       ],
       "priority": 100
@@ -76,33 +114,33 @@
       "price_per_unit": 12,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
       "match": [
         {
           "path": "input_tokens",
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
-          "value": 32000
+          "value": 128000
         },
         {
           "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 128000
+          "value": 256000
         }
       ],
       "priority": 100
     },
     {
-      "meter": "input_text_tokens",
+      "meter": "cached_write_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 3,
+      "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
       "match": [
         {
           "path": "input_tokens",
@@ -116,19 +154,19 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 252000
+          "value": 256000
         }
       ],
       "priority": 100
     },
     {
-      "meter": "output_text_tokens",
+      "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 15,
+      "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Updated from Alibaba Model Studio qwen3.6-max-preview tiered pricing with cache rates (2026-04-21)",
       "match": [
         {
           "path": "input_tokens",
@@ -142,7 +180,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 252000
+          "value": 256000
         }
       ],
       "priority": 100

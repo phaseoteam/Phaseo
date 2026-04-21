@@ -1,7 +1,7 @@
 {
-  "key": "novita:moonshotai/kimi-k2.6:text.generate",
-  "api_provider_id": "novita",
-  "provider_slug": "novita",
+  "key": "gmicloud:moonshotai/kimi-k2.6:text.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
   "api_model_id": "moonshotai/kimi-k2.6",
   "capability_id": "text.generate",
   "rules": [
@@ -9,10 +9,10 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.95,
+      "price_per_unit": 0.855,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Current 10% promotional discount from $0.95/M list input rate",
       "match": [],
       "priority": 100
     },
@@ -20,10 +20,10 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.16,
+      "price_per_unit": 0.144,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Current 10% promotional discount from $0.16/M list cache-read rate",
       "match": [],
       "priority": 100
     },
@@ -31,10 +31,10 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 4,
+      "price_per_unit": 3.6,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Current 10% promotional discount from $4.00/M list output rate",
       "match": [],
       "priority": 100
     }
