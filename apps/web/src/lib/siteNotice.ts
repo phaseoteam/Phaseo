@@ -25,13 +25,13 @@ export const SITE_NOTICES: SiteNotice[] = [
 		audience: "authenticated",
 		tone: "warning",
 		message:
-			"Security notice: due to a third-party incident at Vercel, please rotate your API keys as a precaution.",
+			"Security Notice: Third-Party Breach. Please read how you're protected.",
 		cta: {
-			label: "Details",
+			label: "How you're protected",
 			href: VERCEL_SECURITY_NOTICE_HREF,
 		},
 		startsAt: "2026-04-19T00:00:00.000Z",
-		endsAt: "2026-04-26T23:59:59.999Z",
+		endsAt: "2026-04-23T23:59:59.999Z",
 	},
 ];
 
