@@ -17,9 +17,8 @@ export type AppDetails = {
 };
 
 export async function getAppDetails(appId: string): Promise<AppDetails | null> {
-	const supabase = createAdminClient();
-
 	try {
+		const supabase = createAdminClient();
 		// Get app metadata
 		const { data: app, error: appError } = await supabase
 			.from("api_apps")
@@ -74,9 +73,8 @@ export async function getAppDetailsCached(appId: string): Promise<AppDetails | n
 }
 
 export async function getPublicAppIds(): Promise<string[]> {
-	const supabase = createAdminClient();
-
 	try {
+		const supabase = createAdminClient();
 		const { data, error } = await supabase
 			.from("api_apps")
 			.select("id")

@@ -691,11 +691,25 @@ export async function getTopApps(
     cacheLife("hours");
     cacheTag("public-top-apps");
 
-    const supabase = createAdminClient();
+    let supabase: ReturnType<typeof createAdminClient> | null = null;
+    try {
+        supabase = createAdminClient();
+    } catch (error) {
+        console.warn(
+            "[getTopApps] admin client unavailable; returning no top apps.",
+            error instanceof Error ? error.message : String(error),
+        );
+        return { data: [] };
+    }
     const { data, error } = await supabase.rpc("get_public_top_apps", {
         p_time_range: timeRange,
         p_limit: limit,
     });
+
+    if (error) {
+        console.error("[getTopApps] Error:", error);
+        return { data: [] };
+    }
 
     const filteredData = ((data ?? []) as TopAppData[])
         .filter((row) => hasValidAppId(row?.app_id))
@@ -756,7 +770,16 @@ export async function getTrendingApps(
     cacheLife("hours");
     cacheTag("public-top-apps");
 
-    const supabase = createAdminClient();
+    let supabase: ReturnType<typeof createAdminClient> | null = null;
+    try {
+        supabase = createAdminClient();
+    } catch (error) {
+        console.warn(
+            "[getTrendingApps] admin client unavailable; returning no trending apps.",
+            error instanceof Error ? error.message : String(error),
+        );
+        return { data: [] };
+    }
     const { data, error } = await supabase.rpc("get_public_trending_apps", {
         p_limit: limit,
         p_min_week_tokens: minWeekTokens,
