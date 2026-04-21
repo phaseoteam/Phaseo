@@ -1,7 +1,18 @@
 drop view if exists public.workspace_members;
 drop view if exists public.workspaces;
 
-alter type if exists public.team_role rename to workspace_role;
+do $$
+begin
+  if exists (
+    select 1
+    from pg_type t
+    join pg_namespace n on n.oid = t.typnamespace
+    where n.nspname = 'public'
+      and t.typname = 'team_role'
+  ) then
+    alter type public.team_role rename to workspace_role;
+  end if;
+end $$;
 
 alter table if exists public.teams rename to workspaces;
 alter table if exists public.team_members rename to workspace_members;
