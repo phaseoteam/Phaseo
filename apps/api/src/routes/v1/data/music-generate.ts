@@ -277,15 +277,15 @@ function isGoogleMusicProvider(provider: string | null | undefined): boolean {
 
 async function requireOwnedMusicJob(
 	requestId: string,
-	teamId: string,
+	workspaceId: string,
 	musicId: string,
 ): Promise<{ meta: MusicJobMeta } | Response> {
-	const meta = await getMusicJobMeta(teamId, musicId);
+	const meta = await getMusicJobMeta(workspaceId, musicId);
 	if (meta) return { meta };
 	return err("not_found", {
 		reason: "music_not_found_or_not_owned",
 		request_id: requestId,
-		team_id: teamId,
+		workspace_id: workspaceId,
 		music_id: musicId,
 	});
 }
@@ -298,11 +298,11 @@ musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 		return err("validation_error", {
 			reason: "missing_music_id",
 			request_id: auth.value.requestId,
-			team_id: auth.value.teamId,
+			workspace_id: auth.value.workspaceId,
 		});
 	}
 
-	const ownedMusic = await requireOwnedMusicJob(auth.value.requestId, auth.value.teamId, id);
+	const ownedMusic = await requireOwnedMusicJob(auth.value.requestId, auth.value.workspaceId, id);
 	if (ownedMusic instanceof Response) return ownedMusic;
 	const meta = ownedMusic.meta;
 	const provider = meta?.provider ?? SUNO_PROVIDER_ID;
@@ -317,7 +317,7 @@ musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 		return err("not_supported", {
 			reason: "music_status_not_supported_for_provider",
 			request_id: auth.value.requestId,
-			team_id: auth.value.teamId,
+			workspace_id: auth.value.workspaceId,
 		});
 	}
 

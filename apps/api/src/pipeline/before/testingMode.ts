@@ -20,7 +20,7 @@ export function isTestingModeRequested(req: Request, rawBody: any): boolean {
 
 export async function resolveTestingMode(args: {
 	requested: boolean;
-	teamId: string;
+	workspaceId: string;
 	userId?: string | null;
 	internal?: boolean;
 }): Promise<{

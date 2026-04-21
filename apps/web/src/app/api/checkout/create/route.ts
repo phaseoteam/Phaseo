@@ -4,16 +4,16 @@ import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 export async function POST(req: NextRequest) {
     try {
-        const { kind, amount_pence, currency = "usd", team_id } = await req.json();
+        const { kind, amount_pence, currency = "usd", workspace_id } = await req.json();
         const requestedTeamId =
-            typeof team_id === "string" && team_id.trim().length > 0
-                ? team_id.trim()
+            typeof workspace_id === "string" && workspace_id.trim().length > 0
+                ? workspace_id.trim()
                 : undefined;
-        const { teamId, customerId } = await requireActiveTeamStripeCustomer({
+        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer({
             createIfMissing: true,
         });
 
-        if (requestedTeamId && requestedTeamId !== teamId) {
+        if (requestedTeamId && requestedTeamId !== workspaceId) {
             return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
         }
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
                 payment_intent_data: {
                     metadata: {
                         purpose: "top_up_one_off",
-                        ...(teamId ? { team_id: teamId } : {}),
+                        ...(workspaceId ? { workspace_id: workspaceId } : {}),
                     },
                 },
                 // Do NOT set setup_future_usage here (keeps it strictly one-off)
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
                 billing_address_collection: "auto",
                 metadata: {
                     purpose: "top_up_one_off",
-                    ...(teamId ? { team_id: teamId } : {}),
+                    ...(workspaceId ? { workspace_id: workspaceId } : {}),
                 },
             });
 
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
                     setup_future_usage: "off_session", // Save the card for later server-side charging
                     metadata: {
                         purpose: "top_up",
-                        ...(teamId ? { team_id: teamId } : {}),
+                        ...(workspaceId ? { workspace_id: workspaceId } : {}),
                     },
                 },
                 success_url: paymentSuccessUrl,
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
                 setup_intent_data: {
                     metadata: {
                         purpose: "auto_topup_setup",
-                        ...(teamId ? { team_id: teamId } : {}),
+                        ...(workspaceId ? { workspace_id: workspaceId } : {}),
                     },
                 },
             });

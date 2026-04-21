@@ -10,7 +10,7 @@ alter table public.credit_ledger
   add column if not exists after_reserved_nanos bigint null;
 
 create table if not exists public.gateway_wallet_reservations (
-  team_id uuid not null references public.teams(id) on delete cascade,
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
   reservation_id text not null,
   amount_nanos bigint not null check (amount_nanos > 0),
   status text not null check (status in ('held', 'captured', 'released')),
@@ -19,7 +19,7 @@ create table if not exists public.gateway_wallet_reservations (
   release_ref_id text null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint gateway_wallet_reservations_pkey primary key (team_id, reservation_id)
+  constraint gateway_wallet_reservations_pkey primary key (workspace_id, reservation_id)
 );
 
 create index if not exists idx_gateway_wallet_reservations_status_updated
@@ -32,7 +32,7 @@ create policy gateway_wallet_reservations_select_own_team
   on public.gateway_wallet_reservations
   for select
   to authenticated
-  using (public.is_team_member(team_id));
+  using (public.is_workspace_member(workspace_id));
 
 drop policy if exists gateway_wallet_reservations_service_all on public.gateway_wallet_reservations;
 create policy gateway_wallet_reservations_service_all
@@ -46,7 +46,7 @@ grant select on public.gateway_wallet_reservations to authenticated;
 grant select, insert, update on public.gateway_wallet_reservations to service_role;
 
 create or replace function public.gateway_wallet_reserve_once(
-  p_team_id uuid,
+  p_workspace_id uuid,
   p_reservation_id text,
   p_amount_nanos bigint,
   p_hold_ref_id text default null
@@ -70,8 +70,8 @@ declare
   v_reservation public.gateway_wallet_reservations%rowtype;
   v_available bigint;
 begin
-  if p_team_id is null then
-    raise exception 'missing_team_id';
+  if p_workspace_id is null then
+    raise exception 'missing_workspace_id';
   end if;
   if coalesce(trim(p_reservation_id), '') = '' then
     raise exception 'missing_reservation_id';
@@ -83,7 +83,7 @@ begin
   select *
   into v_reservation
   from public.gateway_wallet_reservations
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and reservation_id = p_reservation_id
   for update;
 
@@ -92,7 +92,7 @@ begin
       raise exception 'reservation_amount_mismatch';
     end if;
     if v_reservation.status = 'held' then
-      select * into v_wallet from public.wallets where team_id = p_team_id;
+      select * into v_wallet from public.wallets where workspace_id = p_workspace_id;
       return query
       select
         false,
@@ -121,7 +121,7 @@ begin
   select *
   into v_wallet
   from public.wallets
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   for update;
 
   if not found then
@@ -146,12 +146,12 @@ begin
   update public.wallets
   set reserved_nanos = reserved_nanos + p_amount_nanos,
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   returning *
   into v_wallet;
 
   insert into public.gateway_wallet_reservations (
-    team_id,
+    workspace_id,
     reservation_id,
     amount_nanos,
     status,
@@ -159,7 +159,7 @@ begin
     created_at,
     updated_at
   ) values (
-    p_team_id,
+    p_workspace_id,
     p_reservation_id,
     p_amount_nanos,
     'held',
@@ -169,7 +169,7 @@ begin
   );
 
   insert into public.credit_ledger (
-    team_id,
+    workspace_id,
     event_time,
     kind,
     amount_nanos,
@@ -182,7 +182,7 @@ begin
     created_at,
     status
   ) values (
-    p_team_id,
+    p_workspace_id,
     now(),
     'hold',
     0,
@@ -210,7 +210,7 @@ end;
 $$;
 
 create or replace function public.gateway_wallet_capture_once(
-  p_team_id uuid,
+  p_workspace_id uuid,
   p_reservation_id text,
   p_capture_ref_id text default null
 )
@@ -233,8 +233,8 @@ declare
   v_reservation public.gateway_wallet_reservations%rowtype;
   v_amount bigint;
 begin
-  if p_team_id is null then
-    raise exception 'missing_team_id';
+  if p_workspace_id is null then
+    raise exception 'missing_workspace_id';
   end if;
   if coalesce(trim(p_reservation_id), '') = '' then
     raise exception 'missing_reservation_id';
@@ -243,7 +243,7 @@ begin
   select *
   into v_reservation
   from public.gateway_wallet_reservations
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and reservation_id = p_reservation_id
   for update;
 
@@ -269,7 +269,7 @@ begin
   select *
   into v_wallet
   from public.wallets
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   for update;
 
   if not found then
@@ -292,7 +292,7 @@ begin
   set balance_nanos = balance_nanos - v_amount,
       reserved_nanos = reserved_nanos - v_amount,
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   returning *
   into v_wallet;
 
@@ -300,11 +300,11 @@ begin
   set status = 'captured',
       capture_ref_id = nullif(trim(coalesce(p_capture_ref_id, '')), ''),
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and reservation_id = p_reservation_id;
 
   insert into public.credit_ledger (
-    team_id,
+    workspace_id,
     event_time,
     kind,
     amount_nanos,
@@ -317,7 +317,7 @@ begin
     created_at,
     status
   ) values (
-    p_team_id,
+    p_workspace_id,
     now(),
     'capture',
     -v_amount,
@@ -345,7 +345,7 @@ end;
 $$;
 
 create or replace function public.gateway_wallet_release_once(
-  p_team_id uuid,
+  p_workspace_id uuid,
   p_reservation_id text,
   p_release_ref_id text default null
 )
@@ -368,8 +368,8 @@ declare
   v_reservation public.gateway_wallet_reservations%rowtype;
   v_amount bigint;
 begin
-  if p_team_id is null then
-    raise exception 'missing_team_id';
+  if p_workspace_id is null then
+    raise exception 'missing_workspace_id';
   end if;
   if coalesce(trim(p_reservation_id), '') = '' then
     raise exception 'missing_reservation_id';
@@ -378,7 +378,7 @@ begin
   select *
   into v_reservation
   from public.gateway_wallet_reservations
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and reservation_id = p_reservation_id
   for update;
 
@@ -404,7 +404,7 @@ begin
   select *
   into v_wallet
   from public.wallets
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   for update;
 
   if not found then
@@ -420,7 +420,7 @@ begin
   update public.wallets
   set reserved_nanos = reserved_nanos - v_amount,
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   returning *
   into v_wallet;
 
@@ -428,11 +428,11 @@ begin
   set status = 'released',
       release_ref_id = nullif(trim(coalesce(p_release_ref_id, '')), ''),
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
     and reservation_id = p_reservation_id;
 
   insert into public.credit_ledger (
-    team_id,
+    workspace_id,
     event_time,
     kind,
     amount_nanos,
@@ -445,7 +445,7 @@ begin
     created_at,
     status
   ) values (
-    p_team_id,
+    p_workspace_id,
     now(),
     'release',
     0,

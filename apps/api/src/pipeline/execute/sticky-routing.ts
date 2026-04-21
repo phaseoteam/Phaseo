@@ -337,33 +337,33 @@ export async function resolveStickyRoutingContext(args: {
 }
 
 export function buildStickyRoutingKey(
-    teamId: string,
+    workspaceId: string,
     endpoint: Endpoint,
     model: string,
     contextKey: string
 ) {
-    return `${STICKY_PREFIX}:${teamId}:${endpoint}:${model}:${contextKey}`;
+    return `${STICKY_PREFIX}:${workspaceId}:${endpoint}:${model}:${contextKey}`;
 }
 
 export async function readStickyRouting(
-    teamId: string,
+    workspaceId: string,
     endpoint: Endpoint,
     model: string,
     contextKey: string
 ): Promise<StickyRoutingEntry | null> {
-    const key = buildStickyRoutingKey(teamId, endpoint, model, contextKey);
+    const key = buildStickyRoutingKey(workspaceId, endpoint, model, contextKey);
     return await getJson<StickyRoutingEntry>(key);
 }
 
 export async function writeStickyRouting(
-    teamId: string,
+    workspaceId: string,
     endpoint: Endpoint,
     model: string,
     context: StickyRoutingContext,
     providerId: string,
     cachedReadTokens: number
 ): Promise<void> {
-    const key = buildStickyRoutingKey(teamId, endpoint, model, context.key);
+    const key = buildStickyRoutingKey(workspaceId, endpoint, model, context.key);
     const payload: StickyRoutingEntry = {
         providerId,
         cachedReadTokens,
@@ -375,7 +375,7 @@ export async function writeStickyRouting(
 }
 
 export async function maybeWriteStickyRoutingFromUsage(args: {
-    teamId: string;
+    workspaceId: string;
     endpoint: Endpoint;
     model: string;
     body: any;
@@ -393,7 +393,7 @@ export async function maybeWriteStickyRoutingFromUsage(args: {
     if (cachedReadTokens === null) return;
 
     await writeStickyRouting(
-        args.teamId,
+        args.workspaceId,
         args.endpoint,
         args.model,
         context,

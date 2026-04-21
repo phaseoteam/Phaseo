@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -34,9 +34,9 @@ export default function GuardrailsSettingsPage() {
 
 async function GuardrailsSettingsContent() {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return (
 			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -59,7 +59,7 @@ async function GuardrailsSettingsContent() {
 		keysResult,
 		guardrailsResult,
 	] = await Promise.all([
-		supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle(),
+		supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
 		supabase
 			.from("data_api_providers")
 			.select("api_provider_id, api_provider_name")
@@ -71,15 +71,16 @@ async function GuardrailsSettingsContent() {
 		supabase
 			.from("keys")
 			.select("id, name, prefix, status, created_at")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
+			.neq("status", "deleted")
 			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false }),
 		supabase
-			.from("team_guardrails")
+			.from("workspace_guardrails")
 			.select(
-				"id, team_id, enabled, name, description, privacy_enable_paid_may_train, privacy_enable_free_may_train, privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging, privacy_zdr_only, provider_restriction_mode, provider_restriction_provider_ids, provider_restriction_enforce_allowed, allowed_api_model_ids, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, created_at, updated_at",
+				"id, workspace_id, enabled, name, description, privacy_enable_paid_may_train, privacy_enable_free_may_train, privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging, privacy_zdr_only, provider_restriction_mode, provider_restriction_provider_ids, provider_restriction_enforce_allowed, allowed_api_model_ids, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, created_at, updated_at",
 			)
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false }),
 	]);
 

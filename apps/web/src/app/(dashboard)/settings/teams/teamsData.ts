@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 export async function getTeamsSettingsData() {
@@ -17,37 +17,37 @@ export async function getTeamsSettingsData() {
 	if (userId) {
 		const { data: userRow } = await supabase
 			.from("users")
-			.select("default_team_id")
+			.select("default_workspace_id")
 			.eq("user_id", userId)
 			.maybeSingle();
 
-		personalTeamId = userRow?.default_team_id ?? null;
+		personalTeamId = userRow?.default_workspace_id ?? null;
 	}
 
 	// ── Fetch (unchanged queries; normalize later)
-	const { data: teams } = await supabase.from("teams").select("id, name");
+	const { data: teams } = await supabase.from("workspaces").select("id, name");
 
 	let teamMembers: any[] = [];
 	const usersById: Record<string, any> = {};
 	if (userId) {
 		const { data: membershipRows } = await supabase
-			.from("team_members")
-			.select("team_id")
+			.from("workspace_members")
+			.select("workspace_id")
 			.eq("user_id", userId);
-		const teamIds = Array.from(
+		const workspaceIds = Array.from(
 			new Set(
 				(membershipRows ?? [])
-					.map((row: any) => row?.team_id)
+					.map((row: any) => row?.workspace_id)
 					.filter(Boolean),
 			),
 		) as string[];
 
-		if (teamIds.length) {
+		if (workspaceIds.length) {
 			const admin = createAdminClient();
 			const { data: memberRows } = await admin
-				.from("team_members")
-				.select("team_id, user_id, role")
-				.in("team_id", teamIds);
+				.from("workspace_members")
+				.select("workspace_id, user_id, role")
+				.in("workspace_id", workspaceIds);
 			teamMembers = memberRows ?? [];
 
 			const memberUserIds = Array.from(
@@ -71,26 +71,26 @@ export async function getTeamsSettingsData() {
 		Date.now() - 7 * 24 * 60 * 60 * 1000,
 	).toISOString();
 	const { data: teamInvites } = await supabase
-		.from("team_invites")
+		.from("workspace_invites")
 		.select("*, users(display_name)")
 		.or(`expires_at.is.null,expires_at.gte.${sevenDaysAgoIso}`);
 
 	const { data: teamJoinRequests } = await supabase
-		.from("team_join_requests")
+		.from("workspace_join_requests")
 		.select(
 			`
 			id,
-			team_id,
+			workspace_id,
 			requester_user_id,
 			status,
 			created_at,
 			decided_at,
-			teams ( name ),
-			requester:users!team_join_requests_requester_user_id_fkey (
+			teams:workspaces ( name ),
+			requester:users!workspace_join_requests_requester_user_id_fkey (
 				user_id,
 				display_name
 			),
-			decider:users!team_join_requests_decided_by_fkey (
+			decider:users!workspace_join_requests_decided_by_fkey (
 				user_id,
 				display_name
 			)
@@ -109,25 +109,25 @@ export async function getTeamsSettingsData() {
 
 	const membersByTeam: Record<string, any[]> = {};
 	for (const m of membersArray) {
-		if (!m?.team_id) continue;
-		(membersByTeam[m.team_id] ||= []).push(m);
+		if (!m?.workspace_id) continue;
+		(membersByTeam[m.workspace_id] ||= []).push(m);
 	}
 
 	const invitesByTeam: Record<string, any[]> = {};
 	for (const i of invitesArray) {
-		if (!i?.team_id) continue;
-		(invitesByTeam[i.team_id] ||= []).push(i);
+		if (!i?.workspace_id) continue;
+		(invitesByTeam[i.workspace_id] ||= []).push(i);
 	}
 
 	const requestsByTeam: Record<string, any[]> = {};
 	for (const r of requestsArray) {
-		if (!r?.team_id) continue;
-		(requestsByTeam[r.team_id] ||= []).push(r);
+		if (!r?.workspace_id) continue;
+		(requestsByTeam[r.workspace_id] ||= []).push(r);
 	}
 
-	const initialTeamId = await getTeamIdFromCookie();
+	const initialTeamId = await getWorkspaceIdFromCookie();
 	const manageableTeamIds = Object.entries(membersByTeam).reduce<string[]>(
-		(acc, [teamId, members]) => {
+		(acc, [workspaceId, members]) => {
 			if (
 				members?.some(
 					(member: any) =>
@@ -137,7 +137,7 @@ export async function getTeamsSettingsData() {
 						),
 				)
 			) {
-				acc.push(teamId);
+				acc.push(workspaceId);
 			}
 			return acc;
 		},
@@ -148,36 +148,36 @@ export async function getTeamsSettingsData() {
 	if (teamsArray.length) {
 		const { data: wallets } = await supabase
 			.from("wallets")
-			.select("team_id,balance_nanos")
+			.select("workspace_id,balance_nanos")
 			.in(
-				"team_id",
+				"workspace_id",
 				teamsArray.map((team) => team.id),
 			);
 		for (const wallet of wallets ?? []) {
-			const teamId = wallet?.team_id;
-			if (!teamId) continue;
+			const workspaceId = wallet?.workspace_id;
+			if (!workspaceId) continue;
 			const nanos = Number(wallet?.balance_nanos ?? 0);
 			if (!Number.isFinite(nanos)) continue;
-			walletBalances[teamId] = Number((nanos / 1_000_000_000).toFixed(2));
+			walletBalances[workspaceId] = Number((nanos / 1_000_000_000).toFixed(2));
 		}
 	}
 
 	const teamSsoSettingsByTeam: Record<string, TeamSsoSettingsRow> = {};
 	if (teamsArray.length) {
 		const { data: settingsRows } = await supabase
-			.from("team_settings")
+			.from("workspace_settings")
 			.select(
-				"team_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
+				"workspace_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
 			)
 			.in(
-				"team_id",
+				"workspace_id",
 				teamsArray.map((team) => team.id),
 			);
 
 		for (const row of settingsRows ?? []) {
-			const teamId = row?.team_id;
-			if (!teamId) continue;
-			teamSsoSettingsByTeam[teamId] = {
+			const workspaceId = row?.workspace_id;
+			if (!workspaceId) continue;
+			teamSsoSettingsByTeam[workspaceId] = {
 				sso_enabled: Boolean(row.sso_enabled),
 				sso_enforced: Boolean(row.sso_enforced),
 				sso_mode: String(row.sso_mode ?? "none"),

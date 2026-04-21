@@ -24,7 +24,7 @@ export const MAX_VIDEO_DOWNLOAD_TTL_SECONDS = 3600;
 
 export type VideoRouteAuth = {
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	apiKeyId: string;
 	apiKeyRef: string | null;
 	apiKeyKid: string | null;

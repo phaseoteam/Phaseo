@@ -79,7 +79,7 @@ describe("video-finalization", () => {
 		});
 
 		const result = await finalizeVideoJob({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			videoId: "video_1",
 			providerId: "openai",
 			status: "completed",
@@ -122,7 +122,7 @@ describe("video-finalization", () => {
 		recordUsageAndChargeMock.mockResolvedValue(undefined);
 
 		const result = await finalizeVideoJob({
-			teamId: "team_2",
+			workspaceId: "team_2",
 			videoId: "video_2",
 			providerId: "openai",
 			status: "completed",
@@ -135,7 +135,7 @@ describe("video-finalization", () => {
 		expect(recordUsageAndChargeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				requestId: "video_capture:video_2",
-				teamId: "team_2",
+				workspaceId: "team_2",
 				cost_nanos: 1234,
 			}),
 		);
@@ -162,7 +162,7 @@ describe("video-finalization", () => {
 		});
 
 		const result = await finalizeVideoJob({
-			teamId: "team_4",
+			workspaceId: "team_4",
 			videoId: "video_4",
 			providerId: "openai",
 			status: "completed",
@@ -188,7 +188,7 @@ describe("video-finalization", () => {
 		});
 
 		const result = await finalizeVideoJob({
-			teamId: "team_3",
+			workspaceId: "team_3",
 			videoId: "video_3",
 			providerId: "alibaba",
 			status: "failed",

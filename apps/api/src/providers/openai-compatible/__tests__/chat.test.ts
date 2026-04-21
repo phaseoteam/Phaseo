@@ -41,7 +41,7 @@ function buildArgs(body: Record<string, unknown>, stream = false) {
 		model: "mistral/mistral-small-4",
 		body,
 		meta: { ...REQUEST_META },
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "mistral",
 		byokMeta: [],
 		pricingCard: PRICING_CARD,

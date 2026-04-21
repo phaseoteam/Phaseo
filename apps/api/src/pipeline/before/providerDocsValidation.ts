@@ -13,14 +13,14 @@ export function validateProviderDocsCompliance(args: {
 	endpoint: Endpoint;
 	body: any;
 	requestId: string;
-	teamId: string;
+	workspaceId: string;
 	model: string;
 	providers: ProviderCandidate[];
 	requestedParams: string[];
 }): ValidationResult {
 	void args.endpoint;
 	void args.requestId;
-	void args.teamId;
+	void args.workspaceId;
 	void args.model;
 	void args.requestedParams;
 	return { ok: true, providers: args.providers, body: args.body };

@@ -278,10 +278,10 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 
 	// Fetch user's teams
 	const { data: teamMembers, error: teamsError } = await supabase
-		.from("team_members")
+		.from("workspace_members")
 		.select(`
-			team_id,
-			teams:team_id (
+			workspace_id,
+			teams:workspaces (
 				id,
 				name
 			)

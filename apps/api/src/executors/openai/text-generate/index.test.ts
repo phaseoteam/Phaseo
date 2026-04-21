@@ -20,7 +20,7 @@ function buildArgs(overrides?: Partial<IRChatRequest>): ExecutorExecuteArgs {
 	return {
 		ir,
 		requestId: "req_openai_http_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "openai",
 		endpoint: "responses",
 		protocol: "openai.responses",

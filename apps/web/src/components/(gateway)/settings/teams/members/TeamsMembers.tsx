@@ -51,13 +51,13 @@ interface Props {
 	teams: Team[];
 	membersByTeam: Record<string, Member[]>;
 	currentUserId?: string | null;
-	activeTeamId?: string | undefined;
+	activeWorkspaceId?: string | undefined;
 	onTeamChange?: (id?: string) => void;
-	/** Called when a member is removed: (teamId, userId) */
-	onRemoveMember?: (teamId: string, userId: string) => void;
-	/** Called when a member's role is changed: (teamId, userId, newRole) */
+	/** Called when a member is removed: (workspaceId, userId) */
+	onRemoveMember?: (workspaceId: string, userId: string) => void;
+	/** Called when a member's role is changed: (workspaceId, userId, newRole) */
 	onUpdateMemberRole?: (
-		teamId: string,
+		workspaceId: string,
 		userId: string,
 		newRole?: string
 	) => void;
@@ -69,7 +69,7 @@ export default function TeamsMembers({
 	membersByTeam,
 	onTeamChange,
 	currentUserId,
-	activeTeamId: controlledActiveId,
+	activeWorkspaceId: controlledActiveId,
 	onRemoveMember,
 	onUpdateMemberRole,
 	personalTeamId,
@@ -77,7 +77,7 @@ export default function TeamsMembers({
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
 	>(teams.length ? teams[0].id : undefined);
-	const activeTeamId = controlledActiveId ?? localActiveTeamId;
+	const activeWorkspaceId = controlledActiveId ?? localActiveTeamId;
 	const setActiveTeamId = React.useCallback(
 		(id?: string) => {
 			if (onTeamChange) onTeamChange(id);
@@ -91,14 +91,14 @@ export default function TeamsMembers({
 			setActiveTeamId(undefined);
 			return;
 		}
-		if (!activeTeamId) {
+		if (!activeWorkspaceId) {
 			setActiveTeamId(teams[0].id);
 			return;
 		}
-		if (!teams.find((t) => t.id === activeTeamId)) {
+		if (!teams.find((t) => t.id === activeWorkspaceId)) {
 			setActiveTeamId(teams[0].id);
 		}
-	}, [teams, activeTeamId, setActiveTeamId]);
+	}, [teams, activeWorkspaceId, setActiveTeamId]);
 
 	const roleRank = (r?: string) => {
 		switch ((r || "").toLowerCase()) {
@@ -114,8 +114,8 @@ export default function TeamsMembers({
 	};
 
 	const sortedMembers = React.useMemo(() => {
-		if (!activeTeamId) return [];
-		const list = (membersByTeam[activeTeamId] || []).slice();
+		if (!activeWorkspaceId) return [];
+		const list = (membersByTeam[activeWorkspaceId] || []).slice();
 		list.sort((a, b) => {
 			const ra = roleRank(a.role);
 			const rb = roleRank(b.role);
@@ -125,11 +125,11 @@ export default function TeamsMembers({
 			return na.localeCompare(nb);
 		});
 		return list;
-	}, [activeTeamId, membersByTeam]);
+	}, [activeWorkspaceId, membersByTeam]);
 
 	// Per-member loading is handled by the child actions component
 
-	const activeTeam = teams.find((t) => t.id === activeTeamId);
+	const activeTeam = teams.find((t) => t.id === activeWorkspaceId);
 	const count = sortedMembers.length;
 
 	const roleIcon = (role?: string) => {
@@ -167,12 +167,12 @@ export default function TeamsMembers({
 	const confirmActionLoading = canLeaveTeam ? "Leaving..." : "Revoking...";
 
 	const currentUserRole = React.useMemo(() => {
-		if (!activeTeamId || !currentUserId) return undefined;
-		const row = (membersByTeam[activeTeamId] ?? []).find(
+		if (!activeWorkspaceId || !currentUserId) return undefined;
+		const row = (membersByTeam[activeWorkspaceId] ?? []).find(
 			(m) => m.user_id === currentUserId
 		);
 		return (row?.role ?? "").toLowerCase();
-	}, [activeTeamId, currentUserId, membersByTeam]);
+	}, [activeWorkspaceId, currentUserId, membersByTeam]);
 
 	const currentUserRoleRank = currentUserRole
 		? roleRank(currentUserRole)
@@ -305,7 +305,7 @@ export default function TeamsMembers({
 				<div className="flex flex-wrap items-center gap-2">
 					<Badge variant="outline">{count} members</Badge>
 					<Select
-						value={activeTeamId}
+						value={activeWorkspaceId}
 						onValueChange={(v) => setActiveTeamId(v)}
 					>
 						<SelectTrigger className="w-full sm:w-[200px]">

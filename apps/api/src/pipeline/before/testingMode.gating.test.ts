@@ -18,7 +18,7 @@ describe("resolveTestingMode gating", () => {
 	it("returns not_requested when testing mode not requested", async () => {
 		const result = await resolveTestingMode({
 			requested: false,
-			teamId: "team_1",
+			workspaceId: "team_1",
 			userId: null,
 			internal: false,
 		});
@@ -29,7 +29,7 @@ describe("resolveTestingMode gating", () => {
 		getBindingsMock.mockReturnValue({ NODE_ENV: "development" });
 		const result = await resolveTestingMode({
 			requested: true,
-			teamId: "team_1",
+			workspaceId: "team_1",
 			userId: "user_1",
 			internal: false,
 		});
@@ -40,7 +40,7 @@ describe("resolveTestingMode gating", () => {
 		getBindingsMock.mockReturnValue({ NODE_ENV: "production" });
 		const result = await resolveTestingMode({
 			requested: true,
-			teamId: "team_1",
+			workspaceId: "team_1",
 			userId: "user_1",
 			internal: false,
 		});
@@ -51,7 +51,7 @@ describe("resolveTestingMode gating", () => {
 		getBindingsMock.mockReturnValue({ NODE_ENV: "production" });
 		const result = await resolveTestingMode({
 			requested: true,
-			teamId: "team_1",
+			workspaceId: "team_1",
 			userId: null,
 			internal: true,
 		});

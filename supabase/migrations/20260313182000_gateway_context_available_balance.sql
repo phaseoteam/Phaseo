@@ -3,7 +3,7 @@
 -- credit and team balance fields to use available balance.
 
 create or replace function public.gateway_fetch_request_context_with_reservations(
-  team_id uuid,
+  workspace_id uuid,
   model text,
   endpoint text,
   api_key_id uuid
@@ -21,7 +21,7 @@ declare
   wallet_available_nanos bigint := 0;
   credit_status jsonb;
 begin
-  payload := public.gateway_fetch_request_context(team_id, model, endpoint, api_key_id);
+  payload := public.gateway_fetch_request_context(workspace_id, model, endpoint, api_key_id);
   if payload is null then
     return null;
   end if;
@@ -33,7 +33,7 @@ begin
     wallet_balance_nanos,
     wallet_reserved_nanos
   from public.wallets w
-  where w.team_id = gateway_fetch_request_context_with_reservations.team_id
+  where w.workspace_id = gateway_fetch_request_context_with_reservations.workspace_id
   limit 1;
 
   if not found then

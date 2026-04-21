@@ -73,13 +73,13 @@ function normalizeResult(data: unknown): WalletReservationResult | null {
 }
 
 export async function reserveWalletCredits(args: {
-	teamId: string;
+	workspaceId: string;
 	reservationId: string;
 	amountNanos: number;
 	holdRefId?: string | null;
 }): Promise<WalletReservationResult> {
 	const { data, error } = await getSupabaseAdmin().rpc("gateway_wallet_reserve_once", {
-		p_team_id: args.teamId,
+		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_amount_nanos: Math.max(0, Math.trunc(args.amountNanos)),
 		p_hold_ref_id: args.holdRefId ?? null,
@@ -98,12 +98,12 @@ export async function reserveWalletCredits(args: {
 }
 
 export async function captureWalletReservation(args: {
-	teamId: string;
+	workspaceId: string;
 	reservationId: string;
 	captureRefId?: string | null;
 }): Promise<WalletReservationResult> {
 	const { data, error } = await getSupabaseAdmin().rpc("gateway_wallet_capture_once", {
-		p_team_id: args.teamId,
+		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_capture_ref_id: args.captureRefId ?? null,
 	});
@@ -121,12 +121,12 @@ export async function captureWalletReservation(args: {
 }
 
 export async function releaseWalletReservation(args: {
-	teamId: string;
+	workspaceId: string;
 	reservationId: string;
 	releaseRefId?: string | null;
 }): Promise<WalletReservationResult> {
 	const { data, error } = await getSupabaseAdmin().rpc("gateway_wallet_release_once", {
-		p_team_id: args.teamId,
+		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_release_ref_id: args.releaseRefId ?? null,
 	});

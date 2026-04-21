@@ -13,7 +13,7 @@
 -- - gateway_requests extended to audit OAuth-authenticated requests
 --
 -- Security:
--- - Team-based RLS policies using existing is_team_member() function
+-- - Team-based RLS policies using existing is_workspace_member() function
 -- - User-scoped RLS for authorization management
 -- - JWT validation enforced at API gateway layer
 -- =========================
@@ -33,7 +33,7 @@ create table if not exists public.oauth_app_metadata (
   client_id text not null unique,
 
   -- Team ownership (developer team that created this OAuth app)
-  team_id uuid not null references public.teams(id) on delete cascade,
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
 
   -- App identity & branding
   name text not null,
@@ -55,7 +55,7 @@ create table if not exists public.oauth_app_metadata (
   constraint oauth_app_metadata_name_check check (char_length(name) >= 3 and char_length(name) <= 100)
 );
 -- Indexes for oauth_app_metadata
-create index if not exists oauth_app_metadata_team_id_idx on public.oauth_app_metadata(team_id);
+create index if not exists oauth_app_metadata_workspace_id_idx on public.oauth_app_metadata(workspace_id);
 create index if not exists oauth_app_metadata_created_by_idx on public.oauth_app_metadata(created_by);
 create index if not exists oauth_app_metadata_status_idx on public.oauth_app_metadata(status) where status = 'active';
 -- Trigger to update updated_at timestamp
@@ -90,7 +90,7 @@ create table if not exists public.oauth_authorizations (
   -- Authorization participants
   user_id uuid not null references auth.users(id) on delete cascade,
   client_id text not null, -- References oauth_app_metadata(client_id) and Supabase OAuth client
-  team_id uuid not null references public.teams(id) on delete cascade, -- Which team's resources this authorization can access
+  workspace_id uuid not null references public.workspaces(id) on delete cascade, -- Which team's resources this authorization can access
 
   -- OAuth metadata
   scopes text[] not null default '{}', -- Granted scopes (e.g., ['openid', 'email', 'gateway:access'])
@@ -101,16 +101,16 @@ create table if not exists public.oauth_authorizations (
   revoked_at timestamp with time zone, -- null = active, non-null = revoked
 
   -- Unique constraint: one authorization per user+client+team combination
-  constraint oauth_authorizations_user_client_team_unique unique(user_id, client_id, team_id)
+  constraint oauth_authorizations_user_client_team_unique unique(user_id, client_id, workspace_id)
 );
 -- Indexes for oauth_authorizations
 create index if not exists oauth_authorizations_user_id_idx on public.oauth_authorizations(user_id) where revoked_at is null;
 create index if not exists oauth_authorizations_client_id_idx on public.oauth_authorizations(client_id) where revoked_at is null;
-create index if not exists oauth_authorizations_team_id_idx on public.oauth_authorizations(team_id) where revoked_at is null;
+create index if not exists oauth_authorizations_workspace_id_idx on public.oauth_authorizations(workspace_id) where revoked_at is null;
 create index if not exists oauth_authorizations_last_used_idx on public.oauth_authorizations(last_used_at desc) where revoked_at is null;
 -- Composite index for fast token validation lookup
 create index if not exists oauth_authorizations_validation_idx
-  on public.oauth_authorizations(user_id, client_id, team_id)
+  on public.oauth_authorizations(user_id, client_id, workspace_id)
   where revoked_at is null;
 -- =========================
 -- Extend: gateway_requests
@@ -137,7 +137,7 @@ create policy oauth_app_metadata_select_own_team
   on public.oauth_app_metadata
   for select
   to authenticated
-  using (public.is_team_member(team_id));
+  using (public.is_workspace_member(workspace_id));
 -- INSERT: Team members can create OAuth apps for their team
 drop policy if exists oauth_app_metadata_insert_own_team on public.oauth_app_metadata;
 create policy oauth_app_metadata_insert_own_team
@@ -145,7 +145,7 @@ create policy oauth_app_metadata_insert_own_team
   for insert
   to authenticated
   with check (
-    public.is_team_member(team_id)
+    public.is_workspace_member(workspace_id)
     and created_by = auth.uid()
   );
 -- UPDATE: Team members can update their team's OAuth apps
@@ -154,15 +154,15 @@ create policy oauth_app_metadata_update_own_team
   on public.oauth_app_metadata
   for update
   to authenticated
-  using (public.is_team_member(team_id))
-  with check (public.is_team_member(team_id));
+  using (public.is_workspace_member(workspace_id))
+  with check (public.is_workspace_member(workspace_id));
 -- DELETE: Team members can delete their team's OAuth apps (soft delete via status)
 drop policy if exists oauth_app_metadata_delete_own_team on public.oauth_app_metadata;
 create policy oauth_app_metadata_delete_own_team
   on public.oauth_app_metadata
   for delete
   to authenticated
-  using (public.is_team_member(team_id));
+  using (public.is_workspace_member(workspace_id));
 -- =========================
 -- RLS: oauth_authorizations
 -- =========================
@@ -188,7 +188,7 @@ create policy oauth_authorizations_select_team_apps
       select 1
       from public.oauth_app_metadata oam
       where oam.client_id = oauth_authorizations.client_id
-        and public.is_team_member(oam.team_id)
+        and public.is_workspace_member(oam.workspace_id)
     )
   );
 -- INSERT: System only (authorizations created via OAuth flow, not directly)
@@ -234,7 +234,7 @@ select
   oa.id as authorization_id,
   oa.user_id,
   oa.client_id,
-  oa.team_id,
+  oa.workspace_id,
   oa.scopes,
   oa.created_at as authorized_at,
   oa.last_used_at,
@@ -245,7 +245,7 @@ select
   t.name as team_name
 from public.oauth_authorizations oa
 join public.oauth_app_metadata oam on oam.client_id = oa.client_id
-join public.teams t on t.id = oa.team_id
+join public.workspaces t on t.id = oa.workspace_id
 where oa.revoked_at is null
   and oam.status = 'active'
 order by oa.last_used_at desc nulls last;

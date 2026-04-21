@@ -95,10 +95,10 @@ function resolveScopedTeamId(args: {
     authTeamId: string;
     requestedTeamId: string | null;
     internal?: boolean;
-}): { ok: true; teamId: string } | { ok: false; response: Response } {
+}): { ok: true; workspaceId: string } | { ok: false; response: Response } {
     const requested = args.requestedTeamId?.trim();
     if (!requested) {
-        return { ok: true, teamId: args.authTeamId };
+        return { ok: true, workspaceId: args.authTeamId };
     }
     if (!args.internal && requested !== args.authTeamId) {
         return {
@@ -107,14 +107,14 @@ function resolveScopedTeamId(args: {
                 {
                     ok: false,
                     error: "forbidden",
-                    message: "team_id must match authenticated team",
+                    message: "workspace_id must match authenticated team",
                 },
                 403,
                 { "Cache-Control": "no-store" }
             ),
         };
     }
-    return { ok: true, teamId: requested };
+    return { ok: true, workspaceId: requested };
 }
 
 type AnalyticsRollupRow = {
@@ -169,13 +169,13 @@ function toRoundedUsage(value: number): number {
 }
 
 async function refreshAnalyticsRollup(args: {
-	teamId: string;
+	workspaceId: string;
 	startIso: string;
 	endIso: string;
 }): Promise<void> {
     const supabase = getSupabaseAdmin();
     const { error } = await supabase.rpc("refresh_gateway_activity_rollup_daily", {
-        p_team_id: args.teamId,
+        p_workspace_id: args.workspaceId,
         p_start: args.startIso,
         p_end: args.endIso,
     });
@@ -185,17 +185,17 @@ async function refreshAnalyticsRollup(args: {
 }
 
 function buildRefreshMarkerKey(args: {
-	teamId: string;
+	workspaceId: string;
 	startIso: string;
 	endIso: string;
 }): string {
 	const startDay = args.startIso.slice(0, 10);
 	const endDay = args.endIso.slice(0, 10);
-	return `${ANALYTICS_REFRESH_MARKER_PREFIX}:${args.teamId}:${startDay}:${endDay}`;
+	return `${ANALYTICS_REFRESH_MARKER_PREFIX}:${args.workspaceId}:${startDay}:${endDay}`;
 }
 
 async function shouldRefreshAnalyticsRollup(args: {
-	teamId: string;
+	workspaceId: string;
 	startIso: string;
 	endIso: string;
 }): Promise<boolean> {
@@ -211,7 +211,7 @@ async function shouldRefreshAnalyticsRollup(args: {
 }
 
 async function markAnalyticsRollupRefresh(args: {
-	teamId: string;
+	workspaceId: string;
 	startIso: string;
 	endIso: string;
 }): Promise<void> {
@@ -226,7 +226,7 @@ async function markAnalyticsRollupRefresh(args: {
 }
 
 async function loadAnalyticsRollupRows(args: {
-    teamId: string;
+    workspaceId: string;
     startIso: string;
     endIso: string;
 }): Promise<AnalyticsRollupRow[]> {
@@ -238,7 +238,7 @@ async function loadAnalyticsRollupRows(args: {
         .select(
             "day_bucket,model_id,endpoint,provider,usage_nanos,byok_usage_nanos,requests,prompt_tokens,completion_tokens,reasoning_tokens"
         )
-        .eq("team_id", args.teamId)
+        .eq("workspace_id", args.workspaceId)
         .gte("day_bucket", startDay)
         .lt("day_bucket", endDay);
 
@@ -257,12 +257,12 @@ async function handleAnalytics(req: Request) {
     const authValue = auth.value;
     const url = new URL(req.url);
     const teamScope = resolveScopedTeamId({
-        authTeamId: authValue.teamId,
-        requestedTeamId: url.searchParams.get("team_id"),
+        authTeamId: authValue.workspaceId,
+        requestedTeamId: url.searchParams.get("workspace_id"),
         internal: authValue.internal,
     });
     if (teamScope.ok === false) return teamScope.response;
-    const teamId = teamScope.teamId;
+    const workspaceId = teamScope.workspaceId;
     const todayStart = startOfUtcDay(new Date());
     const range = parseDateParam(url.searchParams.get("date"), todayStart);
     if (range.ok === false) return range.response;
@@ -272,24 +272,24 @@ async function handleAnalytics(req: Request) {
 	try {
 		if (
 			await shouldRefreshAnalyticsRollup({
-				teamId,
+				workspaceId,
 				startIso,
 				endIso,
 			})
 		) {
 			await refreshAnalyticsRollup({
-				teamId,
+				workspaceId,
 				startIso,
 				endIso,
 			});
 			await markAnalyticsRollupRefresh({
-				teamId,
+				workspaceId,
 				startIso,
 				endIso,
 			});
 		}
 		const rows = await loadAnalyticsRollupRows({
-			teamId,
+			workspaceId,
 			startIso,
             endIso,
         });

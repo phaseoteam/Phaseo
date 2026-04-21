@@ -29,7 +29,7 @@ function buildArgs({
 	return {
 		ir: request,
 		requestId: "req_openai_rerank_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId,
 		endpoint: "rerank",
 		protocol: "openai.rerank",

@@ -16,7 +16,7 @@ describe("recordUsageAndChargeOnce", () => {
 	it("records usage charge once per request context", async () => {
 		const ctx: any = {
 			requestId: "req_charge",
-			teamId: "team_charge",
+			workspaceId: "team_charge",
 			endpoint: "responses",
 			meta: {},
 		};
@@ -35,7 +35,7 @@ describe("recordUsageAndChargeOnce", () => {
 		expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(1);
 		expect(recordUsageAndChargeMock).toHaveBeenCalledWith({
 			requestId: "req_charge",
-			teamId: "team_charge",
+			workspaceId: "team_charge",
 			cost_nanos: 12345,
 		});
 	});
@@ -43,7 +43,7 @@ describe("recordUsageAndChargeOnce", () => {
 	it("skips non-positive charge values", async () => {
 		const ctx: any = {
 			requestId: "req_charge_zero",
-			teamId: "team_charge",
+			workspaceId: "team_charge",
 			endpoint: "responses",
 			meta: {},
 		};

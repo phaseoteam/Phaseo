@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
             typeof event_type === "string" && TOP_UP_PURPOSES.has(event_type) ? event_type : "auto_top_up";
         // support paymentMethodId (camelCase) and payment_method_id (snake_case)
         const paymentMethodId = (body.paymentMethodId ?? body.payment_method_id) as string | undefined;
-        const teamId = (body.team_id ?? body.teamId) as string | undefined;
+        const workspaceId = (body.workspace_id ?? body.workspaceId) as string | undefined;
         if (!customerId) return NextResponse.json({ error: "Missing customerId" }, { status: 400 });
         if (!amount_pence || amount_pence < 50) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
             confirm: true,
             metadata: {
                 purpose: normalizedPurpose,
-                ...(teamId ? { team_id: teamId } : {}),
+                ...(workspaceId ? { workspace_id: workspaceId } : {}),
             },
         });
 

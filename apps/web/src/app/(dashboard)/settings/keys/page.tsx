@@ -4,7 +4,7 @@ import { ArrowUpRight, ShieldAlert } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -79,13 +79,14 @@ async function KeysContent() {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const initialTeamId = await getTeamIdFromCookie();
+	const initialTeamId = await getWorkspaceIdFromCookie();
 
 	// fetch API keys for the active team
 	const { data: apiKeys } = await supabase
 		.from("keys")
 		.select("*")
-		.eq("team_id", initialTeamId)
+		.eq("workspace_id", initialTeamId)
+		.neq("status", "deleted")
 		.neq("name", CHAT_MANAGED_KEY_NAME);
 
 	const usageByKey = new Map<
@@ -98,9 +99,9 @@ async function KeysContent() {
 		const dayStartIso = dayStart.toISOString();
 
 		const { data: usageRows, error: usageError } = await supabase.rpc(
-			"get_team_key_usage",
+			"get_workspace_key_usage",
 			{
-				p_team_id: initialTeamId,
+				p_workspace_id: initialTeamId,
 				p_day_start: dayStartIso,
 			},
 		);
@@ -122,8 +123,8 @@ async function KeysContent() {
 
 	// fetch teams the user belongs to (assumes a `team_users` join table)
 	const { data: teamUsers } = await supabase
-		.from("team_members")
-		.select("team_id, teams(id, name)")
+		.from("workspace_members")
+		.select("workspace_id, teams:workspaces(id, name)")
 		.eq("user_id", user?.id);
 
 	// build a teams list including a personal/personal-like fallback

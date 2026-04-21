@@ -44,7 +44,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 
 interface Invite {
 	id: string;
-	team_id: string;
+	workspace_id: string;
 	creator_user_id: string;
 	role: string;
 	token_encrypted: string;

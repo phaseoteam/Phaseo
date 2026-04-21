@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { requireTeamMembership } from "@/utils/serverActionAuth";
+import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 
 function revalidateWorkspacePaths() {
     revalidatePath("/settings/teams");
@@ -14,11 +14,11 @@ function revalidateWorkspacePaths() {
 
 /**
  * Server action: update a member's role.
- * Performs a supabase upsert on the `team_members` table and revalidates.
+ * Performs a supabase upsert on the `workspace_members` table and revalidates.
  */
-export async function updateMemberRole(teamId: string, userId: string, newRole?: string) {
-    if (!teamId || !userId) {
-        throw new Error('Missing teamId or userId');
+export async function updateMemberRole(workspaceId: string, userId: string, newRole?: string) {
+    if (!workspaceId || !userId) {
+        throw new Error('Missing workspaceId or userId');
     }
     const normalizedRole = (newRole ?? "").toLowerCase();
     if (normalizedRole !== "admin" && normalizedRole !== "member") {
@@ -34,12 +34,12 @@ export async function updateMemberRole(teamId: string, userId: string, newRole?:
     if (authError || !authUser?.id) {
         throw new Error("Not authenticated");
     }
-    await requireTeamMembership(supabase, authUser.id, teamId, ["owner", "admin"]);
+    await requireWorkspaceMembership(supabase, authUser.id, workspaceId, ["owner", "admin"]);
 
     const { data: teamData, error: teamError } = await admin
-        .from("teams")
+        .from("workspaces")
         .select("owner_user_id")
-        .eq("id", teamId)
+        .eq("id", workspaceId)
         .maybeSingle();
     if (teamError) throw teamError;
     if (teamData?.owner_user_id === userId) {
@@ -47,9 +47,9 @@ export async function updateMemberRole(teamId: string, userId: string, newRole?:
     }
 
     const { data, error } = await supabase
-        .from("team_members")
-        .upsert({ team_id: teamId, user_id: userId, role: normalizedRole }, { onConflict: "team_id,user_id" })
-        .select("team_id, user_id, role")
+        .from("workspace_members")
+        .upsert({ workspace_id: workspaceId, user_id: userId, role: normalizedRole }, { onConflict: "workspace_id,user_id" })
+        .select("workspace_id, user_id, role")
         .maybeSingle();
 
     if (error) throw error;
@@ -61,15 +61,15 @@ export async function updateMemberRole(teamId: string, userId: string, newRole?:
         // ignore revalidation errors
     }
 
-    return { teamId, userId, role: data?.role ?? null, ok: true };
+    return { workspaceId, userId, role: data?.role ?? null, ok: true };
 }
 
 /**
  * Server action: remove a member from a team.
  */
-export async function removeMember(teamId: string, userId: string) {
-    if (!teamId || !userId) {
-        throw new Error("Missing teamId or userId");
+export async function removeMember(workspaceId: string, userId: string) {
+    if (!workspaceId || !userId) {
+        throw new Error("Missing workspaceId or userId");
     }
 
     const supabase = await createClient();
@@ -102,9 +102,9 @@ export async function removeMember(teamId: string, userId: string) {
     let actingRole: string | undefined;
     if (!isSelf) {
         const { data: membership, error: membershipError } = await supabase
-            .from("team_members")
+            .from("workspace_members")
             .select("role")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("user_id", actingUserId)
             .maybeSingle();
 
@@ -113,7 +113,7 @@ export async function removeMember(teamId: string, userId: string) {
         actingRole = (membership?.role ?? "").toLowerCase();
         if (actingRole !== "owner" && actingRole !== "admin") {
             return {
-                teamId,
+                workspaceId,
                 userId,
                 ok: false as const,
                 message: "You don't have permission to remove this member from the workspace.",
@@ -121,9 +121,9 @@ export async function removeMember(teamId: string, userId: string) {
         }
 
         const { data: targetMembership, error: targetMembershipError } = await admin
-            .from("team_members")
+            .from("workspace_members")
             .select("role")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("user_id", userId)
             .maybeSingle();
 
@@ -134,7 +134,7 @@ export async function removeMember(teamId: string, userId: string) {
 
         if (targetRank < actorRank) {
             return {
-                teamId,
+                workspaceId,
                 userId,
                 ok: false as const,
                 message: "You can't remove a member with a higher role.",
@@ -144,16 +144,16 @@ export async function removeMember(teamId: string, userId: string) {
 
     // Check if the target user owns the team.
     const { data: teamData, error: teamError } = await admin
-        .from("teams")
+        .from("workspaces")
         .select("id, owner_user_id")
-        .eq("id", teamId)
+        .eq("id", workspaceId)
         .maybeSingle();
 
     if (teamError) throw teamError;
 
     if (teamData && teamData.owner_user_id === userId) {
         return {
-            teamId,
+            workspaceId,
             userId,
             ok: false as const,
             message: "You can't remove the workspace owner.",
@@ -161,9 +161,9 @@ export async function removeMember(teamId: string, userId: string) {
     }
 
     const { error } = await admin
-        .from("team_members")
+        .from("workspace_members")
         .delete()
-        .eq("team_id", teamId)
+        .eq("workspace_id", workspaceId)
         .eq("user_id", userId);
 
     if (error) throw error;
@@ -174,5 +174,5 @@ export async function removeMember(teamId: string, userId: string) {
         // no-op
     }
 
-    return { teamId, userId, ok: true as const };
+    return { workspaceId, userId, ok: true as const };
 }

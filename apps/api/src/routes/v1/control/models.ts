@@ -310,7 +310,7 @@ async function handleModels(req: Request, scope: ModelVisibilityScope) {
         );
     }
 
-    const cacheScope = scope === "team" ? `models:team:${auth.value.teamId}:v1` : "models:shared:v1";
+    const cacheScope = scope === "team" ? `models:team:${auth.value.workspaceId}:v1` : "models:shared:v1";
 
     const cacheOptions = {
         scope: cacheScope,

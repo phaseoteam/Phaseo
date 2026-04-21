@@ -24,7 +24,7 @@ function buildArgs(ir: IRVideoGenerationRequest, providerId = "alibaba"): Execut
 	return {
 		ir,
 		requestId: "req_wan_video_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId,
 		endpoint: "video.generation",
 		protocol: "alibaba.video",

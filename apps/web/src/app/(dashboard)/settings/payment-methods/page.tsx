@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { getStripe } from "@/lib/stripe";
 import {
   Card,
@@ -36,7 +36,7 @@ async function PaymentMethodsContent() {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
-  const teamId = await getTeamIdFromCookie();
+  const workspaceId = await getWorkspaceIdFromCookie();
   const stripe = getStripe();
 
   let customerId: string | null = null;
@@ -44,12 +44,12 @@ async function PaymentMethodsContent() {
   let paymentMethods: Stripe.PaymentMethod[] = [];
   let defaultPaymentMethodId: string | null = null;
 
-  if (teamId) {
+  if (workspaceId) {
     try {
       const { data, error } = await supabase
         .from("wallets")
         .select("stripe_customer_id")
-        .eq("team_id", teamId)
+        .eq("workspace_id", workspaceId)
         .maybeSingle();
       if (error) {
         console.log("[WARN] wallets fetch (payment methods):", String(error));

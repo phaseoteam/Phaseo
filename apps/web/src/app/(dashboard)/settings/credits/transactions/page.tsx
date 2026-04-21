@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import RecentTransactions from "@/components/(gateway)/credits/RecentTransactions";
@@ -23,15 +23,15 @@ export default function TransactionsPage() {
 
 async function TransactionsContent() {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	let teamTier = "basic";
 	let billingMode: "wallet" | "invoice" = "wallet";
 
 	try {
 		const { data: teamRow, error: teamErr } = await supabase
-			.from("teams")
+			.from("workspaces")
 			.select("tier,billing_mode")
-			.eq("id", teamId)
+			.eq("id", workspaceId)
 			.maybeSingle();
 
 		if (!teamErr && teamRow) {
@@ -53,11 +53,11 @@ async function TransactionsContent() {
 		let invoices: any[] = [];
 		try {
 			const { data: rows, error: rowsErr } = await supabase
-				.from("team_invoices")
+				.from("workspace_invoices")
 				.select(
 					"id,period_start,period_end,amount_nanos,currency,status,stripe_invoice_id,stripe_invoice_number,due_at,issued_at,paid_at,created_at,updated_at",
 				)
-				.eq("team_id", teamId)
+				.eq("workspace_id", workspaceId)
 				.order("period_end", { ascending: false })
 				.limit(250);
 
@@ -101,7 +101,7 @@ async function TransactionsContent() {
 		const { data: walletRow, error: walletErr } = await supabase
 			.from("wallets")
 			.select("stripe_customer_id")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 		if (!walletErr) {
 			stripeCustomerId = walletRow?.stripe_customer_id ?? null;
@@ -117,7 +117,7 @@ async function TransactionsContent() {
 			.select(
 				"id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at",
 			)
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.order("event_time", { ascending: false })
 			.limit(250);
 

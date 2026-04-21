@@ -12,7 +12,7 @@
  * SELECT cron.schedule(
  *     'cleanup-dormant-enterprise-teams',
  *     '0 0 1 * *',
- *     $$SELECT cleanup_dormant_enterprise_teams()$$
+ *     $$SELECT cleanup_dormant_enterprise_workspaces()$$
  * );
  *
  * Setup Instructions (Option 2 - Cloudflare Workers):
@@ -30,7 +30,7 @@ export interface TierCleanupResult {
     total_teams_checked: number;
     teams_downgraded: number;
     downgraded_teams: Array<{
-        team_id: string;
+        workspace_id: string;
         old_tier: string;
         new_tier: string;
         spend_30d_usd: number;
@@ -41,7 +41,7 @@ export interface TierCleanupResult {
 
 /**
  * Execute monthly cleanup for dormant Enterprise teams
- * Calls the Supabase RPC function cleanup_dormant_enterprise_teams()
+ * Calls the Supabase RPC function cleanup_dormant_enterprise_workspaces()
  *
  * Active teams are handled by per-request tier calculation in context.sql
  * This cron handles teams that stopped making requests while on Enterprise tier
@@ -53,7 +53,7 @@ export async function executeDormantTeamCleanup(): Promise<TierCleanupResult> {
         console.log("[tier-cron] Starting dormant Enterprise team cleanup...");
 
         // Call the RPC function to cleanup dormant teams
-        const { data, error } = await supabase.rpc("cleanup_dormant_enterprise_teams");
+        const { data, error } = await supabase.rpc("cleanup_dormant_enterprise_workspaces");
 
         if (error) {
             console.error("[tier-cron] Error cleaning up dormant teams:", error);

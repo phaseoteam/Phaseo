@@ -66,13 +66,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid payment intent id" }, { status: 400 });
         }
 
-        const { teamId, customerId, userId } = await requireActiveTeamStripeCustomer();
+        const { workspaceId, customerId, userId } = await requireActiveTeamStripeCustomer();
         const supabase = createAdminClient();
 
         const { data: purchase, error: purchaseErr } = await supabase
             .from("credit_ledger")
-            .select("team_id,event_time,kind,amount_nanos,before_balance_nanos,status,ref_type,ref_id")
-            .eq("team_id", teamId)
+            .select("workspace_id,event_time,kind,amount_nanos,before_balance_nanos,status,ref_type,ref_id")
+            .eq("workspace_id", workspaceId)
             .eq("ref_type", "Stripe_Payment_Intent")
             .eq("ref_id", paymentIntentId)
             .maybeSingle();
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         const { data: existingRefunds, error: refundLookupErr } = await supabase
             .from("credit_ledger")
             .select("ref_id,status")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("kind", "refund")
             .eq("source_ref_type", "Stripe_Payment_Intent")
             .eq("source_ref_id", paymentIntentId);
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
         const { data: usageRows, error: usageErr } = await supabase
             .from("gateway_requests")
             .select("cost_nanos")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("success", true)
             .gte("created_at", new Date(purchaseTs).toISOString());
         if (usageErr) throw usageErr;
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
                 reason: "requested_by_customer",
                 metadata: {
                     purpose: "self_serve_unused_lot_refund",
-                    team_id: teamId,
+                    workspace_id: workspaceId,
                     user_id: userId,
                     stripe_customer_id: customerId,
                     user_reason: refundReasonLabel,
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
                 },
             },
             {
-                idempotencyKey: `self_serve_refund:${teamId}:${paymentIntentId}`,
+                idempotencyKey: `self_serve_refund:${workspaceId}:${paymentIntentId}`,
             }
         );
 
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
         const { data: wallet, error: walletErr } = await supabase
             .from("wallets")
             .select("balance_nanos")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .maybeSingle();
         if (walletErr) throw walletErr;
         const currentBalanceNanos = Number(wallet?.balance_nanos ?? 0);
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
         const { error: refundLedgerErr } = await supabase.from("credit_ledger").upsert(
             [
                 {
-                    team_id: teamId,
+                    workspace_id: workspaceId,
                     kind: "refund",
                     amount_nanos: negativeNetNanos,
                     before_balance_nanos: currentBalanceNanos,
@@ -233,13 +233,13 @@ export async function POST(req: NextRequest) {
 
         if (status === "succeeded" && negativeNetNanos < 0) {
             const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
-                p_team_id: teamId,
+                p_workspace_id: workspaceId,
                 p_delta_nanos: negativeNetNanos,
             });
 
             if (deltaErr) {
                 console.warn("[refund.request] inline wallet_apply_delta failed; waiting for webhook reconciliation", {
-                    teamId,
+                    workspaceId,
                     refundId: refund.id,
                     error: deltaErr.message,
                 });
@@ -270,12 +270,12 @@ export async function POST(req: NextRequest) {
                 refund_claimed_at: new Date().toISOString(),
                 refund_claimed_by_user_id: userId,
             })
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("ref_type", "Stripe_Payment_Intent")
             .eq("ref_id", paymentIntentId);
         if (claimUpdateErr && !String(claimUpdateErr.message ?? "").toLowerCase().includes("column")) {
             console.warn("[refund.request] failed to persist refund claim metadata", {
-                teamId,
+                workspaceId,
                 paymentIntentId,
                 error: claimUpdateErr.message,
             });

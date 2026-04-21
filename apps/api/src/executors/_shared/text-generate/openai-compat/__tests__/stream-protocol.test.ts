@@ -46,7 +46,7 @@ function baseArgs(overrides?: Record<string, any>): any {
 			stream: true,
 		},
 		requestId: "req_stream_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "deepseek",
 		endpoint: "chat.completions",
 		protocol: "openai.chat.completions",

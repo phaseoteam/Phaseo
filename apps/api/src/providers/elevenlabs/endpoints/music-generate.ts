@@ -195,7 +195,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 typeof firstOutput?.duration === "number"
                     ? firstOutput.duration
                     : (typeof typedPayload.duration === "number" ? typedPayload.duration : null);
-            await saveMusicJobMeta(args.teamId, String(normalized.id), {
+            await saveMusicJobMeta(args.workspaceId, String(normalized.id), {
                 provider: "elevenlabs",
                 model: requestBody.model_id ?? null,
                 duration: durationSeconds,
@@ -208,7 +208,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         } catch (err) {
             console.error("elevenlabs_music_job_meta_store_failed", {
                 error: err,
-                teamId: args.teamId,
+                workspaceId: args.workspaceId,
                 musicId: normalized.id,
             });
         }

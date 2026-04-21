@@ -93,7 +93,7 @@ export function toPublicVideoStatus(value: unknown): "pending" | "in_progress" |
 export async function issueSignedVideoDownloadUrl(args: {
 	requestUrl?: string | null;
 	baseUrl?: string | null;
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	index?: number;
 	ttlSeconds?: number | null;
@@ -109,7 +109,7 @@ export async function issueSignedVideoDownloadUrl(args: {
 	const disposition = args.disposition === "inline" ? "inline" : "attachment";
 	const index = typeof args.index === "number" && Number.isFinite(args.index) ? Math.max(0, Math.trunc(args.index)) : 0;
 	const tokenPayload = base64UrlEncodeText(JSON.stringify({
-		team_id: args.teamId,
+		workspace_id: args.workspaceId,
 		video_id: args.videoId,
 		index,
 		disposition,
@@ -128,7 +128,7 @@ export async function issueSignedVideoDownloadUrl(args: {
 }
 
 export async function verifySignedVideoDownloadRequest(requestUrl: string): Promise<{
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	index: number;
 	disposition: "attachment" | "inline";
@@ -151,13 +151,13 @@ export async function verifySignedVideoDownloadRequest(requestUrl: string): Prom
 	} catch {
 		return null;
 	}
-	const teamId = normalizeText(payload.team_id);
+	const workspaceId = normalizeText(payload.workspace_id);
 	const videoId = normalizeText(payload.video_id);
 	const disposition = payload.disposition === "inline" ? "inline" : "attachment";
 	const indexRaw = typeof payload.index === "number" && Number.isFinite(payload.index) ? payload.index : 0;
-	if (!teamId || !videoId) return null;
+	if (!workspaceId || !videoId) return null;
 	return {
-		teamId,
+		workspaceId,
 		videoId,
 		index: Math.max(0, Math.trunc(indexRaw)),
 		disposition,

@@ -391,7 +391,7 @@ export async function routeProviders(
     ctx: {
         endpoint: Endpoint;
         model: string;
-        teamId: string;
+        workspaceId: string;
         body?: any;
         routingMode?: string | null;
         betaChannelEnabled?: boolean;
@@ -444,7 +444,7 @@ export async function routeProviders(
             });
             if (stickyContext) {
                 stickyHint = await readStickyRouting(
-                    ctx.teamId,
+                    ctx.workspaceId,
                     ctx.endpoint,
                     base,
                     stickyContext.key,
@@ -646,7 +646,7 @@ export async function routeProviders(
     const minTail = Math.min(...latTail), maxTail = Math.max(...latTail);
     const minTPS = Math.min(...tpss), maxTPS = Math.max(...tpss);
 
-    const rng = seededRandom(hashSeed(`${ctx.requestId ?? ""}:${ctx.teamId}:${ctx.model}`));
+    const rng = seededRandom(hashSeed(`${ctx.requestId ?? ""}:${ctx.workspaceId}:${ctx.model}`));
     const priceScores = preset.wPrice > 0 ? computePriceScores(ctx.endpoint, pool.map((p) => p.candidate)) : new Map();
     const scored = pool.map(v => {
         const h = v.h;

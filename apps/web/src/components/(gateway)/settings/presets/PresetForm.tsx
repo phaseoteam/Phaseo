@@ -237,7 +237,7 @@ export default function PresetForm({
 				visibility,
 				config,
 				creatorUserId: currentUserId,
-				teamId: currentTeamId,
+				workspaceId: currentTeamId,
 			});
 			toast.success("Preset created");
 			router.push("/settings/presets");

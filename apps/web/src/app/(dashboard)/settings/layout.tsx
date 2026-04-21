@@ -4,7 +4,7 @@ import SettingsTopTabsServer from "@/components/(gateway)/settings/SettingsTopTa
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	Sidebar,
 	SidebarInset,
@@ -40,22 +40,22 @@ export default async function SettingsLayout({
 		redirect(`/sign-in?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
 	}
 	const userId = authData.user?.id ?? null;
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	let showBroadcast = false;
 	let isEnterpriseInvoiceMode = false;
-	if (userId && teamId) {
+	if (userId && workspaceId) {
 		const { data: membership } = await supabase
-			.from("team_members")
+			.from("workspace_members")
 			.select("role")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.eq("user_id", userId)
 			.maybeSingle();
 		showBroadcast = (membership?.role ?? "").toLowerCase() === "admin";
 
 		const { data: teamRow } = await supabase
-			.from("teams")
+			.from("workspaces")
 			.select("tier,billing_mode")
-			.eq("id", teamId)
+			.eq("id", workspaceId)
 			.maybeSingle();
 		const tier = String(teamRow?.tier ?? "").toLowerCase();
 		const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();

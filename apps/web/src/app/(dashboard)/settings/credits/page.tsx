@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import CurrentCredits from "@/components/(gateway)/credits/CurrentCredits";
 import Banner from "@/components/(gateway)/credits/Banner";
 import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/TopUp/BuyCreditsClient";
@@ -85,7 +85,7 @@ async function CreditsSettingsContent(props: {
 		mtd: number;
 	} = { lastMonth: 0, mtd: 0 };
 
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	const supabase = await createClient();
 	const { data: authData } = await supabase.auth.getUser();
 	const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
@@ -96,9 +96,9 @@ async function CreditsSettingsContent(props: {
 		const { data, error: walletErr } = await supabase
 			.from("wallets")
 			.select(
-				"team_id,stripe_customer_id,balance_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id"
+				"workspace_id,stripe_customer_id,balance_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id"
 			)
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 
 		if (walletErr) {
@@ -120,9 +120,9 @@ async function CreditsSettingsContent(props: {
 	// Team settings (best-effort)
 	try {
 		const { data: settingsRow, error: settingsErr } = await supabase
-			.from("team_settings")
+			.from("workspace_settings")
 			.select("low_balance_email_enabled,low_balance_email_threshold_nanos")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 
 		if (settingsErr) {
@@ -140,9 +140,9 @@ async function CreditsSettingsContent(props: {
 	// Team billing mode (best-effort)
 	try {
 		const { data: teamRow, error: teamErr } = await supabase
-			.from("teams")
+			.from("workspaces")
 			.select("billing_mode,tier,invoice_onboarding_status")
-			.eq("id", teamId)
+			.eq("id", workspaceId)
 			.maybeSingle();
 
 		if (teamErr) {
@@ -167,9 +167,9 @@ async function CreditsSettingsContent(props: {
 	// Invoice profile (best-effort)
 	try {
 		const { data: invoiceProfileRow, error: invoiceProfileErr } = await supabase
-			.from("team_invoice_profiles")
+			.from("workspace_invoice_profiles")
 			.select("enabled,billing_day")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 
 		if (invoiceProfileErr) {
@@ -255,7 +255,7 @@ async function CreditsSettingsContent(props: {
 		const { data: latestRow, error: latestErr } = await supabase
 			.from("credit_ledger")
 			.select("event_time,status,amount_nanos")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.eq("ref_type", "Stripe_Payment_Intent")
 			.or("status.ilike.paid,status.ilike.succeeded")
 			.gt("amount_nanos", 0)
@@ -271,18 +271,18 @@ async function CreditsSettingsContent(props: {
 	}
 
 	// Tier stats (best-effort)
-	if (teamId) {
+	if (workspaceId) {
 		try {
 			const [{ data: prev, error: e1 }, { data: mtd, error: e2 }] =
 				await Promise.all([
 					supabase
 						.rpc("monthly_spend_prev_cents", {
-							p_team: teamId,
+							p_team: workspaceId,
 						})
 						.single(),
 					supabase
 						.rpc("mtd_spend_cents", {
-							p_team: teamId,
+							p_team: workspaceId,
 						})
 						.single(),
 				]);
@@ -337,7 +337,7 @@ async function CreditsSettingsContent(props: {
 		try {
 			const { data: previewRows, error: previewErr } = await supabase.rpc(
 				"get_team_invoice_preview",
-				{ p_team_id: teamId }
+				{ p_workspace_id: workspaceId }
 			);
 
 			if (previewErr) {

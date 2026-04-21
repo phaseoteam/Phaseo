@@ -38,7 +38,7 @@ describe("validateCapabilities", () => {
 				}],
 			},
 			requestId: "req_stream_tools_provider_specific",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { stream: {}, tools: {}, max_tokens: {} }, 4096),
 				provider("provider-without-tools-stream-combo", { stream: {}, max_tokens: {} }, 4096),
@@ -66,7 +66,7 @@ describe("validateCapabilities", () => {
 				messages: [{ role: "user", content: "hello" }],
 			},
 			requestId: "req_unknown_param",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [provider("openai", { max_tokens: {} })],
 			model: "openai/gpt-4o-mini",
 		});
@@ -94,7 +94,7 @@ describe("validateCapabilities", () => {
 				temperature: 0.2,
 			},
 			requestId: "req_unsupported_param",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { top_p: {} }),
 				provider("anthropic", { tools: {} }),
@@ -127,7 +127,7 @@ describe("validateCapabilities", () => {
 				max_tokens: 32,
 			},
 			requestId: "req_routing_filter",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { temperature: {}, max_tokens: {} }, 4096),
 				provider("anthropic", { top_p: {}, max_tokens: {} }, 4096),
@@ -164,7 +164,7 @@ describe("validateCapabilities", () => {
 				max_output_tokens: 256,
 			},
 			requestId: "req_alias_max_tokens",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("anthropic", { max_tokens: {} }, 4096),
 			],
@@ -190,7 +190,7 @@ describe("validateCapabilities", () => {
 				messages: [{ role: "user", content: "hello" }],
 			},
 			requestId: "req_no_optional_params",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { temperature: {}, max_tokens: {} }, 4096),
 			],
@@ -223,7 +223,7 @@ describe("validateCapabilities", () => {
 				debug: { enabled: true },
 			},
 			requestId: "req_gateway_fields_passthrough",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { tools: {} }, 4096),
 			],
@@ -265,7 +265,7 @@ describe("validateCapabilities", () => {
 				},
 			},
 			requestId: "req_provider_options_context_management",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", {}, 4096),
 				provider("anthropic", {}, 4096),
@@ -294,7 +294,7 @@ describe("validateCapabilities", () => {
 				provider_options: {},
 			},
 			requestId: "req_provider_options_empty",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", {}, 4096),
 			],
@@ -321,7 +321,7 @@ describe("validateCapabilities", () => {
 				modalities: ["text", "image"],
 			},
 			requestId: "req_modalities_passthrough",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				// Intentionally omit "modalities" in capability params.
 				provider("google-ai-studio", { temperature: {} }, 4096),
@@ -356,7 +356,7 @@ describe("validateCapabilities", () => {
 				},
 			},
 			requestId: "req_image_config_supported",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("google-ai-studio", { image_config: {}, temperature: {} }, 4096),
 				provider("openai", { temperature: {} }, 4096),
@@ -385,7 +385,7 @@ describe("validateCapabilities", () => {
 				reasoning: { effort: "high", summary: "detailed" },
 			},
 			requestId: "req_reasoning_children",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { "reasoning.effort": {}, "reasoning.summary": {} }, 4096),
 			],
@@ -413,7 +413,7 @@ describe("validateCapabilities", () => {
 				reasoning: { effort: "medium" },
 			},
 			requestId: "req_reasoning_enabled_supported",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [provider("z-ai", { "reasoning.enabled": {} }, 4096)],
 			model: "z-ai/glm-4-7-flash:free",
 		});
@@ -439,7 +439,7 @@ describe("validateCapabilities", () => {
 				max_completion_tokens: 256,
 			},
 			requestId: "req_alias_max_completion_tokens",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { max_tokens: {} }, 4096),
 			],
@@ -469,7 +469,7 @@ describe("validateCapabilities", () => {
 				input: "hello",
 			},
 			requestId: "req_models_plugins_passthrough",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { tools: {} }, 4096),
 			],
@@ -500,7 +500,7 @@ describe("validateCapabilities", () => {
 				trace: { id: "trace_1" },
 			},
 			requestId: "req_chat_routing_fields",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providers: [
 				provider("openai", { max_tokens: {} }, 4096),
 			],

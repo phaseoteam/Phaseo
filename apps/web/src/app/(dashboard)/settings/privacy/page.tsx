@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import PrivacySettingsClient from "@/components/(gateway)/settings/privacy/PrivacySettingsClient";
@@ -25,9 +25,9 @@ export default function PrivacySettingsPage() {
 
 async function PrivacySettingsContent() {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Select a workspace to manage privacy settings.
@@ -37,13 +37,13 @@ async function PrivacySettingsContent() {
 
 	const [teamResult, settingsResult, providersResult, activeProviderModelsResult] =
 		await Promise.all([
-			supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle(),
+			supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
 			supabase
-				.from("team_settings")
+				.from("workspace_settings")
 				.select(
 					"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed",
 				)
-				.eq("team_id", teamId)
+				.eq("workspace_id", workspaceId)
 				.maybeSingle(),
 			supabase
 				.from("data_api_providers")

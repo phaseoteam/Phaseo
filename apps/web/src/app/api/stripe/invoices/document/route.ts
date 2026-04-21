@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 function parseStripeInvoiceId(body: any): string | null {
 	const raw = body?.stripeInvoiceId ?? body?.stripe_invoice_id ?? null;
@@ -29,15 +29,15 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const teamId = await getTeamIdFromCookie();
-		if (!teamId) {
+		const workspaceId = await getWorkspaceIdFromCookie();
+		if (!workspaceId) {
 			return NextResponse.json({ error: "Missing active team" }, { status: 400 });
 		}
 
 		const { data: membership, error: membershipErr } = await supabase
-			.from("team_members")
+			.from("workspace_members")
 			.select("role")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.eq("user_id", user.id)
 			.maybeSingle();
 		if (membershipErr || !membership) {
@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
 
 		const admin = createAdminClient();
 		const { data: invoiceRow, error: invoiceErr } = await admin
-			.from("team_invoices")
-			.select("team_id,stripe_invoice_id")
-			.eq("team_id", teamId)
+			.from("workspace_invoices")
+			.select("workspace_id,stripe_invoice_id")
+			.eq("workspace_id", workspaceId)
 			.eq("stripe_invoice_id", stripeInvoiceId)
 			.maybeSingle();
 

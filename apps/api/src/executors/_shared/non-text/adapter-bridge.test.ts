@@ -83,7 +83,7 @@ describe("non-text adapter bridge", () => {
 				n: 1,
 			},
 			requestId: "req_non_text_google_image_1",
-			teamId: "team_test",
+			workspaceId: "team_test",
 			providerId: "google-ai-studio",
 			endpoint: "images.generations",
 			providerModelSlug: "gemini-3.1-flash-image-preview",

@@ -24,7 +24,7 @@ export type ProviderExecuteArgs = {
         keySource?: "gateway" | "byok";
         byokKeyId?: string | null;
     };
-    teamId: string;
+    workspaceId: string;
     providerId: string;
     byokMeta: ByokKeyMeta[];
 

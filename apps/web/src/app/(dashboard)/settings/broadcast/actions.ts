@@ -1,15 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
-	requireTeamMembership,
+	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 type BroadcastDestinationRow = {
 	id: string;
-	team_id: string;
+	workspace_id: string;
 	destination_id: string;
 	name: string;
 	enabled: boolean;
@@ -406,17 +406,17 @@ async function getDestinationForTeam(
 	id: string,
 ): Promise<{ supabase: any; row: BroadcastDestinationRow }> {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const { data, error } = await supabase
-		.from("team_broadcast_destinations")
+		.from("workspace_broadcast_destinations")
 		.select(
-			"id, team_id, destination_id, name, enabled, sampling_rate, privacy_exclude_prompts_and_outputs, destination_config",
+			"id, workspace_id, destination_id, name, enabled, sampling_rate, privacy_exclude_prompts_and_outputs, destination_config",
 		)
 		.eq("id", id)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.maybeSingle();
 	if (error) throw error;
 	if (!data) throw new Error("Destination not found");
@@ -426,9 +426,9 @@ async function getDestinationForTeam(
 
 export async function createBroadcastDestinationAction(args: CreateBroadcastDestinationInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const destinationId = normalizeDestinationId(String(args.destinationId ?? "").trim());
 	if (!destinationId) throw new Error("Missing destination id");
@@ -491,9 +491,9 @@ export async function createBroadcastDestinationAction(args: CreateBroadcastDest
 
 	try {
 		const { data: createdDestination, error: insertDestinationError } = await supabase
-			.from("team_broadcast_destinations")
+			.from("workspace_broadcast_destinations")
 			.insert({
-				team_id: teamId,
+				workspace_id: workspaceId,
 				destination_id: destinationId,
 				name,
 				enabled: true,
@@ -511,7 +511,8 @@ export async function createBroadcastDestinationAction(args: CreateBroadcastDest
 			const { data: existingKeys, error: existingKeysError } = await supabase
 				.from("keys")
 				.select("id")
-				.eq("team_id", teamId)
+				.eq("workspace_id", workspaceId)
+				.neq("status", "deleted")
 				.in("id", requestedKeyIds);
 			if (existingKeysError) throw existingKeysError;
 
@@ -561,10 +562,10 @@ export async function createBroadcastDestinationAction(args: CreateBroadcastDest
 	} catch (error) {
 		if (destinationRowId) {
 			await supabase
-				.from("team_broadcast_destinations")
+				.from("workspace_broadcast_destinations")
 				.delete()
 				.eq("id", destinationRowId)
-				.eq("team_id", teamId);
+				.eq("workspace_id", workspaceId);
 		}
 		throw error;
 	}
@@ -575,10 +576,10 @@ export async function disableBroadcastDestinationAction(id: string) {
 	const { supabase, row } = await getDestinationForTeam(id);
 
 	const { error } = await supabase
-		.from("team_broadcast_destinations")
+		.from("workspace_broadcast_destinations")
 		.update({ enabled: false, updated_at: new Date().toISOString() })
 		.eq("id", row.id)
-		.eq("team_id", row.team_id);
+		.eq("workspace_id", row.workspace_id);
 	if (error) throw error;
 
 	revalidatePath("/settings/broadcast");
@@ -590,10 +591,10 @@ export async function deleteBroadcastDestinationAction(id: string) {
 	const { supabase, row } = await getDestinationForTeam(id);
 
 	const { error } = await supabase
-		.from("team_broadcast_destinations")
+		.from("workspace_broadcast_destinations")
 		.delete()
 		.eq("id", row.id)
-		.eq("team_id", row.team_id);
+		.eq("workspace_id", row.workspace_id);
 	if (error) throw error;
 
 	revalidatePath("/settings/broadcast");
@@ -730,9 +731,9 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 	config: Record<string, string>;
 }) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	const destinationId = String(args.destinationId ?? "").trim();
 	if (!destinationId) throw new Error("Missing destination id");

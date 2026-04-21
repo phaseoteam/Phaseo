@@ -32,7 +32,7 @@ import {
 
 interface Request {
 	id: string;
-	team_id?: string;
+	workspace_id?: string;
 	invite_id?: string | null;
 	requester_user_id: string;
 	status?: "pending" | "accepted" | "rejected" | string | null;
@@ -52,7 +52,7 @@ interface Team {
 interface Props {
 	teams: Team[];
 	requestsByTeam: Record<string, Request[]>;
-	activeTeamId?: string | undefined;
+	activeWorkspaceId?: string | undefined;
 	onTeamChange?: (id?: string) => void;
 	onApprove?: (requestId: string) => Promise<void> | void;
 	onReject?: (requestId: string) => Promise<void> | void;
@@ -61,7 +61,7 @@ interface Props {
 export default function TeamsRequests({
 	teams,
 	requestsByTeam,
-	activeTeamId: controlledActiveId,
+	activeWorkspaceId: controlledActiveId,
 	onTeamChange,
 	onApprove,
 	onReject,
@@ -70,7 +70,7 @@ export default function TeamsRequests({
 		string | undefined
 	>(teams.length ? teams[0].id : undefined);
 
-	const activeTeamId = controlledActiveId ?? localActiveTeamId;
+	const activeWorkspaceId = controlledActiveId ?? localActiveTeamId;
 	const setActiveTeamId = React.useCallback(
 		(id?: string) => {
 			if (onTeamChange) onTeamChange(id);
@@ -84,22 +84,22 @@ export default function TeamsRequests({
 			setActiveTeamId(undefined);
 			return;
 		}
-		if (!activeTeamId) {
+		if (!activeWorkspaceId) {
 			setActiveTeamId(teams[0].id);
 			return;
 		}
-		if (!teams.find((t) => t.id === activeTeamId)) {
+		if (!teams.find((t) => t.id === activeWorkspaceId)) {
 			setActiveTeamId(teams[0].id);
 		}
-	}, [teams, activeTeamId, setActiveTeamId]);
+	}, [teams, activeWorkspaceId, setActiveTeamId]);
 
 	const all = React.useMemo(() => requestsByTeam || {}, [requestsByTeam]);
 	const active = React.useMemo(() => {
-		if (!activeTeamId) return [];
-		return (all[activeTeamId] || []).filter((r) => r.status === "pending");
-	}, [activeTeamId, all]);
+		if (!activeWorkspaceId) return [];
+		return (all[activeWorkspaceId] || []).filter((r) => r.status === "pending");
+	}, [activeWorkspaceId, all]);
 
-	const activeTeam = teams.find((t) => t.id === activeTeamId);
+	const activeTeam = teams.find((t) => t.id === activeWorkspaceId);
 
 	function formatDate(d?: string | null) {
 		if (!d) return "";
@@ -293,7 +293,7 @@ export default function TeamsRequests({
 							{active.length === 1 ? "request" : "requests"}
 						</Badge>
 						<Select
-							value={activeTeamId}
+							value={activeWorkspaceId}
 							onValueChange={(v) => setActiveTeamId(v)}
 						>
 							<SelectTrigger className="w-full sm:w-[200px]">

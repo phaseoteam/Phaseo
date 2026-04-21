@@ -13,7 +13,7 @@ const FORCE_CHAT_HASH_SYNC_FLAG = "CHAT_ROUTE_FORCE_HASH_SYNC";
 
 type ChatGatewayContext = {
 	userId: string;
-	teamId: string;
+	workspaceId: string;
 	apiKey: string;
 };
 
@@ -79,15 +79,15 @@ function shouldForceChatHashSync(): boolean {
 	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
-function deriveTeamScopedGatewayKey(args: { teamId: string }): {
+function deriveTeamScopedGatewayKey(args: { workspaceId: string }): {
 	kid: string;
 	secret: string;
 	plaintext: string;
 	prefix: string;
 } {
 	const seed = resolveSeed();
-	const kid = deriveBase62Token(`${seed}:kid:${args.teamId}`, 12);
-	const secret = deriveBase62Token(`${seed}:secret:${args.teamId}`, 40);
+	const kid = deriveBase62Token(`${seed}:kid:${args.workspaceId}`, 12);
+	const secret = deriveBase62Token(`${seed}:secret:${args.workspaceId}`, 40);
 	return {
 		kid,
 		secret,
@@ -99,18 +99,18 @@ function deriveTeamScopedGatewayKey(args: { teamId: string }): {
 async function findTeamIdForUser(userId: string): Promise<string> {
 	const supabase = await createClient();
 	const cookieStore = await cookies();
-	const cookieTeamId = String(cookieStore.get("activeTeamId")?.value ?? "").trim();
+	const cookieTeamId = String(cookieStore.get("activeWorkspaceId")?.value ?? "").trim();
 
-	const isMember = async (teamId: string): Promise<boolean> => {
-		if (!teamId) return false;
+	const isMember = async (workspaceId: string): Promise<boolean> => {
+		if (!workspaceId) return false;
 		const { data, error } = await supabase
-			.from("team_members")
-			.select("team_id")
+			.from("workspace_members")
+			.select("workspace_id")
 			.eq("user_id", userId)
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.limit(1)
 			.maybeSingle();
-		return !error && Boolean(data?.team_id);
+		return !error && Boolean(data?.workspace_id);
 	};
 
 	if (cookieTeamId && (await isMember(cookieTeamId))) {
@@ -119,42 +119,42 @@ async function findTeamIdForUser(userId: string): Promise<string> {
 
 	const { data: userRow } = await supabase
 		.from("users")
-		.select("default_team_id")
+		.select("default_workspace_id")
 		.eq("user_id", userId)
 		.maybeSingle();
-	const defaultTeamId = String(userRow?.default_team_id ?? "").trim();
-	if (defaultTeamId && (await isMember(defaultTeamId))) {
-		return defaultTeamId;
+	const defaultWorkspaceId = String(userRow?.default_workspace_id ?? "").trim();
+	if (defaultWorkspaceId && (await isMember(defaultWorkspaceId))) {
+		return defaultWorkspaceId;
 	}
 
 	const { data: membershipRow, error: membershipError } = await supabase
-		.from("team_members")
-		.select("team_id")
+		.from("workspace_members")
+		.select("workspace_id")
 		.eq("user_id", userId)
 		.limit(1)
 		.maybeSingle();
-	if (membershipError || !membershipRow?.team_id) {
+	if (membershipError || !membershipRow?.workspace_id) {
 		throw new ChatGatewayAuthError(
 			403,
-			"no_team_membership",
+			"no_workspace_membership",
 			"You must be a member of a team to use chat",
 		);
 	}
-	return String(membershipRow.team_id);
+	return String(membershipRow.workspace_id);
 }
 
 async function ensureManagedGatewayKey(args: {
-	teamId: string;
+	workspaceId: string;
 	userId: string;
 }): Promise<string> {
 	const admin = createAdminClient();
 	const pepper = resolvePepper();
-	const derived = deriveTeamScopedGatewayKey({ teamId: args.teamId });
+	const derived = deriveTeamScopedGatewayKey({ workspaceId: args.workspaceId });
 	const expectedHash = hmacSecret(derived.secret, pepper);
 
 	const { data: existing, error: selectError } = await admin
 		.from("keys")
-		.select("id, team_id, status, hash")
+		.select("id, workspace_id, status, hash")
 		.eq("kid", derived.kid)
 		.maybeSingle();
 	if (selectError) {
@@ -167,7 +167,7 @@ async function ensureManagedGatewayKey(args: {
 
 	if (!existing) {
 		const { error: insertError } = await admin.from("keys").insert({
-			team_id: args.teamId,
+			workspace_id: args.workspaceId,
 			name: CHAT_MANAGED_KEY_NAME,
 			kid: derived.kid,
 			hash: expectedHash,
@@ -190,7 +190,7 @@ async function ensureManagedGatewayKey(args: {
 					.from("keys")
 					.select("id")
 					.eq("hash", expectedHash)
-					.eq("team_id", args.teamId)
+					.eq("workspace_id", args.workspaceId)
 					.limit(1)
 					.maybeSingle();
 				if (!concurrentError && concurrentRow?.id) {
@@ -206,7 +206,7 @@ async function ensureManagedGatewayKey(args: {
 		return derived.plaintext;
 	}
 
-	if (String(existing.team_id) !== args.teamId) {
+	if (String(existing.workspace_id) !== args.workspaceId) {
 		throw new ChatGatewayAuthError(
 			500,
 			"chat_key_collision",
@@ -234,7 +234,7 @@ async function ensureManagedGatewayKey(args: {
 			.from("keys")
 			.update(updates)
 			.eq("id", existing.id)
-			.eq("team_id", args.teamId);
+			.eq("workspace_id", args.workspaceId);
 		if (updateError) {
 			throw new ChatGatewayAuthError(
 				500,
@@ -292,12 +292,12 @@ export async function resolveChatGatewayContext(): Promise<ChatGatewayContext> {
 		);
 	}
 
-	const teamId = await findTeamIdForUser(user.id);
-	const apiKey = await ensureManagedGatewayKey({ teamId, userId: user.id });
+	const workspaceId = await findTeamIdForUser(user.id);
+	const apiKey = await ensureManagedGatewayKey({ workspaceId, userId: user.id });
 
 	return {
 		userId: user.id,
-		teamId,
+		workspaceId,
 		apiKey,
 	};
 }

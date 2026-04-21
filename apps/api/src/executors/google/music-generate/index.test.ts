@@ -13,7 +13,7 @@ function buildArgs(ir: IRMusicGenerateRequest): ExecutorExecuteArgs {
 	return {
 		ir,
 		requestId: "req_google_music_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "google-ai-studio",
 		endpoint: "music.generate",
 		protocol: "google.music",

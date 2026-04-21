@@ -799,7 +799,7 @@ export async function handleError({
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
-        teamId: ctx?.teamId ?? body?.team_id ?? null,
+        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? null,
         endpoint,
         model: ctx?.model ?? body?.model,
         appTitle: ctx?.meta?.appTitle ?? body?.meta?.appTitle ?? attributionHeaders.appTitle ?? null,
@@ -865,7 +865,7 @@ export async function handleError({
         ctx,
         result: undefined,
         requestId: auditArgs.requestId,
-        teamId: auditArgs.teamId ?? "unknown",
+        workspaceId: auditArgs.workspaceId ?? "unknown",
         endpoint,
         model: ctx?.model ?? body?.model ?? null,
         provider: stage === "execute" ? providerForAudit : null,

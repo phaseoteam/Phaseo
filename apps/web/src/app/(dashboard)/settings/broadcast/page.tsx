@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import BroadcastSettingsClient from "@/components/(gateway)/settings/observability/BroadcastSettingsClient";
 
@@ -27,9 +27,9 @@ export default async function BroadcastSettingsPage() {
 
 async function BroadcastSettingsContent() {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Select a workspace to manage broadcast settings.
@@ -38,23 +38,23 @@ async function BroadcastSettingsContent() {
 	}
 
 	const teamResult = await supabase
-		.from("teams")
+		.from("workspaces")
 		.select("id, name")
-		.eq("id", teamId)
+		.eq("id", workspaceId)
 		.maybeSingle();
 	const configuredResult = await supabase
-		.from("team_broadcast_destinations")
+		.from("workspace_broadcast_destinations")
 		.select(
 			"id, destination_id, name, enabled, sampling_rate, destination_config, updated_at",
 		)
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.order("created_at", { ascending: false });
 
 	if (teamResult.error) throw new Error(teamResult.error.message);
 	if (
 		configuredResult.error &&
 		!configuredResult.error.message.includes(
-			"Could not find the table 'public.team_broadcast_destinations'",
+			"Could not find the table 'public.workspace_broadcast_destinations'",
 		)
 	) {
 		throw new Error(configuredResult.error.message);

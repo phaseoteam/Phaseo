@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { Briefcase, Clock3, FileText } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,8 +88,8 @@ async function UsageLogsContent({
 
 	if (!user) redirect("/sign-in");
 
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) {
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) {
 		return (
 			<Card>
 				<CardHeader>
@@ -208,13 +208,13 @@ async function UsageLogsContent({
 	const { data: uniqueData } = await supabase
 		.from("gateway_requests")
 		.select("model_id, provider, app_id")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.gte("created_at", from)
 		.lte("created_at", nowIso);
 	const { data: rollupData } = await supabase
-		.from("gateway_usage_rollup_15m_team_provider_model")
+		.from("gateway_usage_rollup_15m_workspace_provider_model")
 		.select("canonical_model_id, provider")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.gte("bucket_15m", from)
 		.lte("bucket_15m", nowIso);
 
@@ -282,7 +282,8 @@ async function UsageLogsContent({
 	const { data: keyRows } = await supabase
 		.from("keys")
 		.select("id,name,prefix")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
+		.neq("status", "deleted")
 		.neq("name", CHAT_MANAGED_KEY_NAME)
 		.order("created_at", { ascending: true });
 	const availableKeys = (keyRows ?? []).map((row: any) => ({

@@ -56,8 +56,8 @@ function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
     };
 }
 
-function buildAutoTopUpIdempotencyKey(args: { teamId: string; requestId: string }): string {
-    const normalizedTeamId = args.teamId.replace(/[^a-zA-Z0-9_-]/g, "_");
+function buildAutoTopUpIdempotencyKey(args: { workspaceId: string; requestId: string }): string {
+    const normalizedTeamId = args.workspaceId.replace(/[^a-zA-Z0-9_-]/g, "_");
     const normalizedRequestId = args.requestId.replace(/[^a-zA-Z0-9_-]/g, "_");
     return `auto_top_up:${normalizedTeamId}:${normalizedRequestId}`.slice(0, 255);
 }
@@ -65,7 +65,7 @@ function buildAutoTopUpIdempotencyKey(args: { teamId: string; requestId: string 
 // src/lib/gateway/pricing/persist.ts
 export async function recordUsageAndCharge(args: {
     requestId: string;
-    teamId: string;
+    workspaceId: string;
     cost_nanos: number;
 }) {
     const releaseRuntime = ensureRuntimeForBackground();
@@ -74,7 +74,7 @@ export async function recordUsageAndCharge(args: {
         // Invoicing is intentionally disabled right now; all charges must flow through
         // the idempotent gateway_deduct_and_check_top_up_once RPC.
         const onceRpc = await supabase.rpc("gateway_deduct_and_check_top_up_once", {
-            p_team_id: args.teamId,
+            p_workspace_id: args.workspaceId,
             p_request_id: args.requestId,
             p_cost_nanos: args.cost_nanos,
         });
@@ -95,7 +95,7 @@ export async function recordUsageAndCharge(args: {
             const minTopUpNanos = 1 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
                 console.error("[auto-recharge] Skipped: auto top-up amount below $1", {
-                    teamId: args.teamId,
+                    workspaceId: args.workspaceId,
                     amount_nanos: chargeResult.auto_top_up_amount_nanos,
                 });
                 return;
@@ -108,14 +108,14 @@ export async function recordUsageAndCharge(args: {
                     : null);
             if (!paymentMethod) {
                 console.error("[auto-recharge] Skipped: no payment method available", {
-                    teamId: args.teamId,
+                    workspaceId: args.workspaceId,
                 });
                 return;
             }
 
             const topUpMetadata: Record<string, string> = {
                 purpose: "credits_topup_offsession",
-                team_id: args.teamId,
+                workspace_id: args.workspaceId,
                 request_id: args.requestId,
                 auto_top_up_amount_nanos: String(chargeResult.auto_top_up_amount_nanos),
                 auto_top_up_payment_method_id: paymentMethod,
@@ -133,14 +133,14 @@ export async function recordUsageAndCharge(args: {
                 },
                 {
                     idempotencyKey: buildAutoTopUpIdempotencyKey({
-                        teamId: args.teamId,
+                        workspaceId: args.workspaceId,
                         requestId: args.requestId,
                     }),
                 }
             );
 
             // Log success or handle failure
-            console.log(`[auto-recharge] Initiated for team ${args.teamId}, payment intent ${paymentIntent.id}, amount: $${(amount_cents / 100).toFixed(2)}`);
+            console.log(`[auto-recharge] Initiated for team ${args.workspaceId}, payment intent ${paymentIntent.id}, amount: $${(amount_cents / 100).toFixed(2)}`);
         }
     } finally {
         releaseRuntime();

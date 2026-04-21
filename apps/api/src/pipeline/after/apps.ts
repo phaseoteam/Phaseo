@@ -119,7 +119,7 @@ function deriveInferredTitle(args: {
  * Resolve or create an app row for logging.
  */
 export async function resolveAppIdForLogging(args: {
-    teamId: string;
+    workspaceId: string;
     appTitle?: string | null;
     referer?: string | null;
     appId?: string | null;
@@ -129,13 +129,13 @@ export async function resolveAppIdForLogging(args: {
 }
 
 export async function ensureAppId(params: {
-    teamId: string;
+    workspaceId: string;
     appTitle?: string | null;
     referer?: string | null;
     appId?: string | null;
     appName?: string | null;
 }): Promise<string | null> {
-    const { teamId, appTitle, referer, appId, appName } = params;
+    const { workspaceId, appTitle, referer, appId, appName } = params;
     const normalizedAppId = normalizeAppId(appId);
     const identityUrl = deriveIdentityUrl({ referer, appId, appTitle, appName });
     const app_key = deriveAppKey(identityUrl);
@@ -149,7 +149,7 @@ export async function ensureAppId(params: {
         normalizedAppId,
     });
     const payload = {
-        team_id: teamId,
+        workspace_id: workspaceId,
         app_key,
         title: inferredTitle,
         url: identityUrl,
@@ -169,7 +169,7 @@ export async function ensureAppId(params: {
         const { data, error } = await supabase
             .from("api_apps")
             .select("id")
-            .eq("team_id", teamId)
+            .eq("workspace_id", workspaceId)
             .eq("app_key", app_key)
             .order("last_seen", { ascending: false })
             .limit(1);
@@ -194,7 +194,7 @@ export async function ensureAppId(params: {
                 meta: payload.meta,
             })
             .eq("id", existingId)
-            .eq("team_id", teamId);
+            .eq("workspace_id", workspaceId);
         if (updateError) {
             console.error("ensureAppId update error:", updateError);
         }

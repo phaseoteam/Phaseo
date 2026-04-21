@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import BroadcastDestinationCreateClient from "@/components/(gateway)/settings/observability/BroadcastDestinationCreateClient";
 import { getDestinationById } from "@/components/(gateway)/settings/observability/destinationCatalog";
@@ -29,9 +29,9 @@ export default async function NewBroadcastDestinationPage({
 	if (!destination) notFound();
 
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 
-	if (!teamId) {
+	if (!workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Select a workspace to add a destination.
@@ -40,11 +40,12 @@ export default async function NewBroadcastDestinationPage({
 	}
 
 	const [teamResult, keysResult, providersResult, activeProviderModelsResult] = await Promise.all([
-		supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle(),
+		supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
 		supabase
 			.from("keys")
 			.select("id, name, prefix")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
+			.neq("status", "deleted")
 			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false }),
 		supabase

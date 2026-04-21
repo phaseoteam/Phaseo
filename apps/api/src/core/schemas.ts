@@ -957,7 +957,7 @@ export type MusicGenerateRequest = z.infer<typeof MusicGenerateSchema>;
 // Generation response schema
 export const GenerationResponseSchema = z.object({
     request_id: z.string(),
-    team_id: z.string(),
+    workspace_id: z.string(),
     app_id: z.string().nullable(),
     endpoint: z.string(),
     model_id: z.string(),

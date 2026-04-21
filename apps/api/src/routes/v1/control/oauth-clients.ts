@@ -40,9 +40,9 @@ function extractUserIdFromBearer(req: Request): string | null {
 	}
 }
 
-function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { teamId: string | null; userId: string | null } {
+function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { workspaceId: string | null; userId: string | null } {
 	return {
-		teamId: typeof ctx?.teamId === "string" ? ctx.teamId : null,
+		workspaceId: typeof ctx?.workspaceId === "string" ? ctx.workspaceId : null,
 		userId: typeof ctx?.userId === "string" ? ctx.userId : null,
 	};
 }
@@ -55,7 +55,7 @@ app.use("*", async (c, next) => {
 			return (auth as GuardErr).response;
 		}
 		c.set("ctx", {
-			teamId: auth.value.teamId,
+			workspaceId: auth.value.workspaceId,
 			userId: extractUserIdFromBearer(c.req.raw),
 			apiKeyId: auth.value.apiKeyId,
 			apiKeyRef: auth.value.apiKeyRef,
@@ -98,7 +98,7 @@ app.post("/", async (c) => {
 	try {
 		// Get authenticated context from middleware
 		const authCtx = readAuthContext(c.get("ctx"));
-		if (!authCtx.teamId) {
+		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 		if (!authCtx.userId) {
@@ -148,7 +148,7 @@ app.post("/", async (c) => {
 			.from("oauth_app_metadata")
 			.insert({
 				client_id: oauthClient.client_id,
-				team_id: authCtx.teamId,
+				workspace_id: authCtx.workspaceId,
 				name: input.name,
 				description: input.description,
 				redirect_uris: input.redirect_uris,
@@ -194,7 +194,7 @@ app.post("/", async (c) => {
 app.get("/", async (c) => {
 	try {
 		const authCtx = readAuthContext(c.get("ctx"));
-		if (!authCtx.teamId) {
+		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -203,7 +203,7 @@ app.get("/", async (c) => {
 		const { data: apps, error: appsError } = await supabase
 			.from("oauth_apps_with_stats")
 			.select("*")
-			.eq("team_id", authCtx.teamId)
+			.eq("workspace_id", authCtx.workspaceId)
 			.order("created_at", { ascending: false });
 
 		if (appsError) {
@@ -233,7 +233,7 @@ app.get("/", async (c) => {
 app.get("/:clientId", async (c) => {
 	try {
 		const authCtx = readAuthContext(c.get("ctx"));
-		if (!authCtx.teamId) {
+		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -245,7 +245,7 @@ app.get("/:clientId", async (c) => {
 			.from("oauth_apps_with_stats")
 			.select("*")
 			.eq("client_id", clientId)
-			.eq("team_id", authCtx.teamId)
+			.eq("workspace_id", authCtx.workspaceId)
 			.single();
 
 		if (appError || !app) {
@@ -268,7 +268,7 @@ app.get("/:clientId", async (c) => {
 app.patch("/:clientId", async (c) => {
 	try {
 		const authCtx = readAuthContext(c.get("ctx"));
-		if (!authCtx.teamId) {
+		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -318,7 +318,7 @@ app.patch("/:clientId", async (c) => {
 				updated_at: new Date().toISOString(),
 			})
 			.eq("client_id", clientId)
-			.eq("team_id", authCtx.teamId)
+			.eq("workspace_id", authCtx.workspaceId)
 			.select()
 			.single();
 
@@ -345,7 +345,7 @@ app.patch("/:clientId", async (c) => {
 app.delete("/:clientId", async (c) => {
 	try {
 		const authCtx = readAuthContext(c.get("ctx"));
-		if (!authCtx.teamId) {
+		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -358,7 +358,7 @@ app.delete("/:clientId", async (c) => {
 			.from("oauth_app_metadata")
 			.select("client_id")
 			.eq("client_id", clientId)
-			.eq("team_id", authCtx.teamId)
+			.eq("workspace_id", authCtx.workspaceId)
 			.single();
 
 		if (fetchError || !app) {
@@ -378,7 +378,7 @@ app.delete("/:clientId", async (c) => {
 			.from("oauth_app_metadata")
 			.delete()
 			.eq("client_id", clientId)
-			.eq("team_id", authCtx.teamId);
+			.eq("workspace_id", authCtx.workspaceId);
 
 		if (deleteError) {
 			console.error("Error deleting OAuth metadata:", deleteError);
@@ -403,7 +403,7 @@ app.delete("/:clientId", async (c) => {
 app.post("/:clientId/regenerate-secret", async (c) => {
 	try {
 		const authCtx = readAuthContext(c.get("ctx"));
-		if (!authCtx.teamId) {
+		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -416,7 +416,7 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 			.from("oauth_app_metadata")
 			.select("client_id")
 			.eq("client_id", clientId)
-			.eq("team_id", authCtx.teamId)
+			.eq("workspace_id", authCtx.workspaceId)
 			.single();
 
 		if (fetchError || !app) {

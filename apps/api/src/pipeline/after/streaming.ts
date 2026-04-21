@@ -100,7 +100,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         if (reason === "aborted") {
             console.warn("[gateway] Streaming response ended before final usage", {
                 requestId: ctx.requestId,
-                teamId: ctx.teamId,
+                workspaceId: ctx.workspaceId,
                 endpoint: ctx.endpoint,
                 provider,
             });
@@ -118,7 +118,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             ).catch((err) => {
                 console.error("passthroughWithPricing onFinalUsage error:", err, {
                     requestId: ctx.requestId,
-                    teamId: ctx.teamId,
+                    workspaceId: ctx.workspaceId,
                 });
             }),
         );
@@ -317,7 +317,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     })().catch(err => {
         console.error("passthroughWithPricing stream error:", err, {
             requestId: ctx.requestId,
-            teamId: ctx.teamId,
+            workspaceId: ctx.workspaceId,
         });
     });
 

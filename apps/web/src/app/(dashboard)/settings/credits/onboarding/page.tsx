@@ -2,7 +2,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import EnterpriseBillingOnboardingClient from "@/components/(gateway)/credits/EnterpriseBillingOnboardingClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -46,8 +46,8 @@ export default async function BillingOnboardingPage() {
 	}
 	const signerName = getDisplayName(user);
 
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) {
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
@@ -59,9 +59,9 @@ export default async function BillingOnboardingPage() {
 	}
 
 	const { data: membership } = await supabase
-		.from("team_members")
+		.from("workspace_members")
 		.select("role")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("user_id", user.id)
 		.maybeSingle();
 
@@ -69,9 +69,9 @@ export default async function BillingOnboardingPage() {
 	const canManageBilling = role === "owner" || role === "admin";
 
 	const { data: team } = await supabase
-		.from("teams")
+		.from("workspaces")
 		.select("name,tier,billing_mode,invoice_onboarding_status")
-		.eq("id", teamId)
+		.eq("id", workspaceId)
 		.maybeSingle();
 
 	if (!team) {
@@ -86,9 +86,9 @@ export default async function BillingOnboardingPage() {
 	}
 
 	const { data: invoiceProfile } = await supabase
-		.from("team_invoice_profiles")
+		.from("workspace_invoice_profiles")
 		.select("enabled,billing_day,payment_terms_days")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.maybeSingle();
 
 	const currentBillingMode: "wallet" | "invoice" =

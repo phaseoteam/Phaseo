@@ -30,7 +30,7 @@ export async function attemptProvider(
         ctx.endpoint,
         adapter.name,
         baseModel,
-        ctx.teamId,
+        ctx.workspaceId,
         ctx.requestId,
         choice.health
     );
@@ -88,7 +88,7 @@ export async function attemptProvider(
             model: baseModel,
             body: ctx.body,
             meta,
-            teamId: ctx.teamId,
+            workspaceId: ctx.workspaceId,
             providerId: candidate.providerId,
             byokMeta: candidate.byokMeta,
             pricingCard,

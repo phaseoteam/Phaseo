@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import AppsPanel from "@/components/(gateway)/settings/apps/AppsPanel";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -80,11 +80,11 @@ async function AppsSettingsContent() {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const initialTeamId = await getTeamIdFromCookie();
+	const initialTeamId = await getWorkspaceIdFromCookie();
 
 	const { data: teamUsers } = await supabase
-		.from("team_members")
-		.select("team_id, teams(id, name)")
+		.from("workspace_members")
+		.select("workspace_id, teams:workspaces(id, name)")
 		.eq("user_id", user?.id);
 
 	const teams: Array<{ id: string; name: string }> = [];
@@ -106,7 +106,7 @@ async function AppsSettingsContent() {
 				.select(
 					"id, title, app_key, url, image_url, is_public, is_active, last_seen, created_at"
 				)
-				.eq("team_id", initialTeamId)
+				.eq("workspace_id", initialTeamId)
 				.order("last_seen", { ascending: false })
 		: { data: [] as AppRow[] };
 	const visibleApps = (apps ?? []).filter((app) => !isInternalApp(app));

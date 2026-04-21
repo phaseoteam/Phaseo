@@ -59,15 +59,15 @@ function mergeDbMusicMeta(record: Awaited<ReturnType<typeof getAsyncOperation>>)
 }
 
 export async function saveMusicJobMeta(
-	teamId: string,
+	workspaceId: string,
 	musicId: string,
 	meta: MusicJobMeta,
 	_ttlSeconds?: number,
 ): Promise<void> {
-	if (!teamId || !musicId) return;
+	if (!workspaceId || !musicId) return;
 	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now() };
 	await upsertAsyncOperation({
-		teamId,
+		workspaceId,
 		kind: "music",
 		internalId: musicId,
 		nativeId: payload.nativeResponseId ?? musicId,
@@ -78,9 +78,9 @@ export async function saveMusicJobMeta(
 	});
 }
 
-export async function getMusicJobMeta(teamId: string, musicId: string): Promise<MusicJobMeta | null> {
-	if (!teamId || !musicId) return null;
-	const dbRecord = await getAsyncOperation(teamId, "music", musicId);
+export async function getMusicJobMeta(workspaceId: string, musicId: string): Promise<MusicJobMeta | null> {
+	if (!workspaceId || !musicId) return null;
+	const dbRecord = await getAsyncOperation(workspaceId, "music", musicId);
 	return mergeDbMusicMeta(dbRecord);
 }
 

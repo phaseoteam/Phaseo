@@ -1,5 +1,5 @@
 import TierOverview from "@/components/(gateway)/credits/TierOverview";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -26,6 +26,6 @@ export default function Page() {
 }
 
 async function TierOverviewContent() {
-	const teamId = await getTeamIdFromCookie();
-	return <TierOverview teamId={teamId} />;
+	const workspaceId = await getWorkspaceIdFromCookie();
+	return <TierOverview workspaceId={workspaceId} />;
 }

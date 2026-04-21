@@ -273,7 +273,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const encodedId = taskId ? encodeMiniMaxMusicId(taskId) : undefined;
 	if (encodedId) {
 		try {
-			await saveMusicJobMeta(args.teamId, encodedId, {
+			await saveMusicJobMeta(args.workspaceId, encodedId, {
 				provider: args.providerId,
 				model,
 				duration: toPositiveNumber(passthroughRequest.duration) ?? null,
@@ -283,7 +283,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} catch (error) {
 			console.error("minimax_music_job_meta_store_failed", {
 				error,
-				teamId: args.teamId,
+				workspaceId: args.workspaceId,
 				musicId: encodedId,
 				requestId: args.requestId,
 			});

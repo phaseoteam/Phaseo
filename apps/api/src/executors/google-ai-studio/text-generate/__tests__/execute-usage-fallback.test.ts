@@ -22,7 +22,7 @@ function buildArgs(
 	return {
 		ir,
 		requestId: "req_google_usage_fallback",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "google-ai-studio",
 		endpoint: "responses",
 		protocol: "openai.responses",

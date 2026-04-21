@@ -33,7 +33,7 @@ describe("batch-jobs metadata", () => {
 
 		expect(upsertAsyncOperationMock).toHaveBeenCalledTimes(1);
 		expect(upsertAsyncOperationMock).toHaveBeenCalledWith(expect.objectContaining({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			kind: "batch",
 			internalId: "batch_1",
 			nativeId: "b_native_1",
@@ -50,7 +50,7 @@ describe("batch-jobs metadata", () => {
 		});
 
 		expect(upsertAsyncOperationMock).toHaveBeenCalledWith(expect.objectContaining({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			kind: "batch",
 			internalId: "__file__:file_1",
 			nativeId: "file_1",
@@ -58,7 +58,7 @@ describe("batch-jobs metadata", () => {
 		}));
 
 		getAsyncOperationMock.mockResolvedValueOnce({
-			team_id: "team_1",
+			workspace_id: "team_1",
 			kind: "batch",
 			internal_id: "__file__:file_1",
 			provider: "openai",
@@ -89,7 +89,7 @@ describe("batch-jobs metadata", () => {
 
 	it("returns null for non-file batch records", async () => {
 		getAsyncOperationMock.mockResolvedValueOnce({
-			team_id: "team_1",
+			workspace_id: "team_1",
 			kind: "batch",
 			internal_id: "batch_1",
 			provider: "openai",
@@ -111,7 +111,7 @@ describe("batch-jobs metadata", () => {
 
 	it("reads extended batch metadata fields", async () => {
 		getAsyncOperationMock.mockResolvedValueOnce({
-			team_id: "team_1",
+			workspace_id: "team_1",
 			kind: "batch",
 			internal_id: "batch_2",
 			provider: "openai",

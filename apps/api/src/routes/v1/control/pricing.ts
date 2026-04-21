@@ -183,7 +183,7 @@ async function handlePricingModels(req: Request) {
         });
 
         const cacheOptions = {
-            scope: `pricing-models:${auth.value.teamId}`,
+            scope: `pricing-models:${auth.value.workspaceId}`,
             ttlSeconds: 300,
             staleSeconds: 600,
         };

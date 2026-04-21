@@ -41,7 +41,7 @@ describe("video-public helpers", () => {
 	it("issues and verifies signed download URLs", async () => {
 		const signed = await issueSignedVideoDownloadUrl({
 			baseUrl: "https://api.phaseo.app",
-			teamId: "team_123",
+			workspaceId: "team_123",
 			videoId: "G-abc",
 			index: 1,
 			disposition: "attachment",
@@ -55,7 +55,7 @@ describe("video-public helpers", () => {
 
 		const verified = await verifySignedVideoDownloadRequest(String(signed?.download_url));
 		expect(verified).toEqual({
-			teamId: "team_123",
+			workspaceId: "team_123",
 			videoId: "G-abc",
 			index: 1,
 			disposition: "attachment",

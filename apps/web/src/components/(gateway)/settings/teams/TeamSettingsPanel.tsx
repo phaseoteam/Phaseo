@@ -54,7 +54,7 @@ type MembersByTeam = Record<
 type Props = {
 	teams: Team[];
 	membersByTeam: MembersByTeam;
-	teamId?: string | undefined | null;
+	workspaceId?: string | undefined | null;
 	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 	personalTeamId?: string | null;
@@ -113,7 +113,7 @@ function normalizeSettings(settings: Settings): Settings {
 export default function TeamSettingsPanel({
 	teams,
 	membersByTeam,
-	teamId,
+	workspaceId,
 	onTeamChange,
 	currentUserId,
 	personalTeamId,
@@ -121,8 +121,8 @@ export default function TeamSettingsPanel({
 	teamSsoSettingsByTeam,
 }: Props) {
 	const fallbackTeamId =
-		(teamId && teams.some((t) => t.id === teamId)
-			? teamId
+		(workspaceId && teams.some((t) => t.id === workspaceId)
+			? workspaceId
 			: teams[0]?.id) || undefined;
 
 	const roleForCurrentUser = React.useMemo(() => {
@@ -156,9 +156,9 @@ export default function TeamSettingsPanel({
 		JSON.stringify(normalizeSettings(settings));
 
 	React.useEffect(() => {
-		if (!teamId) return;
-		const team = teams.find((entry) => entry.id === teamId);
-		const ssoRow = teamSsoSettingsByTeam?.[teamId];
+		if (!workspaceId) return;
+		const team = teams.find((entry) => entry.id === workspaceId);
+		const ssoRow = teamSsoSettingsByTeam?.[workspaceId];
 		const next: Settings = {
 			teamName: team?.name ?? DEFAULTS.teamName,
 			ssoEnabled: Boolean(ssoRow?.sso_enabled),
@@ -174,14 +174,14 @@ export default function TeamSettingsPanel({
 		setSettings(next);
 		setInitial(next);
 		setLoading(false);
-	}, [teamId, teams, teamSsoSettingsByTeam]);
+	}, [workspaceId, teams, teamSsoSettingsByTeam]);
 
 	function update<K extends keyof Settings>(key: K, value: Settings[K]) {
 		setSettings((prev) => ({ ...prev, [key]: value }));
 	}
 
 	async function handleSave() {
-		if (!teamId) return;
+		if (!workspaceId) return;
 		if (isPersonalTeam) {
 			toast.error("Personal workspace settings cannot be edited.");
 			return;
@@ -206,10 +206,10 @@ export default function TeamSettingsPanel({
 					const initialNormalized = normalizeSettings(initial);
 
 					if (normalized.teamName !== initialNormalized.teamName) {
-						await updateTeamAction(teamId, normalized.teamName);
+						await updateTeamAction(workspaceId, normalized.teamName);
 					}
 
-					await updateTeamSsoSettingsAction(teamId, {
+					await updateTeamSsoSettingsAction(workspaceId, {
 						ssoEnabled: normalized.ssoEnabled,
 						ssoEnforced: normalized.ssoEnforced,
 						ssoMode: normalized.ssoMode,
@@ -238,14 +238,14 @@ export default function TeamSettingsPanel({
 	}
 
 	async function handleDeleteTeam() {
-		if (!teamId) return;
+		if (!workspaceId) return;
 		if (isPersonalTeam) {
 			toast.error("Personal workspace cannot be deleted.");
 			return;
 		}
 		setDeleting(true);
 		try {
-			await toast.promise(deleteTeamAction(teamId), {
+			await toast.promise(deleteTeamAction(workspaceId), {
 				loading: "Deleting workspace...",
 				success: "Workspace deleted",
 				error: (error: any) => error?.message || "Could not delete workspace",

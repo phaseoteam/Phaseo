@@ -1,6 +1,6 @@
 -- Email outbox + low balance email alert settings
 -- - Welcome emails are enqueued on auth.users insert
--- - Low balance alert preferences live on team_settings
+-- - Low balance alert preferences live on workspace_settings
 
 create table if not exists public.email_outbox (
   id uuid primary key default gen_random_uuid(),
@@ -9,7 +9,7 @@ create table if not exists public.email_outbox (
   template text not null default 'generic',
   to_email text not null,
   subject text,
-  team_id uuid null references public.teams(id) on delete set null,
+  workspace_id uuid null references public.workspaces(id) on delete set null,
   user_id uuid null references auth.users(id) on delete set null,
   payload jsonb not null default '{}'::jsonb,
   attempts integer not null default 0,
@@ -21,16 +21,16 @@ create index if not exists email_outbox_pending_idx
   on public.email_outbox (sent_at, created_at);
 
 -- Team settings: low balance email alerts
-alter table public.team_settings
+alter table public.workspace_settings
   add column if not exists low_balance_email_enabled boolean not null default false;
 
-alter table public.team_settings
+alter table public.workspace_settings
   add column if not exists low_balance_email_threshold_nanos bigint not null default 0;
 
-alter table public.team_settings
+alter table public.workspace_settings
   add column if not exists low_balance_email_last_sent_at timestamptz null;
 
-alter table public.team_settings
+alter table public.workspace_settings
   add column if not exists low_balance_email_last_sent_balance_nanos bigint null;
 
 -- Enqueue welcome email on signup

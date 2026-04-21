@@ -27,7 +27,7 @@ async function handleGeneration(req: Request) {
     const { data, error } = await supabase
         .from("gateway_requests")
         .select("*")
-        .eq("team_id", auth.teamId)
+        .eq("workspace_id", auth.workspaceId)
         .eq("request_id", id)
         .maybeSingle();
 

@@ -1,12 +1,12 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
-	requireTeamMembership,
+	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
 export type PresetConfig = {
@@ -38,7 +38,7 @@ export type CreatePresetInput = {
 	name: string;
 	description?: string;
 	creatorUserId: string;
-	teamId: string;
+	workspaceId: string;
 	config: PresetConfig;
 	visibility?: PresetVisibility;
 };
@@ -177,7 +177,7 @@ function revalidatePresetDataCache(presetId?: string | null): void {
 
 async function generateUniquePresetName(
 	supabase: Awaited<ReturnType<typeof createClient>>,
-	teamId: string,
+	workspaceId: string,
 	baseName: string
 ) {
 	const normalizedBase = normalizePresetName(baseName);
@@ -188,7 +188,7 @@ async function generateUniquePresetName(
 	const { data: existing } = await supabase
 		.from("presets")
 		.select("name")
-		.eq("team_id", teamId);
+		.eq("workspace_id", workspaceId);
 
 	const existingNames = new Set(
 		(existing ?? [])
@@ -210,12 +210,12 @@ async function generateUniquePresetName(
 }
 
 export async function createPresetAction(input: CreatePresetInput) {
-	const { name, description, creatorUserId, teamId, config, visibility } = input;
+	const { name, description, creatorUserId, workspaceId, config, visibility } = input;
 
 	if (!creatorUserId || typeof creatorUserId !== "string") {
 		throw new Error("Creator user ID is required");
 	}
-	if (!teamId || typeof teamId !== "string") {
+	if (!workspaceId || typeof workspaceId !== "string") {
 		throw new Error("Workspace ID is required");
 	}
 
@@ -223,12 +223,12 @@ export async function createPresetAction(input: CreatePresetInput) {
 
 	const { supabase, user } = await requireAuthenticatedUser();
 	requireActingUser(creatorUserId, user.id);
-	await requireTeamMembership(supabase, user.id, teamId);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	const { data: existing } = await supabase
 		.from("presets")
 		.select("id")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.eq("name", name.trim())
 		.maybeSingle();
 
@@ -240,7 +240,7 @@ export async function createPresetAction(input: CreatePresetInput) {
 	const normalizedVisibility = normalizeVisibility(visibility);
 
 	const insertObj: Record<string, unknown> = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		name: name.trim(),
 		created_by: creatorUserId,
 		config: sanitizedConfig,
@@ -286,8 +286,8 @@ export async function forkPresetAction(sourcePresetId: string) {
 		throw new Error("AUTH_REQUIRED");
 	}
 
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) {
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) {
 		throw new Error("TEAM_REQUIRED");
 	}
 
@@ -308,12 +308,12 @@ export async function forkPresetAction(sourcePresetId: string) {
 
 	const uniqueName = await generateUniquePresetName(
 		supabase,
-		teamId,
+		workspaceId,
 		source.name || "@preset"
 	);
 
 	const insertObj: Record<string, unknown> = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		name: uniqueName,
 		created_by: user.id,
 		config: source.config ?? {},
@@ -356,14 +356,14 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 
 	const { data: existing } = await supabase
 		.from("presets")
-		.select("id, team_id, name, config")
+		.select("id, workspace_id, name, config")
 		.eq("id", id)
 		.maybeSingle();
 
 	if (!existing) {
 		throw new Error("Preset not found");
 	}
-	await requireTeamMembership(supabase, user.id, existing.team_id);
+	await requireWorkspaceMembership(supabase, user.id, existing.workspace_id);
 
 	const updateObj: Record<string, unknown> = {
 		updated_at: new Date().toISOString(),
@@ -375,7 +375,7 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 		const { data: duplicate } = await supabase
 			.from("presets")
 			.select("id")
-			.eq("team_id", existing.team_id)
+			.eq("workspace_id", existing.workspace_id)
 			.eq("name", name.trim())
 			.neq("id", id)
 			.maybeSingle();
@@ -426,7 +426,7 @@ export async function deletePresetAction(id: string, confirmName?: string) {
 
 	const { data: existing, error: fetchError } = await supabase
 		.from("presets")
-		.select("name, team_id")
+		.select("name, workspace_id")
 		.eq("id", id)
 		.maybeSingle();
 
@@ -437,8 +437,8 @@ export async function deletePresetAction(id: string, confirmName?: string) {
 	if (!existing) {
 		throw new Error("Preset not found");
 	}
-	if (!existing.team_id) throw new Error("Preset not found");
-	await requireTeamMembership(supabase, user.id, existing.team_id);
+	if (!existing.workspace_id) throw new Error("Preset not found");
+	await requireWorkspaceMembership(supabase, user.id, existing.workspace_id);
 
 	if (confirmName) {
 		if (existing.name !== confirmName) {
@@ -479,25 +479,25 @@ export async function getPresetById(id: string) {
 		console.error("Failed to fetch preset:", error);
 		throw new Error(`Failed to fetch preset: ${error.message}`);
 	}
-	if (data?.team_id) {
-		await requireTeamMembership(supabase, user.id, data.team_id);
+	if (data?.workspace_id) {
+		await requireWorkspaceMembership(supabase, user.id, data.workspace_id);
 	}
 
 	return data;
 }
 
-export async function listPresetsByTeam(teamId: string) {
-	if (!teamId || typeof teamId !== "string") {
+export async function listPresetsByTeam(workspaceId: string) {
+	if (!workspaceId || typeof workspaceId !== "string") {
 		throw new Error("Valid workspace ID is required");
 	}
 
 	const { supabase, user } = await requireAuthenticatedUser();
-	await requireTeamMembership(supabase, user.id, teamId);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	const { data, error } = await supabase
 		.from("presets")
 		.select("*")
-		.eq("team_id", teamId)
+		.eq("workspace_id", workspaceId)
 		.order("created_at", { ascending: false });
 
 	if (error) {

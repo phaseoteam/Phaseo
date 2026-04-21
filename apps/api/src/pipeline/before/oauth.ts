@@ -10,7 +10,7 @@
  * 2. Validate JWT signature using JWKS
  * 3. Validate claims (exp, iss, aud, custom claims)
  * 4. Check authorization not revoked in database
- * 5. Extract team context (team_id, user_id, client_id)
+ * 5. Extract team context (workspace_id, user_id, client_id)
  * 6. Update last_used_at timestamp (async)
  *
  * Performance:
@@ -27,7 +27,7 @@ import { validateOAuthToken, isJWT, type JWTClaims } from "@/lib/oauth/jwt";
 export interface OAuthAuthResult {
 	authenticated: boolean;
 	userId?: string;
-	teamId?: string;
+	workspaceId?: string;
 	clientId?: string;
 	error?: string;
 	claims?: JWTClaims;
@@ -40,7 +40,7 @@ async function checkAuthorizationRevoked(
 	db: any, // D1 database
 	userId: string,
 	clientId: string,
-	teamId: string
+	workspaceId: string
 ): Promise<boolean> {
 	try {
 		// Query oauth_authorizations table
@@ -49,10 +49,10 @@ async function checkAuthorizationRevoked(
 			FROM oauth_authorizations
 			WHERE user_id = ?
 			  AND client_id = ?
-			  AND team_id = ?
+			  AND workspace_id = ?
 		`);
 
-		const result = await stmt.bind(userId, clientId, teamId).first();
+		const result = await stmt.bind(userId, clientId, workspaceId).first();
 
 		// If no authorization found, treat as revoked
 		if (!result) {
@@ -76,7 +76,7 @@ function updateLastUsed(
 	db: any,
 	userId: string,
 	clientId: string,
-	teamId: string
+	workspaceId: string
 ): void {
 	// Fire and forget - don't await
 	const stmt = db.prepare(`
@@ -84,12 +84,12 @@ function updateLastUsed(
 		SET last_used_at = CURRENT_TIMESTAMP
 		WHERE user_id = ?
 		  AND client_id = ?
-		  AND team_id = ?
+		  AND workspace_id = ?
 		  AND revoked_at IS NULL
 	`);
 
 	stmt
-		.bind(userId, clientId, teamId)
+		.bind(userId, clientId, workspaceId)
 		.run()
 		.catch((error: any) => {
 			console.error("Error updating last_used_at:", error);
@@ -169,7 +169,7 @@ export async function authenticateOAuth(
 			c.env.DB,
 			claims.user_id,
 			claims.client_id,
-			claims.team_id
+			claims.workspace_id
 		);
 
 		if (isRevoked) {
@@ -180,12 +180,12 @@ export async function authenticateOAuth(
 		}
 
 		// Update last_used_at (async, don't await)
-		updateLastUsed(c.env.DB, claims.user_id, claims.client_id, claims.team_id);
+		updateLastUsed(c.env.DB, claims.user_id, claims.client_id, claims.workspace_id);
 
 		return {
 			authenticated: true,
 			userId: claims.user_id,
-			teamId: claims.team_id,
+			workspaceId: claims.workspace_id,
 			clientId: claims.client_id,
 			claims: claims,
 		};

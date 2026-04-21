@@ -41,7 +41,7 @@ export async function runVideoReconciliationJob(args?: {
 			const currentStatus = String(job.status ?? "").toLowerCase();
 			if (currentStatus === "completed") {
 				const finalized = await finalizeVideoJob({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					providerId: String(job.provider ?? job.meta?.provider ?? ""),
 					status: "completed",
@@ -58,7 +58,7 @@ export async function runVideoReconciliationJob(args?: {
 					},
 				});
 				dispatchVideoWebhookEventInBackground({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					eventType: "video.completed",
 				});
@@ -69,7 +69,7 @@ export async function runVideoReconciliationJob(args?: {
 			}
 			if (currentStatus === "failed") {
 				const finalized = await finalizeVideoJob({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					providerId: String(job.provider ?? job.meta?.provider ?? ""),
 					status: "failed",
@@ -86,7 +86,7 @@ export async function runVideoReconciliationJob(args?: {
 					},
 				});
 				dispatchVideoWebhookEventInBackground({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					eventType: "video.failed",
 				});
@@ -101,7 +101,7 @@ export async function runVideoReconciliationJob(args?: {
 			counts.jobsPolled += 1;
 			if (polled.status === "in_progress" && typeof polled.progress === "number") {
 				dispatchVideoWebhookEventInBackground({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					eventType: "video.progress",
 					progress: polled.progress,
@@ -109,7 +109,7 @@ export async function runVideoReconciliationJob(args?: {
 			}
 
 			const finalized = await finalizeVideoJob({
-				teamId: job.teamId,
+				workspaceId: job.workspaceId,
 				videoId: job.videoId,
 				providerId: polled.providerId,
 				status: polled.status,
@@ -124,14 +124,14 @@ export async function runVideoReconciliationJob(args?: {
 			});
 			if (finalized.status === "completed") {
 				dispatchVideoWebhookEventInBackground({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					eventType: "video.completed",
 				});
 			}
 			if (finalized.status === "failed") {
 				dispatchVideoWebhookEventInBackground({
-					teamId: job.teamId,
+					workspaceId: job.workspaceId,
 					videoId: job.videoId,
 					eventType: "video.failed",
 				});
@@ -145,7 +145,7 @@ export async function runVideoReconciliationJob(args?: {
 			counts.jobsErrored += 1;
 			console.error("video_reconcile_job_failed", {
 				error,
-				teamId: job.teamId,
+				workspaceId: job.workspaceId,
 				videoId: job.videoId,
 				provider: job.provider,
 			});

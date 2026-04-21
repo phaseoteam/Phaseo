@@ -41,7 +41,7 @@ describe("applyByokServiceFee", () => {
 
 	it("returns original pricing for non-BYOK requests", async () => {
 		const result = await applyByokServiceFee({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			isByok: false,
 			baseCostNanos: 1_000_000_000,
 			pricedUsage: {
@@ -68,7 +68,7 @@ describe("applyByokServiceFee", () => {
 		});
 
 		const result = await applyByokServiceFee({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			isByok: true,
 			baseCostNanos: 2_000_000_000,
 			pricedUsage: {
@@ -82,8 +82,8 @@ describe("applyByokServiceFee", () => {
 			},
 		});
 
-		expect(rpcMock).toHaveBeenCalledWith("increment_team_byok_monthly_request_count", {
-			p_team_id: "team_1",
+		expect(rpcMock).toHaveBeenCalledWith("increment_workspace_byok_monthly_request_count", {
+			p_workspace_id: "team_1",
 			p_now: expect.any(String),
 		});
 		expect(result.totalNanos).toBe(0);
@@ -104,7 +104,7 @@ describe("applyByokServiceFee", () => {
 		const expectedFeeNanos = Math.round(baseCost * BYOK_SERVICE_FEE_RATE); // $0.07
 
 		const result = await applyByokServiceFee({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			isByok: true,
 			baseCostNanos: baseCost,
 			pricedUsage: {
@@ -138,7 +138,7 @@ describe("applyByokServiceFee", () => {
 		});
 
 		const result = await applyByokServiceFee({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			isByok: true,
 			baseCostNanos: 3_000_000_000,
 			pricedUsage: {
@@ -167,7 +167,7 @@ describe("applyByokServiceFee", () => {
 		});
 
 		const result = await applyByokServiceFee({
-			teamId: "team_1",
+			workspaceId: "team_1",
 			isByok: true,
 			baseCostNanos: 3_000_000_000,
 			pricedUsage: {

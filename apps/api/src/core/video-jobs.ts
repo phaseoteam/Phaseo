@@ -61,7 +61,7 @@ export type VideoJobMeta = {
 };
 
 export type VideoJobRecord = {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	requestId: string | null;
 	sessionId: string | null;
@@ -194,7 +194,7 @@ function mergeDbVideoMeta(record: Awaited<ReturnType<typeof getAsyncOperation>>)
 function toVideoJobRecord(record: Awaited<ReturnType<typeof getAsyncOperation>>): VideoJobRecord | null {
 	if (!record) return null;
 	return {
-		teamId: record.teamId,
+		workspaceId: record.workspaceId,
 		videoId: record.internalId,
 		requestId: record.requestId,
 		sessionId: record.sessionId,
@@ -211,17 +211,17 @@ function toVideoJobRecord(record: Awaited<ReturnType<typeof getAsyncOperation>>)
 }
 
 export async function saveVideoJobMeta(
-	teamId: string,
+	workspaceId: string,
 	videoId: string,
 	meta: VideoJobMeta,
 	nativeId?: string | null,
 	status: "queued" | "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired" = "queued",
 	_ttlSeconds?: number,
 ): Promise<void> {
-	if (!teamId || !videoId) return;
+	if (!workspaceId || !videoId) return;
 	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now() };
 	await upsertAsyncOperation({
-		teamId,
+		workspaceId,
 		kind: "video",
 		internalId: videoId,
 		requestId: payload.requestId ?? videoId,
@@ -237,7 +237,7 @@ export async function saveVideoJobMeta(
 		void import("@core/video-user-webhooks")
 			.then((module) =>
 				module.dispatchVideoWebhookEventInBackground({
-					teamId,
+					workspaceId,
 					videoId,
 					eventType: "video.created",
 				}),
@@ -246,15 +246,15 @@ export async function saveVideoJobMeta(
 	}
 }
 
-export async function getVideoJobMeta(teamId: string, videoId: string): Promise<VideoJobMeta | null> {
-	if (!teamId || !videoId) return null;
-	const dbRecord = await getAsyncOperation(teamId, "video", videoId);
+export async function getVideoJobMeta(workspaceId: string, videoId: string): Promise<VideoJobMeta | null> {
+	if (!workspaceId || !videoId) return null;
+	const dbRecord = await getAsyncOperation(workspaceId, "video", videoId);
 	return mergeDbVideoMeta(dbRecord);
 }
 
-export async function getVideoJobRecord(teamId: string, videoId: string): Promise<VideoJobRecord | null> {
-	if (!teamId || !videoId) return null;
-	const dbRecord = await getAsyncOperation(teamId, "video", videoId);
+export async function getVideoJobRecord(workspaceId: string, videoId: string): Promise<VideoJobRecord | null> {
+	if (!workspaceId || !videoId) return null;
+	const dbRecord = await getAsyncOperation(workspaceId, "video", videoId);
 	return toVideoJobRecord(dbRecord);
 }
 
@@ -266,7 +266,7 @@ export async function findVideoJobRecordByNativeId(
 	const dbRecord = await findAsyncOperationByNativeId("video", provider, nativeId);
 	if (!dbRecord) return null;
 	return {
-		teamId: dbRecord.teamId,
+		workspaceId: dbRecord.workspaceId,
 		videoId: dbRecord.internalId,
 		requestId: dbRecord.requestId,
 		sessionId: dbRecord.sessionId,
@@ -290,7 +290,7 @@ export async function listPendingVideoJobs(limit = 100): Promise<VideoJobRecord[
 	});
 	return records
 		.map((record) => ({
-			teamId: record.teamId,
+			workspaceId: record.workspaceId,
 			videoId: record.internalId,
 			requestId: record.requestId,
 			sessionId: record.sessionId,
@@ -319,18 +319,18 @@ export async function listPendingVideoJobs(limit = 100): Promise<VideoJobRecord[
 }
 
 export async function listTeamVideoJobs(args: {
-	teamId: string;
+	workspaceId: string;
 	limit?: number;
 	statuses?: string[];
 }): Promise<VideoJobRecord[]> {
 	const records = await listTeamAsyncOperations({
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		kind: "video",
 		limit: args.limit,
 		statuses: args.statuses,
 	});
 	return records.map((record) => ({
-		teamId: record.teamId,
+		workspaceId: record.workspaceId,
 		videoId: record.internalId,
 		requestId: record.requestId,
 		sessionId: record.sessionId,
@@ -347,13 +347,13 @@ export async function listTeamVideoJobs(args: {
 }
 
 export async function setVideoJobStatus(
-	teamId: string,
+	workspaceId: string,
 	videoId: string,
 	status: "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired",
 	metaPatch?: Record<string, unknown>,
 ): Promise<void> {
 	await setAsyncOperationStatus({
-		teamId,
+		workspaceId,
 		kind: "video",
 		internalId: videoId,
 		status,
@@ -361,29 +361,29 @@ export async function setVideoJobStatus(
 	});
 }
 
-export async function isVideoJobBilled(teamId: string, videoId: string): Promise<boolean> {
-	if (!teamId || !videoId) return false;
-	return isAsyncOperationBilledInDb(teamId, "video", videoId);
+export async function isVideoJobBilled(workspaceId: string, videoId: string): Promise<boolean> {
+	if (!workspaceId || !videoId) return false;
+	return isAsyncOperationBilledInDb(workspaceId, "video", videoId);
 }
 
 export async function markVideoJobBilled(
-	teamId: string,
+	workspaceId: string,
 	videoId: string,
 	_ttlSeconds?: number,
 ): Promise<void> {
-	if (!teamId || !videoId) return;
-	await markAsyncOperationBilledInDb(teamId, "video", videoId);
+	if (!workspaceId || !videoId) return;
+	await markAsyncOperationBilledInDb(workspaceId, "video", videoId);
 }
 
 export async function patchVideoJobMeta(
-	teamId: string,
+	workspaceId: string,
 	videoId: string,
 	metaPatch: Record<string, unknown>,
 ): Promise<void> {
-	if (!teamId || !videoId) return;
+	if (!workspaceId || !videoId) return;
 	if (!metaPatch || typeof metaPatch !== "object" || Array.isArray(metaPatch)) return;
 	await patchAsyncOperationMeta({
-		teamId,
+		workspaceId,
 		kind: "video",
 		internalId: videoId,
 		metaPatch,

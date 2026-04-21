@@ -48,7 +48,7 @@ create table if not exists public.credit_grant_redemptions (
   id uuid primary key default gen_random_uuid(),
   grant_id uuid not null references public.credit_grants(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  team_id uuid not null references public.teams(id) on delete cascade,
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
   amount_nanos bigint not null check (amount_nanos > 0),
   created_at timestamptz not null default now(),
   constraint credit_grant_redemptions_grant_user_unique unique (grant_id, user_id)
@@ -58,7 +58,7 @@ create index if not exists credit_grant_redemptions_user_created_idx
   on public.credit_grant_redemptions (user_id, created_at desc);
 
 create index if not exists credit_grant_redemptions_team_created_idx
-  on public.credit_grant_redemptions (team_id, created_at desc);
+  on public.credit_grant_redemptions (workspace_id, created_at desc);
 
 alter table public.credit_grants enable row level security;
 alter table public.credit_grant_redemptions enable row level security;
@@ -102,7 +102,7 @@ grant select, insert, update, delete on public.credit_grant_redemptions to servi
 
 create or replace function public.redeem_credit_code(
   p_code text,
-  p_team_id uuid
+  p_workspace_id uuid
 )
 returns table(
   status text,
@@ -111,7 +111,7 @@ returns table(
   amount_nanos bigint,
   before_balance_nanos bigint,
   after_balance_nanos bigint,
-  team_id uuid
+  workspace_id uuid
 )
 language plpgsql
 security definer
@@ -134,11 +134,11 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
-  if p_team_id is null or not public.is_team_member(p_team_id) then
+  if p_workspace_id is null or not public.is_workspace_member(p_workspace_id) then
     return query
     select
       'team_forbidden'::text,
@@ -147,14 +147,14 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
   select lower(coalesce(t.billing_mode::text, 'wallet'))
   into v_team_billing_mode
-  from public.teams t
-  where t.id = p_team_id;
+  from public.workspaces t
+  where t.id = p_workspace_id;
 
   if not found then
     return query
@@ -165,7 +165,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
@@ -178,7 +178,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
@@ -196,7 +196,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
@@ -215,7 +215,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
@@ -228,7 +228,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
@@ -241,7 +241,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
@@ -254,14 +254,14 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
   select *
   into v_wallet
   from public.wallets w
-  where w.team_id = p_team_id
+  where w.workspace_id = p_workspace_id
   for update;
 
   if not found then
@@ -273,19 +273,19 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
   insert into public.credit_grant_redemptions (
     grant_id,
     user_id,
-    team_id,
+    workspace_id,
     amount_nanos
   ) values (
     v_grant.id,
     v_user_id,
-    p_team_id,
+    p_workspace_id,
     v_grant.amount_nanos
   )
   on conflict on constraint credit_grant_redemptions_grant_user_unique
@@ -302,19 +302,19 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_team_id;
+      p_workspace_id;
     return;
   end if;
 
   update public.wallets
   set balance_nanos = balance_nanos + v_grant.amount_nanos,
       updated_at = now()
-  where team_id = p_team_id
+  where workspace_id = p_workspace_id
   returning *
   into v_wallet;
 
   insert into public.credit_ledger (
-    team_id,
+    workspace_id,
     event_time,
     kind,
     amount_nanos,
@@ -325,7 +325,7 @@ begin
     created_at,
     status
   ) values (
-    p_team_id,
+    p_workspace_id,
     now(),
     'promo_code',
     v_grant.amount_nanos,
@@ -349,7 +349,7 @@ begin
     v_grant.amount_nanos,
     v_wallet.balance_nanos - v_grant.amount_nanos,
     v_wallet.balance_nanos,
-    p_team_id;
+    p_workspace_id;
 end;
 $$;
 

@@ -22,7 +22,7 @@ export const exchangeSchema = z.object({
 
 type OAuthAppMetadataRow = {
 	client_id: string;
-	team_id: string;
+	workspace_id: string;
 	name: string | null;
 	status: string;
 	redirect_uris: string[] | null;
@@ -119,7 +119,7 @@ export async function resolveOAuthApp(args: { clientId?: string | null; redirect
 	if (clientId) {
 		const { data, error } = await supabase
 			.from("oauth_app_metadata")
-			.select("client_id, team_id, name, status, redirect_uris")
+			.select("client_id, workspace_id, name, status, redirect_uris")
 			.eq("client_id", clientId)
 			.eq("status", "active")
 			.maybeSingle();
@@ -179,7 +179,7 @@ export async function resolveOAuthApp(args: { clientId?: string | null; redirect
 
 	const { data, error } = await supabase
 		.from("oauth_app_metadata")
-		.select("client_id, team_id, name, status, redirect_uris")
+		.select("client_id, workspace_id, name, status, redirect_uris")
 		.eq("status", "active")
 		.contains("redirect_uris", [args.redirectUri])
 		.limit(2);

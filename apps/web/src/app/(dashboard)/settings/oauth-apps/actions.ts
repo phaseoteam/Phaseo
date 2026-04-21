@@ -21,7 +21,7 @@ interface CreateOAuthAppInput {
 	description?: string;
 	homepage_url?: string;
 	redirect_uris: string[];
-	team_id: string;
+	workspace_id: string;
 	logo_url?: string;
 	privacy_policy_url?: string;
 	terms_of_service_url?: string;
@@ -59,9 +59,9 @@ export async function createOAuthAppAction(
 
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", input.team_id)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", input.workspace_id)
 			.eq("user_id", user.id)
 			.single();
 
@@ -106,7 +106,7 @@ export async function createOAuthAppAction(
 			.from("oauth_app_metadata")
 			.insert({
 				client_id: oauthClient.client_id,
-				team_id: input.team_id,
+				workspace_id: input.workspace_id,
 				name: input.name,
 				description: input.description,
 				redirect_uris: input.redirect_uris,
@@ -174,7 +174,7 @@ export async function updateOAuthAppAction(
 		// Fetch app to verify ownership
 		const { data: app } = await supabase
 			.from("oauth_app_metadata")
-			.select("team_id")
+			.select("workspace_id")
 			.eq("client_id", clientId)
 			.single();
 
@@ -184,9 +184,9 @@ export async function updateOAuthAppAction(
 
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", app.team_id)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
 			.single();
 
@@ -240,7 +240,7 @@ export async function regenerateClientSecretAction(
 		// Fetch app to verify ownership
 		const { data: app } = await supabase
 			.from("oauth_app_metadata")
-			.select("team_id, name")
+			.select("workspace_id, name")
 			.eq("client_id", clientId)
 			.single();
 
@@ -250,9 +250,9 @@ export async function regenerateClientSecretAction(
 
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", app.team_id)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
 			.single();
 
@@ -309,7 +309,7 @@ export async function deleteOAuthAppAction(
 		// Fetch app to verify ownership
 		const { data: app } = await supabase
 			.from("oauth_app_metadata")
-			.select("team_id")
+			.select("workspace_id")
 			.eq("client_id", clientId)
 			.single();
 
@@ -319,9 +319,9 @@ export async function deleteOAuthAppAction(
 
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", app.team_id)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
 			.single();
 
@@ -358,7 +358,7 @@ export async function deleteOAuthAppAction(
  * List OAuth apps for a team
  */
 export async function listOAuthAppsAction(
-	teamId: string
+	workspaceId: string
 ): Promise<OAuthAppResult> {
 	try {
 		const supabase = await createClient();
@@ -375,9 +375,9 @@ export async function listOAuthAppsAction(
 
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", teamId)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", workspaceId)
 			.eq("user_id", user.id)
 			.single();
 
@@ -389,7 +389,7 @@ export async function listOAuthAppsAction(
 		const { data: apps, error: appsError } = await supabase
 			.from("oauth_apps_with_stats")
 			.select("*")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false });
 
 		if (appsError) {
@@ -426,7 +426,7 @@ export async function updateRedirectUrisAction(
 		// Fetch app to verify ownership
 		const { data: app } = await supabase
 			.from("oauth_app_metadata")
-			.select("team_id")
+			.select("workspace_id")
 			.eq("client_id", clientId)
 			.single();
 
@@ -436,9 +436,9 @@ export async function updateRedirectUrisAction(
 
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
-			.from("team_members")
-			.select("team_id")
-			.eq("team_id", app.team_id)
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
 			.single();
 
@@ -478,7 +478,7 @@ export async function updateRedirectUrisAction(
 				redirect_uris: redirectUris,
 			})
 			.eq("client_id", clientId)
-			.eq("team_id", app.team_id);
+			.eq("workspace_id", app.workspace_id);
 		if (metadataUpdateError) {
 			return {
 				error: `Redirect URIs updated in OAuth client but metadata sync failed: ${metadataUpdateError.message}`,

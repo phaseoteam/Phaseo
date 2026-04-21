@@ -9,7 +9,7 @@ import {
 } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Contact AI Stats Support",
@@ -51,7 +51,7 @@ async function ContactPersonalization() {
 		weekday: "short",
 	});
 
-	const teamId = await getTeamIdFromCookie();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	const supabase = await createClient();
 	const {
 		data: { user },
@@ -59,16 +59,16 @@ async function ContactPersonalization() {
 
 	let tierLabel = "";
 	let defaultInternalId = "";
-	if (teamId) {
+	if (workspaceId) {
 		try {
 			const [{ data: prev }, { data: teamResult }] = await Promise.all([
-				supabase.rpc("monthly_spend_prev_cents", { p_team: teamId }).single(),
-				supabase.from("teams").select("slug").eq("id", teamId).single(),
+				supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+				supabase.from("workspaces").select("slug").eq("id", workspaceId).single(),
 			]);
 			const lastMonthCents = Number(prev ?? 0);
 			const lastMonthUsd = lastMonthCents / 1_000_000_000;
 			tierLabel = lastMonthUsd >= 10000 ? "Enterprise" : "Basic";
-			defaultInternalId = teamResult?.slug ?? teamId ?? "";
+			defaultInternalId = teamResult?.slug ?? workspaceId ?? "";
 		} catch (error) {
 			console.warn("[contact] failed to load tier label", error);
 		}

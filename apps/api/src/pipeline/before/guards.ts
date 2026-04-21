@@ -175,7 +175,7 @@ type GuardAuthOptions = {
 
 export async function guardAuth(req: Request, options: GuardAuthOptions = {}): Promise<GuardResult<{
     requestId: string;
-    teamId: string;
+    workspaceId: string;
     apiKeyId: string;
     apiKeyRef: string | null;
     apiKeyKid: string | null;
@@ -192,7 +192,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
         ok: true,
         value: {
             requestId,
-            teamId: auth.teamId,
+            workspaceId: auth.workspaceId,
             apiKeyId: auth.apiKeyId,
             apiKeyRef: auth.apiKeyRef,
             apiKeyKid: auth.apiKeyKid,
@@ -202,7 +202,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     };
 }
 
-export async function guardJson(req: Request, teamId: string, requestId: string): Promise<GuardResult<any>> {
+export async function guardJson(req: Request, workspaceId: string, requestId: string): Promise<GuardResult<any>> {
     const contentType = (req.headers.get("content-type") || "").toLowerCase();
     try {
         if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
@@ -212,11 +212,11 @@ export async function guardJson(req: Request, teamId: string, requestId: string)
         const body = await req.json();
         return { ok: true, value: body };
     } catch {
-        return { ok: false, response: err("invalid_json", { request_id: requestId, team_id: teamId }) };
+        return { ok: false, response: err("invalid_json", { request_id: requestId, workspace_id: workspaceId }) };
     }
 }
 
-export function guardZod(schema: z.ZodTypeAny | null, rawBody: any, teamId: string, requestId: string): GuardResult<any> {
+export function guardZod(schema: z.ZodTypeAny | null, rawBody: any, workspaceId: string, requestId: string): GuardResult<any> {
     if (!schema) return { ok: true, value: rawBody };
     const result = schema.safeParse(rawBody);
     if (!result.success) {
@@ -225,24 +225,24 @@ export function guardZod(schema: z.ZodTypeAny | null, rawBody: any, teamId: stri
             response: err("validation_error", {
                 details: formatZodErrors(result.error),
                 request_id: requestId,
-                team_id: teamId,
+                workspace_id: workspaceId,
             }),
         };
     }
     return { ok: true, value: result.data };
 }
 
-export function guardModel(body: any, teamId: string, requestId: string): GuardResult<{ body: any; model: string; stream: boolean }> {
+export function guardModel(body: any, workspaceId: string, requestId: string): GuardResult<{ body: any; model: string; stream: boolean }> {
     const model = extractModel(body);
     if (!model) {
-        return { ok: false, response: err("model_required", { request_id: requestId, team_id: teamId }) };
+        return { ok: false, response: err("model_required", { request_id: requestId, workspace_id: workspaceId }) };
     }
     const stream = Boolean((body as any)?.stream);
     return { ok: true, value: { body, model, stream } };
 }
 
 export async function guardContext(args: {
-    teamId: string;
+    workspaceId: string;
     apiKeyId: string;
     endpoint: Endpoint;
     capability: string;
@@ -254,7 +254,7 @@ export async function guardContext(args: {
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
         const context = await fetchGatewayContext({
-            teamId: args.teamId,
+            workspaceId: args.workspaceId,
             model: args.model,
             endpoint: args.capability,
             apiKeyId: args.apiKeyId,
@@ -268,7 +268,7 @@ export async function guardContext(args: {
                 response: err("unauthorised", {
                     reason: context.key.reason ?? "key_invalid",
                     request_id: args.requestId,
-                    team_id: args.teamId,
+                    workspace_id: args.workspaceId,
                 }),
             };
         }
@@ -280,7 +280,7 @@ export async function guardContext(args: {
                     reason: context.keyLimit.reason ?? "key_limit_exceeded",
                     reset_at: context.keyLimit.resetAt,
                     request_id: args.requestId,
-                    team_id: args.teamId,
+                    workspace_id: args.workspaceId,
                 }),
             };
         }
@@ -293,7 +293,7 @@ export async function guardContext(args: {
                     model: args.model,
                     endpoint: args.endpoint,
                     request_id: args.requestId,
-                    team_id: args.teamId,
+                    workspace_id: args.workspaceId,
                     provider_candidate_diagnostics: candidateDiagnostics,
                 }),
             };
@@ -325,7 +325,7 @@ export async function guardContext(args: {
                     reason: context.credit.reason ?? "credit_check_failed",
                     min_usd: MIN_CREDIT_AMOUNT,
                     request_id: args.requestId,
-                    team_id: args.teamId,
+                    workspace_id: args.workspaceId,
                 }),
             };
         }
@@ -346,7 +346,7 @@ export async function guardContext(args: {
             response: err("gateway_error", {
                 reason: "gateway_context_failed",
                 request_id: args.requestId,
-                team_id: args.teamId,
+                workspace_id: args.workspaceId,
             }),
         };
     }

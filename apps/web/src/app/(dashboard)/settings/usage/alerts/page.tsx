@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -31,8 +31,8 @@ async function UsageAlertsContent() {
 	} = await supabase.auth.getUser();
 	if (!user) redirect("/sign-in");
 
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) {
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) {
 		return (
 			<Card>
 				<CardHeader>
@@ -47,7 +47,7 @@ async function UsageAlertsContent() {
 		);
 	}
 
-	const warnings = await getDeprecationWarningsForTeam(teamId);
+	const warnings = await getDeprecationWarningsForTeam(workspaceId);
 
 	return (
 		<div className="space-y-6">

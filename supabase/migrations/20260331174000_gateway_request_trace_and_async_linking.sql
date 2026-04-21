@@ -40,18 +40,18 @@ begin
 end $$;
 
 create index if not exists gateway_requests_team_session_created_idx
-  on public.gateway_requests (team_id, session_id, created_at desc)
+  on public.gateway_requests (workspace_id, session_id, created_at desc)
   where session_id is not null;
 
 create index if not exists gateway_requests_team_end_user_created_idx
-  on public.gateway_requests (team_id, end_user_id, created_at desc)
+  on public.gateway_requests (workspace_id, end_user_id, created_at desc)
   where end_user_id is not null;
 
 create index if not exists gateway_requests_team_auth_method_created_idx
-  on public.gateway_requests (team_id, auth_method, created_at desc);
+  on public.gateway_requests (workspace_id, auth_method, created_at desc);
 
 create index if not exists gateway_requests_team_oauth_client_created_idx
-  on public.gateway_requests (team_id, oauth_client_id, created_at desc)
+  on public.gateway_requests (workspace_id, oauth_client_id, created_at desc)
   where oauth_client_id is not null;
 
 create index if not exists gateway_requests_trace_data_gin_idx
@@ -71,15 +71,15 @@ alter table public.gateway_async_operations
   add column if not exists app_id uuid references public.api_apps (id) on delete set null;
 
 create index if not exists gateway_async_operations_team_request_updated_idx
-  on public.gateway_async_operations (team_id, request_id, updated_at desc)
+  on public.gateway_async_operations (workspace_id, request_id, updated_at desc)
   where request_id is not null;
 
 create index if not exists gateway_async_operations_team_session_updated_idx
-  on public.gateway_async_operations (team_id, session_id, updated_at desc)
+  on public.gateway_async_operations (workspace_id, session_id, updated_at desc)
   where session_id is not null;
 
 create index if not exists gateway_async_operations_team_app_updated_idx
-  on public.gateway_async_operations (team_id, app_id, updated_at desc)
+  on public.gateway_async_operations (workspace_id, app_id, updated_at desc)
   where app_id is not null;
 
 comment on column public.gateway_requests.end_user_id is

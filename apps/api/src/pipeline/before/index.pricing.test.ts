@@ -110,7 +110,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 			ok: true,
 			value: {
 				requestId: "req_123",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				apiKeyId: "key_123",
 				apiKeyRef: "kid_123",
 				apiKeyKid: "kid_123",

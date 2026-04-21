@@ -14,14 +14,14 @@ export default async function AuthControls({
 	const { data: getUserData } = await supabase.auth.getUser();
 	const user = getUserData?.user ?? null;
 
-	// Determine current active team id: prefer cookie, else fallback to user's default_team_id
+	// Determine current active team id: prefer cookie, else fallback to user's default_workspace_id
 	let currentTeamId: string | undefined = undefined;
 	// fetch user role from users table (if available)
 	let userRole: string | undefined = undefined;
 
 	try {
 		const cookieStore = await cookies();
-		const cookie = await cookieStore.get("activeTeamId");
+		const cookie = await cookieStore.get("activeWorkspaceId");
 		if (cookie?.value) {
 			currentTeamId = cookie.value;
 		}
@@ -31,13 +31,13 @@ export default async function AuthControls({
 			try {
 				const u = await supabase
 					.from("users")
-					.select("default_team_id, role")
+					.select("default_workspace_id, role")
 					.eq("user_id", user.id)
 					.single();
 
 				if (!u.error && u.data) {
-					if (!currentTeamId && u.data.default_team_id) {
-						currentTeamId = String(u.data.default_team_id);
+					if (!currentTeamId && u.data.default_workspace_id) {
+						currentTeamId = String(u.data.default_workspace_id);
 					}
 					if (u.data.role) {
 						userRole = String(u.data.role);
@@ -67,7 +67,7 @@ export default async function AuthControls({
 	// Fetch teams for the team switcher. If the table doesn't exist, return empty array.
 	let teams: { id: string; name: string }[] = [];
 	try {
-		const res = await supabase.from("teams").select("id, name");
+		const res = await supabase.from("workspaces").select("id, name");
 		const data = res.data as any[] | null;
 		const error = res.error;
 		if (!error && Array.isArray(data)) {

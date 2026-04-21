@@ -133,7 +133,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				betaChannelEnabled: false,
 				providerCapabilitiesBeta: false,
 				testingMode: false,
@@ -155,7 +155,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				betaChannelEnabled: false,
 				providerCapabilitiesBeta: false,
 				testingMode: true,
@@ -177,7 +177,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				betaChannelEnabled: true,
 				alphaChannelEnabled: false,
 				providerCapabilitiesBeta: false,
@@ -202,7 +202,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				betaChannelEnabled: true,
 				alphaChannelEnabled: true,
 				providerCapabilitiesBeta: false,
@@ -226,7 +226,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				testingMode: false,
 			}
 		);
@@ -248,7 +248,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini:fast",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				testingMode: false,
 			}
 		);
@@ -269,7 +269,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				body: { provider: { only: ["google-ai-studio"] } },
 				testingMode: false,
 			}
@@ -299,7 +299,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini:fast",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				body: { input: "hello world" },
 				testingMode: false,
 			}
@@ -341,7 +341,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini:fast",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				body: { input: "hello world" },
 				testingMode: false,
 			}
@@ -373,7 +373,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini:fast",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				cacheAwareRouting: false,
 				testingMode: false,
 			}
@@ -405,7 +405,7 @@ describe("routeProviders testing mode", () => {
 			{
 				endpoint: "responses",
 				model: "openai/gpt-4o-mini:fast",
-				teamId: "team_123",
+				workspaceId: "team_123",
 				testingMode: false,
 			}
 		);

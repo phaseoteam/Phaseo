@@ -21,7 +21,7 @@ function buildContext(args: {
     pricing?: Record<string, any>;
 }): GatewayContextData {
     return {
-        teamId: "team_test",
+        workspaceId: "team_test",
         resolvedModel: args.resolvedModel,
         key: { ok: true, reason: null, resetAt: null },
         keyLimit: { ok: true, reason: null, resetAt: null },

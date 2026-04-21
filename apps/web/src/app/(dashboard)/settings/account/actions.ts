@@ -10,7 +10,7 @@ import { OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo } from '@/lib/obfuscation
 
 export async function updateAccount(payload: {
     display_name?: string | null
-    default_team_id?: string | null
+    default_workspace_id?: string | null
     obfuscate_info?: boolean
 }) {
     const supabase = await createClient()
@@ -23,7 +23,7 @@ export async function updateAccount(payload: {
 
     const toUpsert: any = {}
     if (payload.display_name !== undefined) toUpsert.display_name = payload.display_name
-    if (payload.default_team_id !== undefined) toUpsert.default_team_id = payload.default_team_id
+    if (payload.default_workspace_id !== undefined) toUpsert.default_workspace_id = payload.default_workspace_id
     if (payload.obfuscate_info !== undefined) toUpsert.obfuscate_info = payload.obfuscate_info
 
     toUpsert.user_id = authUser.id

@@ -42,7 +42,7 @@ export async function resolveVideoProviderKey(
 	let key = bindings[envKey] ?? null;
 	if (videoMeta?.keySource === "byok" && videoMeta.byokKeyId) {
 		const byok = await loadByokKey({
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			providerId,
 			metaList: [{
 				id: videoMeta.byokKeyId,
@@ -61,7 +61,7 @@ export async function resolveVideoProviderKey(
 
 export async function proxyOpenAIVideoRequest(
 	req: Request,
-	auth: { requestId: string; teamId: string },
+	auth: { requestId: string; workspaceId: string },
 	providerId: string,
 	path: string,
 	method: string,
@@ -73,7 +73,7 @@ export async function proxyOpenAIVideoRequest(
 	const videoMeta = options?.videoMeta;
 	if (videoMeta?.keySource === "byok" && videoMeta.byokKeyId) {
 		const byok = await loadByokKey({
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			providerId,
 			metaList: [{
 				id: videoMeta.byokKeyId,
@@ -91,7 +91,7 @@ export async function proxyOpenAIVideoRequest(
 		return err("upstream_error", {
 			reason: "video_provider_key_missing",
 			request_id: auth.requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 			provider: providerId,
 		});
 	}
@@ -120,7 +120,7 @@ export async function proxyOpenAIVideoRequest(
 		return err("upstream_error", {
 			reason: isTimeout ? "video_provider_timeout" : "video_provider_request_failed",
 			request_id: auth.requestId,
-			team_id: auth.teamId,
+			workspace_id: auth.workspaceId,
 			provider: providerId,
 			...(isTimeout ? { timeout_ms: timeoutMs } : {}),
 			...(isTimeout ? {} : { message: String((fetchErr as any)?.message ?? "unknown_fetch_error") }),
@@ -241,7 +241,7 @@ export function decodeBase64ToBuffer(base64: string): ArrayBuffer {
 }
 
 export async function persistBufferedVideoResponse(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	index: number;
 	buffer: ArrayBuffer;
@@ -261,7 +261,7 @@ export async function persistBufferedVideoResponse(args: {
 }
 
 export async function persistFetchedVideoResponse(args: {
-	teamId: string;
+	workspaceId: string;
 	videoId: string;
 	index: number;
 	response: Response;
@@ -271,7 +271,7 @@ export async function persistFetchedVideoResponse(args: {
 }): Promise<Response> {
 	const buffer = await args.response.arrayBuffer();
 	return persistBufferedVideoResponse({
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		videoId: args.videoId,
 		index: args.index,
 		buffer,
@@ -336,7 +336,7 @@ export async function fetchGoogleOperation(
 		const upstreamBody = await res.clone().text().catch(() => "");
 		logGoogleVideoTrace("operation_fetch_failed", {
 			requestId: auth.requestId,
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			operationName,
 			provider: videoMeta?.provider ?? "google-ai-studio",
 			model: videoMeta?.model ?? null,
@@ -392,7 +392,7 @@ export async function fetchGoogleVideoContent(
 		const upstreamBody = await res.clone().text().catch(() => "");
 		logGoogleVideoTrace("content_fetch_failed", {
 			requestId: auth.requestId,
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			contentUri: uri,
 			contentUrl: redactSensitiveUrl(contentUrl),
 			provider: videoMeta?.provider ?? "google-ai-studio",
@@ -445,7 +445,7 @@ export async function fetchGoogleVertexOperation(
 		const upstreamBody = await res.clone().text().catch(() => "");
 		logGoogleVideoTrace("vertex_operation_fetch_failed", {
 			requestId: auth.requestId,
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			operationName,
 			provider: videoMeta?.provider ?? "google-vertex",
 			model,
@@ -486,7 +486,7 @@ export async function fetchGoogleVertexVideoContent(
 		const upstreamBody = await res.clone().text().catch(() => "");
 		logGoogleVideoTrace("vertex_content_fetch_failed", {
 			requestId: auth.requestId,
-			teamId: auth.teamId,
+			workspaceId: auth.workspaceId,
 			contentUri: uri,
 			contentUrl,
 			provider: videoMeta?.provider ?? "google-vertex",

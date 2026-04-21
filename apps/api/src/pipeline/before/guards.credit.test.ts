@@ -74,7 +74,7 @@ function makeContext(args: {
 	);
 
 	return {
-		teamId: "team_123",
+		workspaceId: "team_123",
 		resolvedModel: args.model ?? "openai/gpt-4.1-mini",
 		key: { ok: true, reason: null, resetAt: null },
 		keyLimit: { ok: true, reason: null, resetAt: null },
@@ -119,7 +119,7 @@ describe("guardContext credit gating for free models", () => {
 		);
 
 		const result = await guardContext({
-			teamId: "team_123",
+			workspaceId: "team_123",
 			apiKeyId: "key_123",
 			endpoint: "responses",
 			capability: "text.generate",
@@ -144,7 +144,7 @@ describe("guardContext credit gating for free models", () => {
 		);
 
 		const result = await guardContext({
-			teamId: "team_123",
+			workspaceId: "team_123",
 			apiKeyId: "key_123",
 			endpoint: "responses",
 			capability: "text.generate",
@@ -165,7 +165,7 @@ describe("guardContext credit gating for free models", () => {
 		);
 
 		const result = await guardContext({
-			teamId: "team_123",
+			workspaceId: "team_123",
 			apiKeyId: "key_123",
 			endpoint: "responses",
 			capability: "text.generate",
@@ -192,7 +192,7 @@ describe("guardContext credit gating for free models", () => {
 		);
 
 		const result = await guardContext({
-			teamId: "team_123",
+			workspaceId: "team_123",
 			apiKeyId: "key_123",
 			endpoint: "responses",
 			capability: "text.generate",
@@ -224,7 +224,7 @@ describe("guardContext credit gating for free models", () => {
 		);
 
 		const result = await guardContext({
-			teamId: "team_123",
+			workspaceId: "team_123",
 			apiKeyId: "key_123",
 			endpoint: "responses",
 			capability: "text.generate",

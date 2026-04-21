@@ -68,7 +68,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		return err("validation_error", {
 			reason: "missing_video_id",
 			request_id: null,
-			team_id: null,
+			workspace_id: null,
 		});
 	}
 	const signedDownload = await verifySignedVideoDownloadRequest(req.url);
@@ -78,13 +78,13 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("validation_error", {
 				reason: "signed_download_video_mismatch",
 				request_id: null,
-				team_id: signedDownload.teamId,
+				workspace_id: signedDownload.workspaceId,
 				video_id: id,
 			});
 		}
 		authValue = {
 			requestId: generatePublicId(),
-			teamId: signedDownload.teamId,
+			workspaceId: signedDownload.workspaceId,
 			apiKeyId: "signed-download",
 			apiKeyRef: null,
 			apiKeyKid: null,
@@ -104,7 +104,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		return err("not_found", {
 			reason: "video_deleted",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 		});
 	}
@@ -117,7 +117,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 				: null;
 		logGoogleVideoTrace("vertex_content_request_start", {
 			requestId: authValue.requestId,
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			operationName: vertexOperationName,
 			provider: videoMeta?.provider ?? "google-vertex",
@@ -130,7 +130,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			if (cachedVideoRes instanceof Response && cachedVideoRes.ok) {
 				logGoogleVideoTrace("vertex_content_served_from_cached_uri", {
 					requestId: authValue.requestId,
-					teamId: authValue.teamId,
+					workspaceId: authValue.workspaceId,
 					videoId: id,
 					operationName: vertexOperationName,
 					cachedUri,
@@ -150,7 +150,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "google_vertex_operation_fetch_failed",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				upstream_status: res.status,
 				upstream_status_text: res.statusText || null,
 				upstream_body_preview: upstreamBody ? upstreamBody.slice(0, 1200) : null,
@@ -179,7 +179,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const operationError = extractGoogleOperationError(json);
@@ -201,7 +201,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "video_generation_failed",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				upstream_error: operationError,
 			});
 		}
@@ -225,7 +225,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		const b64Json = generatedVideo.b64Json;
 		if (!uri && b64Json) {
 			return persistBufferedVideoResponse({
-				teamId: authValue.teamId,
+				workspaceId: authValue.workspaceId,
 				videoId: id,
 				index: requestedIndex,
 				buffer: decodeBase64ToBuffer(b64Json),
@@ -238,7 +238,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetchGoogleVertexVideoContent(authValue, videoMeta, uri);
@@ -248,7 +248,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "google_vertex_video_content_fetch_failed",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				upstream_status: videoRes.status,
 				upstream_status_text: videoRes.statusText || null,
 				upstream_body_preview: upstreamBody ? upstreamBody.slice(0, 1200) : null,
@@ -256,7 +256,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			});
 		}
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -273,7 +273,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 				: null;
 		logGoogleVideoTrace("content_request_start", {
 			requestId: authValue.requestId,
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			operationName,
 			provider: videoMeta?.provider ?? "google-ai-studio",
@@ -286,7 +286,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			if (cachedVideoRes instanceof Response && cachedVideoRes.ok) {
 				logGoogleVideoTrace("content_served_from_cached_uri", {
 					requestId: authValue.requestId,
-					teamId: authValue.teamId,
+					workspaceId: authValue.workspaceId,
 					videoId: id,
 					operationName,
 					cachedUri,
@@ -324,7 +324,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 				return err("upstream_error", {
 					reason: "google_operation_auth_unsupported",
 					request_id: authValue.requestId,
-					team_id: authValue.teamId,
+					workspace_id: authValue.workspaceId,
 					operation_name: operationName,
 					hint: "Google native operation polling requires OAuth principal auth for this endpoint.",
 				});
@@ -332,7 +332,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "google_video_operation_fetch_failed",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				upstream_status: res.status,
 				upstream_status_text: res.statusText || null,
 				upstream_body_preview: upstreamBody ? upstreamBody.slice(0, 1200) : null,
@@ -361,7 +361,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const operationError = extractGoogleOperationError(json);
@@ -383,7 +383,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "video_generation_failed",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				upstream_error: operationError,
 			});
 		}
@@ -408,7 +408,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetchGoogleVideoContent(authValue, videoMeta, uri);
@@ -418,7 +418,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "google_video_content_fetch_failed",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				upstream_status: videoRes.status,
 				upstream_status_text: videoRes.statusText || null,
 				upstream_body_preview: upstreamBody ? upstreamBody.slice(0, 1200) : null,
@@ -426,7 +426,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			});
 		}
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -481,7 +481,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: failed ? "video_generation_failed" : "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const uri =
@@ -493,12 +493,12 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetch(uri, { method: "GET" });
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -543,7 +543,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const xaiOutputs = extractVideoOutputFromPayload(json);
@@ -552,12 +552,12 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetch(uri, { method: "GET" });
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -601,7 +601,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const minimaxOutputs = extractVideoOutputFromPayload(json);
@@ -628,12 +628,12 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetch(uri, { method: "GET" });
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -685,7 +685,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const byteplusOutputs = extractVideoOutputFromPayload(json);
@@ -694,12 +694,12 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetch(uri, { method: "GET" });
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -750,7 +750,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const runwayOutputs = extractVideoOutputFromPayload(json);
@@ -759,7 +759,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetch(uri, { method: "GET" });
@@ -811,7 +811,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("not_ready", {
 				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 				...(status === "failed"
 					? { upstream_error: payload.error ?? ((json as any)?.error ?? null) }
 					: {}),
@@ -823,12 +823,12 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			return err("upstream_error", {
 				reason: "missing_video_uri",
 				request_id: authValue.requestId,
-				team_id: authValue.teamId,
+				workspace_id: authValue.workspaceId,
 			});
 		}
 		const videoRes = await fetch(uri, { method: "GET" });
 		return persistFetchedVideoResponse({
-			teamId: authValue.teamId,
+			workspaceId: authValue.workspaceId,
 			videoId: id,
 			index: requestedIndex,
 			response: videoRes,
@@ -845,7 +845,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		return err("not_ready", {
 			reason: "atlas_prediction_id_missing",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 		});
 	}
@@ -854,7 +854,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		return err("not_supported", {
 			reason: "video_content_unsupported",
 			request_id: authValue.requestId,
-			team_id: authValue.teamId,
+			workspace_id: authValue.workspaceId,
 			video_id: id,
 			provider: openAiCompatProviderId,
 		});
@@ -898,7 +898,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 				return err("upstream_error", {
 					reason: "video_generation_failed",
 					request_id: authValue.requestId,
-					team_id: authValue.teamId,
+					workspace_id: authValue.workspaceId,
 					upstream_error: (statusJson as any)?.error ?? null,
 				});
 			}
@@ -906,7 +906,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 				return err("not_ready", {
 					reason: "video_not_ready",
 					request_id: authValue.requestId,
-					team_id: authValue.teamId,
+					workspace_id: authValue.workspaceId,
 				});
 			}
 		}
@@ -924,7 +924,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 	if (!(openAiContentRes instanceof Response)) return openAiContentRes;
 	if (!openAiContentRes.ok) return openAiContentRes;
 	return persistFetchedVideoResponse({
-		teamId: authValue.teamId,
+		workspaceId: authValue.workspaceId,
 		videoId: id,
 		index: requestedIndex,
 		response: openAiContentRes,

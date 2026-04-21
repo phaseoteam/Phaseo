@@ -36,7 +36,7 @@ async function AccountDetailsContent() {
 
 	const { data: userRow } = await supabase
 		.from("users")
-		.select("user_id, display_name, default_team_id, created_at")
+		.select("user_id, display_name, default_workspace_id, created_at")
 		.eq("user_id", authUser.id)
 		.maybeSingle();
 	const obfuscateInfo = await getUserObfuscationPreference(authUser.id);
@@ -45,7 +45,7 @@ async function AccountDetailsContent() {
 		id: authUser.id,
 		displayName: userRow?.display_name,
 		email: authUser.email ?? null,
-		defaultTeamId: userRow?.default_team_id ?? null,
+		defaultWorkspaceId: userRow?.default_workspace_id ?? null,
 		obfuscateInfo,
 		createdAt: userRow?.created_at,
 	};
@@ -55,8 +55,8 @@ async function AccountDetailsContent() {
 	const hasPassword = !isOAuthUser;
 
 	const { data: teamMembersData } = await supabase
-		.from("team_members")
-		.select("team_id, teams(id, name)")
+		.from("workspace_members")
+		.select("workspace_id, teams:workspaces(id, name)")
 		.eq("user_id", authUser.id);
 
 	const teams = (teamMembersData ?? [])

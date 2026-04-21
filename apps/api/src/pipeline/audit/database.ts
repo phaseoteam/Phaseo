@@ -9,7 +9,7 @@ import type { Endpoint } from "@core/types";
 
 export type PersistArgs = {
     requestId: string;
-    teamId: string;
+    workspaceId: string;
 
     // identity
     provider: string;
@@ -142,9 +142,9 @@ function deriveInferredTitle(args: {
     return "App";
 }
 
-/** Upsert (team_id, app_key) → api_apps.id, updating title/url/meta/last_seen */
+/** Upsert (workspace_id, app_key) → api_apps.id, updating title/url/meta/last_seen */
 export async function ensureAppId(args: {
-    teamId: string;
+    workspaceId: string;
     appTitle?: string | null;
     referer?: string | null;
     appId?: string | null;
@@ -163,7 +163,7 @@ export async function ensureAppId(args: {
     const nowIso = new Date().toISOString();
 
     const payload = {
-        team_id: args.teamId,
+        workspace_id: args.workspaceId,
         app_key,
         title,
         url: identityUrl,
@@ -183,7 +183,7 @@ export async function ensureAppId(args: {
         const { data, error } = await supabase
             .from("api_apps")
             .select("id")
-            .eq("team_id", args.teamId)
+            .eq("workspace_id", args.workspaceId)
             .eq("app_key", app_key)
             .order("last_seen", { ascending: false })
             .limit(1);
@@ -208,7 +208,7 @@ export async function ensureAppId(args: {
                 meta: payload.meta,
             })
             .eq("id", existingId)
-            .eq("team_id", args.teamId);
+            .eq("workspace_id", args.workspaceId);
         if (updateError) {
             console.error("ensureAppId update error:", updateError);
         }
@@ -236,13 +236,13 @@ export async function ensureAppId(args: {
     return null;
 }
 
-/** Insert or upsert a generation row (idempotent on team_id+request_id). */
+/** Insert or upsert a generation row (idempotent on workspace_id+request_id). */
 async function upsertGeneration(args: PersistArgs & { appId?: string | null }) {
     const supabase = svc();
 
     const row = {
         request_id: args.requestId,
-        team_id: args.teamId,
+        workspace_id: args.workspaceId,
 
         provider: args.provider,
         model_id: args.model,
@@ -267,7 +267,7 @@ async function upsertGeneration(args: PersistArgs & { appId?: string | null }) {
 
     const { error } = await supabase
         .from("gateway_generations")
-        .upsert(row, { onConflict: "team_id,request_id" });
+        .upsert(row, { onConflict: "workspace_id,request_id" });
 
     if (error) {
         console.error("gateway_generations upsert error:", error, { row });
@@ -278,7 +278,7 @@ async function upsertGeneration(args: PersistArgs & { appId?: string | null }) {
 export async function persistGenerationToSupabase(args: PersistArgs) {
     try {
         const appId = await ensureAppId({
-            teamId: args.teamId,
+            workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,
             referer: args.referer ?? null,
         });

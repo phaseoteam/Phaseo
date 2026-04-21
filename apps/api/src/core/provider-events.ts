@@ -9,7 +9,7 @@ export type ProviderEventRecord = {
 	provider: string;
 	providerEventId: string;
 	kind: string | null;
-	teamId: string | null;
+	workspaceId: string | null;
 	internalId: string | null;
 	processedAt: string | null;
 	createdAt: string | null;
@@ -20,7 +20,7 @@ type ProviderEventRow = {
 	provider: string;
 	provider_event_id: string;
 	kind: string | null;
-	team_id: string | null;
+	workspace_id: string | null;
 	internal_id: string | null;
 	processed_at: string | null;
 	created_at: string | null;
@@ -38,7 +38,7 @@ function mapRow(row: ProviderEventRow): ProviderEventRecord {
 		provider: row.provider,
 		providerEventId: row.provider_event_id,
 		kind: row.kind,
-		teamId: row.team_id,
+		workspaceId: row.workspace_id,
 		internalId: row.internal_id,
 		processedAt: row.processed_at,
 		createdAt: row.created_at,
@@ -49,7 +49,7 @@ export async function insertProviderEvent(args: {
 	provider: string;
 	providerEventId: string;
 	kind?: string | null;
-	teamId?: string | null;
+	workspaceId?: string | null;
 	internalId?: string | null;
 	payload?: Record<string, unknown> | null;
 	headers?: Record<string, string> | null;
@@ -65,7 +65,7 @@ export async function insertProviderEvent(args: {
 		provider,
 		provider_event_id: providerEventId,
 		kind: normalizeText(args.kind),
-		team_id: normalizeText(args.teamId),
+		workspace_id: normalizeText(args.workspaceId),
 		internal_id: normalizeText(args.internalId),
 		payload: args.payload ?? {},
 		headers: args.headers ?? {},
@@ -75,7 +75,7 @@ export async function insertProviderEvent(args: {
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_provider_events")
 		.insert(payload)
-		.select("id,provider,provider_event_id,kind,team_id,internal_id,processed_at,created_at")
+		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,processed_at,created_at")
 		.maybeSingle();
 
 	if (!error) {
@@ -104,7 +104,7 @@ export async function getProviderEvent(
 
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_provider_events")
-		.select("id,provider,provider_event_id,kind,team_id,internal_id,processed_at,created_at")
+		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,processed_at,created_at")
 		.eq("provider", provider)
 		.eq("provider_event_id", providerEventId)
 		.maybeSingle();
@@ -116,7 +116,7 @@ export async function getProviderEvent(
 export async function markProviderEventProcessed(args: {
 	provider: string;
 	providerEventId: string;
-	teamId?: string | null;
+	workspaceId?: string | null;
 	internalId?: string | null;
 }): Promise<void> {
 	const provider = normalizeText(args.provider);
@@ -128,9 +128,9 @@ export async function markProviderEventProcessed(args: {
 		processed_at: now,
 		updated_at: now,
 	};
-	const teamId = normalizeText(args.teamId);
+	const workspaceId = normalizeText(args.workspaceId);
 	const internalId = normalizeText(args.internalId);
-	if (teamId) patch.team_id = teamId;
+	if (workspaceId) patch.workspace_id = workspaceId;
 	if (internalId) patch.internal_id = internalId;
 
 	const { error } = await getSupabaseAdmin()

@@ -2,11 +2,11 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import {
     requireAuthenticatedUser,
-    requireTeamMembership,
+    requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 import {
 	isPromoCodeFormatValid,
@@ -28,9 +28,9 @@ interface SetUpAutoTopUpProps {
 export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
     const { supabase, user } = await requireAuthenticatedUser();
     // read team id from the shared helper
-    const teamId = await getTeamIdFromCookie();
-    if (!teamId) throw new Error("Missing workspace id cookie");
-    await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+    const workspaceId = await getWorkspaceIdFromCookie();
+    if (!workspaceId) throw new Error("Missing workspace id cookie");
+    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const {
         balanceThreshold,
@@ -55,7 +55,7 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
     const { data, error } = await supabase
         .from("wallets")
         .update(payload)
-        .eq("team_id", teamId)
+        .eq("workspace_id", workspaceId)
         .select();
 
     if (error) throw error;
@@ -66,9 +66,9 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
 
 export async function DisableAutoTopUpServer() {
     const { supabase, user } = await requireAuthenticatedUser();
-    const teamId = await getTeamIdFromCookie();
-    if (!teamId) throw new Error("Missing workspace id cookie");
-    await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+    const workspaceId = await getWorkspaceIdFromCookie();
+    if (!workspaceId) throw new Error("Missing workspace id cookie");
+    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const { data, error } = await supabase
         .from("wallets")
@@ -79,7 +79,7 @@ export async function DisableAutoTopUpServer() {
             auto_top_up_account_id: null,
             updated_at: new Date().toISOString()
         })
-        .eq("team_id", teamId)
+        .eq("workspace_id", workspaceId)
         .select();
 
     if (error) throw error;
@@ -95,9 +95,9 @@ type SetLowBalanceEmailAlertArgs = {
 export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs) {
 	const { enabled, thresholdUsd } = args;
 	const { supabase, user } = await requireAuthenticatedUser();
-	const teamId = await getTeamIdFromCookie();
-	if (!teamId) throw new Error("Missing workspace id cookie");
-	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) throw new Error("Missing workspace id cookie");
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	if (enabled) {
 		if (thresholdUsd == null || !Number.isFinite(thresholdUsd) || thresholdUsd <= 0) {
@@ -109,7 +109,7 @@ export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs)
 		thresholdUsd == null ? 0 : Math.round(thresholdUsd * 1_000_000_000);
 
 	const payload: any = {
-		team_id: teamId,
+		workspace_id: workspaceId,
 		low_balance_email_enabled: enabled,
 		low_balance_email_threshold_nanos: thresholdNanos,
 		updated_at: new Date().toISOString(),
@@ -121,8 +121,8 @@ export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs)
 	}
 
 	const { error } = await supabase
-		.from("team_settings")
-		.upsert(payload, { onConflict: "team_id" });
+		.from("workspace_settings")
+		.upsert(payload, { onConflict: "workspace_id" });
 
 	if (error) throw error;
 
@@ -137,7 +137,7 @@ type ChargeSavedPaymentArgs = {
     event_type?: string;
     paymentMethodId?: string | null;
     payment_method_id?: string | null;
-    team_id?: string | null;
+    workspace_id?: string | null;
 };
 
 function resolveInternalBaseUrl(): string {
@@ -158,9 +158,9 @@ const INTERNAL_HEADER = "x-internal-payments-token";
 
 export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const teamId = args.team_id ?? (await getTeamIdFromCookie());
-    if (!teamId) throw new Error("Missing workspace id");
-    await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+    const workspaceId = args.workspace_id ?? (await getWorkspaceIdFromCookie());
+    if (!workspaceId) throw new Error("Missing workspace id");
+    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
     if (!token) throw new Error("Internal payments token not configured");
@@ -174,7 +174,7 @@ export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
             "Content-Type": "application/json",
             [INTERNAL_HEADER]: token,
         },
-        body: JSON.stringify({ ...args, team_id: teamId }),
+        body: JSON.stringify({ ...args, workspace_id: workspaceId }),
         cache: "no-store",
     });
 
@@ -202,14 +202,14 @@ function clampInt(value: number, min: number, max: number, fallback: number) {
 
 export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingArgs) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const teamId = await getTeamIdFromCookie();
-    if (!teamId) throw new Error("Missing workspace id cookie");
-    await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+    const workspaceId = await getWorkspaceIdFromCookie();
+    if (!workspaceId) throw new Error("Missing workspace id cookie");
+    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const { data: teamRow, error: teamErr } = await supabase
-        .from("teams")
+        .from("workspaces")
         .select("tier,billing_mode,invoice_mode_activated_at,invoice_onboarding_status")
-        .eq("id", teamId)
+        .eq("id", workspaceId)
         .maybeSingle();
     if (teamErr) throw teamErr;
 
@@ -229,9 +229,9 @@ export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingA
     }
 
     const { data: existingProfile, error: profileReadErr } = await supabase
-        .from("team_invoice_profiles")
+        .from("workspace_invoice_profiles")
         .select("billing_day,payment_terms_days")
-        .eq("team_id", teamId)
+        .eq("workspace_id", workspaceId)
         .maybeSingle();
     if (profileReadErr) throw profileReadErr;
 
@@ -278,22 +278,22 @@ export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingA
     }
 
     const { error: modeErr } = await supabase
-        .from("teams")
+        .from("workspaces")
         .update(teamUpdate)
-        .eq("id", teamId);
+        .eq("id", workspaceId);
     if (modeErr) throw modeErr;
 
     const { error: profileWriteErr } = await supabase
-        .from("team_invoice_profiles")
+        .from("workspace_invoice_profiles")
         .upsert(
             {
-                team_id: teamId,
+                workspace_id: workspaceId,
                 enabled: true,
                 billing_day: billingDay,
                 payment_terms_days: paymentTermsDays,
                 updated_at: nowIso,
             },
-            { onConflict: "team_id" },
+            { onConflict: "workspace_id" },
         );
     if (profileWriteErr) throw profileWriteErr;
 
@@ -303,7 +303,7 @@ export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingA
         console.warn(
             "[billing-onboarding] unable to ensure stripe customer for invoice mode",
             {
-                teamId,
+                workspaceId,
                 err: String(err),
             },
         );
@@ -316,7 +316,7 @@ export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingA
 
 type RedeemCreditCodeArgs = {
 	code: string;
-	teamId: string;
+	workspaceId: string;
 };
 
 type RedeemCreditCodeRow = {
@@ -326,14 +326,14 @@ type RedeemCreditCodeRow = {
 	amount_nanos?: number | null;
 	before_balance_nanos?: number | null;
 	after_balance_nanos?: number | null;
-	team_id?: string | null;
+	workspace_id?: string | null;
 };
 
 export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
-	const { code, teamId } = args;
+	const { code, workspaceId } = args;
 	const { supabase, user } = await requireAuthenticatedUser();
 
-	if (!teamId || typeof teamId !== "string") {
+	if (!workspaceId || typeof workspaceId !== "string") {
 		return {
 			ok: false as const,
 			status: "team_forbidden",
@@ -341,7 +341,7 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 		};
 	}
 
-	await requireTeamMembership(supabase, user.id, teamId);
+	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	const normalizedCode = normalizePromoCodeInput(code);
 	if (!isPromoCodeFormatValid(normalizedCode)) {
@@ -354,14 +354,14 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 
 	const { data, error } = await supabase.rpc("redeem_credit_code", {
 		p_code: normalizedCode,
-		p_team_id: teamId,
+		p_workspace_id: workspaceId,
 	});
 
 	if (error) {
 		console.warn("[credits.redeem] redeem_credit_code rpc failed", {
 			code: error.code ?? null,
 			message: error.message ?? null,
-			teamId,
+			workspaceId,
 			userId: user.id,
 		});
 		return {
@@ -378,7 +378,7 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 	const amountNanos = Number(row?.amount_nanos ?? NaN);
 	const beforeBalanceNanos = Number(row?.before_balance_nanos ?? NaN);
 	const afterBalanceNanos = Number(row?.after_balance_nanos ?? NaN);
-	const resolvedTeamId = String(row?.team_id ?? teamId);
+	const resolvedTeamId = String(row?.workspace_id ?? workspaceId);
 
 	const ok = status === "succeeded";
 	if (ok) {
@@ -397,7 +397,7 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 		afterBalanceNanos: Number.isFinite(afterBalanceNanos)
 			? afterBalanceNanos
 			: null,
-		teamId: resolvedTeamId,
+		workspaceId: resolvedTeamId,
 		grantId: row?.grant_id ?? null,
 	};
 }

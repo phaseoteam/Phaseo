@@ -27,7 +27,7 @@ function buildArgs(
 	return {
 		ir,
 		requestId: "req_minimax_video_test",
-		teamId: "team_test",
+		workspaceId: "team_test",
 		providerId: "minimax",
 		endpoint: "video.generation",
 		protocol: "minimax.video",

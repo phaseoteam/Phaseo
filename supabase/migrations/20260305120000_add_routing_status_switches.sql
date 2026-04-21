@@ -101,6 +101,6 @@ alter table if exists public.data_api_provider_models
 
 
 -- Team-level default for cache-aware routing behavior.
-alter table if exists public.team_settings
+alter table if exists public.workspace_settings
   add column if not exists cache_aware_routing_enabled boolean not null default true;
 

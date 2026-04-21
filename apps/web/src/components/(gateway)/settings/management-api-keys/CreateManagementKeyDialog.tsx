@@ -61,7 +61,7 @@ export default function CreateManagementKeyDialog({
 			const res: any = await createManagementKeyAction({
 				name,
 				creatorUserId: currentUserId as string,
-				teamId: teamArg,
+				workspaceId: teamArg,
 				scopes: JSON.stringify([])
 			});
 			setPlainKey(res?.plaintext ?? null);

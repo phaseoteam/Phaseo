@@ -7,7 +7,7 @@ create table if not exists public.gateway_provider_events (
   provider text not null,
   provider_event_id text not null,
   kind text null,
-  team_id uuid null references public.teams(id) on delete set null,
+  workspace_id uuid null references public.workspaces(id) on delete set null,
   internal_id text null,
   payload jsonb not null default '{}'::jsonb,
   headers jsonb not null default '{}'::jsonb,
@@ -22,8 +22,8 @@ create index if not exists gateway_provider_events_provider_created_idx
   on public.gateway_provider_events (provider, created_at desc);
 
 create index if not exists gateway_provider_events_team_created_idx
-  on public.gateway_provider_events (team_id, created_at desc)
-  where team_id is not null;
+  on public.gateway_provider_events (workspace_id, created_at desc)
+  where workspace_id is not null;
 
 alter table public.gateway_provider_events enable row level security;
 

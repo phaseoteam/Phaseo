@@ -58,7 +58,7 @@ export default function CreateOAuthAppDialog({
 				description: formData.description || undefined,
 				homepage_url: formData.homepageUrl || undefined,
 				redirect_uris: formData.redirectUris.split("\n").filter(uri => uri.trim()),
-				team_id: currentTeamId!,
+				workspace_id: currentTeamId!,
 			});
 
 			if (result.error) {

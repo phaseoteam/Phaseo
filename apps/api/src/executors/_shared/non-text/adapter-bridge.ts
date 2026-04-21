@@ -515,7 +515,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			returnUpstreamResponse: args.meta.returnUpstreamResponse,
 			upstreamStartMs: args.meta.upstreamStartMs,
 		},
-		teamId: args.teamId,
+		workspaceId: args.workspaceId,
 		providerId: args.providerId,
 		byokMeta: args.byokMeta,
 		pricingCard: args.pricingCard,

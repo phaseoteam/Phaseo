@@ -226,14 +226,14 @@ authRouter.post(
 		const decoded = decodeJWT(accessToken);
 		const claims = decoded?.payload ?? {};
 		const oauthUserId = typeof claims.user_id === "string" ? claims.user_id : null;
-		const oauthTeamId = typeof claims.team_id === "string" ? claims.team_id : null;
+		const oauthTeamId = typeof claims.workspace_id === "string" ? claims.workspace_id : null;
 		const oauthClientId = typeof claims.client_id === "string" ? claims.client_id : null;
 		if (!oauthUserId || !oauthTeamId || !oauthClientId) {
 			return json(
 				{
 					ok: false,
 					error: "token_claims_missing",
-					message: "Expected user_id, team_id, and client_id claims in access token",
+					message: "Expected user_id, workspace_id, and client_id claims in access token",
 				},
 				400,
 				{ "Cache-Control": "no-store" },
@@ -256,7 +256,7 @@ authRouter.post(
 			.from("oauth_authorizations")
 			.select("id")
 			.eq("client_id", oauthClientId)
-			.eq("team_id", oauthTeamId)
+			.eq("workspace_id", oauthTeamId)
 			.eq("user_id", oauthUserId)
 			.is("revoked_at", null)
 			.maybeSingle();
@@ -286,7 +286,7 @@ authRouter.post(
 			const insertResult = await supabase
 				.from("keys")
 				.insert({
-					team_id: oauthTeamId,
+					workspace_id: oauthTeamId,
 					name: keyName,
 					kid: generated.kid,
 					hash,
@@ -301,7 +301,7 @@ authRouter.post(
 					weekly_limit_cost_nanos: 0,
 					monthly_limit_cost_nanos: 0,
 				})
-				.select("id, team_id, name, prefix, status, created_by, created_at")
+				.select("id, workspace_id, name, prefix, status, created_by, created_at")
 				.maybeSingle();
 
 			if (!insertResult.error && insertResult.data) {
@@ -309,7 +309,7 @@ authRouter.post(
 					ok: true,
 					key: {
 						id: insertResult.data.id,
-						team_id: insertResult.data.team_id,
+						workspace_id: insertResult.data.workspace_id,
 						name: insertResult.data.name,
 						prefix: insertResult.data.prefix,
 						status: insertResult.data.status,
@@ -320,7 +320,7 @@ authRouter.post(
 					oauth: {
 						client_id: oauthClientId,
 						user_id: oauthUserId,
-						team_id: oauthTeamId,
+						workspace_id: oauthTeamId,
 						scope:
 							tokenBody && typeof tokenBody === "object" && typeof (tokenBody as any).scope === "string"
 								? (tokenBody as any).scope

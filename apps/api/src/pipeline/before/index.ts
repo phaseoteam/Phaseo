@@ -35,10 +35,10 @@ export async function beforeRequest(
     // 1) Auth
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
-    const { requestId, teamId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
+    const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
 
     // 2) JSON (raw body for tracing + schema guard)
-    const j = await timer.span("guardJson", () => guardJson(req, teamId, requestId));
+    const j = await timer.span("guardJson", () => guardJson(req, workspaceId, requestId));
     if (!j.ok) return j as { ok: false; response: Response };
     const rawBody = j.value;
     const betaCapabilities = normalizeReturnFlag(
@@ -55,19 +55,19 @@ export async function beforeRequest(
     const testingModeRequested = isTestingModeRequested(req, rawBody);
 
     // 3) Zod (route schema: shape depends on request path)
-    const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, teamId, requestId));
+    const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
     if (!v.ok) return v as { ok: false; response: Response };
     const body = v.value;
 
     // 4) Model + stream (required for provider selection)
-    const m = await timer.span("guardModel", () => guardModel(body, teamId, requestId));
+    const m = await timer.span("guardModel", () => guardModel(body, workspaceId, requestId));
     if (!m.ok) return m as { ok: false; response: Response };
     const { model, stream } = m.value;
 
     const testingMode = await timer.span("resolveTestingMode", () =>
         resolveTestingMode({
             requested: testingModeRequested,
-            teamId,
+            workspaceId,
             userId,
             internal,
         })
@@ -78,7 +78,7 @@ export async function beforeRequest(
             response: err("unauthorised", {
                 reason: testingMode.reason,
                 request_id: requestId,
-                team_id: teamId,
+                workspace_id: workspaceId,
             }),
         };
     }
@@ -88,7 +88,7 @@ export async function beforeRequest(
     const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
     const c = await timer.span("guardContext", () =>
         guardContext({
-            teamId,
+            workspaceId,
             apiKeyId,
             endpoint,
             capability,
@@ -137,7 +137,7 @@ export async function beforeRequest(
                         params: { preset: context.preset.name },
                     }],
                     request_id: requestId,
-                    team_id: teamId,
+                    workspace_id: workspaceId,
                 }),
             };
         }
@@ -150,7 +150,7 @@ export async function beforeRequest(
             rawBody,
             body: mergedBody,
             requestId,
-            teamId,
+            workspaceId,
             providers: presetFilteredProviders,
             model: resolvedModel || model,
         })
@@ -250,7 +250,7 @@ export async function beforeRequest(
                 model: resolvedModel || model,
                 endpoint,
                 request_id: requestId,
-                team_id: teamId,
+                workspace_id: workspaceId,
                 provider_enablement: providerEnablementDiagnostics,
                 provider_candidate_diagnostics: candidateDiagnostics,
                 reason: missingPricingProviders.length > 0
@@ -336,7 +336,7 @@ export async function beforeRequest(
         rawBody,
         body: mergedBody,
         model: resolvedModel || model,
-        teamId,
+        workspaceId,
         stream,
         requestPath: requestPath ?? undefined,
         requestedParams: capabilityValidation.requestedParams,

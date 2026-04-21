@@ -108,7 +108,7 @@ function extractUserIdFromBearer(req: Request): string | null {
 
 async function resolveCreatorUserId(args: {
 	req: Request;
-	teamId: string;
+	workspaceId: string;
 	internal?: boolean;
 	bodyCreatorUserId: unknown;
 }): Promise<{ ok: true; userId: string } | { ok: false; response: Response }> {
@@ -142,9 +142,9 @@ async function resolveCreatorUserId(args: {
 	try {
 		const supabase = getSupabaseAdmin();
 		const { data: team, error } = await supabase
-			.from("teams")
+			.from("workspaces")
 			.select("owner_user_id")
-			.eq("id", args.teamId)
+			.eq("id", args.workspaceId)
 			.maybeSingle();
 		if (error) {
 			throw new Error(error.message || "Failed to resolve team owner");
@@ -184,10 +184,10 @@ function resolveScopedTeamId(args: {
 	authTeamId: string;
 	requestedTeamId: string | null;
 	internal?: boolean;
-}): { ok: true; teamId: string } | { ok: false; response: Response } {
+}): { ok: true; workspaceId: string } | { ok: false; response: Response } {
 	const requested = args.requestedTeamId?.trim();
 	if (!requested) {
-		return { ok: true, teamId: args.authTeamId };
+		return { ok: true, workspaceId: args.authTeamId };
 	}
 	if (!args.internal && requested !== args.authTeamId) {
 		return {
@@ -196,14 +196,14 @@ function resolveScopedTeamId(args: {
 				{
 					ok: false,
 					error: "forbidden",
-					message: "team_id must match authenticated team",
+					message: "workspace_id must match authenticated team",
 				},
 				403,
 				{ "Cache-Control": "no-store" }
 			),
 		};
 	}
-	return { ok: true, teamId: requested };
+	return { ok: true, workspaceId: requested };
 }
 
 async function handleListKeys(req: Request) {
@@ -214,14 +214,14 @@ async function handleListKeys(req: Request) {
 
 	const url = new URL(req.url);
 	const teamScope = resolveScopedTeamId({
-		authTeamId: auth.value.teamId,
-		requestedTeamId: url.searchParams.get("team_id"),
+		authTeamId: auth.value.workspaceId,
+		requestedTeamId: url.searchParams.get("workspace_id"),
 		internal: auth.value.internal,
 	});
 	if (teamScope.ok === false) {
 		return teamScope.response;
 	}
-	const teamId = teamScope.teamId;
+	const workspaceId = teamScope.workspaceId;
 	const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
 	const offset = parseOffsetParam(url.searchParams.get("offset"));
 
@@ -231,7 +231,7 @@ async function handleListKeys(req: Request) {
 		const { data: keys, error } = await supabase
 			.from("management_keys")
 			.select("id, name, prefix, status, scopes, created_at, last_used_at")
-			.eq("team_id", teamId)
+			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 
@@ -242,7 +242,7 @@ async function handleListKeys(req: Request) {
 		const { count, error: countError } = await supabase
 			.from("management_keys")
 			.select("*", { count: "exact", head: true })
-			.eq("team_id", teamId);
+			.eq("workspace_id", workspaceId);
 
 		return json(
 			{
@@ -320,22 +320,22 @@ async function handleCreateKey(req: Request) {
 
 	const url = new URL(req.url);
 	const requestedTeamId =
-		typeof body.team_id === "string"
-			? body.team_id
-			: url.searchParams.get("team_id");
+		typeof body.workspace_id === "string"
+			? body.workspace_id
+			: url.searchParams.get("workspace_id");
 	const teamScope = resolveScopedTeamId({
-		authTeamId: auth.value.teamId,
+		authTeamId: auth.value.workspaceId,
 		requestedTeamId,
 		internal: auth.value.internal,
 	});
 	if (teamScope.ok === false) {
 		return teamScope.response;
 	}
-	const teamId = teamScope.teamId;
+	const workspaceId = teamScope.workspaceId;
 
 	const creator = await resolveCreatorUserId({
 		req,
-		teamId,
+		workspaceId,
 		internal: auth.value.internal,
 		bodyCreatorUserId: body.created_by,
 	});
@@ -365,7 +365,7 @@ async function handleCreateKey(req: Request) {
 			const generated = generateManagementKey();
 			const hash = await hmacSecret(generated.secret, pepper);
 			const insertObj = {
-				team_id: teamId,
+				workspace_id: workspaceId,
 				name,
 				kid: generated.kid,
 				hash,
@@ -437,9 +437,9 @@ async function handleGetKey(req: Request) {
 
 		const { data, error } = await supabase
 			.from("management_keys")
-			.select("id, team_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked")
+			.select("id, workspace_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked")
 			.eq("id", keyId)
-			.eq("team_id", auth.value.teamId)
+			.eq("workspace_id", auth.value.workspaceId)
 			.maybeSingle();
 
 		if (error) {
@@ -455,7 +455,7 @@ async function handleGetKey(req: Request) {
 				ok: true,
 				key: {
 					id: data.id,
-					team_id: data.team_id,
+					workspace_id: data.workspace_id,
 					name: data.name,
 					prefix: data.prefix,
 					status: data.status,
@@ -501,7 +501,7 @@ async function handleUpdateKey(req: Request) {
 			.from("management_keys")
 			.select("id")
 			.eq("id", keyId)
-			.eq("team_id", auth.value.teamId)
+			.eq("workspace_id", auth.value.workspaceId)
 			.maybeSingle();
 
 		if (fetchError) {
@@ -535,7 +535,7 @@ async function handleUpdateKey(req: Request) {
 			.from("management_keys")
 			.update(updateObj)
 			.eq("id", keyId)
-			.eq("team_id", auth.value.teamId);
+			.eq("workspace_id", auth.value.workspaceId);
 
 		if (error) {
 			throw new Error(error.message || "Failed to update key");
@@ -581,7 +581,7 @@ async function handleDeleteKey(req: Request) {
 			.from("management_keys")
 			.select("id, name")
 			.eq("id", keyId)
-			.eq("team_id", auth.value.teamId)
+			.eq("workspace_id", auth.value.workspaceId)
 			.maybeSingle();
 
 		if (fetchError) {
@@ -596,7 +596,7 @@ async function handleDeleteKey(req: Request) {
 			.from("management_keys")
 			.delete()
 			.eq("id", keyId)
-			.eq("team_id", auth.value.teamId);
+			.eq("workspace_id", auth.value.workspaceId);
 
 		if (error) {
 			throw new Error(error.message || "Failed to delete key");

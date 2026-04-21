@@ -291,7 +291,7 @@ const keyEnrichmentSchema = z
 
 const contextSchema = z
     .object({
-        team_id: z.string(),
+        workspace_id: z.string(),
         resolved_model: z.string().nullable().optional(),
         preset: presetDataSchema.nullable().optional(),
         key_ok: gateCheckSchema,
@@ -303,7 +303,7 @@ const contextSchema = z
         key_enrichment: keyEnrichmentSchema.nullable().optional(),
     })
     .transform<GatewayContextData>((payload) => ({
-        teamId: payload.team_id,
+        workspaceId: payload.workspace_id,
         resolvedModel: payload.resolved_model ?? undefined,
         preset: payload.preset ?? null,
         key: payload.key_ok,
