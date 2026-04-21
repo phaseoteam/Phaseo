@@ -1,0 +1,19 @@
+{
+  "model_id": "moonshotai/kimi-k2.6",
+  "organisation_id": "moonshotai",
+  "name": "Kimi K2.6",
+  "status": "Available",
+  "previous_model_id": "moonshotai/kimi-k2.5",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "moonshotai/kimi-k2.6",
+  "family_id": "moonshotai/kimi-k2",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

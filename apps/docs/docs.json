@@ -253,17 +253,21 @@
 						"icon": "server",
 						"groups": [
 							{
-								"group": "Start Here",
+								"group": "API Guides",
+								"icon": "book-open",
 								"expanded": true,
 								"pages": [
 									"v1/api-reference/introduction",
+									"v1/api-reference/streaming",
+									"v1/api-reference/limits",
 									"v1/api-reference/authentication",
+									"v1/api-reference/parameters",
 									"v1/api-reference/errors"
 								]
 							},
 							{
-								"group": "Core Endpoints",
-								"icon": "sparkles",
+								"group": "API Endpoints",
+								"icon": "square-terminal",
 								"expanded": true,
 								"pages": [
 									{
@@ -271,17 +275,26 @@
 										"expanded": true,
 										"pages": [
 											"v1/api-reference/endpoint/responses",
-											"v1/api-reference/endpoint/responses-ws",
 											"v1/api-reference/endpoint/chat-completions",
 											"v1/api-reference/endpoint/anthropic-messages"
 										]
 									},
 									{
-										"group": "Image",
+										"group": "Image Generation",
 										"expanded": false,
 										"pages": [
 											"v1/api-reference/endpoint/images-generations",
 											"v1/api-reference/endpoint/images-edits"
+										]
+									},
+									{
+										"group": "Video",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/video-generation",
+											"v1/api-reference/endpoint/video-status",
+											"v1/api-reference/endpoint/video-content",
+											"v1/api-reference/endpoint/video-delete"
 										]
 									},
 									{
@@ -291,6 +304,14 @@
 											"v1/api-reference/endpoint/audio-speech",
 											"v1/api-reference/endpoint/audio-transcriptions",
 											"v1/api-reference/endpoint/audio-translations"
+										]
+									},
+									{
+										"group": "Music",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/music-generate",
+											"v1/api-reference/endpoint/music-status"
 										]
 									},
 									{
@@ -315,6 +336,14 @@
 										]
 									},
 									{
+										"group": "Batch",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/batches",
+											"v1/api-reference/endpoint/batches-status"
+										]
+									},
+									{
 										"group": "Files",
 										"expanded": false,
 										"pages": [
@@ -326,40 +355,7 @@
 								]
 							},
 							{
-								"group": "Asynchronous Endpoints",
-								"icon": "clock-3",
-								"expanded": true,
-								"pages": [
-									{
-										"group": "Videos",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/video-generation",
-											"v1/api-reference/endpoint/video-status",
-											"v1/api-reference/endpoint/video-content",
-											"v1/api-reference/endpoint/video-delete"
-										]
-									},
-									{
-										"group": "Music",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/music-generate",
-											"v1/api-reference/endpoint/music-status"
-										]
-									},
-									{
-										"group": "Batches",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/batches",
-											"v1/api-reference/endpoint/batches-status"
-										]
-									}
-								]
-							},
-							{
-								"group": "Control and Management",
+								"group": "Administration APIs",
 								"icon": "settings",
 								"expanded": false,
 								"pages": [
@@ -406,7 +402,7 @@
 										]
 									},
 									{
-										"group": "Management API Keys Overview",
+										"group": "Management Keys",
 										"expanded": false,
 										"pages": [
 											"v1/api-reference/endpoint/management/index"

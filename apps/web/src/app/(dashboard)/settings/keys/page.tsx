@@ -1,14 +1,16 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ShieldAlert } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
+import { VERCEL_SECURITY_NOTICE_HREF } from "@/lib/siteNotice";
 
 const QUICKSTART_DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
 
@@ -16,9 +18,39 @@ export const metadata = {
 	title: "API Keys - Settings",
 };
 
+function SecurityNoticeBanner() {
+	return (
+		<Alert
+			variant="destructive"
+			className="border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+		>
+			<ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+			<AlertTitle className="text-amber-800 dark:text-amber-300">
+				Security notice: rotate your API keys
+			</AlertTitle>
+			<AlertDescription className="text-amber-700 dark:text-amber-400">
+				This is a precautionary response to a third-party security incident at
+				Vercel, not a direct breach of AI Stats. We have updated backend key
+				configuration and are asking all users to rotate API keys as soon as
+				possible.{" "}
+				<Link
+					href={VERCEL_SECURITY_NOTICE_HREF}
+					target="_blank"
+					rel="noreferrer"
+					className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
+				>
+					Read Vercel&apos;s security notice (April 19, 2026)
+					<ArrowUpRight className="h-3.5 w-3.5" />
+				</Link>
+			</AlertDescription>
+		</Alert>
+	);
+}
+
 export default function KeysPage() {
 	return (
 		<div className="space-y-6">
+			<SecurityNoticeBanner />
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<KeysContent />
 			</Suspense>

@@ -75,6 +75,9 @@ const MODALITY_OPTIONS = [
 	"image",
 	"video",
 	"audio",
+	"audio_stt",
+	"audio_tts",
+	"audio_music",
 ];
 
 const STATUS_OPTIONS = ["Rumoured", "Announced", "Withheld", "Available", "Deprecated", "Retired"];

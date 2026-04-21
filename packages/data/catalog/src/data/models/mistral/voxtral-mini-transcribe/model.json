@@ -9,7 +9,7 @@
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
-  "input_types": "audio",
+  "input_types": "audio_stt",
   "output_types": "text",
   "api_model_id": "mistral/voxtral-mini-transcribe",
   "links": [],

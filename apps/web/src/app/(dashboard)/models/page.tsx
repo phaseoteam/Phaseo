@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { cacheLife, cacheTag } from "next/cache";
 import ModelsDisplay from "@/components/(data)/models/Models/ModelsDisplay";
 import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPageSkeleton";
 import {
@@ -41,8 +40,10 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"text",
 	"image",
 	"video",
+	"audio_stt",
+	"audio_tts",
+	"audio_music",
 	"audio",
-	"music",
 	"file",
 	"moderations",
 	"rerank",
@@ -93,7 +94,22 @@ function normalizeModalityKey(value: string): string {
 	}
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
-	if (normalized.includes("music")) return "music";
+	if (normalized.includes("music")) return "audio_music";
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return "audio_stt";
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return "audio_tts";
+	}
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("file")) return "file";
 	if (normalized.includes("text")) return "text";
@@ -323,6 +339,12 @@ type GatewaySignals = {
 	latestApiTimestamp: number | null;
 	lowestInputPrice: number | null;
 	lowestOutputPrice: number | null;
+	lowestStandardInputPrice: number | null;
+	lowestStandardOutputPrice: number | null;
+	lowestStandardInputPriceLabel: string | null;
+	lowestStandardInputPriceUnit: string | null;
+	lowestStandardOutputPriceLabel: string | null;
+	lowestStandardOutputPriceUnit: string | null;
 	lowestFromPrice: number | null;
 	lowestFromPriceUnit: string | null;
 	fromPriceByUnit: Map<string, number>;
@@ -350,6 +372,12 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		latestApiTimestamp: null,
 		lowestInputPrice: null,
 		lowestOutputPrice: null,
+		lowestStandardInputPrice: null,
+		lowestStandardOutputPrice: null,
+		lowestStandardInputPriceLabel: null,
+		lowestStandardInputPriceUnit: null,
+		lowestStandardOutputPriceLabel: null,
+		lowestStandardOutputPriceUnit: null,
 		lowestFromPrice: null,
 		lowestFromPriceUnit: null,
 		fromPriceByUnit: new Map<string, number>(),
@@ -443,6 +471,32 @@ function aggregateGatewaySignals(
 				existing.lowestOutputPrice === null
 					? outputPrice
 					: Math.min(existing.lowestOutputPrice, outputPrice);
+		}
+		const standardInputPrice = Number(row.provider.standardInputPrice);
+		if (Number.isFinite(standardInputPrice) && standardInputPrice > 0) {
+			if (
+				existing.lowestStandardInputPrice === null ||
+				standardInputPrice < existing.lowestStandardInputPrice
+			) {
+				existing.lowestStandardInputPrice = standardInputPrice;
+				existing.lowestStandardInputPriceLabel =
+					String(row.provider.standardInputPriceLabel ?? "").trim() || null;
+				existing.lowestStandardInputPriceUnit =
+					String(row.provider.standardInputPriceUnit ?? "").trim() || null;
+			}
+		}
+		const standardOutputPrice = Number(row.provider.standardOutputPrice);
+		if (Number.isFinite(standardOutputPrice) && standardOutputPrice > 0) {
+			if (
+				existing.lowestStandardOutputPrice === null ||
+				standardOutputPrice < existing.lowestStandardOutputPrice
+			) {
+				existing.lowestStandardOutputPrice = standardOutputPrice;
+				existing.lowestStandardOutputPriceLabel =
+					String(row.provider.standardOutputPriceLabel ?? "").trim() || null;
+				existing.lowestStandardOutputPriceUnit =
+					String(row.provider.standardOutputPriceUnit ?? "").trim() || null;
+			}
 		}
 		const fromPrice = Number(row.provider.fromPrice);
 		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
@@ -765,6 +819,16 @@ function withGatewayMetadata(
 			).sort(),
 			lowest_input_price: signals?.lowestInputPrice ?? null,
 			lowest_output_price: signals?.lowestOutputPrice ?? null,
+			lowest_standard_input_price: signals?.lowestStandardInputPrice ?? null,
+			lowest_standard_output_price: signals?.lowestStandardOutputPrice ?? null,
+			lowest_standard_input_price_label:
+				signals?.lowestStandardInputPriceLabel ?? null,
+			lowest_standard_input_price_unit:
+				signals?.lowestStandardInputPriceUnit ?? null,
+			lowest_standard_output_price_label:
+				signals?.lowestStandardOutputPriceLabel ?? null,
+			lowest_standard_output_price_unit:
+				signals?.lowestStandardOutputPriceUnit ?? null,
 			lowest_from_price: signals?.lowestFromPrice ?? null,
 			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
@@ -848,6 +912,12 @@ function withGatewayMetadata(
 				supported_parameters: [],
 				lowest_input_price: null,
 				lowest_output_price: null,
+				lowest_standard_input_price: null,
+				lowest_standard_output_price: null,
+				lowest_standard_input_price_label: null,
+				lowest_standard_input_price_unit: null,
+				lowest_standard_output_price_label: null,
+				lowest_standard_output_price_unit: null,
 				lowest_from_price: null,
 				lowest_from_price_unit: null,
 				popularity_tokens_week: weeklyMetrics.tokensWeek,
@@ -870,12 +940,7 @@ function withGatewayMetadata(
 	});
 }
 
-async function ModelsPageContent() {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("page:models");
-
+async function ModelsPageDataSection() {
 	const includeHidden = false;
 	const [monitorResult, rankingsResult, weeklyUsageResult, allModels] =
 		await Promise.all([
@@ -895,14 +960,10 @@ async function ModelsPageContent() {
 	return <ModelsDisplay models={models} facets={facets} />;
 }
 
-function ModelsGridSkeleton() {
-	return <ModelsPageSkeleton />;
-}
-
 export default function ModelsPage() {
 	return (
-		<Suspense fallback={<ModelsGridSkeleton />}>
-			<ModelsPageContent />
+		<Suspense fallback={<ModelsPageSkeleton />}>
+			<ModelsPageDataSection />
 		</Suspense>
 	);
 }

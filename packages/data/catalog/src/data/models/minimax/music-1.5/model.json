@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": null,
-  "output_types": null,
+  "output_types": "audio_music",
   "api_model_id": "minimax/music-1.5",
   "links": [],
   "details": [],

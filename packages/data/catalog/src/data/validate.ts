@@ -139,6 +139,7 @@ const VALIDATION_SECTION_KEYS = [
     'benchmarks',
     'apiProviders',
     'modelFiles',
+    'apiProviderModels',
     'modelReferences',
     'pricing',
     'plans',
@@ -358,6 +359,59 @@ function loadModels(state: ValidationState): string[] {
     return errors;
 }
 
+function checkApiProviderModels(
+    state: ValidationState
+): { errors: string[]; warnings: string[]; entryCount: number } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    let entryCount = 0;
+    const providersDir = path.join(DATA_ROOT, 'api_providers');
+
+    for (const provider of listDirs(providersDir)) {
+        const filePath = path.join(providersDir, provider, 'models.json');
+        if (!fs.existsSync(filePath)) continue;
+        const raw = safeReadJson(filePath, errors, 'API provider models');
+        if (!raw) continue;
+        if (!Array.isArray(raw)) {
+            errors.push(`API provider models ${provider} has non-array models.json`);
+            continue;
+        }
+
+        for (const row of raw) {
+            entryCount += 1;
+            const apiModelId = normalizeReference((row as Record<string, unknown>)?.api_model_id);
+            const internalModelId = normalizeReference((row as Record<string, unknown>)?.internal_model_id);
+            const providerApiModelId = normalizeReference((row as Record<string, unknown>)?.provider_api_model_id);
+            const rowLabel = `${provider}${providerApiModelId ? ` (${providerApiModelId})` : ''}`;
+
+            if (!apiModelId) {
+                errors.push(`API provider model ${rowLabel} missing api_model_id`);
+                continue;
+            }
+
+            const hasInternalModel = internalModelId ? state.modelIds.has(internalModelId) : false;
+            const hasDirectApiModel = state.modelIds.has(apiModelId);
+
+            if (!hasInternalModel && !hasDirectApiModel) {
+                errors.push(
+                    `API provider model ${rowLabel} unresolved: expected base model for ` +
+                        `api_model_id='${apiModelId}'${internalModelId ? ` or internal_model_id='${internalModelId}'` : ''}`
+                );
+                continue;
+            }
+
+            if (internalModelId && !hasInternalModel && hasDirectApiModel) {
+                warnings.push(
+                    `API provider model ${rowLabel} references unknown internal_model_id '${internalModelId}' ` +
+                        `but resolves via api_model_id '${apiModelId}'`
+                );
+            }
+        }
+    }
+
+    return { errors, warnings, entryCount };
+}
+
 function checkModelReferences(state: ValidationState): { errors: string[]; warnings: string[] } {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -571,6 +625,15 @@ export function runWebDataValidation(options?: { gatingSections?: ValidationSect
     const modelLoadErrors = loadModels(state);
     results.push({ key: 'modelFiles', label: 'Model files', info: `${state.models.length} files`, errors: modelLoadErrors });
 
+    const apiProviderModelChecks = checkApiProviderModels(state);
+    results.push({
+        key: 'apiProviderModels',
+        label: 'API provider models',
+        info: `${apiProviderModelChecks.entryCount} entries`,
+        errors: apiProviderModelChecks.errors,
+        warnings: apiProviderModelChecks.warnings,
+    });
+
     const modelRefChecks = checkModelReferences(state);
     results.push({
         key: 'modelReferences',
@@ -611,7 +674,17 @@ export function runWebDataValidation(options?: { gatingSections?: ValidationSect
 
 const SECTION_PRESETS: Record<string, ValidationSectionKey[]> = {
     all: [...VALIDATION_SECTION_KEYS],
-    structure: ['organisations', 'families', 'benchmarks', 'apiProviders', 'modelFiles', 'modelReferences', 'plans', 'aliases'],
+    structure: [
+        'organisations',
+        'families',
+        'benchmarks',
+        'apiProviders',
+        'modelFiles',
+        'apiProviderModels',
+        'modelReferences',
+        'plans',
+        'aliases',
+    ],
     pricing: ['pricing'],
 };
 

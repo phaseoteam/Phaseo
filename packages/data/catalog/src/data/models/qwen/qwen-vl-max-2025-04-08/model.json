@@ -1,0 +1,18 @@
+{
+  "model_id": "qwen/qwen-vl-max-2025-04-08",
+  "organisation_id": "qwen",
+  "name": "Qwen VL Max 2025 04 08",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen-vl-max-2025-04-08",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": null,
   "input_types": null,
-  "output_types": null,
+  "output_types": "audio_tts",
   "api_model_id": "qwen/qwen3-tts-12hz-0.6b-base",
   "links": [],
   "details": [],

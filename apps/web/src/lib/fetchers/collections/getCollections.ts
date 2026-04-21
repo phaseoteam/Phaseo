@@ -422,41 +422,26 @@ async function getFeatureModels(args: {
 	return uniqueModels(sortByReleaseDate(matchedModels), args.limit);
 }
 
-export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelCollection[]> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("collections");
-
-	const includeHidden = false;
-
-	const [
-		freeModels,
-		imageModels,
-		videoModels,
-		audioModels,
-		toolModels,
-		reasoningModels,
-		codingModels,
-		imageUnderstandingModels,
-	] = await Promise.all([
-		getFreeModels({ limit, includeHidden }),
-		getImageGenerationModels({ limit, includeHidden }),
-		getVideoGenerationModels({ limit, includeHidden }),
-		getAudioModels({ limit, includeHidden }),
-		getToolModels({ limit, includeHidden }),
-		getReasoningModels({ limit, includeHidden }),
-		getBenchmarkTopModels({
-			benchmarkId: "aider-polyglot",
-			limit,
-			includeHidden,
-		}),
-		getBenchmarkTopModels({
-			benchmarkId: "mmmu",
-			limit,
-			includeHidden,
-		}),
-	]);
+function buildCollections(args: {
+	freeModels?: ModelCard[];
+	imageModels?: ModelCard[];
+	videoModels?: ModelCard[];
+	audioModels?: ModelCard[];
+	toolModels?: ModelCard[];
+	reasoningModels?: ModelCard[];
+	codingModels?: ModelCard[];
+	imageUnderstandingModels?: ModelCard[];
+} = {}): ModelCollection[] {
+	const {
+		freeModels = [],
+		imageModels = [],
+		videoModels = [],
+		audioModels = [],
+		toolModels = [],
+		reasoningModels = [],
+		codingModels = [],
+		imageUnderstandingModels = [],
+	} = args;
 
 	return [
 		{
@@ -510,4 +495,61 @@ export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelC
 			models: imageUnderstandingModels,
 		},
 	];
+}
+
+export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelCollection[]> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("collections");
+
+	const includeHidden = false;
+
+	try {
+		const [
+			freeModels,
+			imageModels,
+			videoModels,
+			audioModels,
+			toolModels,
+			reasoningModels,
+			codingModels,
+			imageUnderstandingModels,
+		] = await Promise.all([
+			getFreeModels({ limit, includeHidden }),
+			getImageGenerationModels({ limit, includeHidden }),
+			getVideoGenerationModels({ limit, includeHidden }),
+			getAudioModels({ limit, includeHidden }),
+			getToolModels({ limit, includeHidden }),
+			getReasoningModels({ limit, includeHidden }),
+			getBenchmarkTopModels({
+				benchmarkId: "aider-polyglot",
+				limit,
+				includeHidden,
+			}),
+			getBenchmarkTopModels({
+				benchmarkId: "mmmu",
+				limit,
+				includeHidden,
+			}),
+		]);
+
+		return buildCollections({
+			freeModels,
+			imageModels,
+			videoModels,
+			audioModels,
+			toolModels,
+			reasoningModels,
+			codingModels,
+			imageUnderstandingModels,
+		});
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			"[collections] failed to build collections",
+			error instanceof Error ? error.message : String(error),
+		);
+		return buildCollections();
+	}
 }

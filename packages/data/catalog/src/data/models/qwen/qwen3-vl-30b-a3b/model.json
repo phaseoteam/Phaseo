@@ -1,0 +1,18 @@
+{
+  "model_id": "qwen/qwen3-vl-30b-a3b",
+  "organisation_id": "qwen",
+  "name": "Qwen3 VL 30b A3b",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,video,image",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen3-vl-30b-a3b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

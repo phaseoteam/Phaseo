@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import { resolveAuthCallbackUrl } from '@/lib/auth/authOrigin'
+import { sanitizeReturnUrl } from '@/lib/auth/return-url'
 
 const cookieOpts = {
 	path: '/',
@@ -17,10 +18,30 @@ async function setAuthProviderCookie(provider: string): Promise<void> {
 	await (await cookies()).set('auth_provider', provider, cookieOpts)
 }
 
+function buildRedirect(pathname: string, params: Record<string, string | undefined>) {
+	const url = new URL(pathname, 'http://localhost')
+	for (const [key, value] of Object.entries(params)) {
+		if (value) url.searchParams.set(key, value)
+	}
+	return `${url.pathname}${url.search}`
+}
+
+function buildCallbackPath(params: {
+	returnUrl?: string
+	type?: 'email'
+}) {
+	const url = new URL('/auth/callback', 'http://localhost')
+	if (params.returnUrl) url.searchParams.set('returnUrl', params.returnUrl)
+	if (params.type) url.searchParams.set('type', params.type)
+	return `${url.pathname}${url.search}`
+}
+
 export async function handleOAuthRedirect(formData: FormData) {
 	const supabase = await createClient()
 	const provider = String(formData.get('provider') ?? 'google').toLowerCase()
-	const redirectTo = await resolveAuthCallbackUrl(formData.get('returnUrl'))
+	const returnUrl = sanitizeReturnUrl(formData.get('returnUrl'), '/')
+	const safeReturnUrl = returnUrl === '/' ? undefined : returnUrl
+	const redirectTo = await resolveAuthCallbackUrl(safeReturnUrl)
 
 	await setAuthProviderCookie(provider)
 
@@ -45,7 +66,9 @@ export async function handleEmailSignup(formData: FormData) {
 	const supabase = await createClient()
 	const email = String(formData.get('email') ?? '')
 	const password = String(formData.get('password') ?? '')
-	const callbackUrl = await resolveAuthCallbackUrl(formData.get('returnUrl'))
+	const returnUrl = sanitizeReturnUrl(formData.get('returnUrl'), '/')
+	const safeReturnUrl = returnUrl === '/' ? undefined : returnUrl
+	const callbackUrl = await resolveAuthCallbackUrl(safeReturnUrl)
 
 	// Supabase signUp may return "User already registered" for duplicate emails.
 	const { data, error } = await supabase.auth.signUp({
@@ -63,7 +86,12 @@ export async function handleEmailSignup(formData: FormData) {
 		const message = (error.message ?? '').toLowerCase()
 		if (message.includes('already registered') || message.includes('already exists')) {
 			// Keep outward response identical to avoid account enumeration.
-			redirect('/sign-in?signup=check-email')
+			redirect(
+				buildRedirect('/sign-in', {
+					signup: 'check-email',
+					returnUrl: safeReturnUrl,
+				})
+			)
 		}
 		redirect(`/error?message=${encodeURIComponent(error.message || 'Authentication failed')}`)
 	}
@@ -71,9 +99,12 @@ export async function handleEmailSignup(formData: FormData) {
 	await setAuthProviderCookie('email')
 
 	if (data?.session) {
-		const callback = new URL(callbackUrl)
-		callback.searchParams.set('type', 'email')
-		redirect(callback.toString())
+		redirect(buildCallbackPath({ returnUrl: safeReturnUrl, type: 'email' }))
 	}
-	redirect('/sign-in?signup=check-email')
+	redirect(
+		buildRedirect('/sign-in', {
+			signup: 'check-email',
+			returnUrl: safeReturnUrl,
+		})
+	)
 }

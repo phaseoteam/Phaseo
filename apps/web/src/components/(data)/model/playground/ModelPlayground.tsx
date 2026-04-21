@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Streamdown } from "streamdown";
 import {
 	Clapperboard,
+	Code2,
 	Clock3,
 	Fingerprint,
 	FileText,
@@ -15,7 +16,16 @@ import {
 	Sparkles,
 	TerminalSquare,
 } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import {
@@ -37,7 +47,9 @@ import {
 } from "@/lib/chat/roomRequestBuilders";
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
+import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 
 const PLAYGROUND_APP_HEADERS = {
 	"x-app-id": "ai-stats-playground",
@@ -77,6 +89,29 @@ type ModeConfig = {
 	mode: PlaygroundMode;
 	label: string;
 };
+
+type PlaygroundCodeSnippet = {
+	id: string;
+	label: string;
+	category:
+		| "AI Stats SDK"
+		| "OpenAI SDK"
+		| "Anthropic SDK"
+		| "HTTP"
+		| "Raw";
+	description: string;
+	lang: ShikiLang;
+	installCommand?: string;
+	code: string;
+};
+
+const CODE_CATEGORY_ORDER: PlaygroundCodeSnippet["category"][] = [
+	"AI Stats SDK",
+	"OpenAI SDK",
+	"Anthropic SDK",
+	"HTTP",
+	"Raw",
+];
 
 const MODE_CONFIGS: ModeConfig[] = [
 	{ mode: "text", label: "Text" },
@@ -202,26 +237,212 @@ function parseSseFrame(frame: string): SseFrame {
 	};
 }
 
+type ParsedPlaygroundError = {
+	message: string | null;
+	code: string | null;
+	type: string | null;
+};
+
+function readNonEmptyString(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed ? trimmed : null;
+}
+
+function parseJsonObject(raw: string): Record<string, unknown> | null {
+	try {
+		const parsed = JSON.parse(raw);
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+			? (parsed as Record<string, unknown>)
+			: null;
+	} catch {
+		return null;
+	}
+}
+
+function extractPlaygroundError(
+	payload: Record<string, unknown> | null,
+): ParsedPlaygroundError {
+	if (!payload) {
+		return { message: null, code: null, type: null };
+	}
+
+	const rootMessage =
+		readNonEmptyString(payload.message) ?? readNonEmptyString(payload.description);
+	const rootCode =
+		readNonEmptyString(payload.code) ??
+		(typeof payload.error === "string" ? readNonEmptyString(payload.error) : null);
+	const rootType = readNonEmptyString(payload.type);
+
+	const nestedError =
+		payload.error && typeof payload.error === "object" && !Array.isArray(payload.error)
+			? (payload.error as Record<string, unknown>)
+			: null;
+	const nestedMessage = nestedError
+		? readNonEmptyString(nestedError.message) ??
+			readNonEmptyString(nestedError.description) ??
+			readNonEmptyString(nestedError.error_description)
+		: null;
+	const nestedCode = nestedError
+		? readNonEmptyString(nestedError.code) ??
+			readNonEmptyString(nestedError.errorCode) ??
+			readNonEmptyString(nestedError.error_code)
+		: null;
+	const nestedType = nestedError
+		? readNonEmptyString(nestedError.type) ??
+			readNonEmptyString(nestedError.errorType) ??
+			readNonEmptyString(nestedError.error_type)
+		: null;
+
+	return {
+		message: nestedMessage ?? rootMessage,
+		code: nestedCode ?? rootCode,
+		type: nestedType ?? rootType,
+	};
+}
+
+function mergeFriendlyMessage(
+	friendly: string,
+	detail: string | null,
+): string {
+	if (!detail) return friendly;
+	const normalizedDetail = detail.trim();
+	if (!normalizedDetail) return friendly;
+	if (/^request failed \(\d+\)\.?$/i.test(normalizedDetail)) return friendly;
+	if (friendly.toLowerCase() === normalizedDetail.toLowerCase()) return friendly;
+	return `${friendly} ${normalizedDetail}`;
+}
+
+function buildFriendlyPlaygroundError(args: {
+	status: number;
+	message: string | null;
+	code: string | null;
+	type: string | null;
+}): string | null {
+	const haystack = `${args.code ?? ""} ${args.type ?? ""} ${args.message ?? ""}`
+		.toLowerCase()
+		.trim();
+	const isCreditRelated =
+		args.status === 402 ||
+		haystack.includes("insufficient_funds") ||
+		haystack.includes("insufficient fund") ||
+		haystack.includes("insufficient_credits") ||
+		haystack.includes("insufficient credits") ||
+		haystack.includes("out_of_credits") ||
+		haystack.includes("out of credits") ||
+		haystack.includes("no_credits") ||
+		haystack.includes("no credits") ||
+		haystack.includes("wallet balance") ||
+		haystack.includes("payment_required");
+	if (isCreditRelated) {
+		return "Insufficient credits for this request. Add credits in Billing and try again.";
+	}
+
+	if (args.status === 401 || haystack.includes("unauthorized")) {
+		return "Sign in to use the playground, then try again.";
+	}
+
+	if (args.status === 403) {
+		return "This request is not permitted for your current team or key. Check model access and permissions.";
+	}
+
+	if (args.status === 404) {
+		return "The model or endpoint was not found. Try another model.";
+	}
+
+	const isRateLimitRelated =
+		args.status === 429 ||
+		haystack.includes("rate_limit") ||
+		haystack.includes("rate limit") ||
+		haystack.includes("too many requests") ||
+		haystack.includes("quota exceeded");
+	if (isRateLimitRelated) {
+		return "Rate limit reached. Wait a moment and retry.";
+	}
+
+	const isGatewayUnavailable =
+		args.status === 502 ||
+		args.status === 503 ||
+		args.status === 504 ||
+		haystack.includes("gateway_unreachable") ||
+		haystack.includes("gateway unavailable");
+	if (isGatewayUnavailable) {
+		return "The gateway is temporarily unavailable. Please retry shortly.";
+	}
+
+	if (args.status >= 500) {
+		return "Temporary server issue. Please retry.";
+	}
+
+	return null;
+}
+
 async function readErrorMessage(response: Response): Promise<string> {
+	const status = response.status;
 	const contentType = response.headers.get("content-type") ?? "";
 	if (contentType.includes("application/json")) {
 		try {
 			const payload = (await response.json()) as Record<string, unknown> | null;
-			if (payload && typeof payload.message === "string" && payload.message.trim()) {
-				return payload.message;
+			const parsedError = extractPlaygroundError(payload);
+			const friendly = buildFriendlyPlaygroundError({
+				status,
+				message: parsedError.message,
+				code: parsedError.code,
+				type: parsedError.type,
+			});
+			if (friendly) {
+				return mergeFriendlyMessage(friendly, parsedError.message);
 			}
-			if (payload && typeof payload.error === "string" && payload.error.trim()) {
-				return payload.error;
-			}
+			if (parsedError.message) return parsedError.message;
+			if (parsedError.code) return `Request failed (${status}): ${parsedError.code}.`;
+			return `Request failed (${status}).`;
 		} catch {
-			return `Request failed (${response.status}).`;
+			const fallback = buildFriendlyPlaygroundError({
+				status,
+				message: null,
+				code: null,
+				type: null,
+			});
+			return fallback ?? `Request failed (${status}).`;
 		}
 	}
 
 	const rawText = await response.text();
 	const text = rawText.trim();
-	if (text) return text;
-	return `Request failed (${response.status}).`;
+	if (text) {
+		const parsedPayload = parseJsonObject(text);
+		if (parsedPayload) {
+			const parsedError = extractPlaygroundError(parsedPayload);
+			const friendly = buildFriendlyPlaygroundError({
+				status,
+				message: parsedError.message,
+				code: parsedError.code,
+				type: parsedError.type,
+			});
+			if (friendly) {
+				return mergeFriendlyMessage(friendly, parsedError.message);
+			}
+			if (parsedError.message) return parsedError.message;
+			if (parsedError.code) return `Request failed (${status}): ${parsedError.code}.`;
+		}
+
+		const friendlyFromText = buildFriendlyPlaygroundError({
+			status,
+			message: text,
+			code: null,
+			type: null,
+		});
+		if (friendlyFromText) return friendlyFromText;
+		return text;
+	}
+
+	const fallback = buildFriendlyPlaygroundError({
+		status,
+		message: null,
+		code: null,
+		type: null,
+	});
+	return fallback ?? `Request failed (${status}).`;
 }
 
 function normalizeAudioMimeType(value: unknown): string {
@@ -251,6 +472,699 @@ function extractAudioDataUrl(payload: any): string | null {
 	const directUrl = typeof payload.url === "string" ? payload.url.trim() : "";
 	if (directUrl) return directUrl;
 	return null;
+}
+
+function resolvePromptForSnippet(prompt: string, modelName: string): string {
+	const trimmed = prompt.trim();
+	if (trimmed) return trimmed;
+	return `Give me a concise overview of ${modelName}.`;
+}
+
+function jsonToPythonLiteral(json: string): string {
+	return json
+		.replace(/true/g, "True")
+		.replace(/false/g, "False")
+		.replace(/null/g, "None");
+}
+
+function buildPlaygroundCodeSnippets({
+	modelId,
+	modelName,
+	prompt,
+}: {
+	modelId: string;
+	modelName: string;
+	prompt: string;
+}): PlaygroundCodeSnippet[] {
+	const resolvedPrompt = resolvePromptForSnippet(prompt, modelName);
+	const resolvedPromptStringLiteral = JSON.stringify(resolvedPrompt);
+	const endpointPath = "/responses";
+	const endpointUrl = `${BASE_URL}${endpointPath}`;
+	const payload = {
+		model: modelId,
+		input: [{ role: "user", content: resolvedPrompt }],
+	};
+	const payloadJson = JSON.stringify(payload, null, 2);
+	const payloadJsonNode = payloadJson
+		.split("\n")
+		.map((line) => `  ${line}`)
+		.join("\n");
+	const payloadJsonPython = jsonToPythonLiteral(payloadJson);
+
+	return [
+		{
+			id: "raw-curl",
+			label: "cURL",
+			category: "Raw",
+			description: "Lowest-level HTTP request against the gateway.",
+			lang: "bash",
+			code: `# 1) Set your key
+export AI_STATS_API_KEY="aistats_***"
+
+# 2) Send a request
+curl -s ${endpointUrl} \\
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '${payloadJson}'`,
+		},
+		{
+			id: "typescript-fetch",
+			label: "TypeScript",
+			category: "HTTP",
+			description: "OpenAI-compatible call using native fetch in TS/Node.",
+			lang: "ts",
+			code: `const apiKey = process.env.AI_STATS_API_KEY;
+
+const response = await fetch("${endpointUrl}", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: \`Bearer \${apiKey}\`,
+  },
+  body: JSON.stringify(
+${payloadJsonNode}
+  ),
+});
+
+const data = await response.json();
+console.log(data);`,
+		},
+		{
+			id: "javascript-fetch",
+			label: "JavaScript",
+			category: "HTTP",
+			description: "OpenAI-compatible call using native fetch in JavaScript.",
+			lang: "js",
+			code: `const apiKey = process.env.AI_STATS_API_KEY;
+
+const response = await fetch("${endpointUrl}", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: \`Bearer \${apiKey}\`,
+  },
+  body: JSON.stringify(
+${payloadJsonNode}
+  ),
+});
+
+const data = await response.json();
+console.log(data);`,
+		},
+		{
+			id: "python-requests",
+			label: "Python",
+			category: "HTTP",
+			description: "OpenAI-compatible call using Python requests.",
+			lang: "python",
+			code: `import os
+import requests
+
+api_key = os.environ.get("AI_STATS_API_KEY")
+url = "${endpointUrl}"
+payload = ${payloadJsonPython}
+
+response = requests.post(
+    url,
+    json=payload,
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    },
+)
+
+print(response.json())`,
+		},
+		{
+			id: "rust-reqwest",
+			label: "Rust",
+			category: "HTTP",
+			description: "OpenAI-compatible call using reqwest.",
+			lang: "rust",
+			installCommand: "cargo add reqwest tokio",
+			code: `#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let payload = r#"
+${payloadJson}
+"#;
+
+    let api_key = std::env::var("AI_STATS_API_KEY")?;
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post("${endpointUrl}")
+        .header("Authorization", format!("Bearer {api_key}"))
+        .header("Content-Type", "application/json")
+        .body(payload)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    println!("{}", response);
+    Ok(())
+}`,
+		},
+		{
+			id: "go-net-http",
+			label: "Go",
+			category: "HTTP",
+			description: "OpenAI-compatible call using Go's standard HTTP client.",
+			lang: "go",
+			code: `package main
+
+import (
+    "bytes"
+    "fmt"
+    "io"
+    "net/http"
+    "os"
+)
+
+func main() {
+    payload := []byte(\`${payloadJson}\`)
+
+    req, err := http.NewRequest("POST", "${endpointUrl}", bytes.NewBuffer(payload))
+    if err != nil {
+        panic(err)
+    }
+
+    req.Header.Set("Authorization", "Bearer "+os.Getenv("AI_STATS_API_KEY"))
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, err := (&http.Client{}).Do(req)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}`,
+		},
+		{
+			id: "csharp-http-client",
+			label: "C#",
+			category: "HTTP",
+			description: "OpenAI-compatible call using .NET HttpClient.",
+			lang: "csharp",
+			code: `using System.Net.Http.Headers;
+using System.Text;
+
+var apiKey = Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+
+using var http = new HttpClient();
+using var request = new HttpRequestMessage(HttpMethod.Post, "${endpointUrl}");
+request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+request.Content = new StringContent("""
+${payloadJson}
+""", Encoding.UTF8, "application/json");
+
+var response = await http.SendAsync(request);
+var body = await response.Content.ReadAsStringAsync();
+
+Console.WriteLine(body);`,
+		},
+		{
+			id: "java-http-client",
+			label: "Java",
+			category: "HTTP",
+			description: "OpenAI-compatible call using Java HttpClient.",
+			lang: "java",
+			code: `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        String apiKey = System.getenv("AI_STATS_API_KEY");
+        String payload = """
+${payloadJson}
+""";
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("${endpointUrl}"))
+            .header("Authorization", "Bearer " + apiKey)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(payload))
+            .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        System.out.println(response.body());
+    }
+}`,
+		},
+		{
+			id: "php-curl",
+			label: "PHP",
+			category: "HTTP",
+			description: "OpenAI-compatible call using PHP cURL.",
+			lang: "php",
+			code: `<?php
+$apiKey = getenv("AI_STATS_API_KEY");
+$payload = <<<'JSON'
+${payloadJson}
+JSON;
+
+$ch = curl_init("${endpointUrl}");
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer {$apiKey}",
+        "Content-Type: application/json",
+    ],
+    CURLOPT_POSTFIELDS => $payload,
+    CURLOPT_RETURNTRANSFER => true,
+]);
+
+$response = curl_exec($ch);
+if ($response === false) {
+    throw new RuntimeException(curl_error($ch));
+}
+curl_close($ch);
+
+echo $response . PHP_EOL;`,
+		},
+		{
+			id: "ruby-net-http",
+			label: "Ruby",
+			category: "HTTP",
+			description: "OpenAI-compatible call using Ruby Net::HTTP.",
+			lang: "ruby",
+			code: `require "net/http"
+require "uri"
+
+uri = URI("${endpointUrl}")
+request = Net::HTTP::Post.new(uri)
+request["Authorization"] = "Bearer #{ENV["AI_STATS_API_KEY"]}"
+request["Content-Type"] = "application/json"
+request.body = <<~JSON
+${payloadJson}
+JSON
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
+  http.request(request)
+end
+
+puts response.body`,
+		},
+		{
+			id: "openai-node",
+			label: "TypeScript",
+			category: "OpenAI SDK",
+			description: "OpenAI JavaScript SDK pointed at AI Stats Gateway.",
+			lang: "ts",
+			installCommand: "npm install openai",
+			code: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.responses.create(
+${payloadJsonNode}
+);
+
+console.log(response);`,
+		},
+		{
+			id: "openai-javascript",
+			label: "JavaScript",
+			category: "OpenAI SDK",
+			description: "OpenAI JavaScript SDK (CommonJS) for AI Stats Gateway.",
+			lang: "js",
+			installCommand: "npm install openai",
+			code: `const OpenAI = require("openai");
+
+const client = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.responses.create(
+${payloadJsonNode}
+);
+
+console.log(response);`,
+		},
+		{
+			id: "openai-python",
+			label: "Python",
+			category: "OpenAI SDK",
+			description: "OpenAI Python SDK pointed at AI Stats Gateway.",
+			lang: "python",
+			installCommand: "pip install openai",
+			code: `import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ.get("AI_STATS_API_KEY"),
+    base_url="${BASE_URL}",
+)
+
+payload = ${payloadJsonPython}
+response = client.responses.create(**payload)
+
+print(response)`,
+		},
+		{
+			id: "openai-csharp",
+			label: "C#",
+			category: "OpenAI SDK",
+			description: "OpenAI .NET SDK configured to use AI Stats Gateway.",
+			lang: "csharp",
+			installCommand: "dotnet add package OpenAI",
+			code: `using OpenAI;
+using OpenAI.Responses;
+
+var apiKey = Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+var client = new OpenAIClient(apiKey, new OpenAIClientOptions
+{
+    Endpoint = new Uri("${BASE_URL}")
+});
+
+var responseClient = client.GetResponseClient();
+var result = await responseClient.CreateResponseAsync(new ResponseCreationOptions
+{
+    Model = "${modelId}",
+    Input = ${resolvedPromptStringLiteral},
+});
+
+Console.WriteLine(result.Value.OutputText);`,
+		},
+		{
+			id: "openai-go",
+			label: "Go",
+			category: "OpenAI SDK",
+			description: "OpenAI Go SDK configured to use AI Stats Gateway.",
+			lang: "go",
+			installCommand: "go get github.com/openai/openai-go",
+			code: `package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+
+    openai "github.com/openai/openai-go"
+    "github.com/openai/openai-go/option"
+)
+
+func main() {
+    client := openai.NewClient(
+        option.WithAPIKey(os.Getenv("AI_STATS_API_KEY")),
+        option.WithBaseURL("${BASE_URL}"),
+    )
+
+    response, err := client.Responses.New(context.Background(), openai.ResponseNewParams{
+        Model: openai.String("${modelId}"),
+        Input: openai.ResponseNewParamsInputUnion{
+            OfString: openai.String(${resolvedPromptStringLiteral}),
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(response.OutputText())
+}`,
+		},
+		{
+			id: "openai-java",
+			label: "Java",
+			category: "OpenAI SDK",
+			description: "OpenAI Java SDK configured for AI Stats Gateway.",
+			lang: "java",
+			installCommand: "./mvnw dependency:get -Dartifact=com.openai:openai-java:latest.release",
+			code: `import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.models.responses.Response;
+import com.openai.models.responses.ResponseCreateParams;
+
+public class Main {
+    public static void main(String[] args) {
+        // Set env vars before running:
+        // OPENAI_API_KEY=$AI_STATS_API_KEY
+        // OPENAI_BASE_URL=${BASE_URL}
+        OpenAIClient client = OpenAIOkHttpClient.fromEnv();
+
+        ResponseCreateParams params = ResponseCreateParams.builder()
+            .model("${modelId}")
+            .input(${JSON.stringify(resolvedPrompt)})
+            .build();
+
+        Response response = client.responses().create(params);
+        System.out.println(response);
+    }
+}`,
+		},
+		{
+			id: "anthropic-node",
+			label: "TypeScript",
+			category: "Anthropic SDK",
+			description: "Anthropic JavaScript SDK configured to use AI Stats Gateway.",
+			lang: "ts",
+			installCommand: "npm install @anthropic-ai/sdk",
+			code: `import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.messages.create({
+  model: "${modelId}",
+  max_tokens: 512,
+  messages: [{ role: "user", content: ${JSON.stringify(resolvedPrompt)} }],
+});
+
+console.log(response);`,
+		},
+		{
+			id: "anthropic-javascript",
+			label: "JavaScript",
+			category: "Anthropic SDK",
+			description: "Anthropic JavaScript SDK (CommonJS) for AI Stats Gateway.",
+			lang: "js",
+			installCommand: "npm install @anthropic-ai/sdk",
+			code: `const Anthropic = require("@anthropic-ai/sdk");
+
+const client = new Anthropic({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.messages.create({
+  model: "${modelId}",
+  max_tokens: 512,
+  messages: [{ role: "user", content: ${JSON.stringify(resolvedPrompt)} }],
+});
+
+console.log(response);`,
+		},
+		{
+			id: "anthropic-python",
+			label: "Python",
+			category: "Anthropic SDK",
+			description: "Anthropic Python SDK configured to use AI Stats Gateway.",
+			lang: "python",
+			installCommand: "pip install anthropic",
+			code: `import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ.get("AI_STATS_API_KEY"),
+    base_url="${BASE_URL}",
+)
+
+response = client.messages.create(
+    model="${modelId}",
+    max_tokens=512,
+    messages=[{"role": "user", "content": ${JSON.stringify(resolvedPrompt)}}],
+)
+
+print(response)`,
+		},
+		{
+			id: "aistats-typescript",
+			label: "TypeScript",
+			category: "AI Stats SDK",
+			description: "Official AI Stats SDK for TypeScript.",
+			lang: "ts",
+			installCommand: "npm install @ai-stats/sdk",
+			code: `import { AIStats } from "@ai-stats/sdk";
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+const response = await client.generateResponse(
+${payloadJsonNode}
+);
+
+console.log(response);`,
+		},
+		{
+			id: "aistats-python",
+			label: "Python",
+			category: "AI Stats SDK",
+			description: "Official AI Stats SDK for Python.",
+			lang: "python",
+			installCommand: "pip install ai-stats",
+			code: `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+response = client.generate_response(payload)
+
+print(response)`,
+		},
+		{
+			id: "aistats-go",
+			label: "Go",
+			category: "AI Stats SDK",
+			description: "Official AI Stats SDK for Go.",
+			lang: "go",
+			installCommand:
+				"go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest",
+			code: `package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+    client, err := aistats.NewAIStatsFromEnv()
+    if err != nil {
+        panic(err)
+    }
+
+    payloadJSON := \`${payloadJson}\`
+    var payload map[string]any
+    if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
+        panic(err)
+    }
+
+    response, err := client.Request(context.Background(), "POST", "${endpointPath}", nil, nil, payload)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(response)
+}`,
+		},
+		{
+			id: "aistats-csharp",
+			label: "C#",
+			category: "AI Stats SDK",
+			description: "Official AI Stats SDK for C#.",
+			lang: "csharp",
+			installCommand: "dotnet add package AI.Stats.Sdk",
+			code: `using System.Collections.Generic;
+using System.Text.Json;
+using AiStatsSdk;
+
+var client = new AIStats();
+var payload = JsonSerializer.Deserialize<Dictionary<string, object>>("""
+${payloadJson}
+""");
+
+var response = await client.RawClient.SendAsync<object>(
+    method: "POST",
+    path: "${endpointPath}",
+    body: payload
+);
+
+Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
+{
+    WriteIndented = true
+}));`,
+		},
+		{
+			id: "aistats-php",
+			label: "PHP",
+			category: "AI Stats SDK",
+			description: "Official AI Stats SDK for PHP.",
+			lang: "php",
+			installCommand: "composer require ai-stats/php-sdk",
+			code: `<?php
+require "vendor/autoload.php";
+
+use AIStats\\Sdk\\AIStats;
+
+$client = new AIStats(apiKey: getenv("AI_STATS_API_KEY"));
+$payload = json_decode(<<<'JSON'
+${payloadJson}
+JSON, true, 512, JSON_THROW_ON_ERROR);
+
+$response = $client->rawClient()->request(
+    "POST",
+    "${endpointPath}",
+    null,
+    null,
+    $payload
+);
+
+echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`,
+		},
+		{
+			id: "aistats-ruby",
+			label: "Ruby",
+			category: "AI Stats SDK",
+			description: "Official AI Stats SDK for Ruby.",
+			lang: "ruby",
+			installCommand: "gem install ai_stats_sdk",
+			code: `require "json"
+require "ai_stats_sdk"
+
+client = AIStatsSdk::AIStats.new
+payload = JSON.parse(<<~JSON)
+${payloadJson}
+JSON
+
+response = client.raw_client.request(
+  method: "post",
+  path: "${endpointPath}",
+  body: payload
+)
+
+puts JSON.pretty_generate(response)`,
+		},
+	];
+}
+
+function getSnippetLogoId(snippet: PlaygroundCodeSnippet): string | null {
+	switch (snippet.lang) {
+		case "ts":
+			return "typescript";
+		case "js":
+			return "javascript";
+		case "python":
+			return "python";
+		case "go":
+			return "go";
+		case "csharp":
+			return "csharp";
+		case "java":
+			return "java";
+		case "php":
+			return "php";
+		case "ruby":
+			return "ruby";
+		case "rust":
+			return "rust";
+		default:
+			return null;
+	}
 }
 
 export default function ModelPlayground({
@@ -296,6 +1210,12 @@ export default function ModelPlayground({
 	const [moderationRawResponse, setModerationRawResponse] = useState("");
 	const [moderationIsGenerating, setModerationIsGenerating] = useState(false);
 	const [moderationError, setModerationError] = useState<string | null>(null);
+	const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
+	const [selectedCodeCategory, setSelectedCodeCategory] =
+		useState<PlaygroundCodeSnippet["category"]>("AI Stats SDK");
+	const [selectedCodeSnippetId, setSelectedCodeSnippetId] = useState(
+		"aistats-typescript",
+	);
 
 	const trimmedPrompt = prompt.trim();
 	const hasPrompt = trimmedPrompt.length > 0;
@@ -307,6 +1227,36 @@ export default function ModelPlayground({
 			return `/chat?${modelPart}&prompt=${encodeURIComponent(trimmedPrompt)}`;
 		},
 		[resolvedRequestModelId, trimmedPrompt],
+	);
+	const codeSnippets = useMemo(
+		() =>
+			buildPlaygroundCodeSnippets({
+				modelId: resolvedRequestModelId,
+				modelName,
+				prompt: trimmedPrompt,
+			}),
+		[modelName, resolvedRequestModelId, trimmedPrompt],
+	);
+	const codeCategories = useMemo(
+		() => {
+			const categoriesInSnippets = new Set(
+				codeSnippets.map((snippet) => snippet.category),
+			);
+			return CODE_CATEGORY_ORDER.filter((category) =>
+				categoriesInSnippets.has(category),
+			);
+		},
+		[codeSnippets],
+	);
+	const snippetsForSelectedCategory = useMemo(
+		() =>
+			codeSnippets.filter((snippet) => snippet.category === selectedCodeCategory),
+		[codeSnippets, selectedCodeCategory],
+	);
+	const selectedCodeSnippet = useMemo(
+		() =>
+			codeSnippets.find((snippet) => snippet.id === selectedCodeSnippetId) ?? null,
+		[codeSnippets, selectedCodeSnippetId],
 	);
 	const trimmedAudioPrompt = audioPrompt.trim();
 	const hasAudioPrompt = trimmedAudioPrompt.length > 0;
@@ -400,6 +1350,40 @@ export default function ModelPlayground({
 			}
 		};
 	}, [audioResponseUrl]);
+	useEffect(() => {
+		if (!codeCategories.length) return;
+		if (!codeCategories.includes(selectedCodeCategory)) {
+			setSelectedCodeCategory(codeCategories[0]);
+		}
+	}, [codeCategories, selectedCodeCategory]);
+	useEffect(() => {
+		if (!codeSnippets.length || !selectedCodeCategory) return;
+		if (
+			selectedCodeSnippet &&
+			selectedCodeSnippet.category === selectedCodeCategory
+		) {
+			return;
+		}
+		const fallbackSnippet = codeSnippets.find(
+			(snippet) => snippet.category === selectedCodeCategory,
+		);
+		if (fallbackSnippet) {
+			setSelectedCodeSnippetId(fallbackSnippet.id);
+			return;
+		}
+		setSelectedCodeSnippetId(codeSnippets[0]?.id ?? "raw-curl");
+	}, [codeSnippets, selectedCodeCategory, selectedCodeSnippet]);
+	const handleSelectCodeCategory = (
+		category: PlaygroundCodeSnippet["category"],
+	): void => {
+		setSelectedCodeCategory(category);
+		const firstInCategory = codeSnippets.find(
+			(snippet) => snippet.category === category,
+		);
+		if (firstInCategory) {
+			setSelectedCodeSnippetId(firstInCategory.id);
+		}
+	};
 
 	const handleGenerate = async () => {
 		if (!trimmedPrompt || isGenerating) return;
@@ -1329,37 +2313,48 @@ export default function ModelPlayground({
 							);
 						})}
 					</div>
-					{mode === "text"
-						? isGenerating ? (
-								<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
-									<Clock3 className="h-3.5 w-3.5" />
-									{formatDuration(elapsedMs)}
-								</div>
-							) : stats ? (
-								<div className="text-xs text-black/70 dark:text-white/70">
-									{`${formatDuration(stats.elapsedMs)} | ${formatTokens(
-										stats.totalTokens,
-									)} | ${formatThroughput(
-										stats.throughputTokensPerSecond,
-									)} | ${formatCost(stats.totalCostUsd)}`}
-								</div>
-							) : null
-						: mode === "audio"
-							? audioIsGenerating ? (
+					<div className="ml-auto flex items-center gap-3">
+						{mode === "text"
+							? isGenerating ? (
 									<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
 										<Clock3 className="h-3.5 w-3.5" />
-										{formatDuration(audioElapsedMs)}
+										{formatDuration(elapsedMs)}
 									</div>
-								) : audioStats ? (
+								) : stats ? (
 									<div className="text-xs text-black/70 dark:text-white/70">
-										{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
-											audioStats.totalTokens,
+										{`${formatDuration(stats.elapsedMs)} | ${formatTokens(
+											stats.totalTokens,
 										)} | ${formatThroughput(
-											audioStats.throughputTokensPerSecond,
-										)} | ${formatCost(audioStats.totalCostUsd)}`}
+											stats.throughputTokensPerSecond,
+										)} | ${formatCost(stats.totalCostUsd)}`}
 									</div>
 								) : null
-							: null}
+							: mode === "audio"
+								? audioIsGenerating ? (
+										<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
+											<Clock3 className="h-3.5 w-3.5" />
+											{formatDuration(audioElapsedMs)}
+										</div>
+									) : audioStats ? (
+										<div className="text-xs text-black/70 dark:text-white/70">
+											{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
+												audioStats.totalTokens,
+											)} | ${formatThroughput(
+												audioStats.throughputTokensPerSecond,
+											)} | ${formatCost(audioStats.totalCostUsd)}`}
+										</div>
+									) : null
+								: null}
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsCodeDialogOpen(true)}
+							className="h-9 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
+						>
+							<Code2 className="h-4 w-4" />
+							Get Code
+						</Button>
+					</div>
 				</div>
 
 				{mode === "text" ? (
@@ -1372,7 +2367,7 @@ export default function ModelPlayground({
 								placeholder="Enter your message..."
 								className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 							/>
-							<div className="grid grid-cols-2 gap-3">
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 								<Button
 									type="button"
 									asChild
@@ -1436,6 +2431,123 @@ export default function ModelPlayground({
 					renderInlineRoom()
 				)}
 			</div>
+
+			<Dialog open={isCodeDialogOpen} onOpenChange={setIsCodeDialogOpen}>
+				<DialogContent className="h-[100dvh] max-h-[100dvh] w-screen max-w-none overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[90vh] sm:w-[96vw] sm:max-w-6xl sm:rounded-lg">
+					<div className="flex h-full max-h-[100dvh] flex-col sm:max-h-[90vh]">
+						<DialogHeader className="border-b border-black/10 p-4 pr-12 sm:p-5 sm:pr-12 dark:border-white/15">
+							<DialogTitle>Get Code</DialogTitle>
+							<DialogDescription>
+								Ready-to-copy snippets for {modelName} across raw HTTP,
+								OpenAI SDK, and AI Stats SDK integrations.
+							</DialogDescription>
+						</DialogHeader>
+
+						<div className="flex-1 overflow-y-auto p-4 sm:p-5">
+							<div className="space-y-4">
+								<div className="-mx-1 overflow-x-auto pb-1">
+									<div className="flex w-max min-w-full gap-2 px-1">
+										{codeCategories.map((category) => {
+											const isActive = category === selectedCodeCategory;
+											return (
+												<button
+													key={category}
+													type="button"
+													onClick={() => handleSelectCodeCategory(category)}
+													className={`whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+														isActive
+															? "border-black/20 bg-black/10 text-black dark:border-white/30 dark:bg-white/20 dark:text-white"
+															: "border-black/15 bg-white text-black/80 hover:bg-black/[0.03] dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
+													}`}
+													aria-pressed={isActive}
+												>
+													{category}
+												</button>
+											);
+										})}
+									</div>
+								</div>
+
+								<div className="-mx-1 overflow-x-auto border-b border-black/10 pb-2 dark:border-white/15">
+									<div className="flex w-max min-w-full items-center gap-4 px-1 text-sm">
+										{snippetsForSelectedCategory.map((snippet) => {
+											const isActive = snippet.id === selectedCodeSnippetId;
+											const logoId = getSnippetLogoId(snippet);
+											return (
+												<button
+													key={snippet.id}
+													type="button"
+													onClick={() => setSelectedCodeSnippetId(snippet.id)}
+													className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 pb-1.5 transition-colors ${
+														isActive
+															? "border-black text-black dark:border-white dark:text-white"
+															: "border-transparent text-black/65 hover:text-black dark:text-white/65 dark:hover:text-white"
+													}`}
+													aria-pressed={isActive}
+												>
+													<span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+														{logoId ? (
+															<Logo
+																id={logoId}
+																alt={`${snippet.label} icon`}
+																width={14}
+																height={14}
+																className="object-contain"
+															/>
+														) : snippet.lang === "bash" ? (
+															<TerminalSquare className="h-3.5 w-3.5" />
+														) : (
+															<Code2 className="h-3.5 w-3.5" />
+														)}
+													</span>
+													{snippet.label}
+												</button>
+											);
+										})}
+									</div>
+								</div>
+
+								{selectedCodeSnippet ? (
+									<div className="space-y-3">
+										<div className="space-y-1">
+											<p className="text-xs font-medium uppercase tracking-wide text-black/60 dark:text-white/60">
+												{selectedCodeSnippet.category}
+											</p>
+											<p className="text-sm text-black/70 dark:text-white/70">
+												{selectedCodeSnippet.description}
+											</p>
+										</div>
+
+										{selectedCodeSnippet.installCommand ? (
+											<div className="space-y-2">
+												<p className="text-xs font-medium text-black/70 dark:text-white/70">
+													Install
+												</p>
+												<CodeBlock
+													code={selectedCodeSnippet.installCommand}
+													lang="bash"
+													label="bash"
+												/>
+											</div>
+										) : null}
+
+										<div className="space-y-2">
+											<p className="text-xs font-medium text-black/70 dark:text-white/70">
+												Usage
+											</p>
+											<CodeBlock
+												code={selectedCodeSnippet.code}
+												lang={selectedCodeSnippet.lang}
+												label={selectedCodeSnippet.lang}
+											/>
+										</div>
+									</div>
+								) : null}
+							</div>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

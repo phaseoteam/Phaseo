@@ -1,0 +1,18 @@
+{
+  "model_id": "mistral/ministral-3-14b-2512",
+  "organisation_id": "mistral",
+  "name": "Ministral 3 14b 2512",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "mistral/ministral-3-14b-2512",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

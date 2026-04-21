@@ -43,6 +43,12 @@ export interface ModelCard {
     supported_parameters?: string[];
     lowest_input_price?: number | null;
     lowest_output_price?: number | null;
+    lowest_standard_input_price?: number | null;
+    lowest_standard_output_price?: number | null;
+    lowest_standard_input_price_label?: string | null;
+    lowest_standard_input_price_unit?: string | null;
+    lowest_standard_output_price_label?: string | null;
+    lowest_standard_output_price_unit?: string | null;
     lowest_from_price?: number | null;
     lowest_from_price_unit?: string | null;
     popularity_tokens_week?: number | null;
@@ -306,6 +312,7 @@ export async function getAllModelsCached(includeHidden: boolean): Promise<ModelC
 
     cacheLife("days");
     cacheTag("data:models");
+    cacheTag("models:list-base");
 
     console.log("[fetch] HIT DB for models");
     return getAllModels(includeHidden);
