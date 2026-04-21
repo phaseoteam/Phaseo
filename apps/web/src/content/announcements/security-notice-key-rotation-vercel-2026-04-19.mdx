@@ -1,6 +1,6 @@
 ---
-title: "Security Notice: Rotate Your Keys (April 19, 2026)"
-description: Following Vercel's April 19, 2026 security incident bulletin, we recommend all users rotate keys immediately. We have also updated key creation as a precaution.
+title: "Security Notice: Third-Party Breach (April 19, 2026)"
+description: Incident response update following Vercel's April 19, 2026 security bulletin, including mitigation actions and customer guidance.
 publishedAt: 2026-04-19T19:45:00Z
 author: AI Stats Team
 tags:
@@ -10,39 +10,43 @@ tags:
 draft: false
 ---
 
-We are issuing this notice in response to Vercel's security bulletin published on **April 19, 2026**:
+## Summary
+
+Following Vercel's security bulletin published on **April 19, 2026**, we initiated incident-response procedures across AI Stats.
+As part of that response, we rotated AI Stats internal platform secrets and credentials, invalidated prior internal values, and verified key-handling paths across gateway services.
+
+As of **April 21, 2026**, we have no evidence of unauthorized access to AI Stats user data.
+Customer-managed API keys were not rotated by us. We recommend that all customers rotate their API keys for safety as a precaution.
+
+## Official Bulletin
 
 - [Vercel April 2026 security incident](https://vercel.com/kb/bulletin/vercel-april-2026-security-incident)
 
-## What this means for AI Stats users
+Key points reported by Vercel include:
+- Unauthorized access to certain internal Vercel systems.
+- Initial impact to a limited customer subset involving non-sensitive environment variables.
+- No reported evidence that sensitive environment variable values were accessed.
+- No reported evidence of compromise to npm packages published by Vercel.
 
-Out of caution, we are recommending that **all users rotate their keys as soon as possible**.
+## Actions Taken by AI Stats
 
-Even if you have not seen any suspicious activity, this is a precautionary security step we recommend taking now.
+- Rotated AI Stats internal platform secrets and credentials.
+- Invalidated superseded key material and completed control checks.
+- Reinforced key-management defaults and operational safeguards.
+- Reviewed service activity and logs for suspicious behavior.
+- Continued active monitoring and incident-response review.
 
-## What we changed
+## Required Customer Actions
 
-As a precaution, we have **updated our key creation flow** to strengthen key safety during this period.
+1. Rotate your AI Stats API keys in [/settings/keys](/settings/keys).
+2. Update application, worker, and CI/CD secrets to the new values.
+3. Confirm traffic on the new keys.
+4. Revoke old keys after cutover.
 
-## What you should do now
-
-1. Create a new key in [/settings/keys](/settings/keys).
-2. Update your apps, services, and CI/CD secrets to use the new key.
-3. Verify traffic is working on the new key.
-4. Revoke old keys immediately after cutover.
-5. Review usage/activity logs for unexpected requests.
-
-<Callout title="Priority" tone="warning">
-Rotate production keys first, then staging and development keys.
+<Callout title="Status" tone="warning">
+Please prioritize production key rotation.
 </Callout>
 
-## Recommended rotation checklist
+## Ongoing updates
 
-- API keys used in backend services
-- Keys used in CI/CD pipelines
-- Keys stored in environment variables
-- Shared team keys or long-lived service keys
-
-## We will continue to monitor
-
-We are actively monitoring and will publish follow-up guidance if anything changes.
+This page will be updated as and when additional verified information becomes available.
