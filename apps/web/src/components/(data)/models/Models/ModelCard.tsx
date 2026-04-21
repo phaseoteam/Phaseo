@@ -10,6 +10,9 @@ import {
 	Type,
 	ImageIcon,
 	AudioLines,
+	Mic,
+	Music2,
+	Volume2,
 	Video,
 	Binary,
 	Shield,
@@ -47,6 +50,9 @@ const PRIMARY_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
 const MODALITY_DISPLAY_ORDER = [
 	"text",
 	"image",
+	"audio_stt",
+	"audio_tts",
+	"audio_music",
 	"audio",
 	"video",
 	"rerank",
@@ -108,6 +114,10 @@ const providerStatusOrderIndex = new Map<string, number>(
 );
 
 function toTitleLabel(value: string): string {
+	const normalized = value.trim().toLowerCase();
+	if (normalized === "audio_stt") return "STT";
+	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -129,6 +139,22 @@ function normalizeModalityOrderKey(value: string): string {
 	}
 	if (normalized.includes("moderat")) return "moderation";
 	if (normalized.includes("image")) return "image";
+	if (normalized.includes("music")) return "audio_music";
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return "audio_stt";
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return "audio_tts";
+	}
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("audio")) return "audio";
 	if (normalized.includes("text")) return "text";
@@ -261,6 +287,18 @@ function formatFromPrice(
 	return normalizedUnit ? `${amount} per ${normalizedUnit}` : amount;
 }
 
+function formatPriceWithUnit(
+	value: number | null | undefined,
+	unit: string | null | undefined,
+): string | null {
+	const amount = formatPrice(value);
+	if (!amount) return null;
+	const normalizedUnit = normalizeFromPriceUnit(unit);
+	if (!normalizedUnit) return amount;
+	if (normalizedUnit === "1M tokens") return `${amount} /M tokens`;
+	return `${amount} / ${normalizedUnit}`;
+}
+
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("embed")) return Binary;
@@ -270,6 +308,22 @@ function getModalityIcon(value: string): LucideIcon {
 	if (normalized.includes("moderat")) return Shield;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("image")) return ImageIcon;
+	if (normalized.includes("music")) return Music2;
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return Mic;
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return Volume2;
+	}
 	if (normalized.includes("video")) return Video;
 	if (normalized.includes("audio")) return AudioLines;
 	if (normalized.includes("text")) return Type;
@@ -372,14 +426,25 @@ function ModelCardImpl({
 	const isTextModel = modalitySet.has("text");
 	const inputPrice = formatPrice(model.lowest_input_price);
 	const outputPrice = formatPrice(model.lowest_output_price);
+	const standardInputPrice = formatPrice(model.lowest_standard_input_price);
+	const standardOutputPrice = formatPrice(model.lowest_standard_output_price);
 	const ioPriceSummary =
 		inputPrice && outputPrice
-			? `${inputPrice} in / ${outputPrice} out`
+			? `${inputPrice} / ${outputPrice}`
 			: inputPrice
-				? `${inputPrice} in`
+				? inputPrice
 				: outputPrice
-					? `${outputPrice} out`
+					? outputPrice
 					: null;
+	const standardIoPriceSummary =
+		standardInputPrice && standardOutputPrice
+			? `${standardInputPrice} / ${standardOutputPrice}`
+			: standardInputPrice
+				? standardInputPrice
+				: standardOutputPrice
+					? standardOutputPrice
+					: null;
+	const textPriceSummary = standardIoPriceSummary ?? ioPriceSummary;
 	const explicitFromPrice = formatFromPrice(
 		model.lowest_from_price,
 		model.lowest_from_price_unit,
@@ -392,8 +457,32 @@ function ModelCardImpl({
 			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
 			: null;
 	const fromPriceSummary = explicitFromPrice ?? fallbackFromPrice;
-	const priceSummary = isTextModel && ioPriceSummary ? ioPriceSummary : fromPriceSummary;
-	const priceLabel = isTextModel && ioPriceSummary ? "Lowest Price" : "From:";
+	const priceSummary =
+		isTextModel && textPriceSummary ? textPriceSummary : fromPriceSummary;
+	const priceLabel = isTextModel && textPriceSummary ? "Pricing" : "From:";
+	const pricingDetailRows = isTextModel
+		? [
+				{
+					id: "input",
+					label:
+						String(model.lowest_standard_input_price_label ?? "").trim() || "Input",
+					value: formatPriceWithUnit(
+						model.lowest_standard_input_price,
+						model.lowest_standard_input_price_unit,
+					),
+				},
+				{
+					id: "output",
+					label:
+						String(model.lowest_standard_output_price_label ?? "").trim() ||
+						"Output",
+					value: formatPriceWithUnit(
+						model.lowest_standard_output_price,
+						model.lowest_standard_output_price_unit,
+					),
+				},
+			].filter((row) => Boolean(row.value))
+		: [];
 	const formatModalities = (values: string[]) => {
 		const unique = sortModalitiesForDisplay(Array.from(
 			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
@@ -618,10 +707,39 @@ function ModelCardImpl({
 							</div>
 						) : null}
 						{priceSummary ? (
-							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">{priceLabel}</span>
-								<span className="font-medium text-foreground">{priceSummary}</span>
-							</div>
+							isTextModel && pricingDetailRows.length > 0 ? (
+								<HoverCard openDelay={120} closeDelay={100}>
+									<HoverCardTrigger asChild>
+										<button
+											type="button"
+											data-no-row-nav="true"
+											className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
+										>
+											<span className="text-muted-foreground">{priceLabel}</span>
+											<span className="font-medium text-foreground">
+												{priceSummary}
+											</span>
+										</button>
+									</HoverCardTrigger>
+									<HoverCardContent align="start" className="w-52 p-3">
+										<div className="space-y-2">
+											{pricingDetailRows.map((row) => (
+												<div key={row.id} className="space-y-0.5 text-xs">
+													<div className="font-semibold text-foreground">
+														{row.label}
+													</div>
+													<div className="text-muted-foreground">{row.value}</div>
+												</div>
+											))}
+										</div>
+									</HoverCardContent>
+								</HoverCard>
+							) : (
+								<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+									<span className="text-muted-foreground">{priceLabel}</span>
+									<span className="font-medium text-foreground">{priceSummary}</span>
+								</div>
+							)
 						) : null}
 					</div>
 

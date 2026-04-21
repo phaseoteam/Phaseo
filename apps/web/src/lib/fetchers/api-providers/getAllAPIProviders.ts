@@ -160,7 +160,16 @@ function toShareMap(rows: unknown): Map<string, number> {
 }
 
 export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
-    const supabase = createAdminClient();
+    let supabase: ReturnType<typeof createAdminClient> | null = null;
+    try {
+        supabase = createAdminClient();
+    } catch (error) {
+        console.warn(
+            "[getAllAPIProviders] admin client unavailable; returning no providers.",
+            error instanceof Error ? error.message : String(error),
+        );
+        return [];
+    }
     const nowIso = new Date().toISOString();
     const activeWindowClause = [
         "and(effective_from.is.null,effective_to.is.null)",

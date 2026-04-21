@@ -226,6 +226,7 @@ function RequestPulse({ d, delay }: { d: string; delay: string }) {
 		<>
 			<circle
 				r="3.6"
+				opacity="0"
 				fill="currentColor"
 				className="text-zinc-500 dark:text-zinc-400"
 				stroke="rgba(255,255,255,0.88)"

@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": "text",
-  "output_types": "audio",
+  "output_types": "audio_tts",
   "api_model_id": "google/gemini-3.1-flash-tts-preview",
   "links": [
     {

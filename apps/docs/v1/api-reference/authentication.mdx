@@ -1,30 +1,55 @@
 ---
 title: "Authentication"
-description: "Authenticate securely with the AI Stats Gateway API using your API key."
+description: "Authenticate requests with bearer API keys and manage key lifecycle safely."
+icon: "key"
 ---
 
-All requests to the AI Stats Gateway require authentication via an API key.
+All Gateway requests require a bearer API key.
 
-You can find or create keys in your **AI Stats Dashboard** under **Keys** in the profile selector or inside of settings.
+Create and manage keys in the AI Stats dashboard.
 
 <Note>
 Calls to `:free` models can run with zero deposited credits. Paid-model calls require available wallet balance.
 </Note>
 
-{/* Add image here of profile selector + Settings */}
-
----
-
-## Header-based authentication
+## Using an API key
 
 Include your API key in the `Authorization` header using the `Bearer` scheme:
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-5.1",
-    "messages": [{"role": "user", "content": "Hello!"}]
+    "model": "openai/gpt-5-nano",
+    "input": "Hello!"
   }'
 ```
+
+## Key format and handling
+
+- Key format: `aistats_v1_sk_<kid>_<secret>`
+- Store keys in a secrets manager, not in browser code.
+- Use separate keys per app/environment for safer rotation.
+
+## Management keys API
+
+For programmatic key lifecycle operations, use the [Management Keys](./endpoint/management/index.mdx) endpoints under Administration APIs.
+
+## Authentication failures
+
+- `401`: Missing, malformed, or invalid API key.
+- `403`: Key is valid but cannot access the requested capability.
+
+## Related pages
+
+- [Limits](./limits.mdx)
+- [Errors and Debugging](./errors.mdx)
+
+<Visibility for="agents">
+If you are implementing authentication flows as an agent:
+
+- Use repository skills for secret handling and environment wiring.
+- Never place gateway API keys in client-delivered code.
+- Prefer short-lived internal tokens between frontend and your backend, with gateway keys only server-side.
+</Visibility>

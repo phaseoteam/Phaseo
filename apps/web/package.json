@@ -5,7 +5,7 @@
 	"engines": {
 		"node": ">=20.10.0"
 	},
-	"packageManager": "pnpm@10.15.1",
+	"packageManager": "pnpm@10.33.0",
 	"scripts": {
 		"dev": "next dev --turbopack --port 3100",
 		"build": "next build",
@@ -20,6 +20,7 @@
 		"db:reconcile-api-model-links": "tsx scripts/importer/reconcile-api-model-links.ts",
 		"db-progress": "cd ../../packages/data/catalog/src/data && python -X utf8 progressCalc.py",
 		"oauth:e2e:playwright": "tsx scripts/oauth-e2e-playwright.ts",
+		"test:live:playground-text": "tsx scripts/live-playground-text-smoke.ts",
 		"test": "jest --runInBand"
 	},
 	"dependencies": {

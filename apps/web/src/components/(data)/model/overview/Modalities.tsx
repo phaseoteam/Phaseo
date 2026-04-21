@@ -1,9 +1,18 @@
-import { Text, Image, AudioLines, Video } from "lucide-react";
+import {
+	Text,
+	Image,
+	AudioLines,
+	Video,
+	Mic,
+	Volume2,
+	Music2,
+	type LucideIcon,
+} from "lucide-react";
 
 interface Modality {
 	key: string;
 	label: string;
-	icon: any;
+	icon: LucideIcon;
 }
 
 interface ModalitiesProps {
@@ -14,6 +23,9 @@ interface ModalitiesProps {
 const MODALITIES: Modality[] = [
 	{ key: "text", label: "Text", icon: Text },
 	{ key: "image", label: "Image", icon: Image },
+	{ key: "audio_stt", label: "STT", icon: Mic },
+	{ key: "audio_tts", label: "TTS", icon: Volume2 },
+	{ key: "audio_music", label: "Music", icon: Music2 },
 	{ key: "audio", label: "Audio", icon: AudioLines },
 	{ key: "video", label: "Video", icon: Video },
 ];

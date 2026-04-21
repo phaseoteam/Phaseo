@@ -19,6 +19,9 @@ import {
 	Image as ImageIcon,
 	MessageSquareText,
 	AudioLines,
+	Mic,
+	Music2,
+	Volume2,
 	Video,
 	Workflow,
 	ArrowUpDown,
@@ -37,6 +40,9 @@ const MOD_ICON: Record<string, React.ElementType> = {
 	text: MessageSquareText,
 	image: ImageIcon,
 	audio: AudioLines,
+	audio_stt: Mic,
+	audio_tts: Volume2,
+	audio_music: Music2,
 	video: Video,
 	tool: Workflow, // "tool use" / function calling
 	rerank: ArrowUpDown,
@@ -48,6 +54,9 @@ const MOD_BADGE_CLASS: Record<string, string> = {
 	text: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
 	image: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	audio: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+	audio_stt: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
+	audio_tts: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
+	audio_music: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	video: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200",
 	tool: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
 	rerank: "bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200",
@@ -55,15 +64,69 @@ const MOD_BADGE_CLASS: Record<string, string> = {
 	vision: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 };
 
-const KNOWN_MODALITIES = ["text", "image", "audio", "video", "rerank", "embeddings"];
+const KNOWN_MODALITIES = [
+	"text",
+	"image",
+	"video",
+	"audio_stt",
+	"audio_tts",
+	"audio_music",
+	"audio",
+	"rerank",
+	"embeddings",
+];
+
+function normalizeModality(value: string): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[._/-]+/g, " ");
+	if (!normalized) return "";
+	if (normalized.includes("embed")) return "embeddings";
+	if (normalized.includes("rerank") || normalized.includes("re rank")) return "rerank";
+	if (normalized.includes("vision") || normalized.includes("image")) return "image";
+	if (normalized.includes("video")) return "video";
+	if (normalized.includes("music")) return "audio_music";
+	if (
+		normalized.includes("transcrib") ||
+		normalized.includes("speech to text") ||
+		normalized.includes("stt")
+	) {
+		return "audio_stt";
+	}
+	if (
+		normalized.includes("text to speech") ||
+		normalized.includes("audio speech") ||
+		normalized.includes("speech synth") ||
+		normalized.includes("tts")
+	) {
+		return "audio_tts";
+	}
+	if (normalized.includes("audio")) return "audio";
+	if (normalized.includes("text")) return "text";
+	return normalized.replace(/\s+/g, "_");
+}
+
+function formatModalityLabel(value: string): string {
+	if (value === "audio_stt") return "STT";
+	if (value === "audio_tts") return "TTS";
+	if (value === "audio_music") return "Music";
+	return value
+		.replace(/[_-]+/g, " ")
+		.trim()
+		.replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 function toList(v?: string[] | string | null) {
 	if (!v) return [] as string[];
-	if (Array.isArray(v)) return v.map((s) => String(s).toLowerCase());
-	return String(v)
-		.split(/[,\s]+/)
-		.map((s) => s.trim().toLowerCase())
-		.filter(Boolean);
+	const values = Array.isArray(v) ? v.map((s) => String(s)) : String(v).split(/[,\s]+/);
+	return Array.from(
+		new Set(
+			values
+				.map((s) => normalizeModality(s))
+				.filter(Boolean),
+		),
+	);
 }
 
 
@@ -110,18 +173,18 @@ const ENDPOINT_META: Record<
 	},
 	"/audio/transcriptions": {
 		label: "Audio Transcriptions",
-		icon: AudioLines,
-		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+		icon: Mic,
+		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/translations": {
 		label: "Audio Translations",
-		icon: AudioLines,
-		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+		icon: Mic,
+		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/speech": {
 		label: "Audio Speech",
-		icon: AudioLines,
-		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+		icon: Volume2,
+		className: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
 	},
 	"/audio/realtime": {
 		label: "Audio Realtime",
@@ -145,8 +208,8 @@ const ENDPOINT_META: Record<
 	},
 	"/music/generations": {
 		label: "Music Generations",
-		icon: AudioLines,
-		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+		icon: Music2,
+		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
 };
 
@@ -363,7 +426,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 										</div>
 									</TooltipTrigger>
 									<TooltipContent side="top">
-										<span className="capitalize">{mod}</span>
+										<span>{formatModalityLabel(mod)}</span>
 									</TooltipContent>
 								</Tooltip>
 							);
@@ -393,7 +456,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 										</div>
 									</TooltipTrigger>
 									<TooltipContent side="top">
-										<span className="capitalize">{mod}</span>
+										<span>{formatModalityLabel(mod)}</span>
 									</TooltipContent>
 								</Tooltip>
 							);

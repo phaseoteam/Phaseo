@@ -163,6 +163,9 @@ const (
 	// Model ID: anthropic/claude-instant-1.2
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.2
 	ModelIDAnthropicClaudeInstant12 gen.ModelId = "anthropic/claude-instant-1.2"
+	// Model ID: anthropic/claude-mythos-preview
+	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview
+	ModelIDAnthropicClaudeMythosPreview gen.ModelId = "anthropic/claude-mythos-preview"
 	// Model ID: anthropic/claude-opus-4
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4
 	ModelIDAnthropicClaudeOpus4 gen.ModelId = "anthropic/claude-opus-4"
@@ -646,6 +649,9 @@ const (
 	// Model ID: google/gemini-3.1-flash-lite-preview
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-preview
 	ModelIDGoogleGemini31FlashLitePreview gen.ModelId = "google/gemini-3.1-flash-lite-preview"
+	// Model ID: google/gemini-3.1-flash-tts-preview
+	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-tts-preview
+	ModelIDGoogleGemini31FlashTtsPreview gen.ModelId = "google/gemini-3.1-flash-tts-preview"
 	// Model ID: google/gemini-3.1-pro-preview
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-pro-preview
 	ModelIDGoogleGemini31ProPreview gen.ModelId = "google/gemini-3.1-pro-preview"
@@ -712,6 +718,12 @@ const (
 	// Model ID: google/gemma-3n-e4b
 	// Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b
 	ModelIDGoogleGemma3nE4b gen.ModelId = "google/gemma-3n-e4b"
+	// Model ID: google/gemma-4-26b-a4b
+	// Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b
+	ModelIDGoogleGemma426bA4b gen.ModelId = "google/gemma-4-26b-a4b"
+	// Model ID: google/gemma-4-31b
+	// Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b
+	ModelIDGoogleGemma431b gen.ModelId = "google/gemma-4-31b"
 	// Model ID: google/image-generation-002
 	// Model page: https://ai-stats.phaseo.app/models/google/image-generation-002
 	ModelIDGoogleImageGeneration002 gen.ModelId = "google/image-generation-002"
@@ -1204,6 +1216,9 @@ const (
 	// Model ID: minimax/music-2.5
 	// Model page: https://ai-stats.phaseo.app/models/minimax/music-2.5
 	ModelIDMinimaxMusic25 gen.ModelId = "minimax/music-2.5"
+	// Model ID: minimax/music-2.6
+	// Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6
+	ModelIDMinimaxMusic26 gen.ModelId = "minimax/music-2.6"
 	// Model ID: minimax/s2v-01
 	// Model page: https://ai-stats.phaseo.app/models/minimax/s2v-01
 	ModelIDMinimaxS2v01 gen.ModelId = "minimax/s2v-01"
@@ -1414,6 +1429,9 @@ const (
 	// Model ID: moonshotai/kimi-k2.5
 	// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.5
 	ModelIDMoonshotaiKimiK25 gen.ModelId = "moonshotai/kimi-k2.5"
+	// Model ID: moonshotai/kimi-k2.6
+	// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6
+	ModelIDMoonshotaiKimiK26 gen.ModelId = "moonshotai/kimi-k2.6"
 	// Model ID: moonshotai/kimi-linear-48b
 	// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-linear-48b
 	ModelIDMoonshotaiKimiLinear48b gen.ModelId = "moonshotai/kimi-linear-48b"
@@ -2296,9 +2314,6 @@ const (
 	// Model ID: qwen/qwen3-tts-12hz-1.7b-voicedesign
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-voicedesign
 	ModelIDQwenQwen3Tts12hz17bVoicedesign gen.ModelId = "qwen/qwen3-tts-12hz-1.7b-voicedesign"
-	// Model ID: qwen/qwen3-tts-tokenizer-12hz
-	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-tokenizer-12hz
-	ModelIDQwenQwen3TtsTokenizer12hz gen.ModelId = "qwen/qwen3-tts-tokenizer-12hz"
 	// Model ID: qwen/qwen3-vl-235b-a22b-instruct
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct
 	ModelIDQwenQwen3Vl235bA22bInstruct gen.ModelId = "qwen/qwen3-vl-235b-a22b-instruct"
@@ -2377,6 +2392,15 @@ const (
 	// Model ID: qwen/qwen3.5-plus
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-plus
 	ModelIDQwenQwen35Plus gen.ModelId = "qwen/qwen3.5-plus"
+	// Model ID: qwen/qwen3.6-35b-a3b
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-35b-a3b
+	ModelIDQwenQwen3635bA3b gen.ModelId = "qwen/qwen3.6-35b-a3b"
+	// Model ID: qwen/qwen3.6-max-preview
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-max-preview
+	ModelIDQwenQwen36MaxPreview gen.ModelId = "qwen/qwen3.6-max-preview"
+	// Model ID: qwen/qwen3.6-plus
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus
+	ModelIDQwenQwen36Plus gen.ModelId = "qwen/qwen3.6-plus"
 	// Model ID: qwen/qwq-32b
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
 	ModelIDQwenQwq32b gen.ModelId = "qwen/qwq-32b"
@@ -2458,6 +2482,90 @@ const (
 	// Model ID: vercel/v0-1.5-sm
 	// Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-sm
 	ModelIDVercelV015Sm gen.ModelId = "vercel/v0-1.5-sm"
+	// Model ID: voyage/rerank-1
+	// Model page: https://ai-stats.phaseo.app/models/voyage/rerank-1
+	ModelIDVoyageRerank1 gen.ModelId = "voyage/rerank-1"
+	// Model ID: voyage/rerank-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2
+	ModelIDVoyageRerank2 gen.ModelId = "voyage/rerank-2"
+	// Model ID: voyage/rerank-2-lite
+	// Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2-lite
+	ModelIDVoyageRerank2Lite gen.ModelId = "voyage/rerank-2-lite"
+	// Model ID: voyage/rerank-lite-1
+	// Model page: https://ai-stats.phaseo.app/models/voyage/rerank-lite-1
+	ModelIDVoyageRerankLite1 gen.ModelId = "voyage/rerank-lite-1"
+	// Model ID: voyage/voyage-01
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-01
+	ModelIDVoyageVoyage01 gen.ModelId = "voyage/voyage-01"
+	// Model ID: voyage/voyage-02
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-02
+	ModelIDVoyageVoyage02 gen.ModelId = "voyage/voyage-02"
+	// Model ID: voyage/voyage-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-2
+	ModelIDVoyageVoyage2 gen.ModelId = "voyage/voyage-2"
+	// Model ID: voyage/voyage-3
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3
+	ModelIDVoyageVoyage3 gen.ModelId = "voyage/voyage-3"
+	// Model ID: voyage/voyage-3-large
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3-large
+	ModelIDVoyageVoyage3Large gen.ModelId = "voyage/voyage-3-large"
+	// Model ID: voyage/voyage-3-lite
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3-lite
+	ModelIDVoyageVoyage3Lite gen.ModelId = "voyage/voyage-3-lite"
+	// Model ID: voyage/voyage-3.5
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3.5
+	ModelIDVoyageVoyage35 gen.ModelId = "voyage/voyage-3.5"
+	// Model ID: voyage/voyage-3.5-lite
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3.5-lite
+	ModelIDVoyageVoyage35Lite gen.ModelId = "voyage/voyage-3.5-lite"
+	// Model ID: voyage/voyage-4
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4
+	ModelIDVoyageVoyage4 gen.ModelId = "voyage/voyage-4"
+	// Model ID: voyage/voyage-4-large
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4-large
+	ModelIDVoyageVoyage4Large gen.ModelId = "voyage/voyage-4-large"
+	// Model ID: voyage/voyage-4-lite
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4-lite
+	ModelIDVoyageVoyage4Lite gen.ModelId = "voyage/voyage-4-lite"
+	// Model ID: voyage/voyage-code-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-code-2
+	ModelIDVoyageVoyageCode2 gen.ModelId = "voyage/voyage-code-2"
+	// Model ID: voyage/voyage-code-3
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-code-3
+	ModelIDVoyageVoyageCode3 gen.ModelId = "voyage/voyage-code-3"
+	// Model ID: voyage/voyage-context-3
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-context-3
+	ModelIDVoyageVoyageContext3 gen.ModelId = "voyage/voyage-context-3"
+	// Model ID: voyage/voyage-finance-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-finance-2
+	ModelIDVoyageVoyageFinance2 gen.ModelId = "voyage/voyage-finance-2"
+	// Model ID: voyage/voyage-large-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-large-2
+	ModelIDVoyageVoyageLarge2 gen.ModelId = "voyage/voyage-large-2"
+	// Model ID: voyage/voyage-large-2-instruct
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-large-2-instruct
+	ModelIDVoyageVoyageLarge2Instruct gen.ModelId = "voyage/voyage-large-2-instruct"
+	// Model ID: voyage/voyage-law-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-law-2
+	ModelIDVoyageVoyageLaw2 gen.ModelId = "voyage/voyage-law-2"
+	// Model ID: voyage/voyage-lite-01
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-01
+	ModelIDVoyageVoyageLite01 gen.ModelId = "voyage/voyage-lite-01"
+	// Model ID: voyage/voyage-lite-01-instruct
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-01-instruct
+	ModelIDVoyageVoyageLite01Instruct gen.ModelId = "voyage/voyage-lite-01-instruct"
+	// Model ID: voyage/voyage-lite-02-instruct
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-02-instruct
+	ModelIDVoyageVoyageLite02Instruct gen.ModelId = "voyage/voyage-lite-02-instruct"
+	// Model ID: voyage/voyage-multilingual-2
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multilingual-2
+	ModelIDVoyageVoyageMultilingual2 gen.ModelId = "voyage/voyage-multilingual-2"
+	// Model ID: voyage/voyage-multimodal-3
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3
+	ModelIDVoyageVoyageMultimodal3 gen.ModelId = "voyage/voyage-multimodal-3"
+	// Model ID: voyage/voyage-multimodal-3.5
+	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5
+	ModelIDVoyageVoyageMultimodal35 gen.ModelId = "voyage/voyage-multimodal-3.5"
 	// Model ID: x-ai/grok-0
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-0
 	ModelIDXAiGrok0 gen.ModelId = "x-ai/grok-0"
@@ -2518,6 +2626,9 @@ const (
 	// Model ID: x-ai/grok-4.20-multi-agent-beta
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta
 	ModelIDXAiGrok420MultiAgentBeta gen.ModelId = "x-ai/grok-4.20-multi-agent-beta"
+	// Model ID: x-ai/grok-4.3
+	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
+	ModelIDXAiGrok43 gen.ModelId = "x-ai/grok-4.3"
 	// Model ID: x-ai/grok-code-fast-1
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
 	ModelIDXAiGrokCodeFast1 gen.ModelId = "x-ai/grok-code-fast-1"
@@ -2669,6 +2780,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDAnthropicClaudeInstant10,
 	ModelIDAnthropicClaudeInstant11,
 	ModelIDAnthropicClaudeInstant12,
+	ModelIDAnthropicClaudeMythosPreview,
 	ModelIDAnthropicClaudeOpus4,
 	ModelIDAnthropicClaudeOpus41,
 	ModelIDAnthropicClaudeOpus45,
@@ -2830,6 +2942,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDGoogleGemini3ProPreview,
 	ModelIDGoogleGemini31FlashImagePreview,
 	ModelIDGoogleGemini31FlashLitePreview,
+	ModelIDGoogleGemini31FlashTtsPreview,
 	ModelIDGoogleGemini31ProPreview,
 	ModelIDGoogleGemini31ProPreviewCustomtools,
 	ModelIDGoogleGeminiDiffusion,
@@ -2852,6 +2965,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDGoogleGemma34b,
 	ModelIDGoogleGemma3nE2b,
 	ModelIDGoogleGemma3nE4b,
+	ModelIDGoogleGemma426bA4b,
+	ModelIDGoogleGemma431b,
 	ModelIDGoogleImageGeneration002,
 	ModelIDGoogleImageGeneration005,
 	ModelIDGoogleImageGeneration006,
@@ -3016,6 +3131,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDMinimaxMusic15,
 	ModelIDMinimaxMusic20,
 	ModelIDMinimaxMusic25,
+	ModelIDMinimaxMusic26,
 	ModelIDMinimaxS2v01,
 	ModelIDMinimaxSpeech01Hd,
 	ModelIDMinimaxSpeech01Turbo,
@@ -3086,6 +3202,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDMoonshotaiKimiK220250711,
 	ModelIDMoonshotaiKimiK2Thinking,
 	ModelIDMoonshotaiKimiK25,
+	ModelIDMoonshotaiKimiK26,
 	ModelIDMoonshotaiKimiLinear48b,
 	ModelIDMoonshotaiKimiVlA3b,
 	ModelIDMoonshotaiKimiVlA3bThinking,
@@ -3380,7 +3497,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenQwen3Tts12hz06bCustomvoice,
 	ModelIDQwenQwen3Tts12hz17bBase,
 	ModelIDQwenQwen3Tts12hz17bVoicedesign,
-	ModelIDQwenQwen3TtsTokenizer12hz,
 	ModelIDQwenQwen3Vl235bA22bInstruct,
 	ModelIDQwenQwen3Vl235bA22bThinking,
 	ModelIDQwenQwen3Vl2bInstruct,
@@ -3407,6 +3523,9 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenQwen359b,
 	ModelIDQwenQwen35Flash,
 	ModelIDQwenQwen35Plus,
+	ModelIDQwenQwen3635bA3b,
+	ModelIDQwenQwen36MaxPreview,
+	ModelIDQwenQwen36Plus,
 	ModelIDQwenQwq32b,
 	ModelIDQwenQwq32bPreview,
 	ModelIDQwenWorldpm72b,
@@ -3434,6 +3553,34 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDVercelV015Lg,
 	ModelIDVercelV015Md,
 	ModelIDVercelV015Sm,
+	ModelIDVoyageRerank1,
+	ModelIDVoyageRerank2,
+	ModelIDVoyageRerank2Lite,
+	ModelIDVoyageRerankLite1,
+	ModelIDVoyageVoyage01,
+	ModelIDVoyageVoyage02,
+	ModelIDVoyageVoyage2,
+	ModelIDVoyageVoyage3,
+	ModelIDVoyageVoyage3Large,
+	ModelIDVoyageVoyage3Lite,
+	ModelIDVoyageVoyage35,
+	ModelIDVoyageVoyage35Lite,
+	ModelIDVoyageVoyage4,
+	ModelIDVoyageVoyage4Large,
+	ModelIDVoyageVoyage4Lite,
+	ModelIDVoyageVoyageCode2,
+	ModelIDVoyageVoyageCode3,
+	ModelIDVoyageVoyageContext3,
+	ModelIDVoyageVoyageFinance2,
+	ModelIDVoyageVoyageLarge2,
+	ModelIDVoyageVoyageLarge2Instruct,
+	ModelIDVoyageVoyageLaw2,
+	ModelIDVoyageVoyageLite01,
+	ModelIDVoyageVoyageLite01Instruct,
+	ModelIDVoyageVoyageLite02Instruct,
+	ModelIDVoyageVoyageMultilingual2,
+	ModelIDVoyageVoyageMultimodal3,
+	ModelIDVoyageVoyageMultimodal35,
 	ModelIDXAiGrok0,
 	ModelIDXAiGrok1,
 	ModelIDXAiGrok15,
@@ -3454,6 +3601,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDXAiGrok41Thinking,
 	ModelIDXAiGrok420,
 	ModelIDXAiGrok420MultiAgentBeta,
+	ModelIDXAiGrok43,
 	ModelIDXAiGrokCodeFast1,
 	ModelIDXAiGrokImagineImage,
 	ModelIDXAiGrokImagineImagePro,

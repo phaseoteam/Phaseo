@@ -577,7 +577,7 @@ export async function getModelPricingCached(
 ): Promise<ProviderPricing[]> {
     "use cache";
 
-    cacheLife("days");
+    cacheLife("hours");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:api:${modelId}`);

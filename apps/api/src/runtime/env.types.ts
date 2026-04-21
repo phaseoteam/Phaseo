@@ -175,6 +175,8 @@ export type GatewayBindings = {
     DISCORD_USER_ID?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     KEY_PEPPER?: string;
+    KEY_PEPPER_ACTIVE?: string;
+    KEY_PEPPER_PREVIOUS?: string;
     VIDEO_DOWNLOAD_SIGNING_SECRET?: string;
     GATEWAY_INTERNAL_TEST_TOKEN?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;

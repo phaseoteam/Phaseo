@@ -9,7 +9,7 @@
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
-  "input_types": "text,audio",
+  "input_types": "text,audio_stt",
   "output_types": "text",
   "api_model_id": "openai/gpt-4o-mini-transcribe",
   "family_id": "openai/gpt-4o",

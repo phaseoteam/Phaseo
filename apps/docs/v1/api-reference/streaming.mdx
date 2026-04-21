@@ -1,0 +1,68 @@
+---
+title: "Streaming"
+description: "Stream model output in real time using SSE on core text endpoints."
+icon: "radio"
+---
+
+Streaming lets your UI render tokens as they are generated instead of waiting for a full response.
+
+## Supported endpoints
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## Enable streaming
+
+Set `stream: true` in the request body.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## SSE frame shape
+
+Streams are returned as SSE frames:
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## Error handling during streams
+
+- If a request fails before streaming starts, you receive a normal JSON error response.
+- If a request fails after partial output, treat the stream as incomplete and surface a retry path in your UI.
+- Always log `generation_id` (when present) for support and correlation.
+
+## Cancellation
+
+Use cancellation controls (`AbortController` in JS, request timeout in backend workers) so abandoned streams do not consume unnecessary capacity.
+
+## Known limitation
+
+At the current gateway request-validation layer, `stream: true` with tool-calling is rejected. Use non-streaming for tool-calling loops.
+
+## Related pages
+
+- [Responses endpoint](./endpoint/responses.mdx)
+- [Chat Completions endpoint](./endpoint/chat-completions.mdx)
+- [Messages endpoint](./endpoint/anthropic-messages.mdx)
+- [Errors and Debugging](./errors.mdx)
+
+<Visibility for="agents">
+If you are implementing streaming support as an agent:
+
+- Use repository skills for SSE parsing, retries, and cancellation handling.
+- Prefer endpoint-specific schemas before adding provider-specific assumptions.
+- Keep incremental output rendering separate from final-state persistence.
+</Visibility>

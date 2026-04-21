@@ -1,17 +1,18 @@
 ---
-title: "Error Handling"
-description: "Understand how to handle errors and interpret responses from the AI Stats Gateway API."
+title: "Errors and Debugging"
+description: "Interpret Gateway error responses and use debug controls for faster issue triage."
+icon: "bug"
 ---
 
-All errors from the AI Stats Gateway should be returned in a consistent JSON structure:
+Gateway errors use a consistent JSON shape:
 
 ```json
 {
-	"generation_id": "G-abc123",
-	"status_code": 401,
-	"error": "validation_error",
-	"error_type": "user",
-	"description": "Input validation failed"
+  "generation_id": "G-abc123",
+  "status_code": 401,
+  "error": "validation_error",
+  "error_type": "user",
+  "description": "Input validation failed"
 }
 ```
 
@@ -21,10 +22,16 @@ Every response includes:
 - `status_code`: mirrors the HTTP status to make retries decisions easier.
 - `error`: a machine-readable error code (for example `validation_error`).
 - `error_type`: high-level classification (`user` or `system`).
-- `description`: a human-friendly explanation safe to display to end users.
+- `description`: a human-friendly explanation.
 - `details` (optional): structured validation errors when `error` is `validation_error`.
 
----
+## Status class guidance
+
+| Status | Meaning | Recommended action |
+| --- | --- | --- |
+| `400-499` | Request/authentication/authorization issue | Fix request inputs or credentials before retrying. |
+| `429` | Provider or route-level throttling | Retry with backoff and respect `Retry-After`. |
+| `500-599` | Gateway or upstream provider failure | Retry with jittered backoff and log correlation ids. |
 
 ## Common error codes
 
@@ -38,7 +45,31 @@ Every response includes:
 | `provider_error`       | `502`       | Upstream model provider failed to respond correctly. |
 | `server_error`         | `500`       | Unexpected issue within the Gateway.                 |
 
----
+## Debug options
+
+Most request schemas support a `debug` object for controlled troubleshooting:
+
+```json
+{
+  "debug": {
+    "enabled": true,
+    "return_upstream_request": true,
+    "return_upstream_response": false,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+Available fields:
+
+- `enabled`
+- `return_upstream_request`
+- `return_upstream_response`
+- `trace`
+- `trace_level` (`summary` or `full`)
+
+Use debug mode in development or tightly controlled environments only.
 
 ## Retry strategy
 
@@ -55,15 +86,17 @@ if (error.error === "rate_limit_error") {
 }
 ```
 
----
+## Streaming-specific debugging
+
+- If the request fails before streaming begins, you get a standard JSON error payload.
+- If it fails mid-stream, treat the partial stream as incomplete and show a retry option.
+- Always capture `generation_id` and endpoint/model metadata in logs.
 
 ## Troubleshooting tips
 
 -   Check the [Gateway status page](https://ai-stats.phaseo.app/status) for ongoing incidents.
--   Review your request payloads -- strict JSON validation is enforced.
--   Use the `generation_id` (from the response body) when contacting support as this helps us identify your request.
-
----
+-   Review request payloads against endpoint schema docs.
+-   Share `generation_id` when contacting support.
 
 ## Related resources
 
@@ -73,13 +106,28 @@ if (error.error === "rate_limit_error") {
 		icon="key"
 		href="./authentication.mdx"
 	>
-		How to authenticate with your API key securely.
+		Authenticate with bearer API keys.
 	</Card>
 	<Card
-		title="Health Endpoint"
-		icon="activity"
-		href="./endpoint/health.mdx"
+		title="Limits"
+		icon="gauge"
+		href="./limits.mdx"
 	>
-		Test connectivity and verify Gateway uptime.
+		Handle provider-driven throttling and retries.
+	</Card>
+	<Card
+		title="Streaming"
+		icon="radio"
+		href="./streaming.mdx"
+	>
+		Use SSE safely in production flows.
 	</Card>
 </Columns>
+
+<Visibility for="agents">
+If you are implementing error handling as an agent:
+
+- Use repository skills for retry logic, structured logging, and schema-safe error parsing.
+- Treat debug payloads as potentially sensitive and redact before persistent logs.
+- Prefer deterministic retries (bounded attempts + jitter) over unbounded loops.
+</Visibility>

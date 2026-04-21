@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": null,
-  "output_types": null,
+  "output_types": "audio_tts",
   "api_model_id": "google/gemini-2.5-pro-preview-tts",
   "links": [],
   "details": [],

@@ -89,7 +89,10 @@ export default function Header() {
 	);
 
 	return (
-		<header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur dark:bg-zinc-950/80">
+		<header
+			className="sticky z-50 border-b bg-white/80 backdrop-blur dark:bg-zinc-950/80"
+			style={{ top: "var(--site-notice-height, 0px)" }}
+		>
 			<Suspense
 				fallback={
 					<div className="mx-auto w-full max-w-full px-4 [view-transition-name:site-header-shell] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[1024px] xl:max-w-[1280px] 2xl:max-w-[1536px]">

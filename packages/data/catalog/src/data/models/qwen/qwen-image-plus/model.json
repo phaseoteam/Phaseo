@@ -1,0 +1,18 @@
+{
+  "model_id": "qwen/qwen-image-plus",
+  "organisation_id": "qwen",
+  "name": "Qwen Image Plus",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "qwen/qwen-image-plus",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

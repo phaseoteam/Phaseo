@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 import { decodeJWT } from "@/lib/oauth/jwt";
 import { json, withRuntime } from "@/routes/utils";
@@ -342,13 +343,13 @@ async function handleCreateKey(req: Request) {
 		return creator.response;
 	}
 
-	const pepper = (getBindings().KEY_PEPPER ?? "").trim();
+	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) {
 		return json(
 			{
 				ok: false,
 				error: "server_misconfig_missing_pepper",
-				message: "KEY_PEPPER is not configured",
+				message: "KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured",
 			},
 			503,
 			{ "Cache-Control": "no-store" }

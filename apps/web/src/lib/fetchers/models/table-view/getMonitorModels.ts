@@ -96,6 +96,40 @@ function toDisplayPrice(
 	};
 }
 
+function getStandardIoMeterMeta(
+	meterRaw: unknown,
+): { side: "input" | "output"; label: string; priority: number } | null {
+	const meter = String(meterRaw ?? "")
+		.trim()
+		.toLowerCase();
+
+	if (meter === "input_text_tokens" || meter === "input_tokens") {
+		return { side: "input", label: "Text Input", priority: 0 };
+	}
+	if (meter === "input_audio_tokens") {
+		return { side: "input", label: "Audio Input", priority: 1 };
+	}
+	if (meter === "input_image_tokens") {
+		return { side: "input", label: "Image Input", priority: 2 };
+	}
+	if (meter === "input_video_tokens") {
+		return { side: "input", label: "Video Input", priority: 3 };
+	}
+	if (meter === "output_text_tokens" || meter === "output_tokens") {
+		return { side: "output", label: "Text Output", priority: 0 };
+	}
+	if (meter === "output_audio_tokens") {
+		return { side: "output", label: "Audio Output", priority: 1 };
+	}
+	if (meter === "output_image_tokens") {
+		return { side: "output", label: "Image Output", priority: 2 };
+	}
+	if (meter === "output_video_tokens") {
+		return { side: "output", label: "Video Output", priority: 3 };
+	}
+	return null;
+}
+
 async function fetchProviderModelsPaginated({
 	supabase,
 	selectClause,
@@ -217,7 +251,8 @@ export async function getMonitorModels(
 }> {
 	"use cache";
 
-	cacheLife("days");
+	cacheLife("hours");
+	cacheTag("models:monitor");
 	cacheTag("monitor-models");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:data_api_pricing_rules");
@@ -461,6 +496,14 @@ export async function getMonitorModels(
 		{
 			inputPrice: number;
 			outputPrice: number;
+			standardInputPrice: number | null;
+			standardOutputPrice: number | null;
+			standardInputPriceLabel: string | null;
+			standardInputPriceUnit: string | null;
+			standardOutputPriceLabel: string | null;
+			standardOutputPriceUnit: string | null;
+			standardInputPriority: number;
+			standardOutputPriority: number;
 			tier: string;
 			fromPrice: number | null;
 			fromPriceUnit: string | null;
@@ -477,18 +520,69 @@ export async function getMonitorModels(
 			pricingByKey.set(p.model_key, {
 				inputPrice: 0,
 				outputPrice: 0,
+				standardInputPrice: null,
+				standardOutputPrice: null,
+				standardInputPriceLabel: null,
+				standardInputPriceUnit: null,
+				standardOutputPriceLabel: null,
+				standardOutputPriceUnit: null,
+				standardInputPriority: Number.POSITIVE_INFINITY,
+				standardOutputPriority: Number.POSITIVE_INFINITY,
 				tier: "standard",
 				fromPrice: null,
 				fromPriceUnit: null,
 			});
 		}
 		const prices = pricingByKey.get(p.model_key)!;
+		const displayPrice = toDisplayPrice(
+			p.price_per_unit,
+			p.unit_size,
+			p.meter,
+			p.unit,
+		);
+		const normalizedPricingPlan = String(p.pricing_plan ?? "standard")
+			.trim()
+			.toLowerCase();
+		const isStandardPricingPlan =
+			normalizedPricingPlan === "" || normalizedPricingPlan === "standard";
 		if (
 			(p.meter === "input_text_tokens" || p.meter === "input_tokens") &&
 			prices.inputPrice === 0
 		) {
 			prices.inputPrice = toUsdPerMillion(p.price_per_unit, p.unit_size);
 			prices.tier = p.pricing_plan || "standard";
+		}
+		if (
+			isStandardPricingPlan &&
+			displayPrice
+		) {
+			const meterMeta = getStandardIoMeterMeta(p.meter);
+			if (meterMeta?.side === "input") {
+				const shouldReplaceInput =
+					prices.standardInputPrice === null ||
+					meterMeta.priority < prices.standardInputPriority ||
+					(meterMeta.priority === prices.standardInputPriority &&
+						displayPrice.value < prices.standardInputPrice);
+				if (shouldReplaceInput) {
+					prices.standardInputPrice = displayPrice.value;
+					prices.standardInputPriceLabel = meterMeta.label;
+					prices.standardInputPriceUnit = displayPrice.unit;
+					prices.standardInputPriority = meterMeta.priority;
+				}
+			}
+			if (meterMeta?.side === "output") {
+				const shouldReplaceOutput =
+					prices.standardOutputPrice === null ||
+					meterMeta.priority < prices.standardOutputPriority ||
+					(meterMeta.priority === prices.standardOutputPriority &&
+						displayPrice.value < prices.standardOutputPrice);
+				if (shouldReplaceOutput) {
+					prices.standardOutputPrice = displayPrice.value;
+					prices.standardOutputPriceLabel = meterMeta.label;
+					prices.standardOutputPriceUnit = displayPrice.unit;
+					prices.standardOutputPriority = meterMeta.priority;
+				}
+			}
 		}
 		if (
 			(p.meter === "output_text_tokens" || p.meter === "output_tokens") &&
@@ -499,13 +593,6 @@ export async function getMonitorModels(
 				prices.tier = p.pricing_plan || "standard";
 			}
 		}
-
-		const displayPrice = toDisplayPrice(
-			p.price_per_unit,
-			p.unit_size,
-			p.meter,
-			p.unit,
-		);
 		if (!displayPrice) continue;
 		if (prices.fromPrice === null || !prices.fromPriceUnit) {
 			prices.fromPrice = displayPrice.value;
@@ -552,6 +639,14 @@ export async function getMonitorModels(
 				: undefined) ?? {
 				inputPrice: 0,
 				outputPrice: 0,
+				standardInputPrice: null,
+				standardOutputPrice: null,
+				standardInputPriceLabel: null,
+				standardInputPriceUnit: null,
+				standardOutputPriceLabel: null,
+				standardOutputPriceUnit: null,
+				standardInputPriority: Number.POSITIVE_INFINITY,
+				standardOutputPriority: Number.POSITIVE_INFINITY,
 				tier: "standard",
 				fromPrice: null,
 				fromPriceUnit: null,
@@ -601,6 +696,12 @@ export async function getMonitorModels(
 				id: gatewayModel.api_provider_id,
 				inputPrice: prices.inputPrice,
 				outputPrice: prices.outputPrice,
+				standardInputPrice: prices.standardInputPrice,
+				standardOutputPrice: prices.standardOutputPrice,
+				standardInputPriceLabel: prices.standardInputPriceLabel,
+				standardInputPriceUnit: prices.standardInputPriceUnit,
+				standardOutputPriceLabel: prices.standardOutputPriceLabel,
+				standardOutputPriceUnit: prices.standardOutputPriceUnit,
 				fromPrice: prices.fromPrice,
 				fromPriceUnit: prices.fromPriceUnit,
 				features: sortedFeatures,

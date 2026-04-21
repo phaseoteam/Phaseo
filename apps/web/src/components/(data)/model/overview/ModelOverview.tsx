@@ -27,17 +27,42 @@ export default function ModelOverview({ model }: ModelOverviewProps) {
 
 	// Modalities logic: always show Text, Image, Audio, Video
 	const parseTypes = (types: any) => {
+		const normalizeType = (raw: unknown): string => {
+			const value = String(raw ?? "")
+				.trim()
+				.toLowerCase()
+				.replace(/[._/-]+/g, " ");
+			if (!value) return "";
+			if (value.includes("music")) return "audio_music";
+			if (
+				value.includes("transcrib") ||
+				value.includes("speech to text") ||
+				value.includes("stt")
+			) {
+				return "audio_stt";
+			}
+			if (
+				value.includes("text to speech") ||
+				value.includes("audio speech") ||
+				value.includes("speech synth") ||
+				value.includes("tts")
+			) {
+				return "audio_tts";
+			}
+			return value.replace(/\s+/g, "_");
+		};
+
 		if (Array.isArray(types))
-			return types.map((t: any) =>
-				typeof t === "string"
-					? t.toLowerCase()
-					: String(t).toLowerCase()
-			);
+			return Array.from(new Set(types.map((t: any) => normalizeType(t)).filter(Boolean)));
 		if (typeof types === "string")
-			return types
-				.split(",")
-				.map((t) => t.trim().toLowerCase())
-				.filter(Boolean);
+			return Array.from(
+				new Set(
+					types
+						.split(",")
+						.map((t) => normalizeType(t))
+						.filter(Boolean),
+				),
+			);
 		return [];
 	};
 	const inputTypes = parseTypes(model.input_types);
