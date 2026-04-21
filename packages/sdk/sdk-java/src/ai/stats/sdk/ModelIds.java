@@ -163,6 +163,9 @@ public final class ModelIds {
     /** Model ID: <code>anthropic/claude-instant-1.2</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.2 */
     public static final String ANTHROPIC_CLAUDE_INSTANT_1_2 = "anthropic/claude-instant-1.2";
 
+    /** Model ID: <code>anthropic/claude-mythos-preview</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview */
+    public static final String ANTHROPIC_CLAUDE_MYTHOS_PREVIEW = "anthropic/claude-mythos-preview";
+
     /** Model ID: <code>anthropic/claude-opus-4</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4 */
     public static final String ANTHROPIC_CLAUDE_OPUS_4 = "anthropic/claude-opus-4";
 
@@ -646,6 +649,9 @@ public final class ModelIds {
     /** Model ID: <code>google/gemini-3.1-flash-lite-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-preview */
     public static final String GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW = "google/gemini-3.1-flash-lite-preview";
 
+    /** Model ID: <code>google/gemini-3.1-flash-tts-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-tts-preview */
+    public static final String GOOGLE_GEMINI_3_1_FLASH_TTS_PREVIEW = "google/gemini-3.1-flash-tts-preview";
+
     /** Model ID: <code>google/gemini-3.1-pro-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-pro-preview */
     public static final String GOOGLE_GEMINI_3_1_PRO_PREVIEW = "google/gemini-3.1-pro-preview";
 
@@ -711,6 +717,12 @@ public final class ModelIds {
 
     /** Model ID: <code>google/gemma-3n-e4b</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b */
     public static final String GOOGLE_GEMMA_3N_E4B = "google/gemma-3n-e4b";
+
+    /** Model ID: <code>google/gemma-4-26b-a4b</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b */
+    public static final String GOOGLE_GEMMA_4_26B_A4B = "google/gemma-4-26b-a4b";
+
+    /** Model ID: <code>google/gemma-4-31b</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b */
+    public static final String GOOGLE_GEMMA_4_31B = "google/gemma-4-31b";
 
     /** Model ID: <code>google/image-generation-002</code>. Model page: https://ai-stats.phaseo.app/models/google/image-generation-002 */
     public static final String GOOGLE_IMAGE_GENERATION_002 = "google/image-generation-002";
@@ -1204,6 +1216,9 @@ public final class ModelIds {
     /** Model ID: <code>minimax/music-2.5</code>. Model page: https://ai-stats.phaseo.app/models/minimax/music-2.5 */
     public static final String MINIMAX_MUSIC_2_5 = "minimax/music-2.5";
 
+    /** Model ID: <code>minimax/music-2.6</code>. Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6 */
+    public static final String MINIMAX_MUSIC_2_6 = "minimax/music-2.6";
+
     /** Model ID: <code>minimax/s2v-01</code>. Model page: https://ai-stats.phaseo.app/models/minimax/s2v-01 */
     public static final String MINIMAX_S2V_01 = "minimax/s2v-01";
 
@@ -1413,6 +1428,9 @@ public final class ModelIds {
 
     /** Model ID: <code>moonshotai/kimi-k2.5</code>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.5 */
     public static final String MOONSHOTAI_KIMI_K2_5 = "moonshotai/kimi-k2.5";
+
+    /** Model ID: <code>moonshotai/kimi-k2.6</code>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6 */
+    public static final String MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6";
 
     /** Model ID: <code>moonshotai/kimi-linear-48b</code>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-linear-48b */
     public static final String MOONSHOTAI_KIMI_LINEAR_48B = "moonshotai/kimi-linear-48b";
@@ -2296,9 +2314,6 @@ public final class ModelIds {
     /** Model ID: <code>qwen/qwen3-tts-12hz-1.7b-voicedesign</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-voicedesign */
     public static final String QWEN_QWEN3_TTS_12HZ_1_7B_VOICEDESIGN = "qwen/qwen3-tts-12hz-1.7b-voicedesign";
 
-    /** Model ID: <code>qwen/qwen3-tts-tokenizer-12hz</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-tokenizer-12hz */
-    public static final String QWEN_QWEN3_TTS_TOKENIZER_12HZ = "qwen/qwen3-tts-tokenizer-12hz";
-
     /** Model ID: <code>qwen/qwen3-vl-235b-a22b-instruct</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct */
     public static final String QWEN_QWEN3_VL_235B_A22B_INSTRUCT = "qwen/qwen3-vl-235b-a22b-instruct";
 
@@ -2376,6 +2391,15 @@ public final class ModelIds {
 
     /** Model ID: <code>qwen/qwen3.5-plus</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-plus */
     public static final String QWEN_QWEN3_5_PLUS = "qwen/qwen3.5-plus";
+
+    /** Model ID: <code>qwen/qwen3.6-35b-a3b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-35b-a3b */
+    public static final String QWEN_QWEN3_6_35B_A3B = "qwen/qwen3.6-35b-a3b";
+
+    /** Model ID: <code>qwen/qwen3.6-max-preview</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-max-preview */
+    public static final String QWEN_QWEN3_6_MAX_PREVIEW = "qwen/qwen3.6-max-preview";
+
+    /** Model ID: <code>qwen/qwen3.6-plus</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus */
+    public static final String QWEN_QWEN3_6_PLUS = "qwen/qwen3.6-plus";
 
     /** Model ID: <code>qwen/qwq-32b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b */
     public static final String QWEN_QWQ_32B = "qwen/qwq-32b";
@@ -2458,6 +2482,90 @@ public final class ModelIds {
     /** Model ID: <code>vercel/v0-1.5-sm</code>. Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-sm */
     public static final String VERCEL_V0_1_5_SM = "vercel/v0-1.5-sm";
 
+    /** Model ID: <code>voyage/rerank-1</code>. Model page: https://ai-stats.phaseo.app/models/voyage/rerank-1 */
+    public static final String VOYAGE_RERANK_1 = "voyage/rerank-1";
+
+    /** Model ID: <code>voyage/rerank-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2 */
+    public static final String VOYAGE_RERANK_2 = "voyage/rerank-2";
+
+    /** Model ID: <code>voyage/rerank-2-lite</code>. Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2-lite */
+    public static final String VOYAGE_RERANK_2_LITE = "voyage/rerank-2-lite";
+
+    /** Model ID: <code>voyage/rerank-lite-1</code>. Model page: https://ai-stats.phaseo.app/models/voyage/rerank-lite-1 */
+    public static final String VOYAGE_RERANK_LITE_1 = "voyage/rerank-lite-1";
+
+    /** Model ID: <code>voyage/voyage-01</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-01 */
+    public static final String VOYAGE_VOYAGE_01 = "voyage/voyage-01";
+
+    /** Model ID: <code>voyage/voyage-02</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-02 */
+    public static final String VOYAGE_VOYAGE_02 = "voyage/voyage-02";
+
+    /** Model ID: <code>voyage/voyage-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-2 */
+    public static final String VOYAGE_VOYAGE_2 = "voyage/voyage-2";
+
+    /** Model ID: <code>voyage/voyage-3</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3 */
+    public static final String VOYAGE_VOYAGE_3 = "voyage/voyage-3";
+
+    /** Model ID: <code>voyage/voyage-3-large</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3-large */
+    public static final String VOYAGE_VOYAGE_3_LARGE = "voyage/voyage-3-large";
+
+    /** Model ID: <code>voyage/voyage-3-lite</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3-lite */
+    public static final String VOYAGE_VOYAGE_3_LITE = "voyage/voyage-3-lite";
+
+    /** Model ID: <code>voyage/voyage-3.5</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3.5 */
+    public static final String VOYAGE_VOYAGE_3_5 = "voyage/voyage-3.5";
+
+    /** Model ID: <code>voyage/voyage-3.5-lite</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-3.5-lite */
+    public static final String VOYAGE_VOYAGE_3_5_LITE = "voyage/voyage-3.5-lite";
+
+    /** Model ID: <code>voyage/voyage-4</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4 */
+    public static final String VOYAGE_VOYAGE_4 = "voyage/voyage-4";
+
+    /** Model ID: <code>voyage/voyage-4-large</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4-large */
+    public static final String VOYAGE_VOYAGE_4_LARGE = "voyage/voyage-4-large";
+
+    /** Model ID: <code>voyage/voyage-4-lite</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-4-lite */
+    public static final String VOYAGE_VOYAGE_4_LITE = "voyage/voyage-4-lite";
+
+    /** Model ID: <code>voyage/voyage-code-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-code-2 */
+    public static final String VOYAGE_VOYAGE_CODE_2 = "voyage/voyage-code-2";
+
+    /** Model ID: <code>voyage/voyage-code-3</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-code-3 */
+    public static final String VOYAGE_VOYAGE_CODE_3 = "voyage/voyage-code-3";
+
+    /** Model ID: <code>voyage/voyage-context-3</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-context-3 */
+    public static final String VOYAGE_VOYAGE_CONTEXT_3 = "voyage/voyage-context-3";
+
+    /** Model ID: <code>voyage/voyage-finance-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-finance-2 */
+    public static final String VOYAGE_VOYAGE_FINANCE_2 = "voyage/voyage-finance-2";
+
+    /** Model ID: <code>voyage/voyage-large-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-large-2 */
+    public static final String VOYAGE_VOYAGE_LARGE_2 = "voyage/voyage-large-2";
+
+    /** Model ID: <code>voyage/voyage-large-2-instruct</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-large-2-instruct */
+    public static final String VOYAGE_VOYAGE_LARGE_2_INSTRUCT = "voyage/voyage-large-2-instruct";
+
+    /** Model ID: <code>voyage/voyage-law-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-law-2 */
+    public static final String VOYAGE_VOYAGE_LAW_2 = "voyage/voyage-law-2";
+
+    /** Model ID: <code>voyage/voyage-lite-01</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-01 */
+    public static final String VOYAGE_VOYAGE_LITE_01 = "voyage/voyage-lite-01";
+
+    /** Model ID: <code>voyage/voyage-lite-01-instruct</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-01-instruct */
+    public static final String VOYAGE_VOYAGE_LITE_01_INSTRUCT = "voyage/voyage-lite-01-instruct";
+
+    /** Model ID: <code>voyage/voyage-lite-02-instruct</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-lite-02-instruct */
+    public static final String VOYAGE_VOYAGE_LITE_02_INSTRUCT = "voyage/voyage-lite-02-instruct";
+
+    /** Model ID: <code>voyage/voyage-multilingual-2</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multilingual-2 */
+    public static final String VOYAGE_VOYAGE_MULTILINGUAL_2 = "voyage/voyage-multilingual-2";
+
+    /** Model ID: <code>voyage/voyage-multimodal-3</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3 */
+    public static final String VOYAGE_VOYAGE_MULTIMODAL_3 = "voyage/voyage-multimodal-3";
+
+    /** Model ID: <code>voyage/voyage-multimodal-3.5</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5 */
+    public static final String VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5";
+
     /** Model ID: <code>x-ai/grok-0</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-0 */
     public static final String X_AI_GROK_0 = "x-ai/grok-0";
 
@@ -2517,6 +2625,9 @@ public final class ModelIds {
 
     /** Model ID: <code>x-ai/grok-4.20-multi-agent-beta</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta */
     public static final String X_AI_GROK_4_20_MULTI_AGENT_BETA = "x-ai/grok-4.20-multi-agent-beta";
+
+    /** Model ID: <code>x-ai/grok-4.3</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3 */
+    public static final String X_AI_GROK_4_3 = "x-ai/grok-4.3";
 
     /** Model ID: <code>x-ai/grok-code-fast-1</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1 */
     public static final String X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1";
