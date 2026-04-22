@@ -253,13 +253,6 @@ function parseSseFrame(frame: string): SseFrame {
 	};
 }
 
-function splitModalities(value: string | null | undefined): string[] {
-	return String(value ?? "")
-		.split(",")
-		.map((entry) => entry.trim().toLowerCase())
-		.filter(Boolean);
-}
-
 function modelHasCapabilityHint(
 	model: GatewaySupportedModel,
 	hints: string[],
@@ -369,7 +362,10 @@ function extractMusicErrorMessage(payload: unknown): string | null {
 	return null;
 }
 
-async function pollMusicGeneration(resourceId: string): Promise<{
+async function pollMusicGeneration(
+	resourceId: string,
+	signal?: AbortSignal,
+): Promise<{
 	payload: unknown;
 	urls: string[];
 	status: MusicStatus;
@@ -377,9 +373,12 @@ async function pollMusicGeneration(resourceId: string): Promise<{
 	let latestPayload: unknown = null;
 	let latestStatus: MusicStatus = null;
 	for (let attempt = 0; attempt < MUSIC_POLL_MAX_ATTEMPTS; attempt += 1) {
+		if (signal?.aborted) {
+			throw new DOMException("Polling aborted", "AbortError");
+		}
 		const response = await fetch(
 			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
-			{ method: "GET" },
+			{ method: "GET", signal },
 		);
 		const rawText = await response.text();
 		let payload: unknown = null;
@@ -412,6 +411,9 @@ async function pollMusicGeneration(resourceId: string): Promise<{
 		}
 		if (attempt < MUSIC_POLL_MAX_ATTEMPTS - 1) {
 			await wait(MUSIC_POLL_INTERVAL_MS);
+			if (signal?.aborted) {
+				throw new DOMException("Polling aborted", "AbortError");
+			}
 		}
 	}
 	return { payload: latestPayload, urls: [], status: latestStatus };
@@ -1352,7 +1354,6 @@ export default function ModelPlayground({
 	requestModelId,
 	modelName,
 	gatewayModels = [],
-	gatewayProviders = [],
 	primaryModelIdentifierByEndpoint = {},
 }: ModelPlaygroundProps) {
 	const [mode, setMode] = useState<PlaygroundMode>("text");
@@ -1371,6 +1372,8 @@ export default function ModelPlayground({
 	const [audioStats, setAudioStats] = useState<PlaygroundStats | null>(null);
 	const [audioElapsedMs, setAudioElapsedMs] = useState(0);
 	const audioStartRef = useRef<number | null>(null);
+	const isMountedRef = useRef(true);
+	const musicPollControllerRef = useRef<AbortController | null>(null);
 	const [imagePrompt, setImagePrompt] = useState("");
 	const [imageResponseUrls, setImageResponseUrls] = useState<string[]>([]);
 	const [imageResponseText, setImageResponseText] = useState("");
@@ -1434,15 +1437,6 @@ export default function ModelPlayground({
 		"moderation",
 		"moderations.create",
 	);
-	const outputModalitySet = useMemo(() => {
-		const set = new Set<string>();
-		for (const provider of gatewayProviders) {
-			for (const modality of splitModalities(provider.output_modalities)) {
-				set.add(modality);
-			}
-		}
-		return set;
-	}, [gatewayProviders]);
 	const chatHref = useMemo(
 		() => {
 			const modelPart = `model=${encodeURIComponent(preferredTextModelId)}`;
@@ -1516,33 +1510,6 @@ export default function ModelPlayground({
 		);
 		return byMode;
 	}, [gatewayModels]);
-	const hasModeSupport = useMemo(() => {
-		const supportsText =
-			outputModalitySet.has("text") || modelsByMode.text.length > 0;
-		const supportsAudio =
-			outputModalitySet.has("audio") || modelsByMode.audio.length > 0;
-		const supportsImage =
-			outputModalitySet.has("image") || modelsByMode.image.length > 0;
-		const supportsVideo =
-			outputModalitySet.has("video") || modelsByMode.video.length > 0;
-		const supportsTts = modelsByMode.tts.length > 0;
-		const supportsMusic = modelsByMode.music.length > 0;
-		const support: Record<PlaygroundMode, boolean> = {
-			text: supportsText,
-			tts: supportsTts,
-			music: supportsMusic,
-			audio: supportsAudio && !supportsTts && !supportsMusic,
-			image: supportsImage,
-			video: supportsVideo,
-			embeddings: modelsByMode.embeddings.length > 0,
-			moderation: modelsByMode.moderation.length > 0,
-		};
-		return support;
-	}, [modelsByMode, outputModalitySet]);
-	const availableModeConfigs = useMemo(
-		() => MODE_CONFIGS.filter((config) => hasModeSupport[config.mode]),
-		[hasModeSupport],
-	);
 	const resolvedTextModelId = useMemo(
 		() => resolveSupportedModelId(modelsByMode.text, preferredTextModelId),
 		[modelsByMode.text, preferredTextModelId],
@@ -1591,6 +1558,38 @@ export default function ModelPlayground({
 			),
 		[modelsByMode.moderation, preferredModerationModelId],
 	);
+	const hasModeSupport = useMemo(() => {
+		const supportsText = Boolean(resolvedTextModelId);
+		const supportsAudio = Boolean(resolvedAudioModelId);
+		const supportsImage = Boolean(resolvedImageModelId);
+		const supportsVideo = Boolean(resolvedVideoModelId);
+		const supportsTts = Boolean(resolvedTtsModelId);
+		const supportsMusic = Boolean(resolvedMusicModelId);
+		const support: Record<PlaygroundMode, boolean> = {
+			text: supportsText,
+			tts: supportsTts,
+			music: supportsMusic,
+			audio: supportsAudio && !supportsTts && !supportsMusic,
+			image: supportsImage,
+			video: supportsVideo,
+			embeddings: Boolean(resolvedEmbeddingsModelId),
+			moderation: Boolean(resolvedModerationModelId),
+		};
+		return support;
+	}, [
+		resolvedAudioModelId,
+		resolvedEmbeddingsModelId,
+		resolvedImageModelId,
+		resolvedModerationModelId,
+		resolvedMusicModelId,
+		resolvedTextModelId,
+		resolvedTtsModelId,
+		resolvedVideoModelId,
+	]);
+	const availableModeConfigs = useMemo(
+		() => MODE_CONFIGS.filter((config) => hasModeSupport[config.mode]),
+		[hasModeSupport],
+	);
 	const isAudioGenerationMode =
 		mode === "audio" || mode === "tts" || mode === "music";
 	const audioAction = mode === "music" ? "music" : "speech";
@@ -1624,6 +1623,14 @@ export default function ModelPlayground({
 			setMode(fallbackMode);
 		}
 	}, [availableModeConfigs, hasModeSupport, mode]);
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+			musicPollControllerRef.current?.abort();
+			musicPollControllerRef.current = null;
+		};
+	}, []);
 	useEffect(() => {
 		return () => {
 			if (audioResponseUrl && audioResponseUrl.startsWith("blob:")) {
@@ -1819,6 +1826,8 @@ export default function ModelPlayground({
 		targetModelId: string,
 	) => {
 		if (!trimmedAudioPrompt || audioIsGenerating || !targetModelId) return;
+		musicPollControllerRef.current?.abort();
+		musicPollControllerRef.current = null;
 
 		setAudioIsGenerating(true);
 		setAudioError(null);
@@ -1882,7 +1891,15 @@ export default function ModelPlayground({
 				if (action === "music" && !nextAudioUrl) {
 					const resourceId = extractMusicResourceId(payload);
 					if (resourceId) {
-						const polled = await pollMusicGeneration(resourceId);
+						const pollController = new AbortController();
+						musicPollControllerRef.current = pollController;
+						const polled = await pollMusicGeneration(
+							resourceId,
+							pollController.signal,
+						);
+						if (musicPollControllerRef.current === pollController) {
+							musicPollControllerRef.current = null;
+						}
 						payload = polled.payload;
 						const polledUsage = extractUsage(payload);
 						if (polledUsage) usage = polledUsage;
@@ -1892,8 +1909,11 @@ export default function ModelPlayground({
 						if (polledUrls.length > 0) {
 							nextAudioUrl = polledUrls[0] ?? null;
 						}
-						if (!nextAudioUrl && polled.status !== "failed") {
+						if (!nextAudioUrl && polled.status === "completed") {
 							nextAudioText = "Music generation completed with no playable URL.";
+						} else if (!nextAudioUrl && polled.status !== "failed") {
+							nextAudioText =
+								"Music generation is still in progress. Please try again shortly.";
 						}
 					}
 				}
@@ -1919,6 +1939,7 @@ export default function ModelPlayground({
 						? "Music request completed."
 						: "Audio request completed.";
 			}
+			if (!isMountedRef.current) return;
 			setAudioResponseUrl(nextAudioUrl);
 			setAudioResponseText(nextAudioText);
 
@@ -1942,14 +1963,23 @@ export default function ModelPlayground({
 				totalCostUsd,
 			});
 		} catch (requestError) {
+			if (
+				requestError instanceof DOMException &&
+				requestError.name === "AbortError"
+			) {
+				return;
+			}
 			const message =
 				requestError instanceof Error
 					? requestError.message
 					: action === "music"
 						? "Music request failed. Please try again."
 						: "Audio request failed. Please try again.";
+			if (!isMountedRef.current) return;
 			setAudioError(message);
 		} finally {
+			musicPollControllerRef.current = null;
+			if (!isMountedRef.current) return;
 			setAudioIsGenerating(false);
 			audioStartRef.current = null;
 		}
