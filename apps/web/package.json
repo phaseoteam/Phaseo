@@ -69,7 +69,7 @@
 		"@upstash/ratelimit": "^2.0.6",
 		"@upstash/redis": "^1.35.3",
 		"@vercel/analytics": "^2.0.1",
-		"@vercel/og": "^0.6.4",
+		"@vercel/og": "^0.11.1",
 		"@xyflow/react": "^12.10.1",
 		"ai": "^6.0.105",
 		"ajv": "^8.18.0",
