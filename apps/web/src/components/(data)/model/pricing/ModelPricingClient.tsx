@@ -597,7 +597,7 @@ export default function ModelPricingClient({
 
     useEffect(() => {
         setShowAllProviders(false);
-    }, [plan, quantizationFilter, sort, sortDirection]);
+    }, [plan, quantizationFilter]);
 
     useEffect(() => {
         try {
@@ -843,7 +843,7 @@ export default function ModelPricingClient({
                                         )}
                                     >
                                         <div className="overflow-hidden">
-                                            <div className="pt-3">
+                                            <div>
 												<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                                     {extraProviders.map((prov) => (
                                                         <ProviderCard
