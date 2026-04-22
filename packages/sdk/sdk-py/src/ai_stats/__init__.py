@@ -17,6 +17,7 @@ from .model_ids import MODEL_IDS, ModelIds
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "ai-stats-python"
+__version__ = "2.0.0"
 
 
 class _ChatCompletionsResource:
