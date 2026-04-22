@@ -65,9 +65,10 @@ export async function getTeamsSettingsData() {
 		}
 	}
 
-	const workspaceIds = uniqueStrings(
-		(membershipRows ?? []).map((row: any) => row?.workspace_id),
-	);
+	const workspaceIds = uniqueStrings([
+		...(membershipRows ?? []).map((row: any) => row?.workspace_id),
+		personalTeamId,
+	]);
 
 	let teams: Array<{ id: string; name: string }> = [];
 	if (workspaceIds.length) {
@@ -75,18 +76,13 @@ export async function getTeamsSettingsData() {
 			.from("workspaces")
 			.select("id, name")
 			.in("id", workspaceIds);
-		if (!error) teams = data ?? [];
-	}
-	if (!teams.length) {
-		const { data, error } = await readClient
-			.from("workspaces")
-			.select("id, name");
 		if (!error) {
 			teams = data ?? [];
 		} else {
 			const { data: legacyTeams } = await (readClient as any)
 				.from("teams")
-				.select("id, name");
+				.select("id, name")
+				.in("id", workspaceIds);
 			teams = legacyTeams ?? [];
 		}
 	}
