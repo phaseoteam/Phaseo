@@ -12,6 +12,7 @@ import {
 	ImageIcon,
 	Mic,
 	MessageSquare,
+	Music2,
 	ShieldAlert,
 	Sparkles,
 	TerminalSquare,
@@ -63,6 +64,12 @@ type ModelPlaygroundProps = {
 	requestModelId?: string;
 	modelName: string;
 	gatewayModels?: GatewaySupportedModel[];
+	gatewayProviders?: Array<{
+		model_id: string;
+		endpoint: string;
+		output_modalities: string;
+	}>;
+	primaryModelIdentifierByEndpoint?: Record<string, string>;
 };
 
 type PlaygroundStats = {
@@ -79,6 +86,8 @@ type SseFrame = {
 
 type PlaygroundMode =
 	| "text"
+	| "tts"
+	| "music"
 	| "audio"
 	| "image"
 	| "video"
@@ -115,12 +124,19 @@ const CODE_CATEGORY_ORDER: PlaygroundCodeSnippet["category"][] = [
 
 const MODE_CONFIGS: ModeConfig[] = [
 	{ mode: "text", label: "Text" },
+	{ mode: "tts", label: "TTS" },
+	{ mode: "music", label: "Music" },
 	{ mode: "audio", label: "Audio" },
 	{ mode: "image", label: "Image" },
 	{ mode: "video", label: "Video" },
 	{ mode: "embeddings", label: "Embeddings" },
 	{ mode: "moderation", label: "Moderation" },
 ];
+
+const TTS_CAPABILITY_HINTS = ["audio.speech", "audio.generate"];
+const MUSIC_CAPABILITY_HINTS = ["music.generate", "music"];
+const MUSIC_POLL_INTERVAL_MS = 2_500;
+const MUSIC_POLL_MAX_ATTEMPTS = 24;
 
 function resolveSupportedModelId(
 	models: GatewaySupportedModel[],
@@ -235,6 +251,170 @@ function parseSseFrame(frame: string): SseFrame {
 		eventType,
 		data: data.length > 0 ? data : null,
 	};
+}
+
+function splitModalities(value: string | null | undefined): string[] {
+	return String(value ?? "")
+		.split(",")
+		.map((entry) => entry.trim().toLowerCase())
+		.filter(Boolean);
+}
+
+function modelHasCapabilityHint(
+	model: GatewaySupportedModel,
+	hints: string[],
+): boolean {
+	const caps = model.capabilities ?? [];
+	return caps.some((capability) => {
+		const normalized = capability.trim().toLowerCase();
+		return hints.some((hint) => normalized.includes(hint));
+	});
+}
+
+function wait(ms: number): Promise<void> {
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+type MusicStatus = "queued" | "in_progress" | "completed" | "failed" | null;
+
+function normalizeMusicStatus(value: unknown): MusicStatus {
+	if (typeof value !== "string") return null;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return null;
+	if (
+		normalized === "queued" ||
+		normalized === "pending" ||
+		normalized === "processing" ||
+		normalized === "submitted"
+	) {
+		return "queued";
+	}
+	if (
+		normalized === "in_progress" ||
+		normalized === "running" ||
+		normalized === "working"
+	) {
+		return "in_progress";
+	}
+	if (
+		normalized === "completed" ||
+		normalized === "complete" ||
+		normalized === "succeeded" ||
+		normalized === "success"
+	) {
+		return "completed";
+	}
+	if (
+		normalized === "failed" ||
+		normalized === "error" ||
+		normalized === "cancelled" ||
+		normalized === "canceled"
+	) {
+		return "failed";
+	}
+	return null;
+}
+
+function extractMusicStatus(payload: unknown): MusicStatus {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	const result =
+		record.result && typeof record.result === "object"
+			? (record.result as Record<string, unknown>)
+			: null;
+	return (
+		normalizeMusicStatus(record.status) ??
+		normalizeMusicStatus(record.task_status) ??
+		normalizeMusicStatus(record.taskStatus) ??
+		normalizeMusicStatus(result?.status) ??
+		normalizeMusicStatus(result?.task_status) ??
+		null
+	);
+}
+
+function extractMusicResourceId(payload: unknown): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	const candidates = [
+		record.nativeId,
+		record.native_id,
+		record.nativeResponseId,
+		record.native_response_id,
+		record.musicId,
+		record.music_id,
+		record.id,
+	];
+	for (const value of candidates) {
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (trimmed) return trimmed;
+	}
+	return null;
+}
+
+function extractMusicErrorMessage(payload: unknown): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	if (typeof record.error === "string" && record.error.trim()) return record.error.trim();
+	if (
+		record.error &&
+		typeof record.error === "object" &&
+		typeof (record.error as Record<string, unknown>).message === "string"
+	) {
+		const message = String((record.error as Record<string, unknown>).message).trim();
+		if (message) return message;
+	}
+	if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+	if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+	return null;
+}
+
+async function pollMusicGeneration(resourceId: string): Promise<{
+	payload: unknown;
+	urls: string[];
+	status: MusicStatus;
+}> {
+	let latestPayload: unknown = null;
+	let latestStatus: MusicStatus = null;
+	for (let attempt = 0; attempt < MUSIC_POLL_MAX_ATTEMPTS; attempt += 1) {
+		const response = await fetch(
+			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
+			{ method: "GET" },
+		);
+		const rawText = await response.text();
+		let payload: unknown = null;
+		if (rawText.trim()) {
+			try {
+				payload = JSON.parse(rawText);
+			} catch {
+				payload = { raw_text: rawText };
+			}
+		}
+		latestPayload = payload;
+		const urls = extractGenerationUrls(payload);
+		if (!response.ok) {
+			const message =
+				extractMusicErrorMessage(payload) ||
+				rawText.trim() ||
+				`Music status request failed (${response.status}).`;
+			throw new Error(message);
+		}
+		if (urls.length > 0) {
+			return { payload, urls, status: "completed" };
+		}
+		const status = extractMusicStatus(payload);
+		latestStatus = status;
+		if (status === "failed") {
+			throw new Error(extractMusicErrorMessage(payload) ?? "Music generation failed.");
+		}
+		if (status === "completed") {
+			return { payload, urls: [], status };
+		}
+		if (attempt < MUSIC_POLL_MAX_ATTEMPTS - 1) {
+			await wait(MUSIC_POLL_INTERVAL_MS);
+		}
+	}
+	return { payload: latestPayload, urls: [], status: latestStatus };
 }
 
 type ParsedPlaygroundError = {
@@ -1172,6 +1352,8 @@ export default function ModelPlayground({
 	requestModelId,
 	modelName,
 	gatewayModels = [],
+	gatewayProviders = [],
+	primaryModelIdentifierByEndpoint = {},
 }: ModelPlaygroundProps) {
 	const [mode, setMode] = useState<PlaygroundMode>("text");
 	const [prompt, setPrompt] = useState("");
@@ -1220,22 +1402,63 @@ export default function ModelPlayground({
 	const trimmedPrompt = prompt.trim();
 	const hasPrompt = trimmedPrompt.length > 0;
 	const resolvedRequestModelId = (requestModelId ?? "").trim() || modelId;
+	const preferredModelIdentifier = (...capabilityIds: string[]): string => {
+		for (const capabilityId of capabilityIds) {
+			const candidate = primaryModelIdentifierByEndpoint[capabilityId]?.trim();
+			if (candidate) return candidate;
+		}
+		return resolvedRequestModelId;
+	};
+	const preferredTextModelId = preferredModelIdentifier(
+		"text.generate",
+		"chat.generate",
+		"responses",
+	);
+	const preferredImageModelId = preferredModelIdentifier(
+		"image.generate",
+		"images.generate",
+		"images.generations",
+	);
+	const preferredVideoModelId = preferredModelIdentifier("video.generate");
+	const preferredSpeechModelId = preferredModelIdentifier(
+		"audio.speech",
+		"audio.generate",
+	);
+	const preferredMusicModelId = preferredModelIdentifier("music.generate", "music");
+	const preferredEmbeddingsModelId = preferredModelIdentifier(
+		"text.embed",
+		"embeddings",
+	);
+	const preferredModerationModelId = preferredModelIdentifier(
+		"text.moderate",
+		"moderation",
+		"moderations.create",
+	);
+	const outputModalitySet = useMemo(() => {
+		const set = new Set<string>();
+		for (const provider of gatewayProviders) {
+			for (const modality of splitModalities(provider.output_modalities)) {
+				set.add(modality);
+			}
+		}
+		return set;
+	}, [gatewayProviders]);
 	const chatHref = useMemo(
 		() => {
-			const modelPart = `model=${encodeURIComponent(resolvedRequestModelId)}`;
+			const modelPart = `model=${encodeURIComponent(preferredTextModelId)}`;
 			if (!trimmedPrompt) return `/chat?${modelPart}`;
 			return `/chat?${modelPart}&prompt=${encodeURIComponent(trimmedPrompt)}`;
 		},
-		[resolvedRequestModelId, trimmedPrompt],
+		[preferredTextModelId, trimmedPrompt],
 	);
 	const codeSnippets = useMemo(
 		() =>
 			buildPlaygroundCodeSnippets({
-				modelId: resolvedRequestModelId,
+				modelId: preferredTextModelId,
 				modelName,
 				prompt: trimmedPrompt,
 			}),
-		[modelName, resolvedRequestModelId, trimmedPrompt],
+		[modelName, preferredTextModelId, trimmedPrompt],
 	);
 	const codeCategories = useMemo(
 		() => {
@@ -1271,6 +1494,8 @@ export default function ModelPlayground({
 	const modelsByMode = useMemo(() => {
 		const byMode: Record<PlaygroundMode, GatewaySupportedModel[]> = {
 			text: [],
+			tts: [],
+			music: [],
 			audio: [],
 			image: [],
 			video: [],
@@ -1283,42 +1508,98 @@ export default function ModelPlayground({
 		byMode.video = filterModelsForRoom(gatewayModels, "video");
 		byMode.embeddings = filterModelsForRoom(gatewayModels, "embeddings");
 		byMode.moderation = filterModelsForRoom(gatewayModels, "moderation");
+		byMode.tts = gatewayModels.filter((model) =>
+			modelHasCapabilityHint(model, TTS_CAPABILITY_HINTS),
+		);
+		byMode.music = gatewayModels.filter((model) =>
+			modelHasCapabilityHint(model, MUSIC_CAPABILITY_HINTS),
+		);
 		return byMode;
 	}, [gatewayModels]);
 	const hasModeSupport = useMemo(() => {
+		const supportsText =
+			outputModalitySet.has("text") || modelsByMode.text.length > 0;
+		const supportsAudio =
+			outputModalitySet.has("audio") || modelsByMode.audio.length > 0;
+		const supportsImage =
+			outputModalitySet.has("image") || modelsByMode.image.length > 0;
+		const supportsVideo =
+			outputModalitySet.has("video") || modelsByMode.video.length > 0;
+		const supportsTts = modelsByMode.tts.length > 0;
+		const supportsMusic = modelsByMode.music.length > 0;
 		const support: Record<PlaygroundMode, boolean> = {
-			text: modelsByMode.text.length > 0,
-			audio: modelsByMode.audio.length > 0,
-			image: modelsByMode.image.length > 0,
-			video: modelsByMode.video.length > 0,
+			text: supportsText,
+			tts: supportsTts,
+			music: supportsMusic,
+			audio: supportsAudio && !supportsTts && !supportsMusic,
+			image: supportsImage,
+			video: supportsVideo,
 			embeddings: modelsByMode.embeddings.length > 0,
 			moderation: modelsByMode.moderation.length > 0,
 		};
 		return support;
-	}, [modelsByMode]);
+	}, [modelsByMode, outputModalitySet]);
 	const availableModeConfigs = useMemo(
 		() => MODE_CONFIGS.filter((config) => hasModeSupport[config.mode]),
 		[hasModeSupport],
 	);
-	const resolvedAudioModelId = useMemo(() => {
-		return resolveSupportedModelId(modelsByMode.audio, resolvedRequestModelId);
-	}, [modelsByMode.audio, resolvedRequestModelId]);
+	const resolvedTextModelId = useMemo(
+		() => resolveSupportedModelId(modelsByMode.text, preferredTextModelId),
+		[modelsByMode.text, preferredTextModelId],
+	);
+	const resolvedAudioModelId = useMemo(
+		() => resolveSupportedModelId(modelsByMode.audio, preferredSpeechModelId),
+		[modelsByMode.audio, preferredSpeechModelId],
+	);
+	const resolvedTtsModelId = useMemo(
+		() =>
+			resolveSupportedModelId(
+				modelsByMode.tts.length > 0 ? modelsByMode.tts : modelsByMode.audio,
+				preferredSpeechModelId,
+			),
+		[modelsByMode.audio, modelsByMode.tts, preferredSpeechModelId],
+	);
+	const resolvedMusicModelId = useMemo(
+		() =>
+			resolveSupportedModelId(
+				modelsByMode.music.length > 0 ? modelsByMode.music : modelsByMode.audio,
+				preferredMusicModelId,
+			),
+		[modelsByMode.audio, modelsByMode.music, preferredMusicModelId],
+	);
 	const resolvedImageModelId = useMemo(
-		() => resolveSupportedModelId(modelsByMode.image, resolvedRequestModelId),
-		[modelsByMode.image, resolvedRequestModelId],
+		() => resolveSupportedModelId(modelsByMode.image, preferredImageModelId),
+		[modelsByMode.image, preferredImageModelId],
 	);
 	const resolvedVideoModelId = useMemo(
-		() => resolveSupportedModelId(modelsByMode.video, resolvedRequestModelId),
-		[modelsByMode.video, resolvedRequestModelId],
+		() => resolveSupportedModelId(modelsByMode.video, preferredVideoModelId),
+		[modelsByMode.video, preferredVideoModelId],
 	);
 	const resolvedEmbeddingsModelId = useMemo(
-		() => resolveSupportedModelId(modelsByMode.embeddings, resolvedRequestModelId),
-		[modelsByMode.embeddings, resolvedRequestModelId],
+		() =>
+			resolveSupportedModelId(
+				modelsByMode.embeddings,
+				preferredEmbeddingsModelId,
+			),
+		[modelsByMode.embeddings, preferredEmbeddingsModelId],
 	);
 	const resolvedModerationModelId = useMemo(
-		() => resolveSupportedModelId(modelsByMode.moderation, resolvedRequestModelId),
-		[modelsByMode.moderation, resolvedRequestModelId],
+		() =>
+			resolveSupportedModelId(
+				modelsByMode.moderation,
+				preferredModerationModelId,
+			),
+		[modelsByMode.moderation, preferredModerationModelId],
 	);
+	const isAudioGenerationMode =
+		mode === "audio" || mode === "tts" || mode === "music";
+	const audioAction = mode === "music" ? "music" : "speech";
+	const resolvedAudioModeModelId =
+		mode === "music"
+			? resolvedMusicModelId
+			: mode === "tts"
+				? resolvedTtsModelId
+				: resolvedAudioModelId;
 
 	useEffect(() => {
 		if (!isGenerating || startRef.current == null) return;
@@ -1386,7 +1667,7 @@ export default function ModelPlayground({
 	};
 
 	const handleGenerate = async () => {
-		if (!trimmedPrompt || isGenerating) return;
+		if (!trimmedPrompt || isGenerating || !resolvedTextModelId) return;
 
 		setIsGenerating(true);
 		setError(null);
@@ -1407,7 +1688,7 @@ export default function ModelPlayground({
 				},
 				body: JSON.stringify({
 					requestBody: {
-						model: resolvedRequestModelId,
+						model: resolvedTextModelId,
 						stream: true,
 						input: [{ role: "user", content: trimmedPrompt }],
 					},
@@ -1533,8 +1814,11 @@ export default function ModelPlayground({
 			startRef.current = null;
 		}
 	};
-	const handleGenerateAudio = async () => {
-		if (!trimmedAudioPrompt || audioIsGenerating || !resolvedAudioModelId) return;
+	const handleGenerateAudio = async (
+		action: "speech" | "music",
+		targetModelId: string,
+	) => {
+		if (!trimmedAudioPrompt || audioIsGenerating || !targetModelId) return;
 
 		setAudioIsGenerating(true);
 		setAudioError(null);
@@ -1548,24 +1832,29 @@ export default function ModelPlayground({
 		setAudioElapsedMs(0);
 
 		try {
-			const audioDefaults = getDefaultAudioRoomParams(resolvedAudioModelId);
+			const audioDefaults = getDefaultAudioRoomParams(targetModelId);
 			const audioOptions = buildAudioRequestOptions(
-				"speech",
-				resolvedAudioModelId,
+				action,
+				targetModelId,
 				audioDefaults,
 			);
+			const requestBody: Record<string, unknown> = {
+				model: targetModelId,
+				...audioOptions,
+			};
+			if (action === "music") {
+				requestBody.prompt = trimmedAudioPrompt;
+			} else {
+				requestBody.input = trimmedAudioPrompt;
+			}
 			const response = await fetch("/api/chat/audio", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					action: "speech",
-					requestBody: {
-						model: resolvedAudioModelId,
-						input: trimmedAudioPrompt,
-						...audioOptions,
-					},
+					action,
+					requestBody,
 					appHeaders: PLAYGROUND_APP_HEADERS,
 				}),
 			});
@@ -1579,11 +1868,35 @@ export default function ModelPlayground({
 			let nextAudioUrl: string | null = null;
 			let nextAudioText = "";
 			if (contentType.includes("application/json")) {
-				const payload = await response.json();
+				let payload = await response.json();
 				usage = extractUsage(payload);
 				meta = extractMeta(payload);
 				const maybeAudioUrl = extractAudioDataUrl(payload);
 				if (maybeAudioUrl) nextAudioUrl = maybeAudioUrl;
+				if (!nextAudioUrl) {
+					const generationUrls = extractGenerationUrls(payload);
+					if (generationUrls.length > 0) {
+						nextAudioUrl = generationUrls[0] ?? null;
+					}
+				}
+				if (action === "music" && !nextAudioUrl) {
+					const resourceId = extractMusicResourceId(payload);
+					if (resourceId) {
+						const polled = await pollMusicGeneration(resourceId);
+						payload = polled.payload;
+						const polledUsage = extractUsage(payload);
+						if (polledUsage) usage = polledUsage;
+						const polledMeta = extractMeta(payload);
+						if (polledMeta) meta = polledMeta;
+						const polledUrls = polled.urls;
+						if (polledUrls.length > 0) {
+							nextAudioUrl = polledUrls[0] ?? null;
+						}
+						if (!nextAudioUrl && polled.status !== "failed") {
+							nextAudioText = "Music generation completed with no playable URL.";
+						}
+					}
+				}
 				const maybeText = extractResponseText(payload).trim();
 				if (maybeText) nextAudioText = maybeText;
 			} else if (contentType.startsWith("audio/") && response.body) {
@@ -1601,7 +1914,10 @@ export default function ModelPlayground({
 				nextAudioUrl = URL.createObjectURL(normalizedBlob);
 			}
 			if (!nextAudioUrl && !nextAudioText) {
-				nextAudioText = "Audio request completed.";
+				nextAudioText =
+					action === "music"
+						? "Music request completed."
+						: "Audio request completed.";
 			}
 			setAudioResponseUrl(nextAudioUrl);
 			setAudioResponseText(nextAudioText);
@@ -1629,7 +1945,9 @@ export default function ModelPlayground({
 			const message =
 				requestError instanceof Error
 					? requestError.message
-					: "Audio request failed. Please try again.";
+					: action === "music"
+						? "Music request failed. Please try again."
+						: "Audio request failed. Please try again.";
 			setAudioError(message);
 		} finally {
 			setAudioIsGenerating(false);
@@ -1889,7 +2207,10 @@ export default function ModelPlayground({
 	const handleAudioPromptKeyDown = (
 		event: React.KeyboardEvent<HTMLTextAreaElement>,
 	) => {
-		handleEnterToSubmit(event, () => void handleGenerateAudio());
+		handleEnterToSubmit(
+			event,
+			() => void handleGenerateAudio(audioAction, resolvedAudioModeModelId),
+		);
 	};
 	const handleImagePromptKeyDown = (
 		event: React.KeyboardEvent<HTMLTextAreaElement>,
@@ -1942,6 +2263,10 @@ export default function ModelPlayground({
 		switch (targetMode) {
 			case "text":
 				return <FileText className="h-4 w-4" />;
+			case "tts":
+				return <Mic className="h-4 w-4" />;
+			case "music":
+				return <Music2 className="h-4 w-4" />;
 			case "audio":
 				return <Mic className="h-4 w-4" />;
 			case "image":
@@ -1969,7 +2294,23 @@ export default function ModelPlayground({
 			);
 		}
 
-		if (mode === "audio") {
+		if (isAudioGenerationMode) {
+			const audioPromptPlaceholder =
+				mode === "music"
+					? "Describe the track you want to generate. Add style, mood, instruments, or lyrics..."
+					: mode === "tts"
+						? "Enter text to convert to speech..."
+						: "Enter text to generate audio...";
+			const audioGenerateLabel =
+				mode === "music"
+					? "Generate Music"
+					: mode === "tts"
+						? "Generate Speech"
+						: "Generate Audio";
+			const emptyAudioLabel =
+				mode === "music"
+					? "Generated music appears here."
+					: "Audio output appears here.";
 			return (
 				<div className="grid gap-6 md:grid-cols-2">
 					<div className="flex min-h-[440px] flex-col gap-3">
@@ -1977,17 +2318,23 @@ export default function ModelPlayground({
 							value={audioPrompt}
 							onChange={(event) => setAudioPrompt(event.target.value)}
 							onKeyDown={handleAudioPromptKeyDown}
-							placeholder="Enter text to convert to speech..."
+							placeholder={audioPromptPlaceholder}
 							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 						/>
 						<Button
 							type="button"
-							onClick={handleGenerateAudio}
-							disabled={!hasAudioPrompt || audioIsGenerating || !resolvedAudioModelId}
+							onClick={() =>
+								void handleGenerateAudio(audioAction, resolvedAudioModeModelId)
+							}
+							disabled={
+								!hasAudioPrompt ||
+								audioIsGenerating ||
+								!resolvedAudioModeModelId
+							}
 							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 						>
 							<Sparkles className="h-4 w-4" />
-							{audioIsGenerating ? "Generating..." : "Generate Audio"}
+							{audioIsGenerating ? "Generating..." : audioGenerateLabel}
 						</Button>
 						{audioError ? (
 							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
@@ -2017,7 +2364,7 @@ export default function ModelPlayground({
 						) : showAudioThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyAudioResponse ? (
-							renderEmptyPanel("Audio output appears here.")
+							renderEmptyPanel(emptyAudioLabel)
 						) : null}
 					</div>
 				</div>
@@ -2329,7 +2676,7 @@ export default function ModelPlayground({
 										)} | ${formatCost(stats.totalCostUsd)}`}
 									</div>
 								) : null
-							: mode === "audio"
+							: isAudioGenerationMode
 								? audioIsGenerating ? (
 										<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
 											<Clock3 className="h-3.5 w-3.5" />
@@ -2382,7 +2729,7 @@ export default function ModelPlayground({
 								<Button
 									type="button"
 									onClick={handleGenerate}
-									disabled={!hasPrompt || isGenerating}
+									disabled={!hasPrompt || isGenerating || !resolvedTextModelId}
 									className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 								>
 									<Sparkles className="h-4 w-4" />
