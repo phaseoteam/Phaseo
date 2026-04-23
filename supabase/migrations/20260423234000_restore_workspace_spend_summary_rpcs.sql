@@ -15,9 +15,10 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_current_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc'));
-  v_prev_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc')) - interval '1 month';
+  v_current_month_start_ts timestamptz := (date_trunc('month', now() at time zone 'UTC') at time zone 'UTC');
+  v_prev_month_start_ts timestamptz := ((date_trunc('month', now() at time zone 'UTC') - interval '1 month') at time zone 'UTC');
   v_prev_month_nanos bigint := 0;
+  v_prev_month_cents bigint := 0;
 begin
   if p_workspace_id is null then
     raise exception 'workspace_id_required';
@@ -49,7 +50,8 @@ begin
     and gr.created_at >= v_prev_month_start_ts
     and gr.created_at < v_current_month_start_ts;
 
-  return v_prev_month_nanos;
+  v_prev_month_cents := floor(v_prev_month_nanos::numeric / 10000000.0)::bigint;
+  return v_prev_month_cents;
 end;
 $$;
 
@@ -65,8 +67,9 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_now_utc timestamptz := now();
-  v_current_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc'));
+  v_current_month_start_ts timestamptz := (date_trunc('month', now() at time zone 'UTC') at time zone 'UTC');
   v_mtd_nanos bigint := 0;
+  v_mtd_cents bigint := 0;
 begin
   if p_workspace_id is null then
     raise exception 'workspace_id_required';
@@ -98,7 +101,8 @@ begin
     and gr.created_at >= v_current_month_start_ts
     and gr.created_at <= v_now_utc;
 
-  return v_mtd_nanos;
+  v_mtd_cents := floor(v_mtd_nanos::numeric / 10000000.0)::bigint;
+  return v_mtd_cents;
 end;
 $$;
 

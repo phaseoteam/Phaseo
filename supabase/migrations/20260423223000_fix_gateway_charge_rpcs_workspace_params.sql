@@ -81,6 +81,7 @@ declare
   v_auto_top_up_amount_nanos bigint;
   v_auto_top_up_account_id text;
   v_stripe_customer_id text;
+  v_applied boolean;
 begin
   if p_workspace_id is null then
     raise exception 'missing_workspace_id';
@@ -186,18 +187,20 @@ begin
   );
 
   v_stripe_customer_id := nullif(v_result_json ->> 'stripe_customer_id', '');
+  v_applied := v_status in ('top_up_required', 'top_up_not_required');
 
   update public.gateway_request_charges
-  set status = 'applied',
+  set status = case when v_applied then 'applied' else 'failed' end,
       deducted_status = v_status,
       auto_top_up_required = v_status = 'top_up_required',
+      error_message = case when v_applied then null else format('deduct_and_check_top_up returned %s', v_status) end,
       updated_at = now()
   where workspace_id = p_workspace_id
     and request_id = p_request_id;
 
   return query
   select
-    true,
+    v_applied,
     false,
     v_status,
     v_auto_top_up_amount_nanos,

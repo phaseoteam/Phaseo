@@ -122,9 +122,9 @@ declare
   v_prev_month_nanos bigint := 0;
   v_current_month_spend numeric(12, 2);
   v_prev_month_spend numeric(12, 2);
-  v_current_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc'));
-  v_prev_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc')) - interval '1 month';
-  v_next_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc')) + interval '1 month';
+  v_current_month_start_ts timestamptz := (date_trunc('month', now() at time zone 'UTC') at time zone 'UTC');
+  v_prev_month_start_ts timestamptz := ((date_trunc('month', now() at time zone 'UTC') - interval '1 month') at time zone 'UTC');
+  v_next_month_start_ts timestamptz := ((date_trunc('month', now() at time zone 'UTC') + interval '1 month') at time zone 'UTC');
 begin
   select true, t.tier_updated_at
   into v_exists, v_tier_updated_at
@@ -173,7 +173,7 @@ end;
 $$;
 
 create or replace function public.get_due_enterprise_invoice_runs(
-  p_run_at timestamptz default (now() at time zone 'utc')
+  p_run_at timestamptz default now()
 )
 returns table (
   workspace_id uuid,
@@ -189,7 +189,16 @@ security definer
 set search_path = public
 as $$
 with params as (
-  select (p_run_at at time zone 'utc')::timestamptz as run_at
+  select
+    p_run_at as run_at,
+    (p_run_at at time zone 'UTC') as run_at_utc,
+    extract(
+      day from (
+        date_trunc('month', p_run_at at time zone 'UTC')
+        + interval '1 month'
+        - interval '1 day'
+      )
+    )::int as last_day_utc
 ),
 due_profiles as (
   select
@@ -204,7 +213,7 @@ due_profiles as (
     on w.workspace_id = p.workspace_id
   cross join params pa
   where p.enabled = true
-    and p.billing_day = extract(day from pa.run_at)::int
+    and least(p.billing_day, pa.last_day_utc) = least(extract(day from pa.run_at_utc)::int, pa.last_day_utc)
     and coalesce(t.billing_mode, 'wallet') = 'invoice'
     and w.stripe_customer_id is not null
 ),
@@ -213,12 +222,9 @@ windows as (
     d.*,
     pa.run_at,
     make_timestamptz(
-      extract(year from pa.run_at)::int,
-      extract(month from pa.run_at)::int,
-      least(
-        d.billing_day,
-        extract(day from (date_trunc('month', pa.run_at) + interval '1 month' - interval '1 day'))::int
-      ),
+      extract(year from pa.run_at_utc)::int,
+      extract(month from pa.run_at_utc)::int,
+      least(d.billing_day, pa.last_day_utc),
       0, 0, 0,
       'UTC'
     ) as this_cycle_end
@@ -309,3 +315,13 @@ comment on function public.cleanup_dormant_enterprise_workspaces()
 
 comment on function public.get_workspace_tier_info(uuid)
   is 'Single-tier workspace pricing info with a flat 5% markup.';
+
+revoke all on function public.calculate_tier_with_grace(uuid, bigint) from public;
+revoke all on function public.cleanup_dormant_enterprise_workspaces() from public;
+revoke all on function public.get_workspace_tier_info(uuid) from public;
+revoke all on function public.get_due_enterprise_invoice_runs(timestamptz) from public;
+
+grant execute on function public.calculate_tier_with_grace(uuid, bigint) to service_role;
+grant execute on function public.cleanup_dormant_enterprise_workspaces() to service_role;
+grant execute on function public.get_workspace_tier_info(uuid) to service_role;
+grant execute on function public.get_due_enterprise_invoice_runs(timestamptz) to service_role;

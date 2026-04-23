@@ -20,7 +20,7 @@ create table if not exists public.gateway_usage_rollup_workspace_request_state (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists gateway_usage_rollup_workspace_request_state_team_bucket_idx
+create index if not exists gateway_usage_rollup_workspace_request_state_workspace_bucket_idx
   on public.gateway_usage_rollup_workspace_request_state (workspace_id, bucket_15m desc);
 
 create or replace function public.apply_workspace_usage_rollup_delta(
@@ -313,10 +313,10 @@ comment on function public.apply_workspace_usage_rollup_delta(
   bigint,
   numeric,
   bigint
-) is 'Applies an additive delta to the team/key/provider/model 15-minute usage rollup.';
+) is 'Applies an additive delta to the workspace/key/provider/model 15-minute usage rollup.';
 
 comment on function public.upsert_gateway_request_into_workspace_usage_rollup(uuid, timestamptz, uuid) is
-  'Projects a single gateway_requests row into the team usage rollup and reconciles prior projections for mutable request rows.';
+  'Projects a single gateway_requests row into the workspace usage rollup and reconciles prior projections for mutable request rows.';
 
 revoke execute on function public.apply_workspace_usage_rollup_delta(
   timestamptz,
