@@ -1,0 +1,105 @@
+{
+  "key": "google-ai-studio:google/gemini-embedding-2:text.embed",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-embedding-2",
+  "capability_id": "text.embed",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.45,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_video_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.225,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.25,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    },
+    {
+      "meter": "input_video_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    }
+  ]
+}
