@@ -1873,6 +1873,7 @@ function ChatPlaygroundContent({
 					errorCode === "invalid_secret" ||
 					errorCode === "key_not_found_or_revoked" ||
 					errorCode === "unauthorised" ||
+					errorCode === "unauthorized" ||
 					lowerMessage.includes("invalid secret") ||
 					lowerMessage.includes("invalid_secret") ||
 					lowerMessage.includes("unauthorised") ||
@@ -1882,6 +1883,9 @@ function ChatPlaygroundContent({
 						? "Invalid secret"
 						: normalizedMessage === "key_not_found_or_revoked"
 							? "API key not found or revoked"
+							: normalizedMessage === "unauthorized" ||
+								  normalizedMessage === "unauthorised"
+								? "Unauthorized"
 							: normalizedMessage;
 				const errorContent = isGatewayError
 					? "All Providers Failed"
