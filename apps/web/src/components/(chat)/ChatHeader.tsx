@@ -47,10 +47,6 @@ import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { ChatThread, UnifiedChatEndpoint } from "@/lib/indexeddb/chats";
 import {
-	DEFAULT_PERSONALIZATION_THEME_PRESET,
-	PERSONALIZATION_ACCENT_COLORS,
-	PERSONALIZATION_CHAT_THEME_PRESETS,
-	PERSONALIZATION_FONT_FAMILIES,
 	type PersonalizationSettings,
 	type ResolvedChatroomTheme,
 } from "@/components/(chat)/playground/chat-playground-core";
@@ -222,13 +218,6 @@ export function ChatHeader({
 		message: string;
 		type: "success" | "error" | "info";
 	} | null>(null);
-	const selectedThemePreset = useMemo(
-		() =>
-			PERSONALIZATION_CHAT_THEME_PRESETS.find(
-				(preset) => preset.id === personalization.themePreset,
-			) ?? PERSONALIZATION_CHAT_THEME_PRESETS[0],
-		[personalization.themePreset],
-	);
 	const groupedEntries = useMemo(
 		() => Array.from(modelOptions.grouped.entries()),
 		[modelOptions.grouped]
@@ -1195,181 +1184,6 @@ export function ChatHeader({
 													placeholder="I like short, actionable responses."
 													rows={3}
 												/>
-											</div>
-											<div className="grid gap-2">
-												<Label htmlFor="theme-preset">
-													Theme preset
-												</Label>
-												<Select
-													value={personalization.themePreset}
-													onValueChange={(value) => {
-														const nextPreset =
-															PERSONALIZATION_CHAT_THEME_PRESETS.find(
-																(preset) =>
-																	preset.id ===
-																	value,
-															);
-														if (!nextPreset) return;
-														onPersonalizationChange({
-															...personalization,
-															themePreset:
-																nextPreset.id,
-															accentColor:
-																nextPreset.id ===
-																DEFAULT_PERSONALIZATION_THEME_PRESET
-																	? personalization.accentColor
-																	: nextPreset.defaultAccentColor,
-														});
-													}}
-												>
-													<SelectTrigger id="theme-preset">
-														<SelectValue placeholder="Choose a theme" />
-													</SelectTrigger>
-													<SelectContent>
-														{PERSONALIZATION_CHAT_THEME_PRESETS.map(
-															(preset) => (
-																<SelectItem
-																	key={preset.id}
-																	value={preset.id}
-																>
-																	<span className="flex items-center gap-2">
-																		<span
-																			className="h-3 w-3 rounded-full border border-border"
-																			style={{
-																				backgroundColor:
-																					preset.defaultAccentColor,
-																			}}
-																		/>
-																		{preset.label}
-																	</span>
-																</SelectItem>
-															),
-														)}
-													</SelectContent>
-												</Select>
-												<p className="text-xs text-muted-foreground">
-													{selectedThemePreset.description}
-												</p>
-											</div>
-											<div className="grid gap-2">
-												<Label htmlFor="font-family">
-													Font family
-												</Label>
-												<Select
-													value={personalization.fontFamily}
-													onValueChange={(value) =>
-														onPersonalizationChange({
-															...personalization,
-															fontFamily: value as PersonalizationSettings["fontFamily"],
-														})
-													}
-												>
-													<SelectTrigger id="font-family">
-														<SelectValue placeholder="Choose a font" />
-													</SelectTrigger>
-													<SelectContent>
-														{PERSONALIZATION_FONT_FAMILIES.map(
-															(font) => (
-																<SelectItem
-																	key={font.id}
-																	value={font.id}
-																>
-																	{font.label}
-																</SelectItem>
-															),
-														)}
-													</SelectContent>
-												</Select>
-											</div>
-											<div className="grid gap-2">
-												<Label htmlFor="accent-color">
-													Accent color
-												</Label>
-												<Select
-													value={
-														personalization.accentColor
-													}
-													disabled={
-														personalization.themePreset !==
-														DEFAULT_PERSONALIZATION_THEME_PRESET
-													}
-													onValueChange={(value) =>
-														onPersonalizationChange(
-															{
-																...personalization,
-																accentColor:
-																	value,
-															}
-														)
-													}
-												>
-													<SelectTrigger id="accent-color">
-														<SelectValue placeholder="Select a color" />
-													</SelectTrigger>
-													<SelectContent>
-														{PERSONALIZATION_ACCENT_COLORS.map(
-															(color) => (
-																<SelectItem
-																	key={
-																		color.value
-																	}
-																	value={
-																		color.value
-																	}
-																>
-																	<span className="flex items-center gap-2">
-																		<span
-																			className="h-3 w-3 rounded-full border border-border"
-																			style={{
-																				backgroundColor:
-																					color.value,
-																			}}
-																		/>
-																		{
-																			color.label
-																		}
-																	</span>
-																</SelectItem>
-															)
-														)}
-													</SelectContent>
-												</Select>
-												{personalization.themePreset !==
-												DEFAULT_PERSONALIZATION_THEME_PRESET ? (
-													<p className="text-xs text-muted-foreground">
-														Switch to Custom to pick
-														a manual accent color.
-													</p>
-												) : null}
-											</div>
-											<div
-												className="rounded-lg border px-3 py-3"
-												style={{
-													borderColor: theme.composerBorder,
-													backgroundColor:
-														theme.assistantBubbleBackground,
-												}}
-											>
-												<div className="grid gap-2">
-													<p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-														Theme preview
-													</p>
-													<div className="flex items-center gap-2">
-														<span
-															className="h-5 w-12 rounded-full border"
-															style={{
-																backgroundColor:
-																	theme.accentColor,
-																borderColor:
-																	theme.composerBorder,
-															}}
-														/>
-														<span className="text-xs text-muted-foreground">
-															{theme.presetLabel} -{" "}
-															{theme.fontFamilyLabel}
-														</span>
-													</div>
-												</div>
 											</div>
 										</div>
 									)}

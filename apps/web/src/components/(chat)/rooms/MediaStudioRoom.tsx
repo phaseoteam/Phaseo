@@ -1618,6 +1618,22 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						});
 
 						if (!response.ok) {
+							const contentType =
+								(response.headers.get("content-type") ?? "").toLowerCase();
+							if (contentType.includes("application/json")) {
+								try {
+									const payload = (await response.clone().json()) as
+										| Record<string, unknown>
+										| null;
+									const reason = toOptionalString(payload?.reason);
+									const message = toOptionalString(payload?.message);
+									const errorCode = toOptionalString(payload?.error);
+									const detail = message ?? reason ?? errorCode;
+									if (detail) throw new Error(detail);
+								} catch {
+									// Fall back to response.text()/status below.
+								}
+							}
 							const text = await response.text();
 							throw new Error(text || `Request failed (${response.status})`);
 						}
