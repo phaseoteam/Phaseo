@@ -3200,11 +3200,11 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5.5",
-    "provider_api_model_id": "openai:openai/gpt-5.5",
-    "provider_model_slug": "gpt-5.5",
+    "api_model_id": "openai/gpt-5.5-20260423",
+    "provider_api_model_id": "openai:openai/gpt-5.5-20260423",
+    "provider_model_slug": "gpt-5.5-20260423",
     "internal_model_id": "openai/gpt-5.5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -3215,7 +3215,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": [
           {
             "param_id": "seed",
@@ -3325,11 +3325,11 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5.5-pro",
-    "provider_api_model_id": "openai:openai/gpt-5.5-pro",
-    "provider_model_slug": "gpt-5.5-pro",
+    "api_model_id": "openai/gpt-5.5-pro-20260423",
+    "provider_api_model_id": "openai:openai/gpt-5.5-pro-20260423",
+    "provider_model_slug": "gpt-5.5-pro-20260423",
     "internal_model_id": "openai/gpt-5.5-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -3340,7 +3340,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": [
           {
             "param_id": "seed",

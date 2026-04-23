@@ -1622,7 +1622,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								(response.headers.get("content-type") ?? "").toLowerCase();
 							if (contentType.includes("application/json")) {
 								try {
-									const payload = (await response.json()) as
+									const payload = (await response.clone().json()) as
 										| Record<string, unknown>
 										| null;
 									const reason = toOptionalString(payload?.reason);
@@ -1631,7 +1631,10 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									const detail = message ?? reason ?? errorCode;
 									if (detail) throw new Error(detail);
 								} catch (parseError) {
-									if (parseError instanceof Error) throw parseError;
+									if (parseError instanceof Error && parseError.message) {
+										throw parseError;
+									}
+									// Fall back to response.text()/status below.
 								}
 							}
 							const text = await response.text();
