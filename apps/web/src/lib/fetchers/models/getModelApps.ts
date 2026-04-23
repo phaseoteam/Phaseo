@@ -26,6 +26,7 @@ type ModelAppsRollupRpcRow = {
 };
 
 type ModelAppsRequestRow = {
+	id: string | null;
 	app_id: string | null;
 	success: boolean | null;
 	usage: unknown;
@@ -199,15 +200,17 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 		string,
 		{ requests: bigint; success: bigint; tokens: bigint }
 	>();
+	const seenRequestIds = new Set<string>();
 
 	const fetchByColumn = async (column: "canonical_model_id" | "model_id") => {
 		for (let offset = 0; ; offset += PAGE_SIZE) {
 			const { data, error } = await args.client
 				.from("gateway_requests")
-				.select("app_id, success, usage")
+				.select("id, app_id, success, usage")
 				.in(column, args.aliases)
 				.not("app_id", "is", null)
 				.order("created_at", { ascending: true })
+				.order("id", { ascending: true })
 				.range(offset, offset + PAGE_SIZE - 1);
 
 			if (error) {
@@ -222,6 +225,12 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 			if (!Array.isArray(data) || data.length === 0) break;
 
 			for (const row of data as ModelAppsRequestRow[]) {
+				const requestId = String(row?.id ?? "").trim();
+				if (requestId) {
+					if (seenRequestIds.has(requestId)) continue;
+					seenRequestIds.add(requestId);
+				}
+
 				const appId = String(row?.app_id ?? "").trim();
 				if (!appId) continue;
 
@@ -241,9 +250,7 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 	};
 
 	await fetchByColumn("canonical_model_id");
-	if (aggregate.size === 0) {
-		await fetchByColumn("model_id");
-	}
+	await fetchByColumn("model_id");
 
 	if (aggregate.size === 0) return [];
 

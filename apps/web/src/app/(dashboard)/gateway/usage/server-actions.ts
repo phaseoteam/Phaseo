@@ -1236,7 +1236,6 @@ export async function fetchChartData(
 		toIso: string,
 	): Promise<any[]> => {
 		const pageSize = 1000;
-		const maxPages = 20;
 		const merged = new Map<
 			string,
 			{
@@ -1249,17 +1248,17 @@ export async function fetchChartData(
 			}
 		>();
 
-		for (let page = 0; page < maxPages; page += 1) {
-			const from = page * pageSize;
+		for (let from = 0; ; from += pageSize) {
 			const to = from + pageSize - 1;
 			let query = supabase
 				.from("gateway_requests")
-				.select("created_at, provider, model_id, usage, cost_nanos")
+				.select("id, created_at, provider, model_id, usage, cost_nanos")
 				.eq("workspace_id", workspaceId)
 				.eq("success", true)
 				.gte("created_at", fromIso)
 				.lte("created_at", toIso)
 				.order("created_at", { ascending: true })
+				.order("id", { ascending: true })
 				.range(from, to);
 
 			if (params.keyFilter) {

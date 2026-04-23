@@ -18,6 +18,7 @@ type ProviderModelRollupRow = {
 };
 
 type ProviderModelRequestRow = {
+	id: string | null;
 	created_at: string;
 	canonical_model_id: string | null;
 	model_id: string | null;
@@ -95,11 +96,17 @@ async function fetchProviderModelRollupRows(
 ): Promise<ProviderModelRollupRow[]> {
 	const supabase = createAdminClient();
 	const rows: ProviderModelRollupRow[] = [];
-	let hitPageCap = true;
+	let hitPageCap = false;
 	let pagesFetched = 0;
 	let hadError = false;
+	const seenRequestIds = new Set<string>();
+	const filteredModelIds = Array.isArray(modelIds)
+		? Array.from(
+				new Set(modelIds.map((modelId) => String(modelId ?? "").trim()).filter(Boolean)),
+			)
+		: null;
 
-	if (Array.isArray(modelIds) && modelIds.length === 0) {
+	if (Array.isArray(modelIds) && filteredModelIds?.length === 0) {
 		logUsageFetch("provider_model_rollup_query", {
 			providerId: apiProviderId,
 			filteredModelIds: 0,
@@ -111,48 +118,71 @@ async function fetchProviderModelRollupRows(
 		return rows;
 	}
 
-	for (let page = 0, from = 0; page < Math.max(1, maxPages); page += 1, from += PAGE_SIZE) {
-		pagesFetched += 1;
-		const to = from + PAGE_SIZE - 1;
-		const query = supabase
-			.from("gateway_requests")
-			.select("created_at, canonical_model_id, model_id, usage")
-			.eq("provider", apiProviderId)
-			.gte("created_at", sinceIso)
-			.lte("created_at", nowIso)
-			.order("created_at", { ascending: true })
-			.range(from, to);
-		const { data, error } = await query;
+	const columnsToQuery = filteredModelIds
+		? (["canonical_model_id", "model_id"] as const)
+		: ([null] as const);
 
-		if (error) {
-			hadError = true;
-			hitPageCap = false;
-			console.error("Error loading provider rollup rows for chart:", error);
-			break;
-		}
-		if (!Array.isArray(data) || data.length === 0) {
-			hitPageCap = false;
-			break;
-		}
-
-		for (const row of (data ?? []) as ProviderModelRequestRow[]) {
-			const canonicalModelId =
-				String(row?.canonical_model_id ?? "").trim() ||
-				String(row?.model_id ?? "").trim();
-			if (!canonicalModelId) continue;
-			if (Array.isArray(modelIds) && modelIds.length > 0 && !modelIds.includes(canonicalModelId)) {
-				continue;
+	for (const filterColumn of columnsToQuery) {
+		let queryHitPageCap = true;
+		for (
+			let page = 0, from = 0;
+			page < Math.max(1, maxPages);
+			page += 1, from += PAGE_SIZE
+		) {
+			pagesFetched += 1;
+			const to = from + PAGE_SIZE - 1;
+			let query = supabase
+				.from("gateway_requests")
+				.select("id, created_at, canonical_model_id, model_id, usage")
+				.eq("provider", apiProviderId)
+				.gte("created_at", sinceIso)
+				.lte("created_at", nowIso)
+				.order("created_at", { ascending: true })
+				.order("id", { ascending: true })
+				.range(from, to);
+			if (filterColumn && filteredModelIds && filteredModelIds.length > 0) {
+				query = query.in(filterColumn, filteredModelIds);
 			}
 
-			rows.push({
-				bucket_15m: String(row.created_at ?? "").trim(),
-				canonical_model_id: canonicalModelId,
-				total_tokens: getTotalTokensFromUsage(row.usage),
-			});
+			const { data, error } = await query;
+
+			if (error) {
+				hadError = true;
+				queryHitPageCap = false;
+				console.error("Error loading provider rollup rows for chart:", error);
+				break;
+			}
+			if (!Array.isArray(data) || data.length === 0) {
+				queryHitPageCap = false;
+				break;
+			}
+
+			for (const row of data as ProviderModelRequestRow[]) {
+				const requestId = String(row?.id ?? "").trim();
+				if (requestId) {
+					if (seenRequestIds.has(requestId)) continue;
+					seenRequestIds.add(requestId);
+				}
+
+				const canonicalModelId =
+					String(row?.canonical_model_id ?? "").trim() ||
+					String(row?.model_id ?? "").trim();
+				if (!canonicalModelId) continue;
+
+				rows.push({
+					bucket_15m: String(row.created_at ?? "").trim(),
+					canonical_model_id: canonicalModelId,
+					total_tokens: getTotalTokensFromUsage(row.usage),
+				});
+			}
+			if (data.length < PAGE_SIZE) {
+				queryHitPageCap = false;
+				break;
+			}
 		}
-		if (data.length < PAGE_SIZE) {
-			hitPageCap = false;
-			break;
+
+		if (queryHitPageCap) {
+			hitPageCap = true;
 		}
 	}
 
@@ -163,7 +193,7 @@ async function fetchProviderModelRollupRows(
 	}
 	logUsageFetch("provider_model_rollup_query", {
 		providerId: apiProviderId,
-		filteredModelIds: Array.isArray(modelIds) ? modelIds.length : null,
+		filteredModelIds: filteredModelIds?.length ?? null,
 		pagesFetched,
 		rows: rows.length,
 		hitPageCap,
