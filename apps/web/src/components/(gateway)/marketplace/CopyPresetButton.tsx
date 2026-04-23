@@ -32,8 +32,8 @@ export default function CopyPresetButton({
 							router.push("/sign-in");
 							return;
 						}
-						if (message === "TEAM_REQUIRED") {
-							toast.error("Select a team before copying a preset.");
+						if (message === "WORKSPACE_REQUIRED") {
+							toast.error("Select a workspace before copying a preset.");
 							return;
 						}
 						toast.error(message || "Failed to copy preset");

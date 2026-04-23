@@ -26,28 +26,28 @@ import { toast } from "sonner";
 
 export default function CreateManagementKeyDialog({
 	currentUserId,
-	currentTeamId,
-	teams,
+	currentWorkspaceId,
+	workspaces,
 }: {
 	currentUserId?: string | null;
-	currentTeamId?: string | null;
-	teams?: Array<{ id: string | null; name: string }>;
+	currentWorkspaceId?: string | null;
+	workspaces?: Array<{ id: string | null; name: string }>;
 }) {
 	const resolveInitialWorkspaceId = React.useCallback(() => {
-		const normalizedCurrent = String(currentTeamId ?? "").trim();
+		const normalizedCurrent = String(currentWorkspaceId ?? "").trim();
 		if (normalizedCurrent) return normalizedCurrent;
-		for (const team of teams ?? []) {
-			const teamId = String(team?.id ?? "").trim();
-			if (teamId) return teamId;
+		for (const workspace of workspaces ?? []) {
+			const workspaceId = String(workspace?.id ?? "").trim();
+			if (workspaceId) return workspaceId;
 		}
 		return null;
-	}, [currentTeamId, teams]);
+	}, [currentWorkspaceId, workspaces]);
 
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
-	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
+	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
 		resolveInitialWorkspaceId()
 	);
 
@@ -56,23 +56,23 @@ export default function CreateManagementKeyDialog({
 		!!name &&
 		!loading &&
 		!missingContext &&
-		typeof selectedTeamId === "string" &&
-		selectedTeamId.trim().length > 0;
+		typeof selectedWorkspaceId === "string" &&
+		selectedWorkspaceId.trim().length > 0;
 
 	React.useEffect(() => {
 		const nextWorkspaceId = resolveInitialWorkspaceId();
-		if (nextWorkspaceId !== selectedTeamId) {
-			setSelectedTeamId(nextWorkspaceId);
+		if (nextWorkspaceId !== selectedWorkspaceId) {
+			setSelectedWorkspaceId(nextWorkspaceId);
 		}
-	}, [resolveInitialWorkspaceId, selectedTeamId]);
+	}, [resolveInitialWorkspaceId, selectedWorkspaceId]);
 
 	async function onCreate(e?: React.FormEvent) {
 		e?.preventDefault();
 		if (!name) return;
 		if (
 			!currentUserId ||
-			typeof selectedTeamId !== "string" ||
-			selectedTeamId.trim().length === 0
+			typeof selectedWorkspaceId !== "string" ||
+			selectedWorkspaceId.trim().length === 0
 		) {
 			setPlainKey(null);
 			setLoading(false);
@@ -86,7 +86,7 @@ export default function CreateManagementKeyDialog({
 			const res: any = await createManagementKeyAction({
 				name,
 				creatorUserId: currentUserId as string,
-				workspaceId: selectedTeamId,
+				workspaceId: selectedWorkspaceId,
 				scopes: JSON.stringify([])
 			});
 			setPlainKey(res?.plaintext ?? null);
@@ -150,7 +150,7 @@ export default function CreateManagementKeyDialog({
 
 				{!plainKey ? (
 					<form onSubmit={onCreate} className="space-y-4">
-						{teams && teams.length > 0 ? (
+						{workspaces && workspaces.length > 0 ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -159,8 +159,8 @@ export default function CreateManagementKeyDialog({
 										className="w-full flex items-center justify-between"
 									>
 										<span>
-											{teams.find(
-												(t) => t.id === selectedTeamId
+											{workspaces.find(
+												(workspace) => workspace.id === selectedWorkspaceId
 											)?.name || "Personal"}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
@@ -171,14 +171,14 @@ export default function CreateManagementKeyDialog({
 									align="start"
 									className="w-full"
 								>
-									{teams.map((t) => (
+									{workspaces.map((workspace) => (
 										<DropdownMenuItem
-											key={String(t.id ?? "__null")}
+											key={String(workspace.id ?? "__null")}
 											onSelect={() =>
-												setSelectedTeamId(t.id ?? null)
+												setSelectedWorkspaceId(workspace.id ?? null)
 											}
 										>
-											{t.name}
+											{workspace.name}
 										</DropdownMenuItem>
 									))}
 								</DropdownMenuContent>

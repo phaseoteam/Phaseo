@@ -32,7 +32,7 @@ export default function ManagementApiKeysPage(props: {
 				</AlertTitle>
 				<AlertDescription className="text-amber-700 dark:text-amber-400">
 					Management API keys grant higher privileges to your account. They can
-					create resources, manage teams, and access sensitive data. Never share
+					create resources, manage workspaces, and access sensitive data. Never share
 					these keys and rotate them immediately if compromised.
 				</AlertDescription>
 			</Alert>
@@ -66,9 +66,9 @@ async function ManagementApiKeysContent({
 		.from("management_keys")
 		.select("*");
 
-	const { data: teamUsers } = await supabase
+	const { data: workspaceUsers } = await supabase
 		.from("workspace_members")
-		.select("workspace_id, teams:workspaces(id, name)")
+		.select("workspace_id, workspaces(id, name)")
 		.eq("user_id", user?.id);
 
 	let membershipWorkspaceIds: string[] = [];
@@ -112,18 +112,20 @@ async function ManagementApiKeysContent({
 	const rawCookieWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
 
-	const teams: Array<{ id: string; name: string }> = [];
+	const workspaces: Array<{ id: string; name: string }> = [];
 	const seenTeamIds = new Set<string>();
 
-	if (teamUsers) {
-		for (const tu of teamUsers) {
-			if (tu?.teams) {
-				const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
+	if (workspaceUsers) {
+		for (const workspaceUser of workspaceUsers) {
+			if (workspaceUser?.workspaces) {
+				const team = Array.isArray(workspaceUser.workspaces)
+					? workspaceUser.workspaces[0]
+					: workspaceUser.workspaces;
 				const teamId = String(team?.id ?? "").trim();
 				const teamName = String(team?.name ?? "").trim();
 				if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
 				seenTeamIds.add(teamId);
-				teams.push({ id: teamId, name: teamName });
+				workspaces.push({ id: teamId, name: teamName });
 			}
 		}
 	}
@@ -138,23 +140,24 @@ async function ManagementApiKeysContent({
 			const teamName = String(team?.name ?? "").trim();
 			if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
 			seenTeamIds.add(teamId);
-			teams.push({ id: teamId, name: teamName });
+			workspaces.push({ id: teamId, name: teamName });
 		}
 	}
 
-	const initialTeamCandidate =
+	const initialWorkspaceCandidate =
 		String(preferredWorkspaceId ?? "").trim() ||
 		String(rawCookieWorkspaceId ?? "").trim() ||
 		String(resolvedWorkspaceId ?? "").trim() ||
 		"";
-		const initialTeamId =
-			(initialTeamCandidate && teams.some((team) => team.id === initialTeamCandidate)
-				? initialTeamCandidate
-				: teams[0]?.id) ?? null;
+	const initialWorkspaceId =
+		(initialWorkspaceCandidate &&
+		workspaces.some((workspace) => workspace.id === initialWorkspaceCandidate)
+			? initialWorkspaceCandidate
+			: workspaces[0]?.id) ?? null;
 
 	const keysArray = (managementKeys ?? []).map((k: any) => ({ ...k }));
 
-	const teamsWithKeys = teams.map((t) => ({
+	const teamsWithKeys = workspaces.map((t) => ({
 		...t,
 		keys: keysArray.filter(
 			(k: any) => (k.workspace_id ?? null) === (t.id ?? null)
@@ -170,14 +173,14 @@ async function ManagementApiKeysContent({
 				actions={
 					<CreateManagementKeyDialog
 						currentUserId={user?.id}
-						currentTeamId={initialTeamId}
-						teams={teams}
+						currentWorkspaceId={initialWorkspaceId}
+						workspaces={workspaces}
 					/>
 				}
 			/>
 			<ManagementKeysPanel
 				teamsWithKeys={teamsWithKeys}
-				initialTeamId={initialTeamId}
+				initialTeamId={initialWorkspaceId}
 				currentUserId={user?.id}
 			/>
 		</div>

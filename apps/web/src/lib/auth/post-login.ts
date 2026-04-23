@@ -26,6 +26,11 @@ export type FinalizePostLoginResult = {
 	createdPersonalTeam: boolean;
 };
 
+type PersonalWorkspaceProvisionResult = {
+	workspaceId: string;
+	createdPersonalTeam: boolean;
+};
+
 function makeSlug(name: string) {
 	return name
 		.toLowerCase()
@@ -152,11 +157,11 @@ async function ensureWalletRow(
 	});
 }
 
-async function getOrCreatePersonalTeamId(opts: {
+async function legacyGetOrCreatePersonalWorkspace(opts: {
 	supabaseAdmin: ReturnType<typeof createAdminClient>;
 	userId: string;
 	displayName: string;
-}) {
+}): Promise<PersonalWorkspaceProvisionResult> {
 	const { supabaseAdmin, userId, displayName } = opts;
 	let createdPersonalTeam = false;
 
@@ -165,6 +170,12 @@ async function getOrCreatePersonalTeamId(opts: {
 			{ workspace_id: workspaceId, user_id: userId, role: "owner" },
 			{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
 		);
+	};
+
+	const ensureWorkspaceSettings = async (workspaceId: string) => {
+		await supabaseAdmin
+			.from("workspace_settings")
+			.upsert({ workspace_id: workspaceId }, { onConflict: "workspace_id" });
 	};
 
 	const hasTeamAccess = async (workspaceId: string): Promise<boolean> => {
@@ -211,6 +222,7 @@ async function getOrCreatePersonalTeamId(opts: {
 	const defaultWorkspaceId = String(userRow?.default_workspace_id ?? "").trim();
 	if (defaultWorkspaceId) {
 		if (await hasTeamAccess(defaultWorkspaceId)) {
+			await ensureWorkspaceSettings(defaultWorkspaceId);
 			return { workspaceId: defaultWorkspaceId, createdPersonalTeam };
 		}
 
@@ -220,7 +232,7 @@ async function getOrCreatePersonalTeamId(opts: {
 			.eq("user_id", userId)
 			.eq("default_workspace_id", defaultWorkspaceId);
 
-		console.warn("post_login_default_team_invalid", {
+		console.warn("post_login_default_workspace_invalid", {
 			userId,
 			defaultWorkspaceId,
 		});
@@ -236,6 +248,7 @@ async function getOrCreatePersonalTeamId(opts: {
 
 	if (ownedTeam?.id) {
 		await ensureOwnerMembership(ownedTeam.id);
+		await ensureWorkspaceSettings(ownedTeam.id);
 		await supabaseAdmin
 			.from("users")
 			.update({ default_workspace_id: ownedTeam.id })
@@ -257,6 +270,7 @@ async function getOrCreatePersonalTeamId(opts: {
 
 	if (personalCandidate && personalCandidate[0]?.id) {
 		await ensureOwnerMembership(personalCandidate[0].id);
+		await ensureWorkspaceSettings(personalCandidate[0].id);
 		await supabaseAdmin
 			.from("users")
 			.update({ default_workspace_id: personalCandidate[0].id })
@@ -299,10 +313,11 @@ async function getOrCreatePersonalTeamId(opts: {
 	}
 
 	if (!workspaceId) {
-		throw new Error("Could not obtain a team id");
+		throw new Error("Could not obtain a workspace id");
 	}
 
 	await ensureOwnerMembership(workspaceId);
+	await ensureWorkspaceSettings(workspaceId);
 
 	await supabaseAdmin
 		.from("users")
@@ -313,6 +328,45 @@ async function getOrCreatePersonalTeamId(opts: {
 	return {
 		workspaceId,
 		createdPersonalTeam,
+	};
+}
+
+async function provisionPersonalWorkspace(opts: {
+	supabaseAdmin: ReturnType<typeof createAdminClient>;
+	userId: string;
+	displayName: string;
+}): Promise<PersonalWorkspaceProvisionResult> {
+	const { supabaseAdmin, userId, displayName } = opts;
+	const { data, error } = await supabaseAdmin.rpc("provision_personal_workspace", {
+		p_user_id: userId,
+		p_display_name: displayName,
+	});
+
+	if (error) {
+		const message = String(error.message ?? "");
+		const missingRpc =
+			message.includes("provision_personal_workspace") &&
+			message.toLowerCase().includes("schema cache");
+		if (!missingRpc) {
+			throw new Error(`provision_personal_workspace_failed:${message || "unknown"}`);
+		}
+
+		console.warn(
+			"[post-login] provision_personal_workspace rpc unavailable, falling back to legacy provisioning",
+			{ userId },
+		);
+		return legacyGetOrCreatePersonalWorkspace(opts);
+	}
+
+	const row = Array.isArray(data) ? (data[0] ?? null) : data;
+	const workspaceId = String((row as any)?.workspace_id ?? "").trim();
+	if (!workspaceId) {
+		throw new Error("provision_personal_workspace_empty");
+	}
+
+	return {
+		workspaceId,
+		createdPersonalTeam: Boolean((row as any)?.created_workspace),
 	};
 }
 
@@ -352,7 +406,7 @@ export async function finalizePostLogin(
 
 	const supabaseAdmin = createAdminClient();
 
-	const provisionedTeam = await getOrCreatePersonalTeamId({
+	const provisionedTeam = await provisionPersonalWorkspace({
 		supabaseAdmin,
 		userId: user.id,
 		displayName,

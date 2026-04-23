@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { revalidatePath } from "next/cache";
 import { getStripe } from "@/lib/stripe";
-import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createClient } from "@/utils/supabase/server";
 
 type PaymentMethodSummary = {
@@ -89,13 +89,16 @@ async function listPaymentMethods(stripe: Stripe, customerId: string) {
 
 export async function GET() {
     try {
-        const { customerId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+        const { customerId } = await requireActiveWorkspaceStripeCustomer({ createIfMissing: true });
         const stripe = getStripe();
         const payload = await listPaymentMethods(stripe, customerId);
         return NextResponse.json(payload);
     } catch (error: any) {
         if (error?.message === "unauthorized") return toErrorResponse("Unauthorized", 401);
-        if (error?.message === "missing_team" || error?.message === "missing_stripe_customer") {
+        if (
+            error?.message === "missing_workspace" ||
+            error?.message === "missing_stripe_customer"
+        ) {
             return toErrorResponse(error.message, 400);
         }
         return toErrorResponse(error, 500);
@@ -105,7 +108,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId, workspaceId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+        const { customerId, workspaceId } = await requireActiveWorkspaceStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const returnUrl = resolveSafeReturnUrl(request, body?.returnUrl);
 
@@ -126,7 +129,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ url: session.url });
     } catch (error: any) {
         if (error?.message === "unauthorized") return toErrorResponse("Unauthorized", 401);
-        if (error?.message === "missing_team" || error?.message === "missing_stripe_customer") {
+        if (
+            error?.message === "missing_workspace" ||
+            error?.message === "missing_stripe_customer"
+        ) {
             return toErrorResponse(error.message, 400);
         }
         return toErrorResponse(error, 500);
@@ -136,7 +142,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+        const { customerId } = await requireActiveWorkspaceStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const paymentMethodId = typeof body?.paymentMethodId === "string" ? body.paymentMethodId.trim() : "";
         if (!paymentMethodId) {
@@ -164,7 +170,10 @@ export async function PATCH(request: Request) {
         return NextResponse.json(payload);
     } catch (error: any) {
         if (error?.message === "unauthorized") return toErrorResponse("Unauthorized", 401);
-        if (error?.message === "missing_team" || error?.message === "missing_stripe_customer") {
+        if (
+            error?.message === "missing_workspace" ||
+            error?.message === "missing_stripe_customer"
+        ) {
             return toErrorResponse(error.message, 400);
         }
         return toErrorResponse(error, 500);
@@ -174,7 +183,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId, workspaceId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+        const { customerId, workspaceId } = await requireActiveWorkspaceStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const paymentMethodId = typeof body?.paymentMethodId === "string" ? body.paymentMethodId.trim() : "";
         if (!paymentMethodId) {
@@ -220,7 +229,10 @@ export async function DELETE(request: Request) {
         return NextResponse.json(payload);
     } catch (error: any) {
         if (error?.message === "unauthorized") return toErrorResponse("Unauthorized", 401);
-        if (error?.message === "missing_team" || error?.message === "missing_stripe_customer") {
+        if (
+            error?.message === "missing_workspace" ||
+            error?.message === "missing_stripe_customer"
+        ) {
             return toErrorResponse(error.message, 400);
         }
         return toErrorResponse(error, 500);

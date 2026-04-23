@@ -23,7 +23,7 @@ export default async function AuthControls({
 	const user = getUserData?.user ?? null;
 
 	// Determine current active workspace id: prefer cookie, else user's default_workspace_id.
-	let currentTeamId: string | undefined = undefined;
+	let currentWorkspaceId: string | undefined = undefined;
 	// fetch user role from users table (if available)
 	let userRole: string | undefined = undefined;
 	let defaultWorkspaceId: string | undefined = undefined;
@@ -34,7 +34,7 @@ export default async function AuthControls({
 		const cookieStore = await cookies();
 		const cookie = await cookieStore.get("activeWorkspaceId");
 		if (cookie?.value) {
-			currentTeamId = cookie.value;
+			currentWorkspaceId = cookie.value;
 		}
 
 		// Regardless of cookie, if we have a logged-in user try to fetch their role
@@ -97,8 +97,8 @@ export default async function AuthControls({
 			<HeaderClient
 				isLoggedIn={false}
 				user={undefined}
-				teams={[]}
-				currentTeamId={undefined}
+				workspaces={[]}
+				currentWorkspaceId={undefined}
 				userRole={undefined}
 				variant={variant}
 			/>
@@ -106,18 +106,18 @@ export default async function AuthControls({
 	}
 
 	// Fetch workspaces for the switcher.
-	let teams: { id: string; name: string }[] = [];
+	let workspaces: { id: string; name: string }[] = [];
 	try {
 		const accessibleWorkspaceIds = Array.from(
 			new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
 		);
 
-		const membershipTeams = await supabase
+		const membershipWorkspaces = await supabase
 			.from("workspace_members")
 			.select("workspace_id, workspaces(id, name)")
 			.eq("user_id", user.id);
-		if (!membershipTeams.error && Array.isArray(membershipTeams.data)) {
-			teams = membershipTeams.data
+		if (!membershipWorkspaces.error && Array.isArray(membershipWorkspaces.data)) {
+			workspaces = membershipWorkspaces.data
 				.map((row: any) => {
 					const workspace =
 						Array.isArray(row?.workspaces) ? row.workspaces[0] : row?.workspaces;
@@ -135,22 +135,24 @@ export default async function AuthControls({
 				.select("id, name")
 				.in("id", accessibleWorkspaceIds);
 			if (!scoped.error && Array.isArray(scoped.data)) {
-				const scopedTeams = scoped.data.map((row: any) => ({
+				const scopedWorkspaces = scoped.data.map((row: any) => ({
 					id: String(row.id),
 					name: String(row.name),
 				}));
-				if (teams.length === 0) {
-					teams = scopedTeams;
+				if (workspaces.length === 0) {
+					workspaces = scopedWorkspaces;
 				} else {
-					const merged = new Map(teams.map((team) => [team.id, team]));
-					for (const team of scopedTeams) merged.set(team.id, team);
-					teams = Array.from(merged.values());
+					const merged = new Map(workspaces.map((workspace) => [workspace.id, workspace]));
+					for (const workspace of scopedWorkspaces) {
+						merged.set(workspace.id, workspace);
+					}
+					workspaces = Array.from(merged.values());
 				}
 			}
 		}
 
 		if (
-			teams.length === 0 &&
+			workspaces.length === 0 &&
 			defaultWorkspaceId &&
 			accessibleWorkspaceIds.includes(defaultWorkspaceId)
 		) {
@@ -160,7 +162,7 @@ export default async function AuthControls({
 				.eq("id", defaultWorkspaceId)
 				.limit(1);
 			if (!scoped.error && Array.isArray(scoped.data)) {
-				teams = scoped.data.map((row: any) => ({
+				workspaces = scoped.data.map((row: any) => ({
 					id: String(row.id),
 					name: String(row.name),
 				}));
@@ -168,28 +170,31 @@ export default async function AuthControls({
 		}
 
 	} catch {
-		// ignore and keep teams empty
+		// ignore and keep workspaces empty
 	}
 
-	const teamIds = new Set(teams.map((team) => team.id));
-	const cookieTeamId = currentTeamId && teamIds.has(currentTeamId) ? currentTeamId : undefined;
-	if (cookieTeamId) {
-		currentTeamId = cookieTeamId;
-	} else if (defaultWorkspaceId && teamIds.has(defaultWorkspaceId)) {
-		currentTeamId = defaultWorkspaceId;
+	const workspaceIds = new Set(workspaces.map((workspace) => workspace.id));
+	const cookieWorkspaceId =
+		currentWorkspaceId && workspaceIds.has(currentWorkspaceId)
+			? currentWorkspaceId
+			: undefined;
+	if (cookieWorkspaceId) {
+		currentWorkspaceId = cookieWorkspaceId;
+	} else if (defaultWorkspaceId && workspaceIds.has(defaultWorkspaceId)) {
+		currentWorkspaceId = defaultWorkspaceId;
 	} else {
-		currentTeamId = teams[0]?.id;
+		currentWorkspaceId = workspaces[0]?.id;
 	}
 
-	// HeaderClient expects teams as array or undefined, not null
-	const safeTeams = teams ?? undefined;
+	// HeaderClient expects workspaces as array or undefined, not null
+	const safeWorkspaces = workspaces ?? undefined;
 
 	return (
 		<HeaderClient
 			isLoggedIn={true}
 			user={user}
-			teams={safeTeams}
-			currentTeamId={currentTeamId}
+			workspaces={safeWorkspaces}
+			currentWorkspaceId={currentWorkspaceId}
 			userRole={userRole}
 			variant={variant}
 		/>

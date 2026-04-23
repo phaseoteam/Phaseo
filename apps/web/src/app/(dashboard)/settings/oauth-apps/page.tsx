@@ -89,12 +89,12 @@ async function OAuthAppsContent() {
 		);
 	}
 
-	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
+	const initialWorkspaceId = (await getWorkspaceIdFromCookie()) ?? null;
 
 	const { data: oauthApps } = await supabase
 		.from("oauth_apps_with_stats")
 		.select("*")
-		.eq("workspace_id", initialTeamId)
+		.eq("workspace_id", initialWorkspaceId)
 		.order("created_at", { ascending: false });
 
 	return (
@@ -119,7 +119,7 @@ async function OAuthAppsContent() {
 							</Button>
 						</Link>
 						<CreateOAuthAppDialog
-							currentTeamId={initialTeamId}
+							currentWorkspaceId={initialWorkspaceId}
 						/>
 					</>
 				}

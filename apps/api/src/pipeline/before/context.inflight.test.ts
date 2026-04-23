@@ -19,7 +19,7 @@ const runtime = vi.hoisted(() => {
     };
 
     const contextPayload = {
-        workspace_id: "team_inflight",
+        workspace_id: "workspace_inflight",
         resolved_model: "resolved/openai-gpt-5-nano",
         key_ok: { ok: true, reason: null },
         key_limit_ok: { ok: true, reason: null },
@@ -51,7 +51,7 @@ const runtime = vi.hoisted(() => {
                 }),
             };
         }
-        if (table === "teams") {
+        if (table === "workspaces") {
             return {
                 select: () => ({
                     eq: () => ({
@@ -101,7 +101,7 @@ describe("fetchGatewayContext inflight dedupe", () => {
 
         const { fetchGatewayContext } = await import("./context");
         const args = {
-            workspaceId: "team_inflight",
+            workspaceId: "workspace_inflight",
             model: "openai/gpt-5-nano",
             endpoint: "text.generate",
             apiKeyId: "key_inflight",
@@ -115,9 +115,9 @@ describe("fetchGatewayContext inflight dedupe", () => {
         ]);
 
         expect(runtime.supabase.rpc).toHaveBeenCalledTimes(1);
-        expect(a.workspaceId).toBe("team_inflight");
-        expect(b.workspaceId).toBe("team_inflight");
-        expect(c.workspaceId).toBe("team_inflight");
+        expect(a.workspaceId).toBe("workspace_inflight");
+        expect(b.workspaceId).toBe("workspace_inflight");
+        expect(c.workspaceId).toBe("workspace_inflight");
         expect(a).not.toBe(b);
         expect(b).not.toBe(c);
     });

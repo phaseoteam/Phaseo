@@ -91,21 +91,23 @@ async function KeysContent({
 		new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
 	);
 
-	const { data: teamUsers } = await supabase
+	const { data: workspaceUsers } = await supabase
 		.from("workspace_members")
-		.select("workspace_id, teams:workspaces(id, name)")
+		.select("workspace_id, workspaces(id, name)")
 		.eq("user_id", user?.id);
 
-	const teams: Array<{ id: string; name: string }> = [];
+	const workspaces: Array<{ id: string; name: string }> = [];
 	const seenTeamIds = new Set<string>();
-	for (const tu of teamUsers ?? []) {
-		if (!tu?.teams) continue;
-		const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
-		const teamId = String(team?.id ?? "").trim();
-		const teamName = String(team?.name ?? "").trim();
+	for (const workspaceUser of workspaceUsers ?? []) {
+		if (!workspaceUser?.workspaces) continue;
+		const workspace = Array.isArray(workspaceUser.workspaces)
+			? workspaceUser.workspaces[0]
+			: workspaceUser.workspaces;
+		const teamId = String(workspace?.id ?? "").trim();
+		const teamName = String(workspace?.name ?? "").trim();
 		if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
 		seenTeamIds.add(teamId);
-		teams.push({ id: teamId, name: teamName });
+		workspaces.push({ id: teamId, name: teamName });
 	}
 
 	if (accessibleWorkspaceIds.length) {
@@ -118,26 +120,27 @@ async function KeysContent({
 			const teamName = String(team?.name ?? "").trim();
 			if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
 			seenTeamIds.add(teamId);
-			teams.push({ id: teamId, name: teamName });
+			workspaces.push({ id: teamId, name: teamName });
 		}
 	}
 
-	const initialTeamCandidate =
+	const initialWorkspaceCandidate =
 		String(preferredWorkspaceId ?? "").trim() ||
 		String(rawCookieWorkspaceId ?? "").trim() ||
 		String(resolvedWorkspaceId ?? "").trim() ||
 		"";
-	const initialTeamId =
-		(initialTeamCandidate && teams.some((team) => team.id === initialTeamCandidate)
-			? initialTeamCandidate
-			: teams[0]?.id) ?? null;
+	const initialWorkspaceId =
+		(initialWorkspaceCandidate &&
+		workspaces.some((workspace) => workspace.id === initialWorkspaceCandidate)
+			? initialWorkspaceCandidate
+			: workspaces[0]?.id) ?? null;
 
-	const apiKeys = initialTeamId
+	const apiKeys = initialWorkspaceId
 		? (
 				await supabase
 					.from("keys")
 					.select("*")
-					.eq("workspace_id", initialTeamId)
+					.eq("workspace_id", initialWorkspaceId)
 					.neq("status", "deleted")
 					.neq("name", CHAT_MANAGED_KEY_NAME)
 		  ).data
@@ -147,7 +150,7 @@ async function KeysContent({
 		string,
 		{ requests: number; costNanos: number; lastUsedAt: string | null }
 	>();
-	if (initialTeamId) {
+	if (initialWorkspaceId) {
 		const dayStart = new Date();
 		dayStart.setUTCHours(0, 0, 0, 0);
 		const dayStartIso = dayStart.toISOString();
@@ -155,7 +158,7 @@ async function KeysContent({
 		const { data: usageRows, error: usageError } = await supabase.rpc(
 			"get_workspace_key_usage",
 			{
-				p_workspace_id: initialTeamId,
+				p_workspace_id: initialWorkspaceId,
 				p_day_start: dayStartIso,
 			},
 		);
@@ -193,7 +196,7 @@ async function KeysContent({
 		};
 	});
 
-	const activeTeam = teams.find((t) => t.id === initialTeamId);
+	const activeTeam = workspaces.find((t) => t.id === initialWorkspaceId);
 	const teamsWithKeys = activeTeam ? [{ ...activeTeam, keys: keysArray }] : [];
 
 	return (
@@ -215,15 +218,15 @@ async function KeysContent({
 						</Button>
 						<CreateKeyDialog
 							currentUserId={user?.id}
-							currentTeamId={initialTeamId}
-							teams={teams}
+							currentWorkspaceId={initialWorkspaceId}
+							workspaces={workspaces}
 						/>
 					</div>
 				}
 			/>
 			<KeysPanel
 				teamsWithKeys={teamsWithKeys}
-				initialTeamId={initialTeamId}
+				initialTeamId={initialWorkspaceId}
 				currentUserId={user?.id}
 			/>
 		</div>

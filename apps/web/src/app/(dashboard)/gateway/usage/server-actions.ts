@@ -21,7 +21,7 @@ async function requireAuthedTeamContext(
 	if (error || !user?.id) throw new Error("Unauthorized");
 
 	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) throw new Error("Missing team id");
+	if (!workspaceId) throw new Error("Missing workspace id");
 
 	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 	return { user, workspaceId };
