@@ -26,8 +26,11 @@ set
   enterprise_lock_through_month = null,
   tier_low_streak_evaluated_month = null
 where
-  coalesce(tier, 'basic') <> 'basic'
-  or coalesce(consecutive_low_spend_months, 0) <> 0
+  tier is null
+  or tier <> 'basic'
+  or tier_updated_at is null
+  or consecutive_low_spend_months is null
+  or consecutive_low_spend_months <> 0
   or enterprise_lock_through_month is not null
   or tier_low_streak_evaluated_month is not null;
 
@@ -116,7 +119,6 @@ security definer
 set search_path = public
 as $$
 declare
-  v_exists boolean := false;
   v_tier_updated_at timestamptz;
   v_current_month_nanos bigint := 0;
   v_prev_month_nanos bigint := 0;
@@ -126,12 +128,12 @@ declare
   v_prev_month_start_ts timestamptz := ((date_trunc('month', now() at time zone 'UTC') - interval '1 month') at time zone 'UTC');
   v_next_month_start_ts timestamptz := ((date_trunc('month', now() at time zone 'UTC') + interval '1 month') at time zone 'UTC');
 begin
-  select true, t.tier_updated_at
-  into v_exists, v_tier_updated_at
+  select t.tier_updated_at
+  into v_tier_updated_at
   from public.workspaces t
   where t.id = p_workspace_id;
 
-  if not v_exists then
+  if not found then
     raise exception 'Workspace not found: %', p_workspace_id;
   end if;
 
@@ -222,6 +224,22 @@ windows as (
     d.*,
     pa.run_at,
     make_timestamptz(
+      extract(year from (pa.run_at_utc - interval '1 month'))::int,
+      extract(month from (pa.run_at_utc - interval '1 month'))::int,
+      least(
+        d.billing_day,
+        extract(
+          day from (
+            date_trunc('month', pa.run_at_utc - interval '1 month')
+            + interval '1 month'
+            - interval '1 day'
+          )
+        )::int
+      ),
+      0, 0, 0,
+      'UTC'
+    ) as prev_cycle_end,
+    make_timestamptz(
       extract(year from pa.run_at_utc)::int,
       extract(month from pa.run_at_utc)::int,
       least(d.billing_day, pa.last_day_utc),
@@ -237,16 +255,8 @@ periods as (
     w.stripe_customer_id,
     w.billing_day,
     w.payment_terms_days,
-    case
-      when w.run_at < w.this_cycle_end
-        then w.this_cycle_end - interval '1 month'
-      else w.this_cycle_end
-    end as period_start,
-    case
-      when w.run_at < w.this_cycle_end
-        then w.this_cycle_end
-      else w.this_cycle_end + interval '1 month'
-    end as period_end
+    w.prev_cycle_end as period_start,
+    w.this_cycle_end as period_end
   from windows w
 ),
 aggregated as (

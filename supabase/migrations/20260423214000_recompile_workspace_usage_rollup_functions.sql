@@ -156,6 +156,7 @@ begin
   where gr.id = p_request_row_id
     and gr.created_at = p_request_created_at
     and gr.workspace_id = p_workspace_id
+  for update
   limit 1;
 
   if not found then
