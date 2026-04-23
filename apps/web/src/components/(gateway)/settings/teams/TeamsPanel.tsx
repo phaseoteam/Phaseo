@@ -16,7 +16,6 @@ interface Props {
 	requestsByTeam: Record<string, any[]>;
 	invitesByTeam?: Record<string, any[]>;
 	activeWorkspaceId?: string | undefined | null;
-	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 	personalTeamId?: string | null;
 	manageableTeamIds?: string[];
@@ -28,7 +27,6 @@ export default function TeamsPanel({
 	requestsByTeam,
 	invitesByTeam,
 	activeWorkspaceId,
-	onTeamChange,
 	currentUserId,
 	personalTeamId,
 	manageableTeamIds,
@@ -64,7 +62,6 @@ export default function TeamsPanel({
 				membersByTeam={membersByTeam}
 				currentUserId={currentUserId}
 				activeWorkspaceId={fallbackActiveTeamId}
-				onTeamChange={onTeamChange}
 				personalTeamId={personalTeamId}
 			/>
 			{canManageActiveTeam ? (
@@ -73,13 +70,11 @@ export default function TeamsPanel({
 						teams={manageableTeams}
 						requestsByTeam={requestsByTeam}
 						activeWorkspaceId={activeWorkspaceId ?? undefined}
-						onTeamChange={onTeamChange}
 					/>
 					<TeamsInvites
 						teams={manageableTeams}
 						invitesByTeam={invitesByTeam}
 						activeWorkspaceId={activeWorkspaceId ?? undefined}
-						onTeamChange={onTeamChange}
 						membersByTeam={membersByTeam}
 						currentUserId={currentUserId}
 					/>

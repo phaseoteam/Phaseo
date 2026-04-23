@@ -299,14 +299,10 @@ export async function guardContext(args: {
             };
         }
 
-        const teamTier = String(context.teamEnrichment?.tier ?? "")
-            .trim()
-            .toLowerCase();
         const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
             .trim()
             .toLowerCase();
-        const bypassWalletCreditCheck =
-            teamTier === "enterprise" && billingMode === "invoice";
+        const bypassWalletCreditCheck = billingMode === "invoice";
         const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
             model: args.model,
             context,

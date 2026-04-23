@@ -450,4 +450,82 @@ describe("passthroughWithPricing", () => {
 			total_tokens: 12,
 		});
 	});
+
+	it("records stream latency from request start and generation from first frame to final frame", async () => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: {
+				startedAtMs: Date.now() - 40,
+			},
+		});
+		const upstream = makeDelayedSseResponse([
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "hello" }, finish_reason: null }],
+					usage: { prompt_tokens: 4, completion_tokens: 1, total_tokens: 5 },
+				},
+			},
+			{
+				data: {
+					object: "chat.completion",
+					choices: [{ index: 0, message: { role: "assistant", content: "hello" }, finish_reason: "stop" }],
+				},
+			},
+		], 20);
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx,
+			provider: "openai",
+			priceCard: null,
+		});
+
+		await drain(response);
+
+		expect(typeof ctx.meta.latency_ms).toBe("number");
+		expect(typeof ctx.meta.generation_ms).toBe("number");
+		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan(0);
+		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual(0);
+		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan((ctx.meta.generation_ms as number)!);
+	});
+
+	it("overwrites adapter latency with first downstream frame timing for streamed responses", async () => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: {
+				startedAtMs: Date.now() - 50,
+				latency_ms: 1,
+			},
+		});
+		const upstream = makeDelayedSseResponse([
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "hello" }, finish_reason: null }],
+				},
+			},
+			{
+				data: {
+					object: "chat.completion",
+					choices: [{ index: 0, message: { role: "assistant", content: "hello" }, finish_reason: "stop" }],
+				},
+			},
+		], 20);
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx,
+			provider: "openai",
+			priceCard: null,
+		});
+
+		await drain(response);
+
+		expect(typeof ctx.meta.latency_ms).toBe("number");
+		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan(1);
+		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan((ctx.meta.generation_ms as number)!);
+	});
 });

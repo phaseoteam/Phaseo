@@ -99,13 +99,22 @@ function buildSupaRow(args: {
     edgeContinent?: string | null;
     edgeAsn?: number | null;
 }) {
+    const modelId =
+        typeof args.model === "string" && args.model.trim().length > 0
+            ? args.model.trim()
+            : "__unknown__";
+    const canonicalModelId =
+        typeof args.canonicalModel === "string" && args.canonicalModel.trim().length > 0
+            ? args.canonicalModel.trim()
+            : modelId;
+
     return {
         request_id: args.requestId,
         workspace_id: args.workspaceId ?? null,
         app_id: args.appId ?? null,
         endpoint: args.endpoint,
-        model_id: args.model ?? null,
-        canonical_model_id: args.canonicalModel ?? args.model ?? null,
+        model_id: modelId,
+        canonical_model_id: canonicalModelId,
         provider: args.provider ?? null,
         native_response_id: args.nativeResponseId ?? null,
         auth_method: args.authMethod ?? "api_key",

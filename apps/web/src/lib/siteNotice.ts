@@ -15,25 +15,7 @@ export type SiteNotice = {
 	endsAt?: string;
 };
 
-export const VERCEL_SECURITY_NOTICE_HREF =
-	"/announcements/security-notice-key-rotation-vercel-2026-04-19";
-
-export const SITE_NOTICES: SiteNotice[] = [
-	{
-		id: "vercel-april-2026-security-incident",
-		enabled: true,
-		audience: "authenticated",
-		tone: "warning",
-		message:
-			"Security Notice: Third-Party Breach. Please read how you're protected.",
-		cta: {
-			label: "How you're protected",
-			href: VERCEL_SECURITY_NOTICE_HREF,
-		},
-		startsAt: "2026-04-19T00:00:00.000Z",
-		endsAt: "2026-04-23T23:59:59.999Z",
-	},
-];
+export const SITE_NOTICES: SiteNotice[] = [];
 
 function isActiveAt(notice: SiteNotice, now: Date): boolean {
 	const startTs = notice.startsAt ? Date.parse(notice.startsAt) : null;

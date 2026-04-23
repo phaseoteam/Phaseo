@@ -184,12 +184,21 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (firstFrameAt === null) {
                         firstFrameAt = performance.now();
                         firstFrameAtMs = Date.now();
-                        if (typeof ctx.meta.latency_ms !== "number") {
-                            if (typeof ctx.meta.upstreamStartMs === "number") {
-                                ctx.meta.latency_ms = Math.round(firstFrameAtMs - ctx.meta.upstreamStartMs);
-                            } else {
-                                ctx.meta.latency_ms = Math.round(firstFrameAt - tStart);
-                            }
+                        // For streamed responses, latency must mean request start -> first frame returned
+                        // by the gateway. Provider adapters may record first upstream bytes earlier than
+                        // the first downstream frame we actually emit, so overwrite here deliberately.
+                        if (typeof ctx.meta.startedAtMs === "number") {
+                            ctx.meta.latency_ms = Math.max(
+                                0,
+                                Math.round(firstFrameAtMs - ctx.meta.startedAtMs),
+                            );
+                        } else if (typeof ctx.meta.upstreamStartMs === "number") {
+                            ctx.meta.latency_ms = Math.max(
+                                0,
+                                Math.round(firstFrameAtMs - ctx.meta.upstreamStartMs),
+                            );
+                        } else {
+                            ctx.meta.latency_ms = Math.max(0, Math.round(firstFrameAt - tStart));
                         }
                     }
 
@@ -247,12 +256,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
                     if (isFinalSnapshot) {
                         sawFinalUsage = true;
-                        if (typeof ctx.meta.generation_ms !== "number") {
-                            if (firstFrameAt !== null) {
-                                ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
-                            } else if (typeof ctx.meta.upstreamStartMs === "number") {
-                                ctx.meta.generation_ms = Math.round(Date.now() - ctx.meta.upstreamStartMs);
-                            }
+                        if (typeof ctx.meta.generation_ms !== "number" && firstFrameAt !== null) {
+                            ctx.meta.generation_ms = Math.max(
+                                0,
+                                Math.round(performance.now() - firstFrameAt),
+                            );
                         }
                     }
 

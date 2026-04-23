@@ -1,93 +1,147 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowUpRight, ShieldAlert } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import {
+	getActiveWorkspaceIdFromCookieRaw,
+	getWorkspaceIdFromCookie,
+} from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
-import { VERCEL_SECURITY_NOTICE_HREF } from "@/lib/siteNotice";
 
 const QUICKSTART_DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
-const KEYS_SECURITY_NOTICE_STARTS_AT = "2026-04-21T00:00:00.000Z";
-const KEYS_SECURITY_NOTICE_ENDS_AT = "2026-04-23T00:00:00.000Z";
 
 export const metadata = {
 	title: "API Keys - Settings",
 };
 
-function shouldShowSecurityNotice(now: Date): boolean {
-	const start = Date.parse(KEYS_SECURITY_NOTICE_STARTS_AT);
-	const end = Date.parse(KEYS_SECURITY_NOTICE_ENDS_AT);
-	const nowTs = now.getTime();
-	if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-	return nowTs >= start && nowTs < end;
-}
-
-function SecurityNoticeBanner({ show }: { show: boolean }) {
-	if (!show) return null;
-
-	return (
-		<Alert
-			variant="destructive"
-			className="border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-		>
-			<ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-			<AlertTitle className="text-amber-800 dark:text-amber-300">
-				Security notice: all API keys were removed
-			</AlertTitle>
-			<AlertDescription className="text-amber-700 dark:text-amber-400">
-				Unfortunately, due to the security incident, we removed all keys. Please
-				regenerate any keys you require, and we apologise for the inconvenience.
-				This is a protective measure we are actively working to prevent from
-				ever being required again, and it should be the only time we ever need
-				to do this.{" "}
-				<Link
-					href={VERCEL_SECURITY_NOTICE_HREF}
-					target="_blank"
-					rel="noreferrer"
-					className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
-				>
-					Read the full security update
-					<ArrowUpRight className="h-3.5 w-3.5" />
-				</Link>
-			</AlertDescription>
-		</Alert>
-	);
-}
-
-export default function KeysPage() {
+export default function KeysPage(props: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
 	return (
 		<div className="space-y-6">
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<KeysContent />
+				<KeysContent searchParams={props.searchParams} />
 			</Suspense>
 		</div>
 	);
 }
 
-async function KeysContent() {
+async function KeysContent({
+	searchParams,
+}: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
 	const supabase = await createClient();
+	let adminClient: ReturnType<typeof createAdminClient> | null = null;
+	try {
+		adminClient = createAdminClient();
+	} catch {
+		adminClient = null;
+	}
+	const readClient: any = adminClient ?? supabase;
 
-	// get current user
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
-	const showSecurityNotice = shouldShowSecurityNotice(new Date());
 
-	const initialTeamId = await getWorkspaceIdFromCookie();
+	const sp = await searchParams;
+	const preferredWorkspaceId =
+		typeof sp?.workspace_id === "string"
+			? sp.workspace_id
+			: Array.isArray(sp?.workspace_id)
+				? sp?.workspace_id?.[0]
+				: undefined;
+	const rawCookieWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
 
-	// fetch API keys for the active team
-	const { data: apiKeys } = await supabase
-		.from("keys")
-		.select("*")
-		.eq("workspace_id", initialTeamId)
-		.neq("status", "deleted")
-		.neq("name", CHAT_MANAGED_KEY_NAME);
+	let membershipWorkspaceIds: string[] = [];
+	let ownedWorkspaceIds: string[] = [];
+	if (user?.id) {
+		const { data: membershipRows } = await readClient
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("user_id", user.id);
+		membershipWorkspaceIds = Array.from(
+			new Set(
+				(membershipRows ?? [])
+					.map((row: any) => String(row?.workspace_id ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+
+		const { data: ownedRows } = await readClient
+			.from("workspaces")
+			.select("id")
+			.eq("owner_user_id", user.id);
+		ownedWorkspaceIds = Array.from(
+			new Set(
+				(ownedRows ?? [])
+					.map((row: any) => String(row?.id ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+	}
+	const accessibleWorkspaceIds = Array.from(
+		new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
+	);
+
+	const { data: teamUsers } = await supabase
+		.from("workspace_members")
+		.select("workspace_id, teams:workspaces(id, name)")
+		.eq("user_id", user?.id);
+
+	const teams: Array<{ id: string; name: string }> = [];
+	const seenTeamIds = new Set<string>();
+	for (const tu of teamUsers ?? []) {
+		if (!tu?.teams) continue;
+		const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
+		const teamId = String(team?.id ?? "").trim();
+		const teamName = String(team?.name ?? "").trim();
+		if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
+		seenTeamIds.add(teamId);
+		teams.push({ id: teamId, name: teamName });
+	}
+
+	if (accessibleWorkspaceIds.length) {
+		const { data: scopedTeams } = await readClient
+			.from("workspaces")
+			.select("id, name")
+			.in("id", accessibleWorkspaceIds);
+		for (const team of scopedTeams ?? []) {
+			const teamId = String(team?.id ?? "").trim();
+			const teamName = String(team?.name ?? "").trim();
+			if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
+			seenTeamIds.add(teamId);
+			teams.push({ id: teamId, name: teamName });
+		}
+	}
+
+	const initialTeamCandidate =
+		String(preferredWorkspaceId ?? "").trim() ||
+		String(rawCookieWorkspaceId ?? "").trim() ||
+		String(resolvedWorkspaceId ?? "").trim() ||
+		"";
+	const initialTeamId =
+		(initialTeamCandidate && teams.some((team) => team.id === initialTeamCandidate)
+			? initialTeamCandidate
+			: initialTeamCandidate || teams[0]?.id) ?? null;
+
+	const apiKeys = initialTeamId
+		? (
+				await supabase
+					.from("keys")
+					.select("*")
+					.eq("workspace_id", initialTeamId)
+					.neq("status", "deleted")
+					.neq("name", CHAT_MANAGED_KEY_NAME)
+		  ).data
+		: [];
 
 	const usageByKey = new Map<
 		string,
@@ -116,28 +170,9 @@ async function KeysContent() {
 			usageByKey.set(keyId, {
 				requests: Number(row?.daily_request_count ?? 0) || 0,
 				costNanos: Number(row?.daily_cost_nanos ?? 0) || 0,
-				lastUsedAt: typeof row?.last_used_at === "string" ? row.last_used_at : null,
+				lastUsedAt:
+					typeof row?.last_used_at === "string" ? row.last_used_at : null,
 			});
-		}
-	}
-
-	// fetch teams the user belongs to (assumes a `team_users` join table)
-	const { data: teamUsers } = await supabase
-		.from("workspace_members")
-		.select("workspace_id, teams:workspaces(id, name)")
-		.eq("user_id", user?.id);
-
-	// build a teams list including a personal/personal-like fallback
-	const teams: any[] = [];
-
-	if (teamUsers) {
-		for (const tu of teamUsers) {
-			if (tu?.teams) {
-				const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
-				if (team?.id && team?.name) {
-					teams.push({ id: team.id, name: team.name });
-				}
-			}
 		}
 	}
 
@@ -158,14 +193,11 @@ async function KeysContent() {
 		};
 	});
 
-	// find the active team
 	const activeTeam = teams.find((t) => t.id === initialTeamId);
-
 	const teamsWithKeys = activeTeam ? [{ ...activeTeam, keys: keysArray }] : [];
 
 	return (
 		<div className="space-y-6">
-			<SecurityNoticeBanner show={showSecurityNotice} />
 			<SettingsPageHeader
 				title="API Keys"
 				description="Create and manage gateway API keys for this workspace."

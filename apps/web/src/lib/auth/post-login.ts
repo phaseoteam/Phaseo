@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { classifyAuthMethodFromSession } from "@/lib/auth/method";
 import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";
+import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import type { createClient } from "@/utils/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -138,16 +139,17 @@ async function sendSignupDiscordWebhook(args: {
 }
 
 async function ensureWalletRow(
-	supabaseAdmin: ReturnType<typeof createAdminClient>,
 	workspaceId: string,
+	userId: string,
+	email: string | null | undefined,
+	displayName: string,
 ) {
-	await supabaseAdmin.from("wallets").upsert(
-		{ workspace_id: workspaceId },
-		{
-			onConflict: "workspace_id",
-			ignoreDuplicates: true,
-		},
-	);
+	await ensureWorkspaceStripeWallet({
+		workspaceId,
+		userId,
+		email: email ?? undefined,
+		name: displayName,
+	});
 }
 
 async function getOrCreatePersonalTeamId(opts: {
@@ -358,7 +360,12 @@ export async function finalizePostLogin(
 	const workspaceId = provisionedTeam.workspaceId;
 
 	try {
-		await ensureWalletRow(supabaseAdmin, workspaceId);
+		await ensureWalletRow(
+			workspaceId,
+			user.id,
+			user.email,
+			displayName,
+		);
 	} catch (error) {
 		console.error("Failed to ensure wallet row during post-login finalize", {
 			source: input.source,
@@ -408,42 +415,6 @@ export async function finalizePostLogin(
 		} else {
 			await Promise.allSettled(notificationTasks);
 		}
-	}
-
-	try {
-		const { data: teamRow } = await supabaseAdmin
-			.from("workspaces")
-			.select("tier,billing_mode")
-			.eq("id", workspaceId)
-			.maybeSingle();
-
-		const isEnterprise =
-			String(teamRow?.tier ?? "").toLowerCase() === "enterprise";
-		const isInvoiceMode =
-			String(teamRow?.billing_mode ?? "wallet").toLowerCase() === "invoice";
-
-		if (isEnterprise && isInvoiceMode) {
-			const { data: profileRow } = await supabaseAdmin
-				.from("workspace_invoice_profiles")
-				.select("enabled")
-				.eq("workspace_id", workspaceId)
-				.maybeSingle();
-
-			if (!profileRow?.enabled) {
-				return {
-					redirectPath: "/settings/credits/onboarding",
-					workspaceId,
-					userId: user.id,
-					createdPersonalTeam: provisionedTeam.createdPersonalTeam,
-				};
-			}
-		}
-	} catch (error) {
-		console.error("Failed invoice onboarding check during post-login finalize", {
-			source: input.source,
-			workspaceId,
-			error: error instanceof Error ? error.message : String(error),
-		});
 	}
 
 	try {

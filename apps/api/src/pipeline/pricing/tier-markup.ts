@@ -1,47 +1,37 @@
-// Purpose: Apply tier-based markup to pricing calculations
-// Why: Simplified two-tier pricing (Basic 5%, Enterprise 5%)
-// How: Applies markup multiplier after base cost calculation
+// Purpose: Apply flat workspace markup to pricing calculations
+// Why: Single-plan pricing model at 5%
+// How: Applies the standard markup multiplier after base cost calculation
 
 import type { PricingResult } from "./types";
 
-/**
- * Tier-based markup rates
- * Basic: 5% markup (1.05x)
- * Enterprise: 5% markup (1.05x)
- */
-const TIER_MARKUP = {
-    basic: 1.05,      // 5% markup
-    enterprise: 1.05, // 5% markup
-} as const;
-
-export type PricingTier = keyof typeof TIER_MARKUP;
+const STANDARD_MARKUP = 1.05; // Flat 5% markup for all workspaces.
 
 /**
- * Get markup multiplier for a tier
+ * Get markup multiplier for workspace pricing.
  */
 export function getTierMarkup(tier: string | null | undefined): number {
-    const normalizedTier = (tier || 'basic').toLowerCase();
-    return TIER_MARKUP[normalizedTier as PricingTier] ?? TIER_MARKUP.basic;
+    void tier;
+    return STANDARD_MARKUP;
 }
 
 /**
- * Get markup percentage for display (e.g., 7 for Basic, 5 for Enterprise)
+ * Get markup percentage for display.
  */
 export function getTierMarkupPercentage(tier: string | null | undefined): number {
+    void tier;
     const multiplier = getTierMarkup(tier);
     return Math.round((multiplier - 1) * 100);
 }
 
 /**
- * Apply tier-based markup to a pricing result
+ * Apply standard workspace markup to a pricing result
  *
  * Example:
  * - Base cost: $1.00
- * - Basic tier (5%): $1.05
- * - Enterprise tier (5%): $1.05
+ * - Standard fee (5%): $1.05
  *
  * @param pricingResult - Base pricing calculation (before markup)
- * @param tier - Team tier ('basic' or 'enterprise')
+ * @param tier - Legacy tier value (ignored in single-plan mode)
  * @returns Pricing result with markup applied
  */
 export function applyTierMarkup(

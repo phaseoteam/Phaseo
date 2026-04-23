@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function TeamsPage() {
-	redirect("/settings/workspaces/members");
+	redirect("/settings/workspaces/general");
 }

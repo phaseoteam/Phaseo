@@ -909,6 +909,15 @@ export default function ModelOverviewSections({
 				<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
 			</Suspense>
 			{isLimitedAvailabilityModel ? null : (
+				<Suspense fallback={null}>
+					<ModelPerformanceSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						surface="overview"
+					/>
+				</Suspense>
+			)}
+			{isLimitedAvailabilityModel ? null : (
 				<Suspense
 					fallback={
 						<QuickstartSectionSkeleton />

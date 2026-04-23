@@ -53,6 +53,8 @@ import {
 } from "@/components/(chat)/playground/capability-utils";
 import {
 	APP_HEADERS,
+	DEFAULT_PERSONALIZATION_FONT_FAMILY,
+	DEFAULT_PERSONALIZATION_THEME_PRESET,
 	DEFAULT_SETTINGS,
 	STORAGE_KEYS,
 	TEMP_CHAT_ID,
@@ -68,12 +70,16 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getOrgId,
+	isPersonalizationFontFamilyId,
 	isModelExpired,
+	isPersonalizationThemePresetId,
 	normalizeBaseUrl,
 	nowIso,
+	resolveChatroomTheme,
 	shouldRequestImageModalities,
 	type ModelOption,
 	type PersonalizationSettings,
+	type ResolvedChatroomTheme,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
@@ -193,8 +199,14 @@ function ChatPlaygroundContent({
 			name: "",
 			role: "",
 			notes: "",
+			themePreset: DEFAULT_PERSONALIZATION_THEME_PRESET,
+			fontFamily: DEFAULT_PERSONALIZATION_FONT_FAMILY,
 			accentColor: "#111111",
 		});
+	const chatroomTheme = useMemo<ResolvedChatroomTheme>(
+		() => resolveChatroomTheme(personalization),
+		[personalization],
+	);
 
 	const modelOptions = useMemo(() => {
 		const map = new Map<string, ModelOption>();
@@ -653,6 +665,12 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationNotes,
 				) ?? "";
+			const storedThemePreset = window.localStorage.getItem(
+				STORAGE_KEYS.personalizationTheme,
+			);
+			const storedFontFamily = window.localStorage.getItem(
+				STORAGE_KEYS.personalizationFont,
+			);
 			const storedAccent =
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
@@ -671,6 +689,12 @@ function ChatPlaygroundContent({
 				name: storedPersonalName,
 				role: storedPersonalRole,
 				notes: storedPersonalNotes,
+				themePreset: isPersonalizationThemePresetId(storedThemePreset)
+					? storedThemePreset
+					: DEFAULT_PERSONALIZATION_THEME_PRESET,
+				fontFamily: isPersonalizationFontFamilyId(storedFontFamily)
+					? storedFontFamily
+					: DEFAULT_PERSONALIZATION_FONT_FAMILY,
 				accentColor: storedAccent,
 			});
 
@@ -724,6 +748,14 @@ function ChatPlaygroundContent({
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationNotes,
 			personalization.notes,
+		);
+		window.localStorage.setItem(
+			STORAGE_KEYS.personalizationTheme,
+			personalization.themePreset,
+		);
+		window.localStorage.setItem(
+			STORAGE_KEYS.personalizationFont,
+			personalization.fontFamily,
 		);
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationAccent,
@@ -2965,8 +2997,22 @@ function ChatPlaygroundContent({
 	]);
 
 	return (
-		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
-			<Sidebar collapsible="icon" className="border-r border-border bg-background">
+		<div
+			className="flex h-full min-h-0 w-full overflow-hidden text-foreground"
+			style={{
+				backgroundColor: chatroomTheme.appBackground,
+				color: chatroomTheme.textColor,
+				fontFamily: chatroomTheme.fontFamilyValue,
+			}}
+		>
+			<Sidebar
+				collapsible="icon"
+				className="top-[var(--site-notice-height,0px)] bottom-0 h-auto border-r"
+				style={{
+					borderColor: chatroomTheme.sidebarBorder,
+					backgroundColor: chatroomTheme.sidebarBackground,
+				}}
+			>
 				<ChatSidebar
 					groupedThreads={groupedThreads}
 					threads={threads}
@@ -2984,7 +3030,10 @@ function ChatPlaygroundContent({
 				/>
 				<SidebarRail />
 			</Sidebar>
-			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
+			<SidebarInset
+				className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden"
+				style={{ backgroundColor: chatroomTheme.canvasBackground }}
+			>
 				<ChatHeader
 					activeThread={activeThread}
 					modelOptions={modelOptions}
@@ -3021,6 +3070,7 @@ function ChatPlaygroundContent({
 					modelSupportsAudioInputById={modelSupportsAudioInputById}
 					requiredCapability={activeModelCapability}
 					requireAudioInput={composerRequiresAudioInput}
+					theme={chatroomTheme}
 				/>
 				<ChatConversation
 					activeThread={activeThread}
@@ -3061,7 +3111,7 @@ function ChatPlaygroundContent({
 					modelOrgIdById={modelOrgIdById}
 					modelLinkById={modelLinkById}
 					isAuthenticated={isAuthenticated}
-					accentColor={personalization.accentColor}
+					theme={chatroomTheme}
 					selectedOrgId={selectedOrgId}
 					selectedModelId={activeThread?.modelId ?? ""}
 					selectedModelLabel={selectedModelLabel}

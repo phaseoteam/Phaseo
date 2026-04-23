@@ -33,37 +33,62 @@ export default function CreateKeyDialog({
 	currentTeamId?: string | null;
 	teams?: Array<{ id: string | null; name: string }>;
 }) {
+	const resolveInitialWorkspaceId = React.useCallback(() => {
+		const normalizedCurrent = String(currentTeamId ?? "").trim();
+		if (normalizedCurrent) return normalizedCurrent;
+		for (const team of teams ?? []) {
+			const teamId = String(team?.id ?? "").trim();
+			if (teamId) return teamId;
+		}
+		return null;
+	}, [currentTeamId, teams]);
+
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
-		currentTeamId ?? null
+		resolveInitialWorkspaceId()
 	);
 
 	const missingContext = !currentUserId;
 	const canCreate =
-		!!name && !loading && !missingContext && selectedTeamId !== undefined;
+		!!name &&
+		!loading &&
+		!missingContext &&
+		typeof selectedTeamId === "string" &&
+		selectedTeamId.trim().length > 0;
+
+	React.useEffect(() => {
+		const nextWorkspaceId = resolveInitialWorkspaceId();
+		if (nextWorkspaceId !== selectedTeamId) {
+			setSelectedTeamId(nextWorkspaceId);
+		}
+	}, [resolveInitialWorkspaceId, selectedTeamId]);
 
 	async function onCreate(e?: React.FormEvent) {
 		e?.preventDefault();
 		if (!name) return;
-		if (!currentUserId || selectedTeamId === undefined) {
+		if (
+			!currentUserId ||
+			typeof selectedTeamId !== "string" ||
+			selectedTeamId.trim().length === 0
+		) {
 			// surface an error so users understand why nothing happens
 			setPlainKey(null);
 			setLoading(false);
-			alert("Missing user or workspace context. Make sure you are signed in.");
+			toast.error(
+				"Missing workspace context. Select a workspace in the header and try again.",
+			);
 			return;
 		}
 		try {
 			setLoading(true);
 			// call server action and get plaintext key
-			const teamArg =
-				selectedTeamId === null ? "" : (selectedTeamId as string);
 			const res: any = await createApiKeyAction(
 				name,
 				currentUserId as string,
-				teamArg,
+				selectedTeamId,
 				JSON.stringify([]) // default empty scopes
 			);
 			setPlainKey(res?.plaintext ?? null);

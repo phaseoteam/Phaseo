@@ -522,7 +522,6 @@ export async function sendAxiomEvent(args: AxiomArgs) {
     const alwaysLog = (
         !args.success ||                                    // All errors
         (args.statusCode && args.statusCode >= 500) ||      // All 5xx
-        args.teamEnrichment?.tier === "enterprise" ||       // Enterprise customers
         (args.teamEnrichment?.spend_30d_usd ?? 0) > 100 ||  // High spenders ($100+/month)
         args.routingContext?.circuit_breaker_open ||        // Circuit breaker open
         (args.latencyMs && args.latencyMs > 10000)          // Very slow requests (>10s)

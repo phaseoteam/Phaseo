@@ -14,7 +14,6 @@ interface Props {
 	stripeInfo?: any;
 	tierInfo?: any;
 	embedded?: boolean;
-	invoiceInviteStatus?: "none" | "pre_invoice" | "completed";
 }
 
 export default function BuyCreditsClient({
@@ -22,12 +21,8 @@ export default function BuyCreditsClient({
 	stripeInfo,
 	tierInfo,
 	embedded = false,
-	invoiceInviteStatus = "none",
 }: Props) {
 	const [open, setOpen] = useState(false);
-	const isEnterpriseTier =
-		String(tierInfo?.current?.key ?? "").toLowerCase() === "enterprise";
-	const isPreInvoiceInvited = invoiceInviteStatus === "pre_invoice";
 
 	if (embedded) {
 		return (
@@ -52,35 +47,7 @@ export default function BuyCreditsClient({
 					</Button>
 				</div>
 				<div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-					{isEnterpriseTier ? (
-						isPreInvoiceInvited ? (
-							<>
-								You have been invited to setup invoiced billing.{" "}
-								<Link
-									href="/settings/credits/onboarding"
-									className="font-medium text-foreground underline-offset-4 hover:underline"
-								>
-									Get started here
-								</Link>
-								.
-							</>
-						) : (
-							<>
-								Invoiced billing is currently invite-only.{" "}
-								<Link
-									href="/contact"
-									className="font-medium text-foreground underline-offset-4 hover:underline"
-								>
-									Get in touch
-								</Link>{" "}
-								to request access.
-							</>
-						)
-					) : (
-						<>
-							Invoiced billing is currently invite-only.
-						</>
-					)}
+					Invoicing coming soon.
 				</div>
 				<CreditsPurchaseDialog
 					open={open}

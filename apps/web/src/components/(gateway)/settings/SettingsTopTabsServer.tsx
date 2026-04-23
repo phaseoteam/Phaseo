@@ -23,15 +23,11 @@ type Tab = {
 	badge?: string;
 };
 
-function getBillingTabs(isEnterpriseInvoiceMode: boolean): Tab[] {
+function getBillingTabs(): Tab[] {
 	return [
 		{ href: "/settings/credits", label: "Credits" },
-		{
-			href: "/settings/credits/transactions",
-			label: isEnterpriseInvoiceMode ? "Invoices" : "Transactions",
-		},
+		{ href: "/settings/credits/transactions", label: "Transactions" },
 		{ href: "/settings/payment-methods", label: "Payment Methods" },
-		{ href: "/settings/tiers", label: "Tiers" },
 	];
 }
 
@@ -77,21 +73,22 @@ const OAUTH_TABS: Tab[] = [
 
 const WORKSPACE_TABS: Tab[] = [
 	{
-		href: "/settings/workspaces/members",
-		label: "Members",
-		match: ["/settings/teams/members"],
+		href: "/settings/workspaces/general",
+		label: "General",
+		match: [
+			"/settings/workspaces/members",
+			"/settings/workspaces/settings",
+			"/settings/teams/members",
+			"/settings/teams/settings",
+		],
 	},
 	{
-		href: "/settings/workspaces/settings",
-		label: "Workspace Settings",
-		match: ["/settings/teams/settings"],
+		href: "/settings/workspaces/access",
+		label: "Access",
 	},
 ];
 
-function resolveTabs(
-	pathname: string,
-	isEnterpriseInvoiceMode: boolean,
-): Tab[] | null {
+function resolveTabs(pathname: string): Tab[] | null {
 	// Account
 	if (pathname.startsWith("/settings/account")) {
 		return [
@@ -129,8 +126,8 @@ function resolveTabs(
 		return WORKSPACE_TABS;
 	}
 
-	if (pathname.startsWith("/settings/credits") || pathname.startsWith("/settings/payment-methods") || pathname.startsWith("/settings/tiers")) {
-		return getBillingTabs(isEnterpriseInvoiceMode);
+	if (pathname.startsWith("/settings/credits") || pathname.startsWith("/settings/payment-methods")) {
+		return getBillingTabs();
 	}
 	if (pathname.startsWith("/settings/usage")) return USAGE_TABS;
 	if (
@@ -150,13 +147,10 @@ function resolveTabs(
 	return null;
 }
 
-export default function SettingsTopTabsServer(props: {
-	isEnterpriseInvoiceMode?: boolean;
-}) {
-	const isEnterpriseInvoiceMode = Boolean(props.isEnterpriseInvoiceMode);
+export default function SettingsTopTabsServer() {
 	const pathname = usePathname() ?? "";
 	const { toggleSidebar } = useSidebar();
-	const tabs = resolveTabs(pathname, isEnterpriseInvoiceMode);
+	const tabs = resolveTabs(pathname);
 
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
 	const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -168,10 +162,10 @@ export default function SettingsTopTabsServer(props: {
 			return { exact: true, len: t.href.length };
 		}
 
-		// Treat index routes as members; both old and new paths are valid.
+		// Treat index routes as general; both old and new paths are valid.
 		if (
 			(pathname === "/settings/workspaces" || pathname === "/settings/teams") &&
-			t.href === "/settings/workspaces/members"
+			t.href === "/settings/workspaces/general"
 		) {
 			return { exact: true, len: t.href.length };
 		}

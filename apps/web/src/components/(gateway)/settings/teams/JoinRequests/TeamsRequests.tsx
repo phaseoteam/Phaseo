@@ -1,21 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-	Card,
-	CardHeader,
-	CardTitle,
-	CardDescription,
-	CardContent,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-	Select,
-	SelectTrigger,
-	SelectValue,
-	SelectContent,
-	SelectItem,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -29,6 +15,14 @@ import {
 	approveJoinRequest,
 	rejectJoinRequest,
 } from "@/app/(dashboard)/settings/teams/actions";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 interface Request {
 	id: string;
@@ -53,45 +47,174 @@ interface Props {
 	teams: Team[];
 	requestsByTeam: Record<string, Request[]>;
 	activeWorkspaceId?: string | undefined;
-	onTeamChange?: (id?: string) => void;
 	onApprove?: (requestId: string) => Promise<void> | void;
 	onReject?: (requestId: string) => Promise<void> | void;
+}
+
+function formatDate(d?: string | null) {
+	if (!d) return "";
+	try {
+		return new Date(d).toLocaleDateString(undefined, {
+			day: "2-digit",
+			month: "short",
+			year: "numeric",
+		});
+	} catch {
+		return "";
+	}
+}
+
+function statusBadgeClass(status?: string | null) {
+	switch (status) {
+		case "accepted":
+			return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300";
+		case "rejected":
+			return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300";
+		default:
+			return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300";
+	}
+}
+
+function statusLabel(status?: string | null) {
+	switch (status) {
+		case "accepted":
+			return "Accepted";
+		case "rejected":
+			return "Rejected";
+		default:
+			return "Pending";
+	}
+}
+
+function RequestTableRow({
+	request,
+	onApprove,
+	onReject,
+}: {
+	request: Request;
+	onApprove?: (id: string) => Promise<void> | void;
+	onReject?: (id: string) => Promise<void> | void;
+}) {
+	const initialStatus = (request.status ?? "pending") as Request["status"];
+	const [localStatus, setLocalStatus] = React.useState<Request["status"]>(
+		initialStatus,
+	);
+	const [busy, setBusy] = React.useState(false);
+
+	const handleApprove = async () => {
+		setBusy(true);
+		setLocalStatus("accepted");
+		try {
+			await toast.promise(approveJoinRequest(request.id), {
+				loading: "Approving...",
+				success: "Request approved",
+				error: (err) => `Failed: ${err?.message || err}`,
+			});
+			await onApprove?.(request.id);
+		} catch {
+			setLocalStatus(initialStatus);
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	const handleReject = async () => {
+		setBusy(true);
+		setLocalStatus("rejected");
+		try {
+			await toast.promise(rejectJoinRequest(request.id), {
+				loading: "Rejecting...",
+				success: "Request rejected",
+				error: (err) => `Failed: ${err?.message || err}`,
+			});
+			await onReject?.(request.id);
+		} catch {
+			setLocalStatus(initialStatus);
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<TableRow>
+			<TableCell>
+				<div className="min-w-0">
+					<div className="truncate text-sm font-medium">
+						{request.requester?.display_name
+							? request.requester.display_name
+							: request.requester_user_id}
+					</div>
+					<div className="truncate text-xs text-muted-foreground">
+						{request.requester_user_id}
+					</div>
+				</div>
+			</TableCell>
+			<TableCell className="text-muted-foreground">
+				{request.created_at ? formatDate(request.created_at) : "—"}
+			</TableCell>
+			<TableCell>
+				<span
+					className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${statusBadgeClass(
+						localStatus,
+					)}`}
+				>
+					{statusLabel(localStatus)}
+				</span>
+			</TableCell>
+			<TableCell className="text-right">
+				{localStatus === "pending" ? (
+					<div className="flex items-center justify-end gap-1">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 hover:text-green-600"
+									onClick={handleApprove}
+									disabled={busy}
+									aria-label="Approve request"
+								>
+									<Check className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Approve</TooltipContent>
+						</Tooltip>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 hover:text-red-600"
+									onClick={handleReject}
+									disabled={busy}
+									aria-label="Reject request"
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Reject</TooltipContent>
+						</Tooltip>
+					</div>
+				) : (
+					<span className="text-xs text-muted-foreground">Resolved</span>
+				)}
+			</TableCell>
+		</TableRow>
+	);
 }
 
 export default function TeamsRequests({
 	teams,
 	requestsByTeam,
 	activeWorkspaceId: controlledActiveId,
-	onTeamChange,
 	onApprove,
 	onReject,
 }: Props) {
-	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
-		string | undefined
-	>(teams.length ? teams[0].id : undefined);
-
-	const activeWorkspaceId = controlledActiveId ?? localActiveTeamId;
-	const setActiveTeamId = React.useCallback(
-		(id?: string) => {
-			if (onTeamChange) onTeamChange(id);
-			else setLocalActiveTeamId(id);
-		},
-		[onTeamChange]
-	);
-
-	React.useEffect(() => {
-		if (!teams.length) {
-			setActiveTeamId(undefined);
-			return;
-		}
-		if (!activeWorkspaceId) {
-			setActiveTeamId(teams[0].id);
-			return;
-		}
-		if (!teams.find((t) => t.id === activeWorkspaceId)) {
-			setActiveTeamId(teams[0].id);
-		}
-	}, [teams, activeWorkspaceId, setActiveTeamId]);
+	const activeWorkspaceId =
+		controlledActiveId && teams.some((team) => team.id === controlledActiveId)
+			? controlledActiveId
+			: teams[0]?.id;
 
 	const all = React.useMemo(() => requestsByTeam || {}, [requestsByTeam]);
 	const active = React.useMemo(() => {
@@ -101,238 +224,54 @@ export default function TeamsRequests({
 
 	const activeTeam = teams.find((t) => t.id === activeWorkspaceId);
 
-	function formatDate(d?: string | null) {
-		if (!d) return "";
-		try {
-			return new Date(d).toLocaleDateString(undefined, {
-				day: "2-digit",
-				month: "short",
-				year: "numeric",
-			});
-		} catch {
-			return "";
-		}
-	}
-
-	// status-driven class maps
-	function borderClass(status?: string | null) {
-		switch (status) {
-			case "accepted":
-				return "border-emerald-300/60 dark:border-emerald-700/60";
-			case "rejected":
-				return "border-rose-300/60 dark:border-rose-700/60";
-			default:
-				return "border-amber-300/60 dark:border-amber-700/60";
-		}
-	}
-	function stripeClass(status?: string | null) {
-		switch (status) {
-			case "accepted":
-				return "before:bg-emerald-500";
-			case "rejected":
-				return "before:bg-rose-500";
-			default:
-				return "before:bg-amber-500";
-		}
-	}
-	function dotClass(status?: string | null) {
-		switch (status) {
-			case "accepted":
-				return "bg-emerald-500";
-			case "rejected":
-				return "bg-rose-500";
-			default:
-				return "bg-amber-500";
-		}
-	}
-
-	function RequestCard({
-		request,
-		onApprove,
-		onReject,
-	}: {
-		request: Request;
-		onApprove?: (id: string) => Promise<void> | void;
-		onReject?: (id: string) => Promise<void> | void;
-	}) {
-		const initialStatus = (request.status ??
-			"pending") as Request["status"];
-		const [localStatus, setLocalStatus] =
-			React.useState<Request["status"]>(initialStatus);
-		const [busy, setBusy] = React.useState(false);
-
-		const handleApprove = async () => {
-			setBusy(true);
-			setLocalStatus("accepted");
-			try {
-				// call server action with toast feedback
-				await toast.promise(approveJoinRequest(request.id), {
-					loading: "Approving…",
-					success: "Request approved",
-					error: (err) => `Failed: ${err?.message || err}`,
-				});
-				await onApprove?.(request.id);
-			} catch {
-				setLocalStatus(initialStatus);
-			} finally {
-				setBusy(false);
-			}
-		};
-
-		const handleReject = async () => {
-			setBusy(true);
-			setLocalStatus("rejected");
-			try {
-				await toast.promise(rejectJoinRequest(request.id), {
-					loading: "Rejecting…",
-					success: "Request rejected",
-					error: (err) => `Failed: ${err?.message || err}`,
-				});
-				await onReject?.(request.id);
-			} catch {
-				setLocalStatus(initialStatus);
-			} finally {
-				setBusy(false);
-			}
-		};
-
-		return (
-			<Card
-				className={[
-					"group relative border p-3 shadow-sm transition hover:shadow-md",
-					// left coloured stripe
-					"before:absolute before:left-0 before:top-0 before:h-full before:w-1.5 before:rounded-l-md before:content-['']",
-					borderClass(localStatus),
-					stripeClass(localStatus),
-				].join(" ")}
-			>
-				<div className="flex items-center gap-3 pl-2">
-					<div className="min-w-0 flex-1">
-						<div className="truncate text-sm font-medium">
-							{request.requester?.display_name
-								? `${request.requester.display_name} requested to join`
-								: "Join request"}
-						</div>
-						<div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-							<span>
-								{request.created_at
-									? `Requested ${formatDate(
-											request.created_at
-									  )}`
-									: ""}
-							</span>
-
-							{/* tiny status dot (subtle, no label) */}
-							<span
-								className={`inline-block h-1.5 w-1.5 rounded-full ${dotClass(
-									localStatus
-								)}`}
-								aria-hidden
-							/>
-						</div>
-					</div>
-
-					{/* Actions: always visible */}
-					<div className="flex items-center gap-1">
-						{localStatus === "pending" ? (
-							<>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											size="icon"
-											variant="ghost"
-											className="h-8 w-8 hover:text-green-600"
-											onClick={handleApprove}
-											disabled={busy}
-											aria-label="Approve request"
-										>
-											<Check className="h-4 w-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Approve</TooltipContent>
-								</Tooltip>
-
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											size="icon"
-											variant="ghost"
-											className="h-8 w-8 hover:text-red-600"
-											onClick={handleReject}
-											disabled={busy}
-											aria-label="Reject request"
-										>
-											<X className="h-4 w-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Reject</TooltipContent>
-								</Tooltip>
-							</>
-						) : null}
-					</div>
-				</div>
-			</Card>
-		);
-	}
-
 	return (
 		<TooltipProvider delayDuration={150}>
-			<Card className="h-full">
-				<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+			<section className="space-y-3">
+				<div className="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-start sm:justify-between">
 					<div>
-						<CardTitle className="text-base">
-							Join requests
-						</CardTitle>
-						<CardDescription>
-							Approve or ignore requests to join this workspace.
-						</CardDescription>
+						<h3 className="text-base font-semibold">Join requests</h3>
+						<p className="text-sm text-muted-foreground">
+							Approve or reject requests to join this workspace.
+						</p>
 					</div>
-					<div className="flex flex-wrap items-center gap-2">
-						<Badge variant="outline">
-							{active.length} pending{" "}
-							{active.length === 1 ? "request" : "requests"}
-						</Badge>
-						<Select
-							value={activeWorkspaceId}
-							onValueChange={(v) => setActiveTeamId(v)}
-						>
-							<SelectTrigger className="w-full sm:w-[200px]">
-								<SelectValue placeholder="Select workspace…" />
-							</SelectTrigger>
-							<SelectContent>
-								{teams.map((t) => (
-									<SelectItem key={t.id} value={t.id}>
-										{t.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</CardHeader>
+					<Badge variant="outline">
+						{active.length} pending {active.length === 1 ? "request" : "requests"}
+					</Badge>
+				</div>
 
-				<CardContent>
-					{!activeTeam ? (
-						<div className="text-sm text-muted-foreground">
-							No workspaces available.
-						</div>
-					) : active.length === 0 ? (
-						<div className="text-sm text-muted-foreground">
-							No pending requests for {activeTeam.name}.
-						</div>
-					) : (
-						<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-							{active.map((r) => (
-								<RequestCard
-									key={r.id}
-									request={r}
-									onApprove={onApprove}
-									onReject={onReject}
-								/>
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
+				{!activeTeam ? (
+					<div className="text-sm text-muted-foreground">
+						No workspaces available.
+					</div>
+				) : active.length === 0 ? (
+					<div className="text-sm text-muted-foreground">
+						No pending requests for {activeTeam.name}.
+					</div>
+				) : (
+					<div className="overflow-hidden rounded-md border">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Requester</TableHead>
+									<TableHead>Requested</TableHead>
+									<TableHead>Status</TableHead>
+									<TableHead className="text-right">Actions</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{active.map((request) => (
+									<RequestTableRow
+										key={request.id}
+										request={request}
+										onApprove={onApprove}
+										onReject={onReject}
+									/>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				)}
+			</section>
 		</TooltipProvider>
 	);
 }

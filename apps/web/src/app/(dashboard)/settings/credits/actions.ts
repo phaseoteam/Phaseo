@@ -2,8 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
 import {
     requireAuthenticatedUser,
     requireWorkspaceMembership,
@@ -19,6 +18,18 @@ export async function RefreshCredits() {
     revalidatePath("/settings/credits");
 }
 
+async function resolveWorkspaceIdFromActiveCookie(userId: string): Promise<string> {
+    const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+    console.info("[credits-action] active workspace cookie", {
+        userId,
+        workspaceId: workspaceId ?? null,
+    });
+    if (!workspaceId) {
+        throw new Error("Missing workspace id cookie");
+    }
+    return workspaceId;
+}
+
 interface SetUpAutoTopUpProps {
     balanceThreshold: number;
     topUpAmount: number;
@@ -27,9 +38,7 @@ interface SetUpAutoTopUpProps {
 
 export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
     const { supabase, user } = await requireAuthenticatedUser();
-    // read team id from the shared helper
-    const workspaceId = await getWorkspaceIdFromCookie();
-    if (!workspaceId) throw new Error("Missing workspace id cookie");
+    const workspaceId = await resolveWorkspaceIdFromActiveCookie(user.id);
     await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const {
@@ -66,8 +75,7 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
 
 export async function DisableAutoTopUpServer() {
     const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await getWorkspaceIdFromCookie();
-    if (!workspaceId) throw new Error("Missing workspace id cookie");
+    const workspaceId = await resolveWorkspaceIdFromActiveCookie(user.id);
     await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const { data, error } = await supabase
@@ -95,8 +103,7 @@ type SetLowBalanceEmailAlertArgs = {
 export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs) {
 	const { enabled, thresholdUsd } = args;
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) throw new Error("Missing workspace id cookie");
+	const workspaceId = await resolveWorkspaceIdFromActiveCookie(user.id);
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	if (enabled) {
@@ -158,8 +165,7 @@ const INTERNAL_HEADER = "x-internal-payments-token";
 
 export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = args.workspace_id ?? (await getWorkspaceIdFromCookie());
-    if (!workspaceId) throw new Error("Missing workspace id");
+    const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie(user.id));
     await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
@@ -195,123 +201,9 @@ type SaveBillingOnboardingArgs = {
     signedByName?: string | null;
 };
 
-function clampInt(value: number, min: number, max: number, fallback: number) {
-    if (!Number.isFinite(value)) return fallback;
-    return Math.min(max, Math.max(min, Math.trunc(value)));
-}
-
 export async function saveBillingOnboardingSettings(args: SaveBillingOnboardingArgs) {
-    const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await getWorkspaceIdFromCookie();
-    if (!workspaceId) throw new Error("Missing workspace id cookie");
-    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
-
-    const { data: teamRow, error: teamErr } = await supabase
-        .from("workspaces")
-        .select("tier,billing_mode,invoice_mode_activated_at,invoice_onboarding_status")
-        .eq("id", workspaceId)
-        .maybeSingle();
-    if (teamErr) throw teamErr;
-
-    const teamTier = String(teamRow?.tier ?? "basic").toLowerCase();
-    const currentMode =
-        String(teamRow?.billing_mode ?? "wallet").toLowerCase() === "invoice"
-            ? "invoice"
-            : "wallet";
-    const onboardingStatus = String(teamRow?.invoice_onboarding_status ?? "none").toLowerCase();
-    const alreadyInvoice = currentMode === "invoice";
-
-    if (teamTier !== "enterprise") {
-        throw new Error("Invoiced billing is available for Enterprise workspaces only.");
-    }
-    if (!alreadyInvoice && onboardingStatus !== "pre_invoice") {
-        throw new Error("This workspace is not authorized for invoiced billing yet.");
-    }
-
-    const { data: existingProfile, error: profileReadErr } = await supabase
-        .from("workspace_invoice_profiles")
-        .select("billing_day,payment_terms_days")
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-    if (profileReadErr) throw profileReadErr;
-
-    const billingDay = clampInt(
-        Number(args.billingDay ?? existingProfile?.billing_day ?? 1),
-        1,
-        28,
-        1,
-    );
-    const requestedPaymentTerms = Number(
-        args.paymentTermsDays ?? existingProfile?.payment_terms_days ?? 30
-    );
-    if (requestedPaymentTerms !== 14 && requestedPaymentTerms !== 30) {
-        throw new Error("Payment terms must be Net 14 or Net 30.");
-    }
-    const paymentTermsDays: 14 | 30 = requestedPaymentTerms === 14 ? 14 : 30;
-
-    const activatingInvoiceNow = !alreadyInvoice;
-    const signedByName = String(args.signedByName ?? "").trim();
-    if (activatingInvoiceNow) {
-        if (!args.termsAccepted) {
-            throw new Error("You must accept the invoiced billing terms to continue.");
-        }
-        if (signedByName.length < 2) {
-            throw new Error("A valid signer name is required.");
-        }
-        if (signedByName.length > 120) {
-            throw new Error("Signer name is too long.");
-        }
-    }
-
-    const nowIso = new Date().toISOString();
-
-    const teamUpdate: Record<string, any> = {
-        billing_mode: "invoice",
-        invoice_onboarding_status: "completed",
-        updated_at: nowIso,
-    };
-
-    if (activatingInvoiceNow) {
-        teamUpdate.invoice_terms_accepted_at = nowIso;
-        teamUpdate.invoice_terms_accepted_by_user_id = user.id;
-        teamUpdate.invoice_terms_accepted_by_name = signedByName;
-    }
-
-    const { error: modeErr } = await supabase
-        .from("workspaces")
-        .update(teamUpdate)
-        .eq("id", workspaceId);
-    if (modeErr) throw modeErr;
-
-    const { error: profileWriteErr } = await supabase
-        .from("workspace_invoice_profiles")
-        .upsert(
-            {
-                workspace_id: workspaceId,
-                enabled: true,
-                billing_day: billingDay,
-                payment_terms_days: paymentTermsDays,
-                updated_at: nowIso,
-            },
-            { onConflict: "workspace_id" },
-        );
-    if (profileWriteErr) throw profileWriteErr;
-
-    try {
-        await requireActiveTeamStripeCustomer({ createIfMissing: true });
-    } catch (err) {
-        console.warn(
-            "[billing-onboarding] unable to ensure stripe customer for invoice mode",
-            {
-                workspaceId,
-                err: String(err),
-            },
-        );
-    }
-
-    revalidatePath("/settings/credits");
-    revalidatePath("/settings/credits/onboarding");
-    return { ok: true as const, billingMode: "invoice" as const };
+    void args;
+    throw new Error("Invoicing is coming soon.");
 }
 
 type RedeemCreditCodeArgs = {

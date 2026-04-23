@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,16 @@ export default function CurrentCredits({
 	subtitle = null,
 	refreshAriaLabel = "refresh balance",
 }: Props) {
+	const safeBalance = Number.isFinite(balance) ? balance : 0;
 	const router = useRouter();
 	const [refreshing, setRefreshing] = useState(false);
+
+	useEffect(() => {
+		console.info("[credits-debug] CurrentCredits render", {
+			balance,
+			safeBalance,
+		});
+	}, [balance, safeBalance]);
 
 	async function handleRefresh() {
 		const MIN_SPIN_MS = 500; // minimum spin duration to ensure the animation is visible
@@ -82,9 +90,9 @@ export default function CurrentCredits({
 					) : null}
 					<div>
 						<CreditAmount
-							value={balance}
+							value={safeBalance}
 							className={`text-3xl font-semibold ${
-								balance < 0 ? "text-red-500" : ""
+								safeBalance < 0 ? "text-red-500" : ""
 							}`}
 						/>
 					</div>

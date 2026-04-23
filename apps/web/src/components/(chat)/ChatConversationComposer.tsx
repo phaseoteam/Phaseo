@@ -15,6 +15,7 @@ import {
 	X,
 } from "lucide-react";
 import type { ChatSettings } from "@/lib/indexeddb/chats";
+import type { ResolvedChatroomTheme } from "@/components/(chat)/playground/chat-playground-core";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,7 @@ type ReasoningOption = {
 };
 
 interface ChatConversationComposerProps {
+	theme: ResolvedChatroomTheme;
 	sendGateType: SendGateType;
 	isSending: boolean;
 	composer: string;
@@ -79,6 +81,7 @@ interface ChatConversationComposerProps {
 
 export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	const {
+		theme,
 		sendGateType,
 		isSending,
 		composer,
@@ -114,7 +117,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	} = props;
 
 	return (
-		<div className="border-t border-border px-4 py-4 md:px-8">
+		<div
+			className="border-t px-4 py-4 md:px-8"
+			style={{
+				borderColor: theme.composerBorder,
+				backgroundColor: theme.canvasBackground,
+			}}
+		>
 			<div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
 				{sendGateType === "auth" ? (
 					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/30 dark:text-amber-100">
@@ -139,7 +148,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</div>
 					</div>
 				) : null}
-				<div className="rounded-2xl border border-border bg-background px-3 py-2">
+				<div
+					className="rounded-2xl border px-3 py-2"
+					style={{
+						borderColor: theme.composerBorder,
+						backgroundColor: theme.composerBackground,
+					}}
+				>
 					<input
 						ref={fileInputRef}
 						type="file"

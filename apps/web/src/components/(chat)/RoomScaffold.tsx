@@ -177,7 +177,10 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 
 	return (
 		<SidebarProvider defaultOpen contained className="h-full overflow-hidden">
-			<Sidebar collapsible="icon" className="border-r border-border bg-background">
+			<Sidebar
+				collapsible="icon"
+				className="top-[var(--site-notice-height,0px)] bottom-0 h-auto border-r border-border bg-background"
+			>
 				<SidebarHeader className="gap-0 px-0 pt-3.5 pb-0">
 					<div className="mb-3.5 ml-2 flex w-full items-center gap-2 px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pb-1">
 						<Link href="/">

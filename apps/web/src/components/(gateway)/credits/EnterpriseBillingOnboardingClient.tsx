@@ -18,7 +18,6 @@ import {
 
 type Props = {
 	teamName: string;
-	teamTier: string;
 	currentBillingMode: "wallet" | "invoice";
 	invoiceProfileEnabled: boolean;
 	initialBillingDay: number;
@@ -33,7 +32,6 @@ const SIGNATURE_PATH_LENGTH = 560;
 
 export default function EnterpriseBillingOnboardingClient(props: Props) {
 	const router = useRouter();
-	const isEnterprise = props.teamTier.toLowerCase() === "enterprise";
 	const isInvoiceActive = props.currentBillingMode === "invoice";
 	const [started, setStarted] = React.useState<boolean>(isInvoiceActive);
 	const [billingDay, setBillingDay] = React.useState<number>(
@@ -51,7 +49,7 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 	const holdRafRef = React.useRef<number | null>(null);
 
 	const canSave = React.useMemo(() => {
-		if (!isEnterprise || !started) return false;
+		if (!started) return false;
 		const settingsChanged =
 			billingDay !== props.initialBillingDay ||
 			paymentTermsDays !== (props.initialPaymentTermsDays === 14 ? 14 : 30) ||
@@ -59,7 +57,6 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 		if (isInvoiceActive) return settingsChanged;
 		return holdComplete;
 	}, [
-		isEnterprise,
 		started,
 		billingDay,
 		props.initialBillingDay,
@@ -126,10 +123,6 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 	}
 
 	async function handleSave() {
-		if (!isEnterprise) {
-			toast.error("Invoiced billing is available for Enterprise teams only.");
-			return;
-		}
 		if (!started) {
 			toast.error("Start invoiced billing first.");
 			return;
@@ -177,15 +170,7 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 				</p>
 			</div>
 
-			{!isEnterprise ? (
-				<p className="text-sm text-muted-foreground">
-					This team is on the{" "}
-					<span className="font-medium text-foreground">{props.teamTier}</span>{" "}
-					tier. Invoiced billing is available on Enterprise.
-				</p>
-			) : null}
-
-			{isEnterprise && !started ? (
+			{!started ? (
 				<div className="space-y-3">
 					<Button onClick={() => setStarted(true)}>
 						Start Invoiced Billing
@@ -197,7 +182,7 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 				</div>
 			) : null}
 
-			{isEnterprise && started ? (
+			{started ? (
 				<div className="space-y-6 border-t pt-6">
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="grid gap-2">

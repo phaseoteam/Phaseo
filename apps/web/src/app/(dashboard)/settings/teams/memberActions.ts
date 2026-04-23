@@ -8,6 +8,8 @@ import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 function revalidateWorkspacePaths() {
     revalidatePath("/settings/teams");
     revalidatePath("/settings/workspaces");
+    revalidatePath("/settings/workspaces/general");
+    revalidatePath("/settings/workspaces/access");
     revalidatePath("/settings/workspaces/members");
     revalidatePath("/settings/workspaces/settings");
 }
