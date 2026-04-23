@@ -70,9 +70,7 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getOrgId,
-	isPersonalizationFontFamilyId,
 	isModelExpired,
-	isPersonalizationThemePresetId,
 	normalizeBaseUrl,
 	nowIso,
 	resolveChatroomTheme,
@@ -665,16 +663,6 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationNotes,
 				) ?? "";
-			const storedThemePreset = window.localStorage.getItem(
-				STORAGE_KEYS.personalizationTheme,
-			);
-			const storedFontFamily = window.localStorage.getItem(
-				STORAGE_KEYS.personalizationFont,
-			);
-			const storedAccent =
-				window.localStorage.getItem(
-					STORAGE_KEYS.personalizationAccent,
-				) ?? "#111111";
 			const resolvedModel =
 				(queryModelIsValid && queryModelId) ||
 				(storedModel &&
@@ -689,13 +677,9 @@ function ChatPlaygroundContent({
 				name: storedPersonalName,
 				role: storedPersonalRole,
 				notes: storedPersonalNotes,
-				themePreset: isPersonalizationThemePresetId(storedThemePreset)
-					? storedThemePreset
-					: DEFAULT_PERSONALIZATION_THEME_PRESET,
-				fontFamily: isPersonalizationFontFamilyId(storedFontFamily)
-					? storedFontFamily
-					: DEFAULT_PERSONALIZATION_FONT_FAMILY,
-				accentColor: storedAccent,
+				themePreset: DEFAULT_PERSONALIZATION_THEME_PRESET,
+				fontFamily: DEFAULT_PERSONALIZATION_FONT_FAMILY,
+				accentColor: "#111111",
 			});
 
 			const chats = await getAllChats("text");
@@ -748,18 +732,6 @@ function ChatPlaygroundContent({
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationNotes,
 			personalization.notes,
-		);
-		window.localStorage.setItem(
-			STORAGE_KEYS.personalizationTheme,
-			personalization.themePreset,
-		);
-		window.localStorage.setItem(
-			STORAGE_KEYS.personalizationFont,
-			personalization.fontFamily,
-		);
-		window.localStorage.setItem(
-			STORAGE_KEYS.personalizationAccent,
-			personalization.accentColor,
 		);
 	}, [personalization]);
 
