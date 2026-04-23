@@ -1,5 +1,8 @@
 -- Restore spend summary RPCs used by settings pricing widgets with workspace-era
 -- parameter names and explicit access checks.
+-- These RPCs are called via PostgREST with named arguments, so the parameter
+-- name must match the payload. Drop/recreate is safe here because they do not
+-- sit under RLS policy dependencies.
 
 drop function if exists public.monthly_spend_prev_cents(uuid);
 drop function if exists public.mtd_spend_cents(uuid);

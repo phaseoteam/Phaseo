@@ -27,7 +27,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SwapTeam } from "@/app/(dashboard)/actions";
+import { setActiveWorkspaceAction } from "@/app/(dashboard)/actions";
 import { CurrentUserAvatar } from "../ui/current-user-avatar";
 import { cn } from "@/lib/utils";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
@@ -36,9 +36,9 @@ import { useTheme } from "next-themes";
 
 interface TeamSwitcherProps {
 	user?: any;
-	teams?: { id: string; name: string }[];
+	workspaces?: { id: string; name: string }[];
 	onSignOut?: () => void;
-	initialActiveTeamId?: string;
+	initialActiveWorkspaceId?: string;
 	userRole?: string | undefined;
 }
 
@@ -53,9 +53,9 @@ function emitWorkspaceChanged(workspaceId: string) {
 
 export default function TeamSwitcher({
 	user,
-	teams = [],
+	workspaces = [],
 	onSignOut,
-	initialActiveTeamId,
+	initialActiveWorkspaceId,
 	userRole,
 }: TeamSwitcherProps) {
 	const router = useRouter();
@@ -80,18 +80,20 @@ export default function TeamSwitcher({
 		[router],
 	);
 
-	const getInitialTeamId = (initial?: string) => {
+	const getInitialWorkspaceId = (initial?: string) => {
 		if (initial) return initial;
-		return teams.length ? teams[0].id : undefined;
+		return workspaces.length ? workspaces[0].id : undefined;
 	};
 
-	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(() =>
-		getInitialTeamId(initialActiveTeamId)
+	const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | undefined>(() =>
+		getInitialWorkspaceId(initialActiveWorkspaceId)
 	);
-	const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
+	const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-	const activeTeam = teams.find((t) => t.id === activeWorkspaceId) ?? teams[0];
+	const activeWorkspace =
+		workspaces.find((workspace) => workspace.id === activeWorkspaceId) ??
+		workspaces[0];
 	const workspacesHref = `/settings/workspaces${
 		activeWorkspaceId
 			? `?workspace_id=${encodeURIComponent(activeWorkspaceId)}`
@@ -125,19 +127,19 @@ export default function TeamSwitcher({
 	}, [supportIsOpen, minutesUntilNextWindow]);
 
 	useEffect(() => {
-		setIsTeamMenuOpen(false);
+		setIsWorkspaceMenuOpen(false);
 		setIsProfileMenuOpen(false);
 	}, [pathname]);
 
 	useEffect(() => {
-		setActiveTeamId(getInitialTeamId(initialActiveTeamId));
+		setActiveWorkspaceId(getInitialWorkspaceId(initialActiveWorkspaceId));
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [initialActiveTeamId, teams]);
+	}, [initialActiveWorkspaceId, workspaces]);
 
 	return (
 		<div className="flex items-center gap-2">
 			{/* Workspace Dropdown */}
-			<DropdownMenu open={isTeamMenuOpen} onOpenChange={setIsTeamMenuOpen}>
+			<DropdownMenu open={isWorkspaceMenuOpen} onOpenChange={setIsWorkspaceMenuOpen}>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
@@ -151,14 +153,14 @@ export default function TeamSwitcher({
 					>
 						<span
 							className="max-w-32 truncate text-sm font-medium select-none"
-							title={activeTeam ? activeTeam.name : undefined}
+							title={activeWorkspace ? activeWorkspace.name : undefined}
 						>
-							{activeTeam ? activeTeam.name : "Personal Workspace"}
+							{activeWorkspace ? activeWorkspace.name : "Personal Workspace"}
 						</span>
 						<ChevronDown
 							className={cn(
 								"h-4 w-4 text-zinc-500 transition-transform",
-								isTeamMenuOpen && "rotate-180"
+								isWorkspaceMenuOpen && "rotate-180"
 							)}
 						/>
 					</Button>
@@ -172,11 +174,11 @@ export default function TeamSwitcher({
 					)}
 				>
 					<div>
-						{teams.slice(0, 5).map((t) => {
-							const isActive = t.id === activeWorkspaceId;
+						{workspaces.slice(0, 5).map((workspace) => {
+							const isActive = workspace.id === activeWorkspaceId;
 							return (
 								<DropdownMenuItem
-									key={t.id}
+									key={workspace.id}
 									className={cn(
 										"rounded-md text-sm cursor-pointer",
 										"hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70",
@@ -196,7 +198,7 @@ export default function TeamSwitcher({
 												return;
 											}
 											void navigator.clipboard
-												.writeText(t.id)
+												.writeText(workspace.id)
 												.then(() => {
 													toast.success("Workspace UUID copied to clipboard.", {
 														position: "bottom-right",
@@ -210,16 +212,16 @@ export default function TeamSwitcher({
 											return;
 										}
 										const previous = activeWorkspaceId;
-										setActiveTeamId(t.id);
-										toast.promise(SwapTeam(t.id), {
+										setActiveWorkspaceId(workspace.id);
+										toast.promise(setActiveWorkspaceAction(workspace.id), {
 											loading: "Switching workspace...",
 											success: (res) => {
 												if (res?.ok) {
-													emitWorkspaceChanged(t.id);
+													emitWorkspaceChanged(workspace.id);
 													router.refresh();
-													return `Switched to ${t.name} workspace`;
+													return `Switched to ${workspace.name} workspace`;
 												} else {
-													setActiveTeamId(
+													setActiveWorkspaceId(
 														previous
 													);
 													throw new Error(
@@ -228,13 +230,13 @@ export default function TeamSwitcher({
 												}
 											},
 											error: (error) => {
-												setActiveTeamId(previous);
+												setActiveWorkspaceId(previous);
 												const reason =
 													typeof (error as any)?.message === "string" &&
 													(error as any).message
 														? ` (${(error as any).message})`
 														: "";
-												return `Failed to switch to ${t.name} workspace${reason}`;
+												return `Failed to switch to ${workspace.name} workspace${reason}`;
 											},
 										});
 									}}
@@ -245,7 +247,7 @@ export default function TeamSwitcher({
 											isActive && "text-foreground"
 										)}
 									>
-										{t.name}
+										{workspace.name}
 									</span>
 									{isActive && (
 										<Check className="ml-auto h-4 w-4 text-primary" />
@@ -253,7 +255,7 @@ export default function TeamSwitcher({
 								</DropdownMenuItem>
 							);
 						})}
-						{teams.length > 0 ? (
+						{workspaces.length > 0 ? (
 							<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
 						) : null}
 						<DropdownMenuItem
@@ -265,7 +267,7 @@ export default function TeamSwitcher({
 								className="flex w-full items-center"
 								onClick={(e) => {
 									e.preventDefault();
-									setIsTeamMenuOpen(false);
+									setIsWorkspaceMenuOpen(false);
 									navigateWithViewTransition(workspacesHref);
 								}}
 							>

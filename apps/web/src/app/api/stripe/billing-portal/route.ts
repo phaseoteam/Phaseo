@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 function resolveSafeReturnUrl(request: Request, candidate: unknown): string {
     const siteBase = process.env.WEBSITE_URL || new URL(request.url).origin;
@@ -25,7 +25,7 @@ function resolveSafeReturnUrl(request: Request, candidate: unknown): string {
 export async function POST(request: Request) {
     try {
         const body = await request.json().catch(() => ({}));
-        const { customerId } = await requireActiveTeamStripeCustomer();
+        const { customerId } = await requireActiveWorkspaceStripeCustomer();
         const returnUrl = resolveSafeReturnUrl(request, body?.returnUrl);
 
         const stripe = getStripe();
@@ -40,7 +40,10 @@ export async function POST(request: Request) {
         if (err?.message === "unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        if (err?.message === "missing_team" || err?.message === "missing_stripe_customer") {
+        if (
+            err?.message === "missing_workspace" ||
+            err?.message === "missing_stripe_customer"
+        ) {
             return NextResponse.json({ error: err.message }, { status: 400 });
         }
         console.log("[ERROR] /api/stripe/billing-portal:", String(err));

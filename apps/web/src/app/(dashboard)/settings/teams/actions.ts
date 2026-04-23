@@ -4,10 +4,10 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import upsertLinearCustomer from "@/lib/linear";
+import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import { userHasPaidTeamAccess } from "@/lib/server/teamLimits";
 import {
 	normalizeTeamSsoSettingsInput,
-	type TeamSsoMode,
 	type TeamSsoSettingsInput,
 	type TeamSsoSettingsRow,
 } from "@/lib/auth/teamSsoSettings";
@@ -28,6 +28,75 @@ function makeSlug(name: string) {
     } catch {
         return base.slice(0, 50);
     }
+}
+
+function deriveWorkspaceOwnerName(user: {
+	email?: string | null;
+	user_metadata?: Record<string, unknown>;
+}) {
+	const meta = user.user_metadata ?? {};
+	const fromMeta =
+		(typeof meta.full_name === "string" && meta.full_name.trim()) ||
+		(typeof meta.name === "string" && meta.name.trim()) ||
+		null;
+	if (fromMeta) return fromMeta;
+	const emailLocal = user.email?.split("@")[0]?.trim();
+	return emailLocal || "Workspace Owner";
+}
+
+function sleep(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isWorkspaceWalletForeignKeyError(error: unknown): boolean {
+	const message = String((error as { message?: unknown } | null)?.message ?? "");
+	return (
+		message.includes("wallets_workspace_id_fkey") ||
+		(message.includes("workspace_id") &&
+			message.includes("not present in table \"workspaces\""))
+	);
+}
+
+async function ensureWorkspaceRowVisible(
+	admin: ReturnType<typeof createAdminClient>,
+	workspaceId: string,
+) {
+	for (let attempt = 0; attempt < 5; attempt += 1) {
+		const { data, error } = await admin
+			.from("workspaces")
+			.select("id")
+			.eq("id", workspaceId)
+			.maybeSingle();
+		if (!error && data?.id) return;
+		await sleep(150 * (attempt + 1));
+	}
+}
+
+async function ensureWorkspaceWalletWithRetry(args: {
+	admin: ReturnType<typeof createAdminClient>;
+	workspaceId: string;
+	userId: string;
+	email?: string;
+	name: string;
+}) {
+	await ensureWorkspaceRowVisible(args.admin, args.workspaceId);
+
+	for (let attempt = 0; attempt < 4; attempt += 1) {
+		try {
+			await ensureWorkspaceStripeWallet({
+				workspaceId: args.workspaceId,
+				userId: args.userId,
+				email: args.email,
+				name: args.name,
+			});
+			return;
+		} catch (error) {
+			if (!isWorkspaceWalletForeignKeyError(error) || attempt === 3) {
+				throw error;
+			}
+			await sleep(200 * (attempt + 1));
+		}
+	}
 }
 
 // ---- Crypto helpers (sync for simplicity; server actions await their callers) ----
@@ -116,8 +185,6 @@ async function ensureTeamOwnerOrAdmin(
     }
 }
 
-export type { TeamSsoMode, TeamSsoSettingsInput, TeamSsoSettingsRow };
-
 function toTeamSsoSettingsResponse(
 	row: TeamSsoSettingsRow | null | undefined,
 ): TeamSsoSettingsRow {
@@ -131,7 +198,6 @@ function toTeamSsoSettingsResponse(
 }
 
 function revalidateWorkspacePaths() {
-	revalidatePath("/settings/teams");
 	revalidatePath("/settings/workspaces");
 	revalidatePath("/settings/workspaces/general");
 	revalidatePath("/settings/workspaces/access");
@@ -243,12 +309,13 @@ export async function createTeamAction(name: string, userId: string) {
         .from("workspace_members")
         .upsert({ workspace_id: newTeamId, user_id: userId, role: "owner" }, { onConflict: "workspace_id,user_id", ignoreDuplicates: true });
 
-    // Create wallet row now; Stripe customer is provisioned lazily when billing
-    // flows are first used for this workspace.
-    await supabase.from("wallets").upsert(
-        { workspace_id: newTeamId },
-        { onConflict: "workspace_id", ignoreDuplicates: true },
-    );
+    await ensureWorkspaceWalletWithRetry({
+        admin,
+        workspaceId: newTeamId,
+        userId,
+        email: user.email ?? undefined,
+        name: deriveWorkspaceOwnerName(user),
+    });
 
     // Upsert a Linear Customer for this workspace. Non-blocking: failures shouldn't block team creation.
     try {

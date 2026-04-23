@@ -288,7 +288,7 @@ export async function forkPresetAction(sourcePresetId: string) {
 
 	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	if (!workspaceId) {
-		throw new Error("TEAM_REQUIRED");
+		throw new Error("WORKSPACE_REQUIRED");
 	}
 
 	const { data: source, error } = await supabase
@@ -486,7 +486,7 @@ export async function getPresetById(id: string) {
 	return data;
 }
 
-export async function listPresetsByTeam(workspaceId: string) {
+export async function listPresetsByWorkspace(workspaceId: string) {
 	if (!workspaceId || typeof workspaceId !== "string") {
 		throw new Error("Valid workspace ID is required");
 	}
@@ -507,3 +507,5 @@ export async function listPresetsByTeam(workspaceId: string) {
 
 	return data;
 }
+
+export const listPresetsByTeam = listPresetsByWorkspace;

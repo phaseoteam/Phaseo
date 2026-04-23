@@ -20,7 +20,7 @@ const TEST_CONFIG = {
 describe('OAuth 2.1 Flow Integration Tests', () => {
   let supabase: ReturnType<typeof createClient>;
   let testUserId: string;
-  let testTeamId: string;
+  let testWorkspaceId: string;
   let testClientId: string;
   let testClientSecret: string;
   let codeVerifier: string;
@@ -41,19 +41,23 @@ describe('OAuth 2.1 Flow Integration Tests', () => {
     if (authError) throw authError;
     testUserId = authData.user!.id;
 
-    // Create test team
-    const { data: teamData, error: teamError } = await supabase
-      .from('teams')
-      .insert({ name: 'OAuth Test Team' })
+    // Create test workspace
+    const { data: workspaceData, error: workspaceError } = await supabase
+      .from('workspaces')
+      .insert({
+        name: 'OAuth Test Workspace',
+        slug: `oauth-test-workspace-${Date.now()}`,
+        owner_user_id: testUserId,
+      })
       .select()
       .single();
 
-    if (teamError) throw teamError;
-    testTeamId = teamData.id;
+    if (workspaceError) throw workspaceError;
+    testWorkspaceId = workspaceData.id;
 
-    // Add user to team
-    await supabase.from('team_members').insert({
-      team_id: testTeamId,
+    // Add user to workspace
+    await supabase.from('workspace_members').insert({
+      workspace_id: testWorkspaceId,
       user_id: testUserId,
       role: 'owner',
     });
@@ -68,8 +72,8 @@ describe('OAuth 2.1 Flow Integration Tests', () => {
         .eq('client_id', testClientId);
     }
 
-    if (testTeamId) {
-      await supabase.from('teams').delete().eq('id', testTeamId);
+    if (testWorkspaceId) {
+      await supabase.from('workspaces').delete().eq('id', testWorkspaceId);
     }
 
     if (testUserId) {
@@ -191,7 +195,7 @@ describe('OAuth 2.1 Flow Integration Tests', () => {
         .insert({
           user_id: testUserId,
           client_id: testClientId,
-          team_id: testTeamId,
+          workspace_id: testWorkspaceId,
           scopes: ['openid', 'email', 'gateway:access'],
         })
         .select()

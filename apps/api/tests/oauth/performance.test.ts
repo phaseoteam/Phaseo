@@ -342,7 +342,7 @@ function createMockJWT(claims: any): string {
     exp: Math.floor(Date.now() / 1000) + 3600,
     iat: Math.floor(Date.now() / 1000),
     user_id: 'user123',
-    team_id: 'team456',
+    workspace_id: 'workspace456',
     client_id: 'oauth789',
   };
 

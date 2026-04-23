@@ -6,7 +6,7 @@ import {
     requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
-export async function SwapTeam(workspaceId: string) {
+export async function setActiveWorkspaceAction(workspaceId: string) {
     try {
         if (!workspaceId || typeof workspaceId !== 'string') {
             return { ok: false, error: 'workspaceId required' };

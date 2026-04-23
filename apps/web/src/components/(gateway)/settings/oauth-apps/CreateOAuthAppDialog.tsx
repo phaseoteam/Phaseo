@@ -21,11 +21,11 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 
 interface CreateOAuthAppDialogProps {
-	currentTeamId: string | null;
+	currentWorkspaceId: string | null;
 }
 
 export default function CreateOAuthAppDialog({
-	currentTeamId,
+	currentWorkspaceId,
 }: CreateOAuthAppDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
@@ -42,7 +42,7 @@ export default function CreateOAuthAppDialog({
 	});
 
 	const handleCreate = async () => {
-		if (!currentTeamId) {
+		if (!currentWorkspaceId) {
 			setError("Select a workspace before creating an OAuth app");
 			return;
 		}
@@ -58,7 +58,7 @@ export default function CreateOAuthAppDialog({
 				description: formData.description || undefined,
 				homepage_url: formData.homepageUrl || undefined,
 				redirect_uris: formData.redirectUris.split("\n").filter(uri => uri.trim()),
-				workspace_id: currentTeamId!,
+				workspace_id: currentWorkspaceId,
 			});
 
 			if (result.error) {
@@ -107,7 +107,7 @@ export default function CreateOAuthAppDialog({
 		return (
 			<Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
 				<DialogTrigger asChild>
-					<Button disabled={!currentTeamId}>
+					<Button disabled={!currentWorkspaceId}>
 						<Plus className="h-4 w-4 mr-2" />
 						Create OAuth App
 					</Button>
@@ -185,7 +185,7 @@ export default function CreateOAuthAppDialog({
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button disabled={!currentTeamId}>
+				<Button disabled={!currentWorkspaceId}>
 					<Plus className="h-4 w-4 mr-2" />
 					Create OAuth App
 				</Button>

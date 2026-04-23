@@ -165,6 +165,14 @@ export type TeamSettings = {
     billingMode: "wallet" | "invoice";
 };
 
+export type WorkspacePolicy = {
+    providerAllowlist: string[] | null;
+    providerBlocklist: string[] | null;
+    allowedApiModels: string[] | null;
+    enforceAllowed: boolean;
+    activeGuardrailIds: string[];
+};
+
 /**
  * API Key enrichment data for observability
  */
@@ -326,6 +334,7 @@ export type PipelineContext = {
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;
     teamSettings?: TeamSettings | null;
+    workspacePolicy?: WorkspacePolicy | null;
     routingMode?: string | null;
     keyId?: string | null;
     testingMode?: boolean;

@@ -143,6 +143,75 @@ export async function beforeRequest(
         }
     }
 
+    const { fetchWorkspacePolicy, applyWorkspacePolicy } = await import("./workspacePolicy");
+    let workspacePolicy = null;
+    try {
+        workspacePolicy = await timer.span("fetchWorkspacePolicy", () =>
+            fetchWorkspacePolicy({
+                workspaceId,
+                apiKeyId,
+            })
+        );
+    } catch (error) {
+        console.error("[beforeRequest] workspace_policy_fetch_failed", {
+            workspaceId,
+            apiKeyId,
+            requestId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return {
+            ok: false,
+            response: err("gateway_error", {
+                reason: "workspace_policy_fetch_failed",
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+
+    const workspacePolicyResult = applyWorkspacePolicy({
+        providers: presetFilteredProviders,
+        resolvedModel: resolvedModel || model,
+        body: mergedBody,
+        workspacePolicy,
+    });
+    if (!workspacePolicyResult.ok) {
+        const workspacePolicyFailure = workspacePolicyResult as Extract<
+            typeof workspacePolicyResult,
+            { ok: false }
+        >;
+        if (workspacePolicyFailure.reason === "model_not_allowed") {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    details: [{
+                        message: `Model "${resolvedModel || model}" is not allowed by workspace policy`,
+                        path: ["model"],
+                        keyword: "model_not_allowed_by_workspace_policy",
+                        params: workspacePolicyFailure.diagnostics,
+                    }],
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+
+        return {
+            ok: false,
+            response: err("validation_error", {
+                details: [{
+                    message: "Workspace and request provider filters resulted in no available providers",
+                    path: ["provider"],
+                    keyword: "no_providers_after_workspace_policy_filter",
+                    params: workspacePolicyFailure.diagnostics,
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    presetFilteredProviders = workspacePolicyResult.providers;
+
     // 5.5) Capability validation - parameter support and token limits
     const capabilityValidation = await timer.span("validateCapabilities", () =>
         validateCapabilities({
@@ -357,6 +426,7 @@ export async function beforeRequest(
         teamEnrichment: context.teamEnrichment ?? null,
         keyEnrichment: context.keyEnrichment ?? null,
         teamSettings: context.teamSettings ?? null,
+        workspacePolicy,
         routingMode: context.teamSettings?.routingMode ?? null,
         keyId: apiKeyId ?? null,
         testingMode: testingModeEnabled,
