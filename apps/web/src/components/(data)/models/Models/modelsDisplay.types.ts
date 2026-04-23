@@ -1,6 +1,6 @@
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 
-export type GatewayStatusFilter = "active" | "not_active";
+export type GatewayStatusFilter = "active" | "coming_soon" | "not_active";
 
 export type OptionCount = {
 	value: string;

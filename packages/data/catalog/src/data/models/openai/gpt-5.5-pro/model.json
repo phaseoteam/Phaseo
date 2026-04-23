@@ -2,18 +2,96 @@
   "model_id": "openai/gpt-5.5-pro",
   "organisation_id": "openai",
   "name": "GPT 5.5 Pro",
-  "status": "Rumoured",
+  "status": "Announced",
   "previous_model_id": "openai/gpt-5.4-pro",
   "announced_date": "2026-04-23T00:00:00",
-  "release_date": "2026-04-23T00:00:00",
+  "release_date": null,
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
   "input_types": null,
   "output_types": null,
-  "api_model_id": "openai/gpt-5.5-pro-20260423",
+  "api_model_id": "openai/gpt-5.5-pro",
   "family_id": "openai/gpt-5-5",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5-5/"
+    }
+  ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 82.3,
+      "is_self_reported": true,
+      "other_info": "Wins or ties",
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "investment-banking-modeling",
+      "score": 88.6,
+      "is_self_reported": true,
+      "other_info": "Internal",
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 90.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "genebench",
+      "score": 33.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frontier-math",
+      "score": 52.4,
+      "is_self_reported": true,
+      "other_info": "Tier 1-3",
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "frontier-math",
+      "score": 39.6,
+      "is_self_reported": true,
+      "other_info": "Tier 4",
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 94.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 43.1,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 57.2,
+      "is_self_reported": true,
+      "other_info": "With tools",
+      "source_link": "https://openai.com/index/introducing-gpt-5-5/",
+      "rank": 2
+    }
+  ]
 }

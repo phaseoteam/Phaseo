@@ -387,14 +387,13 @@ async function getProviderDailySeries7d(
 
 	try {
 		let rollupQuery = client
-			.from("gateway_usage_rollup_15m_model_provider")
+			.from("gateway_requests")
 			.select(
-				"bucket_15m, provider, requests, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
+				"created_at, provider, canonical_model_id, model_id, latency_ms, throughput",
 			)
-			.in("canonical_model_id", aliases)
-			.gte("bucket_15m", start.toISOString())
-			.lte("bucket_15m", now.toISOString())
-			.order("bucket_15m", { ascending: true });
+			.gte("created_at", start.toISOString())
+			.lte("created_at", now.toISOString())
+			.order("created_at", { ascending: true });
 
 		if (sanitizedPreferredProviders.length > 0) {
 			rollupQuery = rollupQuery.in("provider", sanitizedPreferredProviders);
@@ -417,17 +416,19 @@ async function getProviderDailySeries7d(
 		const requestCountByProvider = new Map<string, number>();
 
 		for (const row of data ?? []) {
+			const canonicalModelId =
+				String(row?.canonical_model_id ?? "").trim() ||
+				String(row?.model_id ?? "").trim();
+			if (!canonicalModelId || !aliases.includes(canonicalModelId)) continue;
+
 			const provider = String(row?.provider ?? "").trim();
 			if (!provider) continue;
-			const day = toUtcDayKey(String(row?.bucket_15m ?? ""));
+			const day = toUtcDayKey(String(row?.created_at ?? ""));
 			if (!day) continue;
 
-			const requests = Number(row?.requests ?? 0);
-			const throughputSum = Number(row?.throughput_sum ?? 0);
-			const throughputSamples = Number(row?.throughput_samples ?? 0);
-			const latencySum = Number(row?.latency_sum_ms ?? 0);
-			const latencySamples = Number(row?.latency_samples ?? 0);
-			if (!Number.isFinite(requests) || requests <= 0) continue;
+			const requests = 1;
+			const throughput = Number(row?.throughput ?? 0);
+			const latency = Number(row?.latency_ms ?? 0);
 
 			const key = `${provider}::${day}`;
 			const current = aggregateByProviderDay.get(key) ?? {
@@ -439,13 +440,13 @@ async function getProviderDailySeries7d(
 			};
 
 			current.requests += requests;
-			if (Number.isFinite(throughputSum) && Number.isFinite(throughputSamples)) {
-				current.throughputSum += throughputSum;
-				current.throughputSamples += Math.max(0, throughputSamples);
+			if (Number.isFinite(throughput) && throughput > 0) {
+				current.throughputSum += throughput;
+				current.throughputSamples += 1;
 			}
-			if (Number.isFinite(latencySum) && Number.isFinite(latencySamples)) {
-				current.latencySum += latencySum;
-				current.latencySamples += Math.max(0, latencySamples);
+			if (Number.isFinite(latency) && latency > 0) {
+				current.latencySum += latency;
+				current.latencySamples += 1;
 			}
 
 			aggregateByProviderDay.set(key, current);

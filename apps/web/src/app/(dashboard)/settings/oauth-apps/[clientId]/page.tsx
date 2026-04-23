@@ -37,6 +37,55 @@ interface OAuthUserDirectoryRow {
 	email: string | null;
 }
 
+async function loadOAuthAppWithStats(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	clientId: string,
+) {
+	const { data: metadata, error } = await supabase
+		.from("oauth_app_metadata")
+		.select("*")
+		.eq("client_id", clientId)
+		.eq("status", "active")
+		.maybeSingle();
+	if (error || !metadata) return null;
+
+	const [authRowsResult, requestsResult] = await Promise.all([
+		supabase
+			.from("oauth_authorizations")
+			.select("revoked_at, last_used_at")
+			.eq("client_id", clientId),
+		(() => {
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+			return supabase
+				.from("gateway_requests")
+				.select("oauth_client_id")
+				.eq("oauth_client_id", clientId)
+				.gte("created_at", thirtyDaysAgo.toISOString());
+		})(),
+	]);
+
+	let totalAuthorizations = 0;
+	let activeAuthorizations = 0;
+	let lastUsedAt: string | null = null;
+	for (const row of authRowsResult.data ?? []) {
+		totalAuthorizations += 1;
+		if ((row as any)?.revoked_at == null) activeAuthorizations += 1;
+		const candidate = String((row as any)?.last_used_at ?? "").trim();
+		if (candidate && (!lastUsedAt || candidate > lastUsedAt)) {
+			lastUsedAt = candidate;
+		}
+	}
+
+	return {
+		...metadata,
+		active_authorizations: activeAuthorizations,
+		total_authorizations: totalAuthorizations,
+		last_used_at: lastUsedAt,
+		requests_last_30d: (requestsResult.data ?? []).length,
+	};
+}
+
 export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) {
 	return (
 		<div className="space-y-6">
@@ -73,12 +122,7 @@ async function OAuthAppDetailContent({ params }: OAuthAppDetailPageProps) {
 		return notFound();
 	}
 
-	// Fetch OAuth app with stats
-	const { data: oauthApp } = await supabase
-		.from("oauth_apps_with_stats")
-		.select("*")
-		.eq("client_id", clientId)
-		.single();
+	const oauthApp = await loadOAuthAppWithStats(supabase, clientId);
 
 	if (!oauthApp) {
 		return notFound();

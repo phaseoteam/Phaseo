@@ -7,10 +7,6 @@ import {
 	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
-// Raw fallback can pull large request windows; keep it opt-in to protect DB egress.
-const ENABLE_GATEWAY_USAGE_RAW_FALLBACK =
-	process.env.ENABLE_GATEWAY_USAGE_RAW_FALLBACK === "1";
-
 async function requireAuthedTeamContext(
 	supabase: Awaited<ReturnType<typeof createClient>>
 ) {
@@ -966,13 +962,12 @@ export async function fetchFunStats(
 	}
 
 	const { data: rows } = await supabase
-		.from("gateway_usage_rollup_15m_workspace_provider_model")
-		.select(
-			"canonical_model_id, provider, requests, total_cost_nanos, latency_sum_ms, latency_samples",
-		)
+		.from("gateway_requests")
+		.select("model_id, provider, cost_nanos, latency_ms")
 		.eq("workspace_id", workspaceId)
-		.gte("bucket_15m", timeRange.from)
-		.lte("bucket_15m", timeRange.to);
+		.eq("success", true)
+		.gte("created_at", timeRange.from)
+		.lte("created_at", timeRange.to);
 
 	if (!rows || rows.length === 0) {
 		return {
@@ -986,9 +981,8 @@ export async function fetchFunStats(
 	// Top model by requests
 	const modelCounts = new Map<string, number>();
 	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const requests = Number(r.requests ?? 0) || 0;
-		modelCounts.set(model, (modelCounts.get(model) || 0) + requests);
+		const model = r.model_id || "unknown";
+		modelCounts.set(model, (modelCounts.get(model) || 0) + 1);
 	});
 	const topModelEntry = Array.from(modelCounts.entries()).sort((a, b) => b[1] - a[1])[0];
 	const topModel = topModelEntry
@@ -999,8 +993,7 @@ export async function fetchFunStats(
 	const providerCounts = new Map<string, number>();
 	rows.forEach((r: any) => {
 		const provider = r.provider || "unknown";
-		const requests = Number(r.requests ?? 0) || 0;
-		providerCounts.set(provider, (providerCounts.get(provider) || 0) + requests);
+		providerCounts.set(provider, (providerCounts.get(provider) || 0) + 1);
 	});
 	const topProviderEntry = Array.from(providerCounts.entries()).sort((a, b) => b[1] - a[1])[0];
 	const topProvider = topProviderEntry
@@ -1010,8 +1003,8 @@ export async function fetchFunStats(
 	// Most expensive model
 	const modelCosts = new Map<string, number>();
 	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const cost = Number(r.total_cost_nanos ?? 0) / 1e9;
+		const model = r.model_id || "unknown";
+		const cost = Number(r.cost_nanos ?? 0) / 1e9;
 		modelCosts.set(model, (modelCosts.get(model) || 0) + cost);
 	});
 	const mostExpensiveEntry = Array.from(modelCosts.entries()).sort((a, b) => b[1] - a[1])[0];
@@ -1022,13 +1015,12 @@ export async function fetchFunStats(
 	// Fastest model (average latency)
 	const modelLatencySums = new Map<string, { sum: number; samples: number }>();
 	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const latencySum = Number(r.latency_sum_ms ?? 0) || 0;
-		const latencySamples = Number(r.latency_samples ?? 0) || 0;
-		if (latencySamples <= 0 || latencySum <= 0) return;
+		const model = r.model_id || "unknown";
+		const latency = Number(r.latency_ms ?? 0) || 0;
+		if (latency <= 0) return;
 		const current = modelLatencySums.get(model) ?? { sum: 0, samples: 0 };
-		current.sum += latencySum;
-		current.samples += latencySamples;
+		current.sum += latency;
+		current.samples += 1;
 		modelLatencySums.set(model, current);
 	});
 	const modelAvgLatencies = Array.from(modelLatencySums.entries())
@@ -1325,77 +1317,17 @@ export async function fetchChartData(
 		);
 	};
 
-	const mergeUsageRows = (baseRows: any[], liveRows: any[]): any[] => {
-		const toKey = (row: any) =>
-			`${row?.bucket ?? ""}::${row?.provider ?? "unknown"}::${row?.model_id ?? "unknown"}`;
-		const merged = new Map<string, any>();
-		for (const row of baseRows) {
-			merged.set(toKey(row), row);
-		}
-		for (const row of liveRows) {
-			// Prefer live values for overlapping bucket/provider/model keys.
-			merged.set(toKey(row), row);
-		}
-		return Array.from(merged.values()).sort(
-			(a, b) => new Date(a.bucket).getTime() - new Date(b.bucket).getTime(),
-		);
-	};
-
-	// Fetch current period data (aggregated)
-	const { data: rows, error: rollupError } = await supabase.rpc(
-		"get_usage_chart_rollup",
-		{
-			p_team: workspaceId,
-			p_from: params.timeRange.from,
-			p_to: params.timeRange.to,
-			p_bucket: bucketKey,
-			p_key_id: params.keyFilter ?? null,
-		},
-	);
-	if (rollupError) {
-		console.error("Error fetching usage rollup:", rollupError);
-	}
-
-	// Fetch previous period for comparison (aggregated)
+	// Fetch current/previous period data directly from gateway_requests.
 	const fromDate = new Date(params.timeRange.from);
 	const toDate = new Date(params.timeRange.to);
 	const windowMs = toDate.getTime() - fromDate.getTime();
 	const prevFrom = new Date(fromDate.getTime() - windowMs).toISOString();
 	const prevTo = fromDate.toISOString();
-	const { data: prevRows, error: prevError } = await supabase.rpc(
-		"get_usage_chart_rollup",
-		{
-			p_team: workspaceId,
-			p_from: prevFrom,
-			p_to: prevTo,
-			p_bucket: bucketKey,
-			p_key_id: params.keyFilter ?? null,
-		},
+	const currentRows = await fetchGatewayRequestFallbackRows(
+		params.timeRange.from,
+		params.timeRange.to,
 	);
-	if (prevError) {
-		console.error("Error fetching usage rollup (prev):", prevError);
-	}
-	let currentRows = (rows ?? []) as any[];
-	if (params.forceLive) {
-		const liveRows = await fetchGatewayRequestFallbackRows(
-			params.timeRange.from,
-			params.timeRange.to,
-		);
-		if (liveRows.length > 0) {
-			currentRows = mergeUsageRows(currentRows, liveRows);
-		} else if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && currentRows.length === 0) {
-			currentRows = liveRows;
-		}
-	} else if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && currentRows.length === 0) {
-		currentRows = await fetchGatewayRequestFallbackRows(
-			params.timeRange.from,
-			params.timeRange.to,
-		);
-	}
-	let previousRows = (prevRows ?? []) as any[];
-	if (ENABLE_GATEWAY_USAGE_RAW_FALLBACK && previousRows.length === 0) {
-		previousRows = await fetchGatewayRequestFallbackRows(prevFrom, prevTo);
-	}
+	const previousRows = await fetchGatewayRequestFallbackRows(prevFrom, prevTo);
 
 
 	// Helper functions

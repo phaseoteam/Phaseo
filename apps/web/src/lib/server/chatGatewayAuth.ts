@@ -17,6 +17,10 @@ type ChatGatewayContext = {
 	apiKey: string;
 };
 
+type ResolveChatGatewayContextOptions = {
+	forceHashSync?: boolean;
+};
+
 export class ChatGatewayAuthError extends Error {
 	status: number;
 	code: string;
@@ -74,7 +78,8 @@ function resolvePepper(): string {
 	}
 }
 
-function shouldForceChatHashSync(): boolean {
+function shouldForceChatHashSync(forceFromCaller = false): boolean {
+	if (forceFromCaller) return true;
 	const raw = String(process.env[FORCE_CHAT_HASH_SYNC_FLAG] ?? "").trim().toLowerCase();
 	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
@@ -167,7 +172,7 @@ async function findTeamIdForUser(userId: string): Promise<string> {
 async function ensureManagedGatewayKey(args: {
 	workspaceId: string;
 	userId: string;
-}): Promise<string> {
+}, options: ResolveChatGatewayContextOptions = {}): Promise<string> {
 	const admin = createAdminClient();
 	const pepper = resolvePepper();
 	const derived = deriveTeamScopedGatewayKey({ workspaceId: args.workspaceId });
@@ -243,7 +248,7 @@ async function ensureManagedGatewayKey(args: {
 	// Do not rewrite hash by default: during pepper rotations, Vercel and
 	// Cloudflare can briefly diverge. Forcing hash rewrites on each request can
 	// create auth flapping. Only sync hashes when explicitly requested.
-	if (shouldForceChatHashSync()) {
+	if (shouldForceChatHashSync(options.forceHashSync === true)) {
 		const storedHash = String(existing.hash ?? "").toLowerCase().trim();
 		if (storedHash !== expectedHash) {
 			updates.hash = expectedHash;
@@ -298,7 +303,9 @@ async function invalidateGatewayKeyCache(keyId: string): Promise<void> {
 	}
 }
 
-export async function resolveChatGatewayContext(): Promise<ChatGatewayContext> {
+export async function resolveChatGatewayContext(
+	options: ResolveChatGatewayContextOptions = {},
+): Promise<ChatGatewayContext> {
 	const supabase = await createClient();
 	const {
 		data: { user },
@@ -314,7 +321,10 @@ export async function resolveChatGatewayContext(): Promise<ChatGatewayContext> {
 	}
 
 	const workspaceId = await findTeamIdForUser(user.id);
-	const apiKey = await ensureManagedGatewayKey({ workspaceId, userId: user.id });
+	const apiKey = await ensureManagedGatewayKey(
+		{ workspaceId, userId: user.id },
+		options,
+	);
 
 	return {
 		userId: user.id,

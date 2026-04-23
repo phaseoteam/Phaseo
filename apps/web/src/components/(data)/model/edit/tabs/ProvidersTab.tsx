@@ -27,6 +27,7 @@ import {
   MODEL_CAPABILITY_OPTIONS,
   MODEL_MODALITY_OPTIONS,
   normalizeCapabilityStatus,
+  type CapabilityStatusOption,
 } from "@/lib/models/editorOptions"
 
 export interface ProviderModelRow {
@@ -53,12 +54,7 @@ export interface ProviderCapabilityRow {
   provider_id: string
   api_model_id: string
   capability_id: string
-  status:
-    | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
-    | "disabled"
+  status: CapabilityStatusOption
   effective_from: string | null
   effective_to: string | null
   params: Record<string, boolean>

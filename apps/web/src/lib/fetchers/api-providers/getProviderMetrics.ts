@@ -16,6 +16,16 @@ type ProviderRollupRow = {
 	throughput_samples: number | null;
 };
 
+type ProviderRequestRow = {
+	created_at: string;
+	canonical_model_id: string | null;
+	model_id: string | null;
+	success: boolean | null;
+	usage: unknown;
+	latency_ms: number | null;
+	throughput: number | null;
+};
+
 export type ProviderTimeseriesPoint = {
 	timestamp: string;
 	requests: number;
@@ -85,6 +95,32 @@ function avg(sum: number, samples: number): number | null {
 	return sum / samples;
 }
 
+function toRecord(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object") return null;
+	return value as Record<string, unknown>;
+}
+
+function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
+	if (!usage) return 0;
+	const raw = usage[key];
+	const parsed = Number(raw);
+	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+function getTotalTokensFromUsage(usageValue: unknown): number {
+	const usage = toRecord(usageValue);
+	const directTotal =
+		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
+	if (directTotal > 0) return directTotal;
+
+	return (
+		readUsageInt(usage, "input_tokens") +
+		readUsageInt(usage, "output_tokens") +
+		readUsageInt(usage, "prompt_tokens") +
+		readUsageInt(usage, "completion_tokens")
+	);
+}
+
 function bucketStartISO(date: Date): string {
 	const bucket = new Date(date);
 	bucket.setUTCHours(0, 0, 0, 0);
@@ -130,14 +166,14 @@ async function fetchProviderRollupRows(
 		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
 		const { data, error } = await client
-			.from("gateway_usage_rollup_15m_model_provider")
+			.from("gateway_requests")
 			.select(
-				"bucket_15m, canonical_model_id, requests, success_requests, total_tokens, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
+				"created_at, canonical_model_id, model_id, success, usage, latency_ms, throughput",
 			)
 			.eq("provider", providerId)
-			.gte("bucket_15m", fromIso)
-			.lte("bucket_15m", toIso)
-			.order("bucket_15m", { ascending: true })
+			.gte("created_at", fromIso)
+			.lte("created_at", toIso)
+			.order("created_at", { ascending: true })
 			.range(from, to);
 
 		if (error) {
@@ -157,7 +193,27 @@ async function fetchProviderRollupRows(
 			break;
 		}
 
-		rows.push(...(data as ProviderRollupRow[]));
+		for (const row of (data ?? []) as ProviderRequestRow[]) {
+			const canonicalModelId =
+				String(row?.canonical_model_id ?? "").trim() ||
+				String(row?.model_id ?? "").trim() ||
+				null;
+			const latency = toNumber(row?.latency_ms);
+			const throughput = toNumber(row?.throughput);
+			rows.push({
+				bucket_15m: String(row?.created_at ?? ""),
+				canonical_model_id: canonicalModelId,
+				requests: 1,
+				success_requests: row?.success ? 1 : 0,
+				total_tokens: getTotalTokensFromUsage(row?.usage),
+				latency_sum_ms: Number.isFinite(latency) && latency > 0 ? latency : 0,
+				latency_samples: Number.isFinite(latency) && latency > 0 ? 1 : 0,
+				throughput_sum:
+					Number.isFinite(throughput) && throughput > 0 ? throughput : 0,
+				throughput_samples:
+					Number.isFinite(throughput) && throughput > 0 ? 1 : 0,
+			});
+		}
 		if (data.length < PAGE_SIZE) {
 			hitPageCap = false;
 			break;

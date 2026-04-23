@@ -19,6 +19,10 @@ export type ChatProxyEnvelope = {
 	debug?: boolean;
 };
 
+type ResolveGatewayApiKeyOptions = {
+	forceHashSync?: boolean;
+};
+
 function normalizeGatewayBaseUrl(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
@@ -119,9 +123,13 @@ export async function parseProxyEnvelope(
 	}
 }
 
-async function resolveGatewayApiKey(): Promise<string | Response> {
+async function resolveGatewayApiKey(
+	options: ResolveGatewayApiKeyOptions = {},
+): Promise<string | Response> {
 	try {
-		const auth = await resolveChatGatewayContext();
+		const auth = await resolveChatGatewayContext({
+			forceHashSync: options.forceHashSync === true,
+		});
 		return auth.apiKey;
 	} catch (error) {
 		if (error instanceof ChatGatewayAuthError) {
@@ -143,6 +151,34 @@ async function resolveGatewayApiKey(): Promise<string | Response> {
 				headers: { "Content-Type": "application/json" },
 			},
 		);
+	}
+}
+
+async function shouldRetryForInvalidSecret(upstream: Response): Promise<boolean> {
+	if (upstream.status !== 401) return false;
+	const contentType = (upstream.headers.get("content-type") ?? "").toLowerCase();
+	if (!contentType.includes("application/json")) return false;
+
+	try {
+		const payload = (await upstream.clone().json()) as Record<string, unknown>;
+		const error = String(payload.error ?? "")
+			.trim()
+			.toLowerCase();
+		const reason = String(payload.reason ?? "")
+			.trim()
+			.toLowerCase();
+		const message = String(payload.message ?? "")
+			.trim()
+			.toLowerCase();
+		if (reason === "invalid_secret" || error === "invalid_secret") {
+			return true;
+		}
+		return (
+			error === "unauthorised" &&
+			(reason === "invalid_secret" || message.includes("invalid secret"))
+		);
+	} catch {
+		return false;
 	}
 }
 
@@ -287,6 +323,30 @@ export async function proxyGatewayPost(args: {
 		return buildGatewayUnreachableResponse(error);
 	}
 
+	if (await shouldRetryForInvalidSecret(upstream)) {
+		const retryApiKeyOrResponse = await resolveGatewayApiKey({
+			forceHashSync: true,
+		});
+		if (retryApiKeyOrResponse instanceof Response) {
+			return retryApiKeyOrResponse;
+		}
+		try {
+			upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
+				method: "POST",
+				headers: buildProxyHeaders({
+					appHeaders: args.appHeaders,
+					debug: args.debug,
+					stream: args.stream,
+					apiKey: retryApiKeyOrResponse,
+					contentType: args.contentType,
+				}),
+				body: JSON.stringify(args.requestBody ?? {}),
+			});
+		} catch (error) {
+			return buildGatewayUnreachableResponse(error);
+		}
+	}
+
 	return forwardUpstreamResponse({
 		upstream,
 		streamRequested: Boolean(args.stream),
@@ -320,6 +380,28 @@ export async function proxyGatewayGet(args: {
 		});
 	} catch (error) {
 		return buildGatewayUnreachableResponse(error);
+	}
+
+	if (await shouldRetryForInvalidSecret(upstream)) {
+		const retryApiKeyOrResponse = await resolveGatewayApiKey({
+			forceHashSync: true,
+		});
+		if (retryApiKeyOrResponse instanceof Response) {
+			return retryApiKeyOrResponse;
+		}
+		try {
+			upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
+				method: "GET",
+				headers: buildProxyHeaders({
+					appHeaders: args.appHeaders,
+					debug: args.debug,
+					apiKey: retryApiKeyOrResponse,
+					contentType: null,
+				}),
+			});
+		} catch (error) {
+			return buildGatewayUnreachableResponse(error);
+		}
 	}
 
 	return forwardUpstreamResponse({

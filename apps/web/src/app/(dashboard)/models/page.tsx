@@ -55,6 +55,7 @@ const PROVIDER_STATUS_PRIORITY_ORDER = [
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
+	"coming_soon",
 	"inactive",
 	"disabled",
 	"not_listed",
@@ -152,6 +153,7 @@ function normalizeProviderGatewayStatus(value: unknown): string {
 		.toLowerCase()
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "inactive";
+	if (normalized === "comingsoon") return "coming_soon";
 	if (normalized === "not_active") return "inactive";
 	if (normalized === "deranked" || normalized === "de_ranked") {
 		return "deranked_lvl1";
@@ -178,6 +180,11 @@ function chooseProviderGatewayStatus(
 
 function isActiveProviderStatus(status: string): boolean {
 	return ACTIVE_PROVIDER_STATUS_SET.has(status);
+}
+
+function isComingSoonModelStatus(status: string | null | undefined): boolean {
+	const normalized = String(status ?? "").trim().toLowerCase();
+	return normalized === "announced" || normalized === "rumoured";
 }
 
 function sortModalityOptions(
@@ -287,12 +294,17 @@ function buildYearOptions(models: ModelsPageModel[]): OptionCount[] {
 function buildModelsFilterFacets(models: ModelsPageModel[]): ModelsFilterFacets {
 	const statusCounts: Record<GatewayStatusFilter, number> = {
 		active: 0,
+		coming_soon: 0,
 		not_active: 0,
 	};
 
 	for (const model of models) {
 		const status: GatewayStatusFilter =
-			model.gateway_status === "active" ? "active" : "not_active";
+			model.gateway_status === "active"
+				? "active"
+				: model.gateway_status === "coming_soon"
+					? "coming_soon"
+					: "not_active";
 		statusCounts[status] += 1;
 	}
 
@@ -731,10 +743,15 @@ function withGatewayMetadata(
 		);
 		const providerCount = signals?.providerIds.size ?? 0;
 		const activeProviderCount = signals?.activeProviderIds.size ?? 0;
+		const hasComingSoonProvider = Array.from(
+			signals?.providerDetails?.values() ?? [],
+		).some((provider) => provider.status === "coming_soon");
 
 		const gatewayStatus: NonNullable<ModelCard["gateway_status"]> =
 			activeProviderCount > 0
 				? "active"
+				: hasComingSoonProvider || isComingSoonModelStatus(model?.status)
+					? "coming_soon"
 				: providerCount > 0
 					? "inactive"
 					: "not_listed";

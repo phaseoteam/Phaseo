@@ -17,6 +17,13 @@ type ProviderModelRollupRow = {
 	total_tokens: number | null;
 };
 
+type ProviderModelRequestRow = {
+	created_at: string;
+	canonical_model_id: string | null;
+	model_id: string | null;
+	usage: unknown;
+};
+
 export type ProviderTokenSeriesModel = {
 	modelId: string;
 	modelName: string;
@@ -53,6 +60,32 @@ function buildDayBuckets(since: Date, days: number): string[] {
 	return buckets;
 }
 
+function toRecord(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object") return null;
+	return value as Record<string, unknown>;
+}
+
+function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
+	if (!usage) return 0;
+	const raw = usage[key];
+	const parsed = Number(raw);
+	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+function getTotalTokensFromUsage(usageValue: unknown): number {
+	const usage = toRecord(usageValue);
+	const directTotal =
+		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
+	if (directTotal > 0) return directTotal;
+
+	return (
+		readUsageInt(usage, "input_tokens") +
+		readUsageInt(usage, "output_tokens") +
+		readUsageInt(usage, "prompt_tokens") +
+		readUsageInt(usage, "completion_tokens")
+	);
+}
+
 async function fetchProviderModelRollupRows(
 	apiProviderId: string,
 	sinceIso: string,
@@ -81,17 +114,14 @@ async function fetchProviderModelRollupRows(
 	for (let page = 0, from = 0; page < Math.max(1, maxPages); page += 1, from += PAGE_SIZE) {
 		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
-		let query = supabase
-			.from("gateway_usage_rollup_15m_model_provider")
-			.select("bucket_15m, canonical_model_id, total_tokens")
+		const query = supabase
+			.from("gateway_requests")
+			.select("created_at, canonical_model_id, model_id, usage")
 			.eq("provider", apiProviderId)
-			.gte("bucket_15m", sinceIso)
-			.lte("bucket_15m", nowIso)
-			.order("bucket_15m", { ascending: true })
+			.gte("created_at", sinceIso)
+			.lte("created_at", nowIso)
+			.order("created_at", { ascending: true })
 			.range(from, to);
-		if (Array.isArray(modelIds) && modelIds.length > 0) {
-			query = query.in("canonical_model_id", modelIds);
-		}
 		const { data, error } = await query;
 
 		if (error) {
@@ -105,7 +135,21 @@ async function fetchProviderModelRollupRows(
 			break;
 		}
 
-		rows.push(...(data as ProviderModelRollupRow[]));
+		for (const row of (data ?? []) as ProviderModelRequestRow[]) {
+			const canonicalModelId =
+				String(row?.canonical_model_id ?? "").trim() ||
+				String(row?.model_id ?? "").trim();
+			if (!canonicalModelId) continue;
+			if (Array.isArray(modelIds) && modelIds.length > 0 && !modelIds.includes(canonicalModelId)) {
+				continue;
+			}
+
+			rows.push({
+				bucket_15m: String(row.created_at ?? "").trim(),
+				canonical_model_id: canonicalModelId,
+				total_tokens: getTotalTokensFromUsage(row.usage),
+			});
+		}
 		if (data.length < PAGE_SIZE) {
 			hitPageCap = false;
 			break;

@@ -32,6 +32,111 @@ interface OAuthAppResult {
 	error?: string;
 }
 
+const PAGE_SIZE = 5000;
+
+async function loadOAuthAppsWithStats(args: {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	workspaceId: string;
+}): Promise<any[]> {
+	const { supabase, workspaceId } = args;
+
+	const { data: appMetadataRows, error: appError } = await supabase
+		.from("oauth_app_metadata")
+		.select("*")
+		.eq("workspace_id", workspaceId)
+		.eq("status", "active")
+		.order("created_at", { ascending: false });
+
+	if (appError || !appMetadataRows || appMetadataRows.length === 0) return [];
+
+	const clientIds = appMetadataRows
+		.map((row: any) => String(row?.client_id ?? "").trim())
+		.filter(Boolean);
+	if (clientIds.length === 0) return appMetadataRows;
+
+	const statsByClientId = new Map<
+		string,
+		{
+			active_authorizations: number;
+			total_authorizations: number;
+			last_used_at: string | null;
+			requests_last_30d: number;
+		}
+	>();
+	for (const clientId of clientIds) {
+		statsByClientId.set(clientId, {
+			active_authorizations: 0,
+			total_authorizations: 0,
+			last_used_at: null,
+			requests_last_30d: 0,
+		});
+	}
+
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await supabase
+			.from("oauth_authorizations")
+			.select("client_id, revoked_at, last_used_at")
+			.in("client_id", clientIds)
+			.order("created_at", { ascending: true })
+			.range(offset, offset + PAGE_SIZE - 1);
+		if (error) break;
+		if (!Array.isArray(data) || data.length === 0) break;
+
+		for (const row of data) {
+			const clientId = String((row as any)?.client_id ?? "").trim();
+			if (!clientId) continue;
+			const stats = statsByClientId.get(clientId);
+			if (!stats) continue;
+			stats.total_authorizations += 1;
+			if ((row as any)?.revoked_at == null) {
+				stats.active_authorizations += 1;
+			}
+			const lastUsedAt = String((row as any)?.last_used_at ?? "").trim();
+			if (lastUsedAt && (!stats.last_used_at || lastUsedAt > stats.last_used_at)) {
+				stats.last_used_at = lastUsedAt;
+			}
+		}
+
+		if (data.length < PAGE_SIZE) break;
+	}
+
+	const thirtyDaysAgo = new Date();
+	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+	const fromIso = thirtyDaysAgo.toISOString();
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await supabase
+			.from("gateway_requests")
+			.select("oauth_client_id")
+			.in("oauth_client_id", clientIds)
+			.gte("created_at", fromIso)
+			.order("created_at", { ascending: true })
+			.range(offset, offset + PAGE_SIZE - 1);
+		if (error) break;
+		if (!Array.isArray(data) || data.length === 0) break;
+
+		for (const row of data) {
+			const clientId = String((row as any)?.oauth_client_id ?? "").trim();
+			if (!clientId) continue;
+			const stats = statsByClientId.get(clientId);
+			if (!stats) continue;
+			stats.requests_last_30d += 1;
+		}
+
+		if (data.length < PAGE_SIZE) break;
+	}
+
+	return appMetadataRows.map((appRow: any) => {
+		const stats = statsByClientId.get(String(appRow?.client_id ?? "").trim());
+		return {
+			...appRow,
+			active_authorizations: stats?.active_authorizations ?? 0,
+			total_authorizations: stats?.total_authorizations ?? 0,
+			last_used_at: stats?.last_used_at ?? null,
+			requests_last_30d: stats?.requests_last_30d ?? 0,
+		};
+	});
+}
+
 /**
  * Create a new OAuth application
  *
@@ -385,17 +490,10 @@ export async function listOAuthAppsAction(
 			return { error: "You don't have permission to view OAuth apps for this workspace" };
 		}
 
-		// Fetch apps with stats
-		const { data: apps, error: appsError } = await supabase
-			.from("oauth_apps_with_stats")
-			.select("*")
-			.eq("workspace_id", workspaceId)
-			.order("created_at", { ascending: false });
-
-		if (appsError) {
-			return { error: `Failed to list OAuth apps: ${appsError.message}` };
-		}
-
+		const apps = await loadOAuthAppsWithStats({
+			supabase,
+			workspaceId,
+		});
 		return { data: apps };
 	} catch (error: any) {
 		console.error("Error listing OAuth apps:", error);
