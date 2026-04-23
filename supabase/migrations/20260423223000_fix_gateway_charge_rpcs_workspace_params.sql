@@ -76,7 +76,6 @@ set search_path = public
 as $$
 declare
   v_charge public.gateway_request_charges%rowtype;
-  v_result record;
   v_result_json jsonb;
   v_status text;
   v_auto_top_up_amount_nanos bigint;
@@ -147,14 +146,11 @@ begin
     and request_id = p_request_id;
 
   begin
-    select *
-    into v_result
-    from public.deduct_and_check_top_up(
+    select public.deduct_and_check_top_up(
       p_workspace_id := p_workspace_id,
       p_cost_nanos := p_cost_nanos
-    );
-
-    v_result_json := to_jsonb(v_result);
+    )::jsonb
+    into v_result_json;
   exception when others then
     update public.gateway_request_charges
     set status = 'failed',

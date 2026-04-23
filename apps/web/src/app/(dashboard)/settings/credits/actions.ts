@@ -21,13 +21,12 @@ export async function RefreshCredits() {
     revalidatePath("/settings/credits");
 }
 
-async function resolveWorkspaceIdFromActiveCookie(userId: string): Promise<string> {
+async function resolveWorkspaceIdFromActiveCookie(): Promise<string> {
 	const rawCookieWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
 	console.info("[credits-action] workspace resolution", {
-		userId,
-		rawCookieWorkspaceId: rawCookieWorkspaceId ?? null,
-		resolvedWorkspaceId: resolvedWorkspaceId ?? null,
+		hasRawCookieWorkspaceId: Boolean(rawCookieWorkspaceId),
+		hasResolvedWorkspaceId: Boolean(resolvedWorkspaceId),
 	});
 	if (!resolvedWorkspaceId) {
 		throw new Error("Missing workspace id");
@@ -43,7 +42,7 @@ interface SetUpAutoTopUpProps {
 
 export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await resolveWorkspaceIdFromActiveCookie(user.id);
+    const workspaceId = await resolveWorkspaceIdFromActiveCookie();
     await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const {
@@ -80,7 +79,7 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
 
 export async function DisableAutoTopUpServer() {
     const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await resolveWorkspaceIdFromActiveCookie(user.id);
+    const workspaceId = await resolveWorkspaceIdFromActiveCookie();
     await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const { data, error } = await supabase
@@ -108,7 +107,7 @@ type SetLowBalanceEmailAlertArgs = {
 export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs) {
 	const { enabled, thresholdUsd } = args;
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await resolveWorkspaceIdFromActiveCookie(user.id);
+	const workspaceId = await resolveWorkspaceIdFromActiveCookie();
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
 	if (enabled) {
@@ -170,7 +169,7 @@ const INTERNAL_HEADER = "x-internal-payments-token";
 
 export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie(user.id));
+    const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie());
     await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
     const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;

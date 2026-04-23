@@ -147,10 +147,10 @@ async function ManagementApiKeysContent({
 		String(rawCookieWorkspaceId ?? "").trim() ||
 		String(resolvedWorkspaceId ?? "").trim() ||
 		"";
-	const initialTeamId =
-		(initialTeamCandidate && teams.some((team) => team.id === initialTeamCandidate)
-			? initialTeamCandidate
-			: initialTeamCandidate || teams[0]?.id) ?? null;
+		const initialTeamId =
+			(initialTeamCandidate && teams.some((team) => team.id === initialTeamCandidate)
+				? initialTeamCandidate
+				: teams[0]?.id) ?? null;
 
 	const keysArray = (managementKeys ?? []).map((k: any) => ({ ...k }));
 

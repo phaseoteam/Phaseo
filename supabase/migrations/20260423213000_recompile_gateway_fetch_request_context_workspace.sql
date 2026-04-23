@@ -478,4 +478,5 @@ begin
   );
 end;
 $function$;
-grant execute on function public.gateway_fetch_request_context(uuid, text, text, uuid) to authenticated;
+revoke all on function public.gateway_fetch_request_context(uuid, text, text, uuid) from public;
+grant execute on function public.gateway_fetch_request_context(uuid, text, text, uuid) to service_role;

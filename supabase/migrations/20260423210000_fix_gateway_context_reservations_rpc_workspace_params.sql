@@ -84,5 +84,4 @@ end;
 $function$;
 
 revoke all on function public.gateway_fetch_request_context_with_reservations(uuid, text, text, uuid) from public;
-grant execute on function public.gateway_fetch_request_context_with_reservations(uuid, text, text, uuid) to authenticated;
 grant execute on function public.gateway_fetch_request_context_with_reservations(uuid, text, text, uuid) to service_role;

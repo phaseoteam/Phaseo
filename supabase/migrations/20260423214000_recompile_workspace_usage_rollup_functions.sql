@@ -318,6 +318,24 @@ comment on function public.apply_workspace_usage_rollup_delta(
 comment on function public.upsert_gateway_request_into_workspace_usage_rollup(uuid, timestamptz, uuid) is
   'Projects a single gateway_requests row into the team usage rollup and reconciles prior projections for mutable request rows.';
 
+revoke execute on function public.apply_workspace_usage_rollup_delta(
+  timestamptz,
+  uuid,
+  uuid,
+  text,
+  text,
+  bigint,
+  bigint,
+  bigint,
+  bigint,
+  numeric,
+  bigint,
+  numeric,
+  bigint
+) from public;
+
+revoke execute on function public.upsert_gateway_request_into_workspace_usage_rollup(uuid, timestamptz, uuid) from public;
+
 grant execute on function public.apply_workspace_usage_rollup_delta(
   timestamptz,
   uuid,

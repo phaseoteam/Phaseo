@@ -25,13 +25,24 @@ export default async function TierOverview({ workspaceId }: Props) {
 
 	if (workspaceId) {
 		try {
-			const [{ data: prev }, { data: mtd }] = await Promise.all([
-				supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
-				supabase.rpc("mtd_spend_cents", { p_team: workspaceId }).single(),
+			const [prevRes, mtdRes] = await Promise.all([
+				supabase
+					.rpc("monthly_spend_prev_cents", { p_workspace_id: workspaceId })
+					.single(),
+				supabase
+					.rpc("mtd_spend_cents", { p_workspace_id: workspaceId })
+					.single(),
 			]);
+			if (prevRes.error || mtdRes.error) {
+				throw new Error(
+					`[TierOverview] spend RPC failed: ${prevRes.error?.message ?? "ok"} | ${
+						mtdRes.error?.message ?? "ok"
+					}`,
+				);
+			}
 
-			lastMonthCents = Number(prev ?? 0);
-			mtdCents = Number(mtd ?? 0);
+			lastMonthCents = Number(prevRes.data ?? 0);
+			mtdCents = Number(mtdRes.data ?? 0);
 		} catch (err) {
 			console.error("[TierOverview] Failed to fetch spend:", err);
 		}

@@ -215,7 +215,10 @@ windows as (
     make_timestamptz(
       extract(year from pa.run_at)::int,
       extract(month from pa.run_at)::int,
-      d.billing_day,
+      least(
+        d.billing_day,
+        extract(day from (date_trunc('month', pa.run_at) + interval '1 month' - interval '1 day'))::int
+      ),
       0, 0, 0,
       'UTC'
     ) as this_cycle_end
