@@ -1,5 +1,13 @@
 # @ai-stats/sdk
 
+## 2.0.0
+
+### Major Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes (model IDs removed (1) [qwen/qwen3-tts-tokenizer-12hz]).
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
 ## 1.2.0
 
 ### Minor Changes
