@@ -2,7 +2,7 @@
 -- This prevents owner-only workspaces from becoming inaccessible when a canonical
 -- workspace_members owner row is missing.
 
-create or replace function public.is_workspace_member(p_team_id uuid)
+create or replace function public.is_workspace_member(p_workspace_id uuid)
 returns boolean
 language sql
 stable
@@ -13,13 +13,13 @@ as $$
     exists (
       select 1
       from public.workspace_members wm
-      where wm.workspace_id = p_team_id
+      where wm.workspace_id = p_workspace_id
         and wm.user_id = auth.uid()
     )
     or exists (
       select 1
       from public.workspaces w
-      where w.id = p_team_id
+      where w.id = p_workspace_id
         and w.owner_user_id = auth.uid()
     );
 $$;

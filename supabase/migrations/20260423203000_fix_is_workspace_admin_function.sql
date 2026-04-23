@@ -1,7 +1,7 @@
 -- Fix stale workspace admin helper function bodies that may still reference
 -- pre-rename team tables in some environments.
 
-create or replace function public.is_workspace_admin(p_team_id uuid)
+create or replace function public.is_workspace_admin(p_workspace_id uuid)
 returns boolean
 language sql
 stable
@@ -12,14 +12,14 @@ as $$
     exists (
       select 1
       from public.workspace_members wm
-      where wm.workspace_id = p_team_id
+      where wm.workspace_id = p_workspace_id
         and wm.user_id = auth.uid()
         and lower(coalesce(wm.role::text, '')) in ('owner', 'admin')
     )
     or exists (
       select 1
       from public.workspaces w
-      where w.id = p_team_id
+      where w.id = p_workspace_id
         and w.owner_user_id = auth.uid()
     );
 $$;

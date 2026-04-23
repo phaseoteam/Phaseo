@@ -130,7 +130,7 @@ async function KeysContent({
 	const initialTeamId =
 		(initialTeamCandidate && teams.some((team) => team.id === initialTeamCandidate)
 			? initialTeamCandidate
-			: initialTeamCandidate || teams[0]?.id) ?? null;
+			: teams[0]?.id) ?? null;
 
 	const apiKeys = initialTeamId
 		? (

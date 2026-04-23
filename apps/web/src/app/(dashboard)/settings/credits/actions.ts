@@ -2,7 +2,10 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
+import {
+	getActiveWorkspaceIdFromCookieRaw,
+	getWorkspaceIdFromCookie,
+} from "@/utils/workspaceCookie";
 import {
     requireAuthenticatedUser,
     requireWorkspaceMembership,
@@ -19,15 +22,17 @@ export async function RefreshCredits() {
 }
 
 async function resolveWorkspaceIdFromActiveCookie(userId: string): Promise<string> {
-    const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
-    console.info("[credits-action] active workspace cookie", {
-        userId,
-        workspaceId: workspaceId ?? null,
-    });
-    if (!workspaceId) {
-        throw new Error("Missing workspace id cookie");
-    }
-    return workspaceId;
+	const rawCookieWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
+	console.info("[credits-action] workspace resolution", {
+		userId,
+		rawCookieWorkspaceId: rawCookieWorkspaceId ?? null,
+		resolvedWorkspaceId: resolvedWorkspaceId ?? null,
+	});
+	if (!resolvedWorkspaceId) {
+		throw new Error("Missing workspace id");
+	}
+	return resolvedWorkspaceId;
 }
 
 interface SetUpAutoTopUpProps {
