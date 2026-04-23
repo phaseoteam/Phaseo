@@ -71,6 +71,11 @@ function setToArrayOrNull(value: Set<string>): string[] | null {
     return list.length ? list : null;
 }
 
+function hasUsablePricingCard(pricingByProvider: Record<string, any>, providerId: string): boolean {
+    const card = pricingByProvider[providerId];
+    return Boolean(card && Array.isArray(card.rules) && card.rules.length > 0);
+}
+
 type ProviderModalitiesRow = {
     provider_id: string | null;
     provider_model_slug: string | null;
@@ -615,7 +620,7 @@ export async function fetchGatewayContext(args: {
                         .map((provider) => provider.providerId)
                         .filter((providerId) => {
                             if (!providerId) return false;
-                            if (!pricingByProvider[providerId]) return true;
+                            if (!hasUsablePricingCard(pricingByProvider, providerId)) return true;
                             return contextCapability !== args.endpoint;
                         })
                 )
@@ -688,7 +693,7 @@ export async function fetchGatewayContext(args: {
                 new Set(
                     (parsed.providers ?? [])
                         .map((provider) => provider.providerId)
-                        .filter((providerId) => providerId && !pricingByProvider[providerId])
+                        .filter((providerId) => providerId && !hasUsablePricingCard(pricingByProvider, providerId))
                 )
             );
             if (missingProviders.length > 0) {

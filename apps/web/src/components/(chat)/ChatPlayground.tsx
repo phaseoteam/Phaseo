@@ -1346,11 +1346,17 @@ function ChatPlaygroundContent({
 								if (typeof payload.message === "string") {
 									errorMessage = payload.message;
 								} else if (
+									typeof payload.reason === "string"
+								) {
+									errorMessage = payload.reason;
+								} else if (
 									typeof payload.error === "string"
 								) {
 									errorMessage = payload.error;
 								}
-								if (typeof payload.error === "string") {
+								if (typeof payload.reason === "string") {
+									errorCode = payload.reason;
+								} else if (typeof payload.error === "string") {
 									errorCode = payload.error;
 								}
 							}
@@ -1850,6 +1856,8 @@ function ChatPlaygroundContent({
 					err instanceof Error
 						? err.message
 						: "Failed to send message.";
+				const normalizedMessage = message.trim();
+				const lowerMessage = normalizedMessage.toLowerCase();
 				const errorCode =
 					typeof (err as { code?: unknown })?.code === "string"
 						? (err as { code: string }).code
@@ -1861,10 +1869,24 @@ function ChatPlaygroundContent({
 					message.includes('"description":"all_candidates_failed"') ||
 					message.includes('"errorCode":"upstream_error"') ||
 					message.includes("all_candidates_failed");
+				const isAuthError =
+					errorCode === "invalid_secret" ||
+					errorCode === "key_not_found_or_revoked" ||
+					errorCode === "unauthorised" ||
+					lowerMessage.includes("invalid secret") ||
+					lowerMessage.includes("invalid_secret") ||
+					lowerMessage.includes("unauthorised") ||
+					lowerMessage.includes("unauthorized");
+				const surfacedMessage =
+					normalizedMessage === "invalid_secret"
+						? "Invalid secret"
+						: normalizedMessage === "key_not_found_or_revoked"
+							? "API key not found or revoked"
+							: normalizedMessage;
 				const errorContent = isGatewayError
 					? "All Providers Failed"
-					: isGatewayUnavailable
-						? message
+					: isGatewayUnavailable || isAuthError
+						? surfacedMessage
 						: "Internal Server Error";
 				if (latestThread) {
 					const existingMessage = latestThread.messages.find(

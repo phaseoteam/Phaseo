@@ -334,28 +334,49 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();
     let keyRow: KeyRow | null = null;
-    let cachedLookup: CachedKeyLookup = null;
-    if (useKvCache) {
-        cachedLookup = await getCachedKey(parsed.kid);
-        if (cachedLookup === "missing") {
-            return { ok: false, reason: "key_not_found_or_revoked" };
-        }
-        keyRow = cachedLookup;
-    }
-    if (!keyRow) {
+    let keyRowSource: "cache" | "db" | null = null;
+
+    const fetchFreshKeyRow = async (): Promise<KeyRow | "db_error" | null> => {
         const { data, error } = await supabase
             .from("keys")
             .select("*")
             .eq("kid", parsed.kid)
             .maybeSingle();
+        if (error) return "db_error";
+        if (!data) return null;
+        return data as KeyRow;
+    };
 
-        if (error) return { ok: false, reason: "db_error" };
-        if (!data) {
+    if (useKvCache) {
+        const cachedLookup = await getCachedKey(parsed.kid);
+        if (cachedLookup && cachedLookup !== "missing") {
+            keyRow = cachedLookup;
+            keyRowSource = "cache";
+        }
+    }
+
+    if (!keyRow) {
+        const freshKeyRow = await fetchFreshKeyRow();
+        if (freshKeyRow === "db_error") return { ok: false, reason: "db_error" };
+        if (!freshKeyRow) {
             // Do not negative-cache misses in KV to avoid write amplification
             // from high-cardinality invalid key traffic.
             return { ok: false, reason: "key_not_found_or_revoked" };
         }
-        keyRow = data as KeyRow;
+        keyRow = freshKeyRow;
+        keyRowSource = "db";
+        if (useKvCache) {
+            await cacheKey(parsed.kid, keyRow);
+        }
+    }
+
+    // If cache contains stale status/expiry, re-check from source-of-truth once.
+    if (keyRowSource === "cache" && (keyRow.status !== "active" || isExpiredKey(keyRow.expires_at))) {
+        const freshKeyRow = await fetchFreshKeyRow();
+        if (freshKeyRow === "db_error") return { ok: false, reason: "db_error" };
+        if (!freshKeyRow) return { ok: false, reason: "key_not_found_or_revoked" };
+        keyRow = freshKeyRow;
+        keyRowSource = "db";
         if (useKvCache) {
             await cacheKey(parsed.kid, keyRow);
         }
@@ -368,11 +389,44 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         return { ok: false, reason: "key_expired" };
     }
 
-    const stored = String(keyRow.hash).toLowerCase().trim();
+    let stored = String(keyRow.hash).toLowerCase().trim();
     const activePepper = resolveActiveKeyPepper(bindings);
     const pepperCandidates = resolveKeyPepperCandidates(bindings);
     if (!activePepper || pepperCandidates.length === 0) {
         return { ok: false, reason: "server_misconfig_missing_pepper" };
+    }
+
+    const findMatchingPepper = async (hash: string): Promise<KeyPepperCandidate | null> => {
+        for (const candidate of pepperCandidates) {
+            if (await secretMatchesStoredHash(parsed.secret, hash, candidate.value)) {
+                return candidate;
+            }
+        }
+        return null;
+    };
+
+    let matchedPepper: KeyPepperCandidate | null = await findMatchingPepper(stored);
+
+    // If hash compare failed against cached row, refresh from DB once and retry.
+    if (!matchedPepper && keyRowSource === "cache") {
+        const freshKeyRow = await fetchFreshKeyRow();
+        if (freshKeyRow === "db_error") return { ok: false, reason: "db_error" };
+        if (!freshKeyRow) return { ok: false, reason: "key_not_found_or_revoked" };
+        if (freshKeyRow.status !== "active") return { ok: false, reason: "key_not_found_or_revoked" };
+        if (isExpiredKey(freshKeyRow.expires_at)) return { ok: false, reason: "key_expired" };
+
+        keyRow = freshKeyRow;
+        keyRowSource = "db";
+        stored = String(keyRow.hash).toLowerCase().trim();
+        matchedPepper = await findMatchingPepper(stored);
+
+        if (useKvCache) {
+            await cacheKey(parsed.kid, keyRow);
+        }
+    }
+
+    if (!matchedPepper) {
+        return { ok: false, reason: "invalid_secret" };
     }
 
     const success = async (nextHash?: string): Promise<AuthSuccess | AuthFailure> => {
@@ -415,18 +469,6 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             internal,
         } as AuthSuccess;
     };
-
-    let matchedPepper: KeyPepperCandidate | null = null;
-    for (const candidate of pepperCandidates) {
-        if (await secretMatchesStoredHash(parsed.secret, stored, candidate.value)) {
-            matchedPepper = candidate;
-            break;
-        }
-    }
-
-    if (!matchedPepper) {
-        return { ok: false, reason: "invalid_secret" };
-    }
 
     if (matchedPepper.source === "previous") {
         const nextHash = await hmacUtf8(parsed.secret, activePepper);
