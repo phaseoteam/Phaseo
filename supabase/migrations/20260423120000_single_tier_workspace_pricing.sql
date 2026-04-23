@@ -207,17 +207,17 @@ due_profiles as (
     p.workspace_id,
     p.billing_day,
     p.payment_terms_days,
-    w.stripe_customer_id
+    wl.stripe_customer_id
   from public.workspace_invoice_profiles p
-  join public.workspaces t
-    on t.id = p.workspace_id
-  left join public.wallets w
-    on w.workspace_id = p.workspace_id
+  join public.workspaces w
+    on w.id = p.workspace_id
+  left join public.wallets wl
+    on wl.workspace_id = p.workspace_id
   cross join params pa
   where p.enabled = true
     and least(p.billing_day, pa.last_day_utc) = least(extract(day from pa.run_at_utc)::int, pa.last_day_utc)
-    and coalesce(t.billing_mode, 'wallet') = 'invoice'
-    and w.stripe_customer_id is not null
+    and coalesce(w.billing_mode, 'wallet') = 'invoice'
+    and wl.stripe_customer_id is not null
 ),
 windows as (
   select
@@ -317,6 +317,13 @@ begin
 end;
 $$;
 
+drop trigger if exists workspaces_invoice_onboarding_status_guard on public.workspaces;
+
+create trigger workspaces_invoice_onboarding_status_guard
+  before insert or update of billing_mode on public.workspaces
+  for each row
+  execute function public.enforce_workspace_invoice_onboarding_status();
+
 comment on function public.calculate_tier_with_grace(uuid, bigint)
   is 'Single-tier mode: always resolves to basic/standard tier with a flat 5% pricing fee.';
 
@@ -330,8 +337,10 @@ revoke all on function public.calculate_tier_with_grace(uuid, bigint) from publi
 revoke all on function public.cleanup_dormant_enterprise_workspaces() from public;
 revoke all on function public.get_workspace_tier_info(uuid) from public;
 revoke all on function public.get_due_enterprise_invoice_runs(timestamptz) from public;
+revoke all on function public.enforce_workspace_invoice_onboarding_status() from public;
 
 grant execute on function public.calculate_tier_with_grace(uuid, bigint) to service_role;
 grant execute on function public.cleanup_dormant_enterprise_workspaces() to service_role;
 grant execute on function public.get_workspace_tier_info(uuid) to service_role;
 grant execute on function public.get_due_enterprise_invoice_runs(timestamptz) to service_role;
+grant execute on function public.enforce_workspace_invoice_onboarding_status() to service_role;
