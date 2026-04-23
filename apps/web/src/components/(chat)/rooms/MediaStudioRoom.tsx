@@ -1630,7 +1630,10 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									const errorCode = toOptionalString(payload?.error);
 									const detail = message ?? reason ?? errorCode;
 									if (detail) throw new Error(detail);
-								} catch {
+								} catch (parseError) {
+									if (parseError instanceof Error && parseError.message) {
+										throw parseError;
+									}
 									// Fall back to response.text()/status below.
 								}
 							}

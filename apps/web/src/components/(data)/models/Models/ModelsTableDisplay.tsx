@@ -76,6 +76,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 
 const STATUS_FILTER_DISPLAY_ORDER = [
 	"active",
+	"coming_soon",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
@@ -153,6 +154,7 @@ function normalizeStatusFilterValue(value: string): string {
 		.toLowerCase()
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "";
+	if (normalized === "comingsoon") return "coming_soon";
 	if (normalized === "not_active") return "inactive";
 	if (normalized === "deranked" || normalized === "de_ranked") {
 		return "deranked_lvl1";
@@ -215,6 +217,7 @@ function toTitleCase(value: string): string {
 function formatStatusLabel(value: string): string {
 	const normalized = normalizeStatusFilterValue(value);
 	if (normalized === "active") return "Active On Gateway";
+	if (normalized === "coming_soon") return "Coming Soon";
 	if (normalized === "inactive") return "Not Active";
 	if (normalized === "deranked_lvl1") return "Deranked Level 1";
 	if (normalized === "deranked_lvl2") return "Deranked Level 2";

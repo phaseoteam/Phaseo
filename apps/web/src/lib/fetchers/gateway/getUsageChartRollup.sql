@@ -15,17 +15,23 @@ RETURNS TABLE(
 ) AS $$
 WITH base AS (
     SELECT
-        r.bucket_15m AS created_at,
-        r.provider,
-        r.canonical_model_id AS model_id,
-        r.requests,
-        r.total_tokens,
-        r.total_cost_nanos
-    FROM public.gateway_usage_rollup_15m_workspace_provider_model r
-    WHERE r.workspace_id = p_team
-      AND r.bucket_15m >= p_from
-      AND r.bucket_15m <= p_to
-      AND (p_key_id IS NULL OR r.key_id = p_key_id)
+        gr.created_at,
+        COALESCE(NULLIF(gr.provider, ''), 'unknown') AS provider,
+        COALESCE(
+            NULLIF(gr.canonical_model_id, ''),
+            public.resolve_public_model_id(gr.model_id, gr.provider),
+            NULLIF(gr.model_id, ''),
+            'unknown'
+        ) AS model_id,
+        1::bigint AS requests,
+        public.gateway_usage_total_tokens(gr.usage)::bigint AS total_tokens,
+        COALESCE(gr.cost_nanos, 0)::bigint AS total_cost_nanos
+    FROM public.gateway_requests gr
+    WHERE gr.workspace_id = p_team
+      AND gr.success IS TRUE
+      AND gr.created_at >= p_from
+      AND gr.created_at <= p_to
+      AND (p_key_id IS NULL OR gr.key_id = p_key_id)
 ),
 bucketed AS (
     SELECT

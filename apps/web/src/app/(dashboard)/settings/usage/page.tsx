@@ -138,15 +138,6 @@ async function UsageSettingsContent({
 	const from = fromForRange(range).toISOString();
 	const nowIso = new Date().toISOString();
 
-	// Prefer rollup-derived IDs, but union with request-derived IDs so usage
-	// metadata still populates when rollups are delayed.
-	const { data: modelProviderRollups } = await supabase
-		.from("gateway_usage_rollup_15m_workspace_provider_model")
-		.select("canonical_model_id, provider")
-		.eq("workspace_id", workspaceId)
-		.gte("bucket_15m", from)
-		.lte("bucket_15m", nowIso);
-
 	const { data: requestUniques } = await supabase
 		.from("gateway_requests")
 		.select("model_id")
@@ -157,10 +148,7 @@ async function UsageSettingsContent({
 	// Extract unique values for filters
 	const uniqueModels = Array.from(
 		new Set(
-			[
-				...(modelProviderRollups ?? []).map((r: any) => r.canonical_model_id),
-				...(requestUniques ?? []).map((r: any) => r.model_id),
-			].filter(Boolean),
+			(requestUniques ?? []).map((r: any) => r.model_id).filter(Boolean),
 		),
 	);
 	const [colorMap, modelMetadata] = await Promise.all([

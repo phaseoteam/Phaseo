@@ -6,14 +6,12 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime, json } from "../../utils";
-import { getCache, getSupabaseAdmin } from "@/runtime/env";
+import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 
 const COMPLETED_DAYS_WINDOW = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const ANALYTICS_REFRESH_MARKER_PREFIX = "gateway:analytics:rollup-refresh";
-const ANALYTICS_REFRESH_COOLDOWN_SECONDS = 600;
 
 function startOfUtcDay(date: Date): Date {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -130,6 +128,16 @@ type AnalyticsRollupRow = {
     reasoning_tokens: number | string | null;
 };
 
+type GatewayAnalyticsRequestRow = {
+	created_at: string | null;
+	model_id: string | null;
+	endpoint: string | null;
+	provider: string | null;
+	cost_nanos: number | string | null;
+	byok: boolean | null;
+	usage: Record<string, unknown> | null;
+};
+
 function toModelDisplay(permaslug: string): string {
     const match = permaslug.match(/^(.*)-\d{4}-\d{2}-\d{2}$/);
     if (match && match[1]) return match[1];
@@ -168,61 +176,30 @@ function toRoundedUsage(value: number): number {
     return Number(value.toFixed(9));
 }
 
-async function refreshAnalyticsRollup(args: {
-	workspaceId: string;
-	startIso: string;
-	endIso: string;
-}): Promise<void> {
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase.rpc("refresh_gateway_activity_rollup_daily", {
-        p_workspace_id: args.workspaceId,
-        p_start: args.startIso,
-        p_end: args.endIso,
-    });
-    if (error) {
-        throw new Error(error.message || "Failed to refresh analytics rollup");
+function usageValueAsBigInt(usage: Record<string, unknown> | null, path: string[]): bigint {
+	if (!usage) return 0n;
+	let current: unknown = usage;
+	for (const key of path) {
+		if (!current || typeof current !== "object" || Array.isArray(current)) return 0n;
+		current = (current as Record<string, unknown>)[key];
 	}
+	if (typeof current === "number" && Number.isFinite(current)) {
+		return BigInt(Math.max(0, Math.floor(current)));
+	}
+	if (typeof current === "string" && /^\d+$/.test(current.trim())) {
+		return BigInt(current.trim());
+	}
+	return 0n;
 }
 
-function buildRefreshMarkerKey(args: {
-	workspaceId: string;
-	startIso: string;
-	endIso: string;
-}): string {
-	const startDay = args.startIso.slice(0, 10);
-	const endDay = args.endIso.slice(0, 10);
-	return `${ANALYTICS_REFRESH_MARKER_PREFIX}:${args.workspaceId}:${startDay}:${endDay}`;
-}
-
-async function shouldRefreshAnalyticsRollup(args: {
-	workspaceId: string;
-	startIso: string;
-	endIso: string;
-}): Promise<boolean> {
-	try {
-		const cache = getCache();
-		const markerKey = buildRefreshMarkerKey(args);
-		const marker = await cache.get(markerKey, "text");
-		return !marker;
-	} catch {
-		// Fail open if cache is unavailable so analytics data still updates.
-		return true;
+function nanosValueAsBigInt(value: unknown): bigint {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return BigInt(Math.max(0, Math.floor(value)));
 	}
-}
-
-async function markAnalyticsRollupRefresh(args: {
-	workspaceId: string;
-	startIso: string;
-	endIso: string;
-}): Promise<void> {
-	try {
-		const cache = getCache();
-		await cache.put(buildRefreshMarkerKey(args), "1", {
-			expirationTtl: ANALYTICS_REFRESH_COOLDOWN_SECONDS,
-		});
-	} catch {
-		// Ignore marker write failures so successful refreshes still return data.
+	if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+		return BigInt(value.trim());
 	}
+	return 0n;
 }
 
 async function loadAnalyticsRollupRows(args: {
@@ -231,22 +208,87 @@ async function loadAnalyticsRollupRows(args: {
     endIso: string;
 }): Promise<AnalyticsRollupRow[]> {
     const supabase = getSupabaseAdmin();
-    const startDay = args.startIso.slice(0, 10);
-    const endDay = args.endIso.slice(0, 10);
     const { data, error } = await supabase
-        .from("gateway_activity_rollup_daily")
-        .select(
-            "day_bucket,model_id,endpoint,provider,usage_nanos,byok_usage_nanos,requests,prompt_tokens,completion_tokens,reasoning_tokens"
-        )
+        .from("gateway_requests")
+        .select("created_at,model_id,endpoint,provider,cost_nanos,byok,usage")
         .eq("workspace_id", args.workspaceId)
-        .gte("day_bucket", startDay)
-        .lt("day_bucket", endDay);
+        .eq("success", true)
+        .gte("created_at", args.startIso)
+        .lt("created_at", args.endIso);
 
     if (error) {
-        throw new Error(error.message || "Failed to load analytics rollup rows");
+        throw new Error(error.message || "Failed to load analytics rows");
     }
 
-    return (data ?? []) as AnalyticsRollupRow[];
+	const grouped = new Map<string, {
+		day_bucket: string;
+		model_id: string;
+		endpoint: string;
+		provider: string;
+		usage_nanos: bigint;
+		byok_usage_nanos: bigint;
+		requests: bigint;
+		prompt_tokens: bigint;
+		completion_tokens: bigint;
+		reasoning_tokens: bigint;
+	}>();
+
+	for (const row of (data ?? []) as GatewayAnalyticsRequestRow[]) {
+		if (typeof row.created_at !== "string") continue;
+		const createdAt = new Date(row.created_at);
+		if (Number.isNaN(createdAt.getTime())) continue;
+		const dayBucket = createdAt.toISOString().slice(0, 10);
+		const modelId = toNonEmptyString(row.model_id, "unknown/unknown");
+		const endpoint = toNonEmptyString(row.endpoint, "unknown");
+		const provider = toNonEmptyString(row.provider, "unknown");
+		const usageRecord =
+			row.usage && typeof row.usage === "object" && !Array.isArray(row.usage)
+				? row.usage
+				: null;
+		const promptTokens = usageValueAsBigInt(usageRecord, ["input_tokens"])
+			|| usageValueAsBigInt(usageRecord, ["prompt_tokens"]);
+		const completionTokens = usageValueAsBigInt(usageRecord, ["output_tokens"])
+			|| usageValueAsBigInt(usageRecord, ["completion_tokens"]);
+		const reasoningTokens = usageValueAsBigInt(usageRecord, ["reasoning_tokens"])
+			|| usageValueAsBigInt(usageRecord, ["output_tokens_details", "reasoning_tokens"])
+			|| usageValueAsBigInt(usageRecord, ["completion_tokens_details", "reasoning_tokens"])
+			|| usageValueAsBigInt(usageRecord, ["output_details", "reasoning_tokens"]);
+		const usageNanos = nanosValueAsBigInt(row.cost_nanos);
+		const byokUsageNanos = row.byok ? usageNanos : 0n;
+		const groupKey = `${dayBucket}::${modelId}::${endpoint}::${provider}`;
+		const current = grouped.get(groupKey) ?? {
+			day_bucket: dayBucket,
+			model_id: modelId,
+			endpoint,
+			provider,
+			usage_nanos: 0n,
+			byok_usage_nanos: 0n,
+			requests: 0n,
+			prompt_tokens: 0n,
+			completion_tokens: 0n,
+			reasoning_tokens: 0n,
+		};
+		current.usage_nanos += usageNanos;
+		current.byok_usage_nanos += byokUsageNanos;
+		current.requests += 1n;
+		current.prompt_tokens += promptTokens;
+		current.completion_tokens += completionTokens;
+		current.reasoning_tokens += reasoningTokens;
+		grouped.set(groupKey, current);
+	}
+
+	return Array.from(grouped.values()).map((row) => ({
+		day_bucket: row.day_bucket,
+		model_id: row.model_id,
+		endpoint: row.endpoint,
+		provider: row.provider,
+		usage_nanos: Number(row.usage_nanos),
+		byok_usage_nanos: Number(row.byok_usage_nanos),
+		requests: Number(row.requests),
+		prompt_tokens: Number(row.prompt_tokens),
+		completion_tokens: Number(row.completion_tokens),
+		reasoning_tokens: Number(row.reasoning_tokens),
+	}));
 }
 
 async function handleAnalytics(req: Request) {
@@ -270,24 +312,6 @@ async function handleAnalytics(req: Request) {
 	const endIso = range.end.toISOString();
 
 	try {
-		if (
-			await shouldRefreshAnalyticsRollup({
-				workspaceId,
-				startIso,
-				endIso,
-			})
-		) {
-			await refreshAnalyticsRollup({
-				workspaceId,
-				startIso,
-				endIso,
-			});
-			await markAnalyticsRollupRefresh({
-				workspaceId,
-				startIso,
-				endIso,
-			});
-		}
 		const rows = await loadAnalyticsRollupRows({
 			workspaceId,
 			startIso,

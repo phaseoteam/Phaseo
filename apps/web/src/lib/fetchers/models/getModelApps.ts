@@ -25,11 +25,11 @@ type ModelAppsRollupRpcRow = {
 	last_seen: string | null;
 };
 
-type ModelAppsDailyRollupRow = {
+type ModelAppsRequestRow = {
+	id: string | null;
 	app_id: string | null;
-	requests: number | string | bigint | null;
-	success_requests: number | string | bigint | null;
-	total_tokens: number | string | bigint | null;
+	success: boolean | null;
+	usage: unknown;
 };
 
 type ModelAppMetadataRow = {
@@ -71,6 +71,32 @@ function bigintToDisplayNumber(value: bigint): number {
 	if (value <= BIGINT_ZERO) return 0;
 	if (value > BIGINT_MAX_SAFE) return Number.MAX_SAFE_INTEGER;
 	return Number(value);
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object") return null;
+	return value as Record<string, unknown>;
+}
+
+function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
+	if (!usage) return 0;
+	const raw = usage[key];
+	const parsed = Number(raw);
+	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+function getTotalTokensFromUsage(usageValue: unknown): bigint {
+	const usage = toRecord(usageValue);
+	const directTotal =
+		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
+	if (directTotal > 0) return BigInt(directTotal);
+
+	return BigInt(
+		readUsageInt(usage, "input_tokens") +
+		readUsageInt(usage, "output_tokens") +
+		readUsageInt(usage, "prompt_tokens") +
+		readUsageInt(usage, "completion_tokens"),
+	);
 }
 
 async function getModelAliases(client: ReturnType<typeof createAdminClient>, modelId: string): Promise<string[]> {
@@ -174,43 +200,57 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 		string,
 		{ requests: bigint; success: bigint; tokens: bigint }
 	>();
+	const seenRequestIds = new Set<string>();
 
-	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const { data, error } = await args.client
-			.from("gateway_usage_rollup_daily_app_model")
-			.select("day_bucket, canonical_model_id, app_id, requests, success_requests, total_tokens")
-			.in("canonical_model_id", args.aliases)
-			.order("day_bucket", { ascending: true })
-			.order("app_id", { ascending: true })
-			.order("canonical_model_id", { ascending: true })
-			.range(offset, offset + PAGE_SIZE - 1);
+	const fetchByColumn = async (column: "canonical_model_id" | "model_id") => {
+		for (let offset = 0; ; offset += PAGE_SIZE) {
+			const { data, error } = await args.client
+				.from("gateway_requests")
+				.select("id, app_id, success, usage")
+				.in(column, args.aliases)
+				.not("app_id", "is", null)
+				.order("created_at", { ascending: true })
+				.order("id", { ascending: true })
+				.range(offset, offset + PAGE_SIZE - 1);
 
-		if (error) {
-			console.warn("[model-apps] failed to load model app rollups", {
-				modelId: args.modelId,
-				error,
-			});
-			return [];
+			if (error) {
+				console.warn("[model-apps] failed to load model app usage rows", {
+					modelId: args.modelId,
+					column,
+					error,
+				});
+				return;
+			}
+
+			if (!Array.isArray(data) || data.length === 0) break;
+
+			for (const row of data as ModelAppsRequestRow[]) {
+				const requestId = String(row?.id ?? "").trim();
+				if (requestId) {
+					if (seenRequestIds.has(requestId)) continue;
+					seenRequestIds.add(requestId);
+				}
+
+				const appId = String(row?.app_id ?? "").trim();
+				if (!appId) continue;
+
+				const existing = aggregate.get(appId) ?? {
+					requests: BIGINT_ZERO,
+					success: BIGINT_ZERO,
+					tokens: BIGINT_ZERO,
+				};
+				existing.requests += BigInt(1);
+				if (row?.success) existing.success += BigInt(1);
+				existing.tokens += getTotalTokensFromUsage(row?.usage);
+				aggregate.set(appId, existing);
+			}
+
+			if (data.length < PAGE_SIZE) break;
 		}
+	};
 
-		if (!Array.isArray(data) || data.length === 0) break;
-
-		for (const row of data as ModelAppsDailyRollupRow[]) {
-			const appId = String(row?.app_id ?? "").trim();
-			if (!appId) continue;
-			const existing = aggregate.get(appId) ?? {
-				requests: BIGINT_ZERO,
-				success: BIGINT_ZERO,
-				tokens: BIGINT_ZERO,
-			};
-			existing.requests += toBigInt(row?.requests);
-			existing.success += toBigInt(row?.success_requests);
-			existing.tokens += toBigInt(row?.total_tokens);
-			aggregate.set(appId, existing);
-		}
-
-		if (data.length < PAGE_SIZE) break;
-	}
+	await fetchByColumn("canonical_model_id");
+	await fetchByColumn("model_id");
 
 	if (aggregate.size === 0) return [];
 

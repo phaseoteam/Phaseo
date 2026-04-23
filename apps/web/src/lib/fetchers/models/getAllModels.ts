@@ -22,7 +22,7 @@ export interface ModelCard {
     primary_timestamp: number | null;
     primary_group_key: string | null;
     model_source?: "api_backed" | "internal_only";
-    gateway_status?: "active" | "inactive" | "not_listed";
+    gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed";
     gateway_provider_count?: number;
     gateway_active_provider_count?: number;
     gateway_endpoints?: string[];

@@ -64,6 +64,7 @@ const PROVIDER_STATUS_ORDER = [
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
+	"coming_soon",
 	"inactive",
 	"disabled",
 	"not_listed",
@@ -92,6 +93,11 @@ const PROVIDER_STATUS_META: Record<
 		label: "Deranked L3",
 		badgeClassName: "bg-red-500/10 text-red-600",
 		dotClassName: "bg-red-500",
+	},
+	coming_soon: {
+		label: "Coming Soon",
+		badgeClassName: "bg-sky-500/10 text-sky-700",
+		dotClassName: "bg-sky-500",
 	},
 	disabled: {
 		label: "Disabled",
@@ -185,6 +191,7 @@ function normalizeProviderStatus(value: unknown): string {
 		.toLowerCase()
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "inactive";
+	if (normalized === "comingsoon") return "coming_soon";
 	if (normalized === "not_active") return "inactive";
 	if (normalized === "deranked" || normalized === "de_ranked") {
 		return "deranked_lvl1";

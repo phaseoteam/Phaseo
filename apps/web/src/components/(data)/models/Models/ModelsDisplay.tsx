@@ -223,6 +223,9 @@ function getClosestStopIndex(value: number): number {
 function toGatewayStatusFilter(value: string): GatewayStatusFilter | null {
 	const normalized = value.trim().toLowerCase();
 	if (normalized === "active") return "active";
+	if (normalized === "coming_soon" || normalized === "comingsoon") {
+		return "coming_soon";
+	}
 	if (
 		normalized === "not_active" ||
 		normalized === "inactive" ||
@@ -245,7 +248,9 @@ function parseGatewayStatusParam(value: string | null): string[] {
 function getGatewayStatusBucket(
 	status: ModelsPageModel["gateway_status"] | null | undefined,
 ): GatewayStatusFilter {
-	return status === "active" ? "active" : "not_active";
+	if (status === "active") return "active";
+	if (status === "coming_soon") return "coming_soon";
+	return "not_active";
 }
 
 function serializeCsvParam(values: string[]): string {
@@ -870,7 +875,14 @@ export default function ModelsDisplay({
 			params.delete("q");
 			const statuses = parseGatewayStatusParam(params.get("statuses"));
 			if (statuses.length === 1) {
-				params.set("statuses", statuses[0] === "active" ? "active" : "inactive");
+				params.set(
+					"statuses",
+					statuses[0] === "active"
+						? "active"
+						: statuses[0] === "coming_soon"
+							? "coming_soon"
+							: "inactive",
+				);
 			} else {
 				params.delete("statuses");
 			}
@@ -881,6 +893,7 @@ export default function ModelsDisplay({
 
 	const gatewayStatusOptions: OptionCount[] = [
 		{ value: "active", count: statusCounts.active },
+		{ value: "coming_soon", count: statusCounts.coming_soon },
 		{ value: "not_active", count: statusCounts.not_active },
 	];
 
@@ -1003,10 +1016,12 @@ export default function ModelsDisplay({
 						}
 						labelForValue={(value) => {
 							if (value === "active") return "Active On Gateway";
+							if (value === "coming_soon") return "Coming Soon";
 							return "Not Active";
 						}}
 						iconForValue={(value) => {
 							if (value === "active") return Activity;
+							if (value === "coming_soon") return Sparkles;
 							return Database;
 						}}
 					/>

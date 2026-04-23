@@ -14,20 +14,33 @@ RETURNS TABLE(
 ) AS $$
 BEGIN
   RETURN QUERY
-  WITH grouped AS (
+  WITH base AS (
     SELECT
-      r.canonical_model_id AS model_id,
-      SUM(r.requests)::bigint AS request_count,
-      SUM(r.total_tokens)::bigint AS total_tokens,
-      SUM(r.latency_sum_ms) AS latency_sum_ms,
-      SUM(r.latency_samples)::bigint AS latency_samples,
-      SUM(r.throughput_sum) AS throughput_sum,
-      SUM(r.throughput_samples)::bigint AS throughput_samples
-    FROM public.gateway_usage_rollup_15m_model_provider r
-    WHERE r.provider = p_provider
-      AND r.bucket_15m >= p_since
-      AND r.canonical_model_id IS NOT NULL
-    GROUP BY r.canonical_model_id
+      coalesce(
+        nullif(gr.canonical_model_id, ''),
+        public.resolve_public_model_id(gr.model_id, gr.provider),
+        nullif(gr.model_id, ''),
+        'unknown'
+      ) AS model_id,
+      gr.success,
+      gr.usage,
+      gr.latency_ms::numeric AS latency_ms,
+      gr.throughput::numeric AS throughput
+    FROM public.gateway_requests gr
+    WHERE gr.provider = p_provider
+      AND gr.created_at >= p_since
+  ),
+  grouped AS (
+    SELECT
+      b.model_id,
+      count(*)::bigint AS request_count,
+      coalesce(sum(public.gateway_usage_total_tokens(b.usage)), 0)::bigint AS total_tokens,
+      coalesce(sum(coalesce(b.latency_ms, 0)), 0)::numeric AS latency_sum_ms,
+      count(b.latency_ms)::bigint AS latency_samples,
+      coalesce(sum(coalesce(b.throughput, 0)), 0)::numeric AS throughput_sum,
+      count(b.throughput)::bigint AS throughput_samples
+    FROM base b
+    GROUP BY b.model_id
   )
   SELECT
     g.model_id,

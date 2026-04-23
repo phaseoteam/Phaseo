@@ -14,6 +14,7 @@
 
 ## Safety Notes
 - Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only.
+- Always include `.entire/logs/entire.log` in commits and PRs when it has changes.
 
 ## Coding Style & Naming Conventions
 - TypeScript-first (ES modules, absolute imports `@/...` in the web app); Python for the SDK. Prefer named exports for shared utilities.
