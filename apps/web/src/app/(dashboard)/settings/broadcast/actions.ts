@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
@@ -406,7 +406,7 @@ async function getDestinationForTeam(
 	id: string,
 ): Promise<{ supabase: any; row: BroadcastDestinationRow }> {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getWorkspaceIdFromCookie();
+	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
@@ -426,7 +426,7 @@ async function getDestinationForTeam(
 
 export async function createBroadcastDestinationAction(args: CreateBroadcastDestinationInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getWorkspaceIdFromCookie();
+	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
@@ -731,7 +731,7 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 	config: Record<string, string>;
 }) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getWorkspaceIdFromCookie();
+	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 

@@ -50,6 +50,15 @@ interface HeaderProps {
 	variant?: "mobile" | "desktop";
 }
 
+function emitWorkspaceChanged(workspaceId: string) {
+	if (typeof window === "undefined") return;
+	window.dispatchEvent(
+		new CustomEvent("workspace:changed", {
+			detail: { workspaceId },
+		}),
+	);
+}
+
 export default function HeaderClient({
 	isLoggedIn,
 	user,
@@ -73,6 +82,11 @@ export default function HeaderClient({
 	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(
 		currentTeamId ?? teams[0]?.id,
 	);
+	const workspacesHref = `/settings/workspaces${
+		activeWorkspaceId
+			? `?workspace_id=${encodeURIComponent(activeWorkspaceId)}`
+			: ""
+	}`;
 	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
 	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
 
@@ -100,12 +114,17 @@ export default function HeaderClient({
 		const result = await SwapTeam(nextTeamId);
 		if (!result?.ok) {
 			setActiveTeamId(previousTeamId);
-			toast.error(`Failed to switch to ${teamName} workspace`, {
+			const reason =
+				typeof result?.error === "string" && result.error
+					? ` (${result.error})`
+					: "";
+			toast.error(`Failed to switch to ${teamName} workspace${reason}`, {
 				position: "bottom-right",
 			});
 			return false;
 		}
 
+		emitWorkspaceChanged(nextTeamId);
 		router.refresh();
 		toast.success(`Switched to ${teamName} workspace`, {
 			position: "bottom-right",
@@ -202,7 +221,7 @@ export default function HeaderClient({
 										})}
 										<DropdownMenuSeparator />
 										<Link
-											href="/settings/workspaces"
+											href={workspacesHref}
 											prefetch={false}
 											className={cn(
 												"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
@@ -295,7 +314,7 @@ export default function HeaderClient({
 							</DropdownMenuItem>
 							{teams.length === 0 && (
 								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href="/settings/workspaces" prefetch={false}>
+									<Link href={workspacesHref} prefetch={false}>
 										<Users className="h-4 w-4" />
 										<span>Workspaces</span>
 									</Link>

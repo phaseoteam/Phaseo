@@ -5,19 +5,13 @@ import TeamInviteDialog from "./TeamInviteDialog";
 import { Infinity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
-	Card,
-	CardHeader,
-	CardTitle,
-	CardDescription,
-	CardContent,
-} from "@/components/ui/card";
-import {
-	Select,
-	SelectTrigger,
-	SelectValue,
-	SelectContent,
-	SelectItem,
-} from "@/components/ui/select";
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 interface Invite {
 	id: string;
@@ -43,63 +37,39 @@ interface Props {
 	invitesByTeam?: Record<string, Invite[]>;
 	membersByTeam?: Record<string, any[]>;
 	activeWorkspaceId?: string | undefined;
-	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
+}
+
+function statusBadgeClass(status: "active" | "expired") {
+	return status === "active"
+		? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300"
+		: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300";
 }
 
 export default function TeamsInvites({
 	teams,
 	invitesByTeam,
-	onTeamChange,
 	membersByTeam,
 	currentUserId,
 	activeWorkspaceId: controlledActiveId,
 }: Props) {
-	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
-		string | undefined
-	>(teams.length ? teams[0].id : undefined);
-	const [selectedInvite, setSelectedInvite] = React.useState<Invite | null>(
-		null
-	);
+	const [selectedInvite, setSelectedInvite] = React.useState<Invite | null>(null);
 
-	const activeWorkspaceId = controlledActiveId ?? localActiveTeamId;
-	const setActiveTeamId = React.useCallback(
-		(id?: string) => {
-			if (onTeamChange) onTeamChange(id);
-			else setLocalActiveTeamId(id);
-		},
-		[onTeamChange]
-	);
+	const activeWorkspaceId =
+		controlledActiveId && teams.some((team) => team.id === controlledActiveId)
+			? controlledActiveId
+			: teams[0]?.id;
 
-	React.useEffect(() => {
-		if (!teams.length) {
-			setActiveTeamId(undefined);
-			return;
-		}
-		if (!activeWorkspaceId) {
-			setActiveTeamId(teams[0].id);
-			return;
-		}
-		if (!teams.find((t) => t.id === activeWorkspaceId)) {
-			setActiveTeamId(teams[0].id);
-		}
-	}, [teams, activeWorkspaceId, setActiveTeamId]);
-
-	const mergedInvites = React.useMemo(
-		() => invitesByTeam || {},
-		[invitesByTeam]
-	);
+	const mergedInvites = React.useMemo(() => invitesByTeam || {}, [invitesByTeam]);
 	const activeInvites = React.useMemo(() => {
 		if (!activeWorkspaceId) return [];
 		const invites = (mergedInvites[activeWorkspaceId] || []).slice();
-		// sort by expiry date ascending (soonest first). null expiry (no expiry) go last
 		invites.sort((a, b) => {
 			if (!a.expires_at && !b.expires_at) return 0;
-			if (!a.expires_at) return 1; // a has no expiry -> put after b
-			if (!b.expires_at) return -1; // b has no expiry -> put after a
+			if (!a.expires_at) return 1;
+			if (!b.expires_at) return -1;
 			const da = new Date(a.expires_at as string).getTime();
 			const db = new Date(b.expires_at as string).getTime();
-			// descending: newest expiry first
 			return db - da;
 		});
 		return invites;
@@ -110,9 +80,7 @@ export default function TeamsInvites({
 		let active = 0;
 		let expired = 0;
 		for (const inv of activeInvites) {
-			const isExpired = inv.expires_at
-				? new Date(inv.expires_at) < new Date()
-				: false;
+			const isExpired = inv.expires_at ? new Date(inv.expires_at) < new Date() : false;
 			if (isExpired) expired++;
 			else active++;
 		}
@@ -132,140 +100,93 @@ export default function TeamsInvites({
 	}, [selectedInvite, currentUserId, membersByTeam]);
 
 	return (
-		<Card className="h-full">
-			<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+		<section className="space-y-3">
+			<div className="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-start sm:justify-between">
 				<div>
-					<CardTitle className="text-base">Invites</CardTitle>
-					<CardDescription>
+					<h3 className="text-base font-semibold">Invites</h3>
+					<p className="text-sm text-muted-foreground">
 						View and manage invites for this workspace.
-					</CardDescription>
+					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
 					<Badge variant="outline">{counts.total} total</Badge>
 					<Badge variant="secondary">{counts.active} active</Badge>
-					<Select
-						value={activeWorkspaceId}
-						onValueChange={(v) => setActiveTeamId(v)}
-					>
-						<SelectTrigger className="w-full sm:w-[200px]">
-							<SelectValue placeholder="Select workspace…" />
-						</SelectTrigger>
-						<SelectContent>
-							{teams.map((t) => (
-								<SelectItem key={t.id} value={t.id}>
-									{t.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
 				</div>
-			</CardHeader>
+			</div>
 
-			<CardContent>
-				{!activeTeam ? (
-					<div className="text-sm text-muted-foreground">
-						No workspaces available.
-					</div>
-				) : activeInvites.length === 0 ? (
-					<div className="text-sm text-muted-foreground">
-						No invites for {activeTeam.name} yet.
-					</div>
-				) : (
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-						{activeInvites.map((i) => {
-							const expired = i.expires_at
-								? new Date(i.expires_at) < new Date()
-								: false;
-							const status = expired ? "expired" : "active";
-							return (
-								<Card
-									key={i.id}
-									className="cursor-pointer border p-3 shadow-sm transition hover:shadow-md"
-									onClick={() => setSelectedInvite(i)}
-								>
-									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-										<div className="min-w-0 flex-1">
-											<div className="flex items-center justify-between">
-												<div className="truncate">
-													<div className="truncate text-sm font-medium">
-														Created by{" "}
-														{i.users
-															?.display_name ??
-															"Unknown"}
-													</div>
-													<div className="text-xs text-muted-foreground">
-														Created{" "}
-														{new Date(
-															i.created_at
-														).toLocaleDateString()}
-													</div>
+			{!activeTeam ? (
+				<div className="text-sm text-muted-foreground">
+					No workspaces available.
+				</div>
+			) : activeInvites.length === 0 ? (
+				<div className="text-sm text-muted-foreground">
+					No invites for {activeTeam.name} yet.
+				</div>
+			) : (
+				<div className="overflow-hidden rounded-md border">
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Creator</TableHead>
+								<TableHead>Role</TableHead>
+								<TableHead>Expires</TableHead>
+								<TableHead>Uses</TableHead>
+								<TableHead>Status</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{activeInvites.map((invite) => {
+								const expired = invite.expires_at
+									? new Date(invite.expires_at) < new Date()
+									: false;
+								const status: "active" | "expired" = expired ? "expired" : "active";
+								return (
+									<TableRow
+										key={invite.id}
+										className="cursor-pointer"
+										onClick={() => setSelectedInvite(invite)}
+									>
+										<TableCell>
+											<div className="min-w-0">
+												<div className="truncate text-sm font-medium">
+													{invite.users?.display_name ?? "Unknown"}
 												</div>
-												<div className="ml-2">
-													<Badge
-														className="h-auto px-2 py-0.5 text-xs capitalize"
-														variant={
-															i.role === "owner"
-																? "default"
-																: i.role ===
-																  "admin"
-																? "secondary"
-																: "outline"
-														}
-													>
-														{i.role}
-													</Badge>
+												<div className="truncate text-xs text-muted-foreground">
+													{new Date(invite.created_at).toLocaleDateString()}
 												</div>
 											</div>
+										</TableCell>
+										<TableCell className="capitalize">{invite.role}</TableCell>
+										<TableCell className="text-muted-foreground">
+											{invite.expires_at
+												? new Date(invite.expires_at).toLocaleDateString()
+												: "No expiry"}
+										</TableCell>
+										<TableCell className="text-muted-foreground">
+											<span className="inline-flex items-center gap-1">
+												{invite.uses_count ?? 0}
+												/
+												{invite.max_uses ?? <Infinity className="h-3.5 w-3.5" />}
+											</span>
+										</TableCell>
+										<TableCell>
+											<span
+												className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium capitalize ${statusBadgeClass(
+													status,
+												)}`}
+											>
+												{status}
+											</span>
+										</TableCell>
+									</TableRow>
+								);
+							})}
+						</TableBody>
+					</Table>
+				</div>
+			)}
 
-											<div className="mt-2 flex items-center justify-between text-xs">
-												<div className="text-muted-foreground">
-													{i.expires_at
-														? `Expires ${new Date(
-																i.expires_at
-														  ).toLocaleDateString()}`
-														: "No expiry"}
-												</div>
-												<div className="flex items-center gap-2">
-													<div className="flex items-center gap-1 text-muted-foreground">
-														<span>
-															Uses:{" "}
-															{i.uses_count ?? 0}
-														</span>
-														{i.max_uses ? (
-															<span>
-																/ {i.max_uses}
-															</span>
-														) : (
-															<span className="flex items-center gap-0.5">
-																/{" "}
-																<Infinity className="h-3.5 w-3.5 opacity-80" />
-															</span>
-														)}
-													</div>
-													{/* Status badge with clearer colours: green for active, red for expired */}
-													<Badge
-														className={
-															"text-xs capitalize h-auto px-2 py-0.5 " +
-															(status === "active"
-																? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300 border-emerald-200"
-																: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300 border-rose-200")
-														}
-													>
-														{status}
-													</Badge>
-												</div>
-											</div>
-										</div>
-									</div>
-								</Card>
-							);
-						})}
-					</div>
-				)}
-			</CardContent>
-
-			{/* Invite details dialog */}
-			{selectedInvite && (
+			{selectedInvite ? (
 				<TeamInviteDialog
 					invite={selectedInvite}
 					open={true}
@@ -275,7 +196,7 @@ export default function TeamsInvites({
 					currentUserId={currentUserId}
 					canManageInvite={selectedInviteCanManage}
 				/>
-			)}
-		</Card>
+			) : null}
+		</section>
 	);
 }

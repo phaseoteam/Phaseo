@@ -42,6 +42,15 @@ interface TeamSwitcherProps {
 	userRole?: string | undefined;
 }
 
+function emitWorkspaceChanged(workspaceId: string) {
+	if (typeof window === "undefined") return;
+	window.dispatchEvent(
+		new CustomEvent("workspace:changed", {
+			detail: { workspaceId },
+		}),
+	);
+}
+
 export default function TeamSwitcher({
 	user,
 	teams = [],
@@ -83,6 +92,11 @@ export default function TeamSwitcher({
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
 	const activeTeam = teams.find((t) => t.id === activeWorkspaceId) ?? teams[0];
+	const workspacesHref = `/settings/workspaces${
+		activeWorkspaceId
+			? `?workspace_id=${encodeURIComponent(activeWorkspaceId)}`
+			: ""
+	}`;
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
 			? theme
@@ -114,6 +128,11 @@ export default function TeamSwitcher({
 		setIsTeamMenuOpen(false);
 		setIsProfileMenuOpen(false);
 	}, [pathname]);
+
+	useEffect(() => {
+		setActiveTeamId(getInitialTeamId(initialActiveTeamId));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialActiveTeamId, teams]);
 
 	return (
 		<div className="flex items-center gap-2">
@@ -196,6 +215,7 @@ export default function TeamSwitcher({
 											loading: "Switching workspace...",
 											success: (res) => {
 												if (res?.ok) {
+													emitWorkspaceChanged(t.id);
 													router.refresh();
 													return `Switched to ${t.name} workspace`;
 												} else {
@@ -203,13 +223,18 @@ export default function TeamSwitcher({
 														previous
 													);
 													throw new Error(
-														"Failed to switch workspace"
+														res?.error || "Failed to switch workspace"
 													);
 												}
 											},
-											error: () => {
+											error: (error) => {
 												setActiveTeamId(previous);
-												return `Failed to switch to ${t.name} workspace, please try again`;
+												const reason =
+													typeof (error as any)?.message === "string" &&
+													(error as any).message
+														? ` (${(error as any).message})`
+														: "";
+												return `Failed to switch to ${t.name} workspace${reason}`;
 											},
 										});
 									}}
@@ -236,12 +261,12 @@ export default function TeamSwitcher({
 							className="rounded-md py-1.5 text-sm cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70 focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						>
 							<Link
-								href="/settings/workspaces"
+								href={workspacesHref}
 								className="flex w-full items-center"
 								onClick={(e) => {
 									e.preventDefault();
 									setIsTeamMenuOpen(false);
-									navigateWithViewTransition("/settings/workspaces");
+									navigateWithViewTransition(workspacesHref);
 								}}
 							>
 								<Users className="mr-2 h-4 w-4" />

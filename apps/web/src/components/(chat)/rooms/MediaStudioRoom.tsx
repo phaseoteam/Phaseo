@@ -856,7 +856,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 	const isImageRoom = roomId === "image";
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const filteredModels = useMemo(
-		() => filterModelsForRoom(models, roomId).filter((model) => model.isAvailable),
+		() => filterModelsForRoom(models, roomId),
 		[models, roomId],
 	);
 	const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
@@ -908,8 +908,11 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				activeModelId)) ||
 		"Select model";
 	const openComposerModelPicker = () => {
+		const fallbackModelId =
+			filteredModels.find((model) => model.isAvailable)?.modelId ??
+			filteredModels[0]?.modelId;
 		const targetModelId =
-			activeModelId || selectedModelIds[0] || filteredModels[0]?.modelId;
+			activeModelId || selectedModelIds[0] || fallbackModelId;
 		if (!targetModelId) return;
 		if (!selectedModelIds.includes(targetModelId)) {
 			setSelectedModelIds((prev) =>

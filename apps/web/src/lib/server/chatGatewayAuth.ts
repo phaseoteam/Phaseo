@@ -110,7 +110,16 @@ async function findTeamIdForUser(userId: string): Promise<string> {
 			.eq("workspace_id", workspaceId)
 			.limit(1)
 			.maybeSingle();
-		return !error && Boolean(data?.workspace_id);
+		if (!error && data?.workspace_id) return true;
+
+		const { data: ownedWorkspace, error: ownerError } = await supabase
+			.from("workspaces")
+			.select("id")
+			.eq("id", workspaceId)
+			.eq("owner_user_id", userId)
+			.limit(1)
+			.maybeSingle();
+		return !ownerError && Boolean(ownedWorkspace?.id);
 	};
 
 	if (cookieTeamId && (await isMember(cookieTeamId))) {
@@ -127,20 +136,32 @@ async function findTeamIdForUser(userId: string): Promise<string> {
 		return defaultWorkspaceId;
 	}
 
-	const { data: membershipRow, error: membershipError } = await supabase
-		.from("workspace_members")
-		.select("workspace_id")
-		.eq("user_id", userId)
-		.limit(1)
-		.maybeSingle();
-	if (membershipError || !membershipRow?.workspace_id) {
+	const [{ data: membershipRow }, { data: ownedWorkspace }] = await Promise.all([
+		supabase
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("user_id", userId)
+			.limit(1)
+			.maybeSingle(),
+		supabase
+			.from("workspaces")
+			.select("id")
+			.eq("owner_user_id", userId)
+			.limit(1)
+			.maybeSingle(),
+	]);
+
+	const fallbackWorkspaceId =
+		String(membershipRow?.workspace_id ?? "").trim() ||
+		String(ownedWorkspace?.id ?? "").trim();
+	if (!fallbackWorkspaceId) {
 		throw new ChatGatewayAuthError(
 			403,
 			"no_workspace_membership",
 			"You must be a member of a team to use chat",
 		);
 	}
-	return String(membershipRow.workspace_id);
+	return fallbackWorkspaceId;
 }
 
 async function ensureManagedGatewayKey(args: {

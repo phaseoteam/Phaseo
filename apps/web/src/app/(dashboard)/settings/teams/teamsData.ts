@@ -1,13 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
+import {
+	getActiveWorkspaceIdFromCookieRaw,
+	getWorkspaceIdFromCookie,
+} from "@/utils/workspaceCookie";
 
-function uniqueStrings(values: Array<string | null | undefined>): string[] {
-	return Array.from(new Set(values.filter(Boolean) as string[]));
-}
-
-export async function getTeamsSettingsData() {
+export async function getTeamsSettingsData(preferredWorkspaceId?: string | null) {
 	const supabase = await createClient();
 	let adminClient: ReturnType<typeof createAdminClient> | null = null;
 	try {
@@ -15,7 +13,6 @@ export async function getTeamsSettingsData() {
 	} catch {
 		adminClient = null;
 	}
-
 	const readClient: any = adminClient ?? supabase;
 
 	const {
@@ -24,100 +21,164 @@ export async function getTeamsSettingsData() {
 
 	const userId = user?.id;
 	let personalTeamId: string | null = null;
+	let userRole: string | null = null;
+	let defaultWorkspaceId: string | null = null;
+	let membershipWorkspaceIds: string[] = [];
+	let ownedWorkspaceIds: string[] = [];
 
 	if (userId) {
-		const { data: userRow, error: userRowError } = await readClient
+		const { data: userRow } = await readClient
 			.from("users")
-			.select("default_workspace_id")
+			.select("default_workspace_id, role")
 			.eq("user_id", userId)
 			.maybeSingle();
 
-		if (!userRowError) {
-			personalTeamId = userRow?.default_workspace_id ?? null;
-		} else {
-			const { data: legacyUserRow } = await (readClient as any)
-				.from("users")
-				.select("default_team_id")
-				.eq("user_id", userId)
-				.maybeSingle();
-			personalTeamId = legacyUserRow?.default_team_id ?? null;
-		}
-	}
+		defaultWorkspaceId =
+			String(userRow?.default_workspace_id ?? "").trim() || null;
+		personalTeamId = defaultWorkspaceId;
+		userRole = String(userRow?.role ?? "").trim().toLowerCase() || null;
 
-	let membershipRows: any[] = [];
-	if (userId) {
-		const { data, error } = await readClient
+		const { data: membershipRows } = await readClient
 			.from("workspace_members")
-			.select("workspace_id, user_id, role")
+			.select("workspace_id")
 			.eq("user_id", userId);
-		if (!error) {
-			membershipRows = data ?? [];
-		} else {
-			const { data: legacyMembershipRows } = await (readClient as any)
-				.from("team_members")
-				.select("team_id, user_id, role")
-				.eq("user_id", userId);
-			membershipRows = (legacyMembershipRows ?? []).map((row: any) => ({
-				workspace_id: row?.team_id,
-				user_id: row?.user_id,
-				role: row?.role,
-			}));
-		}
+		membershipWorkspaceIds = Array.from(
+			new Set(
+				(membershipRows ?? [])
+					.map((row: any) => String(row?.workspace_id ?? "").trim())
+				.filter(Boolean),
+			),
+		);
+
+		const { data: ownedWorkspaceRows } = await readClient
+			.from("workspaces")
+			.select("id")
+			.eq("owner_user_id", userId);
+		ownedWorkspaceIds = Array.from(
+			new Set(
+				(ownedWorkspaceRows ?? [])
+					.map((row: any) => String(row?.id ?? "").trim())
+					.filter(Boolean),
+			),
+		);
 	}
 
-	const workspaceIds = uniqueStrings([
-		...(membershipRows ?? []).map((row: any) => row?.workspace_id),
-		personalTeamId,
-	]);
-
+	// Fetch workspaces and enrich with fallback lookups when direct joins miss names.
 	let teams: Array<{ id: string; name: string }> = [];
-	if (workspaceIds.length) {
-		const { data, error } = await readClient
-			.from("workspaces")
-			.select("id, name")
-			.in("id", workspaceIds);
-		if (!error) {
-			teams = data ?? [];
-		} else {
-			const { data: legacyTeams } = await (readClient as any)
-				.from("teams")
+	if (userId) {
+		const accessibleWorkspaceIds = Array.from(
+			new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
+		);
+
+		const { data: membershipTeams } = await supabase
+			.from("workspace_members")
+			.select("workspace_id, workspaces(id, name)")
+			.eq("user_id", userId);
+		teams = (membershipTeams ?? [])
+			.map((row: any) => {
+				const workspace =
+					Array.isArray(row?.workspaces) ? row.workspaces[0] : row?.workspaces;
+				const id = String(workspace?.id ?? row?.workspace_id ?? "").trim();
+				const name = String(workspace?.name ?? "").trim();
+				if (!id || !name) return null;
+				return { id, name };
+			})
+				.filter((row): row is { id: string; name: string } => Boolean(row));
+
+		if (accessibleWorkspaceIds.length) {
+			const { data: scopedTeams } = await readClient
+				.from("workspaces")
 				.select("id, name")
-				.in("id", workspaceIds);
-			teams = legacyTeams ?? [];
+				.in("id", accessibleWorkspaceIds);
+			const normalizedScopedTeams = (scopedTeams ?? [])
+				.map((row: any) => {
+					const id = String(row?.id ?? "").trim();
+					const name = String(row?.name ?? "").trim();
+					if (!id || !name) return null;
+					return { id, name };
+				})
+				.filter(
+					(row: { id: string; name: string } | null): row is { id: string; name: string } =>
+						Boolean(row),
+				);
+
+			if (teams.length === 0) {
+				teams = normalizedScopedTeams;
+			} else {
+				const merged = new Map(teams.map((team) => [team.id, team]));
+				for (const team of normalizedScopedTeams) merged.set(team.id, team);
+				teams = Array.from(merged.values());
+			}
+		}
+
+		if (
+			teams.length === 0 &&
+			defaultWorkspaceId &&
+			accessibleWorkspaceIds.includes(defaultWorkspaceId)
+		) {
+			const { data: defaultWorkspaceRows } = await readClient
+				.from("workspaces")
+				.select("id, name")
+				.eq("id", defaultWorkspaceId)
+				.limit(1);
+			teams = (defaultWorkspaceRows ?? [])
+				.map((row: any) => {
+					const id = String(row?.id ?? "").trim();
+					const name = String(row?.name ?? "").trim();
+					if (!id || !name) return null;
+					return { id, name };
+				})
+				.filter(
+					(row: { id: string; name: string } | null): row is { id: string; name: string } =>
+						Boolean(row),
+				);
+		}
+
+		if (
+			teams.length === 0 &&
+			(userRole === "admin" || userRole === "editor")
+		) {
+			const { data: allWorkspaces } = await readClient
+				.from("workspaces")
+				.select("id, name");
+			teams = (allWorkspaces ?? [])
+				.map((row: any) => {
+					const id = String(row?.id ?? "").trim();
+					const name = String(row?.name ?? "").trim();
+					if (!id || !name) return null;
+					return { id, name };
+				})
+				.filter(
+					(row: { id: string; name: string } | null): row is { id: string; name: string } =>
+						Boolean(row),
+				);
 		}
 	}
 
 	let teamMembers: any[] = [];
 	const usersById: Record<string, any> = {};
-	if (workspaceIds.length) {
-		const { data, error } = await readClient
-			.from("workspace_members")
-			.select("workspace_id, user_id, role")
-			.in("workspace_id", workspaceIds);
-		if (!error) {
-			teamMembers = data ?? [];
-		} else {
-			const { data: legacyMembers } = await (readClient as any)
-				.from("team_members")
-				.select("team_id, user_id, role")
-				.in("team_id", workspaceIds);
-			teamMembers = (legacyMembers ?? []).map((row: any) => ({
-				workspace_id: row?.team_id,
-				user_id: row?.user_id,
-				role: row?.role,
-			}));
-		}
+	if (userId && teams.length) {
+		const workspaceIds = Array.from(new Set(teams.map((team) => team.id)));
+		const memberReadClient: any = adminClient ?? readClient;
 
-		const memberUserIds = uniqueStrings(
-			(teamMembers ?? []).map((member: any) => member?.user_id),
-		);
-		if (memberUserIds.length) {
-			const { data: users } = await readClient
-				.from("users")
-				.select("user_id, display_name")
-				.in("user_id", memberUserIds);
-			for (const u of users ?? []) {
-				if (u?.user_id) usersById[u.user_id] = u;
+		if (workspaceIds.length) {
+			const { data: memberRows } = await memberReadClient
+				.from("workspace_members")
+				.select("workspace_id, user_id, role")
+				.in("workspace_id", workspaceIds);
+			teamMembers = memberRows ?? [];
+
+			const memberUserIds = Array.from(
+				new Set((teamMembers ?? []).map((m: any) => m?.user_id).filter(Boolean)),
+			);
+			if (memberUserIds.length) {
+				const { data: users } = await memberReadClient
+					.from("users")
+					.select("user_id, display_name")
+					.in("user_id", memberUserIds as string[]);
+				for (const u of users ?? []) {
+					if (u?.user_id) usersById[u.user_id] = u;
+				}
 			}
 		}
 	}
@@ -125,136 +186,94 @@ export async function getTeamsSettingsData() {
 	const sevenDaysAgoIso = new Date(
 		Date.now() - 7 * 24 * 60 * 60 * 1000,
 	).toISOString();
+	const { data: teamInvites } = await supabase
+		.from("workspace_invites")
+		.select("*, users(display_name)")
+		.or(`expires_at.is.null,expires_at.gte.${sevenDaysAgoIso}`);
 
-	let teamInvites: any[] = [];
-	if (workspaceIds.length) {
-		const { data, error } = await readClient
-			.from("workspace_invites")
-			.select("*, users(display_name)")
-			.in("workspace_id", workspaceIds);
-		if (!error) {
-			teamInvites = data ?? [];
-		} else {
-			const { data: legacyInvites } = await (readClient as any)
-				.from("team_invites")
-				.select("*, users(display_name)")
-				.in("team_id", workspaceIds);
-			teamInvites = (legacyInvites ?? []).map((row: any) => ({
-				...row,
-				workspace_id: row?.team_id,
-			}));
-		}
-	}
-
-	let teamJoinRequests: any[] = [];
-	if (workspaceIds.length) {
-		const { data, error } = await readClient
-			.from("workspace_join_requests")
-			.select(
-				"id, workspace_id, requester_user_id, status, created_at, decided_at, decided_by, invite_id",
+	const { data: teamJoinRequests } = await supabase
+		.from("workspace_join_requests")
+		.select(
+			`
+			id,
+			workspace_id,
+			requester_user_id,
+			status,
+			created_at,
+			decided_at,
+			teams:workspaces ( name ),
+			requester:users!workspace_join_requests_requester_user_id_fkey (
+				user_id,
+				display_name
+			),
+			decider:users!workspace_join_requests_decided_by_fkey (
+				user_id,
+				display_name
 			)
-			.in("workspace_id", workspaceIds);
-		if (!error) {
-			teamJoinRequests = data ?? [];
-		} else {
-			const { data: legacyRequests } = await (readClient as any)
-				.from("team_join_requests")
-				.select(
-					"id, team_id, requester_user_id, status, created_at, decided_at, decided_by, invite_id",
-				)
-				.in("team_id", workspaceIds);
-			teamJoinRequests = (legacyRequests ?? []).map((row: any) => ({
-				...row,
-				workspace_id: row?.team_id,
-			}));
-		}
-	}
+		`,
+		)
+		.or(`decided_at.is.null,decided_at.gte.${sevenDaysAgoIso}`);
 
+	// Normalize
 	const teamsArray = teams ?? [];
-	const membersArray = (teamMembers ?? []).map((member: any) => ({
-		...member,
-		display_name: usersById[member.user_id]?.display_name ?? null,
+	const membersArray = (teamMembers ?? []).map((m: any) => ({
+		...m,
+		display_name: usersById[m.user_id]?.display_name ?? null,
 	}));
-	const invitesArray = (teamInvites ?? []).filter((invite: any) => {
-		if (!invite?.expires_at) return true;
-		return new Date(invite.expires_at).toISOString() >= sevenDaysAgoIso;
-	});
-
-	const requestUserIds = uniqueStrings(
-		(teamJoinRequests ?? []).flatMap((row: any) => [
-			row?.requester_user_id,
-			row?.decided_by,
-		]),
-	);
-
-	const missingRequestUserIds = requestUserIds.filter((id) => !usersById[id]);
-	if (missingRequestUserIds.length) {
-		const { data: requestUsers } = await readClient
-			.from("users")
-			.select("user_id, display_name")
-			.in("user_id", missingRequestUserIds);
-		for (const userRow of requestUsers ?? []) {
-			if (userRow?.user_id) usersById[userRow.user_id] = userRow;
-		}
-	}
-
-	const teamNameById = Object.fromEntries(
-		teamsArray.map((team) => [team.id, team.name]),
-	) as Record<string, string>;
-
-	const requestsArray = (teamJoinRequests ?? [])
-		.filter((request: any) => {
-			if (!request?.decided_at) return true;
-			return new Date(request.decided_at).toISOString() >= sevenDaysAgoIso;
-		})
-		.map((request: any) => ({
-			...request,
-			teams: {
-				name: teamNameById[request.workspace_id] ?? "Workspace",
-			},
-			requester: request.requester_user_id
-				? {
-						user_id: request.requester_user_id,
-						display_name:
-							usersById[request.requester_user_id]?.display_name ?? null,
-				  }
-				: null,
-			decider: request.decided_by
-				? {
-						user_id: request.decided_by,
-						display_name: usersById[request.decided_by]?.display_name ?? null,
-				  }
-				: null,
-		}));
+	const invitesArray = teamInvites ?? [];
+	const requestsArray = teamJoinRequests ?? [];
 
 	const membersByTeam: Record<string, any[]> = {};
-	for (const member of membersArray) {
-		if (!member?.workspace_id) continue;
-		(membersByTeam[member.workspace_id] ||= []).push(member);
+	for (const m of membersArray) {
+		if (!m?.workspace_id) continue;
+		(membersByTeam[m.workspace_id] ||= []).push(m);
 	}
 
 	const invitesByTeam: Record<string, any[]> = {};
-	for (const invite of invitesArray) {
-		if (!invite?.workspace_id) continue;
-		(invitesByTeam[invite.workspace_id] ||= []).push(invite);
+	for (const i of invitesArray) {
+		if (!i?.workspace_id) continue;
+		(invitesByTeam[i.workspace_id] ||= []).push(i);
 	}
 
 	const requestsByTeam: Record<string, any[]> = {};
-	for (const request of requestsArray) {
-		if (!request?.workspace_id) continue;
-		(requestsByTeam[request.workspace_id] ||= []).push(request);
+	for (const r of requestsArray) {
+		if (!r?.workspace_id) continue;
+		(requestsByTeam[r.workspace_id] ||= []).push(r);
 	}
 
-	const initialTeamId = await getWorkspaceIdFromCookie();
+	const normalizedPreferredWorkspaceId = String(
+		preferredWorkspaceId ?? "",
+	).trim();
+	const rawCookieWorkspaceId = String(
+		(await getActiveWorkspaceIdFromCookieRaw()) ?? "",
+	).trim();
+	const resolvedCookieWorkspaceId = String(
+		(await getWorkspaceIdFromCookie()) ?? "",
+	).trim();
+	const teamIds = new Set(teamsArray.map((team) => team.id));
+
+	const initialTeamId =
+		(normalizedPreferredWorkspaceId &&
+		teamIds.has(normalizedPreferredWorkspaceId)
+			? normalizedPreferredWorkspaceId
+			: undefined) ||
+		(rawCookieWorkspaceId && teamIds.has(rawCookieWorkspaceId)
+			? rawCookieWorkspaceId
+			: undefined) ||
+		(resolvedCookieWorkspaceId && teamIds.has(resolvedCookieWorkspaceId)
+			? resolvedCookieWorkspaceId
+			: undefined) ||
+		(defaultWorkspaceId && teamIds.has(defaultWorkspaceId)
+			? defaultWorkspaceId
+			: undefined) ||
+		teamsArray[0]?.id;
 	const manageableTeamIds = Object.entries(membersByTeam).reduce<string[]>(
 		(acc, [workspaceId, members]) => {
 			if (
 				members?.some(
 					(member: any) =>
 						member?.user_id === userId &&
-						["owner", "admin"].includes(
-							(member?.role ?? "").toLowerCase(),
-						),
+						["owner", "admin"].includes((member?.role ?? "").toLowerCase()),
 				)
 			) {
 				acc.push(workspaceId);
@@ -263,10 +282,15 @@ export async function getTeamsSettingsData() {
 		},
 		[],
 	);
+	for (const ownedWorkspaceId of ownedWorkspaceIds) {
+		if (!manageableTeamIds.includes(ownedWorkspaceId)) {
+			manageableTeamIds.push(ownedWorkspaceId);
+		}
+	}
 
 	const walletBalances: Record<string, number> = {};
 	if (teamsArray.length) {
-		const { data: wallets } = await readClient
+		const { data: wallets } = await supabase
 			.from("wallets")
 			.select("workspace_id,balance_nanos")
 			.in(
@@ -282,33 +306,6 @@ export async function getTeamsSettingsData() {
 		}
 	}
 
-	const teamSsoSettingsByTeam: Record<string, TeamSsoSettingsRow> = {};
-	if (teamsArray.length) {
-		const { data: settingsRows } = await readClient
-			.from("workspace_settings")
-			.select(
-				"workspace_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
-			)
-			.in(
-				"workspace_id",
-				teamsArray.map((team) => team.id),
-			);
-
-		for (const row of settingsRows ?? []) {
-			const workspaceId = row?.workspace_id;
-			if (!workspaceId) continue;
-			teamSsoSettingsByTeam[workspaceId] = {
-				sso_enabled: Boolean(row.sso_enabled),
-				sso_enforced: Boolean(row.sso_enforced),
-				sso_mode: String(row.sso_mode ?? "none"),
-				sso_provider_identifier: row.sso_provider_identifier ?? null,
-				sso_domains: Array.isArray(row.sso_domains)
-					? (row.sso_domains as string[])
-					: [],
-			};
-		}
-	}
-
 	return {
 		teams: teamsArray,
 		membersByTeam,
@@ -319,6 +316,5 @@ export async function getTeamsSettingsData() {
 		personalTeamId,
 		manageableTeamIds,
 		walletBalances,
-		teamSsoSettingsByTeam,
 	};
 }

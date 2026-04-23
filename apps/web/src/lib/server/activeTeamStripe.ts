@@ -148,3 +148,36 @@ export async function requireActiveTeamStripeCustomer(
         userId: user.id,
     };
 }
+
+export async function ensureWorkspaceStripeWallet(args?: {
+    workspaceId?: string;
+    userId?: string;
+    email?: string | null;
+    name?: string;
+}) {
+    if (args?.workspaceId && args?.userId) {
+        const customerId = await findOrCreateStripeCustomer({
+            workspaceId: args.workspaceId,
+            userId: args.userId,
+            email: args.email ?? undefined,
+            name: args.name,
+        });
+
+        const admin = createAdminClient();
+        const { error } = await admin
+            .from("wallets")
+            .upsert(
+                { workspace_id: args.workspaceId, stripe_customer_id: customerId },
+                { onConflict: "workspace_id", ignoreDuplicates: false }
+            );
+        if (error) throw error;
+
+        return {
+            workspaceId: args.workspaceId,
+            customerId,
+            userId: args.userId,
+        };
+    }
+
+    return requireActiveTeamStripeCustomer({ createIfMissing: true });
+}

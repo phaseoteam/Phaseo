@@ -5,6 +5,7 @@ import type { ChangeEvent } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
+import type { ResolvedChatroomTheme } from "@/components/(chat)/playground/chat-playground-core";
 import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
 import { Square } from "lucide-react";
 import {
@@ -46,7 +47,7 @@ type ChatConversationProps = {
 	modelDisplayNameById: Record<string, string>;
 	modelOrgIdById: Record<string, string>;
 	modelLinkById: Record<string, string>;
-	accentColor: string;
+	theme: ResolvedChatroomTheme;
 	selectedOrgId: string;
 	selectedModelId: string;
 	selectedModelLabel: string;
@@ -81,7 +82,7 @@ export function ChatConversation({
 	modelDisplayNameById,
 	modelOrgIdById,
 	modelLinkById,
-	accentColor,
+	theme,
 	selectedOrgId,
 	selectedModelId,
 	selectedModelLabel,
@@ -437,11 +438,20 @@ export function ChatConversation({
 	}, [isRecording, isStartingRecording, startRecording, stopRecording]);
 
 	return (
-		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+		<main
+			className="flex min-h-0 flex-1 flex-col overflow-hidden"
+			style={{ backgroundColor: theme.canvasBackground }}
+		>
 			<ScrollArea className="flex-1 overscroll-contain" ref={scrollAreaRef}>
 				<div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
 					{isRecording ? (
-						<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
+						<div
+							className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border px-4 py-3 shadow-sm backdrop-blur"
+							style={{
+								borderColor: theme.composerBorder,
+								backgroundColor: `${theme.composerBackground}eb`,
+							}}
+						>
 							<div className="flex items-center gap-3">
 								<button
 									type="button"
@@ -478,7 +488,7 @@ export function ChatConversation({
 						modelDisplayNameById={modelDisplayNameById}
 						modelOrgIdById={modelOrgIdById}
 						modelLinkById={modelLinkById}
-						accentColor={accentColor}
+						theme={theme}
 						onEditMessage={onEditMessage}
 						onRetryAssistant={onRetryAssistant}
 						onBranchAssistant={onBranchAssistant}
@@ -488,6 +498,7 @@ export function ChatConversation({
 				</div>
 			</ScrollArea>
 			<ChatConversationComposer
+				theme={theme}
 				sendGateType={sendGateType}
 				isSending={isSending}
 				composer={composer}

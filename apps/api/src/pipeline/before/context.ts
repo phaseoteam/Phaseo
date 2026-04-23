@@ -503,11 +503,38 @@ export async function fetchGatewayContext(args: {
                 api_key_id: args.apiKeyId,
             };
 
-            const { data, error } = await supabase.rpc(
-                "gateway_fetch_request_context_with_reservations",
-                rpcArgs,
-            );
+            const callPrimary = () =>
+                supabase.rpc(
+                    "gateway_fetch_request_context_with_reservations",
+                    rpcArgs,
+                );
+            const callFallback = () =>
+                supabase.rpc(
+                    "gateway_fetch_request_context",
+                    rpcArgs,
+                );
+
+            let { data, error } = await callPrimary();
+            if (error) {
+                const message = String(error.message ?? "");
+                const missingReservationsRpc =
+                    message.includes(
+                        "gateway_fetch_request_context_with_reservations",
+                    ) &&
+                    message.toLowerCase().includes("schema cache");
+                if (missingReservationsRpc) {
+                    console.warn(
+                        "[context] reservations rpc unavailable; falling back to base context rpc",
+                        { workspaceId: args.workspaceId, endpoint: endpointCapability },
+                    );
+                    const fallback = await callFallback();
+                    data = fallback.data;
+                    error = fallback.error;
+                }
+            }
+
             if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
+
             const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
             if (!payload) throw new Error("gateway_context_rpc_empty");
 

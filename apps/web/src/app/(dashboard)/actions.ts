@@ -14,7 +14,7 @@ export async function SwapTeam(workspaceId: string) {
         const { supabase, user } = await requireAuthenticatedUser();
         await requireWorkspaceMembership(supabase, user.id, workspaceId);
         const cookieStore: any = await cookies();
-        await cookieStore.set({
+        cookieStore.set({
             name: 'activeWorkspaceId',
             value: workspaceId,
             httpOnly: true,
@@ -25,7 +25,15 @@ export async function SwapTeam(workspaceId: string) {
         });
 
         return { ok: true };
-    } catch {
-        return { ok: false, error: 'failed to set cookie' };
+    } catch (error) {
+        const reason =
+            error instanceof Error && error.message
+                ? error.message
+                : "failed to set cookie";
+        console.warn("[workspace-switch] failed", {
+            workspaceId,
+            reason,
+        });
+        return { ok: false, error: reason };
     }
 }

@@ -15,6 +15,8 @@ import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAn
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 import { Suspense } from "react";
+import { getServerStatsigBootstrap } from "@/lib/statsig/server";
+import MyStatsig from "./my-statsig";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -55,11 +57,13 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
+	const statsigBootstrap = await getServerStatsigBootstrap();
+
 	return (
 		<html lang="en" className="h-full" suppressHydrationWarning>
 			{/* <head>
@@ -73,24 +77,53 @@ export default function RootLayout({
 					"min-h-screen h-full bg-background antialiased"
 				)}
 			>
-				<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
-				<ConsoleEasterEgg />
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="system"
-					enableSystem
-					disableTransitionOnChange
-				>
-					<TooltipProvider>
-						<Suspense fallback={null}>
-							<SiteNoticeSlot />
-						</Suspense>
-						<NuqsAdapter>{children}</NuqsAdapter>
-						<TailwindIndicator />
-					</TooltipProvider>
-				</ThemeProvider>
-				<Toaster richColors />
-				<DeferredVercelAnalytics />
+				{statsigBootstrap ? (
+					<MyStatsig
+						clientKey={statsigBootstrap.clientKey}
+						user={statsigBootstrap.user}
+						values={statsigBootstrap.values}
+					>
+						<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
+						<ConsoleEasterEgg />
+						<ThemeProvider
+							attribute="class"
+							defaultTheme="system"
+							enableSystem
+							disableTransitionOnChange
+						>
+							<TooltipProvider>
+								<Suspense fallback={null}>
+									<SiteNoticeSlot />
+								</Suspense>
+								<NuqsAdapter>{children}</NuqsAdapter>
+								<TailwindIndicator />
+							</TooltipProvider>
+						</ThemeProvider>
+						<Toaster richColors />
+						<DeferredVercelAnalytics />
+					</MyStatsig>
+				) : (
+					<>
+						<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
+						<ConsoleEasterEgg />
+						<ThemeProvider
+							attribute="class"
+							defaultTheme="system"
+							enableSystem
+							disableTransitionOnChange
+						>
+							<TooltipProvider>
+								<Suspense fallback={null}>
+									<SiteNoticeSlot />
+								</Suspense>
+								<NuqsAdapter>{children}</NuqsAdapter>
+								<TailwindIndicator />
+							</TooltipProvider>
+						</ThemeProvider>
+						<Toaster richColors />
+						<DeferredVercelAnalytics />
+					</>
+				)}
 			</body>
 		</html>
 	);

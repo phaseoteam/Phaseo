@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
 	requireActingUser,
@@ -286,7 +286,7 @@ export async function forkPresetAction(sourcePresetId: string) {
 		throw new Error("AUTH_REQUIRED");
 	}
 
-	const workspaceId = await getWorkspaceIdFromCookie();
+	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
 	if (!workspaceId) {
 		throw new Error("TEAM_REQUIRED");
 	}
