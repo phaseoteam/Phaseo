@@ -514,6 +514,12 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     const rules = p.pricing_rules.filter(
         (r) => (r.pricing_plan || "standard") === plan
     );
+    const listRules =
+        plan === "standard"
+            ? p.pricing_rules.filter(
+                  (r) => (r.pricing_plan || "standard") === "list"
+              )
+            : [];
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (pm.id && pm.endpoint) endpointByKey.set(pm.id, pm.endpoint);
@@ -539,6 +545,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         dedupeKey: string;
     };
     const grouped = new Map<string, any[]>();
+    const listRulesByComparableKey = new Map<string, any[]>();
     const toMs = (value?: string | null) => {
         if (!value) return null;
         const ms = new Date(value).getTime();
@@ -561,6 +568,11 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
         return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
     };
+    const comparableRuleKey = (r: any) => {
+        const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
+        const matchKey = JSON.stringify(r.match ?? []);
+        return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
+    };
     const currentRulesBySignature = new Map<string, any[]>();
     for (const r of rules as any[]) {
         if (!isCurrentRule(r)) continue;
@@ -576,6 +588,13 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
         if (!grouped.has(groupKey)) grouped.set(groupKey, []);
         grouped.get(groupKey)!.push(r);
+    }
+    for (const r of listRules as any[]) {
+        if (!isCurrentRule(r)) continue;
+        const key = comparableRuleKey(r);
+        const list = listRulesByComparableKey.get(key) ?? [];
+        list.push(r);
+        listRulesByComparableKey.set(key, list);
     }
 
     const entries: RuleEntry[] = [];
@@ -643,6 +662,18 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 if (r.priority !== current.priority) return false;
                 const from = toMs(r.effective_from) ?? -Infinity;
                 return from < currentFrom;
+            });
+        }
+        if (!baseCandidates.length && plan === "standard") {
+            baseCandidates = (
+                listRulesByComparableKey.get(comparableRuleKey(current)) ?? []
+            ).filter((candidate) => {
+                const candidatePrice = Number(candidate.price_per_unit ?? Number.NaN);
+                return (
+                    Number.isFinite(candidatePrice) &&
+                    Number.isFinite(currentPrice) &&
+                    candidatePrice > currentPrice
+                );
             });
         }
 
