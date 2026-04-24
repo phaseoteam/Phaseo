@@ -23,7 +23,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -43,7 +43,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -63,7 +63,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -83,7 +83,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -103,7 +103,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -123,7 +123,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -143,7 +143,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -163,7 +163,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -183,7 +183,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -203,7 +203,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -223,7 +223,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -243,7 +243,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -263,7 +263,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -283,7 +283,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -303,67 +303,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 25,
-      "currency": "USD",
-      "pricing_plan": "priority",
-      "note": "High Context",
-      "match": [
-        {
-          "path": "input_tokens",
-          "op": "gte",
-          "or_group": 1,
-          "and_index": 1,
-          "value": 272000
-        }
-      ],
-      "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 2.5,
-      "currency": "USD",
-      "pricing_plan": "priority",
-      "note": "High Context",
-      "match": [
-        {
-          "path": "input_tokens",
-          "op": "gte",
-          "or_group": 1,
-          "and_index": 1,
-          "value": 272000
-        }
-      ],
-      "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 112.5,
-      "currency": "USD",
-      "pricing_plan": "priority",
-      "note": "High Context",
-      "match": [
-        {
-          "path": "input_tokens",
-          "op": "gte",
-          "or_group": 1,
-          "and_index": 1,
-          "value": 272000
-        }
-      ],
-      "priority": 100,
-      "effective_from": "2026-04-23T00:00:00"
+      "effective_from": "2026-04-24T00:00:00"
     }
   ]
 }
