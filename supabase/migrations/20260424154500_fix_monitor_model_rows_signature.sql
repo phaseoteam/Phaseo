@@ -64,6 +64,7 @@ as $$
       gr.latency_ms::numeric as latency_ms
     from public.gateway_requests gr
     where gr.created_at >= now() - interval '7 days'
+      and gr.success is true
   ),
   weekly_model_usage as (
     select

@@ -1,7 +1,11 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
 import { featureOrder } from "@/lib/config/featureLabels";
-import type { MonitorModelData, MonitorModelFilters, GatewayProvider } from "./types";
+import type {
+	GatewayProvider,
+	MonitorModelData,
+	MonitorModelFilters,
+} from "@/lib/fetchers/models/table-view/types";
 import {
 	parseModalities,
 	extractFeatureKeys,
@@ -78,6 +82,8 @@ export async function getMonitorModels(
 	cacheLife("hours");
 	cacheTag("models:monitor");
 	cacheTag("monitor-models");
+	cacheTag("data:data_api_model_aliases");
+	cacheTag("data:data_api_provider_model_capabilities");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:data_api_pricing_rules");
 	cacheTag("data:models");

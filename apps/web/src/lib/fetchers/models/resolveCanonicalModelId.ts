@@ -204,8 +204,14 @@ async function resolveCanonicalModelIdUncached(
 				.maybeSingle(),
 			supabase
 				.from("data_api_provider_models")
-				.select("model_id")
-				.eq("api_model_id", modelId)
+				.select("model_id, api_model_id, provider_api_model_id, provider_model_slug")
+				.or(
+					[
+						`api_model_id.eq.${modelId}`,
+						`provider_api_model_id.eq.${modelId}`,
+						`provider_model_slug.eq.${modelId}`,
+					].join(","),
+				)
 				.not("model_id", "is", null)
 				.limit(1),
 		]);
@@ -245,8 +251,9 @@ async function resolveCanonicalModelIdUncached(
 		return buildResult(modelId, "api_model");
 	}
 
-	if ((providerByApiRes.data?.length ?? 0) > 0) {
-		return buildResult(modelId, "provider_mapping");
+	const providerMappingCandidate = normalizeId(providerByApiRes.data?.[0]?.model_id);
+	if (providerMappingCandidate) {
+		return buildResult(providerMappingCandidate, "provider_mapping");
 	}
 
 	return {
