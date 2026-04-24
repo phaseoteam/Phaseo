@@ -2939,11 +2939,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "disabled",
+          "params": []
+        }
     ]
   },
   {
@@ -3192,11 +3192,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "disabled",
+          "params": []
+        }
     ]
   },
   {
@@ -3317,11 +3317,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "coming_soon",
+          "params": []
+        }
     ]
   },
   {
@@ -3442,11 +3442,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "coming_soon",
+          "params": []
+        }
     ]
   },
   {
