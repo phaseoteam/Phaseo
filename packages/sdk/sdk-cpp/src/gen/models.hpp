@@ -455,6 +455,8 @@ struct KeyInvalidateResponse {
 	std::any ok;
 };
 
+using KnownModelId = std::any;
+
 struct ListFilesResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	std::string object;

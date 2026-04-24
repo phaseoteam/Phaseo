@@ -28,8 +28,9 @@ import * as ops from "./oapi-gen/client/index.js";
 import { Client } from "./runtime/client.js";
 import { TelemetryCapture, extractChatMetadata, extractImageMetadata } from "./devtools/telemetry.js";
 import type { DevToolsConfig } from "./devtools/core.js";
+import type { KnownModelId as GeneratedKnownModelId } from "./modelIds.js";
 
-export type KnownModelId = OapiModelId;
+export type KnownModelId = GeneratedKnownModelId;
 export type ModelIdLiteral = KnownModelId;
 /**
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).

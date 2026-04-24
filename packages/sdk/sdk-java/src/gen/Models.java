@@ -454,6 +454,9 @@ public final class Models {
 		public Object ok;
 	}
 
+	public static class KnownModelId {
+	}
+
 	public static class ListFilesResponse {
 		public java.util.List<Object> data;
 		public String object;

@@ -1093,6 +1093,8 @@ public sealed class KeyInvalidateResponse
 
 }
 
+public sealed class KnownModelId { }
+
 public sealed class ListFilesResponse
 {
 	[JsonPropertyName("data")]

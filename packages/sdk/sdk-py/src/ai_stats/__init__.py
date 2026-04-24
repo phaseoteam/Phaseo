@@ -170,7 +170,7 @@ class _VideosResource:
         return self._parent.list_video_models()
 
 
-KnownModelId: TypeAlias = models.ModelId
+KnownModelId: TypeAlias = models.KnownModelId
 ModelId: TypeAlias = Union[KnownModelId, str]
 AIStatsLogLevel: TypeAlias = Literal["info", "warn", "error"]
 AIStatsLogger: TypeAlias = Callable[[AIStatsLogLevel, str, dict[str, Any]], None]
