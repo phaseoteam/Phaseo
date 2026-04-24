@@ -4598,12 +4598,7 @@ components:
       description: >-
         Model identifier. This is a runtime string so newly released models can
         be used without waiting for an SDK update.
-      examples:
-        - ai21/jamba-large-1.7
-        - ai21/jamba-mini-2
-        - aion-labs/aion-1.0
-        - aion-labs/aion-1.0-mini
-        - aion-labs/aion-2.0
+      example: ai21/jamba-large-1.7
     OrganisationId:
       type: string
       description: Organisation identifier.

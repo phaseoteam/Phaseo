@@ -128,7 +128,7 @@ function main() {
     type: "string",
     description:
       "Model identifier. This is a runtime string so newly released models can be used without waiting for an SDK update.",
-    examples: callableModelIds.slice(0, 5),
+    example: callableModelIds[0] ?? "openai/gpt-5",
   };
 
   schemas.KnownModelId = {
