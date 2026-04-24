@@ -34,6 +34,10 @@ export interface MonitorModelData {
     tier?: string; // pricing tier
     added?: string;
     retired?: string; // When this model is retired
+    weeklyTokensModel?: number | null;
+    weeklyTokensModelProvider?: number | null;
+    weeklyThroughputModel?: number | null;
+    weeklyLatencyModel?: number | null;
 }
 
 export interface MonitorModelFilters {

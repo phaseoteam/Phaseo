@@ -4,11 +4,9 @@ import { cacheLife, cacheTag } from "next/cache";
 
 type ResolveModelIdSource =
 	| "direct"
-	| "redirect"
 	| "alias"
 	| "api_model"
 	| "provider_mapping"
-	| "legacy_internal_mapping"
 	| "unresolved";
 
 export type ResolveCanonicalModelIdResult = {
@@ -191,13 +189,8 @@ async function resolveCanonicalModelIdUncached(
 		return buildResult(modelId, "direct", modelId);
 	}
 
-	const [redirectRes, aliasRes, apiModelRes, providerByApiRes, providerByModelRes] =
+	const [aliasRes, apiModelRes, providerByApiRes] =
 		await Promise.all([
-			supabase
-				.from("data_model_id_redirects")
-				.select("model_id")
-				.eq("legacy_model_id", modelId)
-				.maybeSingle(),
 			supabase
 				.from("data_api_model_aliases")
 				.select("api_model_id")
@@ -215,17 +208,8 @@ async function resolveCanonicalModelIdUncached(
 				.eq("api_model_id", modelId)
 				.not("model_id", "is", null)
 				.limit(1),
-			supabase
-				.from("data_api_provider_models")
-				.select("api_model_id")
-				.eq("model_id", modelId)
-				.not("api_model_id", "is", null)
-				.limit(1),
 		]);
 
-	if (redirectRes.error) {
-		warnIfUnexpectedTableError("redirect lookup", modelId, redirectRes.error);
-	}
 	if (aliasRes.error) {
 		warnIfUnexpectedTableError("alias lookup", modelId, aliasRes.error);
 	}
@@ -238,38 +222,6 @@ async function resolveCanonicalModelIdUncached(
 			modelId,
 			providerByApiRes.error,
 		);
-	}
-	if (providerByModelRes.error) {
-		warnIfUnexpectedTableError(
-			"provider mapping (by internal model) lookup",
-			modelId,
-			providerByModelRes.error,
-		);
-	}
-
-	const redirectCandidate = normalizeId(redirectRes.data?.model_id);
-	if (redirectCandidate) {
-		const [
-			mappedApiModelId,
-			redirectCandidateVisible,
-			redirectCandidateIsApiModel,
-		] = await Promise.all([
-			getMappedApiModelIdForInternalModel(supabase, redirectCandidate),
-			getVisibleModelIds(supabase, [redirectCandidate], includeHidden),
-			redirectCandidate === modelId
-				? Promise.resolve(normalizeId(apiModelRes.data?.api_model_id) === modelId)
-				: apiModelExists(supabase, redirectCandidate),
-		]);
-
-		if (mappedApiModelId) {
-			return buildResult(mappedApiModelId, "redirect");
-		}
-		if (redirectCandidateIsApiModel) {
-			return buildResult(redirectCandidate, "redirect");
-		}
-		if (redirectCandidateVisible.has(redirectCandidate)) {
-			return buildResult(redirectCandidate, "redirect", redirectCandidate);
-		}
 	}
 
 	const aliasCandidate = normalizeId(aliasRes.data?.api_model_id);
@@ -297,13 +249,6 @@ async function resolveCanonicalModelIdUncached(
 		return buildResult(modelId, "provider_mapping");
 	}
 
-	const mappedApiModelId = normalizeId(
-		providerByModelRes.data?.[0]?.api_model_id,
-	);
-	if (mappedApiModelId) {
-		return buildResult(mappedApiModelId, "legacy_internal_mapping");
-	}
-
 	return {
 		requestedModelId: modelId,
 		canonicalModelId: null,
@@ -326,7 +271,6 @@ async function resolveCanonicalModelIdCached(
 	cacheTag("data:models");
 	cacheTag("data:model_aliases");
 	cacheTag("data:data_api_provider_models");
-	cacheTag("data:data_model_id_redirects");
 	cacheTag("data:data_api_models");
 	cacheTag(`model:canonical:${requestedModelId}`);
 

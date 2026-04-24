@@ -2,10 +2,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import ModelsTableDisplay from "@/components/(data)/models/Models/ModelsTableDisplay";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
-import {
-	getWeeklyModelProviderTokens,
-	type WeeklyModelProviderTokens,
-} from "@/lib/fetchers/rankings/getRankingsData";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = {
@@ -23,7 +19,7 @@ function normalizeRankingModelKey(value: string): string {
 }
 
 function buildWeeklyTokensMaps(
-	rows: WeeklyModelProviderTokens[],
+	rows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
 ): {
 	weeklyTokensByModel: Record<string, number>;
 	weeklyTokensByModelProvider: Record<string, number>;
@@ -32,19 +28,20 @@ function buildWeeklyTokensMaps(
 	const tokensByModelProvider = new Map<string, number>();
 
 	for (const row of rows) {
-		const key = normalizeRankingModelKey(row.model_id);
+		const key = normalizeRankingModelKey(row.modelId);
 		if (!key || key === "unknown" || key === "other") continue;
-		const providerKey = normalizeRankingModelKey(row.provider);
-		const tokens = Number(row.total_tokens ?? 0);
-		if (!Number.isFinite(tokens) || tokens < 0) continue;
+		const providerKey = normalizeRankingModelKey(row.provider.id);
+		const modelTokens = Number(row.weeklyTokensModel ?? 0);
+		const providerTokens = Number(row.weeklyTokensModelProvider ?? 0);
+		if (Number.isFinite(modelTokens) && modelTokens >= 0) {
+			const existing = tokensByModel.get(key) ?? 0;
+			tokensByModel.set(key, Math.max(existing, modelTokens));
+		}
 
-		tokensByModel.set(key, (tokensByModel.get(key) ?? 0) + tokens);
-		if (providerKey) {
+		if (providerKey && Number.isFinite(providerTokens) && providerTokens >= 0) {
 			const providerCompositeKey = `${key}::${providerKey}`;
-			tokensByModelProvider.set(
-				providerCompositeKey,
-				(tokensByModelProvider.get(providerCompositeKey) ?? 0) + tokens,
-			);
+			const existing = tokensByModelProvider.get(providerCompositeKey) ?? 0;
+			tokensByModelProvider.set(providerCompositeKey, Math.max(existing, providerTokens));
 		}
 	}
 
@@ -58,10 +55,7 @@ export default async function ModelsTablePage() {
 	// Ensure request-scoped rendering before time-dependent calculations.
 	await headers();
 	const includeHidden = await resolveIncludeHidden();
-	const [monitorResult, weeklyUsageResult] = await Promise.all([
-		getMonitorModels({}, includeHidden),
-		getWeeklyModelProviderTokens(),
-	]);
+	const monitorResult = await getMonitorModels({}, includeHidden);
 	const {
 		models: modelData,
 		allTiers,
@@ -71,7 +65,7 @@ export default async function ModelsTablePage() {
 		allStatuses,
 	} = monitorResult;
 	const { weeklyTokensByModel, weeklyTokensByModelProvider } =
-		buildWeeklyTokensMaps(weeklyUsageResult.data ?? []);
+		buildWeeklyTokensMaps(modelData);
 
 	return (
 		<ModelsTableDisplay
