@@ -454,6 +454,8 @@ async function attemptProviderWithIR(
 		t0 = performance.now();
 
 		ctx.meta.upstreamStartMs = Date.now();
+		delete (ctx.meta as Record<string, unknown>).latency_ms;
+		delete (ctx.meta as Record<string, unknown>).generation_ms;
 		const executor = resolveProviderExecutor(candidate.providerId, ctx.capability);
 		if (!executor) {
 			attemptErrors.push({
@@ -694,12 +696,13 @@ async function attemptProviderWithIR(
 			message,
 		});
 		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
+		const failureLatencyMs = Math.round(performance.now() - t0);
 		await onCallEnd(ctx.endpoint, {
 			provider: candidate.providerId,
 			model: baseModel,
 			ok: false,
-			latency_ms: ctx.meta.latency_ms ?? Math.round(performance.now() - t0),
-			generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
+			latency_ms: ctx.meta.latency_ms ?? failureLatencyMs,
+			generation_ms: ctx.meta.generation_ms ?? failureLatencyMs,
 		});
 		if (isProbe) {
 			await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, false);

@@ -68,6 +68,10 @@ export async function attemptProvider(
         ...ctx.meta,
         stream: ctx.meta.stream,
     } as ProviderExecuteArgs["meta"];
+    delete (meta as Record<string, unknown>).latency_ms;
+    delete (meta as Record<string, unknown>).generation_ms;
+    delete (ctx.meta as Record<string, unknown>).latency_ms;
+    delete (ctx.meta as Record<string, unknown>).generation_ms;
 
     await onCallStart(ctx.endpoint, adapter.name, baseModel);
 
@@ -115,11 +119,7 @@ export async function attemptProvider(
             ctx.meta.generation_ms = meta.generation_ms;
         }
 
-        if (typeof latencyMs === "number") {
-            ctx.meta.latency_ms = latencyMs;
-        } else if (typeof ctx.meta.latency_ms !== "number") {
-            ctx.meta.latency_ms = generationMs;
-        }
+        ctx.meta.latency_ms = typeof latencyMs === "number" ? latencyMs : generationMs;
 
         // Record adapter roundtrip if not already recorded (first adapter)
         if (timing.timer.snapshot().adapter_roundtrip_ms === undefined) {
@@ -241,11 +241,7 @@ export async function attemptProvider(
         if (!ctx.stream) {
             ctx.meta.generation_ms = generationMs;
         }
-        if (typeof latencyMs === "number") {
-            ctx.meta.latency_ms = latencyMs;
-        } else if (typeof ctx.meta.latency_ms !== "number") {
-            ctx.meta.latency_ms = generationMs;
-        }
+        ctx.meta.latency_ms = typeof latencyMs === "number" ? latencyMs : generationMs;
 
         await onCallEnd(ctx.endpoint, {
             provider: adapter.name,
