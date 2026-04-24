@@ -78,12 +78,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         downstreamClosed = true;
     });
 
-    const resolveRequestStartMs = () => {
-        if (typeof ctx.meta.upstreamStartMs === "number") return ctx.meta.upstreamStartMs;
-        if (typeof ctx.meta.startedAtMs === "number") return ctx.meta.startedAtMs;
-        return null;
-    };
-
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
     const writeJson = async (obj: unknown, eventName?: string | null) => {
         if (downstreamClosed) return;
@@ -112,11 +106,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             });
         }
 
-        if (typeof ctx.meta.generation_ms !== "number") {
-            const requestStartMs = resolveRequestStartMs();
-            ctx.meta.generation_ms = requestStartMs !== null
-                ? Math.max(0, Math.round(Date.now() - requestStartMs))
-                : Math.max(0, Math.round(performance.now() - tStart));
+        if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
+            ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
         }
         dispatchBackground(
             Promise.resolve(
@@ -193,14 +184,18 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (firstFrameAt === null) {
                         firstFrameAt = performance.now();
                         firstFrameAtMs = Date.now();
-                        // For streamed responses, latency means upstream request start -> first frame
-                        // emitted back to the client. Provider adapters may record earlier upstream
-                        // timings, so overwrite here with the actual downstream first-frame timing.
-                        const requestStartMs = resolveRequestStartMs();
-                        if (requestStartMs !== null) {
+                        // For streamed responses, latency must mean request start -> first frame returned
+                        // by the gateway. Provider adapters may record first upstream bytes earlier than
+                        // the first downstream frame we actually emit, so overwrite here deliberately.
+                        if (typeof ctx.meta.startedAtMs === "number") {
                             ctx.meta.latency_ms = Math.max(
                                 0,
-                                Math.round(firstFrameAtMs - requestStartMs),
+                                Math.round(firstFrameAtMs - ctx.meta.startedAtMs),
+                            );
+                        } else if (typeof ctx.meta.upstreamStartMs === "number") {
+                            ctx.meta.latency_ms = Math.max(
+                                0,
+                                Math.round(firstFrameAtMs - ctx.meta.upstreamStartMs),
                             );
                         } else {
                             ctx.meta.latency_ms = Math.max(0, Math.round(firstFrameAt - tStart));
@@ -261,11 +256,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
                     if (isFinalSnapshot) {
                         sawFinalUsage = true;
-                        if (typeof ctx.meta.generation_ms !== "number") {
-                            const requestStartMs = resolveRequestStartMs();
-                            ctx.meta.generation_ms = requestStartMs !== null
-                                ? Math.max(0, Math.round(Date.now() - requestStartMs))
-                                : Math.max(0, Math.round(performance.now() - tStart));
+                        if (typeof ctx.meta.generation_ms !== "number" && firstFrameAt !== null) {
+                            ctx.meta.generation_ms = Math.max(
+                                0,
+                                Math.round(performance.now() - firstFrameAt),
+                            );
                         }
                     }
 
