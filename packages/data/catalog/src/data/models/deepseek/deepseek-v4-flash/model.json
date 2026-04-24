@@ -65,7 +65,7 @@
       "benchmark_id": "mmlu-pro",
       "score": 86.4,
       "is_self_reported": true,
-      "other_info": "Best reported mode. Non-think: 83.0, High: 86.4, Max: 86.2",
+      "other_info": "Best reported mode. Non-think: 83.0, High: 86.4, Max: 86.4",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
       "rank": null
     },

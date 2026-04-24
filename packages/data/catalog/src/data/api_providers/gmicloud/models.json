@@ -152,7 +152,7 @@
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
     "is_active_gateway": true,
-    "quantization_scheme": "fp8",
+    "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 1048576,

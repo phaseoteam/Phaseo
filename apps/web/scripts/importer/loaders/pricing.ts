@@ -220,7 +220,7 @@ export async function loadPricing(
         for (const capabilityState of capabilities.values()) {
             if (!capabilityState.unchangedCandidates.length) continue;
 
-            const existingModelKeys = new Set<string>();
+            const existingRuleCounts = new Map<string, number>();
             for (const group of chunk(
                 capabilityState.unchangedCandidates.map((candidate) => candidate.model_key),
                 500
@@ -235,13 +235,18 @@ export async function loadPricing(
 
                 for (const row of rows) {
                     if (typeof row?.model_key === "string" && row.model_key) {
-                        existingModelKeys.add(row.model_key);
+                        existingRuleCounts.set(
+                            row.model_key,
+                            (existingRuleCounts.get(row.model_key) ?? 0) + 1
+                        );
                     }
                 }
             }
 
             for (const candidate of capabilityState.unchangedCandidates) {
-                if (existingModelKeys.has(candidate.model_key)) continue;
+                const existingCount = existingRuleCounts.get(candidate.model_key) ?? 0;
+                const expectedCount = candidate.rows.length;
+                if (existingCount === expectedCount) continue;
                 capabilityState.ruleReplacements.push(candidate);
                 hasChanges = true;
                 queuedModelKeys += 1;

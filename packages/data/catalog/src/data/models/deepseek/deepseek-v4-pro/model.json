@@ -369,7 +369,7 @@
       "benchmark_id": "scale-mcp-atlas",
       "score": 74.2,
       "is_self_reported": true,
-      "other_info": "MCPAtlas. Best reported mode. Non-think: 69.4, High: 74.2, Max: 73.6",
+      "other_info": "MCPAtlas. Best reported mode. Non-think: 69.4, High: 74.2, Max: 74.2",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
       "rank": null
     },
@@ -386,7 +386,7 @@
       "score": 51.8,
       "is_self_reported": true,
       "other_info": "Best reported mode. Non-think: 46.3, High: 49.0, Max: 51.8",
-      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek_V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
       "rank": null
     }
   ]
