@@ -590,9 +590,13 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale
     DEEPSEEK_DEEPSEEK_V3_2_SPECIALE: Final[str] = "deepseek/deepseek-v3.2-speciale"
 
-    # Model ID: deepseek/deepseek-v4
-    # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4
-    DEEPSEEK_DEEPSEEK_V4: Final[str] = "deepseek/deepseek-v4"
+    # Model ID: deepseek/deepseek-v4-flash
+    # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash
+    DEEPSEEK_DEEPSEEK_V4_FLASH: Final[str] = "deepseek/deepseek-v4-flash"
+
+    # Model ID: deepseek/deepseek-v4-pro
+    # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
+    DEEPSEEK_DEEPSEEK_V4_PRO: Final[str] = "deepseek/deepseek-v4-pro"
 
     # Model ID: deepseek/deepseek-vl2
     # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2

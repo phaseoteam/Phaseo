@@ -442,9 +442,12 @@ const (
 	// Model ID: deepseek/deepseek-v3.2-speciale
 	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale
 	ModelIDDeepseekDeepseekV32Speciale gen.ModelId = "deepseek/deepseek-v3.2-speciale"
-	// Model ID: deepseek/deepseek-v4
-	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4
-	ModelIDDeepseekDeepseekV4 gen.ModelId = "deepseek/deepseek-v4"
+	// Model ID: deepseek/deepseek-v4-flash
+	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash
+	ModelIDDeepseekDeepseekV4Flash gen.ModelId = "deepseek/deepseek-v4-flash"
+	// Model ID: deepseek/deepseek-v4-pro
+	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
+	ModelIDDeepseekDeepseekV4Pro gen.ModelId = "deepseek/deepseek-v4-pro"
 	// Model ID: deepseek/deepseek-vl2
 	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2
 	ModelIDDeepseekDeepseekVl2 gen.ModelId = "deepseek/deepseek-vl2"
@@ -2873,7 +2876,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDDeepseekDeepseekV32,
 	ModelIDDeepseekDeepseekV32Exp,
 	ModelIDDeepseekDeepseekV32Speciale,
-	ModelIDDeepseekDeepseekV4,
+	ModelIDDeepseekDeepseekV4Flash,
+	ModelIDDeepseekDeepseekV4Pro,
 	ModelIDDeepseekDeepseekVl2,
 	ModelIDDeepseekDeepseekVl2Small,
 	ModelIDDeepseekDeepseekVl2Tiny,
