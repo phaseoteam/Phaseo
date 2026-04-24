@@ -386,5 +386,7 @@ $$;
 comment on function public.get_usage_tokens_weekly_model_provider(timestamptz) is
   'Aggregates weekly model/provider usage directly from gateway_requests without relying on removed rollup tables.';
 
-grant execute on function public.get_monitor_model_rows(boolean) to authenticated, service_role;
-grant execute on function public.get_usage_tokens_weekly_model_provider(timestamptz) to authenticated, service_role;
+revoke execute on function public.get_monitor_model_rows(boolean) from authenticated;
+revoke execute on function public.get_usage_tokens_weekly_model_provider(timestamptz) from authenticated;
+grant execute on function public.get_monitor_model_rows(boolean) to service_role;
+grant execute on function public.get_usage_tokens_weekly_model_provider(timestamptz) to service_role;

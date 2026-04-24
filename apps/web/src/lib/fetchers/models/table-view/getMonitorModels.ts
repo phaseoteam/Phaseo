@@ -79,7 +79,7 @@ export async function getMonitorModels(
 }> {
 	"use cache";
 
-	cacheLife("hours");
+	cacheLife("minutes");
 	cacheTag("models:monitor");
 	cacheTag("monitor-models");
 	cacheTag("data:data_api_model_aliases");
