@@ -3200,9 +3200,9 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5.5-20260423",
-    "provider_api_model_id": "openai:openai/gpt-5.5-20260423",
-    "provider_model_slug": "gpt-5.5-20260423",
+    "api_model_id": "openai/gpt-5.5",
+    "provider_api_model_id": "openai:openai/gpt-5.5",
+    "provider_model_slug": "gpt-5.5",
     "internal_model_id": "openai/gpt-5.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -3325,9 +3325,9 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5.5-pro-20260423",
-    "provider_api_model_id": "openai:openai/gpt-5.5-pro-20260423",
-    "provider_model_slug": "gpt-5.5-pro-20260423",
+    "api_model_id": "openai/gpt-5.5-pro",
+    "provider_api_model_id": "openai:openai/gpt-5.5-pro",
+    "provider_model_slug": "gpt-5.5-pro",
     "internal_model_id": "openai/gpt-5.5-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,

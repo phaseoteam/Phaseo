@@ -44,7 +44,7 @@
       "other_info": null
     },
     {
-      "model_id": "anthropic/claude-opus-4.5",
+      "model_id": "anthropic/claude-opus-4.7",
       "model_info": null,
       "rate_limit": "Requires extra usage in Claude Code",
       "other_info": null

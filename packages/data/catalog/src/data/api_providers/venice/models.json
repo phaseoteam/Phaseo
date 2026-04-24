@@ -141,7 +141,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "deranked_lvl1",
+        "status": "active",
         "params": []
       }
     ]
@@ -162,7 +162,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "deranked_lvl1",
+        "status": "active",
         "params": []
       }
     ]

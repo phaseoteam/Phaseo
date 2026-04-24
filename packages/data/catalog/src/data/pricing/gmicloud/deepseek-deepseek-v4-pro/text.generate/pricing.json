@@ -14,7 +14,7 @@
       "pricing_plan": "standard",
       "note": "20% promotional discount applied.",
       "match": [],
-      "priority": 100,
+      "priority": 200,
       "effective_from": "2026-04-24T00:00:00"
     },
     {
@@ -26,7 +26,7 @@
       "pricing_plan": "standard",
       "note": "20% promotional discount applied.",
       "match": [],
-      "priority": 100,
+      "priority": 200,
       "effective_from": "2026-04-24T00:00:00"
     },
     {
@@ -38,7 +38,7 @@
       "pricing_plan": "standard",
       "note": "20% promotional discount applied.",
       "match": [],
-      "priority": 100,
+      "priority": 200,
       "effective_from": "2026-04-24T00:00:00"
     },
     {
