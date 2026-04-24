@@ -37,12 +37,18 @@ function formatCountdown(iso?: string | null) {
 
 function renderDiscountFooter(basePrice?: number | null, discountEndsAt?: string | null) {
 	if (basePrice == null) return null;
+	const countdown = formatCountdown(discountEndsAt);
 	return (
 		<span
 			className="text-[11px] text-muted-foreground line-through tabular-nums"
-			title={discountEndsAt ? formatCountdown(discountEndsAt) ?? undefined : undefined}
+			aria-label={
+				countdown
+					? `List price ${fmtUSD(basePrice)}. ${countdown}.`
+					: `List price ${fmtUSD(basePrice)}.`
+			}
 		>
 			{fmtUSD(basePrice)}
+			{countdown ? <span className="sr-only"> {countdown}.</span> : null}
 		</span>
 	);
 }

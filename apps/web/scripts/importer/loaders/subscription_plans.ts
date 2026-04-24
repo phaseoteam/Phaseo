@@ -148,61 +148,6 @@ function stableRowSetSignature(rows: unknown[]): string[] {
     return rows.map(stableRowSignature).sort();
 }
 
-async function syncPlanScopedRows<
-    TKey extends string,
-    TRow extends {
-        plan_uuid: string;
-    } & Record<TKey, string>
->(
-    supa: ReturnType<typeof client>,
-    args: {
-        table:
-            | "data_subscription_plan_models"
-            | "data_subscription_plan_features";
-        planUuid: string;
-        keyColumn: TKey;
-        expectedRows: TRow[];
-        selectColumns: string;
-        upsertConflict: string;
-        upsertLabel: string;
-        selectLabel: string;
-        deleteLabel: string;
-    }
-): Promise<void> {
-    if (args.expectedRows.length > 0) {
-        assertOk(
-            await supa
-                .from(args.table)
-                .upsert(args.expectedRows, { onConflict: args.upsertConflict }),
-            args.upsertLabel
-        );
-    }
-
-    const existingRows = assertOk(
-        await supa
-            .from(args.table)
-            .select(args.selectColumns)
-            .eq("plan_uuid", args.planUuid),
-        args.selectLabel
-    ) as unknown as Array<Record<TKey, string>>;
-
-    const expectedKeys = new Set(
-        args.expectedRows.map((row) => String(row[args.keyColumn]))
-    );
-    for (const existingRow of existingRows) {
-        const keyValue = String(existingRow[args.keyColumn]);
-        if (expectedKeys.has(keyValue)) continue;
-        assertOk(
-            await supa
-                .from(args.table)
-                .delete()
-                .eq("plan_uuid", args.planUuid)
-                .eq(String(args.keyColumn), keyValue),
-            `${args.deleteLabel} (${args.keyColumn}=${keyValue})`
-        );
-    }
-}
-
 async function planStateMatchesDatabase(
     supa: ReturnType<typeof client>,
     planRow: {
@@ -479,34 +424,12 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
             }
 
             const res = await supa
-                .from("data_subscription_plans")
-                .upsert(planRow, { onConflict: "plan_uuid" });
+                .rpc("replace_subscription_plan_bundle", {
+                    p_plan: planRow,
+                    p_models: expectedModelRows,
+                    p_features: expectedFeatureRows,
+                });
             assertOk(res, "upsert data_subscription_plans");
-
-            // Upsert expected rows first, then remove stale extras, so transient
-            // failures cannot leave the plan temporarily empty.
-            await syncPlanScopedRows(supa, {
-                table: "data_subscription_plan_models",
-                planUuid: planRow.plan_uuid,
-                keyColumn: "model_id",
-                expectedRows: expectedModelRows,
-                selectColumns: "model_id",
-                upsertConflict: "plan_uuid,model_id",
-                upsertLabel: "upsert data_subscription_plan_models",
-                selectLabel: "select data_subscription_plan_models by plan_uuid",
-                deleteLabel: "delete stale data_subscription_plan_models row",
-            });
-            await syncPlanScopedRows(supa, {
-                table: "data_subscription_plan_features",
-                planUuid: planRow.plan_uuid,
-                keyColumn: "feature_name",
-                expectedRows: expectedFeatureRows,
-                selectColumns: "feature_name",
-                upsertConflict: "plan_uuid,feature_name",
-                upsertLabel: "upsert data_subscription_plan_features",
-                selectLabel: "select data_subscription_plan_features by plan_uuid",
-                deleteLabel: "delete stale data_subscription_plan_features row",
-            });
         }
     }
 
