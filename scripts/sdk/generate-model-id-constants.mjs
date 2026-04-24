@@ -12,9 +12,11 @@ const websiteBase = "https://ai-stats.phaseo.app";
 const specRaw = await fs.readFile(specPath, "utf8");
 const spec = yaml.load(specRaw);
 
-const modelIds = spec?.components?.schemas?.ModelId?.enum;
+const modelIds =
+	spec?.components?.schemas?.KnownModelId?.enum ??
+	spec?.components?.schemas?.ModelId?.enum;
 if (!Array.isArray(modelIds) || modelIds.length === 0) {
-	throw new Error("Could not find components.schemas.ModelId.enum in OpenAPI spec.");
+	throw new Error("Could not find components.schemas.KnownModelId.enum in OpenAPI spec.");
 }
 
 const legacyModelAliases = [
@@ -171,7 +173,7 @@ function renderHeader(commentPrefix) {
 }
 
 function renderTs(items, aliases) {
-	const lines = [renderHeader("//").trimEnd(), "", 'import type { ModelId } from "./oapi-gen/models/ModelId.js";', "", "/** Known model ID constants for editor autocomplete and hover docs. */", "export const ModelIds = {",];
+	const lines = [renderHeader("//").trimEnd(), "", "/** Known callable model ID constants for editor autocomplete and hover docs. */", "export const ModelIds = {",];
 
 	for (const item of items) {
 		lines.push(
@@ -186,10 +188,11 @@ function renderTs(items, aliases) {
 		);
 	}
 	lines.push(
-		"} as const satisfies Record<string, ModelId>;",
+		"} as const;",
 		"",
-		"export const MODEL_IDS = Object.freeze(Object.values(ModelIds)) as readonly ModelId[];",
-		"export const MODEL_ID_SET: ReadonlySet<ModelId> = new Set(MODEL_IDS);",
+		"export const MODEL_IDS = Object.freeze(Object.values(ModelIds));",
+		"export type KnownModelId = (typeof MODEL_IDS)[number];",
+		"export const MODEL_ID_SET: ReadonlySet<KnownModelId> = new Set(MODEL_IDS);",
 		""
 	);
 	return lines.join("\n");

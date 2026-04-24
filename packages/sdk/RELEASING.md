@@ -49,16 +49,26 @@ Release mode controls:
 
 ## SDK Semver Guardrails
 
-CI runs `changeset:validate-sdk-semver` to enforce model-surface semver:
+CI runs `changeset:validate-sdk-semver` as an informational guard around callable helper model IDs.
 
-- Model IDs added to typed/autocomplete surface -> at least **minor** for functional SDKs (TS/Python/Go/C#/Java/PHP/Ruby).
-- Model IDs removed from typed/autocomplete surface -> **major** for functional SDKs (TS/Python/Go/C#/Java/PHP/Ruby).
+Policy:
+
+- Catalog/discovery model changes do **not** drive SDK semver.
+- Callable helper constant snapshots (`ModelIds`, `MODEL_IDS`, etc.) do **not** require `minor`/`major` bumps when they change.
+- Auto-generated SDK releases for model/helper churn default to **patch**.
+- Real semver signals come from actual client API changes: endpoints, request/response shapes, signatures, packaging/runtime fixes.
+
+Model typing policy:
+
+- Request/invocation `ModelId` is runtime `string`.
+- SDK helper constants are generated from the current callable-on-gateway snapshot.
+- Public catalog APIs may expose additional known models that are not yet callable.
 
 General policy:
 
 - `patch`: backward-compatible bugfixes, metadata fixes, packaging fixes.
-- `minor`: backward-compatible feature additions (new optional params/endpoints/models).
-- `major`: breaking changes (removed/renamed params, removed typed model support, signature/shape breaks).
+- `minor`: backward-compatible feature additions (new optional params/endpoints).
+- `major`: breaking changes (removed/renamed params, signature/shape breaks).
 
 ## Manual Publish Workflows (Other SDKs)
 

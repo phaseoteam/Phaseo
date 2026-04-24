@@ -6,24 +6,31 @@ const RELEVANT_PATH_PREFIXES = [
   "apps/docs/openapi/v1/openapi.yaml",
   "packages/sdk/sdk-ts/src/oapi-gen/",
   "packages/sdk/sdk-ts/src/index.ts",
+  "packages/sdk/sdk-ts/src/modelIds.ts",
   "packages/sdk/sdk-py/src/gen/",
   "packages/sdk/sdk-py/src/ai_stats/__init__.py",
+  "packages/sdk/sdk-py/src/ai_stats/model_ids.py",
   "packages/sdk/sdk-go/src/gen/",
   "packages/sdk/sdk-go/index.go",
   "packages/sdk/sdk-go/go.mod",
+  "packages/sdk/sdk-go/model_ids.go",
   "packages/sdk/sdk-csharp/src/gen/",
   "packages/sdk/sdk-csharp/Client.cs",
   "packages/sdk/sdk-csharp/AIStats.Sdk.csproj",
+  "packages/sdk/sdk-csharp/ModelIds.cs",
   "packages/sdk/sdk-java/src/gen/",
   "packages/sdk/sdk-java/pom.xml",
+  "packages/sdk/sdk-java/src/ai/stats/sdk/ModelIds.java",
   "packages/sdk/sdk-php/src/gen/",
   "packages/sdk/sdk-php/src/index.php",
   "packages/sdk/sdk-php/composer.json",
+  "packages/sdk/sdk-php/src/ModelIds.php",
   "packages/sdk/sdk-ruby/lib/gen/",
   "packages/sdk/sdk-ruby/lib/index.rb",
   "packages/sdk/sdk-ruby/src/gen/",
   "packages/sdk/sdk-ruby/lib/ai_stats_sdk/version.rb",
   "packages/sdk/sdk-ruby/ai_stats_sdk.gemspec",
+  "packages/sdk/sdk-ruby/lib/ai_stats_sdk/model_ids.rb",
 ];
 const SDK_PACKAGES = [
   "@ai-stats/sdk",
@@ -77,27 +84,14 @@ function getDiff(base, head, filePath) {
   }
 }
 
-function extractModelIdsFromManifestDiff(diff) {
+function extractKnownModelIdsFromTsConstantsDiff(diff) {
   const added = new Set();
   const removed = new Set();
   for (const line of diff.split(/\r?\n/)) {
     if (line.startsWith("+++ ") || line.startsWith("--- ") || line.startsWith("@@")) continue;
-    let match = line.match(/^\+\s*"([^"]+\/[^"]+)"/);
+    let match = line.match(/^\+\s+[A-Z0-9_]+:\s+"([^"]+\/[^"]+)"/);
     if (match) added.add(match[1]);
-    match = line.match(/^\-\s*"([^"]+\/[^"]+)"/);
-    if (match) removed.add(match[1]);
-  }
-  return { added, removed };
-}
-
-function extractModelIdsFromTsUnionDiff(diff) {
-  const added = new Set();
-  const removed = new Set();
-  for (const line of diff.split(/\r?\n/)) {
-    if (line.startsWith("+++ ") || line.startsWith("--- ") || line.startsWith("@@")) continue;
-    let match = line.match(/^\+\s*\|\s*"([^"]+)"/);
-    if (match) added.add(match[1]);
-    match = line.match(/^\-\s*\|\s*"([^"]+)"/);
+    match = line.match(/^\-\s+[A-Z0-9_]+:\s+"([^"]+\/[^"]+)"/);
     if (match) removed.add(match[1]);
   }
   return { added, removed };
@@ -112,32 +106,22 @@ function mergeSets(...sets) {
 }
 
 function computeAutoBump(base, head) {
-  const manifestDiff = getDiff(base, head, "packages/data/catalog/src/data/manifest.json");
-  const tsUnionDiff = getDiff(base, head, "packages/sdk/sdk-ts/src/oapi-gen/models/ModelId.ts");
-  const manifestChange = extractModelIdsFromManifestDiff(manifestDiff);
-  const tsChange = extractModelIdsFromTsUnionDiff(tsUnionDiff);
-  const added = mergeSets(manifestChange.added, tsChange.added);
-  const removed = mergeSets(manifestChange.removed, tsChange.removed);
+  const helperDiff = getDiff(base, head, "packages/sdk/sdk-ts/src/modelIds.ts");
+  const helperChange = extractKnownModelIdsFromTsConstantsDiff(helperDiff);
+  const added = mergeSets(helperChange.added);
+  const removed = mergeSets(helperChange.removed);
 
-  if (removed.size > 0) {
-    const sample = Array.from(removed).slice(0, 6).join(", ");
+  if (added.size > 0 || removed.size > 0) {
+    const sample = Array.from(new Set([...added, ...removed])).slice(0, 6).join(", ");
     return {
-      bump: "major",
-      reason: `model IDs removed (${removed.size}) [${sample}]`,
-    };
-  }
-
-  if (added.size > 0) {
-    const sample = Array.from(added).slice(0, 6).join(", ");
-    return {
-      bump: "minor",
-      reason: `model IDs added (${added.size}) [${sample}]`,
+      bump: "patch",
+      reason: `callable helper model IDs changed (${added.size} added, ${removed.size} removed) [${sample}]`,
     };
   }
 
   return {
     bump: "patch",
-    reason: "sdk/openapi changes with no model-id surface changes",
+    reason: "sdk/openapi changes",
   };
 }
 

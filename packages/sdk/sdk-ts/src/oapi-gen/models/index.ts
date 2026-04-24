@@ -50,6 +50,7 @@ export type { ImagesGenerationRequest } from "./ImagesGenerationRequest.js";
 export type { ImagesGenerationResponse } from "./ImagesGenerationResponse.js";
 export type { InvalidRequestResponse } from "./InvalidRequestResponse.js";
 export type { KeyInvalidateResponse } from "./KeyInvalidateResponse.js";
+export type { KnownModelId } from "./KnownModelId.js";
 export type { ListFilesResponse } from "./ListFilesResponse.js";
 export type { ManagementKeyCreateRequest } from "./ManagementKeyCreateRequest.js";
 export type { ManagementKeyCreateResponse } from "./ManagementKeyCreateResponse.js";
