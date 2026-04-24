@@ -517,6 +517,12 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (pm.id && pm.endpoint) endpointByKey.set(pm.id, pm.endpoint);
+        if (pm.api_provider_id && pm.model_id && pm.endpoint) {
+            endpointByKey.set(
+                `${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`,
+                pm.endpoint
+            );
+        }
     }
 
     const out: ProviderSections = {
