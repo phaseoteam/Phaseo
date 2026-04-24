@@ -18,6 +18,12 @@ import {
 
 export type { MonitorModelData } from "./types";
 
+function toNullableNumber(value: unknown): number | null {
+	if (value === null || value === undefined) return null;
+	const numericValue = Number(value);
+	return Number.isFinite(numericValue) ? numericValue : null;
+}
+
 type MonitorModelRpcRow = {
 	model_id: string | null;
 	model_name: string | null;
@@ -232,22 +238,12 @@ export async function getMonitorModels(
 			retired: row.model_retirement_date
 				? new Date(row.model_retirement_date).toISOString().split("T")[0]
 				: undefined,
-			weeklyTokensModel: Number.isFinite(Number(row.weekly_tokens_model))
-				? Number(row.weekly_tokens_model)
-				: null,
-			weeklyTokensModelProvider: Number.isFinite(
-				Number(row.weekly_tokens_model_provider),
-			)
-				? Number(row.weekly_tokens_model_provider)
-				: null,
-			weeklyThroughputModel: Number.isFinite(
-				Number(row.weekly_throughput_model),
-			)
-				? Number(row.weekly_throughput_model)
-				: null,
-			weeklyLatencyModel: Number.isFinite(Number(row.weekly_latency_model))
-				? Number(row.weekly_latency_model)
-				: null,
+			weeklyTokensModel: toNullableNumber(row.weekly_tokens_model),
+			weeklyTokensModelProvider: toNullableNumber(
+				row.weekly_tokens_model_provider,
+			),
+			weeklyThroughputModel: toNullableNumber(row.weekly_throughput_model),
+			weeklyLatencyModel: toNullableNumber(row.weekly_latency_model),
 		};
 
 		allModels.push(monitorModel);
