@@ -670,6 +670,14 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2
     NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2: Final[str] = "nvidia/nvidia-nemotron-nano-9b-v2"
 
+    # Model ID: openai/babbage-002
+    # Model page: https://ai-stats.phaseo.app/models/openai/babbage-002
+    OPENAI_BABBAGE_002: Final[str] = "openai/babbage-002"
+
+    # Model ID: openai/chatgpt-4o
+    # Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o
+    OPENAI_CHATGPT_4O: Final[str] = "openai/chatgpt-4o"
+
     # Model ID: openai/computer-use-preview
     # Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview
     OPENAI_COMPUTER_USE_PREVIEW: Final[str] = "openai/computer-use-preview"
@@ -813,6 +821,14 @@ class ModelIds:
     # Model ID: openai/gpt-5.4-pro
     # Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro
     OPENAI_GPT_5_4_PRO: Final[str] = "openai/gpt-5.4-pro"
+
+    # Model ID: openai/gpt-5.5
+    # Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5
+    OPENAI_GPT_5_5: Final[str] = "openai/gpt-5.5"
+
+    # Model ID: openai/gpt-5.5-pro
+    # Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro
+    OPENAI_GPT_5_5_PRO: Final[str] = "openai/gpt-5.5-pro"
 
     # Model ID: openai/gpt-image-1
     # Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1
@@ -1717,6 +1733,8 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
         ModelIds.NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
         ModelIds.NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,
+        ModelIds.OPENAI_BABBAGE_002,
+        ModelIds.OPENAI_CHATGPT_4O,
         ModelIds.OPENAI_COMPUTER_USE_PREVIEW,
         ModelIds.OPENAI_DAVINCI_002,
         ModelIds.OPENAI_GPT_3_5_TURBO_16K,
@@ -1753,6 +1771,8 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.OPENAI_GPT_5_4_MINI,
         ModelIds.OPENAI_GPT_5_4_NANO,
         ModelIds.OPENAI_GPT_5_4_PRO,
+        ModelIds.OPENAI_GPT_5_5,
+        ModelIds.OPENAI_GPT_5_5_PRO,
         ModelIds.OPENAI_GPT_IMAGE_1,
         ModelIds.OPENAI_GPT_IMAGE_1_MINI,
         ModelIds.OPENAI_GPT_IMAGE_1_5,

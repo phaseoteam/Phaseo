@@ -503,6 +503,12 @@ final class ModelIds
     /** Model ID: nvidia/nvidia-nemotron-nano-9b-v2. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2 */
     public const NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2 = 'nvidia/nvidia-nemotron-nano-9b-v2';
 
+    /** Model ID: openai/babbage-002. Model page: https://ai-stats.phaseo.app/models/openai/babbage-002 */
+    public const OPENAI_BABBAGE_002 = 'openai/babbage-002';
+
+    /** Model ID: openai/chatgpt-4o. Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o */
+    public const OPENAI_CHATGPT_4O = 'openai/chatgpt-4o';
+
     /** Model ID: openai/computer-use-preview. Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview */
     public const OPENAI_COMPUTER_USE_PREVIEW = 'openai/computer-use-preview';
 
@@ -610,6 +616,12 @@ final class ModelIds
 
     /** Model ID: openai/gpt-5.4-pro. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro */
     public const OPENAI_GPT_5_4_PRO = 'openai/gpt-5.4-pro';
+
+    /** Model ID: openai/gpt-5.5. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5 */
+    public const OPENAI_GPT_5_5 = 'openai/gpt-5.5';
+
+    /** Model ID: openai/gpt-5.5-pro. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro */
+    public const OPENAI_GPT_5_5_PRO = 'openai/gpt-5.5-pro';
 
     /** Model ID: openai/gpt-image-1. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1 */
     public const OPENAI_GPT_IMAGE_1 = 'openai/gpt-image-1';

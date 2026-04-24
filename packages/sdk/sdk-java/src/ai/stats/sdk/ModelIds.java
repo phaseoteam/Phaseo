@@ -502,6 +502,12 @@ public final class ModelIds {
     /** Model ID: <code>nvidia/nvidia-nemotron-nano-9b-v2</code>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2 */
     public static final String NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2 = "nvidia/nvidia-nemotron-nano-9b-v2";
 
+    /** Model ID: <code>openai/babbage-002</code>. Model page: https://ai-stats.phaseo.app/models/openai/babbage-002 */
+    public static final String OPENAI_BABBAGE_002 = "openai/babbage-002";
+
+    /** Model ID: <code>openai/chatgpt-4o</code>. Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o */
+    public static final String OPENAI_CHATGPT_4O = "openai/chatgpt-4o";
+
     /** Model ID: <code>openai/computer-use-preview</code>. Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview */
     public static final String OPENAI_COMPUTER_USE_PREVIEW = "openai/computer-use-preview";
 
@@ -609,6 +615,12 @@ public final class ModelIds {
 
     /** Model ID: <code>openai/gpt-5.4-pro</code>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro */
     public static final String OPENAI_GPT_5_4_PRO = "openai/gpt-5.4-pro";
+
+    /** Model ID: <code>openai/gpt-5.5</code>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5 */
+    public static final String OPENAI_GPT_5_5 = "openai/gpt-5.5";
+
+    /** Model ID: <code>openai/gpt-5.5-pro</code>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro */
+    public static final String OPENAI_GPT_5_5_PRO = "openai/gpt-5.5-pro";
 
     /** Model ID: <code>openai/gpt-image-1</code>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1 */
     public static final String OPENAI_GPT_IMAGE_1 = "openai/gpt-image-1";
