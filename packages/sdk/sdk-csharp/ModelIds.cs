@@ -296,8 +296,10 @@ namespace AiStatsSdk
         public const string DeepseekDeepseekV32Exp = "deepseek/deepseek-v3.2-exp";
         /// <summary>Model ID: <c>deepseek/deepseek-v3.2-speciale</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale</summary>
         public const string DeepseekDeepseekV32Speciale = "deepseek/deepseek-v3.2-speciale";
-        /// <summary>Model ID: <c>deepseek/deepseek-v4</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4</summary>
-        public const string DeepseekDeepseekV4 = "deepseek/deepseek-v4";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4-flash</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash</summary>
+        public const string DeepseekDeepseekV4Flash = "deepseek/deepseek-v4-flash";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4-pro</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro</summary>
+        public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
         /// <summary>Model ID: <c>deepseek/deepseek-vl2</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2</summary>
         public const string DeepseekDeepseekVl2 = "deepseek/deepseek-vl2";
         /// <summary>Model ID: <c>deepseek/deepseek-vl2-small</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2-small</summary>
@@ -1818,5 +1820,8 @@ namespace AiStatsSdk
         public const string ZAiGlm5vTurbo = "z-ai/glm-5v-turbo";
         /// <summary>Model ID: <c>z-ai/glm-image</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image</summary>
         public const string ZAiGlmImage = "z-ai/glm-image";
+        /// <summary>Deprecated alias for <c>deepseek/deepseek-v4</c>; use <c>deepseek/deepseek-v4-pro</c>. Scheduled for removal in the next major SDK release.</summary>
+        [System.Obsolete("Use DeepseekDeepseekV4Pro instead. Scheduled for removal in the next major SDK release.")]
+        public const string DeepseekDeepseekV4 = DeepseekDeepseekV4Pro;
     }
 }

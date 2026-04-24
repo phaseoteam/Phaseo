@@ -1,0 +1,81 @@
+{
+  "key": "gmicloud:deepseek/deepseek-v4-pro:text.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "deepseek/deepseek-v4-pro",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.392,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "20% promotional discount applied.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.116,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "20% promotional discount applied.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.784,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "20% promotional discount applied.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.74,
+      "currency": "USD",
+      "pricing_plan": "list",
+      "note": "Undiscounted list price before 20% promotional discount.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.145,
+      "currency": "USD",
+      "pricing_plan": "list",
+      "note": "Undiscounted list price before 20% promotional discount.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.48,
+      "currency": "USD",
+      "pricing_plan": "list",
+      "note": "Undiscounted list price before 20% promotional discount.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00"
+    }
+  ]
+}

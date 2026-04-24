@@ -441,9 +441,12 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2_EXP = "deepseek/deepsee
 // Model ID: deepseek/deepseek-v3.2-speciale
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2_SPECIALE = "deepseek/deepseek-v3.2-speciale";
-// Model ID: deepseek/deepseek-v4
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = "deepseek/deepseek-v4";
+// Model ID: deepseek/deepseek-v4-flash
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash";
+// Model ID: deepseek/deepseek-v4-pro
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro";
 // Model ID: deepseek/deepseek-vl2
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_VL2 = "deepseek/deepseek-vl2";
@@ -2724,8 +2727,10 @@ inline constexpr std::string_view Z_AI_GLM_5V_TURBO = "z-ai/glm-5v-turbo";
 // Model ID: z-ai/glm-image
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
 inline constexpr std::string_view Z_AI_GLM_IMAGE = "z-ai/glm-image";
+// Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 906> ALL = {
+inline constexpr std::array<std::string_view, 907> ALL = {
 	AI21_JAMBA_2_3B,
 	AI21_JAMBA_LARGE_1_5,
 	AI21_JAMBA_LARGE_1_6,
@@ -2871,7 +2876,8 @@ inline constexpr std::array<std::string_view, 906> ALL = {
 	DEEPSEEK_DEEPSEEK_V3_2,
 	DEEPSEEK_DEEPSEEK_V3_2_EXP,
 	DEEPSEEK_DEEPSEEK_V3_2_SPECIALE,
-	DEEPSEEK_DEEPSEEK_V4,
+	DEEPSEEK_DEEPSEEK_V4_FLASH,
+	DEEPSEEK_DEEPSEEK_V4_PRO,
 	DEEPSEEK_DEEPSEEK_VL2,
 	DEEPSEEK_DEEPSEEK_VL2_SMALL,
 	DEEPSEEK_DEEPSEEK_VL2_TINY,

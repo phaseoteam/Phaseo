@@ -442,8 +442,11 @@ public final class ModelIds {
     /** Model ID: <code>deepseek/deepseek-v3.2-speciale</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale */
     public static final String DEEPSEEK_DEEPSEEK_V3_2_SPECIALE = "deepseek/deepseek-v3.2-speciale";
 
-    /** Model ID: <code>deepseek/deepseek-v4</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4 */
-    public static final String DEEPSEEK_DEEPSEEK_V4 = "deepseek/deepseek-v4";
+    /** Model ID: <code>deepseek/deepseek-v4-flash</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash */
+    public static final String DEEPSEEK_DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash";
+
+    /** Model ID: <code>deepseek/deepseek-v4-pro</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro */
+    public static final String DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro";
 
     /** Model ID: <code>deepseek/deepseek-vl2</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2 */
     public static final String DEEPSEEK_DEEPSEEK_VL2 = "deepseek/deepseek-vl2";
@@ -2724,5 +2727,9 @@ public final class ModelIds {
 
     /** Model ID: <code>z-ai/glm-image</code>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image */
     public static final String Z_AI_GLM_IMAGE = "z-ai/glm-image";
+
+    /** Deprecated alias for <code>deepseek/deepseek-v4</code>; use <code>deepseek/deepseek-v4-pro</code>. Scheduled for removal in the next major SDK release. */
+    @Deprecated
+    public static final String DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
 }

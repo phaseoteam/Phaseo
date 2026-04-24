@@ -1,0 +1,393 @@
+{
+  "model_id": "deepseek/deepseek-v4-flash",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek V4 Flash",
+  "status": "Available",
+  "previous_model_id": "deepseek/deepseek-v3.2",
+  "announced_date": "2026-04-24T00:00:00",
+  "release_date": "2026-04-24T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-v4-flash",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://api-docs.deepseek.com/news/news260424"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing"
+    },
+    {
+      "platform": "model_card",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 384000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "agieval",
+      "score": 82.6,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 88.7,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmlu-redux",
+      "score": 89.4,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 86.4,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 83.0, High: 86.4, Max: 86.4",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 88.8,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "c-eval",
+      "score": 92.1,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "cmmlu",
+      "score": 90.4,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "multiloko",
+      "score": 42.2,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "simpleqa-verified",
+      "score": 34.1,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 23.1, High: 28.9, Max: 34.1",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "chinese-simpleqa",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 71.5, High: 73.2, Max: 78.9",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 88.1,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 71.2, High: 87.4, Max: 88.1",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "supergpqa",
+      "score": 46.5,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "facts-parametric",
+      "score": 33.9,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "triviaqa",
+      "score": 82.8,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "bbh",
+      "score": 86.9,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "drop",
+      "score": 88.6,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "hellaswag",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "winogrande",
+      "score": 79.5,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "cluewsc",
+      "score": 82.2,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "bigcodebench",
+      "score": 56.8,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 69.5,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 90.8,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "math",
+      "score": 57.4,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mgsm",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "cmath",
+      "score": 93.6,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "longbench-v2",
+      "score": 44.7,
+      "is_self_reported": true,
+      "other_info": "Base model",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 34.8,
+      "is_self_reported": true,
+      "other_info": "No tools. Best reported mode. Non-think: 8.1, High: 29.4, Max: 34.8",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 45.1,
+      "is_self_reported": true,
+      "other_info": "With tools. Best reported mode",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 91.6,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 55.2, High: 88.4, Max: 91.6",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 3052,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. High: 2816, Max: 3052",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "hmmt-2026-feb",
+      "score": 94.8,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 40.8, High: 91.9, Max: 94.8",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "imoanswerbench",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 41.9, High: 85.1, Max: 88.4",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "apex",
+      "score": 33,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 1.0, High: 19.1, Max: 33.0",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "apex-shortlist",
+      "score": 85.7,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 9.3, High: 72.1, Max: 85.7",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mrcr-1m",
+      "score": 78.7,
+      "is_self_reported": true,
+      "other_info": "MRCR 1M. Best reported mode. Non-think: 37.5, High: 76.9, Max: 78.7",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "corpusqa-1m",
+      "score": 60.5,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 15.5, High: 59.3, Max: 60.5",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 56.9,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 49.1, High: 56.6, Max: 56.9",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 79,
+      "is_self_reported": true,
+      "other_info": "SWE Verified. Best reported mode. Non-think: 73.7, High: 78.6, Max: 79.0",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 52.6,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 49.1, High: 52.3, Max: 52.6",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 69.7, High: 70.2, Max: 73.3",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 73.2,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. High: 53.5, Max: 73.2",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": "MCPAtlas. Best reported mode. Non-think: 64.0, High: 67.4, Max: 69.0",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1395,
+      "is_self_reported": true,
+      "other_info": "Max mode",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 47.8,
+      "is_self_reported": true,
+      "other_info": "Best reported mode. Non-think: 40.7, High: 43.5, Max: 47.8",
+      "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
+      "rank": null
+    }
+  ]
+}
