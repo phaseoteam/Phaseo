@@ -2729,4 +2729,9 @@ final class ModelIds
     /** Model ID: z-ai/glm-image. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image */
     public const Z_AI_GLM_IMAGE = 'z-ai/glm-image';
 
+    /**
+     * @deprecated Use DEEPSEEK_DEEPSEEK_V4_PRO instead. Scheduled for removal in the next major SDK release.
+     */
+    public const DEEPSEEK_DEEPSEEK_V4 = self::DEEPSEEK_DEEPSEEK_V4_PRO;
+
 }

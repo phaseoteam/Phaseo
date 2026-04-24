@@ -1820,5 +1820,8 @@ namespace AiStatsSdk
         public const string ZAiGlm5vTurbo = "z-ai/glm-5v-turbo";
         /// <summary>Model ID: <c>z-ai/glm-image</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image</summary>
         public const string ZAiGlmImage = "z-ai/glm-image";
+        /// <summary>Deprecated alias for <c>deepseek/deepseek-v4</c>; use <c>deepseek/deepseek-v4-pro</c>. Scheduled for removal in the next major SDK release.</summary>
+        [System.Obsolete("Use DeepseekDeepseekV4Pro instead. Scheduled for removal in the next major SDK release.")]
+        public const string DeepseekDeepseekV4 = DeepseekDeepseekV4Pro;
     }
 }

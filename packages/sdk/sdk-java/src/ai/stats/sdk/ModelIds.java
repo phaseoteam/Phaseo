@@ -2728,4 +2728,8 @@ public final class ModelIds {
     /** Model ID: <code>z-ai/glm-image</code>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image */
     public static final String Z_AI_GLM_IMAGE = "z-ai/glm-image";
 
+    /** Deprecated alias for <code>deepseek/deepseek-v4</code>; use <code>deepseek/deepseek-v4-pro</code>. Scheduled for removal in the next major SDK release. */
+    @Deprecated
+    public static final String DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
+
 }

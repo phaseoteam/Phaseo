@@ -2728,6 +2728,8 @@ const (
 	// Model ID: z-ai/glm-image
 	// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
 	ModelIDZAiGlmImage gen.ModelId = "z-ai/glm-image"
+	// Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
+	ModelIDDeepseekDeepseekV4 gen.ModelId = ModelIDDeepseekDeepseekV4Pro
 )
 
 var KnownModelIDs = []gen.ModelId{

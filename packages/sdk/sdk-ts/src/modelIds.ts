@@ -1819,6 +1819,8 @@ export const ModelIds = {
   Z_AI_GLM_5V_TURBO: "z-ai/glm-5v-turbo",
   /** Model ID: `z-ai/glm-image`. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image */
   Z_AI_GLM_IMAGE: "z-ai/glm-image",
+  /** @deprecated Deprecated alias for `deepseek/deepseek-v4`; use `deepseek/deepseek-v4-pro`. Scheduled for removal in the next major SDK release. */
+  DEEPSEEK_DEEPSEEK_V4: "deepseek/deepseek-v4-pro",
 } as const satisfies Record<string, ModelId>;
 
 export const MODEL_IDS = Object.freeze(Object.values(ModelIds)) as readonly ModelId[];

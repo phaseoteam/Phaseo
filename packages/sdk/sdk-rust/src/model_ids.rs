@@ -2724,6 +2724,9 @@ pub mod model_ids {
     /// Model ID: `z-ai/glm-image`.
     /// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
     pub const Z_AI_GLM_IMAGE: &str = "z-ai/glm-image";
+    /// Deprecated alias for `deepseek/deepseek-v4`; use `deepseek/deepseek-v4-pro`.
+    #[deprecated(note = "Use DEEPSEEK_DEEPSEEK_V4_PRO instead. Scheduled for removal in the next major SDK release.")]
+    pub const DEEPSEEK_DEEPSEEK_V4: &str = DEEPSEEK_DEEPSEEK_V4_PRO;
 
     pub const ALL: &[&str] = &[
         AI21_JAMBA_2_3B,

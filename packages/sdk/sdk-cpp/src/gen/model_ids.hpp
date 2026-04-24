@@ -2727,6 +2727,8 @@ inline constexpr std::string_view Z_AI_GLM_5V_TURBO = "z-ai/glm-5v-turbo";
 // Model ID: z-ai/glm-image
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
 inline constexpr std::string_view Z_AI_GLM_IMAGE = "z-ai/glm-image";
+// Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
 inline constexpr std::array<std::string_view, 907> ALL = {
 	AI21_JAMBA_2_3B,
