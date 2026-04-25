@@ -3,6 +3,10 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { classifyAuthMethodFromSession } from "@/lib/auth/method";
 import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";
+import {
+	isResendOnboardingAutomationsEnabled,
+	sendUserCreatedEvent,
+} from "@/lib/automations/resend-events";
 import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import type { createClient } from "@/utils/supabase/server";
 
@@ -107,6 +111,54 @@ async function sendSignupWelcomeEmail(args: {
 	if (error) {
 		throw new Error(`resend_error:${error.name}:${error.message}`);
 	}
+}
+
+async function sendSignupWelcomeNotification(args: {
+	email: string;
+	displayName: string;
+	userId: string;
+	workspaceId: string;
+	source: "auth_callback" | "server_action";
+	createdAtIso: string;
+}) {
+	if (!isResendOnboardingAutomationsEnabled()) {
+		await sendSignupWelcomeEmail({
+			email: args.email,
+			displayName: args.displayName,
+		});
+		return;
+	}
+
+	const firstName = deriveFirstName(args.displayName);
+
+	try {
+		await sendUserCreatedEvent({
+			email: args.email,
+			payload: {
+				userId: args.userId,
+				workspaceId: args.workspaceId,
+				displayName: args.displayName,
+				firstName,
+				source: args.source,
+				createdAtIso: args.createdAtIso,
+			},
+		});
+		return;
+	} catch (automationError) {
+		console.error("Failed sending onboarding automation signup event", {
+			userId: args.userId,
+			workspaceId: args.workspaceId,
+			error:
+				automationError instanceof Error
+					? automationError.message
+					: String(automationError),
+		});
+	}
+
+	await sendSignupWelcomeEmail({
+		email: args.email,
+		displayName: args.displayName,
+	});
 }
 
 async function sendSignupDiscordWebhook(args: {
@@ -433,11 +485,15 @@ export async function finalizePostLogin(
 
 		if (user.email) {
 			notificationTasks.push(
-				sendSignupWelcomeEmail({
+				sendSignupWelcomeNotification({
 					email: user.email,
 					displayName,
+					userId: user.id,
+					workspaceId,
+					source: input.source,
+					createdAtIso: String(user.created_at ?? new Date().toISOString()),
 				}).catch((error) => {
-					console.error("Failed sending direct signup welcome email", {
+					console.error("Failed sending signup onboarding notification", {
 						source: input.source,
 						userId: user.id,
 						workspaceId,

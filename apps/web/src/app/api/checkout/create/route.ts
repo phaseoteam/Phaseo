@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sendCheckoutStartedEvent } from "@/lib/automations/resend-events";
 import { getStripe } from "@/lib/stripe";
 import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
             typeof workspace_id === "string" && workspace_id.trim().length > 0
                 ? workspace_id.trim()
                 : undefined;
-        const { workspaceId, customerId } = await requireActiveWorkspaceStripeCustomer({
+        const { workspaceId, customerId, userId, userEmail } = await requireActiveWorkspaceStripeCustomer({
             createIfMissing: true,
         });
 
@@ -71,6 +72,29 @@ export async function POST(req: NextRequest) {
                     ...(workspaceId ? { workspace_id: workspaceId } : {}),
                 },
             });
+            if (userEmail) {
+                try {
+                    await sendCheckoutStartedEvent({
+                        email: userEmail,
+                        payload: {
+                            workspaceId,
+                            userId,
+                            checkoutSessionId: session.id,
+                            checkoutKind: "oneoff",
+                            currency,
+                            amountPence: Number(amount_pence),
+                            startedAtIso: new Date().toISOString(),
+                        },
+                    });
+                } catch (error) {
+                    console.error("Failed sending checkout.started event for oneoff checkout", {
+                        workspaceId,
+                        userId,
+                        checkoutSessionId: session.id,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
 
             return NextResponse.json({ url: session.url });
         }
@@ -106,6 +130,29 @@ export async function POST(req: NextRequest) {
                 success_url: paymentSuccessUrl,
                 cancel_url: cancelUrl,
             });
+            if (userEmail) {
+                try {
+                    await sendCheckoutStartedEvent({
+                        email: userEmail,
+                        payload: {
+                            workspaceId,
+                            userId,
+                            checkoutSessionId: session.id,
+                            checkoutKind: "pay_and_save",
+                            currency,
+                            amountPence: Number(amount_pence),
+                            startedAtIso: new Date().toISOString(),
+                        },
+                    });
+                } catch (error) {
+                    console.error("Failed sending checkout.started event for pay_and_save checkout", {
+                        workspaceId,
+                        userId,
+                        checkoutSessionId: session.id,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
 
             return NextResponse.json({ url: session.url });
         }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { sendCreditsPurchasedEvent } from "@/lib/automations/resend-events";
 import { getStripe } from "@/lib/stripe";
 
 const TOP_UP_PURPOSES = new Set(["top_up", "top_up_one_off", "auto_top_up", "credits_topup_offsession"]);
@@ -42,6 +43,50 @@ function readCustomerIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | nul
         return typeof id === "string" && id.trim().length > 0 ? id : null;
     }
     return null;
+}
+
+async function resolveCustomerEmail(
+    stripe: Stripe,
+    stripeCustomerId: string | null
+): Promise<string | null> {
+    if (!stripeCustomerId) return null;
+
+    try {
+        const customer = await stripe.customers.retrieve(stripeCustomerId);
+        if ("deleted" in customer && customer.deleted) {
+            return null;
+        }
+        return typeof customer.email === "string" && customer.email.trim().length > 0
+            ? customer.email
+            : null;
+    } catch (error) {
+        console.warn("[stripe-webhook] Failed to resolve customer email", {
+            stripeCustomerId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+    }
+}
+
+async function resolveCheckoutSessionIdForPaymentIntent(
+    stripe: Stripe,
+    paymentIntentId: string
+): Promise<string | undefined> {
+    try {
+        const sessions = await stripe.checkout.sessions.list({
+            payment_intent: paymentIntentId,
+            limit: 1,
+        });
+        const first = sessions.data[0];
+        if (!first?.id) return undefined;
+        return first.id;
+    } catch (error) {
+        console.warn("[stripe-webhook] Failed to resolve checkout session for payment_intent", {
+            paymentIntentId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return undefined;
+    }
 }
 
 type WalletAttributionRow = {
@@ -392,6 +437,32 @@ export async function POST(req: Request) {
                 console.log(
                     `[stripe-webhook] Payment credited net=$${netUsd} fee=$${feeUsd} balance_before=$${beforeUsd} balance_after=$${afterUsd}`
                 );
+
+                const purchasedEmail = await resolveCustomerEmail(stripe, stripeCustomerId);
+                if (purchasedEmail) {
+                    const checkoutSessionId = await resolveCheckoutSessionIdForPaymentIntent(stripe, pi.id);
+                    try {
+                        await sendCreditsPurchasedEvent({
+                            email: purchasedEmail,
+                            payload: {
+                                workspaceId: wallet.workspace_id,
+                                paymentIntentId: pi.id,
+                                checkoutSessionId,
+                                currency: String(pi.currency ?? "usd").toLowerCase(),
+                                amountNanos: netNanos,
+                                kind,
+                                creditedAtIso: new Date().toISOString(),
+                            },
+                        });
+                    } catch (error) {
+                        console.error("[stripe-webhook] Failed sending credits.purchased event", {
+                            paymentIntentId: pi.id,
+                            workspaceId: wallet.workspace_id,
+                            checkoutSessionId: checkoutSessionId ?? null,
+                            error: error instanceof Error ? error.message : String(error),
+                        });
+                    }
+                }
 
                 break;
             }
