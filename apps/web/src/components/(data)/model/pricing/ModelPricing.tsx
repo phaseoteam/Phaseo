@@ -7,6 +7,7 @@ import { getModelProviderRuntimeStatsCached } from "@/lib/fetchers/models/getMod
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { getModelProviderRoutingHealthCached } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
+import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import {
 	Empty,
 	EmptyContent,
@@ -48,6 +49,25 @@ export default async function ModelPricing({
 					providerModel.endpoint !== "unmapped"
 			)
 	);
+	const now = new Date();
+	const hasActiveApiProviders = providersForDisplay.some((provider) =>
+		provider.provider_models.some((providerModel) => {
+			if (!providerModel.is_active_gateway) return false;
+			if (providerModel.capability_status === "disabled") return false;
+			if (!providerModel.endpoint || providerModel.endpoint === "unmapped") return false;
+			const from = providerModel.effective_from
+				? new Date(providerModel.effective_from)
+				: null;
+			const to = providerModel.effective_to
+				? new Date(providerModel.effective_to)
+				: null;
+			if (from && Number.isFinite(from.getTime()) && now < from) return false;
+			if (to && Number.isFinite(to.getTime()) && now >= to) return false;
+			return true;
+		})
+	);
+	const showPendingApiBanner =
+		header?.status === "Available" && !hasActiveApiProviders;
 
 	const runtimeStats = await getModelProviderRuntimeStatsCached({
 		modelId,
@@ -77,6 +97,14 @@ export default async function ModelPricing({
 			<Card className="p-6">
 				{showHeader ? (
 					<h2 className="mb-2 text-xl font-semibold">Availability + Pricing</h2>
+				) : null}
+				{showPendingApiBanner ? (
+					<div className="mb-4">
+						<ModelPendingApiReleaseBanner
+							modelName={header?.name ?? "This model"}
+							surface="providers"
+						/>
+					</div>
 				) : null}
 				<Empty className="rounded-md border p-6">
 					<EmptyHeader>
@@ -110,13 +138,21 @@ export default async function ModelPricing({
 	}
 
 	return (
-		<ModelPricingClient
-			providers={providersForDisplay}
-			subscriptionPlans={subscriptionPlans}
-			creatorOrgId={header?.organisation_id ?? null}
-			runtimeStats={runtimeStats}
-			routingHealth={routingHealth}
-			showHeader={showHeader}
-		/>
+		<div className="space-y-4">
+			{showPendingApiBanner ? (
+				<ModelPendingApiReleaseBanner
+					modelName={header?.name ?? "This model"}
+					surface="providers"
+				/>
+			) : null}
+			<ModelPricingClient
+				providers={providersForDisplay}
+				subscriptionPlans={subscriptionPlans}
+				creatorOrgId={header?.organisation_id ?? null}
+				runtimeStats={runtimeStats}
+				routingHealth={routingHealth}
+				showHeader={showHeader}
+			/>
+		</div>
 	);
 }

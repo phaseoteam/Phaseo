@@ -33,6 +33,7 @@ import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTok
 import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
+import { getModelPendingApiReleaseState } from "@/lib/fetchers/models/getModelPendingApiReleaseState";
 import { getModelAppsCached } from "@/lib/fetchers/models/getModelApps";
 import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 
 type ModelOverviewSectionsProps = {
 	modelId: string;
@@ -217,12 +219,16 @@ export async function ModelPerformanceSection({
 	includeHidden,
 	surface = "page",
 }: ModelSectionSharedProps & { surface?: ModelSectionSurface }) {
-	const [performanceMetrics, tokenTrajectory] = await Promise.all([
+	const [performanceMetrics, tokenTrajectory, pendingApiRelease] =
+		await Promise.all([
 		getModelPerformanceMetricsCached(modelId, includeHidden, 24).catch(() => null),
 		surface === "page"
 			? getModelTokenTrajectoryCached(modelId, includeHidden).catch(() => null)
 			: Promise.resolve(null),
+		getModelPendingApiReleaseState(modelId, includeHidden).catch(() => null),
 	]);
+	const shouldShowPendingApiBanner =
+		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
 
 	return (
 		<Section id="performance">
@@ -241,17 +247,25 @@ export async function ModelPerformanceSection({
 					mode={surface}
 				/>
 			) : (
-				<Empty className="rounded-lg border p-8">
-					<EmptyHeader>
-						<EmptyMedia variant="icon">
-							<Activity className="size-5" />
-						</EmptyMedia>
-						<EmptyTitle>No performance telemetry yet</EmptyTitle>
-						<EmptyDescription>
-							Performance telemetry is not available yet.
-						</EmptyDescription>
-					</EmptyHeader>
-				</Empty>
+				<div className="space-y-3">
+					{shouldShowPendingApiBanner ? (
+						<ModelPendingApiReleaseBanner
+							modelName={pendingApiRelease?.modelName ?? "This model"}
+							surface="performance"
+						/>
+					) : null}
+					<Empty className="rounded-lg border p-8">
+						<EmptyHeader>
+							<EmptyMedia variant="icon">
+								<Activity className="size-5" />
+							</EmptyMedia>
+							<EmptyTitle>No performance telemetry yet</EmptyTitle>
+							<EmptyDescription>
+								Performance telemetry is not available yet.
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				</div>
 			)}
 		</Section>
 	);
@@ -453,13 +467,18 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const benchmarkHighlights = await getModelBenchmarkHighlights(
-		modelId,
-		includeHidden,
-	).catch(() => []);
+	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
+		getModelBenchmarkHighlights(
+			modelId,
+			includeHidden,
+		).catch(() => []),
+		getModelPendingApiReleaseState(modelId, includeHidden).catch(() => null),
+	]);
 	if (hideWhenEmpty && benchmarkHighlights.length === 0) {
 		return null;
 	}
+	const shouldShowPendingApiBanner =
+		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
 
 	return (
 		<Section id="benchmarks">
@@ -476,14 +495,22 @@ export async function ModelBenchmarksSection({
 					mode="summary"
 				/>
 			) : (
-				<Empty className="rounded-lg border p-8">
-					<EmptyHeader>
-						<EmptyTitle>No benchmark data yet</EmptyTitle>
-						<EmptyDescription>
-							No benchmark data is available for this model yet.
-						</EmptyDescription>
-					</EmptyHeader>
-				</Empty>
+				<div className="space-y-3">
+					{shouldShowPendingApiBanner ? (
+						<ModelPendingApiReleaseBanner
+							modelName={pendingApiRelease?.modelName ?? "This model"}
+							surface="benchmarks"
+						/>
+					) : null}
+					<Empty className="rounded-lg border p-8">
+						<EmptyHeader>
+							<EmptyTitle>No benchmark data yet</EmptyTitle>
+							<EmptyDescription>
+								No benchmark data is available for this model yet.
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				</div>
 			)}
 		</Section>
 	);

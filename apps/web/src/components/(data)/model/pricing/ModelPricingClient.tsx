@@ -72,7 +72,7 @@ const PRICING_METER_PREFERENCE = [
     "input_audio_tokens",
     "output_audio_tokens",
 ] as const;
-const DEFAULT_VISIBLE_PROVIDER_COUNT = 4;
+const DEFAULT_VISIBLE_PROVIDER_COUNT = 6;
 const PLAN_FREQUENCY_ALIASES: Record<string, string> = {
     mo: "monthly",
     month: "monthly",
