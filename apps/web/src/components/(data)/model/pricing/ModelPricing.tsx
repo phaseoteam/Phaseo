@@ -1,5 +1,4 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
 import { CircleAlert } from "lucide-react";
 import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
@@ -94,19 +93,21 @@ export default async function ModelPricing({
 
 	if (!providersForDisplay.length && !subscriptionPlans.length) {
 		return (
-			<Card className="p-6">
+			<div className="space-y-4">
 				{showHeader ? (
-					<h2 className="mb-2 text-xl font-semibold">Availability + Pricing</h2>
+					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
+						Availability + Pricing
+					</h2>
 				) : null}
 				{showPendingApiBanner ? (
-					<div className="mb-4">
+					<div>
 						<ModelPendingApiReleaseBanner
 							modelName={header?.name ?? "This model"}
 							surface="providers"
 						/>
 					</div>
 				) : null}
-				<Empty className="rounded-md border p-6">
+				<Empty className="rounded-lg border p-8">
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
@@ -133,7 +134,7 @@ export default async function ModelPricing({
 						</EmptyDescription>
 					</EmptyContent>
 				</Empty>
-			</Card>
+			</div>
 		);
 	}
 
