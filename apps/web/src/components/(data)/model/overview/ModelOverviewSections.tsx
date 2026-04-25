@@ -474,11 +474,11 @@ export async function ModelBenchmarksSection({
 		).catch(() => []),
 		getModelPendingApiReleaseState(modelId, includeHidden).catch(() => null),
 	]);
-	if (hideWhenEmpty && benchmarkHighlights.length === 0) {
-		return null;
-	}
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
+	if (hideWhenEmpty && benchmarkHighlights.length === 0 && !shouldShowPendingApiBanner) {
+		return null;
+	}
 
 	return (
 		<Section id="benchmarks">
@@ -975,3 +975,4 @@ export default function ModelOverviewSections({
 		</div>
 	);
 }
+

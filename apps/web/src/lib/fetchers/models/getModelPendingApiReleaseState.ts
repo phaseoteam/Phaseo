@@ -39,15 +39,25 @@ export async function getModelPendingApiReleaseState(
 }> {
 	const [model, providers] = await Promise.all([
 		getModelOverviewCached(modelId, includeHidden).catch(() => null),
-		getModelPricingCached(modelId, includeHidden).catch(() => []),
+		getModelPricingCached(modelId, includeHidden).catch((error) => {
+			console.warn("[model] failed to fetch pricing while evaluating pending API rollout", {
+				modelId,
+				error,
+			});
+			return null;
+		}),
 	]);
 
 	const isAvailableModel = model?.status === "Available";
+	const hasProviderAvailability = providers
+		? hasActiveApiProviders(providers)
+		: true;
 	const isPendingApiRelease =
-		isAvailableModel && !hasActiveApiProviders(providers);
+		isAvailableModel && providers !== null && !hasProviderAvailability;
 
 	return {
 		isPendingApiRelease,
 		modelName: model?.name ?? "This model",
 	};
 }
+
