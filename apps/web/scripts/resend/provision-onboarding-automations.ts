@@ -49,6 +49,41 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
 	return result.data;
 }
 
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
+
+function isRateLimitError(error: unknown): boolean {
+	const message =
+		error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+	return message.includes("too many requests") || message.includes("429");
+}
+
+async function callResend<T>(
+	label: string,
+	fn: () => PromiseLike<{ data: T | null; error: { message: string } | null }>,
+): Promise<T> {
+	let attempt = 0;
+	while (attempt < 6) {
+		attempt += 1;
+		try {
+			return unwrap(await fn());
+		} catch (error) {
+			if (!isRateLimitError(error) || attempt >= 6) {
+				throw error;
+			}
+			const waitMs = 400 * attempt;
+			console.warn(
+				`Rate limited on ${label}; retrying in ${waitMs}ms (attempt ${attempt}/6)`,
+			);
+			await sleep(waitMs);
+		}
+	}
+	throw new Error(`Unexpected retry exhaustion for ${label}`);
+}
+
 function markdownEmailWrapper(contentHtml: string): string {
 	return [
 		"<div style=\"background:#f6f8fc;padding:32px 12px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;\">",
@@ -148,8 +183,9 @@ async function listAllTemplates(resend: Resend): Promise<
 		name: string;
 	}>
 > {
-	const result = await resend.templates.list({ limit: 100 });
-	const data = unwrap(result);
+	const data = await callResend("templates.list", () =>
+		resend.templates.list({ limit: 100 }),
+	);
 	return data.data.map((template) => ({
 		id: template.id,
 		alias: template.alias,
@@ -176,16 +212,23 @@ async function upsertTemplate(
 
 	let templateId: string;
 	if (!existing) {
-		const created = unwrap(await resend.templates.create(payload));
+		const created = await callResend<{ id: string }>(
+			`templates.create:${template.alias}`,
+			() => resend.templates.create(payload),
+		);
 		templateId = created.id;
 		console.log(`Created template: ${template.alias}`);
 	} else {
-		unwrap(await resend.templates.update(existing.id, payload));
+		await callResend(`templates.update:${template.alias}`, () =>
+			resend.templates.update(existing.id, payload),
+		);
 		templateId = existing.id;
 		console.log(`Updated template: ${template.alias}`);
 	}
 
-	unwrap(await resend.templates.publish(templateId));
+	await callResend(`templates.publish:${template.alias}`, () =>
+		resend.templates.publish(templateId),
+	);
 	console.log(`Published template: ${template.alias}`);
 	return templateId;
 }
@@ -193,8 +236,9 @@ async function upsertTemplate(
 async function listAllContactProperties(resend: Resend): Promise<
 	Array<{ id: string; key: string; type: "string" | "number" }>
 > {
-	const result = await resend.contactProperties.list({ limit: 100 });
-	const data = unwrap(result);
+	const data = await callResend("contactProperties.list", () =>
+		resend.contactProperties.list({ limit: 100 }),
+	);
 	return data.data.map((item) => ({
 		id: item.id,
 		key: item.key,
@@ -218,7 +262,9 @@ async function ensureContactProperties(resend: Resend): Promise<void> {
 	for (const property of required) {
 		const current = existing.find((item) => item.key === property.key);
 		if (!current) {
-			unwrap(await resend.contactProperties.create(property));
+			await callResend(`contactProperties.create:${property.key}`, () =>
+				resend.contactProperties.create(property),
+			);
 			console.log(`Created contact property: ${property.key}`);
 			continue;
 		}
@@ -231,8 +277,7 @@ async function ensureContactProperties(resend: Resend): Promise<void> {
 }
 
 async function listAllEvents(resend: Resend): Promise<Array<{ id: string; name: string }>> {
-	const result = await resend.events.list({ limit: 100 });
-	const data = unwrap(result);
+	const data = await callResend("events.list", () => resend.events.list({ limit: 100 }));
 	return data.data.map((event) => ({
 		id: event.id,
 		name: event.name,
@@ -245,14 +290,17 @@ async function ensureEvents(resend: Resend): Promise<void> {
 
 	for (const eventName of required) {
 		if (current.some((event) => event.name === eventName)) continue;
-		unwrap(await resend.events.create({ name: eventName }));
+		await callResend(`events.create:${eventName}`, () =>
+			resend.events.create({ name: eventName }),
+		);
 		console.log(`Created event: ${eventName}`);
 	}
 }
 
 async function listAllAutomations(resend: Resend): Promise<Array<{ id: string; name: string }>> {
-	const result = await resend.automations.list({ limit: 100 });
-	const data = unwrap(result);
+	const data = await callResend("automations.list", () =>
+		resend.automations.list({ limit: 100 }),
+	);
 	return data.data.map((automation) => ({
 		id: automation.id,
 		name: automation.name,
@@ -414,8 +462,8 @@ async function upsertAutomation(
 ): Promise<void> {
 	const current = existing.find((automation) => automation.name === definition.name);
 	if (!current) {
-		unwrap(
-			await resend.automations.create({
+		await callResend(`automations.create:${definition.name}`, () =>
+			resend.automations.create({
 				name: definition.name,
 				status,
 				steps: definition.steps,
@@ -426,8 +474,8 @@ async function upsertAutomation(
 		return;
 	}
 
-	unwrap(
-		await resend.automations.update(current.id, {
+	await callResend(`automations.update:${definition.name}`, () =>
+		resend.automations.update(current.id, {
 			name: definition.name,
 			status,
 			steps: definition.steps,
