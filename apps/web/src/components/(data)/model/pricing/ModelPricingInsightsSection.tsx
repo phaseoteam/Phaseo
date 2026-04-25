@@ -14,6 +14,8 @@ import {
 	type ModelPricingHistoryProviderInput,
 } from "@/lib/fetchers/models/getModelPricingHistoryRules";
 import ModelPricingInsightsClient from "@/components/(data)/model/pricing/ModelPricingInsightsClient";
+import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
+import { getModelPendingApiReleaseState } from "@/lib/fetchers/models/getModelPendingApiReleaseState";
 
 export default async function ModelPricingInsightsSection({
 	modelId,
@@ -25,6 +27,10 @@ export default async function ModelPricingInsightsSection({
 	showPageHeader?: boolean;
 }) {
 	const providers = await getModelPricingCached(modelId, includeHidden);
+	const pendingApiRelease = await getModelPendingApiReleaseState(
+		modelId,
+		includeHidden,
+	).catch(() => null);
 	const providersForDisplay = (providers || []).filter(
 		(provider) =>
 			Array.isArray(provider.provider_models) && provider.provider_models.length > 0,
@@ -86,23 +92,31 @@ export default async function ModelPricingInsightsSection({
 
 	if (!providersForDisplay.length) {
 		return (
-			<Empty className="rounded-md border p-6">
-				<EmptyHeader>
-					<EmptyMedia variant="icon">
-						<CircleAlert className="size-4" />
-					</EmptyMedia>
-					<EmptyTitle>No pricing data available yet</EmptyTitle>
-					<EmptyDescription>
-						No API pricing information is currently available for this model.
-					</EmptyDescription>
-				</EmptyHeader>
-				<EmptyContent>
-					<EmptyDescription>
-						If you know providers we should integrate, please tell us on Discord
-						or open an issue on GitHub so we can add pricing data.
-					</EmptyDescription>
-				</EmptyContent>
-			</Empty>
+			<div className="space-y-3">
+				{pendingApiRelease?.isPendingApiRelease ? (
+					<ModelPendingApiReleaseBanner
+						modelName={pendingApiRelease.modelName}
+						surface="pricing"
+					/>
+				) : null}
+				<Empty className="rounded-md border p-6">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<CircleAlert className="size-4" />
+						</EmptyMedia>
+						<EmptyTitle>No pricing data available yet</EmptyTitle>
+						<EmptyDescription>
+							No API pricing information is currently available for this model.
+						</EmptyDescription>
+					</EmptyHeader>
+					<EmptyContent>
+						<EmptyDescription>
+							If you know providers we should integrate, please tell us on Discord
+							or open an issue on GitHub so we can add pricing data.
+						</EmptyDescription>
+					</EmptyContent>
+				</Empty>
+			</div>
 		);
 	}
 
@@ -126,11 +140,19 @@ export default async function ModelPricingInsightsSection({
 	]);
 
 	return (
-		<ModelPricingInsightsClient
-			providers={providersForDisplay}
-			runtimeStats={runtimeStats}
-			historyRules={pricingHistoryRules}
-			showPageHeader={showPageHeader}
-		/>
+		<div className="space-y-4">
+			{pendingApiRelease?.isPendingApiRelease ? (
+				<ModelPendingApiReleaseBanner
+					modelName={pendingApiRelease.modelName}
+					surface="pricing"
+				/>
+			) : null}
+			<ModelPricingInsightsClient
+				providers={providersForDisplay}
+				runtimeStats={runtimeStats}
+				historyRules={pricingHistoryRules}
+				showPageHeader={showPageHeader}
+			/>
+		</div>
 	);
 }
