@@ -1,5 +1,9 @@
 import { getStripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
+import {
+	deriveFirstName,
+	sendCheckoutStartedEvent,
+} from "@/lib/automations/resend-events";
 import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 // Minimal Stripe integration. Requires STRIPE_SECRET_KEY in environment.
@@ -14,9 +18,16 @@ export async function POST(req: NextRequest) {
             typeof body?.workspace_id === "string" && body.workspace_id.trim().length > 0
                 ? body.workspace_id.trim()
                 : null;
-        const { workspaceId, customerId } = await requireActiveWorkspaceStripeCustomer({
+        const {
+            workspaceId,
+            customerId,
+            userId: authenticatedUserId,
+            userEmail,
+            userDisplayName,
+        } = await requireActiveWorkspaceStripeCustomer({
             createIfMissing: true,
         });
+        const firstName = deriveFirstName(userDisplayName);
         if (requestedTeamId && requestedTeamId !== workspaceId) {
             return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
         }
@@ -35,7 +46,7 @@ export async function POST(req: NextRequest) {
         const paymentAttempt = Date.now();
 
         // allow optional user_id to be passed from client so webhook can directly credit
-        const userId = body?.user_id;
+        const checkoutUserId = body?.user_id;
 
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
@@ -51,7 +62,7 @@ export async function POST(req: NextRequest) {
                     quantity: 1,
                 },
             ],
-            metadata: userId ? { user_id: String(userId), purchase_amount_cents: String(purchaseAmount) } : { purchase_amount_cents: String(purchaseAmount) },
+            metadata: checkoutUserId ? { user_id: String(checkoutUserId), purchase_amount_cents: String(purchaseAmount) } : { purchase_amount_cents: String(purchaseAmount) },
             payment_intent_data: {
                 description: 'Credits purchase',
                 metadata: {
@@ -62,6 +73,30 @@ export async function POST(req: NextRequest) {
             success_url: `${origin}/settings/credits?checkout=success&payment_attempt=${paymentAttempt}`,
             cancel_url: `${origin}/settings/credits?checkout=cancelled`,
         });
+        if (userEmail) {
+            try {
+                await sendCheckoutStartedEvent({
+                    email: userEmail,
+                    payload: {
+                        workspaceId,
+                        userId: authenticatedUserId,
+                        firstName,
+                        checkoutSessionId: session.id,
+                        checkoutKind: "legacy_checkout",
+                        currency: "usd",
+                        amountPence: Number(totalAmount),
+                        startedAtIso: new Date().toISOString(),
+                    },
+                });
+            } catch (error) {
+                console.error("Failed sending checkout.started event for legacy checkout", {
+                    workspaceId,
+                    userId: authenticatedUserId,
+                    checkoutSessionId: session.id,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
 
         return NextResponse.json({ url: session.url });
     } catch (err: any) {
