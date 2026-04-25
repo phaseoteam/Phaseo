@@ -19,6 +19,18 @@ type TemplateSpec = {
 	replyTo?: string;
 	html: string;
 	text: string;
+	variables?: Array<
+		| {
+				key: string;
+				type: "string";
+				fallbackValue: string;
+		  }
+		| {
+				key: string;
+				type: "number";
+				fallbackValue: number;
+		  }
+	>;
 };
 
 type AutomationDefinition = {
@@ -323,6 +335,46 @@ function buildTemplates(args: {
 			}),
 			text: `Hi {{{user_name}}},\n\nWe noticed checkout started but purchase didn't complete.\n\nReply with what went wrong and we'll help.\n\nReturn to credits: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
+		{
+			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.LOW_BALANCE,
+			name: "Billing - Low Balance Alert",
+			subject: "Low credit balance alert",
+			replyTo: args.replyToEmail,
+			html: renderEmailHtml({
+				kicker: "Billing alert",
+				title: "Your balance is running low.",
+				intro: "Your {{{workspace_name}}} balance is now at ${{{balance_remaining}}}, below your configured threshold of ${{{low_balance_threshold}}}.",
+				ctaLabel: "Top up credits",
+				ctaHref: creditsUrl,
+				steps: [
+					{
+						title: "Top up now to avoid interruptions",
+						body: "Add credits to keep traffic and testing uninterrupted.",
+						hrefLabel: "Open credits settings",
+						href: creditsUrl,
+					},
+					{
+						title: "Adjust your threshold if needed",
+						body: "You can change your low-balance alert amount any time in Settings.",
+						hrefLabel: "Review threshold settings",
+						href: creditsUrl,
+					},
+					{
+						title: "Need help?",
+						body: `Reply and we can help set a practical threshold based on your usage.`,
+					},
+				],
+				replyNote: `Replies go straight to ${args.replyToEmail}.`,
+				includeUnsubscribe: false,
+			}),
+			text: `Hi {{{user_name}}},\n\nYour {{{workspace_name}}} balance is now \${{{balance_remaining}}}, below your alert threshold of \${{{low_balance_threshold}}}.\n\nTop up credits here: ${creditsUrl}\n\nReply if you want help setting the right threshold for your usage.`,
+			variables: [
+				{ key: "user_name", type: "string", fallbackValue: "there" },
+				{ key: "workspace_name", type: "string", fallbackValue: "your workspace" },
+				{ key: "balance_remaining", type: "number", fallbackValue: 0 },
+				{ key: "low_balance_threshold", type: "number", fallbackValue: 0 },
+			],
+		},
 	];
 }
 
@@ -358,7 +410,7 @@ async function upsertTemplate(
 		replyTo: template.replyTo,
 		html: template.html,
 		text: template.text,
-		variables: [
+		variables: template.variables ?? [
 			{
 				key: "user_name",
 				type: "string",
@@ -631,7 +683,35 @@ function buildAutomations(args: {
 		connections: purchaseStateConnections,
 	};
 
-	return [welcome7Day, checkoutAbandoned, purchaseState];
+	const lowBalanceAlert: AutomationDefinition = {
+		name: RESEND_ONBOARDING_AUTOMATION_NAMES.LOW_BALANCE_ALERT,
+		steps: [
+			{
+				key: "trigger_low_balance",
+				type: "trigger",
+				config: { eventName: RESEND_ONBOARDING_EVENT_NAMES.WORKSPACE_LOW_BALANCE },
+			},
+			{
+				key: "send_low_balance_email",
+				type: "send_email",
+				config: {
+					template: {
+						id: args.templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.LOW_BALANCE],
+						variables: {
+							user_name: { var: "event.firstName" },
+							workspace_name: { var: "event.workspaceName" },
+							balance_remaining: { var: "event.balanceUsd" },
+							low_balance_threshold: { var: "event.thresholdUsd" },
+						},
+					},
+					replyTo: args.replyToEmail,
+				},
+			},
+		],
+		connections: [{ from: "trigger_low_balance", to: "send_low_balance_email" }],
+	};
+
+	return [welcome7Day, checkoutAbandoned, purchaseState, lowBalanceAlert];
 }
 
 async function upsertAutomation(

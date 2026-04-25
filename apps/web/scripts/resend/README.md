@@ -1,6 +1,6 @@
-# Resend Onboarding Automations
+# Resend Automations
 
-Provision 7-day onboarding and checkout-recovery automations:
+Provision onboarding, checkout recovery, and low-balance alert automations:
 
 ```bash
 pnpm --filter @ai-stats/web resend:provision:onboarding
@@ -22,8 +22,14 @@ pnpm --filter @ai-stats/web resend:provision:onboarding
 
 ## Runtime Flag
 
-To send lifecycle events from the app at runtime, set:
+To send lifecycle events from the app and gateway runtime, set:
 
 - `RESEND_ONBOARDING_AUTOMATIONS_ENABLED=true`
 
-When this flag is on, signup flow emits `user.created` and falls back to direct welcome email only if event delivery fails.
+When this flag is on:
+- signup emits `user.created`
+- checkout start emits `checkout.started`
+- successful purchase emits `credits.purchased`
+- low-balance threshold checks emit `workspace.low_balance` from the gateway API
+
+If this flag is disabled, low-balance notifications fall back to the legacy `email_outbox` path.
