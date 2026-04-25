@@ -98,19 +98,19 @@ function renderEmailHtml(args: {
 		.map((step, index) => {
 			const linkHtml =
 				step.href && step.hrefLabel
-					? `<p style="margin:8px 0 0;font-size:13px;line-height:1.5;"><a href="${step.href}" style="color:#1d4ed8;text-decoration:none;font-weight:700;">${step.hrefLabel}</a></p>`
+					? `<p style="margin:8px 0 0;font-size:13px;line-height:1.5;"><a href="${step.href}" style="color:#18181b;text-decoration:underline;font-weight:600;">${step.hrefLabel}</a></p>`
 					: "";
 			return `
 				<tr>
-					<td style="padding:0 0 14px 0;">
+					<td style="padding:0 0 16px 0;">
 						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 							<tr>
-								<td width="38" valign="top" style="padding:2px 10px 0 0;">
-									<div style="width:28px;height:28px;border-radius:999px;background:#dbeafe;color:#1e3a8a;font-size:13px;line-height:28px;text-align:center;font-weight:700;">${index + 1}</div>
+								<td width="30" valign="top" style="padding:0 10px 0 0;">
+									<p style="margin:0;font-size:12px;line-height:1.4;color:#71717a;font-weight:700;">0${index + 1}</p>
 								</td>
-								<td valign="top" style="padding:0;">
-									<p style="margin:0;font-size:16px;line-height:1.35;color:#0f172a;font-weight:700;">${step.title}</p>
-									<p style="margin:5px 0 0;font-size:14px;line-height:1.6;color:#334155;">${step.body}</p>
+								<td valign="top" style="padding:0 0 0 12px;border-left:1px solid #e4e4e7;">
+									<p style="margin:0;font-size:16px;line-height:1.35;color:#18181b;font-weight:700;">${step.title}</p>
+									<p style="margin:5px 0 0;font-size:14px;line-height:1.65;color:#3f3f46;">${step.body}</p>
 									${linkHtml}
 								</td>
 							</tr>
@@ -122,7 +122,7 @@ function renderEmailHtml(args: {
 		.join("");
 
 	const unsubscribeHtml = args.includeUnsubscribe
-		? `<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#64748b;">Manage email preferences: <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#475569;">Unsubscribe</a></p>`
+		? `<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#71717a;">Manage email preferences: <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#3f3f46;">Unsubscribe</a></p>`
 		: "";
 
 	return `
@@ -135,38 +135,33 @@ function renderEmailHtml(args: {
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
 </head>
-<body style="margin:0;padding:0;background:#0a1021;">
+<body style="margin:0;padding:0;background:#f4f4f5;">
 	<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${args.title}</div>
-	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a1021;background-image:radial-gradient(circle at 6% 15%, #1d4ed8 0, transparent 36%),radial-gradient(circle at 90% 6%, #22c55e 0, transparent 30%);">
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;">
 		<tr>
 			<td align="center" style="padding:26px 10px 34px;">
 				<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;">
 					<tr>
 						<td style="padding:0;">
-							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius:24px 24px 0 0;overflow:hidden;">
+							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid #e4e4e7;border-radius:20px;overflow:hidden;">
 								<tr>
-									<td style="padding:34px 34px 30px;background:linear-gradient(132deg,#1d4ed8 0%,#0f172a 54%,#0ea5e9 100%);font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;color:#f8fafc;">
-										<p style="margin:0 0 10px;font-size:11px;line-height:1.2;letter-spacing:0.16em;text-transform:uppercase;opacity:0.95;font-weight:700;">${args.kicker}</p>
-										<h1 style="margin:0 0 12px;font-size:31px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;">${args.title}</h1>
-										<p style="margin:0;font-size:15px;line-height:1.65;color:#dbeafe;font-weight:500;">${args.intro}</p>
-										<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">
+									<td style="padding:30px 32px 12px;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;">
+										<p style="margin:0 0 10px;font-size:11px;line-height:1.2;letter-spacing:0.14em;text-transform:uppercase;color:#71717a;font-weight:700;">${args.kicker}</p>
+										<h1 style="margin:0 0 12px;font-size:32px;line-height:1.12;font-weight:800;letter-spacing:-0.02em;color:#09090b;">${args.title}</h1>
+										<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#3f3f46;font-weight:500;">${args.intro}</p>
+										<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
 											<tr>
-												<td style="border-radius:999px;background:#ffffff;">
-													<a href="${args.ctaHref}" style="display:inline-block;padding:12px 18px;font-size:12px;line-height:1.2;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;color:#0f172a;font-weight:800;">${args.ctaLabel}</a>
+												<td style="border-radius:999px;background:#18181b;">
+													<a href="${args.ctaHref}" style="display:inline-block;padding:12px 18px;font-size:12px;line-height:1.2;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;color:#ffffff;font-weight:800;">${args.ctaLabel}</a>
 												</td>
 											</tr>
 										</table>
-									</td>
-								</tr>
-							</table>
-							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fbff;border:1px solid #cbd5e1;border-top:none;border-radius:0 0 24px 24px;">
-								<tr>
-									<td style="padding:26px 30px 10px;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;">
+										<div style="height:1px;background:#e4e4e7;margin:0 0 18px;"></div>
 										<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 											${stepsHtml}
 										</table>
-										<div style="margin:8px 0 0;padding:14px 16px;border-radius:12px;background:linear-gradient(90deg,#e0ecff 0%,#d9fbe8 100%);border:1px solid #bfdbfe;">
-											<p style="margin:0;font-size:13px;line-height:1.6;color:#0f172a;font-weight:600;">${args.replyNote}</p>
+										<div style="margin:8px 0 0;padding:14px 16px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7;">
+											<p style="margin:0;font-size:13px;line-height:1.6;color:#27272a;font-weight:600;">${args.replyNote}</p>
 										</div>
 										${unsubscribeHtml}
 									</td>
