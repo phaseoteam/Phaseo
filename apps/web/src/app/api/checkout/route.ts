@@ -1,6 +1,9 @@
 import { getStripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
-import { sendCheckoutStartedEvent } from "@/lib/automations/resend-events";
+import {
+	deriveFirstName,
+	sendCheckoutStartedEvent,
+} from "@/lib/automations/resend-events";
 import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 // Minimal Stripe integration. Requires STRIPE_SECRET_KEY in environment.
@@ -15,9 +18,16 @@ export async function POST(req: NextRequest) {
             typeof body?.workspace_id === "string" && body.workspace_id.trim().length > 0
                 ? body.workspace_id.trim()
                 : null;
-        const { workspaceId, customerId, userId: authenticatedUserId, userEmail } = await requireActiveWorkspaceStripeCustomer({
+        const {
+            workspaceId,
+            customerId,
+            userId: authenticatedUserId,
+            userEmail,
+            userDisplayName,
+        } = await requireActiveWorkspaceStripeCustomer({
             createIfMissing: true,
         });
+        const firstName = deriveFirstName(userDisplayName);
         if (requestedTeamId && requestedTeamId !== workspaceId) {
             return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
         }
@@ -70,6 +80,7 @@ export async function POST(req: NextRequest) {
                     payload: {
                         workspaceId,
                         userId: authenticatedUserId,
+                        firstName,
                         checkoutSessionId: session.id,
                         checkoutKind: "legacy_checkout",
                         currency: "usd",

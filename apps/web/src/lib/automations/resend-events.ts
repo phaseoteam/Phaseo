@@ -13,6 +13,7 @@ export type ResendUserCreatedPayload = {
 export type ResendCheckoutStartedPayload = {
 	workspaceId: string;
 	userId: string;
+	firstName: string;
 	checkoutSessionId: string;
 	checkoutKind: "oneoff" | "pay_and_save" | "legacy_checkout";
 	currency: string;
@@ -23,12 +24,19 @@ export type ResendCheckoutStartedPayload = {
 export type ResendCreditsPurchasedPayload = {
 	workspaceId: string;
 	paymentIntentId: string;
+	firstName: string;
 	checkoutSessionId?: string;
 	currency: string;
 	amountNanos: number;
 	kind: "top_up" | "top_up_one_off" | "auto_top_up";
 	creditedAtIso: string;
 };
+
+export function deriveFirstName(value: string | null | undefined): string {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) return "";
+	return normalized.split(/\s+/)[0] ?? "";
+}
 
 function readBoolEnv(name: string): boolean | null {
 	const raw = String(process.env[name] ?? "").trim().toLowerCase();

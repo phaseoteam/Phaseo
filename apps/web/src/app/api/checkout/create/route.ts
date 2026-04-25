@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendCheckoutStartedEvent } from "@/lib/automations/resend-events";
+import {
+	deriveFirstName,
+	sendCheckoutStartedEvent,
+} from "@/lib/automations/resend-events";
 import { getStripe } from "@/lib/stripe";
 import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 
@@ -10,9 +13,10 @@ export async function POST(req: NextRequest) {
             typeof workspace_id === "string" && workspace_id.trim().length > 0
                 ? workspace_id.trim()
                 : undefined;
-        const { workspaceId, customerId, userId, userEmail } = await requireActiveWorkspaceStripeCustomer({
+        const { workspaceId, customerId, userId, userEmail, userDisplayName } = await requireActiveWorkspaceStripeCustomer({
             createIfMissing: true,
         });
+        const firstName = deriveFirstName(userDisplayName);
 
         if (requestedTeamId && requestedTeamId !== workspaceId) {
             return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
@@ -79,6 +83,7 @@ export async function POST(req: NextRequest) {
                         payload: {
                             workspaceId,
                             userId,
+                            firstName,
                             checkoutSessionId: session.id,
                             checkoutKind: "oneoff",
                             currency,
@@ -137,6 +142,7 @@ export async function POST(req: NextRequest) {
                         payload: {
                             workspaceId,
                             userId,
+                            firstName,
                             checkoutSessionId: session.id,
                             checkoutKind: "pay_and_save",
                             currency,

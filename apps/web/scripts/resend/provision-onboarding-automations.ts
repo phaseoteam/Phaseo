@@ -146,9 +146,10 @@ function renderEmailHtml(args: {
 							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid #e4e4e7;border-radius:20px;overflow:hidden;">
 								<tr>
 									<td style="padding:30px 32px 12px;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;">
-										<p style="margin:0 0 10px;font-size:11px;line-height:1.2;letter-spacing:0.14em;text-transform:uppercase;color:#71717a;font-weight:700;">${args.kicker}</p>
-										<h1 style="margin:0 0 12px;font-size:32px;line-height:1.12;font-weight:800;letter-spacing:-0.02em;color:#09090b;">${args.title}</h1>
-										<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#3f3f46;font-weight:500;">${args.intro}</p>
+											<p style="margin:0 0 10px;font-size:11px;line-height:1.2;letter-spacing:0.14em;text-transform:uppercase;color:#71717a;font-weight:700;">${args.kicker}</p>
+											<h1 style="margin:0 0 12px;font-size:32px;line-height:1.12;font-weight:800;letter-spacing:-0.02em;color:#09090b;">${args.title}</h1>
+											<p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#18181b;font-weight:600;">Hi {{{user_name}}},</p>
+											<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#3f3f46;font-weight:500;">${args.intro}</p>
 										<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
 											<tr>
 												<td style="border-radius:999px;background:#18181b;">
@@ -221,7 +222,7 @@ function buildTemplates(args: {
 				replyNote: "Reply directly if you want help shipping your first request this week.",
 				includeUnsubscribe: false,
 			}),
-			text: `Welcome to AI Stats.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply if you want help with setup.`,
+			text: `Hi {{{user_name}}},\n\nWelcome to AI Stats.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply if you want help with setup.`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D,
@@ -256,7 +257,7 @@ function buildTemplates(args: {
 				replyNote: "Reply if you want a quick architecture review before scaling up traffic.",
 				includeUnsubscribe: true,
 			}),
-			text: `Thanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nReply for implementation help.\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nThanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nReply for implementation help.\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_NOT_PURCHASED_7D,
@@ -288,7 +289,7 @@ function buildTemplates(args: {
 				replyNote: `Replies go straight to ${args.replyToEmail}. A short note is enough.`,
 				includeUnsubscribe: true,
 			}),
-			text: `It looks like you haven't purchased credits yet.\n\nReply and tell us what blocked you (setup, pricing, model choice, or anything else) and we'll help.\n\nTop up any time: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nIt looks like you haven't purchased credits yet.\n\nReply and tell us what blocked you (setup, pricing, model choice, or anything else) and we'll help.\n\nTop up any time: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.CHECKOUT_ABANDONED,
@@ -320,7 +321,7 @@ function buildTemplates(args: {
 				replyNote: `Replies go straight to ${args.replyToEmail} so you can get direct help.`,
 				includeUnsubscribe: true,
 			}),
-			text: `We noticed checkout started but purchase didn't complete.\n\nReply with what went wrong and we'll help.\n\nReturn to credits: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nWe noticed checkout started but purchase didn't complete.\n\nReply with what went wrong and we'll help.\n\nReturn to credits: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 	];
 }
@@ -357,6 +358,13 @@ async function upsertTemplate(
 		replyTo: template.replyTo,
 		html: template.html,
 		text: template.text,
+		variables: [
+			{
+				key: "user_name",
+				type: "string",
+				fallbackValue: "there",
+			},
+		],
 	};
 
 	let templateId: string;
@@ -472,10 +480,22 @@ function buildAutomations(args: {
 				config: { eventName: RESEND_ONBOARDING_EVENT_NAMES.USER_CREATED },
 			},
 			{
+				key: "set_contact_name_from_signup",
+				type: "contact_update",
+				config: {
+					firstName: { var: "event.firstName" },
+				},
+			},
+			{
 				key: "send_welcome_initial",
 				type: "send_email",
 				config: {
-					template: { id: args.templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_INITIAL] },
+					template: {
+						id: args.templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_INITIAL],
+						variables: {
+							user_name: { var: "contact.first_name" },
+						},
+					},
 				},
 			},
 			{
@@ -492,6 +512,9 @@ function buildAutomations(args: {
 				config: {
 					template: {
 						id: args.templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D],
+						variables: {
+							user_name: { var: "contact.first_name" },
+						},
 					},
 				},
 			},
@@ -501,13 +524,17 @@ function buildAutomations(args: {
 				config: {
 					template: {
 						id: args.templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_NOT_PURCHASED_7D],
+						variables: {
+							user_name: { var: "contact.first_name" },
+						},
 					},
 					replyTo: args.replyToEmail,
 				},
 			},
 		],
 		connections: [
-			{ from: "trigger_user_created", to: "send_welcome_initial" },
+			{ from: "trigger_user_created", to: "set_contact_name_from_signup" },
+			{ from: "set_contact_name_from_signup", to: "send_welcome_initial" },
 			{ from: "send_welcome_initial", to: "wait_for_purchase_7d" },
 			{
 				from: "wait_for_purchase_7d",
@@ -544,6 +571,9 @@ function buildAutomations(args: {
 				config: {
 					template: {
 						id: args.templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.CHECKOUT_ABANDONED],
+						variables: {
+							user_name: { var: "event.firstName" },
+						},
 					},
 					replyTo: args.replyToEmail,
 				},
@@ -569,6 +599,7 @@ function buildAutomations(args: {
 			key: "contact_update_purchase_state",
 			type: "contact_update",
 			config: {
+				firstName: { var: "event.firstName" },
 				properties: {
 					has_bought_credits: "true",
 					last_credit_purchase_nanos: { var: "event.amountNanos" },
