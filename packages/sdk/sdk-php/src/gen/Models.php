@@ -797,6 +797,8 @@ class KeyInvalidateResponse
 	public $ok;
 }
 
+class KnownModelId { }
+
 class ListFilesResponse
 {
 	/** @var array|null */

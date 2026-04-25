@@ -6,12 +6,6 @@ import {
 	type ModelCard,
 } from "@/lib/fetchers/models/getAllModels";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
-import {
-	getModelRankingsRows,
-	getWeeklyModelProviderTokens,
-	type RankingModel,
-	type WeeklyModelProviderTokens,
-} from "@/lib/fetchers/rankings/getRankingsData";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
@@ -584,95 +578,56 @@ type WeeklyRankingMetrics = {
 	latencyWeek: number | null;
 };
 
-type RankingAccumulator = {
-	tokensWeek: number;
-	throughputWeightedSum: number;
-	throughputWeight: number;
-	latencyWeightedSum: number;
-	latencyWeight: number;
-};
-
 function normalizeRankingModelKey(value: string): string {
 	return String(value ?? "").trim().toLowerCase();
 }
 
-function aggregateWeeklyRankingMetrics(
-	rankingRows: RankingModel[],
+function buildWeeklyMetricsByModel(
+	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
 ): Map<string, WeeklyRankingMetrics> {
-	const accumulators = new Map<string, RankingAccumulator>();
+	const metricsByKey = new Map<string, WeeklyRankingMetrics>();
 
-	for (const row of rankingRows) {
-		const key = normalizeRankingModelKey(row.model_id);
-		if (!key || key === "unknown" || key === "other") continue;
-
-		const acc = accumulators.get(key) ?? {
-			tokensWeek: 0,
-			throughputWeightedSum: 0,
-			throughputWeight: 0,
-			latencyWeightedSum: 0,
-			latencyWeight: 0,
+	for (const row of monitorRows) {
+		const metric: WeeklyRankingMetrics = {
+			tokensWeek: Number.isFinite(Number(row.weeklyTokensModel))
+				? Number(row.weeklyTokensModel)
+				: null,
+			throughputWeek: Number.isFinite(Number(row.weeklyThroughputModel))
+				? Number(row.weeklyThroughputModel)
+				: null,
+			latencyWeek: Number.isFinite(Number(row.weeklyLatencyModel))
+				? Number(row.weeklyLatencyModel)
+				: null,
 		};
-
-		const tokens = Number(row.total_tokens ?? 0);
-		if (Number.isFinite(tokens) && tokens > 0) {
-			acc.tokensWeek += tokens;
+		if (
+			metric.tokensWeek === null &&
+			metric.throughputWeek === null &&
+			metric.latencyWeek === null
+		) {
+			continue;
 		}
 
-		const requests = Number(row.requests ?? 0);
-		const weight = Number.isFinite(requests) && requests > 0 ? requests : 0;
-		const throughput = Number(row.median_throughput);
-		if (Number.isFinite(throughput) && throughput > 0 && weight > 0) {
-			acc.throughputWeightedSum += throughput * weight;
-			acc.throughputWeight += weight;
+		for (const candidate of [row.modelId, row.apiModelId]) {
+			const key = normalizeRankingModelKey(String(candidate ?? ""));
+			if (!key || key === "unknown" || key === "other") continue;
+			const existing = metricsByKey.get(key);
+			if (
+				!existing ||
+				(metric.tokensWeek ?? Number.NEGATIVE_INFINITY) >
+					(existing.tokensWeek ?? Number.NEGATIVE_INFINITY)
+			) {
+				metricsByKey.set(key, metric);
+			}
 		}
-		const latency = Number(row.median_latency_ms);
-		if (Number.isFinite(latency) && latency > 0 && weight > 0) {
-			acc.latencyWeightedSum += latency * weight;
-			acc.latencyWeight += weight;
-		}
-
-		accumulators.set(key, acc);
 	}
 
-	return new Map(
-		Array.from(accumulators.entries()).map(([key, acc]) => [
-			key,
-			{
-				tokensWeek: acc.tokensWeek > 0 ? acc.tokensWeek : null,
-				throughputWeek:
-					acc.throughputWeight > 0
-						? acc.throughputWeightedSum / acc.throughputWeight
-						: null,
-				latencyWeek:
-					acc.latencyWeight > 0 ? acc.latencyWeightedSum / acc.latencyWeight : null,
-			},
-		]),
-	);
-}
-
-function aggregateWeeklyTokenMetrics(
-	rows: WeeklyModelProviderTokens[],
-): Map<string, number> {
-	const tokensByModel = new Map<string, number>();
-
-	for (const row of rows) {
-		const key = normalizeRankingModelKey(row.model_id);
-		if (!key || key === "unknown" || key === "other") continue;
-
-		const tokens = Number(row.total_tokens ?? 0);
-		if (!Number.isFinite(tokens) || tokens <= 0) continue;
-
-		tokensByModel.set(key, (tokensByModel.get(key) ?? 0) + tokens);
-	}
-
-	return tokensByModel;
+	return metricsByKey;
 }
 
 function resolveModelWeeklyMetrics(
 	model: ModelCard,
 	signals: GatewaySignals | undefined,
 	metricsByKey: Map<string, WeeklyRankingMetrics>,
-	tokenTotalsByKey: Map<string, number>,
 ): WeeklyRankingMetrics {
 	const candidateKeys = [
 		model.model_id,
@@ -696,37 +651,21 @@ function resolveModelWeeklyMetrics(
 		}
 	}
 
-	let tokensWeek: number | null = null;
-	for (const key of candidateKeys) {
-		const tokens = tokenTotalsByKey.get(key);
-		if (!Number.isFinite(Number(tokens)) || Number(tokens) <= 0) continue;
-		tokensWeek =
-			tokensWeek === null ? Number(tokens) : Math.max(tokensWeek, Number(tokens));
-	}
-
-	if (selected) {
-		return {
-			...selected,
-			tokensWeek: tokensWeek ?? selected.tokensWeek ?? null,
-		};
-	}
-
-	return {
-		tokensWeek,
-		throughputWeek: null,
-		latencyWeek: null,
-	};
+	return (
+		selected ?? {
+			tokensWeek: null,
+			throughputWeek: null,
+			latencyWeek: null,
+		}
+	);
 }
 
 function withGatewayMetadata(
 	baseModels: ModelCard[],
 	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
-	rankingRows: RankingModel[],
-	weeklyTokenRows: WeeklyModelProviderTokens[],
 ): ModelsPageModel[] {
 	const signalsByModelId = aggregateGatewaySignals(monitorRows);
-	const weeklyMetricsByKey = aggregateWeeklyRankingMetrics(rankingRows);
-	const weeklyTokenTotalsByKey = aggregateWeeklyTokenMetrics(weeklyTokenRows);
+	const weeklyMetricsByKey = buildWeeklyMetricsByModel(monitorRows);
 	const baseModelById = new Map(
 		baseModels.map((model) => [String(model.model_id ?? "").trim(), model]),
 	);
@@ -739,7 +678,6 @@ function withGatewayMetadata(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
 			weeklyMetricsByKey,
-			weeklyTokenTotalsByKey,
 		);
 		const providerCount = signals?.providerIds.size ?? 0;
 		const activeProviderCount = signals?.activeProviderIds.size ?? 0;
@@ -897,7 +835,6 @@ function withGatewayMetadata(
 				model,
 				undefined,
 				weeklyMetricsByKey,
-				weeklyTokenTotalsByKey,
 			);
 			const modelId = String(model.model_id ?? "").trim();
 
@@ -959,19 +896,11 @@ function withGatewayMetadata(
 
 async function ModelsPageDataSection() {
 	const includeHidden = false;
-	const [monitorResult, rankingsResult, weeklyUsageResult, allModels] =
-		await Promise.all([
-			getMonitorModels({}, includeHidden),
-			getModelRankingsRows("week", "tokens", 3000),
-			getWeeklyModelProviderTokens(),
-			getAllModelsCached(includeHidden),
-		]);
-	const models = withGatewayMetadata(
-		allModels,
-		monitorResult.models,
-		rankingsResult,
-		weeklyUsageResult.data ?? [],
-	);
+	const [monitorResult, allModels] = await Promise.all([
+		getMonitorModels({}, includeHidden),
+		getAllModelsCached(includeHidden),
+	]);
+	const models = withGatewayMetadata(allModels, monitorResult.models);
 	const facets = buildModelsFilterFacets(models);
 
 	return <ModelsDisplay models={models} facets={facets} />;

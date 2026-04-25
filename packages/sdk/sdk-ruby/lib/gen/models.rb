@@ -642,6 +642,7 @@ module AiStats
     # @!attribute [rw] ok
     #   @return [String]
     KeyInvalidateResponse = Struct.new(:cache_version, :key, :message, :ok, keyword_init: true)
+    KnownModelId = Object
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] object

@@ -16,10 +16,10 @@ type ChargeRpcResult = {
 };
 
 type WorkspaceLowBalanceSettingsRow = {
-	low_balance_email_enabled: boolean | null;
-	low_balance_email_threshold_nanos: number | string | null;
-	low_balance_email_last_sent_at: string | null;
-	low_balance_email_last_sent_balance_nanos: number | string | null;
+    low_balance_email_enabled: boolean | null;
+    low_balance_email_threshold_nanos: number | string | null;
+    low_balance_email_last_sent_at: string | null;
+    low_balance_email_last_sent_balance_nanos: number | string | null;
 };
 
 function getStripe(): Stripe {
@@ -71,64 +71,64 @@ function buildAutoTopUpIdempotencyKey(args: { workspaceId: string; requestId: st
 }
 
 function toFiniteNumber(value: unknown, fallback: number): number {
-	const n = Number(value);
-	return Number.isFinite(n) ? n : fallback;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
 }
 
 async function maybeEnqueueLowBalanceAlert(workspaceId: string): Promise<void> {
-	const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin();
 
-	const { data: settingsRow, error: settingsError } = await supabase
-		.from("workspace_settings")
-		.select(
-			"low_balance_email_enabled,low_balance_email_threshold_nanos,low_balance_email_last_sent_at,low_balance_email_last_sent_balance_nanos",
-		)
-		.eq("workspace_id", workspaceId)
-		.maybeSingle();
+    const { data: settingsRow, error: settingsError } = await supabase
+        .from("workspace_settings")
+        .select(
+            "low_balance_email_enabled,low_balance_email_threshold_nanos,low_balance_email_last_sent_at,low_balance_email_last_sent_balance_nanos",
+        )
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
 
-	if (settingsError) {
-		console.error("[low-balance] failed to load workspace settings", {
-			workspaceId,
-			code: settingsError.code ?? null,
-			message: settingsError.message ?? String(settingsError),
-		});
-		return;
-	}
+    if (settingsError) {
+        console.error("[low-balance] failed to load workspace settings", {
+            workspaceId,
+            code: settingsError.code ?? null,
+            message: settingsError.message ?? String(settingsError),
+        });
+        return;
+    }
 
-	const typedSettings = (settingsRow ?? null) as WorkspaceLowBalanceSettingsRow | null;
-	if (!typedSettings?.low_balance_email_enabled) return;
+    const typedSettings = (settingsRow ?? null) as WorkspaceLowBalanceSettingsRow | null;
+    if (!typedSettings?.low_balance_email_enabled) return;
 
-	const thresholdNanos = toFiniteNumber(typedSettings.low_balance_email_threshold_nanos, 0);
-	if (thresholdNanos <= 0) return;
+    const thresholdNanos = toFiniteNumber(typedSettings.low_balance_email_threshold_nanos, 0);
+    if (thresholdNanos <= 0) return;
 
-	const { data: walletRow, error: walletError } = await supabase
-		.from("wallets")
-		.select("balance_nanos")
-		.eq("workspace_id", workspaceId)
-		.maybeSingle();
+    const { data: walletRow, error: walletError } = await supabase
+        .from("wallets")
+        .select("balance_nanos")
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
 
-	if (walletError) {
-		console.error("[low-balance] failed to load wallet balance", {
-			workspaceId,
-			code: walletError.code ?? null,
-			message: walletError.message ?? String(walletError),
-		});
-		return;
-	}
+    if (walletError) {
+        console.error("[low-balance] failed to load wallet balance", {
+            workspaceId,
+            code: walletError.code ?? null,
+            message: walletError.message ?? String(walletError),
+        });
+        return;
+    }
 
-	const balanceNanos = toFiniteNumber((walletRow as any)?.balance_nanos, NaN);
-	if (!Number.isFinite(balanceNanos)) return;
+    const balanceNanos = toFiniteNumber((walletRow as any)?.balance_nanos, NaN);
+    if (!Number.isFinite(balanceNanos)) return;
 
-	await enqueueLowBalanceEmail({
-		workspaceId,
-		balanceNanos,
-		settings: {
-			enabled: true,
-			thresholdNanos,
-			lastSentAt: typedSettings.low_balance_email_last_sent_at ?? null,
-			lastSentBalanceNanos: typedSettings.low_balance_email_last_sent_balance_nanos ?? null,
-		},
-	});
+    await enqueueLowBalanceEmail({
+        workspaceId,
+        balanceNanos,
+        settings: {
+            enabled: true,
+            thresholdNanos,
+            lastSentAt: typedSettings.low_balance_email_last_sent_at ?? null,
+            lastSentBalanceNanos: typedSettings.low_balance_email_last_sent_balance_nanos ?? null,
+        },
+    });
 }
 
 // src/lib/gateway/pricing/persist.ts
@@ -153,17 +153,14 @@ export async function recordUsageAndCharge(args: {
         if (!chargeResult) return;
         if (chargeResult.already_applied) return;
 
-		try {
-			await maybeEnqueueLowBalanceAlert(args.workspaceId);
-		} catch (lowBalanceError) {
-			console.error("[low-balance] enqueue failed", {
-				workspaceId: args.workspaceId,
-				error:
-					lowBalanceError instanceof Error
-						? lowBalanceError.message
-						: String(lowBalanceError),
-			});
-		}
+        try {
+            await maybeEnqueueLowBalanceAlert(args.workspaceId);
+        } catch (lowBalanceError) {
+            console.error("[low-balance] enqueue failed", {
+                workspaceId: args.workspaceId,
+                error: lowBalanceError instanceof Error ? lowBalanceError.message : String(lowBalanceError),
+            });
+        }
 
         if (chargeResult.status === "top_up_required") {
             // Trigger auto-recharge

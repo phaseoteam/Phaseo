@@ -46,7 +46,7 @@
     "provider_api_model_id": "openai:openai/babbage-002",
     "provider_model_slug": "babbage-002",
     "internal_model_id": "openai/babbage-002",
-      "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -57,7 +57,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-          "status": "coming_soon",
+        "status": "active",
         "params": [
           {
             "param_id": "max_tokens",
@@ -110,18 +110,18 @@
     "provider_api_model_id": "openai:openai/chatgpt-4o",
     "provider_model_slug": "chatgpt-4o-latest",
     "internal_model_id": "openai/chatgpt-4o",
-      "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 128000,
     "max_output_tokens": 16384,
     "effective_from": "2024-05-13T00:00:00",
-    "effective_to": "2026-02-17T00:00:00",
+    "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
-          "status": "coming_soon",
+        "status": "active",
         "params": [
           {
             "param_id": "frequency_penalty",
@@ -2939,11 +2939,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "disabled",
+          "params": []
+        }
     ]
   },
   {
@@ -3192,11 +3192,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "disabled",
+          "params": []
+        }
     ]
   },
   {
@@ -3204,18 +3204,18 @@
     "provider_api_model_id": "openai:openai/gpt-5.5",
     "provider_model_slug": "gpt-5.5",
     "internal_model_id": "openai/gpt-5.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 1050000,
     "max_output_tokens": 128000,
-    "effective_from": "2026-04-23T00:00:00",
+    "effective_from": "2026-04-24T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": [
           {
             "param_id": "seed",
@@ -3317,11 +3317,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "active",
+          "params": []
+        }
     ]
   },
   {
@@ -3329,18 +3329,18 @@
     "provider_api_model_id": "openai:openai/gpt-5.5-pro",
     "provider_model_slug": "gpt-5.5-pro",
     "internal_model_id": "openai/gpt-5.5-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 1050000,
     "max_output_tokens": 128000,
-    "effective_from": "2026-04-23T00:00:00",
+    "effective_from": "2026-04-24T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": [
           {
             "param_id": "seed",
@@ -3442,11 +3442,11 @@
           }
         ]
       },
-      {
-        "capability_id": "batch",
-        "status": "disabled",
-        "params": []
-      }
+        {
+          "capability_id": "batch",
+          "status": "active",
+          "params": []
+        }
     ]
   },
   {
