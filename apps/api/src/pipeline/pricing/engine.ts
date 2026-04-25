@@ -254,22 +254,41 @@ export function computeBillSummary(
     const lines: PricingBreakdownLine[] = [];
     const matchContext = { ...ctx, ...meters };
 
+    const findCandidatesForPlanAndMeter = (plan: string, meter: PricingDimensionKey): PriceRule[] =>
+        card.rules
+            .filter((r) => r.pricing_plan === plan && r.meter === meter)
+            .filter((r) => matchesConditions(r.match, matchContext))
+            .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+
     for (const dim of dims) {
         const qty = meters[dim];
         if (!qty || qty <= 0) continue;
 
         // choose the highest priority rule for this meter that matches plan + conditions
-        const candidates = card.rules
-            .filter((r) => r.pricing_plan === pricingPlan && r.meter === dim)
-            .filter((r) => matchesConditions(r.match, matchContext))
-            .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+        let candidates = findCandidatesForPlanAndMeter(pricingPlan, dim);
+        let resolvedPlan = pricingPlan;
+        if (!candidates.length && pricingPlan !== "standard") {
+            const fallbackCandidates = findCandidatesForPlanAndMeter("standard", dim);
+            if (fallbackCandidates.length) {
+                candidates = fallbackCandidates;
+                resolvedPlan = "standard";
+                logPricingDebug("meter_plan_fallback", {
+                    meter: dim,
+                    quantity: qty,
+                    requestedPricingPlan: pricingPlan,
+                    fallbackPricingPlan: "standard",
+                    candidateRuleIds: candidates.map((r) => r.id),
+                });
+            }
+        }
 
         const selectionSummary = analyzeRuleSelection(candidates, matchContext);
 
         logPricingDebug("meter_candidates", {
             meter: dim,
             quantity: qty,
-            pricingPlan,
+            pricingPlan: resolvedPlan,
+            requestedPricingPlan: pricingPlan,
             candidateRuleIds: candidates.map((r) => r.id),
             candidateCount: candidates.length,
             candidates: candidates.slice(0, 10).map((r) => ({
@@ -286,7 +305,8 @@ export function computeBillSummary(
             logPricingDebug("meter_no_rule", {
                 meter: dim,
                 quantity: qty,
-                pricingPlan,
+                pricingPlan: resolvedPlan,
+                requestedPricingPlan: pricingPlan,
             });
             continue;
         }
