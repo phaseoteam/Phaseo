@@ -84,14 +84,103 @@ async function callResend<T>(
 	throw new Error(`Unexpected retry exhaustion for ${label}`);
 }
 
-function markdownEmailWrapper(contentHtml: string): string {
-	return [
-		"<div style=\"background:#f6f8fc;padding:32px 12px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;\">",
-		"<div style=\"max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:28px;\">",
-		contentHtml,
-		"</div>",
-		"</div>",
-	].join("");
+function renderEmailHtml(args: {
+	kicker: string;
+	title: string;
+	intro: string;
+	ctaLabel: string;
+	ctaHref: string;
+	steps: Array<{ title: string; body: string; hrefLabel?: string; href?: string }>;
+	replyNote: string;
+	includeUnsubscribe: boolean;
+}): string {
+	const stepsHtml = args.steps
+		.map((step, index) => {
+			const linkHtml =
+				step.href && step.hrefLabel
+					? `<p style="margin:8px 0 0;font-size:13px;line-height:1.5;"><a href="${step.href}" style="color:#1d4ed8;text-decoration:none;font-weight:700;">${step.hrefLabel}</a></p>`
+					: "";
+			return `
+				<tr>
+					<td style="padding:0 0 14px 0;">
+						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+							<tr>
+								<td width="38" valign="top" style="padding:2px 10px 0 0;">
+									<div style="width:28px;height:28px;border-radius:999px;background:#dbeafe;color:#1e3a8a;font-size:13px;line-height:28px;text-align:center;font-weight:700;">${index + 1}</div>
+								</td>
+								<td valign="top" style="padding:0;">
+									<p style="margin:0;font-size:16px;line-height:1.35;color:#0f172a;font-weight:700;">${step.title}</p>
+									<p style="margin:5px 0 0;font-size:14px;line-height:1.6;color:#334155;">${step.body}</p>
+									${linkHtml}
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			`;
+		})
+		.join("");
+
+	const unsubscribeHtml = args.includeUnsubscribe
+		? `<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#64748b;">Manage email preferences: <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#475569;">Unsubscribe</a></p>`
+		: "";
+
+	return `
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body style="margin:0;padding:0;background:#0a1021;">
+	<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${args.title}</div>
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a1021;background-image:radial-gradient(circle at 6% 15%, #1d4ed8 0, transparent 36%),radial-gradient(circle at 90% 6%, #22c55e 0, transparent 30%);">
+		<tr>
+			<td align="center" style="padding:26px 10px 34px;">
+				<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;">
+					<tr>
+						<td style="padding:0;">
+							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius:24px 24px 0 0;overflow:hidden;">
+								<tr>
+									<td style="padding:34px 34px 30px;background:linear-gradient(132deg,#1d4ed8 0%,#0f172a 54%,#0ea5e9 100%);font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;color:#f8fafc;">
+										<p style="margin:0 0 10px;font-size:11px;line-height:1.2;letter-spacing:0.16em;text-transform:uppercase;opacity:0.95;font-weight:700;">${args.kicker}</p>
+										<h1 style="margin:0 0 12px;font-size:31px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;">${args.title}</h1>
+										<p style="margin:0;font-size:15px;line-height:1.65;color:#dbeafe;font-weight:500;">${args.intro}</p>
+										<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">
+											<tr>
+												<td style="border-radius:999px;background:#ffffff;">
+													<a href="${args.ctaHref}" style="display:inline-block;padding:12px 18px;font-size:12px;line-height:1.2;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;color:#0f172a;font-weight:800;">${args.ctaLabel}</a>
+												</td>
+											</tr>
+										</table>
+									</td>
+								</tr>
+							</table>
+							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fbff;border:1px solid #cbd5e1;border-top:none;border-radius:0 0 24px 24px;">
+								<tr>
+									<td style="padding:26px 30px 10px;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;">
+										<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+											${stepsHtml}
+										</table>
+										<div style="margin:8px 0 0;padding:14px 16px;border-radius:12px;background:linear-gradient(90deg,#e0ecff 0%,#d9fbe8 100%);border:1px solid #bfdbfe;">
+											<p style="margin:0;font-size:13px;line-height:1.6;color:#0f172a;font-weight:600;">${args.replyNote}</p>
+										</div>
+										${unsubscribeHtml}
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+	`.trim();
 }
 
 function buildTemplates(args: {
@@ -108,37 +197,70 @@ function buildTemplates(args: {
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_INITIAL,
 			name: "Onboarding - Welcome",
 			subject: "Welcome to AI Stats",
-			html: markdownEmailWrapper(
-				[
-					"<h1 style=\"margin:0 0 14px;font-size:24px;line-height:1.2;\">Welcome to AI Stats</h1>",
-					"<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">You're in. Start routing traffic and monitoring usage in minutes.</p>",
-					"<ol style=\"margin:0 0 14px;padding-left:20px;font-size:15px;line-height:1.6;\">",
-					`<li>Add your first API key: <a href="${keysUrl}">${keysUrl}</a></li>`,
-					`<li>Review supported models: <a href="${modelsUrl}">${modelsUrl}</a></li>`,
-					`<li>Top up credits any time: <a href="${creditsUrl}">${creditsUrl}</a></li>`,
-					"</ol>",
-					"<p style=\"margin:0;font-size:14px;line-height:1.6;color:#334155;\">Reply if you want help getting your first request live.</p>",
-				].join(""),
-			),
+			html: renderEmailHtml({
+				kicker: "AI Stats onboarding",
+				title: "Welcome. Your control layer is ready.",
+				intro: "You now have one place to route requests, monitor usage, and move quickly across providers.",
+				ctaLabel: "Open dashboard",
+				ctaHref: dashboardUrl,
+				steps: [
+					{
+						title: "Create your first API key",
+						body: "Generate a key and keep your integration path simple from day one.",
+						hrefLabel: "Manage keys",
+						href: keysUrl,
+					},
+					{
+						title: "Choose models for your first route",
+						body: "Browse model IDs and pick a reliable baseline setup.",
+						hrefLabel: "View model catalog",
+						href: modelsUrl,
+					},
+					{
+						title: "Top up credits when ready",
+						body: "Enable uninterrupted testing and early production traffic.",
+						hrefLabel: "Open credits",
+						href: creditsUrl,
+					},
+				],
+				replyNote: "Reply directly if you want help shipping your first request this week.",
+				includeUnsubscribe: false,
+			}),
 			text: `Welcome to AI Stats.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply if you want help with setup.`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D,
 			name: "Onboarding - Purchased Within 7 Days",
 			subject: "You're ready to ship with AI Stats",
-			html: markdownEmailWrapper(
-				[
-					"<h1 style=\"margin:0 0 14px;font-size:24px;line-height:1.2;\">You're all set</h1>",
-					"<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">Thanks for purchasing credits. Here are the fastest next steps:</p>",
-					"<ul style=\"margin:0 0 14px;padding-left:20px;font-size:15px;line-height:1.6;\">",
-					`<li>Use one key to access multiple providers: <a href="${keysUrl}">${keysUrl}</a></li>`,
-					`<li>Find model IDs and pricing: <a href="${modelsUrl}">${modelsUrl}</a></li>`,
-					`<li>Track spend and usage in real time: <a href="${dashboardUrl}">${dashboardUrl}</a></li>`,
-					"</ul>",
-					"<p style=\"margin:0;font-size:14px;line-height:1.6;color:#334155;\">If you want implementation help, just reply and I'll assist directly.</p>",
-					"<p style=\"margin:16px 0 0;font-size:12px;line-height:1.6;color:#64748b;\">Manage email preferences: <a href=\"{{{RESEND_UNSUBSCRIBE_URL}}}\">Unsubscribe</a></p>",
-				].join(""),
-			),
+			html: renderEmailHtml({
+				kicker: "Momentum unlocked",
+				title: "Credits are live. Let's get you moving.",
+				intro: "Great call on purchasing credits early. Here is the fastest route to start seeing value immediately.",
+				ctaLabel: "Start building",
+				ctaHref: keysUrl,
+				steps: [
+					{
+						title: "Plug your key into your app",
+						body: "Use one key and keep your architecture clean while you test multiple providers.",
+						hrefLabel: "Open keys",
+						href: keysUrl,
+					},
+					{
+						title: "Lock in your default model set",
+						body: "Pick sensible defaults first, then tune for quality, speed, and spend.",
+						hrefLabel: "Explore models",
+						href: modelsUrl,
+					},
+					{
+						title: "Track usage and cost in real time",
+						body: "Watch calls, spend, and balance trends from one dashboard.",
+						hrefLabel: "Open usage dashboard",
+						href: dashboardUrl,
+					},
+				],
+				replyNote: "Reply if you want a quick architecture review before scaling up traffic.",
+				includeUnsubscribe: true,
+			}),
 			text: `Thanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nReply for implementation help.\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
@@ -146,15 +268,31 @@ function buildTemplates(args: {
 			name: "Onboarding - No Purchase In 7 Days",
 			subject: "Anything blocking you from getting started?",
 			replyTo: args.replyToEmail,
-			html: markdownEmailWrapper(
-				[
-					"<h1 style=\"margin:0 0 14px;font-size:24px;line-height:1.2;\">Quick check-in</h1>",
-					"<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">It looks like you haven't purchased credits yet. If something blocked you, reply and tell us what happened.</p>",
-					"<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">Common blockers we can help with: setup, pricing clarity, or model selection.</p>",
-					`<p style=\"margin:0;font-size:14px;line-height:1.6;color:#334155;\">You can also top up here any time: <a href="${creditsUrl}">${creditsUrl}</a></p>`,
-					"<p style=\"margin:16px 0 0;font-size:12px;line-height:1.6;color:#64748b;\">Manage email preferences: <a href=\"{{{RESEND_UNSUBSCRIBE_URL}}}\">Unsubscribe</a></p>",
-				].join(""),
-			),
+			html: renderEmailHtml({
+				kicker: "Quick pulse check",
+				title: "Anything blocking your first credit purchase?",
+				intro: "If you got stuck, reply and tell us what slowed you down. We will unblock you quickly.",
+				ctaLabel: "Resume checkout",
+				ctaHref: creditsUrl,
+				steps: [
+					{
+						title: "Technical setup issue?",
+						body: "We can help with key setup, API flow, or route configuration.",
+					},
+					{
+						title: "Pricing not clear enough?",
+						body: "Tell us your expected usage and we can suggest a practical starting plan.",
+					},
+					{
+						title: "Unsure which model to pick?",
+						body: "Share your use case and we can suggest a starting shortlist.",
+						hrefLabel: "See available models",
+						href: modelsUrl,
+					},
+				],
+				replyNote: `Replies go straight to ${args.replyToEmail}. A short note is enough.`,
+				includeUnsubscribe: true,
+			}),
 			text: `It looks like you haven't purchased credits yet.\n\nReply and tell us what blocked you (setup, pricing, model choice, or anything else) and we'll help.\n\nTop up any time: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
@@ -162,15 +300,31 @@ function buildTemplates(args: {
 			name: "Onboarding - Checkout Started But Not Purchased",
 			subject: "Did anything go wrong at checkout?",
 			replyTo: args.replyToEmail,
-			html: markdownEmailWrapper(
-				[
-					"<h1 style=\"margin:0 0 14px;font-size:24px;line-height:1.2;\">Need help finishing checkout?</h1>",
-					"<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">We noticed checkout started but purchase didn't complete.</p>",
-					"<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">Reply with what stopped you and we'll fix it fast.</p>",
-					`<p style=\"margin:0;font-size:14px;line-height:1.6;color:#334155;\">Return to credits: <a href="${creditsUrl}">${creditsUrl}</a></p>`,
-					"<p style=\"margin:16px 0 0;font-size:12px;line-height:1.6;color:#64748b;\">Manage email preferences: <a href=\"{{{RESEND_UNSUBSCRIBE_URL}}}\">Unsubscribe</a></p>",
-				].join(""),
-			),
+			html: renderEmailHtml({
+				kicker: "Checkout support",
+				title: "Need help finishing your credit purchase?",
+				intro: "Looks like checkout started but did not complete. If anything failed, we can help fast.",
+				ctaLabel: "Return to checkout",
+				ctaHref: creditsUrl,
+				steps: [
+					{
+						title: "Payment friction",
+						body: "Card or wallet issue? Reply with what happened and we will investigate immediately.",
+					},
+					{
+						title: "Not ready to choose an amount",
+						body: "We can recommend a low-risk amount to start with for your usage pattern.",
+					},
+					{
+						title: "Need confidence before buying",
+						body: "We can help validate your integration plan first.",
+						hrefLabel: "Open credits settings",
+						href: creditsUrl,
+					},
+				],
+				replyNote: `Replies go straight to ${args.replyToEmail} so you can get direct help.`,
+				includeUnsubscribe: true,
+			}),
 			text: `We noticed checkout started but purchase didn't complete.\n\nReply with what went wrong and we'll help.\n\nReturn to credits: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 	];
