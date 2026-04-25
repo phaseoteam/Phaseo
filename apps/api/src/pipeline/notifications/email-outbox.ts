@@ -88,6 +88,12 @@ function renderEmailForRow(row: OutboxRow): {
 
 		const payload = row.payload ?? {};
 		const balanceUsd = typeof payload.balance_usd === "number" ? payload.balance_usd : null;
+		const thresholdUsd =
+			typeof payload.threshold_usd === "number" ? payload.threshold_usd : null;
+		const teamName =
+			typeof payload.team_name === "string" && payload.team_name.trim()
+				? payload.team_name.trim()
+				: "your workspace";
 
 		return {
 			subject: row.subject ?? "Low balance alert",
@@ -97,6 +103,8 @@ function renderEmailForRow(row: OutboxRow): {
 					(typeof payload.user_first_name === "string" && payload.user_first_name.trim()) ||
 					"there",
 				BALANCE_REMAINING: balanceUsd ?? "",
+				LOW_BALANCE_THRESHOLD: thresholdUsd ?? "",
+				WORKSPACE_NAME: teamName,
 			},
 		};
 	}
