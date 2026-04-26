@@ -1,0 +1,31 @@
+{
+  "key": "venice-e2ee:z-ai/glm-5.1:text.generate",
+  "api_provider_id": "venice-e2ee",
+  "provider_slug": "venice-e2ee",
+  "api_model_id": "z-ai/glm-5.1",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}
