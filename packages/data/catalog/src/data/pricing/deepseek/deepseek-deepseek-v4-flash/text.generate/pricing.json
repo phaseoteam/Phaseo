@@ -21,7 +21,7 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.028,
+      "price_per_unit": 0.0028,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
