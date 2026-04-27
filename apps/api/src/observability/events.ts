@@ -368,8 +368,13 @@ type RoutingFailureSignals = {
 type AttemptSignals = {
     attemptCount: number | null;
     attemptedProviders: string[];
+    attemptOutcomes: string[];
     attemptFailureTypes: string[];
     attemptStatuses: number[];
+    successCount: number;
+    failureCount: number;
+    totalDurationMs: number | null;
+    maxDurationMs: number | null;
     lastAttempt: Record<string, unknown> | null;
 };
 
@@ -452,27 +457,65 @@ function getAttemptErrorsFromArgs(args: EventArgs): Array<Record<string, unknown
     return [];
 }
 
+function getProviderAttemptsFromArgs(args: EventArgs): Array<Record<string, unknown>> {
+    const fromCtx = (args.ctx as any)?.providerAttempts;
+    if (Array.isArray(fromCtx)) return fromCtx as Array<Record<string, unknown>>;
+    const fromErrorDetails = (args.errorDetails as any)?.provider_attempts;
+    if (Array.isArray(fromErrorDetails)) return fromErrorDetails as Array<Record<string, unknown>>;
+    return getAttemptErrorsFromArgs(args);
+}
+
 function extractAttemptSignals(args: EventArgs): AttemptSignals {
-    const attempts = getAttemptErrorsFromArgs(args);
+    const attempts = getProviderAttemptsFromArgs(args);
     const providerSet = new Set<string>();
+    const outcomeSet = new Set<string>();
     const typeSet = new Set<string>();
     const statusSet = new Set<number>();
+    let successCount = 0;
+    let failureCount = 0;
+    let totalDurationMs = 0;
+    let hasDuration = false;
+    let maxDurationMs: number | null = null;
     for (const attempt of attempts) {
         const provider = typeof attempt?.provider === "string" ? attempt.provider : null;
         if (provider) providerSet.add(provider);
+        const outcome = typeof attempt?.outcome === "string"
+            ? attempt.outcome
+            : (typeof attempt?.type === "string"
+                ? attempt.type
+                : (typeof attempt?.reason === "string" ? attempt.reason : null));
+        if (outcome) {
+            outcomeSet.add(outcome);
+            if (outcome === "success") {
+                successCount += 1;
+            } else {
+                failureCount += 1;
+            }
+        }
         const type = typeof attempt?.type === "string"
             ? attempt.type
             : (typeof attempt?.reason === "string" ? attempt.reason : null);
         if (type) typeSet.add(type);
         const status = Number(attempt?.status ?? NaN);
         if (Number.isFinite(status)) statusSet.add(status);
+        const duration = asNumber(attempt?.duration_ms);
+        if (duration !== null) {
+            totalDurationMs += duration;
+            hasDuration = true;
+            maxDurationMs = maxDurationMs === null ? duration : Math.max(maxDurationMs, duration);
+        }
     }
     const lastAttempt = attempts.length ? (attempts[attempts.length - 1] ?? null) : null;
     return {
         attemptCount: attempts.length || null,
         attemptedProviders: Array.from(providerSet.values()).sort(),
+        attemptOutcomes: Array.from(outcomeSet.values()).sort(),
         attemptFailureTypes: Array.from(typeSet.values()).sort(),
         attemptStatuses: Array.from(statusSet.values()).sort((a, b) => a - b),
+        successCount,
+        failureCount,
+        totalDurationMs: hasDuration ? totalDurationMs : null,
+        maxDurationMs,
         lastAttempt: lastAttempt && typeof lastAttempt === "object" ? lastAttempt : null,
     };
 }
@@ -621,6 +664,9 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             return null;
         })();
         const modelResolved = args.model ?? ctx?.model ?? null;
+        const sanitizedProviderAttempts = includeDetailedPayloads
+            ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
+            : null;
         const mappingSnapshot = includeDetailedPayloads
             ? sanitizeForAxiom({
                 protocol: args.protocolOverride ?? ctx?.protocol ?? null,
@@ -637,6 +683,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
                 param_routing_diagnostics: sanitizedParamRoutingDiagnostics,
                 routing_snapshot: sanitizedRoutingSnapshot,
                 routing_diagnostics: sanitizedRoutingDiagnostics,
+                provider_attempts: sanitizedProviderAttempts,
                 attempt_errors: sanitizedAttemptErrors,
                 provider_enablement_diagnostics: sanitizedProviderEnablement,
                 provider_candidate_build_diagnostics: sanitizedProviderCandidateBuild,
@@ -676,6 +723,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
                 routing_diagnostics: getRoutingDiagnosticsFromArgs(args),
                 routing_signals: routingSignals,
                 attempt_signals: attemptSignals,
+                provider_attempts: getProviderAttemptsFromArgs(args),
                 attempt_errors: getAttemptErrorsFromArgs(args),
             })
             : null;
@@ -766,11 +814,21 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             attempted_providers_json: includeDetailedPayloads
                 ? stringifyForAxiom(attemptSignals.attemptedProviders)
                 : null,
+            attempt_success_count: attemptSignals.successCount || null,
+            attempt_failure_count: attemptSignals.failureCount || null,
+            attempt_total_duration_ms: attemptSignals.totalDurationMs,
+            attempt_max_duration_ms: attemptSignals.maxDurationMs,
+            attempt_outcomes_json: includeDetailedPayloads
+                ? stringifyForAxiom(attemptSignals.attemptOutcomes)
+                : null,
             attempt_failure_types_json: includeDetailedPayloads
                 ? stringifyForAxiom(attemptSignals.attemptFailureTypes)
                 : null,
             attempt_statuses_json: includeDetailedPayloads
                 ? stringifyForAxiom(attemptSignals.attemptStatuses)
+                : null,
+            provider_attempts_json: includeDetailedPayloads
+                ? stringifyForAxiom(sanitizedProviderAttempts)
                 : null,
             attempt_last_json: includeDetailedPayloads
                 ? stringifyForAxiom(sanitizeForAxiom(attemptSignals.lastAttempt))

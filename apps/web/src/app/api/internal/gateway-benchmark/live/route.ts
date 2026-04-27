@@ -1,0 +1,315 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/utils/supabase/server";
+import {
+	buildCompareBody,
+	buildCompareHeaders,
+	type CompareArgs,
+	type CompareTarget,
+	endpointUrl,
+	normalizeCompareBaseUrl,
+	parseJsonObject,
+	parseSseFrame,
+} from "@/lib/internal/gatewayCompare";
+
+const liveCompareRequestSchema = z.object({
+	model: z.string().min(1).max(200),
+	prompt: z.string().min(1).max(8_000),
+	maxCompletionTokens: z.number().int().min(1).max(512),
+	endpoint: z.enum(["chat_completions", "responses"]),
+	gatewayBaseUrl: z.string().url().optional(),
+	openRouterBaseUrl: z.string().url().optional(),
+});
+
+type LiveCompareEvent =
+	| {
+			type: "started";
+			target: CompareTarget;
+	  }
+	| {
+			type: "headers";
+			target: CompareTarget;
+			status: number;
+			headersMs: number;
+	  }
+	| {
+			type: "delta";
+			target: CompareTarget;
+			atMs: number;
+			text: string;
+	  }
+	| {
+			type: "note";
+			target: CompareTarget;
+			atMs: number;
+			text: string;
+	  }
+	| {
+			type: "done";
+			target: CompareTarget;
+			status: number;
+			totalMs: number;
+			firstContentMs: number | null;
+	  }
+	| {
+			type: "error";
+			target: CompareTarget;
+			status: number;
+			headersMs: number;
+			totalMs: number;
+			message: string;
+	  }
+	| {
+			type: "fatal";
+			message: string;
+	  };
+
+const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+function round1(value: number) {
+	return Math.round(value * 10) / 10;
+}
+
+function extractContentText(frame: any): string {
+	const chatContent = frame?.choices?.[0]?.delta?.content;
+	if (typeof chatContent === "string") return chatContent;
+	if (Array.isArray(chatContent)) {
+		return chatContent
+			.map((part) => {
+				if (typeof part === "string") return part;
+				if (part && typeof part.text === "string") return part.text;
+				return "";
+			})
+			.join("");
+	}
+
+	if (typeof frame?.delta === "string") return frame.delta;
+	if (typeof frame?.response?.output_text === "string") return frame.response.output_text;
+	return "";
+}
+
+async function ensureAdmin() {
+	const supabase = await createClient();
+	const {
+		data: { user },
+		error: authError,
+	} = await supabase.auth.getUser();
+
+	if (authError || !user) {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	const { data: userData, error: userError } = await supabase
+		.from("users")
+		.select("role")
+		.eq("user_id", user.id)
+		.single();
+
+	if (userError || userData?.role !== "admin") {
+		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+
+	return null;
+}
+
+async function streamTarget(
+	target: CompareTarget,
+	args: Omit<CompareArgs, "runs">,
+	keys: { gatewayApiKey: string; openRouterApiKey: string },
+	send: (event: LiveCompareEvent) => void,
+) {
+	const apiKey = target === "ai-stats" ? keys.gatewayApiKey : keys.openRouterApiKey;
+	const baseUrl = normalizeCompareBaseUrl(
+		target === "ai-stats"
+			? args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL
+			: args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL,
+	);
+	const start = performance.now();
+	let headersMs = 0;
+	let firstContentMs: number | null = null;
+	let preview = "";
+	let noteCount = 0;
+
+	send({ type: "started", target });
+
+	try {
+		const response = await fetch(endpointUrl(baseUrl, args.endpoint), {
+			method: "POST",
+			headers: buildCompareHeaders(target, apiKey),
+			body: JSON.stringify(buildCompareBody({ ...args, runs: 1 })),
+			cache: "no-store",
+		});
+
+		headersMs = round1(performance.now() - start);
+		send({
+			type: "headers",
+			target,
+			status: response.status,
+			headersMs,
+		});
+
+		const reader = response.body?.getReader();
+		if (!reader) {
+			send({
+				type: "error",
+				target,
+				status: response.status,
+				headersMs,
+				totalMs: headersMs,
+				message: "Missing response body",
+			});
+			return;
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = "";
+
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			if (!value) continue;
+
+			const text = decoder.decode(value, { stream: true });
+			if (preview.length < 500) preview += text.slice(0, 500 - preview.length);
+			buffer += text;
+
+			const frames = buffer.split(/\n\n/);
+			buffer = frames.pop() ?? "";
+			for (const raw of frames) {
+				const atMs = round1(performance.now() - start);
+				const parsed = parseSseFrame(raw);
+				const data = parsed.data.trim();
+
+				if (data === "[DONE]" || !data) continue;
+
+				const json = parseJsonObject(data);
+				if (!json) {
+					if (noteCount < 4) {
+						noteCount += 1;
+						send({
+							type: "note",
+							target,
+							atMs,
+							text: data.slice(0, 120),
+						});
+					}
+					continue;
+				}
+
+				const contentText = extractContentText(json);
+				if (contentText) {
+					if (firstContentMs === null) firstContentMs = atMs;
+					send({
+						type: "delta",
+						target,
+						atMs,
+						text: contentText,
+					});
+				}
+			}
+		}
+
+		const totalMs = round1(performance.now() - start);
+		if (!response.ok) {
+			send({
+				type: "error",
+				target,
+				status: response.status,
+				headersMs,
+				totalMs,
+				message: `HTTP ${response.status}: ${preview.slice(0, 500)}`,
+			});
+			return;
+		}
+
+		send({
+			type: "done",
+			target,
+			status: response.status,
+			totalMs,
+			firstContentMs,
+		});
+	} catch (error) {
+		send({
+			type: "error",
+			target,
+			status: 0,
+			headersMs,
+			totalMs: round1(performance.now() - start),
+			message: error instanceof Error ? error.message : String(error),
+		});
+	}
+}
+
+export async function POST(req: Request) {
+	const authResponse = await ensureAdmin();
+	if (authResponse) return authResponse;
+
+	let rawBody: unknown;
+	try {
+		rawBody = await req.json();
+	} catch {
+		return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+	}
+
+	const parsed = liveCompareRequestSchema.safeParse(rawBody);
+	if (!parsed.success) {
+		return NextResponse.json(
+			{
+				error: "Invalid request body",
+				details: parsed.error.flatten(),
+			},
+			{ status: 400 },
+		);
+	}
+
+	const gatewayApiKey = process.env.AI_STATS_PERFORMANCE_TEST_KEY ?? "";
+	const openRouterApiKey =
+		process.env.PERFORMANCE_KEY_OPENROUTER ??
+		process.env.OPENROUTER_API_KEY ??
+		"";
+
+	if (!gatewayApiKey || !openRouterApiKey) {
+		return NextResponse.json(
+			{
+				error: "Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
+			},
+			{ status: 500 },
+		);
+	}
+
+	const stream = new ReadableStream<Uint8Array>({
+		start(controller) {
+			const encoder = new TextEncoder();
+			let closed = false;
+			const send = (event: LiveCompareEvent) => {
+				if (closed) return;
+				controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+			};
+
+			void Promise.all([
+				streamTarget("ai-stats", parsed.data, { gatewayApiKey, openRouterApiKey }, send),
+				streamTarget("openrouter", parsed.data, { gatewayApiKey, openRouterApiKey }, send),
+			])
+				.catch((error) => {
+					send({
+						type: "fatal",
+						message: error instanceof Error ? error.message : String(error),
+					});
+				})
+				.finally(() => {
+					closed = true;
+					controller.close();
+				});
+		},
+	});
+
+	return new Response(stream, {
+		headers: {
+			"Content-Type": "application/x-ndjson; charset=utf-8",
+			"Cache-Control": "no-store",
+			Connection: "keep-alive",
+		},
+	});
+}

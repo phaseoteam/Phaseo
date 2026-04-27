@@ -506,8 +506,13 @@ function withOpenAIRequestMetadata(
 	ir: IRChatRequest,
 	providerId: string,
 	requestId: string,
+	options?: {
+		includeMetadata?: boolean;
+	},
 ): IRChatRequest {
 	if (providerId !== "openai") return ir;
+	const includeMetadata = options?.includeMetadata !== false;
+	const next: IRChatRequest = { ...ir };
 	const explicitSafetyIdentifier = typeof ir.safetyIdentifier === "string" && ir.safetyIdentifier.trim().length > 0
 		? ir.safetyIdentifier.trim()
 		: undefined;
@@ -515,15 +520,23 @@ function withOpenAIRequestMetadata(
 		? ir.userId.trim()
 		: undefined;
 	const safetyIdentifier = explicitSafetyIdentifier ?? userSafetyIdentifier ?? requestId;
+	if (!includeMetadata) {
+		delete next.metadata;
+		next.safetyIdentifier = safetyIdentifier;
+		return next;
+	}
+
 	const metadata = { ...(ir.metadata ?? {}) };
-	if (typeof metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY] !== "string" || metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY].length === 0) {
+	if (
+		typeof metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY] !== "string" ||
+		metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY].length === 0
+	) {
 		metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY] = requestId;
 	}
-	return {
-		...ir,
-		metadata,
-		safetyIdentifier,
-	};
+
+	next.metadata = metadata;
+	next.safetyIdentifier = safetyIdentifier;
+	return next;
 }
 
 function openAIRequestHeaders(providerId: string, requestId: string): Record<string, string> | undefined {
@@ -667,19 +680,25 @@ function cherryPickIRParams(
 
 async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+	const requestBuildStartMs = Date.now();
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
 		byokMeta: args.byokMeta,
 	} as any);
 
 	const modelForRouting = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const useNativeChatRoute =
+		args.providerId === "openai" &&
+		args.protocol === "openai.chat.completions" &&
+		!(args.ir as IRChatRequest).reasoning;
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
 		args.ir as IRChatRequest,
 		args.providerId,
 		args.requestId,
+		{ includeMetadata: !useNativeChatRoute },
 	);
 	const route = args.providerId === "openai"
-		? "responses"
+		? (useNativeChatRoute ? "chat" : "responses")
 		: resolveOpenAICompatRoute(args.providerId, modelForRouting);
 	const endpoint = route === "responses" ? "/responses" : "/chat/completions";
 
@@ -709,12 +728,14 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		args.meta.debug?.trace,
 	);
 	const mappedRequest = captureRequest ? requestBody : undefined;
+	const requestBuildMs = Math.max(0, Date.now() - requestBuildStartMs);
 	try {
 		(args.ir as any).rawRequest = sanitized.request;
 	} catch {
 		// ignore if readonly
 	}
 
+	const upstreamHeadersStartMs = Date.now();
 	const res = await fetch(openAICompatUrl(args.providerId, endpoint), {
 		method: "POST",
 		headers: openAICompatHeaders(
@@ -724,6 +745,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		),
 		body: requestBody,
 	});
+	const upstreamHeadersMs = Math.max(0, Date.now() - upstreamHeadersStartMs);
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -743,11 +765,20 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			timing: {
+				requestBuildMs,
+				upstreamHeadersMs,
+			},
 		};
 	}
 
 	if (irWithRequestMetadata.stream) {
-		const stream = resolveStreamForProtocol(res, args, route);
+		const stream =
+			useNativeChatRoute &&
+			route === "chat" &&
+			res.body
+				? res.body
+				: resolveStreamForProtocol(res, args, route);
 		return {
 			kind: "stream",
 			stream,
@@ -760,6 +791,8 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 			timing: {
 				latencyMs: undefined,
 				generationMs: undefined,
+				requestBuildMs,
+				upstreamHeadersMs,
 			},
 		};
 	}
@@ -792,6 +825,8 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		timing: {
 			latencyMs: firstByteMs ?? totalMs,
 			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			requestBuildMs,
+			upstreamHeadersMs,
 		},
 	};
 }

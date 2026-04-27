@@ -81,6 +81,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	// Use upstream start time from pipeline (set before executor is called)
 	// Falls back to current time if not provided (backward compatibility)
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+	const requestBuildStartMs = Date.now();
 	// Resolve API key (gateway or BYOK)
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
@@ -137,6 +138,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			// ignore if readonly
 		}
 
+		const fetchStartMs = Date.now();
 		const response = await fetch(openAICompatUrl(args.providerId, endpointForRoute(targetRoute)), {
 			method: "POST",
 			headers: openAICompatHeaders(args.providerId, keyInfo.key),
@@ -147,6 +149,8 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			response,
 			requestBody,
 			request: sanitized.request,
+			requestBuildMs: Math.max(0, fetchStartMs - requestBuildStartMs),
+			upstreamHeadersMs: Math.max(0, Date.now() - fetchStartMs),
 		};
 	};
 
@@ -159,34 +163,48 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		payload: Record<string, any>,
 	) => {
 		let delayMs = OPENAI_COMPAT_TRANSIENT_RETRY_BASE_DELAY_MS;
+		let totalRetryDelayMs = 0;
 		for (let transientAttempt = 0; transientAttempt <= maxTransientRetries; transientAttempt += 1) {
 			try {
 				const result = await sendPayload(targetRoute, payload);
 				const hasRetryLeft = transientAttempt < maxTransientRetries;
 				if (!hasRetryLeft || !shouldRetryOpenAICompatStatus(result.response.status)) {
-					return result;
+					return {
+						...result,
+						transientRetryDelayMs: totalRetryDelayMs,
+					};
 				}
 
 				const retryAfterMs = parseRetryAfterMs(result.response.headers.get("retry-after"));
-				await sleep(retryAfterMs ?? delayMs);
+				const sleepMs = retryAfterMs ?? delayMs;
+				totalRetryDelayMs += sleepMs;
+				await sleep(sleepMs);
 				delayMs = Math.min(delayMs * 2, OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS);
 			} catch (error) {
 				const hasRetryLeft = transientAttempt < maxTransientRetries;
 				if (!hasRetryLeft) {
 					throw error;
 				}
+				totalRetryDelayMs += delayMs;
 				await sleep(delayMs);
 				delayMs = Math.min(delayMs * 2, OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS);
 			}
 		}
 
-		return sendPayload(targetRoute, payload);
+		const finalResult = await sendPayload(targetRoute, payload);
+		return {
+			...finalResult,
+			transientRetryDelayMs: totalRetryDelayMs,
+		};
 	};
 
 	let attempt = await sendPayloadWithRetry(route, buildPayloadForRoute(route));
 	let res = attempt.response;
 	let requestBody = attempt.requestBody;
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+	let requestBuildMs = attempt.requestBuildMs;
+	let upstreamHeadersMs = attempt.upstreamHeadersMs;
+	let transientRetryDelayMs = attempt.transientRetryDelayMs;
 
 	let adaptiveRetryCount = 0;
 	while (!res.ok && adaptiveRetryCount < OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES) {
@@ -204,6 +222,9 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			res = attempt.response;
 			requestBody = attempt.requestBody;
 			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+			requestBuildMs = attempt.requestBuildMs;
+			upstreamHeadersMs = attempt.upstreamHeadersMs;
+			transientRetryDelayMs = attempt.transientRetryDelayMs;
 			adaptiveRetryCount += 1;
 			continue;
 		}
@@ -232,6 +253,9 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		res = attempt.response;
 		requestBody = attempt.requestBody;
 		mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+		requestBuildMs = attempt.requestBuildMs;
+		upstreamHeadersMs = attempt.upstreamHeadersMs;
+		transientRetryDelayMs = attempt.transientRetryDelayMs;
 		adaptiveRetryCount += 1;
 	}
 
@@ -252,6 +276,11 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			timing: {
+				requestBuildMs,
+				upstreamHeadersMs,
+				transientRetryDelayMs,
+			},
 		};
 	}
 
@@ -270,6 +299,9 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			timing: {
 				latencyMs: undefined,
 				generationMs: undefined,
+				requestBuildMs,
+				upstreamHeadersMs,
+				transientRetryDelayMs,
 			},
 		};
 	} else {
@@ -297,6 +329,9 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			timing: {
 				latencyMs: firstByteMs ?? totalMs,
 				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+				requestBuildMs,
+				upstreamHeadersMs,
+				transientRetryDelayMs,
 			},
 		};
 	}

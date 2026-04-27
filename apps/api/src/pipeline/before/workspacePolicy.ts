@@ -1,5 +1,5 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
-import { getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import type { ProviderCandidate, WorkspacePolicy } from "./types";
 
 type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
@@ -23,6 +23,18 @@ type ProviderHintSet = {
 	ignore: string[];
 };
 
+const WORKSPACE_POLICY_L1_TTL_MS = 30_000;
+const WORKSPACE_POLICY_L1_MAX_ENTRIES = 2_000;
+const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy";
+const WORKSPACE_POLICY_KV_TTL_SECONDS = 60;
+
+type WorkspacePolicyL1Entry = {
+	expiresAt: number;
+	value: WorkspacePolicy;
+};
+
+const workspacePolicyL1 = new Map<string, WorkspacePolicyL1Entry>();
+
 export type WorkspacePolicyDiagnostics = {
 	resolvedModel: string;
 	allowedApiModels: string[];
@@ -34,6 +46,74 @@ export type WorkspacePolicyDiagnostics = {
 	beforeCount: number;
 	afterCount: number;
 };
+
+function ttlWithJitter(baseMs: number): number {
+	return baseMs + Math.floor(Math.random() * baseMs * 0.2);
+}
+
+function workspacePolicyCacheKey(workspaceId: string, apiKeyId: string): string {
+	return `${workspaceId}:${apiKeyId}`;
+}
+
+function workspacePolicyKvKey(workspaceId: string, apiKeyId: string): string {
+	return `${WORKSPACE_POLICY_KV_PREFIX}:${workspaceId}:${apiKeyId}`;
+}
+
+function isStringArrayOrNull(value: unknown): value is string[] | null {
+	return value === null || (Array.isArray(value) && value.every((item) => typeof item === "string"));
+}
+
+function isWorkspacePolicyLike(value: unknown): value is WorkspacePolicy {
+	if (!value || typeof value !== "object") return false;
+	const policy = value as Partial<WorkspacePolicy>;
+	return (
+		isStringArrayOrNull(policy.providerAllowlist) &&
+		isStringArrayOrNull(policy.providerBlocklist) &&
+		isStringArrayOrNull(policy.allowedApiModels) &&
+		typeof policy.enforceAllowed === "boolean" &&
+		Array.isArray(policy.activeGuardrailIds) &&
+		policy.activeGuardrailIds.every((item) => typeof item === "string")
+	);
+}
+
+function cloneWorkspacePolicy(policy: WorkspacePolicy): WorkspacePolicy {
+	return {
+		providerAllowlist: policy.providerAllowlist ? [...policy.providerAllowlist] : null,
+		providerBlocklist: policy.providerBlocklist ? [...policy.providerBlocklist] : null,
+		allowedApiModels: policy.allowedApiModels ? [...policy.allowedApiModels] : null,
+		enforceAllowed: policy.enforceAllowed,
+		activeGuardrailIds: [...policy.activeGuardrailIds],
+	};
+}
+
+function readWorkspacePolicyL1(workspaceId: string, apiKeyId: string): WorkspacePolicy | null {
+	const key = workspacePolicyCacheKey(workspaceId, apiKeyId);
+	const entry = workspacePolicyL1.get(key);
+	if (!entry) return null;
+	if (entry.expiresAt <= Date.now()) {
+		workspacePolicyL1.delete(key);
+		return null;
+	}
+	return cloneWorkspacePolicy(entry.value);
+}
+
+function writeWorkspacePolicyL1(workspaceId: string, apiKeyId: string, value: WorkspacePolicy): void {
+	const now = Date.now();
+	for (const [key, entry] of workspacePolicyL1.entries()) {
+		if (entry.expiresAt <= now) {
+			workspacePolicyL1.delete(key);
+		}
+	}
+	while (workspacePolicyL1.size >= WORKSPACE_POLICY_L1_MAX_ENTRIES) {
+		const oldestKey = workspacePolicyL1.keys().next().value;
+		if (!oldestKey) break;
+		workspacePolicyL1.delete(oldestKey);
+	}
+	workspacePolicyL1.set(workspacePolicyCacheKey(workspaceId, apiKeyId), {
+		expiresAt: now + ttlWithJitter(WORKSPACE_POLICY_L1_TTL_MS),
+		value: cloneWorkspacePolicy(value),
+	});
+}
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
 	const normalized = String(value ?? "")
@@ -146,6 +226,22 @@ export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
 }): Promise<WorkspacePolicy> {
+	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId);
+	if (cached) return cached;
+
+	try {
+		const raw = await getCache().get(workspacePolicyKvKey(args.workspaceId, args.apiKeyId), "text");
+		if (raw) {
+			const parsed = JSON.parse(raw);
+			if (isWorkspacePolicyLike(parsed)) {
+				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, parsed);
+				return cloneWorkspacePolicy(parsed);
+			}
+		}
+	} catch {
+		// Ignore cache read failures and use the source of truth.
+	}
+
 	const supabase = getSupabaseAdmin();
 	const [settingsResult, keyGuardrailsResult] = await Promise.all([
 		supabase
@@ -190,10 +286,21 @@ export async function fetchWorkspacePolicy(args: {
 		guardrails = (guardrailsResult.data ?? []) as GuardrailRow[];
 	}
 
-	return buildWorkspacePolicy({
+	const policy = buildWorkspacePolicy({
 		globalSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null,
 		guardrails,
 	});
+	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, policy);
+	dispatchBackground(
+		getCache()
+			.put(
+				workspacePolicyKvKey(args.workspaceId, args.apiKeyId),
+				JSON.stringify(policy),
+				{ expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS },
+			)
+			.catch(() => undefined),
+	);
+	return policy;
 }
 
 export function applyWorkspacePolicy(args: {
