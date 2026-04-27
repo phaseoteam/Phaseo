@@ -448,17 +448,6 @@ async function attemptProviderWithIR(
 			duration_ms: Math.round(performance.now() - attemptStartedAt),
 			was_probe: false,
 		});
-		recordProviderAttempt(ctx, {
-			attempt_number: attemptNumber,
-			provider: candidate.providerId,
-			endpoint: ctx.endpoint,
-			model: baseModel,
-			provider_model_slug: null,
-			outcome: "blocked",
-			type: "blocked",
-			duration_ms: Math.round(performance.now() - attemptStartedAt),
-			was_probe: false,
-		});
 		return { ok: false, skip: "blocked" };
 	}
 	const isProbe = admission === "probe";
