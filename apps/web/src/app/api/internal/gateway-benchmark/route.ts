@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { runGatewayCompare } from "@/lib/internal/gatewayCompare";
+import { isAllowedBenchmarkBaseUrl, runGatewayCompare } from "@/lib/internal/gatewayCompare";
+
+const trustedBaseUrlSchema = z.string().url().refine(
+	(value) => isAllowedBenchmarkBaseUrl(value),
+	"Base URL host is not allowed",
+);
 
 const compareRequestSchema = z.object({
 	model: z.string().min(1).max(200),
@@ -9,8 +14,8 @@ const compareRequestSchema = z.object({
 	runs: z.number().int().min(1).max(10),
 	maxCompletionTokens: z.number().int().min(1).max(512),
 	endpoint: z.enum(["chat_completions", "responses"]),
-	gatewayBaseUrl: z.string().url().optional(),
-	openRouterBaseUrl: z.string().url().optional(),
+	gatewayBaseUrl: trustedBaseUrlSchema.optional(),
+	openRouterBaseUrl: trustedBaseUrlSchema.optional(),
 });
 
 export async function POST(req: Request) {

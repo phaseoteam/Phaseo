@@ -84,6 +84,7 @@ async function materializeStreamResultToCompleted(args: {
 	if (!stream) {
 		throw new Error("gateway_stream_materialization_missing_body");
 	}
+	const materializeStartedAt = performance.now();
 	const consumed = await consumeTextProtocolStreamToIR({
 		protocol: args.protocol,
 		stream,
@@ -91,13 +92,30 @@ async function materializeStreamResultToCompleted(args: {
 		model: args.model,
 		provider: args.result.provider,
 	});
+	const materializedGenerationMs = Math.max(
+		0,
+		Math.round(performance.now() - materializeStartedAt),
+	);
 	return {
 		...args.result,
 		kind: "completed" as const,
 		ir: consumed.ir,
 		stream: null,
 		usageFinalizer: null,
+		generationTimeMs: Math.max(
+			typeof args.result.generationTimeMs === "number" ? args.result.generationTimeMs : 0,
+			materializedGenerationMs,
+		),
 		rawResponse: consumed.rawResponse,
+		timing: {
+			...(args.result.timing ?? {}),
+			generationMs: Math.max(
+				typeof args.result.timing?.generationMs === "number"
+					? args.result.timing.generationMs
+					: 0,
+				materializedGenerationMs,
+			),
+		},
 		bill: {
 			...args.result.bill,
 			usage:

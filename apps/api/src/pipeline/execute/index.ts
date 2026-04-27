@@ -664,8 +664,8 @@ async function attemptProviderWithIR(
 		}
 		timing.timer.end("adapter_start");
 		const generationTimeMs = Math.round(performance.now() - t0);
+		const attemptDurationMs = Math.round(performance.now() - attemptStartedAt);
 
-		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
 		const usageForMetrics = executorResult.kind === "completed"
 			? (executorResult.ir as any)?.usage
 			: null;
@@ -694,7 +694,7 @@ async function attemptProviderWithIR(
 				provider: candidate.providerId,
 				model: baseModel,
 				ok: executorResult.upstream.ok,
-				latency_ms: endToEndMs,
+				latency_ms: attemptDurationMs,
 				generation_ms: ctx.meta.generation_ms ?? generationTimeMs,
 				tokens_in: tokensIn,
 				tokens_out: tokensOut,
@@ -802,7 +802,7 @@ async function attemptProviderWithIR(
 			provider_model_slug: providerModelSlug ?? null,
 			outcome: "success",
 			type: "success",
-			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			duration_ms: attemptDurationMs,
 			status: executorResult.upstream.status,
 			status_text: executorResult.upstream.statusText || null,
 			key_source: executorResult.keySource ?? null,
@@ -852,12 +852,11 @@ async function attemptProviderWithIR(
 			upstream_error_description: stackPreview,
 			was_probe: isProbe,
 		});
-		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
 		await onCallEnd(ctx.endpoint, {
 			provider: candidate.providerId,
 			model: baseModel,
 			ok: false,
-			latency_ms: endToEndMs,
+			latency_ms: Math.round(performance.now() - attemptStartedAt),
 			generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
 		});
 		if (isProbe) {

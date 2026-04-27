@@ -27,6 +27,8 @@ const WORKSPACE_POLICY_L1_TTL_MS = 30_000;
 const WORKSPACE_POLICY_L1_MAX_ENTRIES = 2_000;
 const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy";
 const WORKSPACE_POLICY_KV_TTL_SECONDS = 60;
+const WORKSPACE_POLICY_VERSION_PREFIX = "gateway:workspace-policy-version";
+const WORKSPACE_POLICY_VERSION_L1_TTL_MS = 5_000;
 
 type WorkspacePolicyL1Entry = {
 	expiresAt: number;
@@ -34,6 +36,7 @@ type WorkspacePolicyL1Entry = {
 };
 
 const workspacePolicyL1 = new Map<string, WorkspacePolicyL1Entry>();
+const workspacePolicyVersionL1 = new Map<string, { value: number; expiresAt: number }>();
 
 export type WorkspacePolicyDiagnostics = {
 	resolvedModel: string;
@@ -51,12 +54,63 @@ function ttlWithJitter(baseMs: number): number {
 	return baseMs + Math.floor(Math.random() * baseMs * 0.2);
 }
 
-function workspacePolicyCacheKey(workspaceId: string, apiKeyId: string): string {
-	return `${workspaceId}:${apiKeyId}`;
+function workspacePolicyVersionKey(workspaceId: string): string {
+	return `${WORKSPACE_POLICY_VERSION_PREFIX}:${workspaceId}`;
 }
 
-function workspacePolicyKvKey(workspaceId: string, apiKeyId: string): string {
-	return `${WORKSPACE_POLICY_KV_PREFIX}:${workspaceId}:${apiKeyId}`;
+function workspacePolicyCacheKey(workspaceId: string, apiKeyId: string, versionToken: string): string {
+	return `${workspaceId}:${apiKeyId}:${versionToken}`;
+}
+
+function workspacePolicyKvKey(workspaceId: string, apiKeyId: string, versionToken: string): string {
+	return `${WORKSPACE_POLICY_KV_PREFIX}:${workspaceId}:${apiKeyId}:${versionToken}`;
+}
+
+function readWorkspacePolicyVersionL1(workspaceId: string): number | null {
+	const entry = workspacePolicyVersionL1.get(workspaceId);
+	if (!entry) return null;
+	if (entry.expiresAt <= Date.now()) {
+		workspacePolicyVersionL1.delete(workspaceId);
+		return null;
+	}
+	return entry.value;
+}
+
+function writeWorkspacePolicyVersionL1(workspaceId: string, value: number): void {
+	workspacePolicyVersionL1.set(workspaceId, {
+		value,
+		expiresAt: Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS),
+	});
+}
+
+async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
+	const cached = readWorkspacePolicyVersionL1(workspaceId);
+	if (cached !== null) return `v${cached}`;
+
+	try {
+		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
+		const parsed = raw ? Number(raw) : 0;
+		const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+		writeWorkspacePolicyVersionL1(workspaceId, normalized);
+		return `v${normalized}`;
+	} catch {
+		return "v0";
+	}
+}
+
+export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<number> {
+	let current = 0;
+	try {
+		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
+		const parsed = raw ? Number(raw) : 0;
+		current = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+	} catch {
+		current = 0;
+	}
+	const next = current + 1;
+	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
+	writeWorkspacePolicyVersionL1(workspaceId, next);
+	return next;
 }
 
 function isStringArrayOrNull(value: unknown): value is string[] | null {
@@ -86,8 +140,8 @@ function cloneWorkspacePolicy(policy: WorkspacePolicy): WorkspacePolicy {
 	};
 }
 
-function readWorkspacePolicyL1(workspaceId: string, apiKeyId: string): WorkspacePolicy | null {
-	const key = workspacePolicyCacheKey(workspaceId, apiKeyId);
+function readWorkspacePolicyL1(workspaceId: string, apiKeyId: string, versionToken: string): WorkspacePolicy | null {
+	const key = workspacePolicyCacheKey(workspaceId, apiKeyId, versionToken);
 	const entry = workspacePolicyL1.get(key);
 	if (!entry) return null;
 	if (entry.expiresAt <= Date.now()) {
@@ -97,7 +151,12 @@ function readWorkspacePolicyL1(workspaceId: string, apiKeyId: string): Workspace
 	return cloneWorkspacePolicy(entry.value);
 }
 
-function writeWorkspacePolicyL1(workspaceId: string, apiKeyId: string, value: WorkspacePolicy): void {
+function writeWorkspacePolicyL1(
+	workspaceId: string,
+	apiKeyId: string,
+	versionToken: string,
+	value: WorkspacePolicy,
+): void {
 	const now = Date.now();
 	for (const [key, entry] of workspacePolicyL1.entries()) {
 		if (entry.expiresAt <= now) {
@@ -109,7 +168,7 @@ function writeWorkspacePolicyL1(workspaceId: string, apiKeyId: string, value: Wo
 		if (!oldestKey) break;
 		workspacePolicyL1.delete(oldestKey);
 	}
-	workspacePolicyL1.set(workspacePolicyCacheKey(workspaceId, apiKeyId), {
+	workspacePolicyL1.set(workspacePolicyCacheKey(workspaceId, apiKeyId, versionToken), {
 		expiresAt: now + ttlWithJitter(WORKSPACE_POLICY_L1_TTL_MS),
 		value: cloneWorkspacePolicy(value),
 	});
@@ -226,15 +285,19 @@ export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
 }): Promise<WorkspacePolicy> {
-	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId);
+	const versionToken = await getWorkspacePolicyVersionToken(args.workspaceId);
+	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
 	if (cached) return cached;
 
 	try {
-		const raw = await getCache().get(workspacePolicyKvKey(args.workspaceId, args.apiKeyId), "text");
+		const raw = await getCache().get(
+			workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
+			"text",
+		);
 		if (raw) {
 			const parsed = JSON.parse(raw);
 			if (isWorkspacePolicyLike(parsed)) {
-				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, parsed);
+				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
 				return cloneWorkspacePolicy(parsed);
 			}
 		}
@@ -290,15 +353,14 @@ export async function fetchWorkspacePolicy(args: {
 		globalSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null,
 		guardrails,
 	});
-	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, policy);
+	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
 	dispatchBackground(
 		getCache()
 			.put(
-				workspacePolicyKvKey(args.workspaceId, args.apiKeyId),
+				workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
 				JSON.stringify(policy),
 				{ expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS },
-			)
-			.catch(() => undefined),
+			),
 	);
 	return policy;
 }

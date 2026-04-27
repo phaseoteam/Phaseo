@@ -7,18 +7,25 @@ import {
 	type CompareArgs,
 	type CompareTarget,
 	endpointUrl,
+	isAllowedBenchmarkBaseUrl,
 	normalizeCompareBaseUrl,
 	parseJsonObject,
 	parseSseFrame,
 } from "@/lib/internal/gatewayCompare";
+
+const LIVE_COMPARE_FETCH_TIMEOUT_MS = 30_000;
+const trustedBaseUrlSchema = z.string().url().refine(
+	(value) => isAllowedBenchmarkBaseUrl(value),
+	"Base URL host is not allowed",
+);
 
 const liveCompareRequestSchema = z.object({
 	model: z.string().min(1).max(200),
 	prompt: z.string().min(1).max(8_000),
 	maxCompletionTokens: z.number().int().min(1).max(512),
 	endpoint: z.enum(["chat_completions", "responses"]),
-	gatewayBaseUrl: z.string().url().optional(),
-	openRouterBaseUrl: z.string().url().optional(),
+	gatewayBaseUrl: trustedBaseUrlSchema.optional(),
+	openRouterBaseUrl: trustedBaseUrlSchema.optional(),
 });
 
 type LiveCompareEvent =
@@ -69,6 +76,24 @@ const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 function round1(value: number) {
 	return Math.round(value * 10) / 10;
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number): Promise<Response> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(input, {
+			...init,
+			signal: controller.signal,
+		});
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new Error(`Live benchmark request timed out after ${timeoutMs} ms`);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 }
 
 function extractContentText(frame: any): string {
@@ -134,12 +159,12 @@ async function streamTarget(
 	send({ type: "started", target });
 
 	try {
-		const response = await fetch(endpointUrl(baseUrl, args.endpoint), {
+		const response = await fetchWithTimeout(endpointUrl(baseUrl, args.endpoint), {
 			method: "POST",
 			headers: buildCompareHeaders(target, apiKey),
 			body: JSON.stringify(buildCompareBody({ ...args, runs: 1 })),
 			cache: "no-store",
-		});
+		}, LIVE_COMPARE_FETCH_TIMEOUT_MS);
 
 		headersMs = round1(performance.now() - start);
 		send({

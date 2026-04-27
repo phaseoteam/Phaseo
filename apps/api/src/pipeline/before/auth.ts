@@ -214,7 +214,9 @@ type KeyLookupL1Entry = {
     value: KeyLookupL1Value;
     expiresAt: number;
 };
-type AuthSuccessL1Value = Omit<AuthSuccess, "ok" | "internal">;
+type AuthSuccessL1Value = Omit<AuthSuccess, "ok" | "internal"> & {
+    keyExpiresAt?: string | null;
+};
 type AuthSuccessL1Entry = {
     value: AuthSuccessL1Value;
     expiresAt: number;
@@ -276,6 +278,10 @@ function readAuthSuccessL1(key: string): AuthSuccessL1Value | null {
     const entry = authSuccessL1Cache.get(key);
     if (!entry) return null;
     if (entry.expiresAt <= Date.now()) {
+        authSuccessL1Cache.delete(key);
+        return null;
+    }
+    if (isExpiredKey(entry.value.keyExpiresAt)) {
         authSuccessL1Cache.delete(key);
         return null;
     }
@@ -567,6 +573,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             apiKeyRef: result.apiKeyRef,
             apiKeyKid: result.apiKeyKid,
             userId: result.userId ?? null,
+            keyExpiresAt: keyRow.expires_at ?? null,
         });
     }
     return result;

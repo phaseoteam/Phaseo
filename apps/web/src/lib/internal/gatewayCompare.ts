@@ -1,4 +1,5 @@
 export type CompareTarget = "ai-stats" | "openrouter";
+const COMPARE_FETCH_TIMEOUT_MS = 30_000;
 
 export type CompareArgs = {
 	model: string;
@@ -105,6 +106,32 @@ export type GatewayStageSummary = {
 
 const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const PROD_ALLOWED_BENCHMARK_HOSTS = new Set(["api.phaseo.app", "openrouter.ai"]);
+const DEV_ALLOWED_BENCHMARK_HOSTS = new Set([
+	...PROD_ALLOWED_BENCHMARK_HOSTS,
+	"localhost",
+	"127.0.0.1",
+	"::1",
+]);
+
+export function isAllowedBenchmarkBaseUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		if (!["https:", "http:"].includes(url.protocol)) return false;
+		const allowedHosts =
+			process.env.NODE_ENV === "production"
+				? PROD_ALLOWED_BENCHMARK_HOSTS
+				: DEV_ALLOWED_BENCHMARK_HOSTS;
+		if (!allowedHosts.has(url.hostname)) return false;
+		if (process.env.NODE_ENV === "production" && url.protocol !== "https:") return false;
+		if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1") {
+			return process.env.NODE_ENV !== "production";
+		}
+		return true;
+	} catch {
+		return false;
+	}
+}
 
 export function normalizeCompareBaseUrl(baseUrl: string): string {
 	return baseUrl.replace(/\/+$/, "");
@@ -219,6 +246,24 @@ function round3(value: number): number {
 	return Math.round(value * 1000) / 1000;
 }
 
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number): Promise<Response> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(input, {
+			...init,
+			signal: controller.signal,
+		});
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new Error(`Benchmark request timed out after ${timeoutMs} ms`);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
 function sumStageValues(values: Array<number | null>): number | null {
 	const filtered = values.filter((value): value is number => typeof value === "number");
 	if (!filtered.length) return null;
@@ -327,12 +372,12 @@ async function traceOne(
 	let serverTiming: Record<string, number> | null = null;
 
 	try {
-		const response = await fetch(endpointUrl(baseUrl, args.endpoint), {
+		const response = await fetchWithTimeout(endpointUrl(baseUrl, args.endpoint), {
 			method: "POST",
 			headers: buildCompareHeaders(target, apiKey),
 			body: JSON.stringify(buildCompareBody(args)),
 			cache: "no-store",
-		});
+		}, COMPARE_FETCH_TIMEOUT_MS);
 		headersMs = round3(performance.now() - start);
 		serverTiming =
 			target === "ai-stats"
