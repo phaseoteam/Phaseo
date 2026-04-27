@@ -68,6 +68,12 @@ export class Timer {
         }
     }
 
+    /** Record a pre-measured span duration in milliseconds. */
+    record(name: string, durMs: number) {
+        if (!Number.isFinite(durMs)) return;
+        this.spans.set(this.k(name), Math.max(0, durMs));
+    }
+
     /** Server-Timing header value (e.g., "total;dur=12.345, parse_json;dur=0.812") */
     serverTiming(): string {
         return [...this.spans.entries()]
