@@ -101,6 +101,9 @@ export type ExecutorCompletedResult = {
 	timing?: {
 		latencyMs?: number;
 		generationMs?: number;
+		requestBuildMs?: number;
+		upstreamHeadersMs?: number;
+		transientRetryDelayMs?: number;
 	};
 };
 
@@ -117,6 +120,9 @@ export type ExecutorStreamingResult = {
 	timing?: {
 		latencyMs?: number;
 		generationMs?: number;
+		requestBuildMs?: number;
+		upstreamHeadersMs?: number;
+		transientRetryDelayMs?: number;
 	};
 };
 

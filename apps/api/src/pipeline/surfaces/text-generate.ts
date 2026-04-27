@@ -368,6 +368,8 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			exec.result.normalized = protocolResponse;
 		}
 
+		timing.timer.end("execute_total", "execute_start");
+
 		if (
 			preparedServerTools.config.enabled &&
 			requestedStream &&

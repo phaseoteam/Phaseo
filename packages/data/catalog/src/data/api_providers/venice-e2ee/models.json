@@ -210,6 +210,27 @@
     ]
   },
   {
+    "api_model_id": "z-ai/glm-4.7-flash",
+    "provider_api_model_id": "venice/e2ee:z-ai/glm-4.7-flash",
+    "provider_model_slug": "e2ee-glm-4-7-flash-p",
+    "internal_model_id": "z-ai/glm-4.7-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "z-ai/glm-5",
     "provider_api_model_id": "venice/e2ee:z-ai/glm-5",
     "provider_model_slug": "e2ee-glm-5",
@@ -221,6 +242,27 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "venice/e2ee:z-ai/glm-5.1",
+    "provider_model_slug": "e2ee-glm-5-1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-24T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

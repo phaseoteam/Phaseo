@@ -16,6 +16,7 @@ import {
 	buildAnonymousStatsigUser,
 	buildAuthenticatedStatsigUser,
 	normalizeBetaFeatures,
+	type StatsigProfile,
 } from "./shared";
 
 const statsigServerKey =
@@ -35,6 +36,28 @@ export function getStatsigFlagsAdapter() {
 	return statsigFlagsAdapter;
 }
 
+export const getServerStatsigProfile = cache(
+	async (userId?: string | null): Promise<StatsigProfile> => {
+		if (!userId) {
+			return EMPTY_STATSIG_PROFILE;
+		}
+
+		const supabase = await createClient();
+		const { data: profileRow } = await supabase
+			.from("users")
+			.select("beta_opt_in, beta_features")
+			.eq("user_id", userId)
+			.maybeSingle();
+
+		return {
+			betaOptIn: Boolean(profileRow?.beta_opt_in),
+			betaFeatures: normalizeBetaFeatures(
+				profileRow?.beta_features ?? EMPTY_STATSIG_PROFILE.betaFeatures
+			),
+		};
+	}
+);
+
 export const getServerStatsigUser = cache(async () => {
 	const cookieStore = await cookies();
 	const stableID =
@@ -49,11 +72,7 @@ export const getServerStatsigUser = cache(async () => {
 		return buildAnonymousStatsigUser(stableID);
 	}
 
-	const { data: profileRow } = await supabase
-		.from("users")
-		.select("beta_opt_in, beta_features")
-		.eq("user_id", user.id)
-		.maybeSingle();
+	const profile = await getServerStatsigProfile(user.id);
 
 	return buildAuthenticatedStatsigUser(
 		{
@@ -61,12 +80,7 @@ export const getServerStatsigUser = cache(async () => {
 			email: user.email,
 		},
 		stableID,
-		{
-			betaOptIn: Boolean(profileRow?.beta_opt_in),
-			betaFeatures: normalizeBetaFeatures(
-				profileRow?.beta_features ?? EMPTY_STATSIG_PROFILE.betaFeatures
-			),
-		}
+		profile
 	);
 });
 

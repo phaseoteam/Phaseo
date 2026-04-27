@@ -4,7 +4,7 @@
 // How: Ranks candidates, attempts providers with failover, and records timing/usage.
 
 import type { GatewayResponsePayload } from "@core/types";
-import type { PipelineContext } from "../before/types";
+import type { PipelineContext, ProviderAttemptLog } from "../before/types";
 import { Timer } from "../telemetry/timer";
 
 export type PipelineTiming = {
@@ -222,6 +222,17 @@ async function readUpstreamFailurePayload(result: {
 	}
 }
 
+function getProviderAttempts(ctx: PipelineContext): ProviderAttemptLog[] {
+	return (ctx.providerAttempts ??= []);
+}
+
+function recordProviderAttempt(
+	ctx: PipelineContext,
+	entry: ProviderAttemptLog,
+): void {
+	getProviderAttempts(ctx).push(entry);
+}
+
 /**
  * IR-aware request result
  * Similar to RequestResult but works with IR
@@ -281,14 +292,18 @@ export async function doRequestWithIR(
 	const baseModel = getBaseModel(ctx.model);
 
 	// 1) Guard: Check candidates exist
-	const candidatesGuard = await guardCandidates(ctx, timing);
+	const candidatesGuard = await timing.timer.span("execute_guard_candidates", () =>
+		guardCandidates(ctx, timing),
+	);
 	if (!candidatesGuard.ok) return (candidatesGuard as { ok: false; response: Response }).response;
 	let candidates = candidatesGuard.value;
 
 	// 1.5) Filter providers by requested input/output modalities
 	const normalizedCapability = normalizeCapability(ctx.capability);
 	if (normalizedCapability === "text.generate") {
-		const filtered = filterCandidatesByModalities(candidates, ir as IRChatRequest);
+		const filtered = await timing.timer.span("execute_filter_modalities", () =>
+			filterCandidatesByModalities(candidates, ir as IRChatRequest),
+		);
 		if (!filtered.length) {
 			return err("unsupported_modalities", {
 				model: ctx.model,
@@ -300,7 +315,9 @@ export async function doRequestWithIR(
 		candidates = filtered;
 	}
 	if (normalizedCapability === "embeddings") {
-		const filtered = filterEmbeddingCandidatesByModalities(candidates, ir as IREmbeddingsRequest);
+		const filtered = await timing.timer.span("execute_filter_modalities", () =>
+			filterEmbeddingCandidatesByModalities(candidates, ir as IREmbeddingsRequest),
+		);
 		if (!filtered.length) {
 			return err("unsupported_modalities", {
 				model: ctx.model,
@@ -315,12 +332,16 @@ export async function doRequestWithIR(
 	// 1.6) Guard: Ensure at least one provider has pricing configured
 	const anyPricingAvailable = candidates.some((entry) => Boolean(entry.pricingCard));
 	if (!anyPricingAvailable && !ctx.testingMode) {
-		const pricingGuard = await guardPricingFound(false, ctx, timing);
+		const pricingGuard = await timing.timer.span("execute_guard_pricing", () =>
+			guardPricingFound(false, ctx, timing),
+		);
 		if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
 	}
 
 	// 2) Rank providers (health-aware)
-	const ranked = await rankProviders(candidates, ctx);
+	const ranked = await timing.timer.span("execute_rank_providers", () =>
+		rankProviders(candidates, ctx),
+	);
 
 	// 3) Try providers in order (failover up to 5)
 	const maxTries = calculateMaxTries(ranked.length);
@@ -337,6 +358,7 @@ export async function doRequestWithIR(
 			timing,
 			baseModel,
 			maxTries === 1,
+			attempt + 1,
 		);
 
 		if (result.ok) {
@@ -355,11 +377,15 @@ export async function doRequestWithIR(
 	}
 
 	// 4) Guard: Check if any pricing was found
-	const pricingGuard = await guardPricingFound(anyPricingFound, ctx, timing);
+	const pricingGuard = await timing.timer.span("execute_guard_pricing", () =>
+		guardPricingFound(anyPricingFound, ctx, timing),
+	);
 	if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
 
 	// 5) All providers failed
-	const failureGuard = await guardAllFailed(ctx, timing);
+	const failureGuard = await timing.timer.span("execute_guard_all_failed", () =>
+		guardAllFailed(ctx, timing),
+	);
 	return (failureGuard as { ok: false; response: Response }).response;
 }
 
@@ -385,25 +411,42 @@ async function attemptProviderWithIR(
 	timing: PipelineTiming,
 	baseModel: string,
 	allowSingleProviderRetry: boolean,
+	attemptNumber: number,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string }> {
-	const attemptErrors: Array<Record<string, unknown>> = ((ctx as any).attemptErrors ??= []);
+	const attemptErrors: Array<Record<string, unknown>> = (ctx.attemptErrors ??= []);
+	const attemptPrefix = `attempt_${attemptNumber}`;
+	const attemptStartedAt = performance.now();
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
 
-	const admission = await admitThroughBreaker(
-		ctx.endpoint,
-		candidate.providerId,
-		baseModel,
-		ctx.workspaceId,
-		ctx.requestId,
-		routed.health,
+	const admission = await timing.timer.span(`${attemptPrefix}_breaker`, () =>
+		admitThroughBreaker(
+			ctx.endpoint,
+			candidate.providerId,
+			baseModel,
+			ctx.workspaceId,
+			ctx.requestId,
+			routed.health,
+		),
 	);
 	if (admission === "blocked") {
 		attemptErrors.push({
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
+			attempt_number: attemptNumber,
 			type: "blocked",
+		});
+		recordProviderAttempt(ctx, {
+			attempt_number: attemptNumber,
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			model: baseModel,
+			provider_model_slug: null,
+			outcome: "blocked",
+			type: "blocked",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			was_probe: false,
 		});
 		return { ok: false, skip: "blocked" };
 	}
@@ -419,7 +462,9 @@ async function attemptProviderWithIR(
 	// Get pricing card (testing mode candidates may not have context-preloaded pricing).
 	let pricingCard = candidate.pricingCard ?? null;
 	if (!pricingCard) {
-		pricingCard = await loadPriceCard(candidate.providerId, baseModel, ctx.capability);
+		pricingCard = await timing.timer.span(`${attemptPrefix}_load_pricecard`, () =>
+			loadPriceCard(candidate.providerId, baseModel, ctx.capability),
+		);
 		if (pricingCard) {
 			candidate.pricingCard = pricingCard;
 		}
@@ -428,7 +473,19 @@ async function attemptProviderWithIR(
 		attemptErrors.push({
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
+			attempt_number: attemptNumber,
 			type: "no_pricing",
+		});
+		recordProviderAttempt(ctx, {
+			attempt_number: attemptNumber,
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			model: baseModel,
+			provider_model_slug: providerModelSlug ?? null,
+			outcome: "no_pricing",
+			type: "no_pricing",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			was_probe: isProbe,
 		});
 		return { ok: false, skip: "no_pricing" };
 	}
@@ -445,12 +502,29 @@ async function attemptProviderWithIR(
 		t0 = performance.now();
 
 		ctx.meta.upstreamStartMs = Date.now();
+		const executorResolveStart = performance.now();
 		const executor = resolveProviderExecutor(candidate.providerId, ctx.capability);
+		timing.timer.record(
+			`${attemptPrefix}_resolve_executor`,
+			performance.now() - executorResolveStart,
+		);
 		if (!executor) {
 			attemptErrors.push({
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
+				attempt_number: attemptNumber,
 				type: "unsupported_executor",
+			});
+			recordProviderAttempt(ctx, {
+				attempt_number: attemptNumber,
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				model: baseModel,
+				provider_model_slug: providerModelSlug ?? null,
+				outcome: "unsupported_executor",
+				type: "unsupported_executor",
+				duration_ms: Math.round(performance.now() - attemptStartedAt),
+				was_probe: isProbe,
 			});
 			return { ok: false, skip: "unsupported_executor" };
 		}
@@ -458,18 +532,20 @@ async function attemptProviderWithIR(
 		const normalizedCapability = normalizeCapability(ctx.capability);
 		const isTextGenerate = normalizedCapability === "text.generate";
 
-		const normalizedIr = isTextGenerate
-			? normalizeIRForProvider(
-				ir as IRChatRequest,
-				candidate.providerId,
-				ctx.protocol as any,
-				{
-					capabilityParams: candidate.capabilityParams,
-					providerMaxOutputTokens: candidate.maxOutputTokens,
-					modelForReasoning: providerModelSlug ?? baseModel,
-				},
-			)
-			: ir;
+		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
+			isTextGenerate
+				? normalizeIRForProvider(
+					ir as IRChatRequest,
+					candidate.providerId,
+					ctx.protocol as any,
+					{
+						capabilityParams: candidate.capabilityParams,
+						providerMaxOutputTokens: candidate.maxOutputTokens,
+						modelForReasoning: providerModelSlug ?? baseModel,
+					},
+				)
+				: ir,
+		);
 		const buildExecutorArgs = (forceGatewayKey: boolean, byokMeta: any[]) =>
 			({
 				ir: normalizedIr,
@@ -549,7 +625,9 @@ async function attemptProviderWithIR(
 			throw (lastErr instanceof Error ? lastErr : new Error("executor_retry_exhausted"));
 		};
 
-		const executorResult = await executeWithRetry();
+		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
+			executeWithRetry(),
+		);
 
 		if (executorResult.timing) {
 			if (typeof executorResult.timing.latencyMs === "number") {
@@ -557,6 +635,15 @@ async function attemptProviderWithIR(
 			}
 			if (typeof executorResult.timing.generationMs === "number") {
 				ctx.meta.generation_ms = executorResult.timing.generationMs;
+			}
+			if (typeof executorResult.timing.requestBuildMs === "number") {
+				timing.timer.record(`${attemptPrefix}_request_build`, executorResult.timing.requestBuildMs);
+			}
+			if (typeof executorResult.timing.upstreamHeadersMs === "number") {
+				timing.timer.record(`${attemptPrefix}_upstream_headers`, executorResult.timing.upstreamHeadersMs);
+			}
+			if (typeof executorResult.timing.transientRetryDelayMs === "number") {
+				timing.timer.record(`${attemptPrefix}_retry_delay`, executorResult.timing.transientRetryDelayMs);
 			}
 		}
 		timing.timer.end("adapter_start");
@@ -605,12 +692,13 @@ async function attemptProviderWithIR(
 		if (!executorResult.upstream.ok) {
 			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
 			const upstreamSummary = extractUpstreamErrorSummary(upstreamFailure.payload);
+			const durationMs = Math.round(performance.now() - attemptStartedAt);
 			attemptErrors.push({
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
 				model: baseModel,
 				provider_model_slug: providerModelSlug ?? null,
-				attempt_number: attemptErrors.length + 1,
+				attempt_number: attemptNumber,
 				type: "upstream_non_2xx",
 				status: executorResult.upstream.status,
 				status_text: executorResult.upstream.statusText || null,
@@ -619,6 +707,33 @@ async function attemptProviderWithIR(
 				byok_key_id: executorResult.byokKeyId ?? null,
 				upstream_payload_preview: upstreamFailure.payload_preview,
 				...upstreamSummary,
+			});
+			recordProviderAttempt(ctx, {
+				attempt_number: attemptNumber,
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				model: baseModel,
+				provider_model_slug: providerModelSlug ?? null,
+				outcome: "upstream_non_2xx",
+				type: "upstream_non_2xx",
+				duration_ms: durationMs,
+				status: executorResult.upstream.status,
+				status_text: executorResult.upstream.statusText || null,
+				key_source: executorResult.keySource ?? null,
+				byok_key_id: executorResult.byokKeyId ?? null,
+				upstream_url: redactSensitiveUrl(executorResult.upstream.url || null),
+				upstream_error_code: upstreamSummary.upstream_error_code,
+				upstream_error_type: upstreamSummary.upstream_error_type,
+				upstream_error_message: upstreamSummary.upstream_error_message,
+				upstream_error_description: upstreamSummary.upstream_error_description,
+				upstream_error_param: upstreamSummary.upstream_error_param,
+				upstream_payload_preview: upstreamFailure.payload_preview,
+				response_kind: executorResult.kind,
+				was_probe: isProbe,
+				fallback_attempted: (executorResult as any).fallbackAttempted === true,
+				request_build_ms: executorResult.timing?.requestBuildMs ?? null,
+				upstream_headers_ms: executorResult.timing?.upstreamHeadersMs ?? null,
+				retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
 			});
 			return { ok: false };
 		}
@@ -663,6 +778,28 @@ async function attemptProviderWithIR(
 			});
 		}
 
+		recordProviderAttempt(ctx, {
+			attempt_number: attemptNumber,
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			model: baseModel,
+			provider_model_slug: providerModelSlug ?? null,
+			outcome: "success",
+			type: "success",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			status: executorResult.upstream.status,
+			status_text: executorResult.upstream.statusText || null,
+			key_source: executorResult.keySource ?? null,
+			byok_key_id: executorResult.byokKeyId ?? null,
+			upstream_url: redactSensitiveUrl(executorResult.upstream.url || null),
+			response_kind: executorResult.kind,
+			was_probe: isProbe,
+			fallback_attempted: (executorResult as any).fallbackAttempted === true,
+			request_build_ms: executorResult.timing?.requestBuildMs ?? null,
+			upstream_headers_ms: executorResult.timing?.upstreamHeadersMs ?? null,
+			retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
+		});
+
 		return { ok: true, result };
 	} catch (err) {
 		console.error(`Executor execution failed for ${candidate.providerId}:`, err);
@@ -676,13 +813,28 @@ async function attemptProviderWithIR(
 			endpoint: ctx.endpoint,
 			model: baseModel,
 			provider_model_slug: providerModelSlug ?? null,
-			attempt_number: attemptErrors.length + 1,
+			attempt_number: attemptNumber,
 			type: (err as any)?.retryable === true ? "retryable_error" : "error",
 			retryable: (err as any)?.retryable === true,
 			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
 			upstream_error_message: message,
 			upstream_error_description: stackPreview,
 			message,
+		});
+		recordProviderAttempt(ctx, {
+			attempt_number: attemptNumber,
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			model: baseModel,
+			provider_model_slug: providerModelSlug ?? null,
+			outcome: (err as any)?.retryable === true ? "retryable_error" : "error",
+			type: (err as any)?.retryable === true ? "retryable_error" : "error",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			retryable: (err as any)?.retryable === true,
+			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
+			upstream_error_message: message,
+			upstream_error_description: stackPreview,
+			was_probe: isProbe,
 		});
 		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
 		await onCallEnd(ctx.endpoint, {

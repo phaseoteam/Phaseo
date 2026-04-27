@@ -95,7 +95,13 @@ export function irToOpenAIChat(
 	};
 
 	// Generation parameters
-	if (ir.maxTokens !== undefined) request.max_tokens = ir.maxTokens;
+	if (ir.maxTokens !== undefined) {
+		if (providerId === "openai") {
+			request.max_completion_tokens = ir.maxTokens;
+		} else {
+			request.max_tokens = ir.maxTokens;
+		}
+	}
 	if (ir.temperature !== undefined) request.temperature = ir.temperature;
 	if (ir.topP !== undefined) request.top_p = ir.topP;
 	if (ir.topK !== undefined) request.top_k = ir.topK;
@@ -128,7 +134,10 @@ export function irToOpenAIChat(
 		}
 	}
 
-	if (ir.parallelToolCalls !== undefined) {
+	if (
+		ir.parallelToolCalls !== undefined &&
+		(providerId !== "openai" || (ir.tools && ir.tools.length > 0))
+	) {
 		request.parallel_tool_calls = ir.parallelToolCalls;
 	}
 	if (ir.maxToolCalls !== undefined) {

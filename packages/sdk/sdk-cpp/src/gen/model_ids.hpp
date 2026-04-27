@@ -6,33 +6,12 @@
 #include <string_view>
 
 namespace ai_stats::sdk::model_ids {
-// Model ID: ai21/jamba-2-3b
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-2-3b
-inline constexpr std::string_view AI21_JAMBA_2_3B = "ai21/jamba-2-3b";
-// Model ID: ai21/jamba-large-1.5
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-large-1.5
-inline constexpr std::string_view AI21_JAMBA_LARGE_1_5 = "ai21/jamba-large-1.5";
-// Model ID: ai21/jamba-large-1.6
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-large-1.6
-inline constexpr std::string_view AI21_JAMBA_LARGE_1_6 = "ai21/jamba-large-1.6";
 // Model ID: ai21/jamba-large-1.7
 // Model page: https://ai-stats.phaseo.app/models/ai21/jamba-large-1.7
 inline constexpr std::string_view AI21_JAMBA_LARGE_1_7 = "ai21/jamba-large-1.7";
-// Model ID: ai21/jamba-mini-1.5
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-1.5
-inline constexpr std::string_view AI21_JAMBA_MINI_1_5 = "ai21/jamba-mini-1.5";
-// Model ID: ai21/jamba-mini-1.6
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-1.6
-inline constexpr std::string_view AI21_JAMBA_MINI_1_6 = "ai21/jamba-mini-1.6";
-// Model ID: ai21/jamba-mini-1.7
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-1.7
-inline constexpr std::string_view AI21_JAMBA_MINI_1_7 = "ai21/jamba-mini-1.7";
 // Model ID: ai21/jamba-mini-2
 // Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-2
 inline constexpr std::string_view AI21_JAMBA_MINI_2 = "ai21/jamba-mini-2";
-// Model ID: ai21/jamba-reasoning-3b
-// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-reasoning-3b
-inline constexpr std::string_view AI21_JAMBA_REASONING_3B = "ai21/jamba-reasoning-3b";
 // Model ID: aion-labs/aion-1.0
 // Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0
 inline constexpr std::string_view AION_LABS_AION_1_0 = "aion-labs/aion-1.0";
@@ -48,123 +27,12 @@ inline constexpr std::string_view AION_LABS_AION_2_5 = "aion-labs/aion-2.5";
 // Model ID: aion-labs/aion-rp-llama-3.1-8b
 // Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b
 inline constexpr std::string_view AION_LABS_AION_RP_LLAMA_3_1_8B = "aion-labs/aion-rp-llama-3.1-8b";
-// Model ID: allenai/bolmo-1b
-// Model page: https://ai-stats.phaseo.app/models/allenai/bolmo-1b
-inline constexpr std::string_view ALLENAI_BOLMO_1B = "allenai/bolmo-1b";
-// Model ID: allenai/bolmo-7b
-// Model page: https://ai-stats.phaseo.app/models/allenai/bolmo-7b
-inline constexpr std::string_view ALLENAI_BOLMO_7B = "allenai/bolmo-7b";
-// Model ID: allenai/molmo-2-4b
-// Model page: https://ai-stats.phaseo.app/models/allenai/molmo-2-4b
-inline constexpr std::string_view ALLENAI_MOLMO_2_4B = "allenai/molmo-2-4b";
-// Model ID: allenai/molmo-2-8b
-// Model page: https://ai-stats.phaseo.app/models/allenai/molmo-2-8b
-inline constexpr std::string_view ALLENAI_MOLMO_2_8B = "allenai/molmo-2-8b";
-// Model ID: allenai/olmo-3-32b-think
-// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3-32b-think
-inline constexpr std::string_view ALLENAI_OLMO_3_32B_THINK = "allenai/olmo-3-32b-think";
-// Model ID: allenai/olmo-3-7b-instruct
-// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3-7b-instruct
-inline constexpr std::string_view ALLENAI_OLMO_3_7B_INSTRUCT = "allenai/olmo-3-7b-instruct";
-// Model ID: allenai/olmo-3-7b-think
-// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3-7b-think
-inline constexpr std::string_view ALLENAI_OLMO_3_7B_THINK = "allenai/olmo-3-7b-think";
-// Model ID: allenai/olmo-3.1-32b-instruct
-// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b-instruct
-inline constexpr std::string_view ALLENAI_OLMO_3_1_32B_INSTRUCT = "allenai/olmo-3.1-32b-instruct";
-// Model ID: allenai/olmo-3.1-32b-think
-// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b-think
-inline constexpr std::string_view ALLENAI_OLMO_3_1_32B_THINK = "allenai/olmo-3.1-32b-think";
-// Model ID: amazon/nova-2-lite
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-lite
-inline constexpr std::string_view AMAZON_NOVA_2_LITE = "amazon/nova-2-lite";
-// Model ID: amazon/nova-2-omni
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-omni
-inline constexpr std::string_view AMAZON_NOVA_2_OMNI = "amazon/nova-2-omni";
-// Model ID: amazon/nova-2-pro
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-pro
-inline constexpr std::string_view AMAZON_NOVA_2_PRO = "amazon/nova-2-pro";
-// Model ID: amazon/nova-2-sonic
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-sonic
-inline constexpr std::string_view AMAZON_NOVA_2_SONIC = "amazon/nova-2-sonic";
-// Model ID: amazon/nova-canvas
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-canvas
-inline constexpr std::string_view AMAZON_NOVA_CANVAS = "amazon/nova-canvas";
-// Model ID: amazon/nova-lite-1.0
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-lite-1.0
-inline constexpr std::string_view AMAZON_NOVA_LITE_1_0 = "amazon/nova-lite-1.0";
-// Model ID: amazon/nova-micro-1.0
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-micro-1.0
-inline constexpr std::string_view AMAZON_NOVA_MICRO_1_0 = "amazon/nova-micro-1.0";
-// Model ID: amazon/nova-multimodal-embeddings
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-multimodal-embeddings
-inline constexpr std::string_view AMAZON_NOVA_MULTIMODAL_EMBEDDINGS = "amazon/nova-multimodal-embeddings";
-// Model ID: amazon/nova-premier
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-premier
-inline constexpr std::string_view AMAZON_NOVA_PREMIER = "amazon/nova-premier";
-// Model ID: amazon/nova-pro-1.0
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-pro-1.0
-inline constexpr std::string_view AMAZON_NOVA_PRO_1_0 = "amazon/nova-pro-1.0";
-// Model ID: amazon/nova-reel
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-reel
-inline constexpr std::string_view AMAZON_NOVA_REEL = "amazon/nova-reel";
-// Model ID: amazon/nova-sonic
-// Model page: https://ai-stats.phaseo.app/models/amazon/nova-sonic
-inline constexpr std::string_view AMAZON_NOVA_SONIC = "amazon/nova-sonic";
-// Model ID: anthropic/claude-1.0
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.0
-inline constexpr std::string_view ANTHROPIC_CLAUDE_1_0 = "anthropic/claude-1.0";
-// Model ID: anthropic/claude-1.1
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.1
-inline constexpr std::string_view ANTHROPIC_CLAUDE_1_1 = "anthropic/claude-1.1";
-// Model ID: anthropic/claude-1.2
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.2
-inline constexpr std::string_view ANTHROPIC_CLAUDE_1_2 = "anthropic/claude-1.2";
-// Model ID: anthropic/claude-1.3
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.3
-inline constexpr std::string_view ANTHROPIC_CLAUDE_1_3 = "anthropic/claude-1.3";
-// Model ID: anthropic/claude-2.0
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-2.0
-inline constexpr std::string_view ANTHROPIC_CLAUDE_2_0 = "anthropic/claude-2.0";
-// Model ID: anthropic/claude-2.1
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-2.1
-inline constexpr std::string_view ANTHROPIC_CLAUDE_2_1 = "anthropic/claude-2.1";
-// Model ID: anthropic/claude-3-haiku
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3-haiku
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_HAIKU = "anthropic/claude-3-haiku";
-// Model ID: anthropic/claude-3-opus
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3-opus
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_OPUS = "anthropic/claude-3-opus";
-// Model ID: anthropic/claude-3-sonnet
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3-sonnet
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_SONNET = "anthropic/claude-3-sonnet";
-// Model ID: anthropic/claude-3.5-haiku
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku";
-// Model ID: anthropic/claude-3.5-sonnet-2024-06-20
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-sonnet-2024-06-20
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_5_SONNET_2024_06_20 = "anthropic/claude-3.5-sonnet-2024-06-20";
-// Model ID: anthropic/claude-3.5-sonnet-2024-10-22
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-sonnet-2024-10-22
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_5_SONNET_2024_10_22 = "anthropic/claude-3.5-sonnet-2024-10-22";
-// Model ID: anthropic/claude-3.7-sonnet
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet
-inline constexpr std::string_view ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic/claude-3.7-sonnet";
+// Model ID: allenai/olmo-3.1-32b
+// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b
+inline constexpr std::string_view ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b";
 // Model ID: anthropic/claude-haiku-4.5
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
 inline constexpr std::string_view ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5";
-// Model ID: anthropic/claude-instant-1.0
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.0
-inline constexpr std::string_view ANTHROPIC_CLAUDE_INSTANT_1_0 = "anthropic/claude-instant-1.0";
-// Model ID: anthropic/claude-instant-1.1
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.1
-inline constexpr std::string_view ANTHROPIC_CLAUDE_INSTANT_1_1 = "anthropic/claude-instant-1.1";
-// Model ID: anthropic/claude-instant-1.2
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.2
-inline constexpr std::string_view ANTHROPIC_CLAUDE_INSTANT_1_2 = "anthropic/claude-instant-1.2";
-// Model ID: anthropic/claude-mythos-preview
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview
-inline constexpr std::string_view ANTHROPIC_CLAUDE_MYTHOS_PREVIEW = "anthropic/claude-mythos-preview";
 // Model ID: anthropic/claude-opus-4
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4
 inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4 = "anthropic/claude-opus-4";
@@ -177,6 +45,9 @@ inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4_5 = "anthropic/claude-
 // Model ID: anthropic/claude-opus-4.6
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.6
 inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4_6 = "anthropic/claude-opus-4.6";
+// Model ID: anthropic/claude-opus-4.7
+// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7
+inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4_7 = "anthropic/claude-opus-4.7";
 // Model ID: anthropic/claude-sonnet-4
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
 inline constexpr std::string_view ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4";
@@ -195,9 +66,6 @@ inline constexpr std::string_view ARCEE_AI_TRINITY_LARGE_THINKING = "arcee-ai/tr
 // Model ID: arcee-ai/trinity-mini
 // Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-mini
 inline constexpr std::string_view ARCEE_AI_TRINITY_MINI = "arcee-ai/trinity-mini";
-// Model ID: arcee-ai/trinity-nano-preview
-// Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-nano-preview
-inline constexpr std::string_view ARCEE_AI_TRINITY_NANO_PREVIEW = "arcee-ai/trinity-nano-preview";
 // Model ID: baidu/ernie-4.5-21b-a3b
 // Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-21b-a3b
 inline constexpr std::string_view BAIDU_ERNIE_4_5_21B_A3B = "baidu/ernie-4.5-21b-a3b";
@@ -207,69 +75,39 @@ inline constexpr std::string_view BAIDU_ERNIE_4_5_21B_A3B_THINKING = "baidu/erni
 // Model ID: baidu/ernie-4.5-300b-a47b
 // Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-300b-a47b
 inline constexpr std::string_view BAIDU_ERNIE_4_5_300B_A47B = "baidu/ernie-4.5-300b-a47b";
-// Model ID: baidu/ernie-4.5-turbo
-// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-turbo
-inline constexpr std::string_view BAIDU_ERNIE_4_5_TURBO = "baidu/ernie-4.5-turbo";
 // Model ID: baidu/ernie-4.5-vl-28b-a3b
 // Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b
 inline constexpr std::string_view BAIDU_ERNIE_4_5_VL_28B_A3B = "baidu/ernie-4.5-vl-28b-a3b";
+// Model ID: baidu/ernie-4.5-vl-28b-a3b-thinking
+// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b-thinking
+inline constexpr std::string_view BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING = "baidu/ernie-4.5-vl-28b-a3b-thinking";
 // Model ID: baidu/ernie-4.5-vl-424b-a47b
 // Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b
 inline constexpr std::string_view BAIDU_ERNIE_4_5_VL_424B_A47B = "baidu/ernie-4.5-vl-424b-a47b";
-// Model ID: baidu/ernie-5.0
-// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0
-inline constexpr std::string_view BAIDU_ERNIE_5_0 = "baidu/ernie-5.0";
-// Model ID: baidu/ernie-5.0-0110
-// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0-0110
-inline constexpr std::string_view BAIDU_ERNIE_5_0_0110 = "baidu/ernie-5.0-0110";
-// Model ID: baidu/ernie-5.0-preview-1203
-// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0-preview-1203
-inline constexpr std::string_view BAIDU_ERNIE_5_0_PREVIEW_1203 = "baidu/ernie-5.0-preview-1203";
-// Model ID: baidu/ernie-5.0-preview-1220
-// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0-preview-1220
-inline constexpr std::string_view BAIDU_ERNIE_5_0_PREVIEW_1220 = "baidu/ernie-5.0-preview-1220";
-// Model ID: baidu/ernie-x1.1
-// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-x1.1
-inline constexpr std::string_view BAIDU_ERNIE_X1_1 = "baidu/ernie-x1.1";
-// Model ID: baidu/qianfan-vl-3b
-// Model page: https://ai-stats.phaseo.app/models/baidu/qianfan-vl-3b
-inline constexpr std::string_view BAIDU_QIANFAN_VL_3B = "baidu/qianfan-vl-3b";
-// Model ID: baidu/qianfan-vl-70b
-// Model page: https://ai-stats.phaseo.app/models/baidu/qianfan-vl-70b
-inline constexpr std::string_view BAIDU_QIANFAN_VL_70B = "baidu/qianfan-vl-70b";
-// Model ID: baidu/qianfan-vl-8b
-// Model page: https://ai-stats.phaseo.app/models/baidu/qianfan-vl-8b
-inline constexpr std::string_view BAIDU_QIANFAN_VL_8B = "baidu/qianfan-vl-8b";
-// Model ID: black-forest-labs/flux-2-dev
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-dev
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_DEV = "black-forest-labs/flux-2-dev";
-// Model ID: black-forest-labs/flux-2-flex
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-flex
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_FLEX = "black-forest-labs/flux-2-flex";
-// Model ID: black-forest-labs/flux-2-klein-4b
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-klein-4b
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_KLEIN_4B = "black-forest-labs/flux-2-klein-4b";
-// Model ID: black-forest-labs/flux-2-klein-9b
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-klein-9b
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_KLEIN_9B = "black-forest-labs/flux-2-klein-9b";
-// Model ID: black-forest-labs/flux-2-max
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-max
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_MAX = "black-forest-labs/flux-2-max";
-// Model ID: black-forest-labs/flux-2-pro
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-pro
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_PRO = "black-forest-labs/flux-2-pro";
-// Model ID: bytedance/seed-1.6-2025-06-15
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-2025-06-15
-inline constexpr std::string_view BYTEDANCE_SEED_1_6_2025_06_15 = "bytedance/seed-1.6-2025-06-15";
-// Model ID: bytedance/seed-1.6-2025-09-15
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-2025-09-15
-inline constexpr std::string_view BYTEDANCE_SEED_1_6_2025_09_15 = "bytedance/seed-1.6-2025-09-15";
-// Model ID: bytedance/seed-1.6-flash-2025-06-15
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash-2025-06-15
-inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH_2025_06_15 = "bytedance/seed-1.6-flash-2025-06-15";
-// Model ID: bytedance/seed-1.6-flash-2025-07-15
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash-2025-07-15
-inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH_2025_07_15 = "bytedance/seed-1.6-flash-2025-07-15";
+// Model ID: black-forest-labs/flux-1-dev
+// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-dev
+inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_DEV = "black-forest-labs/flux-1-dev";
+// Model ID: black-forest-labs/flux-1-kontext-max
+// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-max
+inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX = "black-forest-labs/flux-1-kontext-max";
+// Model ID: black-forest-labs/flux-1-kontext-pro
+// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-pro
+inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO = "black-forest-labs/flux-1-kontext-pro";
+// Model ID: black-forest-labs/flux-1-schnell
+// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell
+inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_SCHNELL = "black-forest-labs/flux-1-schnell";
+// Model ID: bytedance/seed-1.6
+// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6
+inline constexpr std::string_view BYTEDANCE_SEED_1_6 = "bytedance/seed-1.6";
+// Model ID: bytedance/seed-1.6-250915
+// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-250915
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_250915 = "bytedance/seed-1.6-250915";
+// Model ID: bytedance/seed-1.6-flash
+// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH = "bytedance/seed-1.6-flash";
+// Model ID: bytedance/seed-1.6-flash-250715
+// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash-250715
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH_250715 = "bytedance/seed-1.6-flash-250715";
 // Model ID: bytedance/seed-1.8
 // Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.8
 inline constexpr std::string_view BYTEDANCE_SEED_1_8 = "bytedance/seed-1.8";
@@ -282,150 +120,42 @@ inline constexpr std::string_view BYTEDANCE_SEED_2_0_MINI = "bytedance/seed-2.0-
 // Model ID: bytedance/seed-2.0-pro
 // Model page: https://ai-stats.phaseo.app/models/bytedance/seed-2.0-pro
 inline constexpr std::string_view BYTEDANCE_SEED_2_0_PRO = "bytedance/seed-2.0-pro";
-// Model ID: bytedance/seed-coder-8b-instruct
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-coder-8b-instruct
-inline constexpr std::string_view BYTEDANCE_SEED_CODER_8B_INSTRUCT = "bytedance/seed-coder-8b-instruct";
-// Model ID: bytedance/seed-coder-8b-reasoning
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-coder-8b-reasoning
-inline constexpr std::string_view BYTEDANCE_SEED_CODER_8B_REASONING = "bytedance/seed-coder-8b-reasoning";
-// Model ID: bytedance/seed-oss-36b-instruct
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-oss-36b-instruct
-inline constexpr std::string_view BYTEDANCE_SEED_OSS_36B_INSTRUCT = "bytedance/seed-oss-36b-instruct";
 // Model ID: bytedance/seed-translation
 // Model page: https://ai-stats.phaseo.app/models/bytedance/seed-translation
 inline constexpr std::string_view BYTEDANCE_SEED_TRANSLATION = "bytedance/seed-translation";
-// Model ID: bytedance/seedream-4.5
-// Model page: https://ai-stats.phaseo.app/models/bytedance/seedream-4.5
-inline constexpr std::string_view BYTEDANCE_SEEDREAM_4_5 = "bytedance/seedream-4.5";
-// Model ID: cohere/c4ai-aya-expanse-32b
-// Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-expanse-32b
-inline constexpr std::string_view COHERE_C4AI_AYA_EXPANSE_32B = "cohere/c4ai-aya-expanse-32b";
-// Model ID: cohere/c4ai-aya-expanse-8b
-// Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-expanse-8b
-inline constexpr std::string_view COHERE_C4AI_AYA_EXPANSE_8B = "cohere/c4ai-aya-expanse-8b";
-// Model ID: cohere/c4ai-aya-vision-32b
-// Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-vision-32b
-inline constexpr std::string_view COHERE_C4AI_AYA_VISION_32B = "cohere/c4ai-aya-vision-32b";
-// Model ID: cohere/c4ai-aya-vision-8b
-// Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-vision-8b
-inline constexpr std::string_view COHERE_C4AI_AYA_VISION_8B = "cohere/c4ai-aya-vision-8b";
-// Model ID: cohere/command
-// Model page: https://ai-stats.phaseo.app/models/cohere/command
-inline constexpr std::string_view COHERE_COMMAND = "cohere/command";
-// Model ID: cohere/command-a
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-a
-inline constexpr std::string_view COHERE_COMMAND_A = "cohere/command-a";
-// Model ID: cohere/command-a-reasoning
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-a-reasoning
-inline constexpr std::string_view COHERE_COMMAND_A_REASONING = "cohere/command-a-reasoning";
-// Model ID: cohere/command-a-translate
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-a-translate
-inline constexpr std::string_view COHERE_COMMAND_A_TRANSLATE = "cohere/command-a-translate";
-// Model ID: cohere/command-a-vision
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-a-vision
-inline constexpr std::string_view COHERE_COMMAND_A_VISION = "cohere/command-a-vision";
-// Model ID: cohere/command-light
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-light
-inline constexpr std::string_view COHERE_COMMAND_LIGHT = "cohere/command-light";
-// Model ID: cohere/command-r--2024-04-04
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-r--2024-04-04
-inline constexpr std::string_view COHERE_COMMAND_R_2024_04_04 = "cohere/command-r--2024-04-04";
-// Model ID: cohere/command-r--2024-08-30
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-r--2024-08-30
-inline constexpr std::string_view COHERE_COMMAND_R_2024_08_30 = "cohere/command-r--2024-08-30";
-// Model ID: cohere/command-r-2024-03-11
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-r-2024-03-11
-inline constexpr std::string_view COHERE_COMMAND_R_2024_03_11 = "cohere/command-r-2024-03-11";
-// Model ID: cohere/command-r-2024-08-30
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-r-2024-08-30
-inline constexpr std::string_view COHERE_COMMAND_R_2024_08_30_2 = "cohere/command-r-2024-08-30";
-// Model ID: cohere/command-r-7b
-// Model page: https://ai-stats.phaseo.app/models/cohere/command-r-7b
-inline constexpr std::string_view COHERE_COMMAND_R_7B = "cohere/command-r-7b";
-// Model ID: cohere/embed-english-light-v2.0
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-light-v2.0
-inline constexpr std::string_view COHERE_EMBED_ENGLISH_LIGHT_V2_0 = "cohere/embed-english-light-v2.0";
-// Model ID: cohere/embed-english-light-v3
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-light-v3
-inline constexpr std::string_view COHERE_EMBED_ENGLISH_LIGHT_V3 = "cohere/embed-english-light-v3";
-// Model ID: cohere/embed-english-v2.0
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-v2.0
-inline constexpr std::string_view COHERE_EMBED_ENGLISH_V2_0 = "cohere/embed-english-v2.0";
-// Model ID: cohere/embed-english-v3
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-v3
-inline constexpr std::string_view COHERE_EMBED_ENGLISH_V3 = "cohere/embed-english-v3";
-// Model ID: cohere/embed-multilingual-light-v3
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-multilingual-light-v3
-inline constexpr std::string_view COHERE_EMBED_MULTILINGUAL_LIGHT_V3 = "cohere/embed-multilingual-light-v3";
-// Model ID: cohere/embed-multilingual-v2.0
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-multilingual-v2.0
-inline constexpr std::string_view COHERE_EMBED_MULTILINGUAL_V2_0 = "cohere/embed-multilingual-v2.0";
-// Model ID: cohere/embed-multilingual-v3
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-multilingual-v3
-inline constexpr std::string_view COHERE_EMBED_MULTILINGUAL_V3 = "cohere/embed-multilingual-v3";
-// Model ID: cohere/embed-v4
-// Model page: https://ai-stats.phaseo.app/models/cohere/embed-v4
-inline constexpr std::string_view COHERE_EMBED_V4 = "cohere/embed-v4";
-// Model ID: cohere/rerank-multilingual-v3
-// Model page: https://ai-stats.phaseo.app/models/cohere/rerank-multilingual-v3
-inline constexpr std::string_view COHERE_RERANK_MULTILINGUAL_V3 = "cohere/rerank-multilingual-v3";
-// Model ID: cohere/rerank-v3.5
-// Model page: https://ai-stats.phaseo.app/models/cohere/rerank-v3.5
-inline constexpr std::string_view COHERE_RERANK_V3_5 = "cohere/rerank-v3.5";
-// Model ID: cohere/rerank-v4.0-fast
-// Model page: https://ai-stats.phaseo.app/models/cohere/rerank-v4.0-fast
-inline constexpr std::string_view COHERE_RERANK_V4_0_FAST = "cohere/rerank-v4.0-fast";
-// Model ID: cohere/rerank-v4.0-pro
-// Model page: https://ai-stats.phaseo.app/models/cohere/rerank-v4.0-pro
-inline constexpr std::string_view COHERE_RERANK_V4_0_PRO = "cohere/rerank-v4.0-pro";
-// Model ID: cohere/rerenk-english-v3
-// Model page: https://ai-stats.phaseo.app/models/cohere/rerenk-english-v3
-inline constexpr std::string_view COHERE_RERENK_ENGLISH_V3 = "cohere/rerenk-english-v3";
-// Model ID: cursor/composer-1
-// Model page: https://ai-stats.phaseo.app/models/cursor/composer-1
-inline constexpr std::string_view CURSOR_COMPOSER_1 = "cursor/composer-1";
-// Model ID: cursor/composer-1.5
-// Model page: https://ai-stats.phaseo.app/models/cursor/composer-1.5
-inline constexpr std::string_view CURSOR_COMPOSER_1_5 = "cursor/composer-1.5";
-// Model ID: deepseek/deepseek-coder-v2-2024-06-14
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-coder-v2-2024-06-14
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_CODER_V2_2024_06_14 = "deepseek/deepseek-coder-v2-2024-06-14";
-// Model ID: deepseek/deepseek-coder-v2-2024-07-27
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-coder-v2-2024-07-27
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_CODER_V2_2024_07_27 = "deepseek/deepseek-coder-v2-2024-07-27";
+// Model ID: bytedance/seedance-2.0
+// Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0
+inline constexpr std::string_view BYTEDANCE_SEEDANCE_2_0 = "bytedance/seedance-2.0";
+// Model ID: bytedance/seedance-2.0-fast
+// Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast
+inline constexpr std::string_view BYTEDANCE_SEEDANCE_2_0_FAST = "bytedance/seedance-2.0-fast";
+// Model ID: cogito/cogito-671b-v2.1
+// Model page: https://ai-stats.phaseo.app/models/cogito/cogito-671b-v2.1
+inline constexpr std::string_view COGITO_COGITO_671B_V2_1 = "cogito/cogito-671b-v2.1";
 // Model ID: deepseek/deepseek-ocr
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_OCR = "deepseek/deepseek-ocr";
 // Model ID: deepseek/deepseek-ocr-2
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr-2
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_OCR_2 = "deepseek/deepseek-ocr-2";
-// Model ID: deepseek/deepseek-r1-2025-01-20
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-2025-01-20
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_R1_2025_01_20 = "deepseek/deepseek-r1-2025-01-20";
-// Model ID: deepseek/deepseek-r1-2025-05-28
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-2025-05-28
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_R1_2025_05_28 = "deepseek/deepseek-r1-2025-05-28";
-// Model ID: deepseek/deepseek-r1-lite-preview
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-lite-preview
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_R1_LITE_PREVIEW = "deepseek/deepseek-r1-lite-preview";
-// Model ID: deepseek/deepseek-v2-2024-05-17
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2-2024-05-17
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V2_2024_05_17 = "deepseek/deepseek-v2-2024-05-17";
-// Model ID: deepseek/deepseek-v2-2024-06-28
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2-2024-06-28
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V2_2024_06_28 = "deepseek/deepseek-v2-2024-06-28";
-// Model ID: deepseek/deepseek-v2.5-2024-09-05
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2.5-2024-09-05
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V2_5_2024_09_05 = "deepseek/deepseek-v2.5-2024-09-05";
-// Model ID: deepseek/deepseek-v2.5-2024-12-10
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2.5-2024-12-10
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V2_5_2024_12_10 = "deepseek/deepseek-v2.5-2024-12-10";
-// Model ID: deepseek/deepseek-v3-2024-12-26
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-2024-12-26
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2024_12_26 = "deepseek/deepseek-v3-2024-12-26";
-// Model ID: deepseek/deepseek-v3-2025-03-24
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-2025-03-24
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2025_03_24 = "deepseek/deepseek-v3-2025-03-24";
+// Model ID: deepseek/deepseek-prover-v2-671b
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-prover-v2-671b
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_PROVER_V2_671B = "deepseek/deepseek-prover-v2-671b";
+// Model ID: deepseek/deepseek-r1-0528
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-0528
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_R1_0528 = "deepseek/deepseek-r1-0528";
+// Model ID: deepseek/deepseek-r1-turbo
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-turbo
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_R1_TURBO = "deepseek/deepseek-r1-turbo";
+// Model ID: deepseek/deepseek-v3
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3 = "deepseek/deepseek-v3";
+// Model ID: deepseek/deepseek-v3-0324
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-0324
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_0324 = "deepseek/deepseek-v3-0324";
+// Model ID: deepseek/deepseek-v3-turbo
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-turbo
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_TURBO = "deepseek/deepseek-v3-turbo";
 // Model ID: deepseek/deepseek-v3.1
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.1
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_1 = "deepseek/deepseek-v3.1";
@@ -441,210 +171,39 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2_EXP = "deepseek/deepsee
 // Model ID: deepseek/deepseek-v3.2-speciale
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2_SPECIALE = "deepseek/deepseek-v3.2-speciale";
+// Model ID: deepseek/deepseek-v3.2-thinking
+// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-thinking
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2_THINKING = "deepseek/deepseek-v3.2-thinking";
 // Model ID: deepseek/deepseek-v4-flash
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash";
 // Model ID: deepseek/deepseek-v4-pro
 // Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro";
-// Model ID: deepseek/deepseek-vl2
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_VL2 = "deepseek/deepseek-vl2";
-// Model ID: deepseek/deepseek-vl2-small
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2-small
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_VL2_SMALL = "deepseek/deepseek-vl2-small";
-// Model ID: deepseek/deepseek-vl2-tiny
-// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2-tiny
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_VL2_TINY = "deepseek/deepseek-vl2-tiny";
-// Model ID: eleven-labs/eleven-english-sts-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-english-sts-v2
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_ENGLISH_STS_V2 = "eleven-labs/eleven-english-sts-v2";
-// Model ID: eleven-labs/eleven-flash-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_FLASH_V2 = "eleven-labs/eleven-flash-v2";
-// Model ID: eleven-labs/eleven-flash-v2.5
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2.5
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_FLASH_V2_5 = "eleven-labs/eleven-flash-v2.5";
-// Model ID: eleven-labs/eleven-monolingual-v1
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-monolingual-v1
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1 = "eleven-labs/eleven-monolingual-v1";
-// Model ID: eleven-labs/eleven-multilingual-sts-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-sts-v2
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MULTILINGUAL_STS_V2 = "eleven-labs/eleven-multilingual-sts-v2";
-// Model ID: eleven-labs/eleven-multilingual-ttv-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-ttv-v2
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MULTILINGUAL_TTV_V2 = "eleven-labs/eleven-multilingual-ttv-v2";
-// Model ID: eleven-labs/eleven-multilingual-v1
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v1
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1 = "eleven-labs/eleven-multilingual-v1";
-// Model ID: eleven-labs/eleven-multilingual-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v2
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2 = "eleven-labs/eleven-multilingual-v2";
-// Model ID: eleven-labs/eleven-ttv-v3
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-ttv-v3
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_TTV_V3 = "eleven-labs/eleven-ttv-v3";
-// Model ID: eleven-labs/eleven-turbo-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_TURBO_V2 = "eleven-labs/eleven-turbo-v2";
-// Model ID: eleven-labs/eleven-turbo-v2.5
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2.5
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_TURBO_V2_5 = "eleven-labs/eleven-turbo-v2.5";
-// Model ID: eleven-labs/eleven-v3
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-v3
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_V3 = "eleven-labs/eleven-v3";
-// Model ID: eleven-labs/scribe-v1
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/scribe-v1
-inline constexpr std::string_view ELEVEN_LABS_SCRIBE_V1 = "eleven-labs/scribe-v1";
-// Model ID: eleven-labs/scribe-v2
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/scribe-v2
-inline constexpr std::string_view ELEVEN_LABS_SCRIBE_V2 = "eleven-labs/scribe-v2";
-// Model ID: eleven-labs/scribe-v2-realtime
-// Model page: https://ai-stats.phaseo.app/models/eleven-labs/scribe-v2-realtime
-inline constexpr std::string_view ELEVEN_LABS_SCRIBE_V2_REALTIME = "eleven-labs/scribe-v2-realtime";
-// Model ID: essential-ai/rnj-1
-// Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1
-inline constexpr std::string_view ESSENTIAL_AI_RNJ_1 = "essential-ai/rnj-1";
-// Model ID: google/chat-bison
-// Model page: https://ai-stats.phaseo.app/models/google/chat-bison
-inline constexpr std::string_view GOOGLE_CHAT_BISON = "google/chat-bison";
-// Model ID: google/code-gecko
-// Model page: https://ai-stats.phaseo.app/models/google/code-gecko
-inline constexpr std::string_view GOOGLE_CODE_GECKO = "google/code-gecko";
-// Model ID: google/embedding-001
-// Model page: https://ai-stats.phaseo.app/models/google/embedding-001
-inline constexpr std::string_view GOOGLE_EMBEDDING_001 = "google/embedding-001";
-// Model ID: google/gemini-1.0-nano
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-nano
-inline constexpr std::string_view GOOGLE_GEMINI_1_0_NANO = "google/gemini-1.0-nano";
-// Model ID: google/gemini-1.0-pro
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-pro
-inline constexpr std::string_view GOOGLE_GEMINI_1_0_PRO = "google/gemini-1.0-pro";
-// Model ID: google/gemini-1.0-pro-vision-001
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-pro-vision-001
-inline constexpr std::string_view GOOGLE_GEMINI_1_0_PRO_VISION_001 = "google/gemini-1.0-pro-vision-001";
-// Model ID: google/gemini-1.0-ultra
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-ultra
-inline constexpr std::string_view GOOGLE_GEMINI_1_0_ULTRA = "google/gemini-1.0-ultra";
-// Model ID: google/gemini-1.5-flash-001
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-001
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_FLASH_001 = "google/gemini-1.5-flash-001";
-// Model ID: google/gemini-1.5-flash-002
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-002
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_FLASH_002 = "google/gemini-1.5-flash-002";
-// Model ID: google/gemini-1.5-flash-8b
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-8b
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_FLASH_8B = "google/gemini-1.5-flash-8b";
-// Model ID: google/gemini-1.5-flash-8b-exp-2024-08-27
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-8b-exp-2024-08-27
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_FLASH_8B_EXP_2024_08_27 = "google/gemini-1.5-flash-8b-exp-2024-08-27";
-// Model ID: google/gemini-1.5-flash-8b-exp-2024-09-24
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-8b-exp-2024-09-24
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_FLASH_8B_EXP_2024_09_24 = "google/gemini-1.5-flash-8b-exp-2024-09-24";
-// Model ID: google/gemini-1.5-flash-preview-2024-05-14
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-preview-2024-05-14
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_FLASH_PREVIEW_2024_05_14 = "google/gemini-1.5-flash-preview-2024-05-14";
-// Model ID: google/gemini-1.5-pro-001
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-001
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_PRO_001 = "google/gemini-1.5-pro-001";
-// Model ID: google/gemini-1.5-pro-002
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-002
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_PRO_002 = "google/gemini-1.5-pro-002";
-// Model ID: google/gemini-1.5-pro-exp-2024-08-01
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-exp-2024-08-01
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_PRO_EXP_2024_08_01 = "google/gemini-1.5-pro-exp-2024-08-01";
-// Model ID: google/gemini-1.5-pro-exp-2024-08-27
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-exp-2024-08-27
-inline constexpr std::string_view GOOGLE_GEMINI_1_5_PRO_EXP_2024_08_27 = "google/gemini-1.5-pro-exp-2024-08-27";
+// Model ID: google/embeddinggemma-300m
+// Model page: https://ai-stats.phaseo.app/models/google/embeddinggemma-300m
+inline constexpr std::string_view GOOGLE_EMBEDDINGGEMMA_300M = "google/embeddinggemma-300m";
 // Model ID: google/gemini-2.0-flash
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash
 inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH = "google/gemini-2.0-flash";
-// Model ID: google/gemini-2.0-flash-exp
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-exp
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_EXP = "google/gemini-2.0-flash-exp";
-// Model ID: google/gemini-2.0-flash-exp-image-generation
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-exp-image-generation
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_EXP_IMAGE_GENERATION = "google/gemini-2.0-flash-exp-image-generation";
 // Model ID: google/gemini-2.0-flash-lite
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite
 inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_LITE = "google/gemini-2.0-flash-lite";
-// Model ID: google/gemini-2.0-flash-live-001
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-live-001
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_LIVE_001 = "google/gemini-2.0-flash-live-001";
-// Model ID: google/gemini-2.0-flash-preview-image-generation
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-preview-image-generation
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_PREVIEW_IMAGE_GENERATION = "google/gemini-2.0-flash-preview-image-generation";
-// Model ID: google/gemini-2.0-flash-thinking-exp-2024-12-19
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-thinking-exp-2024-12-19
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_THINKING_EXP_2024_12_19 = "google/gemini-2.0-flash-thinking-exp-2024-12-19";
-// Model ID: google/gemini-2.0-flash-thinking-exp-2025-01-21
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-thinking-exp-2025-01-21
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_THINKING_EXP_2025_01_21 = "google/gemini-2.0-flash-thinking-exp-2025-01-21";
-// Model ID: google/gemini-2.0-pro-exp
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-pro-exp
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_PRO_EXP = "google/gemini-2.0-pro-exp";
-// Model ID: google/gemini-2.5-computer-use-preview
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-computer-use-preview
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_COMPUTER_USE_PREVIEW = "google/gemini-2.5-computer-use-preview";
-// Model ID: google/gemini-2.5-flash-exp-native-audio-thinking-dialog
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-exp-native-audio-thinking-dialog
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_EXP_NATIVE_AUDIO_THINKING_DIALOG = "google/gemini-2.5-flash-exp-native-audio-thinking-dialog";
 // Model ID: google/gemini-2.5-flash-image
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image
 inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_IMAGE = "google/gemini-2.5-flash-image";
-// Model ID: google/gemini-2.5-flash-image-preview
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image-preview
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_IMAGE_PREVIEW = "google/gemini-2.5-flash-image-preview";
 // Model ID: google/gemini-2.5-flash-lite-preview-2025-06-17
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17
 inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17 = "google/gemini-2.5-flash-lite-preview-2025-06-17";
 // Model ID: google/gemini-2.5-flash-lite-preview-2025-09-25
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25
 inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25 = "google/gemini-2.5-flash-lite-preview-2025-09-25";
-// Model ID: google/gemini-2.5-flash-native-audio-preview-2025-09-03
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-native-audio-preview-2025-09-03
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_NATIVE_AUDIO_PREVIEW_2025_09_03 = "google/gemini-2.5-flash-native-audio-preview-2025-09-03";
-// Model ID: google/gemini-2.5-flash-preview-2025-04-17
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-2025-04-17
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_PREVIEW_2025_04_17 = "google/gemini-2.5-flash-preview-2025-04-17";
-// Model ID: google/gemini-2.5-flash-preview-2025-05-20
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-2025-05-20
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_PREVIEW_2025_05_20 = "google/gemini-2.5-flash-preview-2025-05-20";
-// Model ID: google/gemini-2.5-flash-preview-2025-09-25
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-2025-09-25
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_PREVIEW_2025_09_25 = "google/gemini-2.5-flash-preview-2025-09-25";
-// Model ID: google/gemini-2.5-flash-preview-native-audio-dialog
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-native-audio-dialog
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_PREVIEW_NATIVE_AUDIO_DIALOG = "google/gemini-2.5-flash-preview-native-audio-dialog";
-// Model ID: google/gemini-2.5-flash-preview-tts-2025-05-20
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-tts-2025-05-20
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_PREVIEW_TTS_2025_05_20 = "google/gemini-2.5-flash-preview-tts-2025-05-20";
-// Model ID: google/gemini-2.5-flash-preview-tts-2025-12-10
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-tts-2025-12-10
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_PREVIEW_TTS_2025_12_10 = "google/gemini-2.5-flash-preview-tts-2025-12-10";
-// Model ID: google/gemini-2.5-pro-experimental-2025-03-25
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-experimental-2025-03-25
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_PRO_EXPERIMENTAL_2025_03_25 = "google/gemini-2.5-pro-experimental-2025-03-25";
-// Model ID: google/gemini-2.5-pro-preview-2025-05-06
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-2025-05-06
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_PRO_PREVIEW_2025_05_06 = "google/gemini-2.5-pro-preview-2025-05-06";
-// Model ID: google/gemini-2.5-pro-preview-2025-06-05
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-2025-06-05
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_PRO_PREVIEW_2025_06_05 = "google/gemini-2.5-pro-preview-2025-06-05";
-// Model ID: google/gemini-2.5-pro-preview-tts
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-tts
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_PRO_PREVIEW_TTS = "google/gemini-2.5-pro-preview-tts";
-// Model ID: google/gemini-2.5-pro-preview-tts-2025-05-20
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-tts-2025-05-20
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_PRO_PREVIEW_TTS_2025_05_20 = "google/gemini-2.5-pro-preview-tts-2025-05-20";
 // Model ID: google/gemini-3-flash-preview
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
 inline constexpr std::string_view GOOGLE_GEMINI_3_FLASH_PREVIEW = "google/gemini-3-flash-preview";
 // Model ID: google/gemini-3-pro-image-preview
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview
 inline constexpr std::string_view GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW = "google/gemini-3-pro-image-preview";
-// Model ID: google/gemini-3-pro-preview
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-preview
-inline constexpr std::string_view GOOGLE_GEMINI_3_PRO_PREVIEW = "google/gemini-3-pro-preview";
 // Model ID: google/gemini-3.1-flash-image-preview
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview
 inline constexpr std::string_view GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW = "google/gemini-3.1-flash-image-preview";
@@ -660,444 +219,96 @@ inline constexpr std::string_view GOOGLE_GEMINI_3_1_PRO_PREVIEW = "google/gemini
 // Model ID: google/gemini-3.1-pro-preview-customtools
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-pro-preview-customtools
 inline constexpr std::string_view GOOGLE_GEMINI_3_1_PRO_PREVIEW_CUSTOMTOOLS = "google/gemini-3.1-pro-preview-customtools";
-// Model ID: google/gemini-diffusion
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-diffusion
-inline constexpr std::string_view GOOGLE_GEMINI_DIFFUSION = "google/gemini-diffusion";
 // Model ID: google/gemini-embedding-001
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-001
 inline constexpr std::string_view GOOGLE_GEMINI_EMBEDDING_001 = "google/gemini-embedding-001";
+// Model ID: google/gemini-embedding-2
+// Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-2
+inline constexpr std::string_view GOOGLE_GEMINI_EMBEDDING_2 = "google/gemini-embedding-2";
 // Model ID: google/gemini-embedding-2-preview
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-2-preview
 inline constexpr std::string_view GOOGLE_GEMINI_EMBEDDING_2_PREVIEW = "google/gemini-embedding-2-preview";
-// Model ID: google/gemini-embedding-exp-0307
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-exp-0307
-inline constexpr std::string_view GOOGLE_GEMINI_EMBEDDING_EXP_0307 = "google/gemini-embedding-exp-0307";
-// Model ID: google/gemini-exp-1114
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-exp-1114
-inline constexpr std::string_view GOOGLE_GEMINI_EXP_1114 = "google/gemini-exp-1114";
-// Model ID: google/gemini-exp-1121
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-exp-1121
-inline constexpr std::string_view GOOGLE_GEMINI_EXP_1121 = "google/gemini-exp-1121";
-// Model ID: google/gemini-exp-1206
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-exp-1206
-inline constexpr std::string_view GOOGLE_GEMINI_EXP_1206 = "google/gemini-exp-1206";
-// Model ID: google/gemini-live-2.5-flash-preview
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-live-2.5-flash-preview
-inline constexpr std::string_view GOOGLE_GEMINI_LIVE_2_5_FLASH_PREVIEW = "google/gemini-live-2.5-flash-preview";
-// Model ID: google/gemini-robotics-er-1.5-preview
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-robotics-er-1.5-preview
-inline constexpr std::string_view GOOGLE_GEMINI_ROBOTICS_ER_1_5_PREVIEW = "google/gemini-robotics-er-1.5-preview";
-// Model ID: google/gemma-1-2b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-1-2b
-inline constexpr std::string_view GOOGLE_GEMMA_1_2B = "google/gemma-1-2b";
-// Model ID: google/gemma-1-7b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-1-7b
-inline constexpr std::string_view GOOGLE_GEMMA_1_7B = "google/gemma-1-7b";
-// Model ID: google/gemma-2-27b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-2-27b
-inline constexpr std::string_view GOOGLE_GEMMA_2_27B = "google/gemma-2-27b";
-// Model ID: google/gemma-2-2b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-2-2b
-inline constexpr std::string_view GOOGLE_GEMMA_2_2B = "google/gemma-2-2b";
-// Model ID: google/gemma-2-9b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-2-9b
-inline constexpr std::string_view GOOGLE_GEMMA_2_9B = "google/gemma-2-9b";
+// Model ID: google/gemini-robotics-er-1.6-preview
+// Model page: https://ai-stats.phaseo.app/models/google/gemini-robotics-er-1.6-preview
+inline constexpr std::string_view GOOGLE_GEMINI_ROBOTICS_ER_1_6_PREVIEW = "google/gemini-robotics-er-1.6-preview";
 // Model ID: google/gemma-3-12b
 // Model page: https://ai-stats.phaseo.app/models/google/gemma-3-12b
 inline constexpr std::string_view GOOGLE_GEMMA_3_12B = "google/gemma-3-12b";
-// Model ID: google/gemma-3-1b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-3-1b
-inline constexpr std::string_view GOOGLE_GEMMA_3_1B = "google/gemma-3-1b";
+// Model ID: google/gemma-3-12b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-3-12b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_3_12B_FREE = "google/gemma-3-12b:free";
+// Model ID: google/gemma-3-1b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-3-1b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_3_1B_FREE = "google/gemma-3-1b:free";
 // Model ID: google/gemma-3-27b
 // Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b
 inline constexpr std::string_view GOOGLE_GEMMA_3_27B = "google/gemma-3-27b";
+// Model ID: google/gemma-3-27b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_3_27B_FREE = "google/gemma-3-27b:free";
 // Model ID: google/gemma-3-4b
 // Model page: https://ai-stats.phaseo.app/models/google/gemma-3-4b
 inline constexpr std::string_view GOOGLE_GEMMA_3_4B = "google/gemma-3-4b";
-// Model ID: google/gemma-3n-e2b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e2b
-inline constexpr std::string_view GOOGLE_GEMMA_3N_E2B = "google/gemma-3n-e2b";
-// Model ID: google/gemma-3n-e4b
-// Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b
-inline constexpr std::string_view GOOGLE_GEMMA_3N_E4B = "google/gemma-3n-e4b";
+// Model ID: google/gemma-3-4b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-3-4b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_3_4B_FREE = "google/gemma-3-4b:free";
+// Model ID: google/gemma-3n-e2b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e2b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_3N_E2B_FREE = "google/gemma-3n-e2b:free";
+// Model ID: google/gemma-3n-e4b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_3N_E4B_FREE = "google/gemma-3n-e4b:free";
 // Model ID: google/gemma-4-26b-a4b
 // Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b
 inline constexpr std::string_view GOOGLE_GEMMA_4_26B_A4B = "google/gemma-4-26b-a4b";
+// Model ID: google/gemma-4-26b-a4b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_4_26B_A4B_FREE = "google/gemma-4-26b-a4b:free";
 // Model ID: google/gemma-4-31b
 // Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b
 inline constexpr std::string_view GOOGLE_GEMMA_4_31B = "google/gemma-4-31b";
-// Model ID: google/image-generation-002
-// Model page: https://ai-stats.phaseo.app/models/google/image-generation-002
-inline constexpr std::string_view GOOGLE_IMAGE_GENERATION_002 = "google/image-generation-002";
-// Model ID: google/image-generation-005
-// Model page: https://ai-stats.phaseo.app/models/google/image-generation-005
-inline constexpr std::string_view GOOGLE_IMAGE_GENERATION_005 = "google/image-generation-005";
-// Model ID: google/image-generation-006
-// Model page: https://ai-stats.phaseo.app/models/google/image-generation-006
-inline constexpr std::string_view GOOGLE_IMAGE_GENERATION_006 = "google/image-generation-006";
-// Model ID: google/image-text
-// Model page: https://ai-stats.phaseo.app/models/google/image-text
-inline constexpr std::string_view GOOGLE_IMAGE_TEXT = "google/image-text";
-// Model ID: google/imagen-3.0-generate-001
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-3.0-generate-001
-inline constexpr std::string_view GOOGLE_IMAGEN_3_0_GENERATE_001 = "google/imagen-3.0-generate-001";
-// Model ID: google/imagen-3.0-generate-002
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-3.0-generate-002
-inline constexpr std::string_view GOOGLE_IMAGEN_3_0_GENERATE_002 = "google/imagen-3.0-generate-002";
-// Model ID: google/imagen-4.0-fast-generate-001
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-fast-generate-001
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_FAST_GENERATE_001 = "google/imagen-4.0-fast-generate-001";
-// Model ID: google/imagen-4.0-fast-generate-preview
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-fast-generate-preview
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_FAST_GENERATE_PREVIEW = "google/imagen-4.0-fast-generate-preview";
-// Model ID: google/imagen-4.0-generate-001
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-generate-001
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_GENERATE_001 = "google/imagen-4.0-generate-001";
-// Model ID: google/imagen-4.0-generate-preview
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-generate-preview
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_GENERATE_PREVIEW = "google/imagen-4.0-generate-preview";
-// Model ID: google/imagen-4.0-preview
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-preview
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_PREVIEW = "google/imagen-4.0-preview";
-// Model ID: google/imagen-4.0-ultra-generate-001
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-ultra-generate-001
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_ULTRA_GENERATE_001 = "google/imagen-4.0-ultra-generate-001";
-// Model ID: google/imagen-4.0-ultra-generate-preview
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-ultra-generate-preview
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_ULTRA_GENERATE_PREVIEW = "google/imagen-4.0-ultra-generate-preview";
-// Model ID: google/imagen-4.0-ultra-preview
-// Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-ultra-preview
-inline constexpr std::string_view GOOGLE_IMAGEN_4_0_ULTRA_PREVIEW = "google/imagen-4.0-ultra-preview";
-// Model ID: google/learnlm-1.5-pro-experimental
-// Model page: https://ai-stats.phaseo.app/models/google/learnlm-1.5-pro-experimental
-inline constexpr std::string_view GOOGLE_LEARNLM_1_5_PRO_EXPERIMENTAL = "google/learnlm-1.5-pro-experimental";
-// Model ID: google/learnlm-2.0-flash-experimental
-// Model page: https://ai-stats.phaseo.app/models/google/learnlm-2.0-flash-experimental
-inline constexpr std::string_view GOOGLE_LEARNLM_2_0_FLASH_EXPERIMENTAL = "google/learnlm-2.0-flash-experimental";
-// Model ID: google/lyria-1
-// Model page: https://ai-stats.phaseo.app/models/google/lyria-1
-inline constexpr std::string_view GOOGLE_LYRIA_1 = "google/lyria-1";
-// Model ID: google/lyria-2
-// Model page: https://ai-stats.phaseo.app/models/google/lyria-2
-inline constexpr std::string_view GOOGLE_LYRIA_2 = "google/lyria-2";
-// Model ID: google/lyria-3
-// Model page: https://ai-stats.phaseo.app/models/google/lyria-3
-inline constexpr std::string_view GOOGLE_LYRIA_3 = "google/lyria-3";
-// Model ID: google/medgemma-1.5-4b
-// Model page: https://ai-stats.phaseo.app/models/google/medgemma-1.5-4b
-inline constexpr std::string_view GOOGLE_MEDGEMMA_1_5_4B = "google/medgemma-1.5-4b";
-// Model ID: google/multimodal-embedding-001
-// Model page: https://ai-stats.phaseo.app/models/google/multimodal-embedding-001
-inline constexpr std::string_view GOOGLE_MULTIMODAL_EMBEDDING_001 = "google/multimodal-embedding-001";
-// Model ID: google/text-bison
-// Model page: https://ai-stats.phaseo.app/models/google/text-bison
-inline constexpr std::string_view GOOGLE_TEXT_BISON = "google/text-bison";
-// Model ID: google/text-embedding-004
-// Model page: https://ai-stats.phaseo.app/models/google/text-embedding-004
-inline constexpr std::string_view GOOGLE_TEXT_EMBEDDING_004 = "google/text-embedding-004";
-// Model ID: google/text-embedding-005
-// Model page: https://ai-stats.phaseo.app/models/google/text-embedding-005
-inline constexpr std::string_view GOOGLE_TEXT_EMBEDDING_005 = "google/text-embedding-005";
-// Model ID: google/text-embedding-gecko-001
-// Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-001
-inline constexpr std::string_view GOOGLE_TEXT_EMBEDDING_GECKO_001 = "google/text-embedding-gecko-001";
-// Model ID: google/text-embedding-gecko-002
-// Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-002
-inline constexpr std::string_view GOOGLE_TEXT_EMBEDDING_GECKO_002 = "google/text-embedding-gecko-002";
-// Model ID: google/text-embedding-gecko-003
-// Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-003
-inline constexpr std::string_view GOOGLE_TEXT_EMBEDDING_GECKO_003 = "google/text-embedding-gecko-003";
-// Model ID: google/text-embedding-gecko-multilingual-001
-// Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-multilingual-001
-inline constexpr std::string_view GOOGLE_TEXT_EMBEDDING_GECKO_MULTILINGUAL_001 = "google/text-embedding-gecko-multilingual-001";
-// Model ID: google/text-multilingual-embedding-002
-// Model page: https://ai-stats.phaseo.app/models/google/text-multilingual-embedding-002
-inline constexpr std::string_view GOOGLE_TEXT_MULTILINGUAL_EMBEDDING_002 = "google/text-multilingual-embedding-002";
-// Model ID: google/translategemma-12b
-// Model page: https://ai-stats.phaseo.app/models/google/translategemma-12b
-inline constexpr std::string_view GOOGLE_TRANSLATEGEMMA_12B = "google/translategemma-12b";
-// Model ID: google/translategemma-27b
-// Model page: https://ai-stats.phaseo.app/models/google/translategemma-27b
-inline constexpr std::string_view GOOGLE_TRANSLATEGEMMA_27B = "google/translategemma-27b";
-// Model ID: google/translategemma-4b
-// Model page: https://ai-stats.phaseo.app/models/google/translategemma-4b
-inline constexpr std::string_view GOOGLE_TRANSLATEGEMMA_4B = "google/translategemma-4b";
-// Model ID: google/veo-2
-// Model page: https://ai-stats.phaseo.app/models/google/veo-2
-inline constexpr std::string_view GOOGLE_VEO_2 = "google/veo-2";
-// Model ID: google/veo-3
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3
-inline constexpr std::string_view GOOGLE_VEO_3 = "google/veo-3";
-// Model ID: google/veo-3-fast
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3-fast
-inline constexpr std::string_view GOOGLE_VEO_3_FAST = "google/veo-3-fast";
-// Model ID: google/veo-3.0-fast-generate-preview
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3.0-fast-generate-preview
-inline constexpr std::string_view GOOGLE_VEO_3_0_FAST_GENERATE_PREVIEW = "google/veo-3.0-fast-generate-preview";
-// Model ID: google/veo-3.0-generate-preview
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3.0-generate-preview
-inline constexpr std::string_view GOOGLE_VEO_3_0_GENERATE_PREVIEW = "google/veo-3.0-generate-preview";
-// Model ID: google/veo-3.1-fast-preview
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3.1-fast-preview
-inline constexpr std::string_view GOOGLE_VEO_3_1_FAST_PREVIEW = "google/veo-3.1-fast-preview";
-// Model ID: google/veo-3.1-lite-preview
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3.1-lite-preview
-inline constexpr std::string_view GOOGLE_VEO_3_1_LITE_PREVIEW = "google/veo-3.1-lite-preview";
-// Model ID: google/veo-3.1-preview
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3.1-preview
-inline constexpr std::string_view GOOGLE_VEO_3_1_PREVIEW = "google/veo-3.1-preview";
-// Model ID: google/veo-3.2
-// Model page: https://ai-stats.phaseo.app/models/google/veo-3.2
-inline constexpr std::string_view GOOGLE_VEO_3_2 = "google/veo-3.2";
-// Model ID: google/veo-4
-// Model page: https://ai-stats.phaseo.app/models/google/veo-4
-inline constexpr std::string_view GOOGLE_VEO_4 = "google/veo-4";
-// Model ID: ibm/granite-20b-code-instruct-8k
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-20b-code-instruct-8k
-inline constexpr std::string_view IBM_GRANITE_20B_CODE_INSTRUCT_8K = "ibm/granite-20b-code-instruct-8k";
-// Model ID: ibm/granite-3.0-1b-a400m-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-1b-a400m-instruct
-inline constexpr std::string_view IBM_GRANITE_3_0_1B_A400M_INSTRUCT = "ibm/granite-3.0-1b-a400m-instruct";
-// Model ID: ibm/granite-3.0-2b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-2b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_0_2B_INSTRUCT = "ibm/granite-3.0-2b-instruct";
-// Model ID: ibm/granite-3.0-3b-a800m-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-3b-a800m-instruct
-inline constexpr std::string_view IBM_GRANITE_3_0_3B_A800M_INSTRUCT = "ibm/granite-3.0-3b-a800m-instruct";
-// Model ID: ibm/granite-3.0-8b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-8b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_0_8B_INSTRUCT = "ibm/granite-3.0-8b-instruct";
-// Model ID: ibm/granite-3.1-1b-a400m-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-1b-a400m-instruct
-inline constexpr std::string_view IBM_GRANITE_3_1_1B_A400M_INSTRUCT = "ibm/granite-3.1-1b-a400m-instruct";
-// Model ID: ibm/granite-3.1-2b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-2b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_1_2B_INSTRUCT = "ibm/granite-3.1-2b-instruct";
-// Model ID: ibm/granite-3.1-3b-a800m-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-3b-a800m-instruct
-inline constexpr std::string_view IBM_GRANITE_3_1_3B_A800M_INSTRUCT = "ibm/granite-3.1-3b-a800m-instruct";
-// Model ID: ibm/granite-3.1-8b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-8b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_1_8B_INSTRUCT = "ibm/granite-3.1-8b-instruct";
-// Model ID: ibm/granite-3.2-2b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.2-2b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_2_2B_INSTRUCT = "ibm/granite-3.2-2b-instruct";
-// Model ID: ibm/granite-3.2-8b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.2-8b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_2_8B_INSTRUCT = "ibm/granite-3.2-8b-instruct";
-// Model ID: ibm/granite-3.2-8b-instruct-preview
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.2-8b-instruct-preview
-inline constexpr std::string_view IBM_GRANITE_3_2_8B_INSTRUCT_PREVIEW = "ibm/granite-3.2-8b-instruct-preview";
-// Model ID: ibm/granite-3.3-2b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.3-2b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_3_2B_INSTRUCT = "ibm/granite-3.3-2b-instruct";
-// Model ID: ibm/granite-3.3-8b-instruct
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.3-8b-instruct
-inline constexpr std::string_view IBM_GRANITE_3_3_8B_INSTRUCT = "ibm/granite-3.3-8b-instruct";
-// Model ID: ibm/granite-34b-code-instruct-8b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-34b-code-instruct-8b
-inline constexpr std::string_view IBM_GRANITE_34B_CODE_INSTRUCT_8B = "ibm/granite-34b-code-instruct-8b";
-// Model ID: ibm/granite-3b-code-instruct-128k
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3b-code-instruct-128k
-inline constexpr std::string_view IBM_GRANITE_3B_CODE_INSTRUCT_128K = "ibm/granite-3b-code-instruct-128k";
-// Model ID: ibm/granite-3b-code-instruct-2k
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-3b-code-instruct-2k
-inline constexpr std::string_view IBM_GRANITE_3B_CODE_INSTRUCT_2K = "ibm/granite-3b-code-instruct-2k";
-// Model ID: ibm/granite-4.0-micro
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-micro
-inline constexpr std::string_view IBM_GRANITE_4_0_MICRO = "ibm/granite-4.0-micro";
-// Model ID: ibm/granite-4.0-small
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-small
-inline constexpr std::string_view IBM_GRANITE_4_0_SMALL = "ibm/granite-4.0-small";
-// Model ID: ibm/granite-4.0-tiny
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-tiny
-inline constexpr std::string_view IBM_GRANITE_4_0_TINY = "ibm/granite-4.0-tiny";
-// Model ID: ibm/granite-4.0-tiny-preview
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-tiny-preview
-inline constexpr std::string_view IBM_GRANITE_4_0_TINY_PREVIEW = "ibm/granite-4.0-tiny-preview";
-// Model ID: ibm/granite-8b-code-instruct-128k
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-8b-code-instruct-128k
-inline constexpr std::string_view IBM_GRANITE_8B_CODE_INSTRUCT_128K = "ibm/granite-8b-code-instruct-128k";
-// Model ID: ibm/granite-8b-code-instruct-4k
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-8b-code-instruct-4k
-inline constexpr std::string_view IBM_GRANITE_8B_CODE_INSTRUCT_4K = "ibm/granite-8b-code-instruct-4k";
-// Model ID: ibm/granite-embedding-107m-multilingual
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-107m-multilingual
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_107M_MULTILINGUAL = "ibm/granite-embedding-107m-multilingual";
-// Model ID: ibm/granite-embedding-125m-english
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-125m-english
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_125M_ENGLISH = "ibm/granite-embedding-125m-english";
-// Model ID: ibm/granite-embedding-278m-multilingual
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-278m-multilingual
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_278M_MULTILINGUAL = "ibm/granite-embedding-278m-multilingual";
-// Model ID: ibm/granite-embedding-30m-english
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-30m-english
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_30M_ENGLISH = "ibm/granite-embedding-30m-english";
-// Model ID: ibm/granite-embedding-english-r2
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-english-r2
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_ENGLISH_R2 = "ibm/granite-embedding-english-r2";
-// Model ID: ibm/granite-embedding-reranker-english-r2
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-reranker-english-r2
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_RERANKER_ENGLISH_R2 = "ibm/granite-embedding-reranker-english-r2";
-// Model ID: ibm/granite-embedding-small-english-r2
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-small-english-r2
-inline constexpr std::string_view IBM_GRANITE_EMBEDDING_SMALL_ENGLISH_R2 = "ibm/granite-embedding-small-english-r2";
-// Model ID: ibm/granite-guardian-3.0-2b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.0-2b
-inline constexpr std::string_view IBM_GRANITE_GUARDIAN_3_0_2B = "ibm/granite-guardian-3.0-2b";
-// Model ID: ibm/granite-guardian-3.0-8b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.0-8b
-inline constexpr std::string_view IBM_GRANITE_GUARDIAN_3_0_8B = "ibm/granite-guardian-3.0-8b";
-// Model ID: ibm/granite-guardian-3.1-2b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.1-2b
-inline constexpr std::string_view IBM_GRANITE_GUARDIAN_3_1_2B = "ibm/granite-guardian-3.1-2b";
-// Model ID: ibm/granite-guardian-3.1-8b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.1-8b
-inline constexpr std::string_view IBM_GRANITE_GUARDIAN_3_1_8B = "ibm/granite-guardian-3.1-8b";
-// Model ID: ibm/granite-guardian-3.2-5b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.2-5b
-inline constexpr std::string_view IBM_GRANITE_GUARDIAN_3_2_5B = "ibm/granite-guardian-3.2-5b";
-// Model ID: ibm/granite-guardian-3.3-8b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.3-8b
-inline constexpr std::string_view IBM_GRANITE_GUARDIAN_3_3_8B = "ibm/granite-guardian-3.3-8b";
-// Model ID: ibm/granite-speech-3.2-8b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-speech-3.2-8b
-inline constexpr std::string_view IBM_GRANITE_SPEECH_3_2_8B = "ibm/granite-speech-3.2-8b";
-// Model ID: ibm/granite-speech-3.3-2b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-speech-3.3-2b
-inline constexpr std::string_view IBM_GRANITE_SPEECH_3_3_2B = "ibm/granite-speech-3.3-2b";
-// Model ID: ibm/granite-speech-3.3-8b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-speech-3.3-8b
-inline constexpr std::string_view IBM_GRANITE_SPEECH_3_3_8B = "ibm/granite-speech-3.3-8b";
-// Model ID: ibm/granite-vision-3.1-2b-preview
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.1-2b-preview
-inline constexpr std::string_view IBM_GRANITE_VISION_3_1_2B_PREVIEW = "ibm/granite-vision-3.1-2b-preview";
-// Model ID: ibm/granite-vision-3.2-2b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.2-2b
-inline constexpr std::string_view IBM_GRANITE_VISION_3_2_2B = "ibm/granite-vision-3.2-2b";
-// Model ID: ibm/granite-vision-3.3-2b
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.3-2b
-inline constexpr std::string_view IBM_GRANITE_VISION_3_3_2B = "ibm/granite-vision-3.3-2b";
-// Model ID: ibm/granite-vision-3.3-2b-embedding
-// Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.3-2b-embedding
-inline constexpr std::string_view IBM_GRANITE_VISION_3_3_2B_EMBEDDING = "ibm/granite-vision-3.3-2b-embedding";
-// Model ID: inception/mercury-2
-// Model page: https://ai-stats.phaseo.app/models/inception/mercury-2
-inline constexpr std::string_view INCEPTION_MERCURY_2 = "inception/mercury-2";
-// Model ID: inclusionai/ring-1t-2.5
-// Model page: https://ai-stats.phaseo.app/models/inclusionai/ring-1t-2.5
-inline constexpr std::string_view INCLUSIONAI_RING_1T_2_5 = "inclusionai/ring-1t-2.5";
+// Model ID: google/gemma-4-31b:free
+// Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b%3Afree
+inline constexpr std::string_view GOOGLE_GEMMA_4_31B_FREE = "google/gemma-4-31b:free";
+// Model ID: google/lyria-3-clip-preview
+// Model page: https://ai-stats.phaseo.app/models/google/lyria-3-clip-preview
+inline constexpr std::string_view GOOGLE_LYRIA_3_CLIP_PREVIEW = "google/lyria-3-clip-preview";
+// Model ID: google/lyria-3-pro-preview
+// Model page: https://ai-stats.phaseo.app/models/google/lyria-3-pro-preview
+inline constexpr std::string_view GOOGLE_LYRIA_3_PRO_PREVIEW = "google/lyria-3-pro-preview";
+// Model ID: inclusionai/ling-2.6-1t
+// Model page: https://ai-stats.phaseo.app/models/inclusionai/ling-2.6-1t
+inline constexpr std::string_view INCLUSIONAI_LING_2_6_1T = "inclusionai/ling-2.6-1t";
 // Model ID: kwaipilot/kat-coder-exp-72b-1010
 // Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010";
 // Model ID: kwaipilot/kat-coder-pro
 // Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO = "kwaipilot/kat-coder-pro";
+// Model ID: kwaipilot/kat-coder-pro-v1
+// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v1
+inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V1 = "kwaipilot/kat-coder-pro-v1";
 // Model ID: kwaipilot/kat-coder-pro-v2
 // Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2";
-// Model ID: lg/exaone-3.0
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.0
-inline constexpr std::string_view LG_EXAONE_3_0 = "lg/exaone-3.0";
-// Model ID: lg/exaone-3.5-2.4b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.5-2.4b
-inline constexpr std::string_view LG_EXAONE_3_5_2_4B = "lg/exaone-3.5-2.4b";
-// Model ID: lg/exaone-3.5-32b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.5-32b
-inline constexpr std::string_view LG_EXAONE_3_5_32B = "lg/exaone-3.5-32b";
-// Model ID: lg/exaone-3.5-7.8b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.5-7.8b
-inline constexpr std::string_view LG_EXAONE_3_5_7_8B = "lg/exaone-3.5-7.8b";
-// Model ID: lg/exaone-4.0-1.2b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-4.0-1.2b
-inline constexpr std::string_view LG_EXAONE_4_0_1_2B = "lg/exaone-4.0-1.2b";
-// Model ID: lg/exaone-4.0-32b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-4.0-32b
-inline constexpr std::string_view LG_EXAONE_4_0_32B = "lg/exaone-4.0-32b";
-// Model ID: lg/exaone-deep-2.4b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-deep-2.4b
-inline constexpr std::string_view LG_EXAONE_DEEP_2_4B = "lg/exaone-deep-2.4b";
-// Model ID: lg/exaone-deep-32b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-deep-32b
-inline constexpr std::string_view LG_EXAONE_DEEP_32B = "lg/exaone-deep-32b";
-// Model ID: lg/exaone-deep-7.8b
-// Model page: https://ai-stats.phaseo.app/models/lg/exaone-deep-7.8b
-inline constexpr std::string_view LG_EXAONE_DEEP_7_8B = "lg/exaone-deep-7.8b";
-// Model ID: lg/k-exaone
-// Model page: https://ai-stats.phaseo.app/models/lg/k-exaone
-inline constexpr std::string_view LG_K_EXAONE = "lg/k-exaone";
-// Model ID: liquid-ai/lfm-2-1.2b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-1.2b
-inline constexpr std::string_view LIQUID_AI_LFM_2_1_2B = "liquid-ai/lfm-2-1.2b";
-// Model ID: liquid-ai/lfm-2-2.6b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-2.6b
-inline constexpr std::string_view LIQUID_AI_LFM_2_2_6B = "liquid-ai/lfm-2-2.6b";
-// Model ID: liquid-ai/lfm-2-24b-a2b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
-inline constexpr std::string_view LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b";
-// Model ID: liquid-ai/lfm-2-350m
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-350m
-inline constexpr std::string_view LIQUID_AI_LFM_2_350M = "liquid-ai/lfm-2-350m";
-// Model ID: liquid-ai/lfm-2-700m
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-700m
-inline constexpr std::string_view LIQUID_AI_LFM_2_700M = "liquid-ai/lfm-2-700m";
-// Model ID: liquid-ai/lfm-2-8b-a1b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-8b-a1b
-inline constexpr std::string_view LIQUID_AI_LFM_2_8B_A1B = "liquid-ai/lfm-2-8b-a1b";
-// Model ID: liquid-ai/lfm-2.5-1.2b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-1.2b
-inline constexpr std::string_view LIQUID_AI_LFM_2_5_1_2B = "liquid-ai/lfm-2.5-1.2b";
-// Model ID: liquid-ai/lfm-2.5-1.2b-jp
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-1.2b-jp
-inline constexpr std::string_view LIQUID_AI_LFM_2_5_1_2B_JP = "liquid-ai/lfm-2.5-1.2b-jp";
-// Model ID: liquid-ai/lfm-2.5-1.2b-thinking
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-1.2b-thinking
-inline constexpr std::string_view LIQUID_AI_LFM_2_5_1_2B_THINKING = "liquid-ai/lfm-2.5-1.2b-thinking";
-// Model ID: liquid-ai/lfm-2.5-audio-1.5b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-audio-1.5b
-inline constexpr std::string_view LIQUID_AI_LFM_2_5_AUDIO_1_5B = "liquid-ai/lfm-2.5-audio-1.5b";
-// Model ID: liquid-ai/lfm-2.5-vl-1.6b
-// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-vl-1.6b
-inline constexpr std::string_view LIQUID_AI_LFM_2_5_VL_1_6B = "liquid-ai/lfm-2.5-vl-1.6b";
 // Model ID: meituan/longcat-flash-cat
 // Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat
 inline constexpr std::string_view MEITUAN_LONGCAT_FLASH_CAT = "meituan/longcat-flash-cat";
-// Model ID: meta/llama-2-13b-chat
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-2-13b-chat
-inline constexpr std::string_view META_LLAMA_2_13B_CHAT = "meta/llama-2-13b-chat";
-// Model ID: meta/llama-2-70b-chat
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-2-70b-chat
-inline constexpr std::string_view META_LLAMA_2_70B_CHAT = "meta/llama-2-70b-chat";
-// Model ID: meta/llama-2-7b-chat
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-2-7b-chat
-inline constexpr std::string_view META_LLAMA_2_7B_CHAT = "meta/llama-2-7b-chat";
 // Model ID: meta/llama-3-70b
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b
 inline constexpr std::string_view META_LLAMA_3_70B = "meta/llama-3-70b";
 // Model ID: meta/llama-3-8b
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-3-8b
 inline constexpr std::string_view META_LLAMA_3_8B = "meta/llama-3-8b";
-// Model ID: meta/llama-3.1-405b
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-3.1-405b
-inline constexpr std::string_view META_LLAMA_3_1_405B = "meta/llama-3.1-405b";
 // Model ID: meta/llama-3.1-70b
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-3.1-70b
 inline constexpr std::string_view META_LLAMA_3_1_70B = "meta/llama-3.1-70b";
 // Model ID: meta/llama-3.1-8b
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-3.1-8b
 inline constexpr std::string_view META_LLAMA_3_1_8B = "meta/llama-3.1-8b";
-// Model ID: meta/llama-3.2-11b-vision
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-11b-vision
-inline constexpr std::string_view META_LLAMA_3_2_11B_VISION = "meta/llama-3.2-11b-vision";
-// Model ID: meta/llama-3.2-1b
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-1b
-inline constexpr std::string_view META_LLAMA_3_2_1B = "meta/llama-3.2-1b";
 // Model ID: meta/llama-3.2-3b
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-3b
 inline constexpr std::string_view META_LLAMA_3_2_3B = "meta/llama-3.2-3b";
-// Model ID: meta/llama-3.2-90b-vision
-// Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-90b-vision
-inline constexpr std::string_view META_LLAMA_3_2_90B_VISION = "meta/llama-3.2-90b-vision";
 // Model ID: meta/llama-3.3-70b
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-3.3-70b
 inline constexpr std::string_view META_LLAMA_3_3_70B = "meta/llama-3.3-70b";
@@ -1107,243 +318,93 @@ inline constexpr std::string_view META_LLAMA_4_MAVERICK = "meta/llama-4-maverick
 // Model ID: meta/llama-4-scout
 // Model page: https://ai-stats.phaseo.app/models/meta/llama-4-scout
 inline constexpr std::string_view META_LLAMA_4_SCOUT = "meta/llama-4-scout";
-// Model ID: microsoft/phi-1
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-1
-inline constexpr std::string_view MICROSOFT_PHI_1 = "microsoft/phi-1";
-// Model ID: microsoft/phi-1.5
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-1.5
-inline constexpr std::string_view MICROSOFT_PHI_1_5 = "microsoft/phi-1.5";
-// Model ID: microsoft/phi-2
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-2
-inline constexpr std::string_view MICROSOFT_PHI_2 = "microsoft/phi-2";
-// Model ID: microsoft/phi-3-medium-128k-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-medium-128k-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_MEDIUM_128K_INSTRUCT = "microsoft/phi-3-medium-128k-instruct";
-// Model ID: microsoft/phi-3-medium-4k-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-medium-4k-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_MEDIUM_4K_INSTRUCT = "microsoft/phi-3-medium-4k-instruct";
-// Model ID: microsoft/phi-3-mini-128k-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-mini-128k-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_MINI_128K_INSTRUCT = "microsoft/phi-3-mini-128k-instruct";
-// Model ID: microsoft/phi-3-small-128k-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-small-128k-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_SMALL_128K_INSTRUCT = "microsoft/phi-3-small-128k-instruct";
-// Model ID: microsoft/phi-3-small-8k-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-small-8k-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_SMALL_8K_INSTRUCT = "microsoft/phi-3-small-8k-instruct";
-// Model ID: microsoft/phi-3-vision-128k-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-vision-128k-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_VISION_128K_INSTRUCT = "microsoft/phi-3-vision-128k-instruct";
-// Model ID: microsoft/phi-3.5-mini-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3.5-mini-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_5_MINI_INSTRUCT = "microsoft/phi-3.5-mini-instruct";
-// Model ID: microsoft/phi-3.5-moe-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3.5-moe-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_5_MOE_INSTRUCT = "microsoft/phi-3.5-moe-instruct";
-// Model ID: microsoft/phi-3.5-vision-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3.5-vision-instruct
-inline constexpr std::string_view MICROSOFT_PHI_3_5_VISION_INSTRUCT = "microsoft/phi-3.5-vision-instruct";
+// Model ID: meta/llama-guard-4-12b
+// Model page: https://ai-stats.phaseo.app/models/meta/llama-guard-4-12b
+inline constexpr std::string_view META_LLAMA_GUARD_4_12B = "meta/llama-guard-4-12b";
+// Model ID: meta/llama-prompt-guard-2-22m
+// Model page: https://ai-stats.phaseo.app/models/meta/llama-prompt-guard-2-22m
+inline constexpr std::string_view META_LLAMA_PROMPT_GUARD_2_22M = "meta/llama-prompt-guard-2-22m";
+// Model ID: meta/llama-prompt-guard-2-86m
+// Model page: https://ai-stats.phaseo.app/models/meta/llama-prompt-guard-2-86m
+inline constexpr std::string_view META_LLAMA_PROMPT_GUARD_2_86M = "meta/llama-prompt-guard-2-86m";
 // Model ID: microsoft/phi-4
 // Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4
 inline constexpr std::string_view MICROSOFT_PHI_4 = "microsoft/phi-4";
 // Model ID: microsoft/phi-4-mini
 // Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-mini
 inline constexpr std::string_view MICROSOFT_PHI_4_MINI = "microsoft/phi-4-mini";
-// Model ID: microsoft/phi-4-mini-flash-reasoning
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-mini-flash-reasoning
-inline constexpr std::string_view MICROSOFT_PHI_4_MINI_FLASH_REASONING = "microsoft/phi-4-mini-flash-reasoning";
-// Model ID: microsoft/phi-4-mini-reasoning
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-mini-reasoning
-inline constexpr std::string_view MICROSOFT_PHI_4_MINI_REASONING = "microsoft/phi-4-mini-reasoning";
-// Model ID: microsoft/phi-4-multimodal-instruct
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-multimodal-instruct
-inline constexpr std::string_view MICROSOFT_PHI_4_MULTIMODAL_INSTRUCT = "microsoft/phi-4-multimodal-instruct";
-// Model ID: microsoft/phi-4-reasoning
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-reasoning
-inline constexpr std::string_view MICROSOFT_PHI_4_REASONING = "microsoft/phi-4-reasoning";
-// Model ID: microsoft/phi-4-reasoning-plus
-// Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-reasoning-plus
-inline constexpr std::string_view MICROSOFT_PHI_4_REASONING_PLUS = "microsoft/phi-4-reasoning-plus";
-// Model ID: minimax/hailuo-02
-// Model page: https://ai-stats.phaseo.app/models/minimax/hailuo-02
-inline constexpr std::string_view MINIMAX_HAILUO_02 = "minimax/hailuo-02";
-// Model ID: minimax/hailuo-2.3
-// Model page: https://ai-stats.phaseo.app/models/minimax/hailuo-2.3
-inline constexpr std::string_view MINIMAX_HAILUO_2_3 = "minimax/hailuo-2.3";
-// Model ID: minimax/hailuo-2.3-fast
-// Model page: https://ai-stats.phaseo.app/models/minimax/hailuo-2.3-fast
-inline constexpr std::string_view MINIMAX_HAILUO_2_3_FAST = "minimax/hailuo-2.3-fast";
-// Model ID: minimax/i2v-01-director
-// Model page: https://ai-stats.phaseo.app/models/minimax/i2v-01-director
-inline constexpr std::string_view MINIMAX_I2V_01_DIRECTOR = "minimax/i2v-01-director";
-// Model ID: minimax/i2v-01-live
-// Model page: https://ai-stats.phaseo.app/models/minimax/i2v-01-live
-inline constexpr std::string_view MINIMAX_I2V_01_LIVE = "minimax/i2v-01-live";
-// Model ID: minimax/image-01
-// Model page: https://ai-stats.phaseo.app/models/minimax/image-01
-inline constexpr std::string_view MINIMAX_IMAGE_01 = "minimax/image-01";
-// Model ID: minimax/minimax-m1-40k
-// Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m1-40k
-inline constexpr std::string_view MINIMAX_MINIMAX_M1_40K = "minimax/minimax-m1-40k";
+// Model ID: minimax/m2-her
+// Model page: https://ai-stats.phaseo.app/models/minimax/m2-her
+inline constexpr std::string_view MINIMAX_M2_HER = "minimax/m2-her";
 // Model ID: minimax/minimax-m1-80k
 // Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m1-80k
 inline constexpr std::string_view MINIMAX_MINIMAX_M1_80K = "minimax/minimax-m1-80k";
 // Model ID: minimax/minimax-m2
 // Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2
 inline constexpr std::string_view MINIMAX_MINIMAX_M2 = "minimax/minimax-m2";
-// Model ID: minimax/minimax-m2-her
-// Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2-her
-inline constexpr std::string_view MINIMAX_MINIMAX_M2_HER = "minimax/minimax-m2-her";
 // Model ID: minimax/minimax-m2.1
 // Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.1
 inline constexpr std::string_view MINIMAX_MINIMAX_M2_1 = "minimax/minimax-m2.1";
 // Model ID: minimax/minimax-m2.5
 // Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.5
 inline constexpr std::string_view MINIMAX_MINIMAX_M2_5 = "minimax/minimax-m2.5";
+// Model ID: minimax/minimax-m2.5-highspeed
+// Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.5-highspeed
+inline constexpr std::string_view MINIMAX_MINIMAX_M2_5_HIGHSPEED = "minimax/minimax-m2.5-highspeed";
 // Model ID: minimax/minimax-m2.7
 // Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.7
 inline constexpr std::string_view MINIMAX_MINIMAX_M2_7 = "minimax/minimax-m2.7";
-// Model ID: minimax/minimax-text-01
-// Model page: https://ai-stats.phaseo.app/models/minimax/minimax-text-01
-inline constexpr std::string_view MINIMAX_MINIMAX_TEXT_01 = "minimax/minimax-text-01";
-// Model ID: minimax/minimax-vl-01
-// Model page: https://ai-stats.phaseo.app/models/minimax/minimax-vl-01
-inline constexpr std::string_view MINIMAX_MINIMAX_VL_01 = "minimax/minimax-vl-01";
-// Model ID: minimax/music-1.5
-// Model page: https://ai-stats.phaseo.app/models/minimax/music-1.5
-inline constexpr std::string_view MINIMAX_MUSIC_1_5 = "minimax/music-1.5";
-// Model ID: minimax/music-2.0
-// Model page: https://ai-stats.phaseo.app/models/minimax/music-2.0
-inline constexpr std::string_view MINIMAX_MUSIC_2_0 = "minimax/music-2.0";
-// Model ID: minimax/music-2.5
-// Model page: https://ai-stats.phaseo.app/models/minimax/music-2.5
-inline constexpr std::string_view MINIMAX_MUSIC_2_5 = "minimax/music-2.5";
 // Model ID: minimax/music-2.6
 // Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6
 inline constexpr std::string_view MINIMAX_MUSIC_2_6 = "minimax/music-2.6";
-// Model ID: minimax/s2v-01
-// Model page: https://ai-stats.phaseo.app/models/minimax/s2v-01
-inline constexpr std::string_view MINIMAX_S2V_01 = "minimax/s2v-01";
-// Model ID: minimax/speech-01-hd
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-01-hd
-inline constexpr std::string_view MINIMAX_SPEECH_01_HD = "minimax/speech-01-hd";
-// Model ID: minimax/speech-01-turbo
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-01-turbo
-inline constexpr std::string_view MINIMAX_SPEECH_01_TURBO = "minimax/speech-01-turbo";
-// Model ID: minimax/speech-02-hd
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-02-hd
-inline constexpr std::string_view MINIMAX_SPEECH_02_HD = "minimax/speech-02-hd";
-// Model ID: minimax/speech-02-turbo
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-02-turbo
-inline constexpr std::string_view MINIMAX_SPEECH_02_TURBO = "minimax/speech-02-turbo";
-// Model ID: minimax/speech-2.5-hd-preview
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-2.5-hd-preview
-inline constexpr std::string_view MINIMAX_SPEECH_2_5_HD_PREVIEW = "minimax/speech-2.5-hd-preview";
-// Model ID: minimax/speech-2.5-turbo-preview
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-2.5-turbo-preview
-inline constexpr std::string_view MINIMAX_SPEECH_2_5_TURBO_PREVIEW = "minimax/speech-2.5-turbo-preview";
-// Model ID: minimax/speech-2.6
-// Model page: https://ai-stats.phaseo.app/models/minimax/speech-2.6
-inline constexpr std::string_view MINIMAX_SPEECH_2_6 = "minimax/speech-2.6";
-// Model ID: minimax/t2v-01-director
-// Model page: https://ai-stats.phaseo.app/models/minimax/t2v-01-director
-inline constexpr std::string_view MINIMAX_T2V_01_DIRECTOR = "minimax/t2v-01-director";
-// Model ID: mistral/codestral
-// Model page: https://ai-stats.phaseo.app/models/mistral/codestral
-inline constexpr std::string_view MISTRAL_CODESTRAL = "mistral/codestral";
-// Model ID: mistral/codestral-2024-05-29
-// Model page: https://ai-stats.phaseo.app/models/mistral/codestral-2024-05-29
-inline constexpr std::string_view MISTRAL_CODESTRAL_2024_05_29 = "mistral/codestral-2024-05-29";
-// Model ID: mistral/codestral-2025-01-13
-// Model page: https://ai-stats.phaseo.app/models/mistral/codestral-2025-01-13
-inline constexpr std::string_view MISTRAL_CODESTRAL_2025_01_13 = "mistral/codestral-2025-01-13";
+// Model ID: minimax/music-2.6-free
+// Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6-free
+inline constexpr std::string_view MINIMAX_MUSIC_2_6_FREE = "minimax/music-2.6-free";
 // Model ID: mistral/codestral-embed
 // Model page: https://ai-stats.phaseo.app/models/mistral/codestral-embed
 inline constexpr std::string_view MISTRAL_CODESTRAL_EMBED = "mistral/codestral-embed";
-// Model ID: mistral/codestral-mamba-7b
-// Model page: https://ai-stats.phaseo.app/models/mistral/codestral-mamba-7b
-inline constexpr std::string_view MISTRAL_CODESTRAL_MAMBA_7B = "mistral/codestral-mamba-7b";
-// Model ID: mistral/devstral-2.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-2.0
-inline constexpr std::string_view MISTRAL_DEVSTRAL_2_0 = "mistral/devstral-2.0";
+// Model ID: mistral/devstral-2
+// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-2
+inline constexpr std::string_view MISTRAL_DEVSTRAL_2 = "mistral/devstral-2";
 // Model ID: mistral/devstral-medium-1.0
 // Model page: https://ai-stats.phaseo.app/models/mistral/devstral-medium-1.0
 inline constexpr std::string_view MISTRAL_DEVSTRAL_MEDIUM_1_0 = "mistral/devstral-medium-1.0";
-// Model ID: mistral/devstral-small-1.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.0
-inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_1_0 = "mistral/devstral-small-1.0";
 // Model ID: mistral/devstral-small-1.1
 // Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
 inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_1_1 = "mistral/devstral-small-1.1";
-// Model ID: mistral/devstral-small-2.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-2.0
-inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_2_0 = "mistral/devstral-small-2.0";
-// Model ID: mistral/leanstral
-// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral
-inline constexpr std::string_view MISTRAL_LEANSTRAL = "mistral/leanstral";
-// Model ID: mistral/magistral-medium-1.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.0
-inline constexpr std::string_view MISTRAL_MAGISTRAL_MEDIUM_1_0 = "mistral/magistral-medium-1.0";
-// Model ID: mistral/magistral-medium-1.1
-// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.1
-inline constexpr std::string_view MISTRAL_MAGISTRAL_MEDIUM_1_1 = "mistral/magistral-medium-1.1";
+// Model ID: mistral/devstral-small-2
+// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-2
+inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_2 = "mistral/devstral-small-2";
+// Model ID: mistral/leanstral:free
+// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral%3Afree
+inline constexpr std::string_view MISTRAL_LEANSTRAL_FREE = "mistral/leanstral:free";
 // Model ID: mistral/magistral-medium-1.2
 // Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
 inline constexpr std::string_view MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2";
-// Model ID: mistral/magistral-small-1.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.0
-inline constexpr std::string_view MISTRAL_MAGISTRAL_SMALL_1_0 = "mistral/magistral-small-1.0";
-// Model ID: mistral/magistral-small-1.1
-// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.1
-inline constexpr std::string_view MISTRAL_MAGISTRAL_SMALL_1_1 = "mistral/magistral-small-1.1";
 // Model ID: mistral/magistral-small-1.2
 // Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.2
 inline constexpr std::string_view MISTRAL_MAGISTRAL_SMALL_1_2 = "mistral/magistral-small-1.2";
-// Model ID: mistral/mathstral-7b
-// Model page: https://ai-stats.phaseo.app/models/mistral/mathstral-7b
-inline constexpr std::string_view MISTRAL_MATHSTRAL_7B = "mistral/mathstral-7b";
-// Model ID: mistral/ministral-3.0-14b
-// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3.0-14b
-inline constexpr std::string_view MISTRAL_MINISTRAL_3_0_14B = "mistral/ministral-3.0-14b";
-// Model ID: mistral/ministral-3.0-3b
-// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3.0-3b
-inline constexpr std::string_view MISTRAL_MINISTRAL_3_0_3B = "mistral/ministral-3.0-3b";
-// Model ID: mistral/ministral-3.0-8b
-// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3.0-8b
-inline constexpr std::string_view MISTRAL_MINISTRAL_3_0_8B = "mistral/ministral-3.0-8b";
-// Model ID: mistral/ministral-3b
-// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3b
-inline constexpr std::string_view MISTRAL_MINISTRAL_3B = "mistral/ministral-3b";
-// Model ID: mistral/ministral-8b
-// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-8b
-inline constexpr std::string_view MISTRAL_MINISTRAL_8B = "mistral/ministral-8b";
-// Model ID: mistral/mistral-7b
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-7b
-inline constexpr std::string_view MISTRAL_MISTRAL_7B = "mistral/mistral-7b";
-// Model ID: mistral/mistral-7b-2023-09-27
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-7b-2023-09-27
-inline constexpr std::string_view MISTRAL_MISTRAL_7B_2023_09_27 = "mistral/mistral-7b-2023-09-27";
-// Model ID: mistral/mistral-7b-2023-12-11
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-7b-2023-12-11
-inline constexpr std::string_view MISTRAL_MISTRAL_7B_2023_12_11 = "mistral/mistral-7b-2023-12-11";
+// Model ID: mistral/ministral-3-14b
+// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b
+inline constexpr std::string_view MISTRAL_MINISTRAL_3_14B = "mistral/ministral-3-14b";
+// Model ID: mistral/ministral-3-3b
+// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-3b
+inline constexpr std::string_view MISTRAL_MINISTRAL_3_3B = "mistral/ministral-3-3b";
+// Model ID: mistral/ministral-3-8b
+// Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-8b
+inline constexpr std::string_view MISTRAL_MINISTRAL_3_8B = "mistral/ministral-3-8b";
+// Model ID: mistral/mistral-3.1-24b
+// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-3.1-24b
+inline constexpr std::string_view MISTRAL_MISTRAL_3_1_24B = "mistral/mistral-3.1-24b";
 // Model ID: mistral/mistral-embed
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-embed
 inline constexpr std::string_view MISTRAL_MISTRAL_EMBED = "mistral/mistral-embed";
-// Model ID: mistral/mistral-large-1.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-1.0
-inline constexpr std::string_view MISTRAL_MISTRAL_LARGE_1_0 = "mistral/mistral-large-1.0";
-// Model ID: mistral/mistral-large-2.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-2.0
-inline constexpr std::string_view MISTRAL_MISTRAL_LARGE_2_0 = "mistral/mistral-large-2.0";
 // Model ID: mistral/mistral-large-2.1
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-2.1
 inline constexpr std::string_view MISTRAL_MISTRAL_LARGE_2_1 = "mistral/mistral-large-2.1";
-// Model ID: mistral/mistral-large-3.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-3.0
-inline constexpr std::string_view MISTRAL_MISTRAL_LARGE_3_0 = "mistral/mistral-large-3.0";
-// Model ID: mistral/mistral-medium-1.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-medium-1.0
-inline constexpr std::string_view MISTRAL_MISTRAL_MEDIUM_1_0 = "mistral/mistral-medium-1.0";
+// Model ID: mistral/mistral-large-3
+// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-3
+inline constexpr std::string_view MISTRAL_MISTRAL_LARGE_3 = "mistral/mistral-large-3";
 // Model ID: mistral/mistral-medium-3.0
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-medium-3.0
 inline constexpr std::string_view MISTRAL_MISTRAL_MEDIUM_3_0 = "mistral/mistral-medium-3.0";
@@ -1359,27 +420,12 @@ inline constexpr std::string_view MISTRAL_MISTRAL_MODERATION_2 = "mistral/mistra
 // Model ID: mistral/mistral-nemo-12b
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-nemo-12b
 inline constexpr std::string_view MISTRAL_MISTRAL_NEMO_12B = "mistral/mistral-nemo-12b";
-// Model ID: mistral/mistral-ocr
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-ocr
-inline constexpr std::string_view MISTRAL_MISTRAL_OCR = "mistral/mistral-ocr";
-// Model ID: mistral/mistral-ocr-2
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-ocr-2
-inline constexpr std::string_view MISTRAL_MISTRAL_OCR_2 = "mistral/mistral-ocr-2";
-// Model ID: mistral/mistral-saba
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-saba
-inline constexpr std::string_view MISTRAL_MISTRAL_SABA = "mistral/mistral-saba";
-// Model ID: mistral/mistral-small-1.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-1.0
-inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_1_0 = "mistral/mistral-small-1.0";
-// Model ID: mistral/mistral-small-2.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-2.0
-inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_2_0 = "mistral/mistral-small-2.0";
-// Model ID: mistral/mistral-small-3.0
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-3.0
-inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_3_0 = "mistral/mistral-small-3.0";
-// Model ID: mistral/mistral-small-3.1
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-3.1
-inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_3_1 = "mistral/mistral-small-3.1";
+// Model ID: mistral/mistral-nemo-2407
+// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-nemo-2407
+inline constexpr std::string_view MISTRAL_MISTRAL_NEMO_2407 = "mistral/mistral-nemo-2407";
+// Model ID: mistral/mistral-small-24b-2501
+// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-24b-2501
+inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_24B_2501 = "mistral/mistral-small-24b-2501";
 // Model ID: mistral/mistral-small-3.2
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-3.2
 inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_3_2 = "mistral/mistral-small-3.2";
@@ -1389,42 +435,27 @@ inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_4 = "mistral/mistral-sma
 // Model ID: mistral/mistral-small-creative
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-creative
 inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_CREATIVE = "mistral/mistral-small-creative";
-// Model ID: mistral/mixtral-8x22b
-// Model page: https://ai-stats.phaseo.app/models/mistral/mixtral-8x22b
-inline constexpr std::string_view MISTRAL_MIXTRAL_8X22B = "mistral/mixtral-8x22b";
 // Model ID: mistral/mixtral-8x7b
 // Model page: https://ai-stats.phaseo.app/models/mistral/mixtral-8x7b
 inline constexpr std::string_view MISTRAL_MIXTRAL_8X7B = "mistral/mixtral-8x7b";
-// Model ID: mistral/ocr-3
-// Model page: https://ai-stats.phaseo.app/models/mistral/ocr-3
-inline constexpr std::string_view MISTRAL_OCR_3 = "mistral/ocr-3";
-// Model ID: mistral/pixtral-12b
-// Model page: https://ai-stats.phaseo.app/models/mistral/pixtral-12b
-inline constexpr std::string_view MISTRAL_PIXTRAL_12B = "mistral/pixtral-12b";
 // Model ID: mistral/pixtral-large
 // Model page: https://ai-stats.phaseo.app/models/mistral/pixtral-large
 inline constexpr std::string_view MISTRAL_PIXTRAL_LARGE = "mistral/pixtral-large";
-// Model ID: mistral/voxtral-mini
-// Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-mini
-inline constexpr std::string_view MISTRAL_VOXTRAL_MINI = "mistral/voxtral-mini";
-// Model ID: mistral/voxtral-mini-transcribe
-// Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-mini-transcribe
-inline constexpr std::string_view MISTRAL_VOXTRAL_MINI_TRANSCRIBE = "mistral/voxtral-mini-transcribe";
-// Model ID: mistral/voxtral-mini-transcribe-2
-// Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-mini-transcribe-2
-inline constexpr std::string_view MISTRAL_VOXTRAL_MINI_TRANSCRIBE_2 = "mistral/voxtral-mini-transcribe-2";
-// Model ID: mistral/voxtral-small
-// Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-small
-inline constexpr std::string_view MISTRAL_VOXTRAL_SMALL = "mistral/voxtral-small";
-// Model ID: moonshotai/kimi-k1.5
-// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k1.5
-inline constexpr std::string_view MOONSHOTAI_KIMI_K1_5 = "moonshotai/kimi-k1.5";
+// Model ID: mistralai/mistral-nemo
+// Model page: https://ai-stats.phaseo.app/models/mistralai/mistral-nemo
+inline constexpr std::string_view MISTRALAI_MISTRAL_NEMO = "mistralai/mistral-nemo";
 // Model ID: moonshotai/kimi-k2
 // Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2
 inline constexpr std::string_view MOONSHOTAI_KIMI_K2 = "moonshotai/kimi-k2";
-// Model ID: moonshotai/kimi-k2-2025-07-11
-// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-2025-07-11
-inline constexpr std::string_view MOONSHOTAI_KIMI_K2_2025_07_11 = "moonshotai/kimi-k2-2025-07-11";
+// Model ID: moonshotai/kimi-k2-0905
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-0905
+inline constexpr std::string_view MOONSHOTAI_KIMI_K2_0905 = "moonshotai/kimi-k2-0905";
+// Model ID: moonshotai/kimi-k2-instruct
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-instruct
+inline constexpr std::string_view MOONSHOTAI_KIMI_K2_INSTRUCT = "moonshotai/kimi-k2-instruct";
+// Model ID: moonshotai/kimi-k2-instruct-0905
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-instruct-0905
+inline constexpr std::string_view MOONSHOTAI_KIMI_K2_INSTRUCT_0905 = "moonshotai/kimi-k2-instruct-0905";
 // Model ID: moonshotai/kimi-k2-thinking
 // Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-thinking
 inline constexpr std::string_view MOONSHOTAI_KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking";
@@ -1434,90 +465,24 @@ inline constexpr std::string_view MOONSHOTAI_KIMI_K2_5 = "moonshotai/kimi-k2.5";
 // Model ID: moonshotai/kimi-k2.6
 // Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6
 inline constexpr std::string_view MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6";
-// Model ID: moonshotai/kimi-linear-48b
-// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-linear-48b
-inline constexpr std::string_view MOONSHOTAI_KIMI_LINEAR_48B = "moonshotai/kimi-linear-48b";
-// Model ID: moonshotai/kimi-vl-a3b
-// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-vl-a3b
-inline constexpr std::string_view MOONSHOTAI_KIMI_VL_A3B = "moonshotai/kimi-vl-a3b";
-// Model ID: moonshotai/kimi-vl-a3b-thinking
-// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-vl-a3b-thinking
-inline constexpr std::string_view MOONSHOTAI_KIMI_VL_A3B_THINKING = "moonshotai/kimi-vl-a3b-thinking";
-// Model ID: moonshotai/kimi-vl-a3b-thinking-2025-04-09
-// Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-vl-a3b-thinking-2025-04-09
-inline constexpr std::string_view MOONSHOTAI_KIMI_VL_A3B_THINKING_2025_04_09 = "moonshotai/kimi-vl-a3b-thinking-2025-04-09";
-// Model ID: naver-hyperclova/hyperclova-x-seed-omni-8b
-// Model page: https://ai-stats.phaseo.app/models/naver-hyperclova/hyperclova-x-seed-omni-8b
-inline constexpr std::string_view NAVER_HYPERCLOVA_HYPERCLOVA_X_SEED_OMNI_8B = "naver-hyperclova/hyperclova-x-seed-omni-8b";
-// Model ID: naver-hyperclova/hyperclova-x-seed-think-14b
-// Model page: https://ai-stats.phaseo.app/models/naver-hyperclova/hyperclova-x-seed-think-14b
-inline constexpr std::string_view NAVER_HYPERCLOVA_HYPERCLOVA_X_SEED_THINK_14B = "naver-hyperclova/hyperclova-x-seed-think-14b";
-// Model ID: naver-hyperclova/hyperclova-x-seed-think-32b
-// Model page: https://ai-stats.phaseo.app/models/naver-hyperclova/hyperclova-x-seed-think-32b
-inline constexpr std::string_view NAVER_HYPERCLOVA_HYPERCLOVA_X_SEED_THINK_32B = "naver-hyperclova/hyperclova-x-seed-think-32b";
-// Model ID: nous/hermes-2-llama-2-70b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-llama-2-70b
-inline constexpr std::string_view NOUS_HERMES_2_LLAMA_2_70B = "nous/hermes-2-llama-2-70b";
-// Model ID: nous/hermes-2-pro-llama-3-70b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-pro-llama-3-70b
-inline constexpr std::string_view NOUS_HERMES_2_PRO_LLAMA_3_70B = "nous/hermes-2-pro-llama-3-70b";
-// Model ID: nous/hermes-2-pro-llama-3-8b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-pro-llama-3-8b
-inline constexpr std::string_view NOUS_HERMES_2_PRO_LLAMA_3_8B = "nous/hermes-2-pro-llama-3-8b";
-// Model ID: nous/hermes-2-pro-mistral-7b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-pro-mistral-7b
-inline constexpr std::string_view NOUS_HERMES_2_PRO_MISTRAL_7B = "nous/hermes-2-pro-mistral-7b";
-// Model ID: nous/hermes-2-theta-llama-3-70b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-theta-llama-3-70b
-inline constexpr std::string_view NOUS_HERMES_2_THETA_LLAMA_3_70B = "nous/hermes-2-theta-llama-3-70b";
-// Model ID: nous/hermes-2-theta-llama-3-8b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-theta-llama-3-8b
-inline constexpr std::string_view NOUS_HERMES_2_THETA_LLAMA_3_8B = "nous/hermes-2-theta-llama-3-8b";
 // Model ID: nous/hermes-3-llama-3.1-405b
 // Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
 inline constexpr std::string_view NOUS_HERMES_3_LLAMA_3_1_405B = "nous/hermes-3-llama-3.1-405b";
-// Model ID: nous/hermes-3-llama-3.1-70b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-70b
-inline constexpr std::string_view NOUS_HERMES_3_LLAMA_3_1_70B = "nous/hermes-3-llama-3.1-70b";
-// Model ID: nous/hermes-3-llama-3.1-8b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-8b
-inline constexpr std::string_view NOUS_HERMES_3_LLAMA_3_1_8B = "nous/hermes-3-llama-3.1-8b";
-// Model ID: nous/hermes-3-llama-3.2-3b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.2-3b
-inline constexpr std::string_view NOUS_HERMES_3_LLAMA_3_2_3B = "nous/hermes-3-llama-3.2-3b";
-// Model ID: nous/hermes-4-14b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-4-14b
-inline constexpr std::string_view NOUS_HERMES_4_14B = "nous/hermes-4-14b";
-// Model ID: nous/hermes-4-405b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-4-405b
-inline constexpr std::string_view NOUS_HERMES_4_405B = "nous/hermes-4-405b";
-// Model ID: nous/hermes-4-70b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-4-70b
-inline constexpr std::string_view NOUS_HERMES_4_70B = "nous/hermes-4-70b";
-// Model ID: nous/hermes-4.3-36b
-// Model page: https://ai-stats.phaseo.app/models/nous/hermes-4.3-36b
-inline constexpr std::string_view NOUS_HERMES_4_3_36B = "nous/hermes-4.3-36b";
-// Model ID: nous/nomos-1
-// Model page: https://ai-stats.phaseo.app/models/nous/nomos-1
-inline constexpr std::string_view NOUS_NOMOS_1 = "nous/nomos-1";
-// Model ID: nous/nouscoder-14b
-// Model page: https://ai-stats.phaseo.app/models/nous/nouscoder-14b
-inline constexpr std::string_view NOUS_NOUSCODER_14B = "nous/nouscoder-14b";
-// Model ID: nvidia/llama-3.1-nemotron-70b-instruct
-// Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-70b-instruct
-inline constexpr std::string_view NVIDIA_LLAMA_3_1_NEMOTRON_70B_INSTRUCT = "nvidia/llama-3.1-nemotron-70b-instruct";
-// Model ID: nvidia/llama-3.1-nemotron-nano-4b-v1.1
-// Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-nano-4b-v1.1
-inline constexpr std::string_view NVIDIA_LLAMA_3_1_NEMOTRON_NANO_4B_V1_1 = "nvidia/llama-3.1-nemotron-nano-4b-v1.1";
-// Model ID: nvidia/llama-3.1-nemotron-nano-8b-v1
-// Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-nano-8b-v1
-inline constexpr std::string_view NVIDIA_LLAMA_3_1_NEMOTRON_NANO_8B_V1 = "nvidia/llama-3.1-nemotron-nano-8b-v1";
-// Model ID: nvidia/llama-3.1-nemotron-ultra-253b-v1
-// Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-ultra-253b-v1
-inline constexpr std::string_view NVIDIA_LLAMA_3_1_NEMOTRON_ULTRA_253B_V1 = "nvidia/llama-3.1-nemotron-ultra-253b-v1";
-// Model ID: nvidia/llama-3.3-nemotron-super-49b-v1
-// Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.3-nemotron-super-49b-v1
-inline constexpr std::string_view NVIDIA_LLAMA_3_3_NEMOTRON_SUPER_49B_V1 = "nvidia/llama-3.3-nemotron-super-49b-v1";
+// Model ID: nousresearch/hermes-3-llama-3.1-405b
+// Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b
+inline constexpr std::string_view NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B = "nousresearch/hermes-3-llama-3.1-405b";
+// Model ID: nousresearch/hermes-3-llama-3.1-70b
+// Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-70b
+inline constexpr std::string_view NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B = "nousresearch/hermes-3-llama-3.1-70b";
+// Model ID: nousresearch/hermes-4-405b
+// Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-4-405b
+inline constexpr std::string_view NOUSRESEARCH_HERMES_4_405B = "nousresearch/hermes-4-405b";
+// Model ID: nousresearch/hermes-4-70b
+// Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-4-70b
+inline constexpr std::string_view NOUSRESEARCH_HERMES_4_70B = "nousresearch/hermes-4-70b";
+// Model ID: nvidia/llama-3.1-nemotron-ultra-253b
+// Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-ultra-253b
+inline constexpr std::string_view NVIDIA_LLAMA_3_1_NEMOTRON_ULTRA_253B = "nvidia/llama-3.1-nemotron-ultra-253b";
 // Model ID: nvidia/llama-3.3-nemotron-super-49b-v1.5
 // Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.3-nemotron-super-49b-v1.5
 inline constexpr std::string_view NVIDIA_LLAMA_3_3_NEMOTRON_SUPER_49B_V1_5 = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
@@ -1527,138 +492,39 @@ inline constexpr std::string_view NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nemot
 // Model ID: nvidia/nemotron-3-super-120b-a12b
 // Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
 inline constexpr std::string_view NVIDIA_NEMOTRON_3_SUPER_120B_A12B = "nvidia/nemotron-3-super-120b-a12b";
-// Model ID: nvidia/nvidia-nemotron-nano-12b-v2
-// Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2
-inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2 = "nvidia/nvidia-nemotron-nano-12b-v2";
+// Model ID: nvidia/nvidia-nemotron-3-nano-30b-a3b
+// Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
+inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
+// Model ID: nvidia/nvidia-nemotron-nano-12b-v2-vl
+// Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl
+inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL = "nvidia/nvidia-nemotron-nano-12b-v2-vl";
 // Model ID: nvidia/nvidia-nemotron-nano-9b-v2
 // Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2
 inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2 = "nvidia/nvidia-nemotron-nano-9b-v2";
-// Model ID: nvidia/openreasoning-nemotron-1.5b
-// Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-1.5b
-inline constexpr std::string_view NVIDIA_OPENREASONING_NEMOTRON_1_5B = "nvidia/openreasoning-nemotron-1.5b";
-// Model ID: nvidia/openreasoning-nemotron-14b
-// Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-14b
-inline constexpr std::string_view NVIDIA_OPENREASONING_NEMOTRON_14B = "nvidia/openreasoning-nemotron-14b";
-// Model ID: nvidia/openreasoning-nemotron-32b
-// Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-32b
-inline constexpr std::string_view NVIDIA_OPENREASONING_NEMOTRON_32B = "nvidia/openreasoning-nemotron-32b";
-// Model ID: nvidia/openreasoning-nemotron-7b
-// Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-7b
-inline constexpr std::string_view NVIDIA_OPENREASONING_NEMOTRON_7B = "nvidia/openreasoning-nemotron-7b";
-// Model ID: openai/ada
-// Model page: https://ai-stats.phaseo.app/models/openai/ada
-inline constexpr std::string_view OPENAI_ADA = "openai/ada";
-// Model ID: openai/babbage
-// Model page: https://ai-stats.phaseo.app/models/openai/babbage
-inline constexpr std::string_view OPENAI_BABBAGE = "openai/babbage";
-// Model ID: openai/babbage-002
-// Model page: https://ai-stats.phaseo.app/models/openai/babbage-002
-inline constexpr std::string_view OPENAI_BABBAGE_002 = "openai/babbage-002";
-// Model ID: openai/chatgpt-4o
-// Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o
-inline constexpr std::string_view OPENAI_CHATGPT_4O = "openai/chatgpt-4o";
-// Model ID: openai/chatgpt-image-latest
-// Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-image-latest
-inline constexpr std::string_view OPENAI_CHATGPT_IMAGE_LATEST = "openai/chatgpt-image-latest";
-// Model ID: openai/code-cushman-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-cushman-001
-inline constexpr std::string_view OPENAI_CODE_CUSHMAN_001 = "openai/code-cushman-001";
-// Model ID: openai/code-cushman-002
-// Model page: https://ai-stats.phaseo.app/models/openai/code-cushman-002
-inline constexpr std::string_view OPENAI_CODE_CUSHMAN_002 = "openai/code-cushman-002";
-// Model ID: openai/code-davinci-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-davinci-001
-inline constexpr std::string_view OPENAI_CODE_DAVINCI_001 = "openai/code-davinci-001";
-// Model ID: openai/code-davinci-002
-// Model page: https://ai-stats.phaseo.app/models/openai/code-davinci-002
-inline constexpr std::string_view OPENAI_CODE_DAVINCI_002 = "openai/code-davinci-002";
-// Model ID: openai/code-davinci-edit-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-davinci-edit-001
-inline constexpr std::string_view OPENAI_CODE_DAVINCI_EDIT_001 = "openai/code-davinci-edit-001";
-// Model ID: openai/code-search-ada-code-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-search-ada-code-001
-inline constexpr std::string_view OPENAI_CODE_SEARCH_ADA_CODE_001 = "openai/code-search-ada-code-001";
-// Model ID: openai/code-search-ada-text-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-search-ada-text-001
-inline constexpr std::string_view OPENAI_CODE_SEARCH_ADA_TEXT_001 = "openai/code-search-ada-text-001";
-// Model ID: openai/code-search-babbage-code-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-search-babbage-code-001
-inline constexpr std::string_view OPENAI_CODE_SEARCH_BABBAGE_CODE_001 = "openai/code-search-babbage-code-001";
-// Model ID: openai/code-search-babbage-text-001
-// Model page: https://ai-stats.phaseo.app/models/openai/code-search-babbage-text-001
-inline constexpr std::string_view OPENAI_CODE_SEARCH_BABBAGE_TEXT_001 = "openai/code-search-babbage-text-001";
-// Model ID: openai/codex-mini
-// Model page: https://ai-stats.phaseo.app/models/openai/codex-mini
-inline constexpr std::string_view OPENAI_CODEX_MINI = "openai/codex-mini";
 // Model ID: openai/computer-use-preview
 // Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview
 inline constexpr std::string_view OPENAI_COMPUTER_USE_PREVIEW = "openai/computer-use-preview";
-// Model ID: openai/curie
-// Model page: https://ai-stats.phaseo.app/models/openai/curie
-inline constexpr std::string_view OPENAI_CURIE = "openai/curie";
-// Model ID: openai/dall-e
-// Model page: https://ai-stats.phaseo.app/models/openai/dall-e
-inline constexpr std::string_view OPENAI_DALL_E = "openai/dall-e";
-// Model ID: openai/dall-e-2
-// Model page: https://ai-stats.phaseo.app/models/openai/dall-e-2
-inline constexpr std::string_view OPENAI_DALL_E_2 = "openai/dall-e-2";
-// Model ID: openai/dall-e-3
-// Model page: https://ai-stats.phaseo.app/models/openai/dall-e-3
-inline constexpr std::string_view OPENAI_DALL_E_3 = "openai/dall-e-3";
-// Model ID: openai/davinci
-// Model page: https://ai-stats.phaseo.app/models/openai/davinci
-inline constexpr std::string_view OPENAI_DAVINCI = "openai/davinci";
 // Model ID: openai/davinci-002
 // Model page: https://ai-stats.phaseo.app/models/openai/davinci-002
 inline constexpr std::string_view OPENAI_DAVINCI_002 = "openai/davinci-002";
-// Model ID: openai/gpt-1
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-1
-inline constexpr std::string_view OPENAI_GPT_1 = "openai/gpt-1";
-// Model ID: openai/gpt-2
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-2
-inline constexpr std::string_view OPENAI_GPT_2 = "openai/gpt-2";
-// Model ID: openai/gpt-3
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3
-inline constexpr std::string_view OPENAI_GPT_3 = "openai/gpt-3";
-// Model ID: openai/gpt-3.5-turbo-0613
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-0613
-inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_0613 = "openai/gpt-3.5-turbo-0613";
-// Model ID: openai/gpt-3.5-turbo-16k-0613
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-16k-0613
-inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_16K_0613 = "openai/gpt-3.5-turbo-16k-0613";
-// Model ID: openai/gpt-3.5-turbo-2023-11-06
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-2023-11-06
-inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_2023_11_06 = "openai/gpt-3.5-turbo-2023-11-06";
-// Model ID: openai/gpt-3.5-turbo-2024-01-25
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-2024-01-25
-inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_2024_01_25 = "openai/gpt-3.5-turbo-2024-01-25";
-// Model ID: openai/gpt-3.5-turbo-instruct
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-instruct
-inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_INSTRUCT = "openai/gpt-3.5-turbo-instruct";
-// Model ID: openai/gpt-4
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4
-inline constexpr std::string_view OPENAI_GPT_4 = "openai/gpt-4";
-// Model ID: openai/gpt-4-2023-03-14
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-2023-03-14
-inline constexpr std::string_view OPENAI_GPT_4_2023_03_14 = "openai/gpt-4-2023-03-14";
-// Model ID: openai/gpt-4-32k
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-32k
-inline constexpr std::string_view OPENAI_GPT_4_32K = "openai/gpt-4-32k";
-// Model ID: openai/gpt-4-32k-0314
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-32k-0314
-inline constexpr std::string_view OPENAI_GPT_4_32K_0314 = "openai/gpt-4-32k-0314";
-// Model ID: openai/gpt-4-32k-0613
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-32k-0613
-inline constexpr std::string_view OPENAI_GPT_4_32K_0613 = "openai/gpt-4-32k-0613";
-// Model ID: openai/gpt-4-turbo
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo
-inline constexpr std::string_view OPENAI_GPT_4_TURBO = "openai/gpt-4-turbo";
+// Model ID: openai/gpt-3.5-turbo-16k
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-16k
+inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_16K = "openai/gpt-3.5-turbo-16k";
+// Model ID: openai/gpt-3.5-turbo-2023-03-21
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-2023-03-21
+inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_2023_03_21 = "openai/gpt-3.5-turbo-2023-03-21";
+// Model ID: openai/gpt-4-2023-06-13
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-2023-06-13
+inline constexpr std::string_view OPENAI_GPT_4_2023_06_13 = "openai/gpt-4-2023-06-13";
 // Model ID: openai/gpt-4-turbo-2023-03-14
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo-2023-03-14
 inline constexpr std::string_view OPENAI_GPT_4_TURBO_2023_03_14 = "openai/gpt-4-turbo-2023-03-14";
 // Model ID: openai/gpt-4-turbo-2023-11-06
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo-2023-11-06
 inline constexpr std::string_view OPENAI_GPT_4_TURBO_2023_11_06 = "openai/gpt-4-turbo-2023-11-06";
+// Model ID: openai/gpt-4-turbo-2024-01-25
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo-2024-01-25
+inline constexpr std::string_view OPENAI_GPT_4_TURBO_2024_01_25 = "openai/gpt-4-turbo-2024-01-25";
 // Model ID: openai/gpt-4.1
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.1
 inline constexpr std::string_view OPENAI_GPT_4_1 = "openai/gpt-4.1";
@@ -1668,69 +534,18 @@ inline constexpr std::string_view OPENAI_GPT_4_1_MINI = "openai/gpt-4.1-mini";
 // Model ID: openai/gpt-4.1-nano
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.1-nano
 inline constexpr std::string_view OPENAI_GPT_4_1_NANO = "openai/gpt-4.1-nano";
-// Model ID: openai/gpt-4.5
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.5
-inline constexpr std::string_view OPENAI_GPT_4_5 = "openai/gpt-4.5";
-// Model ID: openai/gpt-4o
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o
-inline constexpr std::string_view OPENAI_GPT_4O = "openai/gpt-4o";
 // Model ID: openai/gpt-4o-2024-05-13
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-2024-05-13
 inline constexpr std::string_view OPENAI_GPT_4O_2024_05_13 = "openai/gpt-4o-2024-05-13";
 // Model ID: openai/gpt-4o-2024-08-06
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-2024-08-06
 inline constexpr std::string_view OPENAI_GPT_4O_2024_08_06 = "openai/gpt-4o-2024-08-06";
-// Model ID: openai/gpt-4o-audio
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-audio
-inline constexpr std::string_view OPENAI_GPT_4O_AUDIO = "openai/gpt-4o-audio";
-// Model ID: openai/gpt-4o-audio-2024-10-01
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-audio-2024-10-01
-inline constexpr std::string_view OPENAI_GPT_4O_AUDIO_2024_10_01 = "openai/gpt-4o-audio-2024-10-01";
-// Model ID: openai/gpt-4o-audio-2024-12-17
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-audio-2024-12-17
-inline constexpr std::string_view OPENAI_GPT_4O_AUDIO_2024_12_17 = "openai/gpt-4o-audio-2024-12-17";
+// Model ID: openai/gpt-4o-2024-11-20
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-2024-11-20
+inline constexpr std::string_view OPENAI_GPT_4O_2024_11_20 = "openai/gpt-4o-2024-11-20";
 // Model ID: openai/gpt-4o-mini
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini
 inline constexpr std::string_view OPENAI_GPT_4O_MINI = "openai/gpt-4o-mini";
-// Model ID: openai/gpt-4o-mini-audio-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-audio-preview
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_AUDIO_PREVIEW = "openai/gpt-4o-mini-audio-preview";
-// Model ID: openai/gpt-4o-mini-realtime-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-realtime-preview
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_REALTIME_PREVIEW = "openai/gpt-4o-mini-realtime-preview";
-// Model ID: openai/gpt-4o-mini-search-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-search-preview
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_SEARCH_PREVIEW = "openai/gpt-4o-mini-search-preview";
-// Model ID: openai/gpt-4o-mini-transcribe
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-transcribe
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_TRANSCRIBE = "openai/gpt-4o-mini-transcribe";
-// Model ID: openai/gpt-4o-mini-transcribe-2025-03-20
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-transcribe-2025-03-20
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_TRANSCRIBE_2025_03_20 = "openai/gpt-4o-mini-transcribe-2025-03-20";
-// Model ID: openai/gpt-4o-mini-tts
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-tts
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_TTS = "openai/gpt-4o-mini-tts";
-// Model ID: openai/gpt-4o-mini-tts-2025-03-20
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-tts-2025-03-20
-inline constexpr std::string_view OPENAI_GPT_4O_MINI_TTS_2025_03_20 = "openai/gpt-4o-mini-tts-2025-03-20";
-// Model ID: openai/gpt-4o-realtime-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-realtime-preview
-inline constexpr std::string_view OPENAI_GPT_4O_REALTIME_PREVIEW = "openai/gpt-4o-realtime-preview";
-// Model ID: openai/gpt-4o-realtime-preview-2024-10-01
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-realtime-preview-2024-10-01
-inline constexpr std::string_view OPENAI_GPT_4O_REALTIME_PREVIEW_2024_10_01 = "openai/gpt-4o-realtime-preview-2024-10-01";
-// Model ID: openai/gpt-4o-realtime-preview-2024-12-17
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-realtime-preview-2024-12-17
-inline constexpr std::string_view OPENAI_GPT_4O_REALTIME_PREVIEW_2024_12_17 = "openai/gpt-4o-realtime-preview-2024-12-17";
-// Model ID: openai/gpt-4o-search-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-search-preview
-inline constexpr std::string_view OPENAI_GPT_4O_SEARCH_PREVIEW = "openai/gpt-4o-search-preview";
-// Model ID: openai/gpt-4o-transcribe
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-transcribe
-inline constexpr std::string_view OPENAI_GPT_4O_TRANSCRIBE = "openai/gpt-4o-transcribe";
-// Model ID: openai/gpt-4o-transcribe-diarize
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-transcribe-diarize
-inline constexpr std::string_view OPENAI_GPT_4O_TRANSCRIBE_DIARIZE = "openai/gpt-4o-transcribe-diarize";
 // Model ID: openai/gpt-5
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5
 inline constexpr std::string_view OPENAI_GPT_5 = "openai/gpt-5";
@@ -1740,9 +555,6 @@ inline constexpr std::string_view OPENAI_GPT_5_CHAT = "openai/gpt-5-chat";
 // Model ID: openai/gpt-5-codex
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-codex
 inline constexpr std::string_view OPENAI_GPT_5_CODEX = "openai/gpt-5-codex";
-// Model ID: openai/gpt-5-codex-mini
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-codex-mini
-inline constexpr std::string_view OPENAI_GPT_5_CODEX_MINI = "openai/gpt-5-codex-mini";
 // Model ID: openai/gpt-5-mini
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-mini
 inline constexpr std::string_view OPENAI_GPT_5_MINI = "openai/gpt-5-mini";
@@ -1752,9 +564,6 @@ inline constexpr std::string_view OPENAI_GPT_5_NANO = "openai/gpt-5-nano";
 // Model ID: openai/gpt-5-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-pro
 inline constexpr std::string_view OPENAI_GPT_5_PRO = "openai/gpt-5-pro";
-// Model ID: openai/gpt-5-search-api
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-search-api
-inline constexpr std::string_view OPENAI_GPT_5_SEARCH_API = "openai/gpt-5-search-api";
 // Model ID: openai/gpt-5.1
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1
 inline constexpr std::string_view OPENAI_GPT_5_1 = "openai/gpt-5.1";
@@ -1770,9 +579,6 @@ inline constexpr std::string_view OPENAI_GPT_5_1_CODEX_MAX = "openai/gpt-5.1-cod
 // Model ID: openai/gpt-5.1-codex-mini
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1-codex-mini
 inline constexpr std::string_view OPENAI_GPT_5_1_CODEX_MINI = "openai/gpt-5.1-codex-mini";
-// Model ID: openai/gpt-5.1-pro
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1-pro
-inline constexpr std::string_view OPENAI_GPT_5_1_PRO = "openai/gpt-5.1-pro";
 // Model ID: openai/gpt-5.2
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2
 inline constexpr std::string_view OPENAI_GPT_5_2 = "openai/gpt-5.2";
@@ -1782,9 +588,6 @@ inline constexpr std::string_view OPENAI_GPT_5_2_CHAT = "openai/gpt-5.2-chat";
 // Model ID: openai/gpt-5.2-codex
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-codex
 inline constexpr std::string_view OPENAI_GPT_5_2_CODEX = "openai/gpt-5.2-codex";
-// Model ID: openai/gpt-5.2-mini
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-mini
-inline constexpr std::string_view OPENAI_GPT_5_2_MINI = "openai/gpt-5.2-mini";
 // Model ID: openai/gpt-5.2-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-pro
 inline constexpr std::string_view OPENAI_GPT_5_2_PRO = "openai/gpt-5.2-pro";
@@ -1794,9 +597,6 @@ inline constexpr std::string_view OPENAI_GPT_5_3_CHAT = "openai/gpt-5.3-chat";
 // Model ID: openai/gpt-5.3-codex
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.3-codex
 inline constexpr std::string_view OPENAI_GPT_5_3_CODEX = "openai/gpt-5.3-codex";
-// Model ID: openai/gpt-5.3-codex-spark
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.3-codex-spark
-inline constexpr std::string_view OPENAI_GPT_5_3_CODEX_SPARK = "openai/gpt-5.3-codex-spark";
 // Model ID: openai/gpt-5.4
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4
 inline constexpr std::string_view OPENAI_GPT_5_4 = "openai/gpt-5.4";
@@ -1809,18 +609,6 @@ inline constexpr std::string_view OPENAI_GPT_5_4_NANO = "openai/gpt-5.4-nano";
 // Model ID: openai/gpt-5.4-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro
 inline constexpr std::string_view OPENAI_GPT_5_4_PRO = "openai/gpt-5.4-pro";
-// Model ID: openai/gpt-audio
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio
-inline constexpr std::string_view OPENAI_GPT_AUDIO = "openai/gpt-audio";
-// Model ID: openai/gpt-audio-1.5
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio-1.5
-inline constexpr std::string_view OPENAI_GPT_AUDIO_1_5 = "openai/gpt-audio-1.5";
-// Model ID: openai/gpt-audio-mini
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio-mini
-inline constexpr std::string_view OPENAI_GPT_AUDIO_MINI = "openai/gpt-audio-mini";
-// Model ID: openai/gpt-audio-mini-2025-10-06
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio-mini-2025-10-06
-inline constexpr std::string_view OPENAI_GPT_AUDIO_MINI_2025_10_06 = "openai/gpt-audio-mini-2025-10-06";
 // Model ID: openai/gpt-image-1
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1
 inline constexpr std::string_view OPENAI_GPT_IMAGE_1 = "openai/gpt-image-1";
@@ -1830,39 +618,24 @@ inline constexpr std::string_view OPENAI_GPT_IMAGE_1_MINI = "openai/gpt-image-1-
 // Model ID: openai/gpt-image-1.5
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1.5
 inline constexpr std::string_view OPENAI_GPT_IMAGE_1_5 = "openai/gpt-image-1.5";
+// Model ID: openai/gpt-image-2
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-2
+inline constexpr std::string_view OPENAI_GPT_IMAGE_2 = "openai/gpt-image-2";
 // Model ID: openai/gpt-oss-120b
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-120b
 inline constexpr std::string_view OPENAI_GPT_OSS_120B = "openai/gpt-oss-120b";
 // Model ID: openai/gpt-oss-20b
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-20b
 inline constexpr std::string_view OPENAI_GPT_OSS_20B = "openai/gpt-oss-20b";
-// Model ID: openai/gpt-oss-safeguard-120b
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-safeguard-120b
-inline constexpr std::string_view OPENAI_GPT_OSS_SAFEGUARD_120B = "openai/gpt-oss-safeguard-120b";
 // Model ID: openai/gpt-oss-safeguard-20b
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-safeguard-20b
 inline constexpr std::string_view OPENAI_GPT_OSS_SAFEGUARD_20B = "openai/gpt-oss-safeguard-20b";
-// Model ID: openai/gpt-realtime
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime
-inline constexpr std::string_view OPENAI_GPT_REALTIME = "openai/gpt-realtime";
-// Model ID: openai/gpt-realtime-1.5
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime-1.5
-inline constexpr std::string_view OPENAI_GPT_REALTIME_1_5 = "openai/gpt-realtime-1.5";
-// Model ID: openai/gpt-realtime-mini
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime-mini
-inline constexpr std::string_view OPENAI_GPT_REALTIME_MINI = "openai/gpt-realtime-mini";
-// Model ID: openai/gpt-realtime-mini-2025-10-06
-// Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime-mini-2025-10-06
-inline constexpr std::string_view OPENAI_GPT_REALTIME_MINI_2025_10_06 = "openai/gpt-realtime-mini-2025-10-06";
 // Model ID: openai/o1
 // Model page: https://ai-stats.phaseo.app/models/openai/o1
 inline constexpr std::string_view OPENAI_O1 = "openai/o1";
 // Model ID: openai/o1-mini
 // Model page: https://ai-stats.phaseo.app/models/openai/o1-mini
 inline constexpr std::string_view OPENAI_O1_MINI = "openai/o1-mini";
-// Model ID: openai/o1-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/o1-preview
-inline constexpr std::string_view OPENAI_O1_PREVIEW = "openai/o1-preview";
 // Model ID: openai/o1-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/o1-pro
 inline constexpr std::string_view OPENAI_O1_PRO = "openai/o1-pro";
@@ -1875,9 +648,6 @@ inline constexpr std::string_view OPENAI_O3_DEEP_RESEARCH = "openai/o3-deep-rese
 // Model ID: openai/o3-mini
 // Model page: https://ai-stats.phaseo.app/models/openai/o3-mini
 inline constexpr std::string_view OPENAI_O3_MINI = "openai/o3-mini";
-// Model ID: openai/o3-preview
-// Model page: https://ai-stats.phaseo.app/models/openai/o3-preview
-inline constexpr std::string_view OPENAI_O3_PREVIEW = "openai/o3-preview";
 // Model ID: openai/o3-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/o3-pro
 inline constexpr std::string_view OPENAI_O3_PRO = "openai/o3-pro";
@@ -1890,39 +660,12 @@ inline constexpr std::string_view OPENAI_O4_MINI_DEEP_RESEARCH = "openai/o4-mini
 // Model ID: openai/omni-moderation
 // Model page: https://ai-stats.phaseo.app/models/openai/omni-moderation
 inline constexpr std::string_view OPENAI_OMNI_MODERATION = "openai/omni-moderation";
-// Model ID: openai/sora-1
-// Model page: https://ai-stats.phaseo.app/models/openai/sora-1
-inline constexpr std::string_view OPENAI_SORA_1 = "openai/sora-1";
 // Model ID: openai/sora-2
 // Model page: https://ai-stats.phaseo.app/models/openai/sora-2
 inline constexpr std::string_view OPENAI_SORA_2 = "openai/sora-2";
-// Model ID: openai/sora-2-2025-09-30
-// Model page: https://ai-stats.phaseo.app/models/openai/sora-2-2025-09-30
-inline constexpr std::string_view OPENAI_SORA_2_2025_09_30 = "openai/sora-2-2025-09-30";
 // Model ID: openai/sora-2-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/sora-2-pro
 inline constexpr std::string_view OPENAI_SORA_2_PRO = "openai/sora-2-pro";
-// Model ID: openai/text-ada-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-ada-001
-inline constexpr std::string_view OPENAI_TEXT_ADA_001 = "openai/text-ada-001";
-// Model ID: openai/text-babbage-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-babbage-001
-inline constexpr std::string_view OPENAI_TEXT_BABBAGE_001 = "openai/text-babbage-001";
-// Model ID: openai/text-curie-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-curie-001
-inline constexpr std::string_view OPENAI_TEXT_CURIE_001 = "openai/text-curie-001";
-// Model ID: openai/text-davinci-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-001
-inline constexpr std::string_view OPENAI_TEXT_DAVINCI_001 = "openai/text-davinci-001";
-// Model ID: openai/text-davinci-002
-// Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-002
-inline constexpr std::string_view OPENAI_TEXT_DAVINCI_002 = "openai/text-davinci-002";
-// Model ID: openai/text-davinci-003
-// Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-003
-inline constexpr std::string_view OPENAI_TEXT_DAVINCI_003 = "openai/text-davinci-003";
-// Model ID: openai/text-davinci-edit-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-edit-001
-inline constexpr std::string_view OPENAI_TEXT_DAVINCI_EDIT_001 = "openai/text-davinci-edit-001";
 // Model ID: openai/text-embedding-3-large
 // Model page: https://ai-stats.phaseo.app/models/openai/text-embedding-3-large
 inline constexpr std::string_view OPENAI_TEXT_EMBEDDING_3_LARGE = "openai/text-embedding-3-large";
@@ -1932,252 +675,105 @@ inline constexpr std::string_view OPENAI_TEXT_EMBEDDING_3_SMALL = "openai/text-e
 // Model ID: openai/text-embedding-ada-002
 // Model page: https://ai-stats.phaseo.app/models/openai/text-embedding-ada-002
 inline constexpr std::string_view OPENAI_TEXT_EMBEDDING_ADA_002 = "openai/text-embedding-ada-002";
-// Model ID: openai/text-moderation-007
-// Model page: https://ai-stats.phaseo.app/models/openai/text-moderation-007
-inline constexpr std::string_view OPENAI_TEXT_MODERATION_007 = "openai/text-moderation-007";
-// Model ID: openai/text-search-ada-doc-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-ada-doc-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_ADA_DOC_001 = "openai/text-search-ada-doc-001";
-// Model ID: openai/text-search-ada-query-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-ada-query-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_ADA_QUERY_001 = "openai/text-search-ada-query-001";
-// Model ID: openai/text-search-babbage-doc-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-babbage-doc-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_BABBAGE_DOC_001 = "openai/text-search-babbage-doc-001";
-// Model ID: openai/text-search-babbage-query-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-babbage-query-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_BABBAGE_QUERY_001 = "openai/text-search-babbage-query-001";
-// Model ID: openai/text-search-curie-doc-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-curie-doc-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_CURIE_DOC_001 = "openai/text-search-curie-doc-001";
-// Model ID: openai/text-search-curie-query-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-curie-query-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_CURIE_QUERY_001 = "openai/text-search-curie-query-001";
-// Model ID: openai/text-search-davinci-doc-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-davinci-doc-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_DAVINCI_DOC_001 = "openai/text-search-davinci-doc-001";
-// Model ID: openai/text-search-davinci-query-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-search-davinci-query-001
-inline constexpr std::string_view OPENAI_TEXT_SEARCH_DAVINCI_QUERY_001 = "openai/text-search-davinci-query-001";
-// Model ID: openai/text-similarity-ada-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-ada-001
-inline constexpr std::string_view OPENAI_TEXT_SIMILARITY_ADA_001 = "openai/text-similarity-ada-001";
-// Model ID: openai/text-similarity-babbage-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-babbage-001
-inline constexpr std::string_view OPENAI_TEXT_SIMILARITY_BABBAGE_001 = "openai/text-similarity-babbage-001";
-// Model ID: openai/text-similarity-curie-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-curie-001
-inline constexpr std::string_view OPENAI_TEXT_SIMILARITY_CURIE_001 = "openai/text-similarity-curie-001";
-// Model ID: openai/text-similarity-davinci-001
-// Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-davinci-001
-inline constexpr std::string_view OPENAI_TEXT_SIMILARITY_DAVINCI_001 = "openai/text-similarity-davinci-001";
-// Model ID: openai/tts-1
-// Model page: https://ai-stats.phaseo.app/models/openai/tts-1
-inline constexpr std::string_view OPENAI_TTS_1 = "openai/tts-1";
-// Model ID: openai/tts-1-hd
-// Model page: https://ai-stats.phaseo.app/models/openai/tts-1-hd
-inline constexpr std::string_view OPENAI_TTS_1_HD = "openai/tts-1-hd";
-// Model ID: openai/whisper-1
-// Model page: https://ai-stats.phaseo.app/models/openai/whisper-1
-inline constexpr std::string_view OPENAI_WHISPER_1 = "openai/whisper-1";
-// Model ID: openai/whisper-3
-// Model page: https://ai-stats.phaseo.app/models/openai/whisper-3
-inline constexpr std::string_view OPENAI_WHISPER_3 = "openai/whisper-3";
-// Model ID: openai/whisper-3-turbo
-// Model page: https://ai-stats.phaseo.app/models/openai/whisper-3-turbo
-inline constexpr std::string_view OPENAI_WHISPER_3_TURBO = "openai/whisper-3-turbo";
-// Model ID: prime-intellect/intellect-3
-// Model page: https://ai-stats.phaseo.app/models/prime-intellect/intellect-3
-inline constexpr std::string_view PRIME_INTELLECT_INTELLECT_3 = "prime-intellect/intellect-3";
-// Model ID: prime-intellect/intellect-3.1
-// Model page: https://ai-stats.phaseo.app/models/prime-intellect/intellect-3.1
-inline constexpr std::string_view PRIME_INTELLECT_INTELLECT_3_1 = "prime-intellect/intellect-3.1";
-// Model ID: qwen/code-qwen-1.5-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/code-qwen-1.5-7b
-inline constexpr std::string_view QWEN_CODE_QWEN_1_5_7B = "qwen/code-qwen-1.5-7b";
-// Model ID: qwen/qvq-72b-preview
-// Model page: https://ai-stats.phaseo.app/models/qwen/qvq-72b-preview
-inline constexpr std::string_view QWEN_QVQ_72B_PREVIEW = "qwen/qvq-72b-preview";
-// Model ID: qwen/qwen-1.8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-1.8b
-inline constexpr std::string_view QWEN_QWEN_1_8B = "qwen/qwen-1.8b";
-// Model ID: qwen/qwen-14b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-14b
-inline constexpr std::string_view QWEN_QWEN_14B = "qwen/qwen-14b";
-// Model ID: qwen/qwen-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-72b
-inline constexpr std::string_view QWEN_QWEN_72B = "qwen/qwen-72b";
-// Model ID: qwen/qwen-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-7b
-inline constexpr std::string_view QWEN_QWEN_7B = "qwen/qwen-7b";
-// Model ID: qwen/qwen-audio
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-audio
-inline constexpr std::string_view QWEN_QWEN_AUDIO = "qwen/qwen-audio";
-// Model ID: qwen/qwen-audio-chat
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-audio-chat
-inline constexpr std::string_view QWEN_QWEN_AUDIO_CHAT = "qwen/qwen-audio-chat";
-// Model ID: qwen/qwen-image
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image
-inline constexpr std::string_view QWEN_QWEN_IMAGE = "qwen/qwen-image";
-// Model ID: qwen/qwen-image-2512
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-2512
-inline constexpr std::string_view QWEN_QWEN_IMAGE_2512 = "qwen/qwen-image-2512";
-// Model ID: qwen/qwen-image-edit
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-edit
-inline constexpr std::string_view QWEN_QWEN_IMAGE_EDIT = "qwen/qwen-image-edit";
-// Model ID: qwen/qwen-image-edit-2509
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-edit-2509
-inline constexpr std::string_view QWEN_QWEN_IMAGE_EDIT_2509 = "qwen/qwen-image-edit-2509";
-// Model ID: qwen/qwen-image-edit-2511
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-edit-2511
-inline constexpr std::string_view QWEN_QWEN_IMAGE_EDIT_2511 = "qwen/qwen-image-edit-2511";
-// Model ID: qwen/qwen-image-layered
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-layered
-inline constexpr std::string_view QWEN_QWEN_IMAGE_LAYERED = "qwen/qwen-image-layered";
-// Model ID: qwen/qwen-vl
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl
-inline constexpr std::string_view QWEN_QWEN_VL = "qwen/qwen-vl";
-// Model ID: qwen/qwen1.5-0.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-0.5b
-inline constexpr std::string_view QWEN_QWEN1_5_0_5B = "qwen/qwen1.5-0.5b";
-// Model ID: qwen/qwen1.5-1.8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-1.8b
-inline constexpr std::string_view QWEN_QWEN1_5_1_8B = "qwen/qwen1.5-1.8b";
-// Model ID: qwen/qwen1.5-110b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-110b
-inline constexpr std::string_view QWEN_QWEN1_5_110B = "qwen/qwen1.5-110b";
-// Model ID: qwen/qwen1.5-14b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-14b
-inline constexpr std::string_view QWEN_QWEN1_5_14B = "qwen/qwen1.5-14b";
-// Model ID: qwen/qwen1.5-32b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-32b
-inline constexpr std::string_view QWEN_QWEN1_5_32B = "qwen/qwen1.5-32b";
-// Model ID: qwen/qwen1.5-4b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-4b
-inline constexpr std::string_view QWEN_QWEN1_5_4B = "qwen/qwen1.5-4b";
-// Model ID: qwen/qwen1.5-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-72b
-inline constexpr std::string_view QWEN_QWEN1_5_72B = "qwen/qwen1.5-72b";
-// Model ID: qwen/qwen1.5-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-7b
-inline constexpr std::string_view QWEN_QWEN1_5_7B = "qwen/qwen1.5-7b";
-// Model ID: qwen/qwen1.5-moe-a2.7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-moe-a2.7b
-inline constexpr std::string_view QWEN_QWEN1_5_MOE_A2_7B = "qwen/qwen1.5-moe-a2.7b";
-// Model ID: qwen/qwen2-0.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-0.5b
-inline constexpr std::string_view QWEN_QWEN2_0_5B = "qwen/qwen2-0.5b";
-// Model ID: qwen/qwen2-1.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-1.5b
-inline constexpr std::string_view QWEN_QWEN2_1_5B = "qwen/qwen2-1.5b";
-// Model ID: qwen/qwen2-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-72b
-inline constexpr std::string_view QWEN_QWEN2_72B = "qwen/qwen2-72b";
+// Model ID: primeintellect/intellect-3
+// Model page: https://ai-stats.phaseo.app/models/primeintellect/intellect-3
+inline constexpr std::string_view PRIMEINTELLECT_INTELLECT_3 = "primeintellect/intellect-3";
+// Model ID: qwen/qvq-max
+// Model page: https://ai-stats.phaseo.app/models/qwen/qvq-max
+inline constexpr std::string_view QWEN_QVQ_MAX = "qwen/qvq-max";
+// Model ID: qwen/qwen-3.6-plus
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-3.6-plus
+inline constexpr std::string_view QWEN_QWEN_3_6_PLUS = "qwen/qwen-3.6-plus";
+// Model ID: qwen/qwen-flash
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-flash
+inline constexpr std::string_view QWEN_QWEN_FLASH = "qwen/qwen-flash";
+// Model ID: qwen/qwen-flash-character
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-flash-character
+inline constexpr std::string_view QWEN_QWEN_FLASH_CHARACTER = "qwen/qwen-flash-character";
+// Model ID: qwen/qwen-max
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-max
+inline constexpr std::string_view QWEN_QWEN_MAX = "qwen/qwen-max";
+// Model ID: qwen/qwen-mt-flash
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-flash
+inline constexpr std::string_view QWEN_QWEN_MT_FLASH = "qwen/qwen-mt-flash";
+// Model ID: qwen/qwen-mt-lite
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-lite
+inline constexpr std::string_view QWEN_QWEN_MT_LITE = "qwen/qwen-mt-lite";
+// Model ID: qwen/qwen-mt-plus
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-plus
+inline constexpr std::string_view QWEN_QWEN_MT_PLUS = "qwen/qwen-mt-plus";
+// Model ID: qwen/qwen-mt-turbo
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-turbo
+inline constexpr std::string_view QWEN_QWEN_MT_TURBO = "qwen/qwen-mt-turbo";
+// Model ID: qwen/qwen-plus-2025-01-25
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-01-25
+inline constexpr std::string_view QWEN_QWEN_PLUS_2025_01_25 = "qwen/qwen-plus-2025-01-25";
+// Model ID: qwen/qwen-plus-2025-04-28
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-04-28
+inline constexpr std::string_view QWEN_QWEN_PLUS_2025_04_28 = "qwen/qwen-plus-2025-04-28";
+// Model ID: qwen/qwen-plus-2025-07-14
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-07-14
+inline constexpr std::string_view QWEN_QWEN_PLUS_2025_07_14 = "qwen/qwen-plus-2025-07-14";
+// Model ID: qwen/qwen-plus-2025-07-28
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-07-28
+inline constexpr std::string_view QWEN_QWEN_PLUS_2025_07_28 = "qwen/qwen-plus-2025-07-28";
+// Model ID: qwen/qwen-plus-2025-09-11
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-09-11
+inline constexpr std::string_view QWEN_QWEN_PLUS_2025_09_11 = "qwen/qwen-plus-2025-09-11";
+// Model ID: qwen/qwen-plus-2025-12-01
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-12-01
+inline constexpr std::string_view QWEN_QWEN_PLUS_2025_12_01 = "qwen/qwen-plus-2025-12-01";
+// Model ID: qwen/qwen-plus-character
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-character
+inline constexpr std::string_view QWEN_QWEN_PLUS_CHARACTER = "qwen/qwen-plus-character";
+// Model ID: qwen/qwen-turbo-2024-11-01
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-turbo-2024-11-01
+inline constexpr std::string_view QWEN_QWEN_TURBO_2024_11_01 = "qwen/qwen-turbo-2024-11-01";
+// Model ID: qwen/qwen-turbo-2025-04-28
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-turbo-2025-04-28
+inline constexpr std::string_view QWEN_QWEN_TURBO_2025_04_28 = "qwen/qwen-turbo-2025-04-28";
+// Model ID: qwen/qwen-vl-max-2025-04-08
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-max-2025-04-08
+inline constexpr std::string_view QWEN_QWEN_VL_MAX_2025_04_08 = "qwen/qwen-vl-max-2025-04-08";
+// Model ID: qwen/qwen-vl-max-2025-08-13
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-max-2025-08-13
+inline constexpr std::string_view QWEN_QWEN_VL_MAX_2025_08_13 = "qwen/qwen-vl-max-2025-08-13";
+// Model ID: qwen/qwen-vl-plus-2025-01-25
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-plus-2025-01-25
+inline constexpr std::string_view QWEN_QWEN_VL_PLUS_2025_01_25 = "qwen/qwen-vl-plus-2025-01-25";
+// Model ID: qwen/qwen-vl-plus-2025-05-07
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-plus-2025-05-07
+inline constexpr std::string_view QWEN_QWEN_VL_PLUS_2025_05_07 = "qwen/qwen-vl-plus-2025-05-07";
+// Model ID: qwen/qwen-vl-plus-2025-08-15
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-plus-2025-08-15
+inline constexpr std::string_view QWEN_QWEN_VL_PLUS_2025_08_15 = "qwen/qwen-vl-plus-2025-08-15";
 // Model ID: qwen/qwen2-7b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-7b
 inline constexpr std::string_view QWEN_QWEN2_7B = "qwen/qwen2-7b";
-// Model ID: qwen/qwen2-audio-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-audio-7b
-inline constexpr std::string_view QWEN_QWEN2_AUDIO_7B = "qwen/qwen2-audio-7b";
-// Model ID: qwen/qwen2-math-1.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-1.5b
-inline constexpr std::string_view QWEN_QWEN2_MATH_1_5B = "qwen/qwen2-math-1.5b";
-// Model ID: qwen/qwen2-math-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-72b
-inline constexpr std::string_view QWEN_QWEN2_MATH_72B = "qwen/qwen2-math-72b";
-// Model ID: qwen/qwen2-math-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-7b
-inline constexpr std::string_view QWEN_QWEN2_MATH_7B = "qwen/qwen2-math-7b";
-// Model ID: qwen/qwen2-math-rm-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-rm-72b
-inline constexpr std::string_view QWEN_QWEN2_MATH_RM_72B = "qwen/qwen2-math-rm-72b";
-// Model ID: qwen/qwen2-vl-2b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-vl-2b
-inline constexpr std::string_view QWEN_QWEN2_VL_2B = "qwen/qwen2-vl-2b";
-// Model ID: qwen/qwen2-vl-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-vl-72b
-inline constexpr std::string_view QWEN_QWEN2_VL_72B = "qwen/qwen2-vl-72b";
-// Model ID: qwen/qwen2-vl-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-vl-7b
-inline constexpr std::string_view QWEN_QWEN2_VL_7B = "qwen/qwen2-vl-7b";
-// Model ID: qwen/qwen2.5-0.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-0.5b
-inline constexpr std::string_view QWEN_QWEN2_5_0_5B = "qwen/qwen2.5-0.5b";
-// Model ID: qwen/qwen2.5-1.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-1.5b
-inline constexpr std::string_view QWEN_QWEN2_5_1_5B = "qwen/qwen2.5-1.5b";
 // Model ID: qwen/qwen2.5-14b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-14b
 inline constexpr std::string_view QWEN_QWEN2_5_14B = "qwen/qwen2.5-14b";
+// Model ID: qwen/qwen2.5-14b-1m
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-14b-1m
+inline constexpr std::string_view QWEN_QWEN2_5_14B_1M = "qwen/qwen2.5-14b-1m";
 // Model ID: qwen/qwen2.5-32b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-32b
 inline constexpr std::string_view QWEN_QWEN2_5_32B = "qwen/qwen2.5-32b";
-// Model ID: qwen/qwen2.5-3b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-3b
-inline constexpr std::string_view QWEN_QWEN2_5_3B = "qwen/qwen2.5-3b";
 // Model ID: qwen/qwen2.5-72b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-72b
 inline constexpr std::string_view QWEN_QWEN2_5_72B = "qwen/qwen2.5-72b";
 // Model ID: qwen/qwen2.5-7b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-7b
 inline constexpr std::string_view QWEN_QWEN2_5_7B = "qwen/qwen2.5-7b";
-// Model ID: qwen/qwen2.5-coder-0.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-0.5b
-inline constexpr std::string_view QWEN_QWEN2_5_CODER_0_5B = "qwen/qwen2.5-coder-0.5b";
-// Model ID: qwen/qwen2.5-coder-1.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-1.5b
-inline constexpr std::string_view QWEN_QWEN2_5_CODER_1_5B = "qwen/qwen2.5-coder-1.5b";
-// Model ID: qwen/qwen2.5-coder-14b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-14b
-inline constexpr std::string_view QWEN_QWEN2_5_CODER_14B = "qwen/qwen2.5-coder-14b";
-// Model ID: qwen/qwen2.5-coder-32b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-32b
-inline constexpr std::string_view QWEN_QWEN2_5_CODER_32B = "qwen/qwen2.5-coder-32b";
-// Model ID: qwen/qwen2.5-coder-3b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-3b
-inline constexpr std::string_view QWEN_QWEN2_5_CODER_3B = "qwen/qwen2.5-coder-3b";
-// Model ID: qwen/qwen2.5-coder-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-7b
-inline constexpr std::string_view QWEN_QWEN2_5_CODER_7B = "qwen/qwen2.5-coder-7b";
-// Model ID: qwen/qwen2.5-math-1.5b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-1.5b
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_1_5B = "qwen/qwen2.5-math-1.5b";
-// Model ID: qwen/qwen2.5-math-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-72b
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_72B = "qwen/qwen2.5-math-72b";
-// Model ID: qwen/qwen2.5-math-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-7b
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_7B = "qwen/qwen2.5-math-7b";
-// Model ID: qwen/qwen2.5-math-7b-prm800k
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-7b-prm800k
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_7B_PRM800K = "qwen/qwen2.5-math-7b-prm800k";
-// Model ID: qwen/qwen2.5-math-prm-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-prm-72b
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_PRM_72B = "qwen/qwen2.5-math-prm-72b";
-// Model ID: qwen/qwen2.5-math-prm-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-prm-7b
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_PRM_7B = "qwen/qwen2.5-math-prm-7b";
-// Model ID: qwen/qwen2.5-math-rm-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-rm-72b
-inline constexpr std::string_view QWEN_QWEN2_5_MATH_RM_72B = "qwen/qwen2.5-math-rm-72b";
-// Model ID: qwen/qwen2.5-omni-3b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-omni-3b
-inline constexpr std::string_view QWEN_QWEN2_5_OMNI_3B = "qwen/qwen2.5-omni-3b";
-// Model ID: qwen/qwen2.5-omni-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-omni-7b
-inline constexpr std::string_view QWEN_QWEN2_5_OMNI_7B = "qwen/qwen2.5-omni-7b";
+// Model ID: qwen/qwen2.5-7b-1m
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-7b-1m
+inline constexpr std::string_view QWEN_QWEN2_5_7B_1M = "qwen/qwen2.5-7b-1m";
 // Model ID: qwen/qwen2.5-vl-32b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-32b
 inline constexpr std::string_view QWEN_QWEN2_5_VL_32B = "qwen/qwen2.5-vl-32b";
-// Model ID: qwen/qwen2.5-vl-3b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-3b
-inline constexpr std::string_view QWEN_QWEN2_5_VL_3B = "qwen/qwen2.5-vl-3b";
 // Model ID: qwen/qwen2.5-vl-72b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-72b
 inline constexpr std::string_view QWEN_QWEN2_5_VL_72B = "qwen/qwen2.5-vl-72b";
-// Model ID: qwen/qwen2.5-vl-7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-7b
-inline constexpr std::string_view QWEN_QWEN2_5_VL_7B = "qwen/qwen2.5-vl-7b";
 // Model ID: qwen/qwen3-0.6b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-0.6b
 inline constexpr std::string_view QWEN_QWEN3_0_6B = "qwen/qwen3-0.6b";
@@ -2187,18 +783,21 @@ inline constexpr std::string_view QWEN_QWEN3_1_7B = "qwen/qwen3-1.7b";
 // Model ID: qwen/qwen3-14b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-14b
 inline constexpr std::string_view QWEN_QWEN3_14B = "qwen/qwen3-14b";
-// Model ID: qwen/qwen3-235b-a22b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b
-inline constexpr std::string_view QWEN_QWEN3_235B_A22B = "qwen/qwen3-235b-a22b";
 // Model ID: qwen/qwen3-235b-a22b-2507
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b-2507
 inline constexpr std::string_view QWEN_QWEN3_235B_A22B_2507 = "qwen/qwen3-235b-a22b-2507";
+// Model ID: qwen/qwen3-235b-a22b-instruct-2507
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b-instruct-2507
+inline constexpr std::string_view QWEN_QWEN3_235B_A22B_INSTRUCT_2507 = "qwen/qwen3-235b-a22b-instruct-2507";
 // Model ID: qwen/qwen3-235b-a22b-thinking-2507
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b-thinking-2507
 inline constexpr std::string_view QWEN_QWEN3_235B_A22B_THINKING_2507 = "qwen/qwen3-235b-a22b-thinking-2507";
 // Model ID: qwen/qwen3-30b-a3b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b
 inline constexpr std::string_view QWEN_QWEN3_30B_A3B = "qwen/qwen3-30b-a3b";
+// Model ID: qwen/qwen3-30b-a3b-2507
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b-2507
+inline constexpr std::string_view QWEN_QWEN3_30B_A3B_2507 = "qwen/qwen3-30b-a3b-2507";
 // Model ID: qwen/qwen3-30b-a3b-instruct-2507
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b-instruct-2507
 inline constexpr std::string_view QWEN_QWEN3_30B_A3B_INSTRUCT_2507 = "qwen/qwen3-30b-a3b-instruct-2507";
@@ -2211,159 +810,99 @@ inline constexpr std::string_view QWEN_QWEN3_32B = "qwen/qwen3-32b";
 // Model ID: qwen/qwen3-4b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b
 inline constexpr std::string_view QWEN_QWEN3_4B = "qwen/qwen3-4b";
-// Model ID: qwen/qwen3-4b-instruct-2507
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b-instruct-2507
-inline constexpr std::string_view QWEN_QWEN3_4B_INSTRUCT_2507 = "qwen/qwen3-4b-instruct-2507";
-// Model ID: qwen/qwen3-4b-saferl
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b-saferl
-inline constexpr std::string_view QWEN_QWEN3_4B_SAFERL = "qwen/qwen3-4b-saferl";
-// Model ID: qwen/qwen3-4b-thinking-2507
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b-thinking-2507
-inline constexpr std::string_view QWEN_QWEN3_4B_THINKING_2507 = "qwen/qwen3-4b-thinking-2507";
 // Model ID: qwen/qwen3-8b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-8b
 inline constexpr std::string_view QWEN_QWEN3_8B = "qwen/qwen3-8b";
-// Model ID: qwen/qwen3-asr-0.6b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-asr-0.6b
-inline constexpr std::string_view QWEN_QWEN3_ASR_0_6B = "qwen/qwen3-asr-0.6b";
-// Model ID: qwen/qwen3-asr-1.7b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-asr-1.7b
-inline constexpr std::string_view QWEN_QWEN3_ASR_1_7B = "qwen/qwen3-asr-1.7b";
+// Model ID: qwen/qwen3-coder
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder
+inline constexpr std::string_view QWEN_QWEN3_CODER = "qwen/qwen3-coder";
 // Model ID: qwen/qwen3-coder-30b-a3b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-30b-a3b
 inline constexpr std::string_view QWEN_QWEN3_CODER_30B_A3B = "qwen/qwen3-coder-30b-a3b";
 // Model ID: qwen/qwen3-coder-480b-a35b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-480b-a35b
 inline constexpr std::string_view QWEN_QWEN3_CODER_480B_A35B = "qwen/qwen3-coder-480b-a35b";
+// Model ID: qwen/qwen3-coder-flash
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-flash
+inline constexpr std::string_view QWEN_QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash";
 // Model ID: qwen/qwen3-coder-next
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-next
 inline constexpr std::string_view QWEN_QWEN3_CODER_NEXT = "qwen/qwen3-coder-next";
-// Model ID: qwen/qwen3-embedding-0.6b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-0.6b
-inline constexpr std::string_view QWEN_QWEN3_EMBEDDING_0_6B = "qwen/qwen3-embedding-0.6b";
-// Model ID: qwen/qwen3-embedding-4b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-4b
-inline constexpr std::string_view QWEN_QWEN3_EMBEDDING_4B = "qwen/qwen3-embedding-4b";
-// Model ID: qwen/qwen3-embedding-8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b
-inline constexpr std::string_view QWEN_QWEN3_EMBEDDING_8B = "qwen/qwen3-embedding-8b";
-// Model ID: qwen/qwen3-forcedaligner-0.6b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-forcedaligner-0.6b
-inline constexpr std::string_view QWEN_QWEN3_FORCEDALIGNER_0_6B = "qwen/qwen3-forcedaligner-0.6b";
-// Model ID: qwen/qwen3-guard-gen-0.6b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-gen-0.6b
-inline constexpr std::string_view QWEN_QWEN3_GUARD_GEN_0_6B = "qwen/qwen3-guard-gen-0.6b";
-// Model ID: qwen/qwen3-guard-gen-4b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-gen-4b
-inline constexpr std::string_view QWEN_QWEN3_GUARD_GEN_4B = "qwen/qwen3-guard-gen-4b";
-// Model ID: qwen/qwen3-guard-gen-8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-gen-8b
-inline constexpr std::string_view QWEN_QWEN3_GUARD_GEN_8B = "qwen/qwen3-guard-gen-8b";
-// Model ID: qwen/qwen3-guard-stream-0.6b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-stream-0.6b
-inline constexpr std::string_view QWEN_QWEN3_GUARD_STREAM_0_6B = "qwen/qwen3-guard-stream-0.6b";
-// Model ID: qwen/qwen3-guard-stream-4b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-stream-4b
-inline constexpr std::string_view QWEN_QWEN3_GUARD_STREAM_4B = "qwen/qwen3-guard-stream-4b";
-// Model ID: qwen/qwen3-guard-stream-8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-stream-8b
-inline constexpr std::string_view QWEN_QWEN3_GUARD_STREAM_8B = "qwen/qwen3-guard-stream-8b";
+// Model ID: qwen/qwen3-coder-plus-2025-07-22
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-07-22
+inline constexpr std::string_view QWEN_QWEN3_CODER_PLUS_2025_07_22 = "qwen/qwen3-coder-plus-2025-07-22";
+// Model ID: qwen/qwen3-coder-plus-2025-09-23
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23
+inline constexpr std::string_view QWEN_QWEN3_CODER_PLUS_2025_09_23 = "qwen/qwen3-coder-plus-2025-09-23";
+// Model ID: qwen/qwen3-max
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max
+inline constexpr std::string_view QWEN_QWEN3_MAX = "qwen/qwen3-max";
+// Model ID: qwen/qwen3-max-2025-09-23
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2025-09-23
+inline constexpr std::string_view QWEN_QWEN3_MAX_2025_09_23 = "qwen/qwen3-max-2025-09-23";
+// Model ID: qwen/qwen3-max-2026-01-23
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2026-01-23
+inline constexpr std::string_view QWEN_QWEN3_MAX_2026_01_23 = "qwen/qwen3-max-2026-01-23";
+// Model ID: qwen/qwen3-max-preview
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-preview
+inline constexpr std::string_view QWEN_QWEN3_MAX_PREVIEW = "qwen/qwen3-max-preview";
 // Model ID: qwen/qwen3-max-thinking
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-thinking
 inline constexpr std::string_view QWEN_QWEN3_MAX_THINKING = "qwen/qwen3-max-thinking";
+// Model ID: qwen/qwen3-next-80b
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b
+inline constexpr std::string_view QWEN_QWEN3_NEXT_80B = "qwen/qwen3-next-80b";
+// Model ID: qwen/qwen3-next-80b-a3b
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b-a3b
+inline constexpr std::string_view QWEN_QWEN3_NEXT_80B_A3B = "qwen/qwen3-next-80b-a3b";
 // Model ID: qwen/qwen3-next-80b-a3b-instruct
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b-a3b-instruct
 inline constexpr std::string_view QWEN_QWEN3_NEXT_80B_A3B_INSTRUCT = "qwen/qwen3-next-80b-a3b-instruct";
 // Model ID: qwen/qwen3-next-80b-a3b-thinking
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b-a3b-thinking
 inline constexpr std::string_view QWEN_QWEN3_NEXT_80B_A3B_THINKING = "qwen/qwen3-next-80b-a3b-thinking";
-// Model ID: qwen/qwen3-omni-30b-a3b-captioner
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-30b-a3b-captioner
-inline constexpr std::string_view QWEN_QWEN3_OMNI_30B_A3B_CAPTIONER = "qwen/qwen3-omni-30b-a3b-captioner";
-// Model ID: qwen/qwen3-omni-30b-a3b-instruct
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-30b-a3b-instruct
-inline constexpr std::string_view QWEN_QWEN3_OMNI_30B_A3B_INSTRUCT = "qwen/qwen3-omni-30b-a3b-instruct";
 // Model ID: qwen/qwen3-omni-30b-a3b-thinking
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-30b-a3b-thinking
 inline constexpr std::string_view QWEN_QWEN3_OMNI_30B_A3B_THINKING = "qwen/qwen3-omni-30b-a3b-thinking";
-// Model ID: qwen/qwen3-omni-flash
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-flash
-inline constexpr std::string_view QWEN_QWEN3_OMNI_FLASH = "qwen/qwen3-omni-flash";
-// Model ID: qwen/qwen3-omni-flash-2025-09-15
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-flash-2025-09-15
-inline constexpr std::string_view QWEN_QWEN3_OMNI_FLASH_2025_09_15 = "qwen/qwen3-omni-flash-2025-09-15";
-// Model ID: qwen/qwen3-reranker-0.6b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker-0.6b
-inline constexpr std::string_view QWEN_QWEN3_RERANKER_0_6B = "qwen/qwen3-reranker-0.6b";
-// Model ID: qwen/qwen3-reranker-4b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker-4b
-inline constexpr std::string_view QWEN_QWEN3_RERANKER_4B = "qwen/qwen3-reranker-4b";
-// Model ID: qwen/qwen3-reranker-8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker-8b
-inline constexpr std::string_view QWEN_QWEN3_RERANKER_8B = "qwen/qwen3-reranker-8b";
-// Model ID: qwen/qwen3-tts
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts
-inline constexpr std::string_view QWEN_QWEN3_TTS = "qwen/qwen3-tts";
-// Model ID: qwen/qwen3-tts-12hz-0.6b-base
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-0.6b-base
-inline constexpr std::string_view QWEN_QWEN3_TTS_12HZ_0_6B_BASE = "qwen/qwen3-tts-12hz-0.6b-base";
-// Model ID: qwen/qwen3-tts-12hz-0.6b-customvoice
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-0.6b-customvoice
-inline constexpr std::string_view QWEN_QWEN3_TTS_12HZ_0_6B_CUSTOMVOICE = "qwen/qwen3-tts-12hz-0.6b-customvoice";
-// Model ID: qwen/qwen3-tts-12hz-1.7b-base
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-base
-inline constexpr std::string_view QWEN_QWEN3_TTS_12HZ_1_7B_BASE = "qwen/qwen3-tts-12hz-1.7b-base";
-// Model ID: qwen/qwen3-tts-12hz-1.7b-voicedesign
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-voicedesign
-inline constexpr std::string_view QWEN_QWEN3_TTS_12HZ_1_7B_VOICEDESIGN = "qwen/qwen3-tts-12hz-1.7b-voicedesign";
+// Model ID: qwen/qwen3-reranker
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker
+inline constexpr std::string_view QWEN_QWEN3_RERANKER = "qwen/qwen3-reranker";
+// Model ID: qwen/qwen3-vl-235b-a22b
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b
+inline constexpr std::string_view QWEN_QWEN3_VL_235B_A22B = "qwen/qwen3-vl-235b-a22b";
 // Model ID: qwen/qwen3-vl-235b-a22b-instruct
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct
 inline constexpr std::string_view QWEN_QWEN3_VL_235B_A22B_INSTRUCT = "qwen/qwen3-vl-235b-a22b-instruct";
 // Model ID: qwen/qwen3-vl-235b-a22b-thinking
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-thinking
 inline constexpr std::string_view QWEN_QWEN3_VL_235B_A22B_THINKING = "qwen/qwen3-vl-235b-a22b-thinking";
-// Model ID: qwen/qwen3-vl-2b-instruct
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-2b-instruct
-inline constexpr std::string_view QWEN_QWEN3_VL_2B_INSTRUCT = "qwen/qwen3-vl-2b-instruct";
-// Model ID: qwen/qwen3-vl-2b-thinking
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-2b-thinking
-inline constexpr std::string_view QWEN_QWEN3_VL_2B_THINKING = "qwen/qwen3-vl-2b-thinking";
+// Model ID: qwen/qwen3-vl-30b-a3b
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-30b-a3b
+inline constexpr std::string_view QWEN_QWEN3_VL_30B_A3B = "qwen/qwen3-vl-30b-a3b";
 // Model ID: qwen/qwen3-vl-30b-a3b-instruct
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-30b-a3b-instruct
 inline constexpr std::string_view QWEN_QWEN3_VL_30B_A3B_INSTRUCT = "qwen/qwen3-vl-30b-a3b-instruct";
 // Model ID: qwen/qwen3-vl-30b-a3b-thinking
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-30b-a3b-thinking
 inline constexpr std::string_view QWEN_QWEN3_VL_30B_A3B_THINKING = "qwen/qwen3-vl-30b-a3b-thinking";
-// Model ID: qwen/qwen3-vl-32b-instruct
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-32b-instruct
-inline constexpr std::string_view QWEN_QWEN3_VL_32B_INSTRUCT = "qwen/qwen3-vl-32b-instruct";
-// Model ID: qwen/qwen3-vl-32b-thinking
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-32b-thinking
-inline constexpr std::string_view QWEN_QWEN3_VL_32B_THINKING = "qwen/qwen3-vl-32b-thinking";
-// Model ID: qwen/qwen3-vl-4b-instruct
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-4b-instruct
-inline constexpr std::string_view QWEN_QWEN3_VL_4B_INSTRUCT = "qwen/qwen3-vl-4b-instruct";
-// Model ID: qwen/qwen3-vl-4b-thinking
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-4b-thinking
-inline constexpr std::string_view QWEN_QWEN3_VL_4B_THINKING = "qwen/qwen3-vl-4b-thinking";
+// Model ID: qwen/qwen3-vl-8b
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-8b
+inline constexpr std::string_view QWEN_QWEN3_VL_8B = "qwen/qwen3-vl-8b";
 // Model ID: qwen/qwen3-vl-8b-instruct
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-8b-instruct
 inline constexpr std::string_view QWEN_QWEN3_VL_8B_INSTRUCT = "qwen/qwen3-vl-8b-instruct";
-// Model ID: qwen/qwen3-vl-8b-thinking
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-8b-thinking
-inline constexpr std::string_view QWEN_QWEN3_VL_8B_THINKING = "qwen/qwen3-vl-8b-thinking";
-// Model ID: qwen/qwen3-vl-embedding-2b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-embedding-2b
-inline constexpr std::string_view QWEN_QWEN3_VL_EMBEDDING_2B = "qwen/qwen3-vl-embedding-2b";
-// Model ID: qwen/qwen3-vl-embedding-8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-embedding-8b
-inline constexpr std::string_view QWEN_QWEN3_VL_EMBEDDING_8B = "qwen/qwen3-vl-embedding-8b";
-// Model ID: qwen/qwen3-vl-reranker-2b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-reranker-2b
-inline constexpr std::string_view QWEN_QWEN3_VL_RERANKER_2B = "qwen/qwen3-vl-reranker-2b";
-// Model ID: qwen/qwen3-vl-reranker-8b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-reranker-8b
-inline constexpr std::string_view QWEN_QWEN3_VL_RERANKER_8B = "qwen/qwen3-vl-reranker-8b";
+// Model ID: qwen/qwen3-vl-flash-2025-10-15
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-flash-2025-10-15
+inline constexpr std::string_view QWEN_QWEN3_VL_FLASH_2025_10_15 = "qwen/qwen3-vl-flash-2025-10-15";
+// Model ID: qwen/qwen3-vl-flash-2026-01-22
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-flash-2026-01-22
+inline constexpr std::string_view QWEN_QWEN3_VL_FLASH_2026_01_22 = "qwen/qwen3-vl-flash-2026-01-22";
+// Model ID: qwen/qwen3-vl-plus-2025-09-23
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-plus-2025-09-23
+inline constexpr std::string_view QWEN_QWEN3_VL_PLUS_2025_09_23 = "qwen/qwen3-vl-plus-2025-09-23";
+// Model ID: qwen/qwen3-vl-plus-2025-12-19
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-plus-2025-12-19
+inline constexpr std::string_view QWEN_QWEN3_VL_PLUS_2025_12_19 = "qwen/qwen3-vl-plus-2025-12-19";
 // Model ID: qwen/qwen3.5-0.8b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-0.8b
 inline constexpr std::string_view QWEN_QWEN3_5_0_8B = "qwen/qwen3.5-0.8b";
@@ -2394,6 +933,9 @@ inline constexpr std::string_view QWEN_QWEN3_5_FLASH = "qwen/qwen3.5-flash";
 // Model ID: qwen/qwen3.5-plus
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-plus
 inline constexpr std::string_view QWEN_QWEN3_5_PLUS = "qwen/qwen3.5-plus";
+// Model ID: qwen/qwen3.6-27b
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-27b
+inline constexpr std::string_view QWEN_QWEN3_6_27B = "qwen/qwen3.6-27b";
 // Model ID: qwen/qwen3.6-35b-a3b
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-35b-a3b
 inline constexpr std::string_view QWEN_QWEN3_6_35B_A3B = "qwen/qwen3.6-35b-a3b";
@@ -2403,87 +945,27 @@ inline constexpr std::string_view QWEN_QWEN3_6_MAX_PREVIEW = "qwen/qwen3.6-max-p
 // Model ID: qwen/qwen3.6-plus
 // Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus
 inline constexpr std::string_view QWEN_QWEN3_6_PLUS = "qwen/qwen3.6-plus";
-// Model ID: qwen/qwq-32b
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
-inline constexpr std::string_view QWEN_QWQ_32B = "qwen/qwq-32b";
-// Model ID: qwen/qwq-32b-preview
-// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b-preview
-inline constexpr std::string_view QWEN_QWQ_32B_PREVIEW = "qwen/qwq-32b-preview";
-// Model ID: qwen/worldpm-72b
-// Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b
-inline constexpr std::string_view QWEN_WORLDPM_72B = "qwen/worldpm-72b";
-// Model ID: qwen/worldpm-72b-helpsteer2
-// Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b-helpsteer2
-inline constexpr std::string_view QWEN_WORLDPM_72B_HELPSTEER2 = "qwen/worldpm-72b-helpsteer2";
-// Model ID: qwen/worldpm-72b-rlhflow
-// Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b-rlhflow
-inline constexpr std::string_view QWEN_WORLDPM_72B_RLHFLOW = "qwen/worldpm-72b-rlhflow";
-// Model ID: qwen/worldpm-72b-ultrafeedback
-// Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b-ultrafeedback
-inline constexpr std::string_view QWEN_WORLDPM_72B_ULTRAFEEDBACK = "qwen/worldpm-72b-ultrafeedback";
-// Model ID: relace/relace-search
-// Model page: https://ai-stats.phaseo.app/models/relace/relace-search
-inline constexpr std::string_view RELACE_RELACE_SEARCH = "relace/relace-search";
-// Model ID: sourceful/riverflow-v2-fast-preview
-// Model page: https://ai-stats.phaseo.app/models/sourceful/riverflow-v2-fast-preview
-inline constexpr std::string_view SOURCEFUL_RIVERFLOW_V2_FAST_PREVIEW = "sourceful/riverflow-v2-fast-preview";
-// Model ID: sourceful/riverflow-v2-max-preview
-// Model page: https://ai-stats.phaseo.app/models/sourceful/riverflow-v2-max-preview
-inline constexpr std::string_view SOURCEFUL_RIVERFLOW_V2_MAX_PREVIEW = "sourceful/riverflow-v2-max-preview";
-// Model ID: sourceful/riverflow-v2-standard-preview
-// Model page: https://ai-stats.phaseo.app/models/sourceful/riverflow-v2-standard-preview
-inline constexpr std::string_view SOURCEFUL_RIVERFLOW_V2_STANDARD_PREVIEW = "sourceful/riverflow-v2-standard-preview";
+// Model ID: qwen/qwq-plus
+// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus
+inline constexpr std::string_view QWEN_QWQ_PLUS = "qwen/qwq-plus";
+// Model ID: qwen/text-embedding-v3
+// Model page: https://ai-stats.phaseo.app/models/qwen/text-embedding-v3
+inline constexpr std::string_view QWEN_TEXT_EMBEDDING_V3 = "qwen/text-embedding-v3";
+// Model ID: qwen/text-embedding-v4
+// Model page: https://ai-stats.phaseo.app/models/qwen/text-embedding-v4
+inline constexpr std::string_view QWEN_TEXT_EMBEDDING_V4 = "qwen/text-embedding-v4";
+// Model ID: qwen/wan2.7-t2v
+// Model page: https://ai-stats.phaseo.app/models/qwen/wan2.7-t2v
+inline constexpr std::string_view QWEN_WAN2_7_T2V = "qwen/wan2.7-t2v";
 // Model ID: stepfun/step-3.5-flash
 // Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash
 inline constexpr std::string_view STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash";
-// Model ID: suno/suno-v3.5
-// Model page: https://ai-stats.phaseo.app/models/suno/suno-v3.5
-inline constexpr std::string_view SUNO_SUNO_V3_5 = "suno/suno-v3.5";
-// Model ID: suno/suno-v4
-// Model page: https://ai-stats.phaseo.app/models/suno/suno-v4
-inline constexpr std::string_view SUNO_SUNO_V4 = "suno/suno-v4";
-// Model ID: suno/suno-v4.5
-// Model page: https://ai-stats.phaseo.app/models/suno/suno-v4.5
-inline constexpr std::string_view SUNO_SUNO_V4_5 = "suno/suno-v4.5";
-// Model ID: suno/suno-v4.5-
-// Model page: https://ai-stats.phaseo.app/models/suno/suno-v4.5-
-inline constexpr std::string_view SUNO_SUNO_V4_5_2 = "suno/suno-v4.5-";
-// Model ID: suno/suno-v4.5-all
-// Model page: https://ai-stats.phaseo.app/models/suno/suno-v4.5-all
-inline constexpr std::string_view SUNO_SUNO_V4_5_ALL = "suno/suno-v4.5-all";
-// Model ID: suno/suno-v5
-// Model page: https://ai-stats.phaseo.app/models/suno/suno-v5
-inline constexpr std::string_view SUNO_SUNO_V5 = "suno/suno-v5";
-// Model ID: upstage/solar-pro
-// Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro
-inline constexpr std::string_view UPSTAGE_SOLAR_PRO = "upstage/solar-pro";
-// Model ID: upstage/solar-pro-2
-// Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2
-inline constexpr std::string_view UPSTAGE_SOLAR_PRO_2 = "upstage/solar-pro-2";
-// Model ID: upstage/solar-pro-2-2025-07-10
-// Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2-2025-07-10
-inline constexpr std::string_view UPSTAGE_SOLAR_PRO_2_2025_07_10 = "upstage/solar-pro-2-2025-07-10";
-// Model ID: upstage/solar-pro-2-2025-09-09
-// Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2-2025-09-09
-inline constexpr std::string_view UPSTAGE_SOLAR_PRO_2_2025_09_09 = "upstage/solar-pro-2-2025-09-09";
-// Model ID: upstage/solar-pro-2-preview
-// Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2-preview
-inline constexpr std::string_view UPSTAGE_SOLAR_PRO_2_PREVIEW = "upstage/solar-pro-2-preview";
-// Model ID: upstage/solar-pro-3
-// Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-3
-inline constexpr std::string_view UPSTAGE_SOLAR_PRO_3 = "upstage/solar-pro-3";
-// Model ID: vercel/v0-1.0-md
-// Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.0-md
-inline constexpr std::string_view VERCEL_V0_1_0_MD = "vercel/v0-1.0-md";
-// Model ID: vercel/v0-1.5-lg
-// Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-lg
-inline constexpr std::string_view VERCEL_V0_1_5_LG = "vercel/v0-1.5-lg";
-// Model ID: vercel/v0-1.5-md
-// Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-md
-inline constexpr std::string_view VERCEL_V0_1_5_MD = "vercel/v0-1.5-md";
-// Model ID: vercel/v0-1.5-sm
-// Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-sm
-inline constexpr std::string_view VERCEL_V0_1_5_SM = "vercel/v0-1.5-sm";
+// Model ID: venice/venice-uncensored
+// Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored
+inline constexpr std::string_view VENICE_VENICE_UNCENSORED = "venice/venice-uncensored";
+// Model ID: venice/venice-uncensored-1.1
+// Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored-1.1
+inline constexpr std::string_view VENICE_VENICE_UNCENSORED_1_1 = "venice/venice-uncensored-1.1";
 // Model ID: voyage/rerank-1
 // Model page: https://ai-stats.phaseo.app/models/voyage/rerank-1
 inline constexpr std::string_view VOYAGE_RERANK_1 = "voyage/rerank-1";
@@ -2568,81 +1050,36 @@ inline constexpr std::string_view VOYAGE_VOYAGE_MULTIMODAL_3 = "voyage/voyage-mu
 // Model ID: voyage/voyage-multimodal-3.5
 // Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5
 inline constexpr std::string_view VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5";
-// Model ID: x-ai/grok-0
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-0
-inline constexpr std::string_view X_AI_GROK_0 = "x-ai/grok-0";
-// Model ID: x-ai/grok-1
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-1
-inline constexpr std::string_view X_AI_GROK_1 = "x-ai/grok-1";
-// Model ID: x-ai/grok-1.5
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-1.5
-inline constexpr std::string_view X_AI_GROK_1_5 = "x-ai/grok-1.5";
-// Model ID: x-ai/grok-1.5v
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-1.5v
-inline constexpr std::string_view X_AI_GROK_1_5V = "x-ai/grok-1.5v";
-// Model ID: x-ai/grok-2
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2
-inline constexpr std::string_view X_AI_GROK_2 = "x-ai/grok-2";
-// Model ID: x-ai/grok-2-image-1212
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-image-1212
-inline constexpr std::string_view X_AI_GROK_2_IMAGE_1212 = "x-ai/grok-2-image-1212";
-// Model ID: x-ai/grok-2-mini
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-mini
-inline constexpr std::string_view X_AI_GROK_2_MINI = "x-ai/grok-2-mini";
-// Model ID: x-ai/grok-2-vision-1212
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-vision-1212
-inline constexpr std::string_view X_AI_GROK_2_VISION_1212 = "x-ai/grok-2-vision-1212";
+// Model ID: x-ai/grok-2-vision
+// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-vision
+inline constexpr std::string_view X_AI_GROK_2_VISION = "x-ai/grok-2-vision";
 // Model ID: x-ai/grok-3
 // Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3
 inline constexpr std::string_view X_AI_GROK_3 = "x-ai/grok-3";
-// Model ID: x-ai/grok-3-beta
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-beta
-inline constexpr std::string_view X_AI_GROK_3_BETA = "x-ai/grok-3-beta";
 // Model ID: x-ai/grok-3-mini
 // Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-mini
 inline constexpr std::string_view X_AI_GROK_3_MINI = "x-ai/grok-3-mini";
-// Model ID: x-ai/grok-3-mini-beta
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-mini-beta
-inline constexpr std::string_view X_AI_GROK_3_MINI_BETA = "x-ai/grok-3-mini-beta";
 // Model ID: x-ai/grok-4
 // Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4
 inline constexpr std::string_view X_AI_GROK_4 = "x-ai/grok-4";
-// Model ID: x-ai/grok-4-fast-non-reasoning
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4-fast-non-reasoning
-inline constexpr std::string_view X_AI_GROK_4_FAST_NON_REASONING = "x-ai/grok-4-fast-non-reasoning";
-// Model ID: x-ai/grok-4-fast-reasoning
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4-fast-reasoning
-inline constexpr std::string_view X_AI_GROK_4_FAST_REASONING = "x-ai/grok-4-fast-reasoning";
-// Model ID: x-ai/grok-4-heavy
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4-heavy
-inline constexpr std::string_view X_AI_GROK_4_HEAVY = "x-ai/grok-4-heavy";
-// Model ID: x-ai/grok-4.1-non-thinking
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1-non-thinking
-inline constexpr std::string_view X_AI_GROK_4_1_NON_THINKING = "x-ai/grok-4.1-non-thinking";
+// Model ID: x-ai/grok-4.1
+// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1
+inline constexpr std::string_view X_AI_GROK_4_1 = "x-ai/grok-4.1";
+// Model ID: x-ai/grok-4.1-fast
+// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1-fast
+inline constexpr std::string_view X_AI_GROK_4_1_FAST = "x-ai/grok-4.1-fast";
 // Model ID: x-ai/grok-4.1-thinking
 // Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1-thinking
 inline constexpr std::string_view X_AI_GROK_4_1_THINKING = "x-ai/grok-4.1-thinking";
-// Model ID: x-ai/grok-4.20
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20
-inline constexpr std::string_view X_AI_GROK_4_20 = "x-ai/grok-4.20";
-// Model ID: x-ai/grok-4.20-multi-agent-beta
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta
-inline constexpr std::string_view X_AI_GROK_4_20_MULTI_AGENT_BETA = "x-ai/grok-4.20-multi-agent-beta";
-// Model ID: x-ai/grok-4.3
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
-inline constexpr std::string_view X_AI_GROK_4_3 = "x-ai/grok-4.3";
+// Model ID: x-ai/grok-4.20-beta-0309
+// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309
+inline constexpr std::string_view X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309";
+// Model ID: x-ai/grok-4.20-multi-agent-beta-0309
+// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
+inline constexpr std::string_view X_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "x-ai/grok-4.20-multi-agent-beta-0309";
 // Model ID: x-ai/grok-code-fast-1
 // Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
 inline constexpr std::string_view X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1";
-// Model ID: x-ai/grok-imagine-image
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image
-inline constexpr std::string_view X_AI_GROK_IMAGINE_IMAGE = "x-ai/grok-imagine-image";
-// Model ID: x-ai/grok-imagine-image-pro
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image-pro
-inline constexpr std::string_view X_AI_GROK_IMAGINE_IMAGE_PRO = "x-ai/grok-imagine-image-pro";
-// Model ID: x-ai/grok-imagine-video
-// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-video
-inline constexpr std::string_view X_AI_GROK_IMAGINE_VIDEO = "x-ai/grok-imagine-video";
 // Model ID: xiaomi/mimo-v2-flash
 // Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash
 inline constexpr std::string_view XIAOMI_MIMO_V2_FLASH = "xiaomi/mimo-v2-flash";
@@ -2652,30 +1089,24 @@ inline constexpr std::string_view XIAOMI_MIMO_V2_OMNI = "xiaomi/mimo-v2-omni";
 // Model ID: xiaomi/mimo-v2-pro
 // Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-pro
 inline constexpr std::string_view XIAOMI_MIMO_V2_PRO = "xiaomi/mimo-v2-pro";
-// Model ID: xiaomi/mimo-v2-tts
-// Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-tts
-inline constexpr std::string_view XIAOMI_MIMO_V2_TTS = "xiaomi/mimo-v2-tts";
+// Model ID: xiaomi/mimo-v2-tts:free
+// Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-tts%3Afree
+inline constexpr std::string_view XIAOMI_MIMO_V2_TTS_FREE = "xiaomi/mimo-v2-tts:free";
+// Model ID: xiaomi/mimo-v2.5
+// Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5
+inline constexpr std::string_view XIAOMI_MIMO_V2_5 = "xiaomi/mimo-v2.5";
+// Model ID: xiaomi/mimo-v2.5-pro
+// Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5-pro
+inline constexpr std::string_view XIAOMI_MIMO_V2_5_PRO = "xiaomi/mimo-v2.5-pro";
+// Model ID: xiaomi/mimo-v2.5-tts:free
+// Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5-tts%3Afree
+inline constexpr std::string_view XIAOMI_MIMO_V2_5_TTS_FREE = "xiaomi/mimo-v2.5-tts:free";
 // Model ID: z-ai/glm-4-32b
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-32b
 inline constexpr std::string_view Z_AI_GLM_4_32B = "z-ai/glm-4-32b";
-// Model ID: z-ai/glm-4-9b
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b
-inline constexpr std::string_view Z_AI_GLM_4_9B = "z-ai/glm-4-9b";
-// Model ID: z-ai/glm-4-9b-2024-06-04
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b-2024-06-04
-inline constexpr std::string_view Z_AI_GLM_4_9B_2024_06_04 = "z-ai/glm-4-9b-2024-06-04";
-// Model ID: z-ai/glm-4-9b-chat
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b-chat
-inline constexpr std::string_view Z_AI_GLM_4_9B_CHAT = "z-ai/glm-4-9b-chat";
-// Model ID: z-ai/glm-4-9b-chat-1m
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b-chat-1m
-inline constexpr std::string_view Z_AI_GLM_4_9B_CHAT_1M = "z-ai/glm-4-9b-chat-1m";
-// Model ID: z-ai/glm-4.1v-9b
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.1v-9b
-inline constexpr std::string_view Z_AI_GLM_4_1V_9B = "z-ai/glm-4.1v-9b";
-// Model ID: z-ai/glm-4.1v-thinking-9b
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.1v-thinking-9b
-inline constexpr std::string_view Z_AI_GLM_4_1V_THINKING_9B = "z-ai/glm-4.1v-thinking-9b";
+// Model ID: z-ai/glm-4-7-flash:free
+// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-7-flash%3Afree
+inline constexpr std::string_view Z_AI_GLM_4_7_FLASH_FREE = "z-ai/glm-4-7-flash:free";
 // Model ID: z-ai/glm-4.5
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.5
 inline constexpr std::string_view Z_AI_GLM_4_5 = "z-ai/glm-4.5";
@@ -2706,9 +1137,6 @@ inline constexpr std::string_view Z_AI_GLM_4_7 = "z-ai/glm-4.7";
 // Model ID: z-ai/glm-4.7-flash
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.7-flash
 inline constexpr std::string_view Z_AI_GLM_4_7_FLASH = "z-ai/glm-4.7-flash";
-// Model ID: z-ai/glm-4v-9b
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4v-9b
-inline constexpr std::string_view Z_AI_GLM_4V_9B = "z-ai/glm-4v-9b";
 // Model ID: z-ai/glm-5
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5
 inline constexpr std::string_view Z_AI_GLM_5 = "z-ai/glm-5";
@@ -2724,799 +1152,315 @@ inline constexpr std::string_view Z_AI_GLM_5_1 = "z-ai/glm-5.1";
 // Model ID: z-ai/glm-5v-turbo
 // Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5v-turbo
 inline constexpr std::string_view Z_AI_GLM_5V_TURBO = "z-ai/glm-5v-turbo";
-// Model ID: z-ai/glm-image
-// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
-inline constexpr std::string_view Z_AI_GLM_IMAGE = "z-ai/glm-image";
+// Model ID: zai-org/glm-4.5-air
+// Model page: https://ai-stats.phaseo.app/models/zai-org/glm-4.5-air
+inline constexpr std::string_view ZAI_ORG_GLM_4_5_AIR = "zai-org/glm-4.5-air";
+// Model ID: zai/glm-5
+// Model page: https://ai-stats.phaseo.app/models/zai/glm-5
+inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 907> ALL = {
-	AI21_JAMBA_2_3B,
-	AI21_JAMBA_LARGE_1_5,
-	AI21_JAMBA_LARGE_1_6,
+inline constexpr std::array<std::string_view, 384> ALL = {
 	AI21_JAMBA_LARGE_1_7,
-	AI21_JAMBA_MINI_1_5,
-	AI21_JAMBA_MINI_1_6,
-	AI21_JAMBA_MINI_1_7,
 	AI21_JAMBA_MINI_2,
-	AI21_JAMBA_REASONING_3B,
 	AION_LABS_AION_1_0,
 	AION_LABS_AION_1_0_MINI,
 	AION_LABS_AION_2_0,
 	AION_LABS_AION_2_5,
 	AION_LABS_AION_RP_LLAMA_3_1_8B,
-	ALLENAI_BOLMO_1B,
-	ALLENAI_BOLMO_7B,
-	ALLENAI_MOLMO_2_4B,
-	ALLENAI_MOLMO_2_8B,
-	ALLENAI_OLMO_3_32B_THINK,
-	ALLENAI_OLMO_3_7B_INSTRUCT,
-	ALLENAI_OLMO_3_7B_THINK,
-	ALLENAI_OLMO_3_1_32B_INSTRUCT,
-	ALLENAI_OLMO_3_1_32B_THINK,
-	AMAZON_NOVA_2_LITE,
-	AMAZON_NOVA_2_OMNI,
-	AMAZON_NOVA_2_PRO,
-	AMAZON_NOVA_2_SONIC,
-	AMAZON_NOVA_CANVAS,
-	AMAZON_NOVA_LITE_1_0,
-	AMAZON_NOVA_MICRO_1_0,
-	AMAZON_NOVA_MULTIMODAL_EMBEDDINGS,
-	AMAZON_NOVA_PREMIER,
-	AMAZON_NOVA_PRO_1_0,
-	AMAZON_NOVA_REEL,
-	AMAZON_NOVA_SONIC,
-	ANTHROPIC_CLAUDE_1_0,
-	ANTHROPIC_CLAUDE_1_1,
-	ANTHROPIC_CLAUDE_1_2,
-	ANTHROPIC_CLAUDE_1_3,
-	ANTHROPIC_CLAUDE_2_0,
-	ANTHROPIC_CLAUDE_2_1,
-	ANTHROPIC_CLAUDE_3_HAIKU,
-	ANTHROPIC_CLAUDE_3_OPUS,
-	ANTHROPIC_CLAUDE_3_SONNET,
-	ANTHROPIC_CLAUDE_3_5_HAIKU,
-	ANTHROPIC_CLAUDE_3_5_SONNET_2024_06_20,
-	ANTHROPIC_CLAUDE_3_5_SONNET_2024_10_22,
-	ANTHROPIC_CLAUDE_3_7_SONNET,
+	ALLENAI_OLMO_3_1_32B,
 	ANTHROPIC_CLAUDE_HAIKU_4_5,
-	ANTHROPIC_CLAUDE_INSTANT_1_0,
-	ANTHROPIC_CLAUDE_INSTANT_1_1,
-	ANTHROPIC_CLAUDE_INSTANT_1_2,
-	ANTHROPIC_CLAUDE_MYTHOS_PREVIEW,
 	ANTHROPIC_CLAUDE_OPUS_4,
 	ANTHROPIC_CLAUDE_OPUS_4_1,
 	ANTHROPIC_CLAUDE_OPUS_4_5,
 	ANTHROPIC_CLAUDE_OPUS_4_6,
+	ANTHROPIC_CLAUDE_OPUS_4_7,
 	ANTHROPIC_CLAUDE_SONNET_4,
 	ANTHROPIC_CLAUDE_SONNET_4_5,
 	ANTHROPIC_CLAUDE_SONNET_4_6,
 	ARCEE_AI_TRINITY_LARGE,
 	ARCEE_AI_TRINITY_LARGE_THINKING,
 	ARCEE_AI_TRINITY_MINI,
-	ARCEE_AI_TRINITY_NANO_PREVIEW,
 	BAIDU_ERNIE_4_5_21B_A3B,
 	BAIDU_ERNIE_4_5_21B_A3B_THINKING,
 	BAIDU_ERNIE_4_5_300B_A47B,
-	BAIDU_ERNIE_4_5_TURBO,
 	BAIDU_ERNIE_4_5_VL_28B_A3B,
+	BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING,
 	BAIDU_ERNIE_4_5_VL_424B_A47B,
-	BAIDU_ERNIE_5_0,
-	BAIDU_ERNIE_5_0_0110,
-	BAIDU_ERNIE_5_0_PREVIEW_1203,
-	BAIDU_ERNIE_5_0_PREVIEW_1220,
-	BAIDU_ERNIE_X1_1,
-	BAIDU_QIANFAN_VL_3B,
-	BAIDU_QIANFAN_VL_70B,
-	BAIDU_QIANFAN_VL_8B,
-	BLACK_FOREST_LABS_FLUX_2_DEV,
-	BLACK_FOREST_LABS_FLUX_2_FLEX,
-	BLACK_FOREST_LABS_FLUX_2_KLEIN_4B,
-	BLACK_FOREST_LABS_FLUX_2_KLEIN_9B,
-	BLACK_FOREST_LABS_FLUX_2_MAX,
-	BLACK_FOREST_LABS_FLUX_2_PRO,
-	BYTEDANCE_SEED_1_6_2025_06_15,
-	BYTEDANCE_SEED_1_6_2025_09_15,
-	BYTEDANCE_SEED_1_6_FLASH_2025_06_15,
-	BYTEDANCE_SEED_1_6_FLASH_2025_07_15,
+	BLACK_FOREST_LABS_FLUX_1_DEV,
+	BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
+	BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
+	BLACK_FOREST_LABS_FLUX_1_SCHNELL,
+	BYTEDANCE_SEED_1_6,
+	BYTEDANCE_SEED_1_6_250915,
+	BYTEDANCE_SEED_1_6_FLASH,
+	BYTEDANCE_SEED_1_6_FLASH_250715,
 	BYTEDANCE_SEED_1_8,
 	BYTEDANCE_SEED_2_0_LITE,
 	BYTEDANCE_SEED_2_0_MINI,
 	BYTEDANCE_SEED_2_0_PRO,
-	BYTEDANCE_SEED_CODER_8B_INSTRUCT,
-	BYTEDANCE_SEED_CODER_8B_REASONING,
-	BYTEDANCE_SEED_OSS_36B_INSTRUCT,
 	BYTEDANCE_SEED_TRANSLATION,
-	BYTEDANCE_SEEDREAM_4_5,
-	COHERE_C4AI_AYA_EXPANSE_32B,
-	COHERE_C4AI_AYA_EXPANSE_8B,
-	COHERE_C4AI_AYA_VISION_32B,
-	COHERE_C4AI_AYA_VISION_8B,
-	COHERE_COMMAND,
-	COHERE_COMMAND_A,
-	COHERE_COMMAND_A_REASONING,
-	COHERE_COMMAND_A_TRANSLATE,
-	COHERE_COMMAND_A_VISION,
-	COHERE_COMMAND_LIGHT,
-	COHERE_COMMAND_R_2024_04_04,
-	COHERE_COMMAND_R_2024_08_30,
-	COHERE_COMMAND_R_2024_03_11,
-	COHERE_COMMAND_R_2024_08_30_2,
-	COHERE_COMMAND_R_7B,
-	COHERE_EMBED_ENGLISH_LIGHT_V2_0,
-	COHERE_EMBED_ENGLISH_LIGHT_V3,
-	COHERE_EMBED_ENGLISH_V2_0,
-	COHERE_EMBED_ENGLISH_V3,
-	COHERE_EMBED_MULTILINGUAL_LIGHT_V3,
-	COHERE_EMBED_MULTILINGUAL_V2_0,
-	COHERE_EMBED_MULTILINGUAL_V3,
-	COHERE_EMBED_V4,
-	COHERE_RERANK_MULTILINGUAL_V3,
-	COHERE_RERANK_V3_5,
-	COHERE_RERANK_V4_0_FAST,
-	COHERE_RERANK_V4_0_PRO,
-	COHERE_RERENK_ENGLISH_V3,
-	CURSOR_COMPOSER_1,
-	CURSOR_COMPOSER_1_5,
-	DEEPSEEK_DEEPSEEK_CODER_V2_2024_06_14,
-	DEEPSEEK_DEEPSEEK_CODER_V2_2024_07_27,
+	BYTEDANCE_SEEDANCE_2_0,
+	BYTEDANCE_SEEDANCE_2_0_FAST,
+	COGITO_COGITO_671B_V2_1,
 	DEEPSEEK_DEEPSEEK_OCR,
 	DEEPSEEK_DEEPSEEK_OCR_2,
-	DEEPSEEK_DEEPSEEK_R1_2025_01_20,
-	DEEPSEEK_DEEPSEEK_R1_2025_05_28,
-	DEEPSEEK_DEEPSEEK_R1_LITE_PREVIEW,
-	DEEPSEEK_DEEPSEEK_V2_2024_05_17,
-	DEEPSEEK_DEEPSEEK_V2_2024_06_28,
-	DEEPSEEK_DEEPSEEK_V2_5_2024_09_05,
-	DEEPSEEK_DEEPSEEK_V2_5_2024_12_10,
-	DEEPSEEK_DEEPSEEK_V3_2024_12_26,
-	DEEPSEEK_DEEPSEEK_V3_2025_03_24,
+	DEEPSEEK_DEEPSEEK_PROVER_V2_671B,
+	DEEPSEEK_DEEPSEEK_R1_0528,
+	DEEPSEEK_DEEPSEEK_R1_TURBO,
+	DEEPSEEK_DEEPSEEK_V3,
+	DEEPSEEK_DEEPSEEK_V3_0324,
+	DEEPSEEK_DEEPSEEK_V3_TURBO,
 	DEEPSEEK_DEEPSEEK_V3_1,
 	DEEPSEEK_DEEPSEEK_V3_1_TERMINUS,
 	DEEPSEEK_DEEPSEEK_V3_2,
 	DEEPSEEK_DEEPSEEK_V3_2_EXP,
 	DEEPSEEK_DEEPSEEK_V3_2_SPECIALE,
+	DEEPSEEK_DEEPSEEK_V3_2_THINKING,
 	DEEPSEEK_DEEPSEEK_V4_FLASH,
 	DEEPSEEK_DEEPSEEK_V4_PRO,
-	DEEPSEEK_DEEPSEEK_VL2,
-	DEEPSEEK_DEEPSEEK_VL2_SMALL,
-	DEEPSEEK_DEEPSEEK_VL2_TINY,
-	ELEVEN_LABS_ELEVEN_ENGLISH_STS_V2,
-	ELEVEN_LABS_ELEVEN_FLASH_V2,
-	ELEVEN_LABS_ELEVEN_FLASH_V2_5,
-	ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1,
-	ELEVEN_LABS_ELEVEN_MULTILINGUAL_STS_V2,
-	ELEVEN_LABS_ELEVEN_MULTILINGUAL_TTV_V2,
-	ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1,
-	ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2,
-	ELEVEN_LABS_ELEVEN_TTV_V3,
-	ELEVEN_LABS_ELEVEN_TURBO_V2,
-	ELEVEN_LABS_ELEVEN_TURBO_V2_5,
-	ELEVEN_LABS_ELEVEN_V3,
-	ELEVEN_LABS_SCRIBE_V1,
-	ELEVEN_LABS_SCRIBE_V2,
-	ELEVEN_LABS_SCRIBE_V2_REALTIME,
-	ESSENTIAL_AI_RNJ_1,
-	GOOGLE_CHAT_BISON,
-	GOOGLE_CODE_GECKO,
-	GOOGLE_EMBEDDING_001,
-	GOOGLE_GEMINI_1_0_NANO,
-	GOOGLE_GEMINI_1_0_PRO,
-	GOOGLE_GEMINI_1_0_PRO_VISION_001,
-	GOOGLE_GEMINI_1_0_ULTRA,
-	GOOGLE_GEMINI_1_5_FLASH_001,
-	GOOGLE_GEMINI_1_5_FLASH_002,
-	GOOGLE_GEMINI_1_5_FLASH_8B,
-	GOOGLE_GEMINI_1_5_FLASH_8B_EXP_2024_08_27,
-	GOOGLE_GEMINI_1_5_FLASH_8B_EXP_2024_09_24,
-	GOOGLE_GEMINI_1_5_FLASH_PREVIEW_2024_05_14,
-	GOOGLE_GEMINI_1_5_PRO_001,
-	GOOGLE_GEMINI_1_5_PRO_002,
-	GOOGLE_GEMINI_1_5_PRO_EXP_2024_08_01,
-	GOOGLE_GEMINI_1_5_PRO_EXP_2024_08_27,
+	GOOGLE_EMBEDDINGGEMMA_300M,
 	GOOGLE_GEMINI_2_0_FLASH,
-	GOOGLE_GEMINI_2_0_FLASH_EXP,
-	GOOGLE_GEMINI_2_0_FLASH_EXP_IMAGE_GENERATION,
 	GOOGLE_GEMINI_2_0_FLASH_LITE,
-	GOOGLE_GEMINI_2_0_FLASH_LIVE_001,
-	GOOGLE_GEMINI_2_0_FLASH_PREVIEW_IMAGE_GENERATION,
-	GOOGLE_GEMINI_2_0_FLASH_THINKING_EXP_2024_12_19,
-	GOOGLE_GEMINI_2_0_FLASH_THINKING_EXP_2025_01_21,
-	GOOGLE_GEMINI_2_0_PRO_EXP,
-	GOOGLE_GEMINI_2_5_COMPUTER_USE_PREVIEW,
-	GOOGLE_GEMINI_2_5_FLASH_EXP_NATIVE_AUDIO_THINKING_DIALOG,
 	GOOGLE_GEMINI_2_5_FLASH_IMAGE,
-	GOOGLE_GEMINI_2_5_FLASH_IMAGE_PREVIEW,
 	GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
 	GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
-	GOOGLE_GEMINI_2_5_FLASH_NATIVE_AUDIO_PREVIEW_2025_09_03,
-	GOOGLE_GEMINI_2_5_FLASH_PREVIEW_2025_04_17,
-	GOOGLE_GEMINI_2_5_FLASH_PREVIEW_2025_05_20,
-	GOOGLE_GEMINI_2_5_FLASH_PREVIEW_2025_09_25,
-	GOOGLE_GEMINI_2_5_FLASH_PREVIEW_NATIVE_AUDIO_DIALOG,
-	GOOGLE_GEMINI_2_5_FLASH_PREVIEW_TTS_2025_05_20,
-	GOOGLE_GEMINI_2_5_FLASH_PREVIEW_TTS_2025_12_10,
-	GOOGLE_GEMINI_2_5_PRO_EXPERIMENTAL_2025_03_25,
-	GOOGLE_GEMINI_2_5_PRO_PREVIEW_2025_05_06,
-	GOOGLE_GEMINI_2_5_PRO_PREVIEW_2025_06_05,
-	GOOGLE_GEMINI_2_5_PRO_PREVIEW_TTS,
-	GOOGLE_GEMINI_2_5_PRO_PREVIEW_TTS_2025_05_20,
 	GOOGLE_GEMINI_3_FLASH_PREVIEW,
 	GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,
-	GOOGLE_GEMINI_3_PRO_PREVIEW,
 	GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW,
 	GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW,
 	GOOGLE_GEMINI_3_1_FLASH_TTS_PREVIEW,
 	GOOGLE_GEMINI_3_1_PRO_PREVIEW,
 	GOOGLE_GEMINI_3_1_PRO_PREVIEW_CUSTOMTOOLS,
-	GOOGLE_GEMINI_DIFFUSION,
 	GOOGLE_GEMINI_EMBEDDING_001,
+	GOOGLE_GEMINI_EMBEDDING_2,
 	GOOGLE_GEMINI_EMBEDDING_2_PREVIEW,
-	GOOGLE_GEMINI_EMBEDDING_EXP_0307,
-	GOOGLE_GEMINI_EXP_1114,
-	GOOGLE_GEMINI_EXP_1121,
-	GOOGLE_GEMINI_EXP_1206,
-	GOOGLE_GEMINI_LIVE_2_5_FLASH_PREVIEW,
-	GOOGLE_GEMINI_ROBOTICS_ER_1_5_PREVIEW,
-	GOOGLE_GEMMA_1_2B,
-	GOOGLE_GEMMA_1_7B,
-	GOOGLE_GEMMA_2_27B,
-	GOOGLE_GEMMA_2_2B,
-	GOOGLE_GEMMA_2_9B,
+	GOOGLE_GEMINI_ROBOTICS_ER_1_6_PREVIEW,
 	GOOGLE_GEMMA_3_12B,
-	GOOGLE_GEMMA_3_1B,
+	GOOGLE_GEMMA_3_12B_FREE,
+	GOOGLE_GEMMA_3_1B_FREE,
 	GOOGLE_GEMMA_3_27B,
+	GOOGLE_GEMMA_3_27B_FREE,
 	GOOGLE_GEMMA_3_4B,
-	GOOGLE_GEMMA_3N_E2B,
-	GOOGLE_GEMMA_3N_E4B,
+	GOOGLE_GEMMA_3_4B_FREE,
+	GOOGLE_GEMMA_3N_E2B_FREE,
+	GOOGLE_GEMMA_3N_E4B_FREE,
 	GOOGLE_GEMMA_4_26B_A4B,
+	GOOGLE_GEMMA_4_26B_A4B_FREE,
 	GOOGLE_GEMMA_4_31B,
-	GOOGLE_IMAGE_GENERATION_002,
-	GOOGLE_IMAGE_GENERATION_005,
-	GOOGLE_IMAGE_GENERATION_006,
-	GOOGLE_IMAGE_TEXT,
-	GOOGLE_IMAGEN_3_0_GENERATE_001,
-	GOOGLE_IMAGEN_3_0_GENERATE_002,
-	GOOGLE_IMAGEN_4_0_FAST_GENERATE_001,
-	GOOGLE_IMAGEN_4_0_FAST_GENERATE_PREVIEW,
-	GOOGLE_IMAGEN_4_0_GENERATE_001,
-	GOOGLE_IMAGEN_4_0_GENERATE_PREVIEW,
-	GOOGLE_IMAGEN_4_0_PREVIEW,
-	GOOGLE_IMAGEN_4_0_ULTRA_GENERATE_001,
-	GOOGLE_IMAGEN_4_0_ULTRA_GENERATE_PREVIEW,
-	GOOGLE_IMAGEN_4_0_ULTRA_PREVIEW,
-	GOOGLE_LEARNLM_1_5_PRO_EXPERIMENTAL,
-	GOOGLE_LEARNLM_2_0_FLASH_EXPERIMENTAL,
-	GOOGLE_LYRIA_1,
-	GOOGLE_LYRIA_2,
-	GOOGLE_LYRIA_3,
-	GOOGLE_MEDGEMMA_1_5_4B,
-	GOOGLE_MULTIMODAL_EMBEDDING_001,
-	GOOGLE_TEXT_BISON,
-	GOOGLE_TEXT_EMBEDDING_004,
-	GOOGLE_TEXT_EMBEDDING_005,
-	GOOGLE_TEXT_EMBEDDING_GECKO_001,
-	GOOGLE_TEXT_EMBEDDING_GECKO_002,
-	GOOGLE_TEXT_EMBEDDING_GECKO_003,
-	GOOGLE_TEXT_EMBEDDING_GECKO_MULTILINGUAL_001,
-	GOOGLE_TEXT_MULTILINGUAL_EMBEDDING_002,
-	GOOGLE_TRANSLATEGEMMA_12B,
-	GOOGLE_TRANSLATEGEMMA_27B,
-	GOOGLE_TRANSLATEGEMMA_4B,
-	GOOGLE_VEO_2,
-	GOOGLE_VEO_3,
-	GOOGLE_VEO_3_FAST,
-	GOOGLE_VEO_3_0_FAST_GENERATE_PREVIEW,
-	GOOGLE_VEO_3_0_GENERATE_PREVIEW,
-	GOOGLE_VEO_3_1_FAST_PREVIEW,
-	GOOGLE_VEO_3_1_LITE_PREVIEW,
-	GOOGLE_VEO_3_1_PREVIEW,
-	GOOGLE_VEO_3_2,
-	GOOGLE_VEO_4,
-	IBM_GRANITE_20B_CODE_INSTRUCT_8K,
-	IBM_GRANITE_3_0_1B_A400M_INSTRUCT,
-	IBM_GRANITE_3_0_2B_INSTRUCT,
-	IBM_GRANITE_3_0_3B_A800M_INSTRUCT,
-	IBM_GRANITE_3_0_8B_INSTRUCT,
-	IBM_GRANITE_3_1_1B_A400M_INSTRUCT,
-	IBM_GRANITE_3_1_2B_INSTRUCT,
-	IBM_GRANITE_3_1_3B_A800M_INSTRUCT,
-	IBM_GRANITE_3_1_8B_INSTRUCT,
-	IBM_GRANITE_3_2_2B_INSTRUCT,
-	IBM_GRANITE_3_2_8B_INSTRUCT,
-	IBM_GRANITE_3_2_8B_INSTRUCT_PREVIEW,
-	IBM_GRANITE_3_3_2B_INSTRUCT,
-	IBM_GRANITE_3_3_8B_INSTRUCT,
-	IBM_GRANITE_34B_CODE_INSTRUCT_8B,
-	IBM_GRANITE_3B_CODE_INSTRUCT_128K,
-	IBM_GRANITE_3B_CODE_INSTRUCT_2K,
-	IBM_GRANITE_4_0_MICRO,
-	IBM_GRANITE_4_0_SMALL,
-	IBM_GRANITE_4_0_TINY,
-	IBM_GRANITE_4_0_TINY_PREVIEW,
-	IBM_GRANITE_8B_CODE_INSTRUCT_128K,
-	IBM_GRANITE_8B_CODE_INSTRUCT_4K,
-	IBM_GRANITE_EMBEDDING_107M_MULTILINGUAL,
-	IBM_GRANITE_EMBEDDING_125M_ENGLISH,
-	IBM_GRANITE_EMBEDDING_278M_MULTILINGUAL,
-	IBM_GRANITE_EMBEDDING_30M_ENGLISH,
-	IBM_GRANITE_EMBEDDING_ENGLISH_R2,
-	IBM_GRANITE_EMBEDDING_RERANKER_ENGLISH_R2,
-	IBM_GRANITE_EMBEDDING_SMALL_ENGLISH_R2,
-	IBM_GRANITE_GUARDIAN_3_0_2B,
-	IBM_GRANITE_GUARDIAN_3_0_8B,
-	IBM_GRANITE_GUARDIAN_3_1_2B,
-	IBM_GRANITE_GUARDIAN_3_1_8B,
-	IBM_GRANITE_GUARDIAN_3_2_5B,
-	IBM_GRANITE_GUARDIAN_3_3_8B,
-	IBM_GRANITE_SPEECH_3_2_8B,
-	IBM_GRANITE_SPEECH_3_3_2B,
-	IBM_GRANITE_SPEECH_3_3_8B,
-	IBM_GRANITE_VISION_3_1_2B_PREVIEW,
-	IBM_GRANITE_VISION_3_2_2B,
-	IBM_GRANITE_VISION_3_3_2B,
-	IBM_GRANITE_VISION_3_3_2B_EMBEDDING,
-	INCEPTION_MERCURY_2,
-	INCLUSIONAI_RING_1T_2_5,
+	GOOGLE_GEMMA_4_31B_FREE,
+	GOOGLE_LYRIA_3_CLIP_PREVIEW,
+	GOOGLE_LYRIA_3_PRO_PREVIEW,
+	INCLUSIONAI_LING_2_6_1T,
 	KWAIPILOT_KAT_CODER_EXP_72B_1010,
 	KWAIPILOT_KAT_CODER_PRO,
+	KWAIPILOT_KAT_CODER_PRO_V1,
 	KWAIPILOT_KAT_CODER_PRO_V2,
-	LG_EXAONE_3_0,
-	LG_EXAONE_3_5_2_4B,
-	LG_EXAONE_3_5_32B,
-	LG_EXAONE_3_5_7_8B,
-	LG_EXAONE_4_0_1_2B,
-	LG_EXAONE_4_0_32B,
-	LG_EXAONE_DEEP_2_4B,
-	LG_EXAONE_DEEP_32B,
-	LG_EXAONE_DEEP_7_8B,
-	LG_K_EXAONE,
-	LIQUID_AI_LFM_2_1_2B,
-	LIQUID_AI_LFM_2_2_6B,
-	LIQUID_AI_LFM_2_24B_A2B,
-	LIQUID_AI_LFM_2_350M,
-	LIQUID_AI_LFM_2_700M,
-	LIQUID_AI_LFM_2_8B_A1B,
-	LIQUID_AI_LFM_2_5_1_2B,
-	LIQUID_AI_LFM_2_5_1_2B_JP,
-	LIQUID_AI_LFM_2_5_1_2B_THINKING,
-	LIQUID_AI_LFM_2_5_AUDIO_1_5B,
-	LIQUID_AI_LFM_2_5_VL_1_6B,
 	MEITUAN_LONGCAT_FLASH_CAT,
-	META_LLAMA_2_13B_CHAT,
-	META_LLAMA_2_70B_CHAT,
-	META_LLAMA_2_7B_CHAT,
 	META_LLAMA_3_70B,
 	META_LLAMA_3_8B,
-	META_LLAMA_3_1_405B,
 	META_LLAMA_3_1_70B,
 	META_LLAMA_3_1_8B,
-	META_LLAMA_3_2_11B_VISION,
-	META_LLAMA_3_2_1B,
 	META_LLAMA_3_2_3B,
-	META_LLAMA_3_2_90B_VISION,
 	META_LLAMA_3_3_70B,
 	META_LLAMA_4_MAVERICK,
 	META_LLAMA_4_SCOUT,
-	MICROSOFT_PHI_1,
-	MICROSOFT_PHI_1_5,
-	MICROSOFT_PHI_2,
-	MICROSOFT_PHI_3_MEDIUM_128K_INSTRUCT,
-	MICROSOFT_PHI_3_MEDIUM_4K_INSTRUCT,
-	MICROSOFT_PHI_3_MINI_128K_INSTRUCT,
-	MICROSOFT_PHI_3_SMALL_128K_INSTRUCT,
-	MICROSOFT_PHI_3_SMALL_8K_INSTRUCT,
-	MICROSOFT_PHI_3_VISION_128K_INSTRUCT,
-	MICROSOFT_PHI_3_5_MINI_INSTRUCT,
-	MICROSOFT_PHI_3_5_MOE_INSTRUCT,
-	MICROSOFT_PHI_3_5_VISION_INSTRUCT,
+	META_LLAMA_GUARD_4_12B,
+	META_LLAMA_PROMPT_GUARD_2_22M,
+	META_LLAMA_PROMPT_GUARD_2_86M,
 	MICROSOFT_PHI_4,
 	MICROSOFT_PHI_4_MINI,
-	MICROSOFT_PHI_4_MINI_FLASH_REASONING,
-	MICROSOFT_PHI_4_MINI_REASONING,
-	MICROSOFT_PHI_4_MULTIMODAL_INSTRUCT,
-	MICROSOFT_PHI_4_REASONING,
-	MICROSOFT_PHI_4_REASONING_PLUS,
-	MINIMAX_HAILUO_02,
-	MINIMAX_HAILUO_2_3,
-	MINIMAX_HAILUO_2_3_FAST,
-	MINIMAX_I2V_01_DIRECTOR,
-	MINIMAX_I2V_01_LIVE,
-	MINIMAX_IMAGE_01,
-	MINIMAX_MINIMAX_M1_40K,
+	MINIMAX_M2_HER,
 	MINIMAX_MINIMAX_M1_80K,
 	MINIMAX_MINIMAX_M2,
-	MINIMAX_MINIMAX_M2_HER,
 	MINIMAX_MINIMAX_M2_1,
 	MINIMAX_MINIMAX_M2_5,
+	MINIMAX_MINIMAX_M2_5_HIGHSPEED,
 	MINIMAX_MINIMAX_M2_7,
-	MINIMAX_MINIMAX_TEXT_01,
-	MINIMAX_MINIMAX_VL_01,
-	MINIMAX_MUSIC_1_5,
-	MINIMAX_MUSIC_2_0,
-	MINIMAX_MUSIC_2_5,
 	MINIMAX_MUSIC_2_6,
-	MINIMAX_S2V_01,
-	MINIMAX_SPEECH_01_HD,
-	MINIMAX_SPEECH_01_TURBO,
-	MINIMAX_SPEECH_02_HD,
-	MINIMAX_SPEECH_02_TURBO,
-	MINIMAX_SPEECH_2_5_HD_PREVIEW,
-	MINIMAX_SPEECH_2_5_TURBO_PREVIEW,
-	MINIMAX_SPEECH_2_6,
-	MINIMAX_T2V_01_DIRECTOR,
-	MISTRAL_CODESTRAL,
-	MISTRAL_CODESTRAL_2024_05_29,
-	MISTRAL_CODESTRAL_2025_01_13,
+	MINIMAX_MUSIC_2_6_FREE,
 	MISTRAL_CODESTRAL_EMBED,
-	MISTRAL_CODESTRAL_MAMBA_7B,
-	MISTRAL_DEVSTRAL_2_0,
+	MISTRAL_DEVSTRAL_2,
 	MISTRAL_DEVSTRAL_MEDIUM_1_0,
-	MISTRAL_DEVSTRAL_SMALL_1_0,
 	MISTRAL_DEVSTRAL_SMALL_1_1,
-	MISTRAL_DEVSTRAL_SMALL_2_0,
-	MISTRAL_LEANSTRAL,
-	MISTRAL_MAGISTRAL_MEDIUM_1_0,
-	MISTRAL_MAGISTRAL_MEDIUM_1_1,
+	MISTRAL_DEVSTRAL_SMALL_2,
+	MISTRAL_LEANSTRAL_FREE,
 	MISTRAL_MAGISTRAL_MEDIUM_1_2,
-	MISTRAL_MAGISTRAL_SMALL_1_0,
-	MISTRAL_MAGISTRAL_SMALL_1_1,
 	MISTRAL_MAGISTRAL_SMALL_1_2,
-	MISTRAL_MATHSTRAL_7B,
-	MISTRAL_MINISTRAL_3_0_14B,
-	MISTRAL_MINISTRAL_3_0_3B,
-	MISTRAL_MINISTRAL_3_0_8B,
-	MISTRAL_MINISTRAL_3B,
-	MISTRAL_MINISTRAL_8B,
-	MISTRAL_MISTRAL_7B,
-	MISTRAL_MISTRAL_7B_2023_09_27,
-	MISTRAL_MISTRAL_7B_2023_12_11,
+	MISTRAL_MINISTRAL_3_14B,
+	MISTRAL_MINISTRAL_3_3B,
+	MISTRAL_MINISTRAL_3_8B,
+	MISTRAL_MISTRAL_3_1_24B,
 	MISTRAL_MISTRAL_EMBED,
-	MISTRAL_MISTRAL_LARGE_1_0,
-	MISTRAL_MISTRAL_LARGE_2_0,
 	MISTRAL_MISTRAL_LARGE_2_1,
-	MISTRAL_MISTRAL_LARGE_3_0,
-	MISTRAL_MISTRAL_MEDIUM_1_0,
+	MISTRAL_MISTRAL_LARGE_3,
 	MISTRAL_MISTRAL_MEDIUM_3_0,
 	MISTRAL_MISTRAL_MEDIUM_3_1,
 	MISTRAL_MISTRAL_MODERATION,
 	MISTRAL_MISTRAL_MODERATION_2,
 	MISTRAL_MISTRAL_NEMO_12B,
-	MISTRAL_MISTRAL_OCR,
-	MISTRAL_MISTRAL_OCR_2,
-	MISTRAL_MISTRAL_SABA,
-	MISTRAL_MISTRAL_SMALL_1_0,
-	MISTRAL_MISTRAL_SMALL_2_0,
-	MISTRAL_MISTRAL_SMALL_3_0,
-	MISTRAL_MISTRAL_SMALL_3_1,
+	MISTRAL_MISTRAL_NEMO_2407,
+	MISTRAL_MISTRAL_SMALL_24B_2501,
 	MISTRAL_MISTRAL_SMALL_3_2,
 	MISTRAL_MISTRAL_SMALL_4,
 	MISTRAL_MISTRAL_SMALL_CREATIVE,
-	MISTRAL_MIXTRAL_8X22B,
 	MISTRAL_MIXTRAL_8X7B,
-	MISTRAL_OCR_3,
-	MISTRAL_PIXTRAL_12B,
 	MISTRAL_PIXTRAL_LARGE,
-	MISTRAL_VOXTRAL_MINI,
-	MISTRAL_VOXTRAL_MINI_TRANSCRIBE,
-	MISTRAL_VOXTRAL_MINI_TRANSCRIBE_2,
-	MISTRAL_VOXTRAL_SMALL,
-	MOONSHOTAI_KIMI_K1_5,
+	MISTRALAI_MISTRAL_NEMO,
 	MOONSHOTAI_KIMI_K2,
-	MOONSHOTAI_KIMI_K2_2025_07_11,
+	MOONSHOTAI_KIMI_K2_0905,
+	MOONSHOTAI_KIMI_K2_INSTRUCT,
+	MOONSHOTAI_KIMI_K2_INSTRUCT_0905,
 	MOONSHOTAI_KIMI_K2_THINKING,
 	MOONSHOTAI_KIMI_K2_5,
 	MOONSHOTAI_KIMI_K2_6,
-	MOONSHOTAI_KIMI_LINEAR_48B,
-	MOONSHOTAI_KIMI_VL_A3B,
-	MOONSHOTAI_KIMI_VL_A3B_THINKING,
-	MOONSHOTAI_KIMI_VL_A3B_THINKING_2025_04_09,
-	NAVER_HYPERCLOVA_HYPERCLOVA_X_SEED_OMNI_8B,
-	NAVER_HYPERCLOVA_HYPERCLOVA_X_SEED_THINK_14B,
-	NAVER_HYPERCLOVA_HYPERCLOVA_X_SEED_THINK_32B,
-	NOUS_HERMES_2_LLAMA_2_70B,
-	NOUS_HERMES_2_PRO_LLAMA_3_70B,
-	NOUS_HERMES_2_PRO_LLAMA_3_8B,
-	NOUS_HERMES_2_PRO_MISTRAL_7B,
-	NOUS_HERMES_2_THETA_LLAMA_3_70B,
-	NOUS_HERMES_2_THETA_LLAMA_3_8B,
 	NOUS_HERMES_3_LLAMA_3_1_405B,
-	NOUS_HERMES_3_LLAMA_3_1_70B,
-	NOUS_HERMES_3_LLAMA_3_1_8B,
-	NOUS_HERMES_3_LLAMA_3_2_3B,
-	NOUS_HERMES_4_14B,
-	NOUS_HERMES_4_405B,
-	NOUS_HERMES_4_70B,
-	NOUS_HERMES_4_3_36B,
-	NOUS_NOMOS_1,
-	NOUS_NOUSCODER_14B,
-	NVIDIA_LLAMA_3_1_NEMOTRON_70B_INSTRUCT,
-	NVIDIA_LLAMA_3_1_NEMOTRON_NANO_4B_V1_1,
-	NVIDIA_LLAMA_3_1_NEMOTRON_NANO_8B_V1,
-	NVIDIA_LLAMA_3_1_NEMOTRON_ULTRA_253B_V1,
-	NVIDIA_LLAMA_3_3_NEMOTRON_SUPER_49B_V1,
+	NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
+	NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,
+	NOUSRESEARCH_HERMES_4_405B,
+	NOUSRESEARCH_HERMES_4_70B,
+	NVIDIA_LLAMA_3_1_NEMOTRON_ULTRA_253B,
 	NVIDIA_LLAMA_3_3_NEMOTRON_SUPER_49B_V1_5,
 	NVIDIA_NEMOTRON_3_NANO_30B_A3B,
 	NVIDIA_NEMOTRON_3_SUPER_120B_A12B,
-	NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2,
+	NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
+	NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
 	NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,
-	NVIDIA_OPENREASONING_NEMOTRON_1_5B,
-	NVIDIA_OPENREASONING_NEMOTRON_14B,
-	NVIDIA_OPENREASONING_NEMOTRON_32B,
-	NVIDIA_OPENREASONING_NEMOTRON_7B,
-	OPENAI_ADA,
-	OPENAI_BABBAGE,
-	OPENAI_BABBAGE_002,
-	OPENAI_CHATGPT_4O,
-	OPENAI_CHATGPT_IMAGE_LATEST,
-	OPENAI_CODE_CUSHMAN_001,
-	OPENAI_CODE_CUSHMAN_002,
-	OPENAI_CODE_DAVINCI_001,
-	OPENAI_CODE_DAVINCI_002,
-	OPENAI_CODE_DAVINCI_EDIT_001,
-	OPENAI_CODE_SEARCH_ADA_CODE_001,
-	OPENAI_CODE_SEARCH_ADA_TEXT_001,
-	OPENAI_CODE_SEARCH_BABBAGE_CODE_001,
-	OPENAI_CODE_SEARCH_BABBAGE_TEXT_001,
-	OPENAI_CODEX_MINI,
 	OPENAI_COMPUTER_USE_PREVIEW,
-	OPENAI_CURIE,
-	OPENAI_DALL_E,
-	OPENAI_DALL_E_2,
-	OPENAI_DALL_E_3,
-	OPENAI_DAVINCI,
 	OPENAI_DAVINCI_002,
-	OPENAI_GPT_1,
-	OPENAI_GPT_2,
-	OPENAI_GPT_3,
-	OPENAI_GPT_3_5_TURBO_0613,
-	OPENAI_GPT_3_5_TURBO_16K_0613,
-	OPENAI_GPT_3_5_TURBO_2023_11_06,
-	OPENAI_GPT_3_5_TURBO_2024_01_25,
-	OPENAI_GPT_3_5_TURBO_INSTRUCT,
-	OPENAI_GPT_4,
-	OPENAI_GPT_4_2023_03_14,
-	OPENAI_GPT_4_32K,
-	OPENAI_GPT_4_32K_0314,
-	OPENAI_GPT_4_32K_0613,
-	OPENAI_GPT_4_TURBO,
+	OPENAI_GPT_3_5_TURBO_16K,
+	OPENAI_GPT_3_5_TURBO_2023_03_21,
+	OPENAI_GPT_4_2023_06_13,
 	OPENAI_GPT_4_TURBO_2023_03_14,
 	OPENAI_GPT_4_TURBO_2023_11_06,
+	OPENAI_GPT_4_TURBO_2024_01_25,
 	OPENAI_GPT_4_1,
 	OPENAI_GPT_4_1_MINI,
 	OPENAI_GPT_4_1_NANO,
-	OPENAI_GPT_4_5,
-	OPENAI_GPT_4O,
 	OPENAI_GPT_4O_2024_05_13,
 	OPENAI_GPT_4O_2024_08_06,
-	OPENAI_GPT_4O_AUDIO,
-	OPENAI_GPT_4O_AUDIO_2024_10_01,
-	OPENAI_GPT_4O_AUDIO_2024_12_17,
+	OPENAI_GPT_4O_2024_11_20,
 	OPENAI_GPT_4O_MINI,
-	OPENAI_GPT_4O_MINI_AUDIO_PREVIEW,
-	OPENAI_GPT_4O_MINI_REALTIME_PREVIEW,
-	OPENAI_GPT_4O_MINI_SEARCH_PREVIEW,
-	OPENAI_GPT_4O_MINI_TRANSCRIBE,
-	OPENAI_GPT_4O_MINI_TRANSCRIBE_2025_03_20,
-	OPENAI_GPT_4O_MINI_TTS,
-	OPENAI_GPT_4O_MINI_TTS_2025_03_20,
-	OPENAI_GPT_4O_REALTIME_PREVIEW,
-	OPENAI_GPT_4O_REALTIME_PREVIEW_2024_10_01,
-	OPENAI_GPT_4O_REALTIME_PREVIEW_2024_12_17,
-	OPENAI_GPT_4O_SEARCH_PREVIEW,
-	OPENAI_GPT_4O_TRANSCRIBE,
-	OPENAI_GPT_4O_TRANSCRIBE_DIARIZE,
 	OPENAI_GPT_5,
 	OPENAI_GPT_5_CHAT,
 	OPENAI_GPT_5_CODEX,
-	OPENAI_GPT_5_CODEX_MINI,
 	OPENAI_GPT_5_MINI,
 	OPENAI_GPT_5_NANO,
 	OPENAI_GPT_5_PRO,
-	OPENAI_GPT_5_SEARCH_API,
 	OPENAI_GPT_5_1,
 	OPENAI_GPT_5_1_CHAT,
 	OPENAI_GPT_5_1_CODEX,
 	OPENAI_GPT_5_1_CODEX_MAX,
 	OPENAI_GPT_5_1_CODEX_MINI,
-	OPENAI_GPT_5_1_PRO,
 	OPENAI_GPT_5_2,
 	OPENAI_GPT_5_2_CHAT,
 	OPENAI_GPT_5_2_CODEX,
-	OPENAI_GPT_5_2_MINI,
 	OPENAI_GPT_5_2_PRO,
 	OPENAI_GPT_5_3_CHAT,
 	OPENAI_GPT_5_3_CODEX,
-	OPENAI_GPT_5_3_CODEX_SPARK,
 	OPENAI_GPT_5_4,
 	OPENAI_GPT_5_4_MINI,
 	OPENAI_GPT_5_4_NANO,
 	OPENAI_GPT_5_4_PRO,
-	OPENAI_GPT_AUDIO,
-	OPENAI_GPT_AUDIO_1_5,
-	OPENAI_GPT_AUDIO_MINI,
-	OPENAI_GPT_AUDIO_MINI_2025_10_06,
 	OPENAI_GPT_IMAGE_1,
 	OPENAI_GPT_IMAGE_1_MINI,
 	OPENAI_GPT_IMAGE_1_5,
+	OPENAI_GPT_IMAGE_2,
 	OPENAI_GPT_OSS_120B,
 	OPENAI_GPT_OSS_20B,
-	OPENAI_GPT_OSS_SAFEGUARD_120B,
 	OPENAI_GPT_OSS_SAFEGUARD_20B,
-	OPENAI_GPT_REALTIME,
-	OPENAI_GPT_REALTIME_1_5,
-	OPENAI_GPT_REALTIME_MINI,
-	OPENAI_GPT_REALTIME_MINI_2025_10_06,
 	OPENAI_O1,
 	OPENAI_O1_MINI,
-	OPENAI_O1_PREVIEW,
 	OPENAI_O1_PRO,
 	OPENAI_O3,
 	OPENAI_O3_DEEP_RESEARCH,
 	OPENAI_O3_MINI,
-	OPENAI_O3_PREVIEW,
 	OPENAI_O3_PRO,
 	OPENAI_O4_MINI,
 	OPENAI_O4_MINI_DEEP_RESEARCH,
 	OPENAI_OMNI_MODERATION,
-	OPENAI_SORA_1,
 	OPENAI_SORA_2,
-	OPENAI_SORA_2_2025_09_30,
 	OPENAI_SORA_2_PRO,
-	OPENAI_TEXT_ADA_001,
-	OPENAI_TEXT_BABBAGE_001,
-	OPENAI_TEXT_CURIE_001,
-	OPENAI_TEXT_DAVINCI_001,
-	OPENAI_TEXT_DAVINCI_002,
-	OPENAI_TEXT_DAVINCI_003,
-	OPENAI_TEXT_DAVINCI_EDIT_001,
 	OPENAI_TEXT_EMBEDDING_3_LARGE,
 	OPENAI_TEXT_EMBEDDING_3_SMALL,
 	OPENAI_TEXT_EMBEDDING_ADA_002,
-	OPENAI_TEXT_MODERATION_007,
-	OPENAI_TEXT_SEARCH_ADA_DOC_001,
-	OPENAI_TEXT_SEARCH_ADA_QUERY_001,
-	OPENAI_TEXT_SEARCH_BABBAGE_DOC_001,
-	OPENAI_TEXT_SEARCH_BABBAGE_QUERY_001,
-	OPENAI_TEXT_SEARCH_CURIE_DOC_001,
-	OPENAI_TEXT_SEARCH_CURIE_QUERY_001,
-	OPENAI_TEXT_SEARCH_DAVINCI_DOC_001,
-	OPENAI_TEXT_SEARCH_DAVINCI_QUERY_001,
-	OPENAI_TEXT_SIMILARITY_ADA_001,
-	OPENAI_TEXT_SIMILARITY_BABBAGE_001,
-	OPENAI_TEXT_SIMILARITY_CURIE_001,
-	OPENAI_TEXT_SIMILARITY_DAVINCI_001,
-	OPENAI_TTS_1,
-	OPENAI_TTS_1_HD,
-	OPENAI_WHISPER_1,
-	OPENAI_WHISPER_3,
-	OPENAI_WHISPER_3_TURBO,
-	PRIME_INTELLECT_INTELLECT_3,
-	PRIME_INTELLECT_INTELLECT_3_1,
-	QWEN_CODE_QWEN_1_5_7B,
-	QWEN_QVQ_72B_PREVIEW,
-	QWEN_QWEN_1_8B,
-	QWEN_QWEN_14B,
-	QWEN_QWEN_72B,
-	QWEN_QWEN_7B,
-	QWEN_QWEN_AUDIO,
-	QWEN_QWEN_AUDIO_CHAT,
-	QWEN_QWEN_IMAGE,
-	QWEN_QWEN_IMAGE_2512,
-	QWEN_QWEN_IMAGE_EDIT,
-	QWEN_QWEN_IMAGE_EDIT_2509,
-	QWEN_QWEN_IMAGE_EDIT_2511,
-	QWEN_QWEN_IMAGE_LAYERED,
-	QWEN_QWEN_VL,
-	QWEN_QWEN1_5_0_5B,
-	QWEN_QWEN1_5_1_8B,
-	QWEN_QWEN1_5_110B,
-	QWEN_QWEN1_5_14B,
-	QWEN_QWEN1_5_32B,
-	QWEN_QWEN1_5_4B,
-	QWEN_QWEN1_5_72B,
-	QWEN_QWEN1_5_7B,
-	QWEN_QWEN1_5_MOE_A2_7B,
-	QWEN_QWEN2_0_5B,
-	QWEN_QWEN2_1_5B,
-	QWEN_QWEN2_72B,
+	PRIMEINTELLECT_INTELLECT_3,
+	QWEN_QVQ_MAX,
+	QWEN_QWEN_3_6_PLUS,
+	QWEN_QWEN_FLASH,
+	QWEN_QWEN_FLASH_CHARACTER,
+	QWEN_QWEN_MAX,
+	QWEN_QWEN_MT_FLASH,
+	QWEN_QWEN_MT_LITE,
+	QWEN_QWEN_MT_PLUS,
+	QWEN_QWEN_MT_TURBO,
+	QWEN_QWEN_PLUS_2025_01_25,
+	QWEN_QWEN_PLUS_2025_04_28,
+	QWEN_QWEN_PLUS_2025_07_14,
+	QWEN_QWEN_PLUS_2025_07_28,
+	QWEN_QWEN_PLUS_2025_09_11,
+	QWEN_QWEN_PLUS_2025_12_01,
+	QWEN_QWEN_PLUS_CHARACTER,
+	QWEN_QWEN_TURBO_2024_11_01,
+	QWEN_QWEN_TURBO_2025_04_28,
+	QWEN_QWEN_VL_MAX_2025_04_08,
+	QWEN_QWEN_VL_MAX_2025_08_13,
+	QWEN_QWEN_VL_PLUS_2025_01_25,
+	QWEN_QWEN_VL_PLUS_2025_05_07,
+	QWEN_QWEN_VL_PLUS_2025_08_15,
 	QWEN_QWEN2_7B,
-	QWEN_QWEN2_AUDIO_7B,
-	QWEN_QWEN2_MATH_1_5B,
-	QWEN_QWEN2_MATH_72B,
-	QWEN_QWEN2_MATH_7B,
-	QWEN_QWEN2_MATH_RM_72B,
-	QWEN_QWEN2_VL_2B,
-	QWEN_QWEN2_VL_72B,
-	QWEN_QWEN2_VL_7B,
-	QWEN_QWEN2_5_0_5B,
-	QWEN_QWEN2_5_1_5B,
 	QWEN_QWEN2_5_14B,
+	QWEN_QWEN2_5_14B_1M,
 	QWEN_QWEN2_5_32B,
-	QWEN_QWEN2_5_3B,
 	QWEN_QWEN2_5_72B,
 	QWEN_QWEN2_5_7B,
-	QWEN_QWEN2_5_CODER_0_5B,
-	QWEN_QWEN2_5_CODER_1_5B,
-	QWEN_QWEN2_5_CODER_14B,
-	QWEN_QWEN2_5_CODER_32B,
-	QWEN_QWEN2_5_CODER_3B,
-	QWEN_QWEN2_5_CODER_7B,
-	QWEN_QWEN2_5_MATH_1_5B,
-	QWEN_QWEN2_5_MATH_72B,
-	QWEN_QWEN2_5_MATH_7B,
-	QWEN_QWEN2_5_MATH_7B_PRM800K,
-	QWEN_QWEN2_5_MATH_PRM_72B,
-	QWEN_QWEN2_5_MATH_PRM_7B,
-	QWEN_QWEN2_5_MATH_RM_72B,
-	QWEN_QWEN2_5_OMNI_3B,
-	QWEN_QWEN2_5_OMNI_7B,
+	QWEN_QWEN2_5_7B_1M,
 	QWEN_QWEN2_5_VL_32B,
-	QWEN_QWEN2_5_VL_3B,
 	QWEN_QWEN2_5_VL_72B,
-	QWEN_QWEN2_5_VL_7B,
 	QWEN_QWEN3_0_6B,
 	QWEN_QWEN3_1_7B,
 	QWEN_QWEN3_14B,
-	QWEN_QWEN3_235B_A22B,
 	QWEN_QWEN3_235B_A22B_2507,
+	QWEN_QWEN3_235B_A22B_INSTRUCT_2507,
 	QWEN_QWEN3_235B_A22B_THINKING_2507,
 	QWEN_QWEN3_30B_A3B,
+	QWEN_QWEN3_30B_A3B_2507,
 	QWEN_QWEN3_30B_A3B_INSTRUCT_2507,
 	QWEN_QWEN3_30B_A3B_THINKING_2507,
 	QWEN_QWEN3_32B,
 	QWEN_QWEN3_4B,
-	QWEN_QWEN3_4B_INSTRUCT_2507,
-	QWEN_QWEN3_4B_SAFERL,
-	QWEN_QWEN3_4B_THINKING_2507,
 	QWEN_QWEN3_8B,
-	QWEN_QWEN3_ASR_0_6B,
-	QWEN_QWEN3_ASR_1_7B,
+	QWEN_QWEN3_CODER,
 	QWEN_QWEN3_CODER_30B_A3B,
 	QWEN_QWEN3_CODER_480B_A35B,
+	QWEN_QWEN3_CODER_FLASH,
 	QWEN_QWEN3_CODER_NEXT,
-	QWEN_QWEN3_EMBEDDING_0_6B,
-	QWEN_QWEN3_EMBEDDING_4B,
-	QWEN_QWEN3_EMBEDDING_8B,
-	QWEN_QWEN3_FORCEDALIGNER_0_6B,
-	QWEN_QWEN3_GUARD_GEN_0_6B,
-	QWEN_QWEN3_GUARD_GEN_4B,
-	QWEN_QWEN3_GUARD_GEN_8B,
-	QWEN_QWEN3_GUARD_STREAM_0_6B,
-	QWEN_QWEN3_GUARD_STREAM_4B,
-	QWEN_QWEN3_GUARD_STREAM_8B,
+	QWEN_QWEN3_CODER_PLUS_2025_07_22,
+	QWEN_QWEN3_CODER_PLUS_2025_09_23,
+	QWEN_QWEN3_MAX,
+	QWEN_QWEN3_MAX_2025_09_23,
+	QWEN_QWEN3_MAX_2026_01_23,
+	QWEN_QWEN3_MAX_PREVIEW,
 	QWEN_QWEN3_MAX_THINKING,
+	QWEN_QWEN3_NEXT_80B,
+	QWEN_QWEN3_NEXT_80B_A3B,
 	QWEN_QWEN3_NEXT_80B_A3B_INSTRUCT,
 	QWEN_QWEN3_NEXT_80B_A3B_THINKING,
-	QWEN_QWEN3_OMNI_30B_A3B_CAPTIONER,
-	QWEN_QWEN3_OMNI_30B_A3B_INSTRUCT,
 	QWEN_QWEN3_OMNI_30B_A3B_THINKING,
-	QWEN_QWEN3_OMNI_FLASH,
-	QWEN_QWEN3_OMNI_FLASH_2025_09_15,
-	QWEN_QWEN3_RERANKER_0_6B,
-	QWEN_QWEN3_RERANKER_4B,
-	QWEN_QWEN3_RERANKER_8B,
-	QWEN_QWEN3_TTS,
-	QWEN_QWEN3_TTS_12HZ_0_6B_BASE,
-	QWEN_QWEN3_TTS_12HZ_0_6B_CUSTOMVOICE,
-	QWEN_QWEN3_TTS_12HZ_1_7B_BASE,
-	QWEN_QWEN3_TTS_12HZ_1_7B_VOICEDESIGN,
+	QWEN_QWEN3_RERANKER,
+	QWEN_QWEN3_VL_235B_A22B,
 	QWEN_QWEN3_VL_235B_A22B_INSTRUCT,
 	QWEN_QWEN3_VL_235B_A22B_THINKING,
-	QWEN_QWEN3_VL_2B_INSTRUCT,
-	QWEN_QWEN3_VL_2B_THINKING,
+	QWEN_QWEN3_VL_30B_A3B,
 	QWEN_QWEN3_VL_30B_A3B_INSTRUCT,
 	QWEN_QWEN3_VL_30B_A3B_THINKING,
-	QWEN_QWEN3_VL_32B_INSTRUCT,
-	QWEN_QWEN3_VL_32B_THINKING,
-	QWEN_QWEN3_VL_4B_INSTRUCT,
-	QWEN_QWEN3_VL_4B_THINKING,
+	QWEN_QWEN3_VL_8B,
 	QWEN_QWEN3_VL_8B_INSTRUCT,
-	QWEN_QWEN3_VL_8B_THINKING,
-	QWEN_QWEN3_VL_EMBEDDING_2B,
-	QWEN_QWEN3_VL_EMBEDDING_8B,
-	QWEN_QWEN3_VL_RERANKER_2B,
-	QWEN_QWEN3_VL_RERANKER_8B,
+	QWEN_QWEN3_VL_FLASH_2025_10_15,
+	QWEN_QWEN3_VL_FLASH_2026_01_22,
+	QWEN_QWEN3_VL_PLUS_2025_09_23,
+	QWEN_QWEN3_VL_PLUS_2025_12_19,
 	QWEN_QWEN3_5_0_8B,
 	QWEN_QWEN3_5_122B_A10B,
 	QWEN_QWEN3_5_27B,
@@ -3527,36 +1471,17 @@ inline constexpr std::array<std::string_view, 907> ALL = {
 	QWEN_QWEN3_5_9B,
 	QWEN_QWEN3_5_FLASH,
 	QWEN_QWEN3_5_PLUS,
+	QWEN_QWEN3_6_27B,
 	QWEN_QWEN3_6_35B_A3B,
 	QWEN_QWEN3_6_MAX_PREVIEW,
 	QWEN_QWEN3_6_PLUS,
-	QWEN_QWQ_32B,
-	QWEN_QWQ_32B_PREVIEW,
-	QWEN_WORLDPM_72B,
-	QWEN_WORLDPM_72B_HELPSTEER2,
-	QWEN_WORLDPM_72B_RLHFLOW,
-	QWEN_WORLDPM_72B_ULTRAFEEDBACK,
-	RELACE_RELACE_SEARCH,
-	SOURCEFUL_RIVERFLOW_V2_FAST_PREVIEW,
-	SOURCEFUL_RIVERFLOW_V2_MAX_PREVIEW,
-	SOURCEFUL_RIVERFLOW_V2_STANDARD_PREVIEW,
+	QWEN_QWQ_PLUS,
+	QWEN_TEXT_EMBEDDING_V3,
+	QWEN_TEXT_EMBEDDING_V4,
+	QWEN_WAN2_7_T2V,
 	STEPFUN_STEP_3_5_FLASH,
-	SUNO_SUNO_V3_5,
-	SUNO_SUNO_V4,
-	SUNO_SUNO_V4_5,
-	SUNO_SUNO_V4_5_2,
-	SUNO_SUNO_V4_5_ALL,
-	SUNO_SUNO_V5,
-	UPSTAGE_SOLAR_PRO,
-	UPSTAGE_SOLAR_PRO_2,
-	UPSTAGE_SOLAR_PRO_2_2025_07_10,
-	UPSTAGE_SOLAR_PRO_2_2025_09_09,
-	UPSTAGE_SOLAR_PRO_2_PREVIEW,
-	UPSTAGE_SOLAR_PRO_3,
-	VERCEL_V0_1_0_MD,
-	VERCEL_V0_1_5_LG,
-	VERCEL_V0_1_5_MD,
-	VERCEL_V0_1_5_SM,
+	VENICE_VENICE_UNCENSORED,
+	VENICE_VENICE_UNCENSORED_1_1,
 	VOYAGE_RERANK_1,
 	VOYAGE_RERANK_2,
 	VOYAGE_RERANK_2_LITE,
@@ -3585,42 +1510,25 @@ inline constexpr std::array<std::string_view, 907> ALL = {
 	VOYAGE_VOYAGE_MULTILINGUAL_2,
 	VOYAGE_VOYAGE_MULTIMODAL_3,
 	VOYAGE_VOYAGE_MULTIMODAL_3_5,
-	X_AI_GROK_0,
-	X_AI_GROK_1,
-	X_AI_GROK_1_5,
-	X_AI_GROK_1_5V,
-	X_AI_GROK_2,
-	X_AI_GROK_2_IMAGE_1212,
-	X_AI_GROK_2_MINI,
-	X_AI_GROK_2_VISION_1212,
+	X_AI_GROK_2_VISION,
 	X_AI_GROK_3,
-	X_AI_GROK_3_BETA,
 	X_AI_GROK_3_MINI,
-	X_AI_GROK_3_MINI_BETA,
 	X_AI_GROK_4,
-	X_AI_GROK_4_FAST_NON_REASONING,
-	X_AI_GROK_4_FAST_REASONING,
-	X_AI_GROK_4_HEAVY,
-	X_AI_GROK_4_1_NON_THINKING,
+	X_AI_GROK_4_1,
+	X_AI_GROK_4_1_FAST,
 	X_AI_GROK_4_1_THINKING,
-	X_AI_GROK_4_20,
-	X_AI_GROK_4_20_MULTI_AGENT_BETA,
-	X_AI_GROK_4_3,
+	X_AI_GROK_4_20_BETA_0309,
+	X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
 	X_AI_GROK_CODE_FAST_1,
-	X_AI_GROK_IMAGINE_IMAGE,
-	X_AI_GROK_IMAGINE_IMAGE_PRO,
-	X_AI_GROK_IMAGINE_VIDEO,
 	XIAOMI_MIMO_V2_FLASH,
 	XIAOMI_MIMO_V2_OMNI,
 	XIAOMI_MIMO_V2_PRO,
-	XIAOMI_MIMO_V2_TTS,
+	XIAOMI_MIMO_V2_TTS_FREE,
+	XIAOMI_MIMO_V2_5,
+	XIAOMI_MIMO_V2_5_PRO,
+	XIAOMI_MIMO_V2_5_TTS_FREE,
 	Z_AI_GLM_4_32B,
-	Z_AI_GLM_4_9B,
-	Z_AI_GLM_4_9B_2024_06_04,
-	Z_AI_GLM_4_9B_CHAT,
-	Z_AI_GLM_4_9B_CHAT_1M,
-	Z_AI_GLM_4_1V_9B,
-	Z_AI_GLM_4_1V_THINKING_9B,
+	Z_AI_GLM_4_7_FLASH_FREE,
 	Z_AI_GLM_4_5,
 	Z_AI_GLM_4_5_AIR,
 	Z_AI_GLM_4_5_AIR_X,
@@ -3631,13 +1539,13 @@ inline constexpr std::array<std::string_view, 907> ALL = {
 	Z_AI_GLM_4_6V_FLASH,
 	Z_AI_GLM_4_7,
 	Z_AI_GLM_4_7_FLASH,
-	Z_AI_GLM_4V_9B,
 	Z_AI_GLM_5,
 	Z_AI_GLM_5_CODE,
 	Z_AI_GLM_5_TURBO,
 	Z_AI_GLM_5_1,
 	Z_AI_GLM_5V_TURBO,
-	Z_AI_GLM_IMAGE,
+	ZAI_ORG_GLM_4_5_AIR,
+	ZAI_GLM_5,
 };
 
 }  // namespace ai_stats::sdk::model_ids
