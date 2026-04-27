@@ -4,7 +4,7 @@ import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 import { getStripe } from "@/lib/stripe";
 
-type ActiveWorkspaceStripeCustomer = {
+type ActiveTeamStripeCustomer = {
     workspaceId: string;
     customerId: string;
     userId: string;
@@ -12,7 +12,7 @@ type ActiveWorkspaceStripeCustomer = {
     userDisplayName: string | null;
 };
 
-type RequireActiveWorkspaceStripeCustomerOptions = {
+type RequireActiveTeamStripeCustomerOptions = {
     createIfMissing?: boolean;
 };
 
@@ -74,9 +74,9 @@ async function findOrCreateStripeCustomer(args: {
     return customerId;
 }
 
-export async function requireActiveWorkspaceStripeCustomer(
-    options: RequireActiveWorkspaceStripeCustomerOptions = {}
-): Promise<ActiveWorkspaceStripeCustomer> {
+export async function requireActiveTeamStripeCustomer(
+    options: RequireActiveTeamStripeCustomerOptions = {}
+): Promise<ActiveTeamStripeCustomer> {
     const supabase = await createClient();
     const {
         data: { user },
@@ -89,7 +89,7 @@ export async function requireActiveWorkspaceStripeCustomer(
 
     const workspaceId = await getWorkspaceIdFromCookie();
     if (!workspaceId) {
-        throw new Error("missing_workspace");
+        throw new Error("missing_team");
     }
 
     try {
@@ -185,5 +185,7 @@ export async function ensureWorkspaceStripeWallet(args?: {
         };
     }
 
-    return requireActiveWorkspaceStripeCustomer({ createIfMissing: true });
+    return requireActiveTeamStripeCustomer({ createIfMissing: true });
 }
+
+export const requireActiveWorkspaceStripeCustomer = requireActiveTeamStripeCustomer;

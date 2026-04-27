@@ -42,48 +42,6 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-v3.1",
-    "provider_api_model_id": "gmicloud:deepseek/deepseek-v3.1",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1",
-    "internal_model_id": "deepseek/deepseek-v3.1",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-24T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-v3.1-terminus",
-    "provider_api_model_id": "gmicloud:deepseek/deepseek-v3.1-terminus",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1-Terminus",
-    "internal_model_id": "deepseek/deepseek-v3.1-terminus",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-24T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v3.2",
     "provider_api_model_id": "gmicloud:deepseek/deepseek-v3.2",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3.2",
@@ -105,27 +63,6 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-v3.2-exp",
-    "provider_api_model_id": "gmicloud:deepseek/deepseek-v3.2-exp",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V3.2-Exp",
-    "internal_model_id": "deepseek/deepseek-v3.2-exp",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-24T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v3-0324",
     "provider_api_model_id": "gmicloud:deepseek/deepseek-v3-0324",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324",
@@ -137,27 +74,6 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-v4-pro",
-    "provider_api_model_id": "gmicloud:deepseek/deepseek-v4-pro",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
-    "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 1048576,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-24T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

@@ -411,7 +411,10 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const filteredModels = useMemo(
-		() => filterModelsForRoom(models, "embeddings"),
+		() =>
+			filterModelsForRoom(models, "embeddings").filter(
+				(model) => model.isAvailable,
+			),
 		[models],
 	);
 	const [modelId, setModelId] = useState("");
@@ -482,10 +485,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				modelId)) ||
 		"Select model";
 	const openComposerModelPicker = () => {
-		const fallbackModelId =
-			filteredModels.find((model) => model.isAvailable)?.modelId ??
-			filteredModels[0]?.modelId;
-		const targetModelId = modelId || fallbackModelId;
+		const targetModelId = modelId || filteredModels[0]?.modelId;
 		if (!targetModelId) return;
 		if (targetModelId !== modelId) {
 			setModelId(targetModelId);

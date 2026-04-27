@@ -47,10 +47,6 @@ import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { ChatThread, UnifiedChatEndpoint } from "@/lib/indexeddb/chats";
 import {
-	type PersonalizationSettings,
-	type ResolvedChatroomTheme,
-} from "@/components/(chat)/playground/chat-playground-core";
-import {
 	ChevronLeft,
 	ChevronRight,
 	Cpu,
@@ -86,6 +82,24 @@ type ModelOptions = {
 	grouped: Map<string, ModelOption[]>;
 	comingSoon: Map<string, ModelOption[]>;
 };
+
+type PersonalizationSettings = {
+	name: string;
+	role: string;
+	notes: string;
+	accentColor: string;
+};
+
+const ACCENT_COLORS = [
+	{ label: "Charcoal", value: "#111111" },
+	{ label: "Slate", value: "#334155" },
+	{ label: "Indigo", value: "#4338ca" },
+	{ label: "Emerald", value: "#047857" },
+	{ label: "Cyan", value: "#0e7490" },
+	{ label: "Orange", value: "#c2410c" },
+	{ label: "Rose", value: "#be123c" },
+	{ label: "Amber", value: "#b45309" },
+];
 
 const MAX_PROVIDER_LOGOS = 8;
 const CAPABILITY_LABELS: Record<UnifiedChatEndpoint, string> = {
@@ -161,7 +175,6 @@ type ChatHeaderProps = {
 	modelSupportsAudioInputById?: Record<string, boolean>;
 	requiredCapability?: UnifiedChatEndpoint | null;
 	requireAudioInput?: boolean;
-	theme: ResolvedChatroomTheme;
 };
 
 function formatOrgLabel(orgId: string) {
@@ -203,7 +216,6 @@ export function ChatHeader({
 	modelSupportsAudioInputById,
 	requiredCapability = null,
 	requireAudioInput = false,
-	theme,
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<
@@ -793,13 +805,7 @@ export function ChatHeader({
 	};
 
 	return (
-		<header
-			className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-3 md:px-5"
-			style={{
-				borderColor: theme.headerBorder,
-				backgroundColor: theme.headerBackground,
-			}}
-		>
+		<header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
 			<div className="flex items-center gap-1">
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -1008,13 +1014,7 @@ export function ChatHeader({
 					<TooltipContent>Settings</TooltipContent>
 				</Tooltip>
 				<Dialog open={settingsOpen} onOpenChange={onSettingsOpenChange}>
-					<DialogContent
-						className="overflow-hidden p-0 md:max-h-[520px] md:max-w-[760px] lg:max-w-[820px]"
-						style={{
-							backgroundColor: theme.canvasBackground,
-							borderColor: theme.composerBorder,
-						}}
-					>
+					<DialogContent className="overflow-hidden p-0 md:max-h-[520px] md:max-w-[760px] lg:max-w-[820px]">
 						<DialogTitle className="sr-only">Settings</DialogTitle>
 						<DialogDescription className="sr-only">
 							Chat settings and diagnostics.
@@ -1033,7 +1033,7 @@ export function ChatHeader({
 									}
 								>
 									<Paintbrush className="h-4 w-4" />
-									Personalisation
+									Personalization
 								</Button>
 								<Button
 									variant={
@@ -1078,7 +1078,7 @@ export function ChatHeader({
 											setSettingsTab("personalization")
 										}
 									>
-										Personalisation
+										Personalization
 									</Button>
 									<Button
 										size="sm"
@@ -1115,7 +1115,7 @@ export function ChatHeader({
 										<div className="grid gap-3">
 											<div className="grid gap-1">
 												<p className="text-sm font-semibold text-foreground">
-													Personalisation
+													Personalization
 												</p>
 												<p className="text-xs text-muted-foreground">
 													Stored locally and applied
@@ -1184,6 +1184,56 @@ export function ChatHeader({
 													placeholder="I like short, actionable responses."
 													rows={3}
 												/>
+											</div>
+											<div className="grid gap-2">
+												<Label htmlFor="accent-color">
+													Accent color
+												</Label>
+												<Select
+													value={
+														personalization.accentColor
+													}
+													onValueChange={(value) =>
+														onPersonalizationChange(
+															{
+																...personalization,
+																accentColor:
+																	value,
+															}
+														)
+													}
+												>
+													<SelectTrigger id="accent-color">
+														<SelectValue placeholder="Select a color" />
+													</SelectTrigger>
+													<SelectContent>
+														{ACCENT_COLORS.map(
+															(color) => (
+																<SelectItem
+																	key={
+																		color.value
+																	}
+																	value={
+																		color.value
+																	}
+																>
+																	<span className="flex items-center gap-2">
+																		<span
+																			className="h-3 w-3 rounded-full border border-border"
+																			style={{
+																				backgroundColor:
+																					color.value,
+																			}}
+																		/>
+																		{
+																			color.label
+																		}
+																	</span>
+																</SelectItem>
+															)
+														)}
+													</SelectContent>
+												</Select>
 											</div>
 										</div>
 									)}

@@ -1,12 +1,8 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import CreateManagementKeyDialog from "@/components/(gateway)/settings/management-api-keys/CreateManagementKeyDialog";
 import ManagementKeysPanel from "@/components/(gateway)/settings/management-api-keys/ManagementKeysPanel";
-import {
-	getActiveWorkspaceIdFromCookieRaw,
-	getWorkspaceIdFromCookie,
-} from "@/utils/workspaceCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert } from "lucide-react";
@@ -17,9 +13,7 @@ export const metadata = {
 	title: "Management API Keys - Settings",
 };
 
-export default function ManagementApiKeysPage(props: {
-	searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default function ManagementApiKeysPage() {
 	return (
 		<div className="space-y-6">
 			<Alert
@@ -32,31 +26,20 @@ export default function ManagementApiKeysPage(props: {
 				</AlertTitle>
 				<AlertDescription className="text-amber-700 dark:text-amber-400">
 					Management API keys grant higher privileges to your account. They can
-					create resources, manage workspaces, and access sensitive data. Never share
+					create resources, manage teams, and access sensitive data. Never share
 					these keys and rotate them immediately if compromised.
 				</AlertDescription>
 			</Alert>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<ManagementApiKeysContent searchParams={props.searchParams} />
+				<ManagementApiKeysContent />
 			</Suspense>
 		</div>
 	);
 }
 
-async function ManagementApiKeysContent({
-	searchParams,
-}: {
-	searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+async function ManagementApiKeysContent() {
 	const supabase = await createClient();
-	let adminClient: ReturnType<typeof createAdminClient> | null = null;
-	try {
-		adminClient = createAdminClient();
-	} catch {
-		adminClient = null;
-	}
-	const readClient: any = adminClient ?? supabase;
 
 	const {
 		data: { user },
@@ -66,98 +49,29 @@ async function ManagementApiKeysContent({
 		.from("management_keys")
 		.select("*");
 
-	const { data: workspaceUsers } = await supabase
+	const { data: teamUsers } = await supabase
 		.from("workspace_members")
-		.select("workspace_id, workspaces(id, name)")
+		.select("workspace_id, teams:workspaces(id, name)")
 		.eq("user_id", user?.id);
 
-	let membershipWorkspaceIds: string[] = [];
-	let ownedWorkspaceIds: string[] = [];
-	if (user?.id) {
-		const { data: membershipRows } = await readClient
-			.from("workspace_members")
-			.select("workspace_id")
-			.eq("user_id", user.id);
-		membershipWorkspaceIds = Array.from(
-			new Set(
-				(membershipRows ?? [])
-					.map((row: any) => String(row?.workspace_id ?? "").trim())
-					.filter(Boolean),
-			),
-		);
+	const initialTeamId = await getWorkspaceIdFromCookie();
 
-		const { data: ownedRows } = await readClient
-			.from("workspaces")
-			.select("id")
-			.eq("owner_user_id", user.id);
-		ownedWorkspaceIds = Array.from(
-			new Set(
-				(ownedRows ?? [])
-					.map((row: any) => String(row?.id ?? "").trim())
-					.filter(Boolean),
-			),
-		);
-	}
-	const accessibleWorkspaceIds = Array.from(
-		new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
-	);
+	const teams: any[] = [];
 
-	const sp = await searchParams;
-	const preferredWorkspaceId =
-		typeof sp?.workspace_id === "string"
-			? sp.workspace_id
-			: Array.isArray(sp?.workspace_id)
-				? sp?.workspace_id?.[0]
-				: undefined;
-	const rawCookieWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
-	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
-
-	const workspaces: Array<{ id: string; name: string }> = [];
-	const seenTeamIds = new Set<string>();
-
-	if (workspaceUsers) {
-		for (const workspaceUser of workspaceUsers) {
-			if (workspaceUser?.workspaces) {
-				const team = Array.isArray(workspaceUser.workspaces)
-					? workspaceUser.workspaces[0]
-					: workspaceUser.workspaces;
-				const teamId = String(team?.id ?? "").trim();
-				const teamName = String(team?.name ?? "").trim();
-				if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
-				seenTeamIds.add(teamId);
-				workspaces.push({ id: teamId, name: teamName });
+	if (teamUsers) {
+		for (const tu of teamUsers) {
+			if (tu?.teams) {
+				const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
+				if (team?.id && team?.name) {
+					teams.push({ id: team.id, name: team.name });
+				}
 			}
 		}
 	}
 
-	if (accessibleWorkspaceIds.length) {
-		const { data: scopedTeams } = await readClient
-			.from("workspaces")
-			.select("id, name")
-			.in("id", accessibleWorkspaceIds);
-		for (const team of scopedTeams ?? []) {
-			const teamId = String(team?.id ?? "").trim();
-			const teamName = String(team?.name ?? "").trim();
-			if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
-			seenTeamIds.add(teamId);
-			workspaces.push({ id: teamId, name: teamName });
-		}
-	}
-
-	const initialWorkspaceCandidate =
-		String(preferredWorkspaceId ?? "").trim() ||
-		String(rawCookieWorkspaceId ?? "").trim() ||
-		String(resolvedWorkspaceId ?? "").trim() ||
-		"";
-	const initialWorkspaceId =
-		(initialWorkspaceCandidate &&
-		workspaces.some((workspace) => workspace.id === initialWorkspaceCandidate)
-			? initialWorkspaceCandidate
-			: workspaces[0]?.id) ?? null;
-
 	const keysArray = (managementKeys ?? []).map((k: any) => ({ ...k }));
 
-	const teamsWithKeys = workspaces.map((t) => ({
+	const teamsWithKeys = teams.map((t) => ({
 		...t,
 		keys: keysArray.filter(
 			(k: any) => (k.workspace_id ?? null) === (t.id ?? null)
@@ -173,14 +87,14 @@ async function ManagementApiKeysContent({
 				actions={
 					<CreateManagementKeyDialog
 						currentUserId={user?.id}
-						currentWorkspaceId={initialWorkspaceId}
-						workspaces={workspaces}
+						currentTeamId={initialTeamId}
+						teams={teams}
 					/>
 				}
 			/>
 			<ManagementKeysPanel
 				teamsWithKeys={teamsWithKeys}
-				initialTeamId={initialWorkspaceId}
+				initialTeamId={initialTeamId}
 				currentUserId={user?.id}
 			/>
 		</div>

@@ -778,12 +778,11 @@ async function bufferGoogleStreamToSnapshot(
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const keyInfo = await resolveApiKey(args);
     const key = keyInfo.key;
-    const { adapterPayload } = buildAdapterPayload(ChatCompletionsSchema, args.body, ["usage", "meta"]);
+    const { canonical, adapterPayload } = buildAdapterPayload(ChatCompletionsSchema, args.body, ["usage", "meta"]);
     const modifiedBody: ChatCompletionsRequest = {
         ...adapterPayload,
         model: args.providerModelSlug || args.model,
-        // Always stream upstream for text execution; caller preference only controls response shaping.
-        stream: true,
+        stream: args.stream ?? canonical.stream ?? false,
     };
     const req = await mapGatewayToGoogleRequest(modifiedBody);
 

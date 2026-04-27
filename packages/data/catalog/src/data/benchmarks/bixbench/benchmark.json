@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "bixbench",
-  "benchmark_name": "BixBench",
-  "category": "science",
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/introducing-gpt-5-5/",
-  "total_models": 1
-}

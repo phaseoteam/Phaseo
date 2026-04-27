@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "graphwalks-parents-256k-f1",
-  "benchmark_name": "Graphwalks Parents 256K F1",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/introducing-gpt-5-5/",
-  "total_models": 1
-}

@@ -30,16 +30,6 @@ export type AppUsageRow = {
 	successful_requests?: number;
 };
 
-type AppRequestRow = {
-	created_at: string;
-	usage: unknown;
-	cost_nanos: number | null;
-	model_id: string | null;
-	canonical_model_id?: string | null;
-	provider: string | null;
-	success: boolean | null;
-};
-
 function logUsageFetch(stage: string, payload: Record<string, unknown>): void {
 	if (!USAGE_FETCH_DEBUG_ENABLED) return;
 	console.info(`[gateway-usage-fetchers] ${stage}`, payload);
@@ -47,47 +37,6 @@ function logUsageFetch(stage: string, payload: Record<string, unknown>): void {
 
 function usesDailyRollup(range: RangeKey): boolean {
 	return range === "1w" || range === "4w" || range === "1m" || range === "1y";
-}
-
-function toRecord(value: unknown): Record<string, unknown> | null {
-	if (!value || typeof value !== "object") return null;
-	return value as Record<string, unknown>;
-}
-
-function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
-	if (!usage) return 0;
-	const raw = usage[key];
-	const parsed = Number(raw);
-	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function getTotalTokensFromUsage(usageValue: unknown): number {
-	const usage = toRecord(usageValue);
-	const directTotal =
-		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
-	if (directTotal > 0) return directTotal;
-
-	return (
-		readUsageInt(usage, "input_tokens") +
-		readUsageInt(usage, "output_tokens") +
-		readUsageInt(usage, "prompt_tokens") +
-		readUsageInt(usage, "completion_tokens")
-	);
-}
-
-function bucketIso15m(createdAt: string): string | null {
-	const date = new Date(createdAt);
-	if (!Number.isFinite(date.getTime())) return null;
-	const mins = date.getUTCMinutes();
-	date.setUTCMinutes(mins - (mins % 15), 0, 0);
-	return date.toISOString();
-}
-
-function bucketIsoDay(createdAt: string): string | null {
-	const date = new Date(createdAt);
-	if (!Number.isFinite(date.getTime())) return null;
-	date.setUTCHours(0, 0, 0, 0);
-	return date.toISOString();
 }
 
 export async function getAppUsageOverTime(
@@ -106,27 +55,16 @@ export async function getAppUsageOverTime(
 	const fromDate = fromForRange(range);
 	const from = fromDate.toISOString();
 	const nowIso = new Date().toISOString();
+	const nowDay = nowIso.slice(0, 10);
 	const rows: AppUsageRow[] = [];
 	const useDaily = usesDailyRollup(range);
 	const fromDay = new Date(fromDate);
 	fromDay.setUTCHours(0, 0, 0, 0);
-	const fromDayIso = fromDay.toISOString();
+	const fromDayIso = fromDay.toISOString().slice(0, 10);
 	let hitPageCap = true;
 	let pagesFetched = 0;
 	let hadError = false;
 	const maxPages = useDaily ? MAX_LONG_RANGE_PAGES : MAX_SHORT_RANGE_PAGES;
-	const aggregates = new Map<
-		string,
-		{
-			created_at: string;
-			model_id: string;
-			provider: string;
-			cost_nanos: number;
-			total_tokens: number;
-			requests: number;
-			successful_requests: number;
-		}
-	>();
 
 	for (
 		let page = 0, offset = 0;
@@ -135,21 +73,34 @@ export async function getAppUsageOverTime(
 	) {
 		pagesFetched += 1;
 		const to = offset + PAGE_SIZE - 1;
-		const query = supabase
-			.from("gateway_requests")
-			.select("created_at, usage, cost_nanos, model_id, canonical_model_id, provider, success")
-			.eq("app_id", appId)
-			.gte("created_at", useDaily ? fromDayIso : from)
-			.lte("created_at", nowIso)
-			.order("created_at", { ascending: true })
-			.range(offset, to);
+		const query = useDaily
+			? supabase
+					.from("gateway_usage_rollup_daily_app_model")
+					.select(
+						"day_bucket, canonical_model_id, requests, success_requests, total_tokens, total_cost_nanos",
+					)
+					.eq("app_id", appId)
+					.gte("day_bucket", fromDayIso)
+					.lte("day_bucket", nowDay)
+					.order("day_bucket", { ascending: true })
+					.range(offset, to)
+			: supabase
+					.from("gateway_usage_rollup_15m_app_model")
+					.select(
+						"bucket_15m, canonical_model_id, requests, success_requests, total_tokens, total_cost_nanos",
+					)
+					.eq("app_id", appId)
+					.gte("bucket_15m", from)
+					.lte("bucket_15m", nowIso)
+					.order("bucket_15m", { ascending: true })
+					.range(offset, to);
 		const { data, error } = await query;
 
 		if (error) {
 			hadError = true;
 			hitPageCap = false;
 			console.error(
-				`Error fetching app usage ${useDaily ? "daily" : "15m"} raw rows:`,
+				`Error fetching app usage ${useDaily ? "daily" : "15m"} rollups:`,
 				error,
 			);
 			return [];
@@ -159,34 +110,30 @@ export async function getAppUsageOverTime(
 			break;
 		}
 
-		for (const row of data as AppRequestRow[]) {
-			const modelId =
-				String(row?.canonical_model_id ?? "").trim() ||
-				String(row?.model_id ?? "").trim();
-			if (!modelId) continue;
+		for (const row of data) {
+			const createdAt = String(
+				useDaily ? (row as any)?.day_bucket ?? "" : (row as any)?.bucket_15m ?? "",
+			).trim();
+			const modelId = String((row as any)?.canonical_model_id ?? "").trim();
+			const requests = Number((row as any)?.requests ?? 0);
+			const successRequests = Number((row as any)?.success_requests ?? 0);
+			const totalTokens = Number((row as any)?.total_tokens ?? 0);
+			const totalCostNanos = Number((row as any)?.total_cost_nanos ?? 0);
 
-			const createdAtBucket = useDaily
-				? bucketIsoDay(String(row?.created_at ?? ""))
-				: bucketIso15m(String(row?.created_at ?? ""));
-			if (!createdAtBucket) continue;
+			if (!createdAt || !modelId) continue;
 
-			const key = `${createdAtBucket}::${modelId}`;
-			const current = aggregates.get(key) ?? {
-				created_at: createdAtBucket,
+			rows.push({
+				created_at: createdAt,
+				usage: { total_tokens: Number.isFinite(totalTokens) ? totalTokens : 0 },
+				cost_nanos: Number.isFinite(totalCostNanos) ? totalCostNanos : 0,
 				model_id: modelId,
-				provider: String(row?.provider ?? ""),
-				cost_nanos: 0,
-				total_tokens: 0,
-				requests: 0,
-				successful_requests: 0,
-			};
-
-			current.requests += 1;
-			if (row?.success) current.successful_requests += 1;
-			current.total_tokens += getTotalTokensFromUsage(row?.usage);
-			const costNanos = Number(row?.cost_nanos ?? 0);
-			if (Number.isFinite(costNanos)) current.cost_nanos += costNanos;
-			aggregates.set(key, current);
+				provider: "",
+				success: (Number.isFinite(successRequests) ? successRequests : 0) > 0,
+				requests: Number.isFinite(requests) ? Math.max(0, requests) : 0,
+				successful_requests: Number.isFinite(successRequests)
+					? Math.max(0, successRequests)
+					: 0,
+			});
 		}
 
 		if (data.length < PAGE_SIZE) {
@@ -195,7 +142,7 @@ export async function getAppUsageOverTime(
 		}
 	}
 
-	if (aggregates.size > 0 && hitPageCap) {
+	if (rows.length > 0 && hitPageCap) {
 		console.warn(
 			`App usage rows may be truncated for app=${appId} range=${range} mode=${useDaily ? "daily" : "15m"}`,
 		);
@@ -203,30 +150,16 @@ export async function getAppUsageOverTime(
 	logUsageFetch("app_usage_over_time_query", {
 		appId,
 		range,
-		mode: useDaily ? "raw_daily" : "raw_15m",
+		mode: useDaily ? "daily" : "15m",
 		pagesFetched,
-		rows: aggregates.size,
+		rows: rows.length,
 		hitPageCap,
 		hadError,
 		maxPages,
 		pageSize: PAGE_SIZE,
 		fromIso: useDaily ? fromDayIso : from,
-		toIso: useDaily ? nowIso : nowIso,
+		toIso: useDaily ? nowDay : nowIso,
 	});
-
-	for (const value of aggregates.values()) {
-		rows.push({
-			created_at: value.created_at,
-			usage: { total_tokens: value.total_tokens },
-			cost_nanos: value.cost_nanos,
-			model_id: value.model_id,
-			provider: value.provider,
-			success: value.successful_requests > 0,
-			requests: value.requests,
-			successful_requests: value.successful_requests,
-		});
-	}
-	rows.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.model_id.localeCompare(b.model_id));
 
 	return rows;
 }

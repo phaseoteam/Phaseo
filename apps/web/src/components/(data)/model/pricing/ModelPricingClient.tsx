@@ -36,7 +36,7 @@ import ProviderCard from "@/components/(data)/model/pricing/ProviderCard";
 import { cn } from "@/lib/utils";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
 
-const PLAN_ORDER = ["free", "standard", "list", "batch", "flex", "priority"] as const;
+const PLAN_ORDER = ["free", "standard", "batch", "flex", "priority"] as const;
 const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
@@ -597,7 +597,7 @@ export default function ModelPricingClient({
 
     useEffect(() => {
         setShowAllProviders(false);
-    }, [plan, quantizationFilter]);
+    }, [plan, quantizationFilter, sort, sortDirection]);
 
     useEffect(() => {
         try {
@@ -843,7 +843,7 @@ export default function ModelPricingClient({
                                         )}
                                     >
                                         <div className="overflow-hidden">
-                                            <div>
+                                            <div className="pt-3">
 												<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                                     {extraProviders.map((prov) => (
                                                         <ProviderCard

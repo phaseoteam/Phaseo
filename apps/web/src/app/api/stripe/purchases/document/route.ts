@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid payment intent id" }, { status: 400 });
         }
 
-        const { workspaceId, customerId } = await requireActiveWorkspaceStripeCustomer();
+        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer();
         const supabase = createAdminClient();
 
         const { data: purchase, error: purchaseErr } = await supabase
@@ -100,10 +100,7 @@ export async function POST(req: NextRequest) {
         if (err?.message === "unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        if (
-            err?.message === "missing_workspace" ||
-            err?.message === "missing_stripe_customer"
-        ) {
+        if (err?.message === "missing_team" || err?.message === "missing_stripe_customer") {
             return NextResponse.json({ error: err.message }, { status: 400 });
         }
         return NextResponse.json({ error: err?.message ?? "document_lookup_failed" }, { status: 500 });

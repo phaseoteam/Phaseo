@@ -28,7 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import TeamSwitcher from "./TeamSwitcher";
-import { setActiveWorkspaceAction } from "@/app/(dashboard)/actions";
+import { SwapTeam } from "@/app/(dashboard)/actions";
 import { createClient } from "@/utils/supabase/client";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -44,26 +44,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 interface HeaderProps {
 	isLoggedIn: boolean;
 	user?: any;
-	workspaces?: { id: string; name: string }[];
-	currentWorkspaceId?: string;
+	teams?: { id: string; name: string }[];
+	currentTeamId?: string;
 	userRole?: string | undefined;
 	variant?: "mobile" | "desktop";
-}
-
-function emitWorkspaceChanged(workspaceId: string) {
-	if (typeof window === "undefined") return;
-	window.dispatchEvent(
-		new CustomEvent("workspace:changed", {
-			detail: { workspaceId },
-		}),
-	);
 }
 
 export default function HeaderClient({
 	isLoggedIn,
 	user,
-	workspaces = [],
-	currentWorkspaceId,
+	teams = [],
+	currentTeamId,
 	userRole,
 	variant = "desktop",
 }: HeaderProps) {
@@ -79,22 +70,15 @@ export default function HeaderClient({
 		dark: { label: "Dark", icon: Moon },
 		system: { label: "System", icon: Monitor },
 	} as const;
-	const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | undefined>(
-		currentWorkspaceId ?? workspaces[0]?.id,
+	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(
+		currentTeamId ?? teams[0]?.id,
 	);
-	const workspacesHref = `/settings/workspaces${
-		activeWorkspaceId
-			? `?workspace_id=${encodeURIComponent(activeWorkspaceId)}`
-			: ""
-	}`;
-	const [isMobileWorkspaceDialogOpen, setIsMobileWorkspaceDialogOpen] = useState(false);
-	const activeWorkspace =
-		workspaces.find((workspace) => workspace.id === activeWorkspaceId) ??
-		workspaces[0];
+	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
+	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
 
 	useEffect(() => {
-		setActiveWorkspaceId(currentWorkspaceId ?? workspaces[0]?.id);
-	}, [currentWorkspaceId, workspaces]);
+		setActiveTeamId(currentTeamId ?? teams[0]?.id);
+	}, [currentTeamId, teams]);
 
 	async function handleSignOut() {
 		try {
@@ -107,28 +91,23 @@ export default function HeaderClient({
 		}
 	}
 
-	async function handleWorkspaceSwitch(nextWorkspaceId: string, workspaceName: string) {
-		if (nextWorkspaceId === activeWorkspaceId) return true;
+	async function handleTeamSwitch(nextTeamId: string, teamName: string) {
+		if (nextTeamId === activeWorkspaceId) return true;
 
-		const previousWorkspaceId = activeWorkspaceId;
-		setActiveWorkspaceId(nextWorkspaceId);
+		const previousTeamId = activeWorkspaceId;
+		setActiveTeamId(nextTeamId);
 
-		const result = await setActiveWorkspaceAction(nextWorkspaceId);
+		const result = await SwapTeam(nextTeamId);
 		if (!result?.ok) {
-			setActiveWorkspaceId(previousWorkspaceId);
-			const reason =
-				typeof result?.error === "string" && result.error
-					? ` (${result.error})`
-					: "";
-			toast.error(`Failed to switch to ${workspaceName} workspace${reason}`, {
+			setActiveTeamId(previousTeamId);
+			toast.error(`Failed to switch to ${teamName} workspace`, {
 				position: "bottom-right",
 			});
 			return false;
 		}
 
-		emitWorkspaceChanged(nextWorkspaceId);
 		router.refresh();
-		toast.success(`Switched to ${workspaceName} workspace`, {
+		toast.success(`Switched to ${teamName} workspace`, {
 			position: "bottom-right",
 		});
 		return true;
@@ -160,12 +139,12 @@ export default function HeaderClient({
 					</Button>
 				</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
-						{isLoggedIn && workspaces.length > 0 && (
+						{isLoggedIn && teams.length > 0 && (
 							<>
 								<Popover
 									modal={false}
-									open={isMobileWorkspaceDialogOpen}
-									onOpenChange={setIsMobileWorkspaceDialogOpen}
+									open={isMobileTeamDialogOpen}
+									onOpenChange={setIsMobileTeamDialogOpen}
 								>
 									<PopoverTrigger asChild>
 										<button
@@ -177,12 +156,12 @@ export default function HeaderClient({
 										>
 											<Users className="h-4 w-4" />
 											<span className="min-w-0 flex-1 truncate">
-												{activeWorkspace?.name ?? "Workspace"}
+												{activeTeam?.name ?? "Workspace"}
 											</span>
 											<ChevronDown
 												className={cn(
 													"ml-auto h-4 w-4 text-zinc-500 transition-transform",
-													isMobileWorkspaceDialogOpen && "rotate-180",
+													isMobileTeamDialogOpen && "rotate-180",
 												)}
 											/>
 										</button>
@@ -193,19 +172,19 @@ export default function HeaderClient({
 										sideOffset={6}
 										className="w-52 rounded-xl p-1"
 									>
-										{workspaces.slice(0, 5).map((workspace) => {
-											const isActive = workspace.id === activeWorkspaceId;
+										{teams.slice(0, 5).map((team) => {
+											const isActive = team.id === activeWorkspaceId;
 											return (
 												<button
-													key={workspace.id}
+													key={team.id}
 													type="button"
 													className={cn(
 														"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
 														"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
 													)}
 													onClick={() => {
-														void handleWorkspaceSwitch(workspace.id, workspace.name).then((ok) => {
-															if (ok) setIsMobileWorkspaceDialogOpen(false);
+														void handleTeamSwitch(team.id, team.name).then((ok) => {
+															if (ok) setIsMobileTeamDialogOpen(false);
 														});
 													}}
 												>
@@ -215,7 +194,7 @@ export default function HeaderClient({
 															isActive && "text-foreground",
 														)}
 													>
-														{workspace.name}
+														{team.name}
 													</span>
 													{isActive && <Check className="ml-auto h-4 w-4 text-primary" />}
 												</button>
@@ -223,13 +202,13 @@ export default function HeaderClient({
 										})}
 										<DropdownMenuSeparator />
 										<Link
-											href={workspacesHref}
+											href="/settings/workspaces"
 											prefetch={false}
 											className={cn(
 												"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
 												"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
 											)}
-											onClick={() => setIsMobileWorkspaceDialogOpen(false)}
+											onClick={() => setIsMobileTeamDialogOpen(false)}
 										>
 											<span>Manage Workspaces</span>
 										</Link>
@@ -314,9 +293,9 @@ export default function HeaderClient({
 									<span>Keys</span>
 								</Link>
 							</DropdownMenuItem>
-							{workspaces.length === 0 && (
+							{teams.length === 0 && (
 								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href={workspacesHref} prefetch={false}>
+									<Link href="/settings/workspaces" prefetch={false}>
 										<Users className="h-4 w-4" />
 										<span>Workspaces</span>
 									</Link>
@@ -429,10 +408,10 @@ export default function HeaderClient({
 			{isLoggedIn ? (
 				<TeamSwitcher
 					user={user}
-					workspaces={workspaces}
+					teams={teams}
 					userRole={userRole}
 					onSignOut={handleSignOut}
-					initialActiveWorkspaceId={currentWorkspaceId}
+					initialActiveTeamId={currentTeamId}
 				/>
 			) : (
 				<Link href="/sign-in" prefetch={false}>

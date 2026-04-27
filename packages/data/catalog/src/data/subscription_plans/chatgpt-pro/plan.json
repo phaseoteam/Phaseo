@@ -153,21 +153,21 @@
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.5",
+      "model_id": "openai/gpt-5.4",
       "model_info": "Thinking",
       "rate_limit": "Unlimited within abuse guardrails",
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.5-pro",
+      "model_id": "openai/gpt-5.4-pro",
       "model_info": null,
-      "rate_limit": "Included",
+      "rate_limit": "Unlimited within abuse guardrails",
       "other_info": null
     },
     {
       "model_id": "openai/gpt-5.4-mini",
       "model_info": "Thinking Fallback",
-      "rate_limit": "Unlimited within abuse guardrails",
+      "rate_limit": null,
       "other_info": null
     },
     {
@@ -183,13 +183,13 @@
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.3-codex",
+      "model_id": "openai/gpt-5.1-codex-max",
       "model_info": null,
       "rate_limit": null,
       "other_info": "Accessible Through Codex"
     },
     {
-      "model_id": "openai/gpt-5-codex-mini",
+      "model_id": "openai/gpt-5.1-codex-mini",
       "model_info": null,
       "rate_limit": null,
       "other_info": "Accessible Through Codex"

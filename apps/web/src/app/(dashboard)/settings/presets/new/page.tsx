@@ -65,7 +65,7 @@ async function NewPresetContent() {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const initialWorkspaceId = await getWorkspaceIdFromCookie();
+	const initialTeamId = await getWorkspaceIdFromCookie();
 
 	const [models, providers] = await Promise.all([
 		getAllModelsCached(await resolveIncludeHidden()),
@@ -77,7 +77,7 @@ async function NewPresetContent() {
 			models={models}
 			providers={providers}
 			currentUserId={user?.id}
-			currentWorkspaceId={initialWorkspaceId}
+			currentTeamId={initialTeamId}
 		/>
 	);
 }

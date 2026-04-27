@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPlayground from "@/components/(data)/model/playground/ModelPlayground";
-import {
-	getModelGatewayMetadataCached,
-	type GatewayProviderModel,
-} from "@/lib/fetchers/models/getModelGatewayMetadata";
+import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
@@ -67,24 +64,12 @@ export default async function Page({
 		.then((header) => header.name?.trim() || modelId)
 		.catch(() => modelId);
 	let requestModelId = modelId;
-	let activeGatewayProviders: Pick<
-		GatewayProviderModel,
-		"model_id" | "endpoint" | "output_modalities"
-	>[] = [];
-	let primaryModelIdentifierByEndpoint: Record<string, string> = {};
 	const scopedModelIdentifiers = new Set<string>([modelId]);
 	try {
 		const gatewayMetadata = await getModelGatewayMetadataCached(
 			modelId,
 			includeHidden,
 		);
-		activeGatewayProviders = gatewayMetadata.activeProviders.map((provider) => ({
-			model_id: provider.model_id,
-			endpoint: provider.endpoint,
-			output_modalities: provider.output_modalities,
-		}));
-		primaryModelIdentifierByEndpoint =
-			gatewayMetadata.primaryModelIdentifierByEndpoint;
 		for (const identifier of Object.values(
 			gatewayMetadata.primaryModelIdentifierByEndpoint,
 		)) {
@@ -130,8 +115,6 @@ export default async function Page({
 				requestModelId={requestModelId}
 				modelName={modelDisplayName}
 				gatewayModels={playgroundModels}
-				gatewayProviders={activeGatewayProviders}
-				primaryModelIdentifierByEndpoint={primaryModelIdentifierByEndpoint}
 			/>
 		</ModelDetailShell>
 	);

@@ -23,7 +23,6 @@ import { z } from "zod";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 
 const app = new Hono<Env>();
-const PAGE_SIZE = 5000;
 
 function extractUserIdFromBearer(req: Request): string | null {
 	const authHeader = req.headers.get("authorization");
@@ -89,111 +88,6 @@ const updateOAuthClientSchema = z.object({
 	terms_of_service_url: z.string().url().optional(),
 	redirect_uris: z.array(z.string().url()).min(1).optional(),
 });
-
-async function attachOAuthAppStats(
-	supabase: ReturnType<typeof getSupabaseAdmin>,
-	apps: any[],
-): Promise<any[]> {
-	if (!Array.isArray(apps) || apps.length === 0) return [];
-
-	const clientIds = apps
-		.map((row) => String(row?.client_id ?? "").trim())
-		.filter(Boolean);
-	if (!clientIds.length) return apps;
-
-	const statsByClientId = new Map<
-		string,
-		{
-			active_authorizations: number;
-			total_authorizations: number;
-			last_used_at: string | null;
-			requests_last_30d: number;
-		}
-	>();
-
-	for (const clientId of clientIds) {
-		statsByClientId.set(clientId, {
-			active_authorizations: 0,
-			total_authorizations: 0,
-			last_used_at: null,
-			requests_last_30d: 0,
-		});
-	}
-
-	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const { data, error } = await supabase
-			.from("oauth_authorizations")
-			.select("client_id, revoked_at, last_used_at")
-			.in("client_id", clientIds)
-			.order("created_at", { ascending: true })
-			.range(offset, offset + PAGE_SIZE - 1);
-
-		if (error) {
-			throw new Error(error.message ?? "Failed to load OAuth authorization stats");
-		}
-		if (!Array.isArray(data) || data.length === 0) break;
-
-		for (const row of data) {
-			const clientId = String((row as any)?.client_id ?? "").trim();
-			if (!clientId) continue;
-			const stats = statsByClientId.get(clientId);
-			if (!stats) continue;
-
-			stats.total_authorizations += 1;
-			if ((row as any)?.revoked_at == null) {
-				stats.active_authorizations += 1;
-			}
-
-			const lastUsedAt = String((row as any)?.last_used_at ?? "").trim();
-			if (!lastUsedAt) continue;
-			if (!stats.last_used_at || lastUsedAt > stats.last_used_at) {
-				stats.last_used_at = lastUsedAt;
-			}
-		}
-
-		if (data.length < PAGE_SIZE) break;
-	}
-
-	const thirtyDaysAgo = new Date();
-	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-	const fromIso = thirtyDaysAgo.toISOString();
-	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const { data, error } = await supabase
-			.from("gateway_requests")
-			.select("oauth_client_id")
-			.in("oauth_client_id", clientIds)
-			.gte("created_at", fromIso)
-			.order("created_at", { ascending: true })
-			.range(offset, offset + PAGE_SIZE - 1);
-
-		if (error) {
-			throw new Error(error.message ?? "Failed to load OAuth usage stats");
-		}
-		if (!Array.isArray(data) || data.length === 0) break;
-
-		for (const row of data) {
-			const clientId = String((row as any)?.oauth_client_id ?? "").trim();
-			if (!clientId) continue;
-			const stats = statsByClientId.get(clientId);
-			if (!stats) continue;
-			stats.requests_last_30d += 1;
-		}
-
-		if (data.length < PAGE_SIZE) break;
-	}
-
-	return apps.map((appRow) => {
-		const clientId = String(appRow?.client_id ?? "").trim();
-		const stats = statsByClientId.get(clientId);
-		return {
-			...appRow,
-			active_authorizations: stats?.active_authorizations ?? 0,
-			total_authorizations: stats?.total_authorizations ?? 0,
-			last_used_at: stats?.last_used_at ?? null,
-			requests_last_30d: stats?.requests_last_30d ?? 0,
-		};
-	});
-}
 
 /**
  * POST /v1/oauth-clients
@@ -304,20 +198,18 @@ app.get("/", async (c) => {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
-		// Fetch OAuth apps for workspace and attach derived stats
+		// Fetch OAuth apps for team from database view
 		const supabase = getSupabaseAdmin();
-		const { data: appMetadataRows, error: appsError } = await supabase
-			.from("oauth_app_metadata")
+		const { data: apps, error: appsError } = await supabase
+			.from("oauth_apps_with_stats")
 			.select("*")
 			.eq("workspace_id", authCtx.workspaceId)
-			.eq("status", "active")
 			.order("created_at", { ascending: false });
 
 		if (appsError) {
 			console.error("Error fetching OAuth apps:", appsError);
 			return c.json({ error: "Failed to fetch OAuth apps" }, 500);
 		}
-		const apps = await attachOAuthAppStats(supabase, appMetadataRows ?? []);
 
 		return c.json({
 			data: apps || [],
@@ -347,22 +239,19 @@ app.get("/:clientId", async (c) => {
 
 		const clientId = c.req.param("clientId");
 
-		// Fetch OAuth app metadata and attach derived stats
+		// Fetch OAuth app with stats
 		const supabase = getSupabaseAdmin();
-		const { data: appMetadata, error: appError } = await supabase
-			.from("oauth_app_metadata")
+		const { data: app, error: appError } = await supabase
+			.from("oauth_apps_with_stats")
 			.select("*")
 			.eq("client_id", clientId)
 			.eq("workspace_id", authCtx.workspaceId)
-			.eq("status", "active")
-			.maybeSingle();
+			.single();
 
-		if (appError || !appMetadata) {
+		if (appError || !app) {
 			console.error("Error fetching OAuth app:", appError);
 			return c.json({ error: "OAuth app not found" }, 404);
 		}
-		const withStats = await attachOAuthAppStats(supabase, [appMetadata]);
-		const app = withStats[0];
 
 		return c.json(app);
 	} catch (error: any) {
