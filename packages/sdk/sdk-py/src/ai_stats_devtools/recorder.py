@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, MutableMapping, Optional
 
 
-SDK_VERSION = "1.2.0"
+SDK_VERSION = "2.0.1"
 
 SDK_NAME = "python"
 

@@ -451,6 +451,8 @@ pub struct KeyInvalidateResponse {
 	pub ok: String,
 }
 
+pub type KnownModelId = JsonValue;
+
 pub struct ListFilesResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
 	pub object: Option<String>,

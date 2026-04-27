@@ -97,7 +97,7 @@
 		"@changesets/changelog-github": "^0.6.0",
 		"@changesets/cli": "^2.30.0",
 		"@stoplight/spectral-cli": "^6.11.1",
-		"ajv": "^8.18.0",
+		"ajv": "^8.20.0",
 		"dotenv-cli": "^11.0.0",
 		"js-yaml": "^4.1.1",
 		"knip": "^5.67.1",

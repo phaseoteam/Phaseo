@@ -11,6 +11,7 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 
 const SHARD_ROTATION_WINDOW_MS = 5 * 60 * 1000;
@@ -72,7 +73,32 @@ async function handleVideoReconciliationScheduledEvent(_event: ScheduledControll
 	}
 }
 
+async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.EMAIL_OUTBOX_DRAIN_ENABLED, true)) {
+		return;
+	}
+	if (!env.RESEND_API_KEY?.trim()) {
+		return;
+	}
+
+	const limit = toInt(env.EMAIL_OUTBOX_DRAIN_LIMIT, 25);
+	configureRuntime(env);
+	try {
+		const summary = await drainEmailOutbox(limit);
+		if (summary.processed > 0 || summary.failed > 0) {
+			console.log("email_outbox_drain_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	try {
+		await handleEmailOutboxScheduledEvent(event, env);
+	} catch (error) {
+		console.error("email_outbox_scheduled_failed", { error });
+	}
 	try {
 		await handleVideoReconciliationScheduledEvent(event, env);
 	} catch (error) {

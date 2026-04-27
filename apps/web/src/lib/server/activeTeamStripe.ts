@@ -8,6 +8,8 @@ type ActiveTeamStripeCustomer = {
     workspaceId: string;
     customerId: string;
     userId: string;
+    userEmail: string | null;
+    userDisplayName: string | null;
 };
 
 type RequireActiveTeamStripeCustomerOptions = {
@@ -135,6 +137,8 @@ export async function requireActiveTeamStripeCustomer(
             workspaceId,
             customerId,
             userId: user.id,
+            userEmail: user.email ?? null,
+            userDisplayName: deriveCustomerName(user) ?? null,
         };
     }
 
@@ -146,5 +150,7 @@ export async function requireActiveTeamStripeCustomer(
         workspaceId: String(wallet.workspace_id),
         customerId: String(wallet.stripe_customer_id),
         userId: user.id,
+        userEmail: user.email ?? null,
+        userDisplayName: deriveCustomerName(user) ?? null,
     };
 }

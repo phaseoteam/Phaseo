@@ -32,7 +32,11 @@ export const metadata: Metadata = buildMetadata({
 	],
 });
 
-const basicTier = GATEWAY_TIERS.find((tier) => tier.key === "basic");
+const standardTier =
+	GATEWAY_TIERS.find((tier) => tier.key === "standard") ?? GATEWAY_TIERS[0];
+const standardFeePct = standardTier?.feePct ?? 5;
+const standardFeeText =
+	Number.isInteger(standardFeePct) ? standardFeePct.toFixed(0) : String(standardFeePct);
 
 const PRICING_POINTS = [
 	{
@@ -41,8 +45,8 @@ const PRICING_POINTS = [
 		icon: Coins,
 	},
 	{
-		title: `Flat ${basicTier?.feePct.toFixed(0) ?? "7"}% fee`,
-		body: `Gateway pricing is a flat ${basicTier?.feePct.toFixed(0) ?? "7"}% fee on credit purchases. No subscriptions, and no plan ladder to unlock the core product.`,
+		title: `Flat ${standardFeeText}% fee`,
+		body: `Gateway pricing is a flat ${standardFeeText}% fee on credit purchases. No subscriptions, and no plan ladder to unlock the core product.`,
 		icon: ShieldCheck,
 	},
 	{

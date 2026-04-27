@@ -48,7 +48,6 @@ const MODEL_API_GLOBAL_TAGS = [
 	"data:api_providers:list",
 	"data:model_aliases",
 	"data:data_api_provider_models",
-	"data:data_model_id_redirects",
 	"data:data_api_models",
 	"data:data_api_pricing_rules",
 	"data:gateway_requests",
@@ -65,7 +64,6 @@ const MODEL_CANONICAL_RESOLVER_TAGS = [
 	"data:models",
 	"data:model_aliases",
 	"data:data_api_provider_models",
-	"data:data_model_id_redirects",
 	"data:data_api_models",
 ] as const;
 

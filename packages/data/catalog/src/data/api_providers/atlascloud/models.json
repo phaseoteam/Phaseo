@@ -141,6 +141,48 @@
     ]
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-flash",
+    "provider_api_model_id": "atlascloud:deepseek/deepseek-v4-flash",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash",
+    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 384000,
+    "effective_from": "2026-04-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-pro",
+    "provider_api_model_id": "atlascloud:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek-ai/deepseek-v4-pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-04-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "deepseek/deepseek-v3-0324",
     "provider_api_model_id": "atlascloud:deepseek/deepseek-v3-0324",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324",

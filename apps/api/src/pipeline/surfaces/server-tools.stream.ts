@@ -460,16 +460,21 @@ export async function consumeTextProtocolStreamToIR(args: {
 	requestId: string;
 	model: string;
 	provider: string;
+	startedAtMs?: number;
 }): Promise<{
 	ir: IRChatResponse;
 	rawResponse: any;
 	usageRaw: any;
 	frameCount: number;
 	sawDone: boolean;
+	firstFrameMs: number | null;
+	totalMs: number | null;
 }> {
 	const reader = args.stream.getReader();
 	const decoder = new TextDecoder();
 	let buffer = "";
+	const materializeStartMs = Date.now();
+	let firstFrameMs: number | null = null;
 	let frameCount = 0;
 	let sawDone = false;
 	let lastPayload: any = null;
@@ -503,6 +508,10 @@ export async function consumeTextProtocolStreamToIR(args: {
 			}
 
 			frameCount += 1;
+			if (firstFrameMs === null) {
+				const baseStartedAt = args.startedAtMs ?? materializeStartMs;
+				firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
+			}
 			lastPayload = payload;
 			const normalizedPayloadForMeta = resolveRawPayloadForUsage(payload);
 			nativeId = nativeId ?? resolveNativeId(normalizedPayloadForMeta);
@@ -586,6 +595,10 @@ export async function consumeTextProtocolStreamToIR(args: {
 			try {
 				const payload = JSON.parse(data);
 				frameCount += 1;
+				if (firstFrameMs === null) {
+					const baseStartedAt = args.startedAtMs ?? materializeStartMs;
+					firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
+				}
 				lastPayload = payload;
 				const events = extractUnifiedStreamEvents({
 					protocol: args.protocol,
@@ -633,5 +646,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 		usageRaw: effectiveUsageRaw,
 		frameCount,
 		sawDone,
+		firstFrameMs,
+		totalMs: Math.max(0, Date.now() - (args.startedAtMs ?? materializeStartMs)),
 	};
 }

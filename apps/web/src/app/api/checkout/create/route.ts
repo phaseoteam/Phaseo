@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+	deriveFirstName,
+	sendCheckoutStartedEvent,
+} from "@/lib/automations/resend-events";
 import { getStripe } from "@/lib/stripe";
-import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 export async function POST(req: NextRequest) {
     try {
@@ -9,12 +13,13 @@ export async function POST(req: NextRequest) {
             typeof workspace_id === "string" && workspace_id.trim().length > 0
                 ? workspace_id.trim()
                 : undefined;
-        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer({
+        const { workspaceId, customerId, userId, userEmail, userDisplayName } = await requireActiveWorkspaceStripeCustomer({
             createIfMissing: true,
         });
+        const firstName = deriveFirstName(userDisplayName);
 
         if (requestedTeamId && requestedTeamId !== workspaceId) {
-            return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
+            return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
         }
 
         // Derive a base URL: prefer NEXT_PUBLIC_BASE_URL, fall back to request origin, then localhost.
@@ -71,6 +76,30 @@ export async function POST(req: NextRequest) {
                     ...(workspaceId ? { workspace_id: workspaceId } : {}),
                 },
             });
+            if (userEmail) {
+                try {
+                    await sendCheckoutStartedEvent({
+                        email: userEmail,
+                        payload: {
+                            workspaceId,
+                            userId,
+                            firstName,
+                            checkoutSessionId: session.id,
+                            checkoutKind: "oneoff",
+                            currency,
+                            amountPence: Number(amount_pence),
+                            startedAtIso: new Date().toISOString(),
+                        },
+                    });
+                } catch (error) {
+                    console.error("Failed sending checkout.started event for oneoff checkout", {
+                        workspaceId,
+                        userId,
+                        checkoutSessionId: session.id,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
 
             return NextResponse.json({ url: session.url });
         }
@@ -106,6 +135,30 @@ export async function POST(req: NextRequest) {
                 success_url: paymentSuccessUrl,
                 cancel_url: cancelUrl,
             });
+            if (userEmail) {
+                try {
+                    await sendCheckoutStartedEvent({
+                        email: userEmail,
+                        payload: {
+                            workspaceId,
+                            userId,
+                            firstName,
+                            checkoutSessionId: session.id,
+                            checkoutKind: "pay_and_save",
+                            currency,
+                            amountPence: Number(amount_pence),
+                            startedAtIso: new Date().toISOString(),
+                        },
+                    });
+                } catch (error) {
+                    console.error("Failed sending checkout.started event for pay_and_save checkout", {
+                        workspaceId,
+                        userId,
+                        checkoutSessionId: session.id,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
 
             return NextResponse.json({ url: session.url });
         }
@@ -137,8 +190,8 @@ export async function POST(req: NextRequest) {
         if (e?.message === "unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        if (e?.message === "missing_team") {
-            return NextResponse.json({ error: "Missing team" }, { status: 400 });
+        if (e?.message === "missing_workspace") {
+            return NextResponse.json({ error: "Missing workspace" }, { status: 400 });
         }
         // log full error server-side for debugging
         // eslint-disable-next-line no-console

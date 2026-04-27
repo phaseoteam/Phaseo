@@ -54,7 +54,7 @@ module AIStatsSdk
       @lifecycle_resolver = lifecycle_resolver
       @warned_models = {}
       @model_lifecycle_cache = {}
-      @telemetry_recorder = TelemetryRecorder.new(devtools, "1.2.0")
+      @telemetry_recorder = TelemetryRecorder.new(devtools, "2.0.1")
     end
 
     def get_model_deprecation_info(model_id)
@@ -509,7 +509,7 @@ module AIStatsSdk
   end
 
   class TelemetryRecorder
-    def initialize(config = nil, sdk_version = "1.2.0")
+    def initialize(config = nil, sdk_version = "2.0.1")
       config ||= {}
       enabled = config.fetch(:enabled, false)
       directory = config.fetch(:directory, ".ai-stats-devtools")

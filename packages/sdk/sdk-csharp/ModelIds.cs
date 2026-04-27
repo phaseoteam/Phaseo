@@ -6,24 +6,10 @@ namespace AiStatsSdk
     /// <summary>Known model ID constants for editor autocomplete and hover docs.</summary>
     public static class ModelIds
     {
-        /// <summary>Model ID: <c>ai21/jamba-2-3b</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-2-3b</summary>
-        public const string Ai21Jamba23b = "ai21/jamba-2-3b";
-        /// <summary>Model ID: <c>ai21/jamba-large-1.5</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-large-1.5</summary>
-        public const string Ai21JambaLarge15 = "ai21/jamba-large-1.5";
-        /// <summary>Model ID: <c>ai21/jamba-large-1.6</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-large-1.6</summary>
-        public const string Ai21JambaLarge16 = "ai21/jamba-large-1.6";
         /// <summary>Model ID: <c>ai21/jamba-large-1.7</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-large-1.7</summary>
         public const string Ai21JambaLarge17 = "ai21/jamba-large-1.7";
-        /// <summary>Model ID: <c>ai21/jamba-mini-1.5</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-1.5</summary>
-        public const string Ai21JambaMini15 = "ai21/jamba-mini-1.5";
-        /// <summary>Model ID: <c>ai21/jamba-mini-1.6</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-1.6</summary>
-        public const string Ai21JambaMini16 = "ai21/jamba-mini-1.6";
-        /// <summary>Model ID: <c>ai21/jamba-mini-1.7</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-1.7</summary>
-        public const string Ai21JambaMini17 = "ai21/jamba-mini-1.7";
         /// <summary>Model ID: <c>ai21/jamba-mini-2</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-2</summary>
         public const string Ai21JambaMini2 = "ai21/jamba-mini-2";
-        /// <summary>Model ID: <c>ai21/jamba-reasoning-3b</c>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-reasoning-3b</summary>
-        public const string Ai21JambaReasoning3b = "ai21/jamba-reasoning-3b";
         /// <summary>Model ID: <c>aion-labs/aion-1.0</c>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0</summary>
         public const string AionLabsAion10 = "aion-labs/aion-1.0";
         /// <summary>Model ID: <c>aion-labs/aion-1.0-mini</c>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0-mini</summary>
@@ -34,84 +20,10 @@ namespace AiStatsSdk
         public const string AionLabsAion25 = "aion-labs/aion-2.5";
         /// <summary>Model ID: <c>aion-labs/aion-rp-llama-3.1-8b</c>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b</summary>
         public const string AionLabsAionRpLlama318b = "aion-labs/aion-rp-llama-3.1-8b";
-        /// <summary>Model ID: <c>allenai/bolmo-1b</c>. Model page: https://ai-stats.phaseo.app/models/allenai/bolmo-1b</summary>
-        public const string AllenaiBolmo1b = "allenai/bolmo-1b";
-        /// <summary>Model ID: <c>allenai/bolmo-7b</c>. Model page: https://ai-stats.phaseo.app/models/allenai/bolmo-7b</summary>
-        public const string AllenaiBolmo7b = "allenai/bolmo-7b";
-        /// <summary>Model ID: <c>allenai/molmo-2-4b</c>. Model page: https://ai-stats.phaseo.app/models/allenai/molmo-2-4b</summary>
-        public const string AllenaiMolmo24b = "allenai/molmo-2-4b";
-        /// <summary>Model ID: <c>allenai/molmo-2-8b</c>. Model page: https://ai-stats.phaseo.app/models/allenai/molmo-2-8b</summary>
-        public const string AllenaiMolmo28b = "allenai/molmo-2-8b";
-        /// <summary>Model ID: <c>allenai/olmo-3-32b-think</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3-32b-think</summary>
-        public const string AllenaiOlmo332bThink = "allenai/olmo-3-32b-think";
-        /// <summary>Model ID: <c>allenai/olmo-3-7b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3-7b-instruct</summary>
-        public const string AllenaiOlmo37bInstruct = "allenai/olmo-3-7b-instruct";
-        /// <summary>Model ID: <c>allenai/olmo-3-7b-think</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3-7b-think</summary>
-        public const string AllenaiOlmo37bThink = "allenai/olmo-3-7b-think";
-        /// <summary>Model ID: <c>allenai/olmo-3.1-32b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b-instruct</summary>
-        public const string AllenaiOlmo3132bInstruct = "allenai/olmo-3.1-32b-instruct";
-        /// <summary>Model ID: <c>allenai/olmo-3.1-32b-think</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b-think</summary>
-        public const string AllenaiOlmo3132bThink = "allenai/olmo-3.1-32b-think";
-        /// <summary>Model ID: <c>amazon/nova-2-lite</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-lite</summary>
-        public const string AmazonNova2Lite = "amazon/nova-2-lite";
-        /// <summary>Model ID: <c>amazon/nova-2-omni</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-omni</summary>
-        public const string AmazonNova2Omni = "amazon/nova-2-omni";
-        /// <summary>Model ID: <c>amazon/nova-2-pro</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-pro</summary>
-        public const string AmazonNova2Pro = "amazon/nova-2-pro";
-        /// <summary>Model ID: <c>amazon/nova-2-sonic</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-2-sonic</summary>
-        public const string AmazonNova2Sonic = "amazon/nova-2-sonic";
-        /// <summary>Model ID: <c>amazon/nova-canvas</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-canvas</summary>
-        public const string AmazonNovaCanvas = "amazon/nova-canvas";
-        /// <summary>Model ID: <c>amazon/nova-lite-1.0</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-lite-1.0</summary>
-        public const string AmazonNovaLite10 = "amazon/nova-lite-1.0";
-        /// <summary>Model ID: <c>amazon/nova-micro-1.0</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-micro-1.0</summary>
-        public const string AmazonNovaMicro10 = "amazon/nova-micro-1.0";
-        /// <summary>Model ID: <c>amazon/nova-multimodal-embeddings</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-multimodal-embeddings</summary>
-        public const string AmazonNovaMultimodalEmbeddings = "amazon/nova-multimodal-embeddings";
-        /// <summary>Model ID: <c>amazon/nova-premier</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-premier</summary>
-        public const string AmazonNovaPremier = "amazon/nova-premier";
-        /// <summary>Model ID: <c>amazon/nova-pro-1.0</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-pro-1.0</summary>
-        public const string AmazonNovaPro10 = "amazon/nova-pro-1.0";
-        /// <summary>Model ID: <c>amazon/nova-reel</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-reel</summary>
-        public const string AmazonNovaReel = "amazon/nova-reel";
-        /// <summary>Model ID: <c>amazon/nova-sonic</c>. Model page: https://ai-stats.phaseo.app/models/amazon/nova-sonic</summary>
-        public const string AmazonNovaSonic = "amazon/nova-sonic";
-        /// <summary>Model ID: <c>anthropic/claude-1.0</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.0</summary>
-        public const string AnthropicClaude10 = "anthropic/claude-1.0";
-        /// <summary>Model ID: <c>anthropic/claude-1.1</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.1</summary>
-        public const string AnthropicClaude11 = "anthropic/claude-1.1";
-        /// <summary>Model ID: <c>anthropic/claude-1.2</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.2</summary>
-        public const string AnthropicClaude12 = "anthropic/claude-1.2";
-        /// <summary>Model ID: <c>anthropic/claude-1.3</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-1.3</summary>
-        public const string AnthropicClaude13 = "anthropic/claude-1.3";
-        /// <summary>Model ID: <c>anthropic/claude-2.0</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-2.0</summary>
-        public const string AnthropicClaude20 = "anthropic/claude-2.0";
-        /// <summary>Model ID: <c>anthropic/claude-2.1</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-2.1</summary>
-        public const string AnthropicClaude21 = "anthropic/claude-2.1";
-        /// <summary>Model ID: <c>anthropic/claude-3-haiku</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3-haiku</summary>
-        public const string AnthropicClaude3Haiku = "anthropic/claude-3-haiku";
-        /// <summary>Model ID: <c>anthropic/claude-3-opus</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3-opus</summary>
-        public const string AnthropicClaude3Opus = "anthropic/claude-3-opus";
-        /// <summary>Model ID: <c>anthropic/claude-3-sonnet</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3-sonnet</summary>
-        public const string AnthropicClaude3Sonnet = "anthropic/claude-3-sonnet";
-        /// <summary>Model ID: <c>anthropic/claude-3.5-haiku</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku</summary>
-        public const string AnthropicClaude35Haiku = "anthropic/claude-3.5-haiku";
-        /// <summary>Model ID: <c>anthropic/claude-3.5-sonnet-2024-06-20</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-sonnet-2024-06-20</summary>
-        public const string AnthropicClaude35Sonnet20240620 = "anthropic/claude-3.5-sonnet-2024-06-20";
-        /// <summary>Model ID: <c>anthropic/claude-3.5-sonnet-2024-10-22</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-sonnet-2024-10-22</summary>
-        public const string AnthropicClaude35Sonnet20241022 = "anthropic/claude-3.5-sonnet-2024-10-22";
-        /// <summary>Model ID: <c>anthropic/claude-3.7-sonnet</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet</summary>
-        public const string AnthropicClaude37Sonnet = "anthropic/claude-3.7-sonnet";
+        /// <summary>Model ID: <c>allenai/olmo-3.1-32b</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b</summary>
+        public const string AllenaiOlmo3132b = "allenai/olmo-3.1-32b";
         /// <summary>Model ID: <c>anthropic/claude-haiku-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5</summary>
         public const string AnthropicClaudeHaiku45 = "anthropic/claude-haiku-4.5";
-        /// <summary>Model ID: <c>anthropic/claude-instant-1.0</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.0</summary>
-        public const string AnthropicClaudeInstant10 = "anthropic/claude-instant-1.0";
-        /// <summary>Model ID: <c>anthropic/claude-instant-1.1</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.1</summary>
-        public const string AnthropicClaudeInstant11 = "anthropic/claude-instant-1.1";
-        /// <summary>Model ID: <c>anthropic/claude-instant-1.2</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-instant-1.2</summary>
-        public const string AnthropicClaudeInstant12 = "anthropic/claude-instant-1.2";
-        /// <summary>Model ID: <c>anthropic/claude-mythos-preview</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview</summary>
-        public const string AnthropicClaudeMythosPreview = "anthropic/claude-mythos-preview";
         /// <summary>Model ID: <c>anthropic/claude-opus-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4</summary>
         public const string AnthropicClaudeOpus4 = "anthropic/claude-opus-4";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.1</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1</summary>
@@ -120,6 +32,8 @@ namespace AiStatsSdk
         public const string AnthropicClaudeOpus45 = "anthropic/claude-opus-4.5";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.6</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.6</summary>
         public const string AnthropicClaudeOpus46 = "anthropic/claude-opus-4.6";
+        /// <summary>Model ID: <c>anthropic/claude-opus-4.7</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7</summary>
+        public const string AnthropicClaudeOpus47 = "anthropic/claude-opus-4.7";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4</summary>
         public const string AnthropicClaudeSonnet4 = "anthropic/claude-sonnet-4";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5</summary>
@@ -132,56 +46,34 @@ namespace AiStatsSdk
         public const string ArceeAiTrinityLargeThinking = "arcee-ai/trinity-large-thinking";
         /// <summary>Model ID: <c>arcee-ai/trinity-mini</c>. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-mini</summary>
         public const string ArceeAiTrinityMini = "arcee-ai/trinity-mini";
-        /// <summary>Model ID: <c>arcee-ai/trinity-nano-preview</c>. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-nano-preview</summary>
-        public const string ArceeAiTrinityNanoPreview = "arcee-ai/trinity-nano-preview";
         /// <summary>Model ID: <c>baidu/ernie-4.5-21b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-21b-a3b</summary>
         public const string BaiduErnie4521bA3b = "baidu/ernie-4.5-21b-a3b";
         /// <summary>Model ID: <c>baidu/ernie-4.5-21b-a3b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-21b-a3b-thinking</summary>
         public const string BaiduErnie4521bA3bThinking = "baidu/ernie-4.5-21b-a3b-thinking";
         /// <summary>Model ID: <c>baidu/ernie-4.5-300b-a47b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-300b-a47b</summary>
         public const string BaiduErnie45300bA47b = "baidu/ernie-4.5-300b-a47b";
-        /// <summary>Model ID: <c>baidu/ernie-4.5-turbo</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-turbo</summary>
-        public const string BaiduErnie45Turbo = "baidu/ernie-4.5-turbo";
         /// <summary>Model ID: <c>baidu/ernie-4.5-vl-28b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b</summary>
         public const string BaiduErnie45Vl28bA3b = "baidu/ernie-4.5-vl-28b-a3b";
+        /// <summary>Model ID: <c>baidu/ernie-4.5-vl-28b-a3b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b-thinking</summary>
+        public const string BaiduErnie45Vl28bA3bThinking = "baidu/ernie-4.5-vl-28b-a3b-thinking";
         /// <summary>Model ID: <c>baidu/ernie-4.5-vl-424b-a47b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b</summary>
         public const string BaiduErnie45Vl424bA47b = "baidu/ernie-4.5-vl-424b-a47b";
-        /// <summary>Model ID: <c>baidu/ernie-5.0</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0</summary>
-        public const string BaiduErnie50 = "baidu/ernie-5.0";
-        /// <summary>Model ID: <c>baidu/ernie-5.0-0110</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0-0110</summary>
-        public const string BaiduErnie500110 = "baidu/ernie-5.0-0110";
-        /// <summary>Model ID: <c>baidu/ernie-5.0-preview-1203</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0-preview-1203</summary>
-        public const string BaiduErnie50Preview1203 = "baidu/ernie-5.0-preview-1203";
-        /// <summary>Model ID: <c>baidu/ernie-5.0-preview-1220</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-5.0-preview-1220</summary>
-        public const string BaiduErnie50Preview1220 = "baidu/ernie-5.0-preview-1220";
-        /// <summary>Model ID: <c>baidu/ernie-x1.1</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-x1.1</summary>
-        public const string BaiduErnieX11 = "baidu/ernie-x1.1";
-        /// <summary>Model ID: <c>baidu/qianfan-vl-3b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/qianfan-vl-3b</summary>
-        public const string BaiduQianfanVl3b = "baidu/qianfan-vl-3b";
-        /// <summary>Model ID: <c>baidu/qianfan-vl-70b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/qianfan-vl-70b</summary>
-        public const string BaiduQianfanVl70b = "baidu/qianfan-vl-70b";
-        /// <summary>Model ID: <c>baidu/qianfan-vl-8b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/qianfan-vl-8b</summary>
-        public const string BaiduQianfanVl8b = "baidu/qianfan-vl-8b";
-        /// <summary>Model ID: <c>black-forest-labs/flux-2-dev</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-dev</summary>
-        public const string BlackForestLabsFlux2Dev = "black-forest-labs/flux-2-dev";
-        /// <summary>Model ID: <c>black-forest-labs/flux-2-flex</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-flex</summary>
-        public const string BlackForestLabsFlux2Flex = "black-forest-labs/flux-2-flex";
-        /// <summary>Model ID: <c>black-forest-labs/flux-2-klein-4b</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-klein-4b</summary>
-        public const string BlackForestLabsFlux2Klein4b = "black-forest-labs/flux-2-klein-4b";
-        /// <summary>Model ID: <c>black-forest-labs/flux-2-klein-9b</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-klein-9b</summary>
-        public const string BlackForestLabsFlux2Klein9b = "black-forest-labs/flux-2-klein-9b";
-        /// <summary>Model ID: <c>black-forest-labs/flux-2-max</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-max</summary>
-        public const string BlackForestLabsFlux2Max = "black-forest-labs/flux-2-max";
-        /// <summary>Model ID: <c>black-forest-labs/flux-2-pro</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-2-pro</summary>
-        public const string BlackForestLabsFlux2Pro = "black-forest-labs/flux-2-pro";
-        /// <summary>Model ID: <c>bytedance/seed-1.6-2025-06-15</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-2025-06-15</summary>
-        public const string BytedanceSeed1620250615 = "bytedance/seed-1.6-2025-06-15";
-        /// <summary>Model ID: <c>bytedance/seed-1.6-2025-09-15</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-2025-09-15</summary>
-        public const string BytedanceSeed1620250915 = "bytedance/seed-1.6-2025-09-15";
-        /// <summary>Model ID: <c>bytedance/seed-1.6-flash-2025-06-15</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash-2025-06-15</summary>
-        public const string BytedanceSeed16Flash20250615 = "bytedance/seed-1.6-flash-2025-06-15";
-        /// <summary>Model ID: <c>bytedance/seed-1.6-flash-2025-07-15</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash-2025-07-15</summary>
-        public const string BytedanceSeed16Flash20250715 = "bytedance/seed-1.6-flash-2025-07-15";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-dev</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-dev</summary>
+        public const string BlackForestLabsFlux1Dev = "black-forest-labs/flux-1-dev";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-kontext-max</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-max</summary>
+        public const string BlackForestLabsFlux1KontextMax = "black-forest-labs/flux-1-kontext-max";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-kontext-pro</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-pro</summary>
+        public const string BlackForestLabsFlux1KontextPro = "black-forest-labs/flux-1-kontext-pro";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-schnell</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell</summary>
+        public const string BlackForestLabsFlux1Schnell = "black-forest-labs/flux-1-schnell";
+        /// <summary>Model ID: <c>bytedance/seed-1.6</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6</summary>
+        public const string BytedanceSeed16 = "bytedance/seed-1.6";
+        /// <summary>Model ID: <c>bytedance/seed-1.6-250915</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-250915</summary>
+        public const string BytedanceSeed16250915 = "bytedance/seed-1.6-250915";
+        /// <summary>Model ID: <c>bytedance/seed-1.6-flash</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash</summary>
+        public const string BytedanceSeed16Flash = "bytedance/seed-1.6-flash";
+        /// <summary>Model ID: <c>bytedance/seed-1.6-flash-250715</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-flash-250715</summary>
+        public const string BytedanceSeed16Flash250715 = "bytedance/seed-1.6-flash-250715";
         /// <summary>Model ID: <c>bytedance/seed-1.8</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.8</summary>
         public const string BytedanceSeed18 = "bytedance/seed-1.8";
         /// <summary>Model ID: <c>bytedance/seed-2.0-lite</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-2.0-lite</summary>
@@ -190,102 +82,30 @@ namespace AiStatsSdk
         public const string BytedanceSeed20Mini = "bytedance/seed-2.0-mini";
         /// <summary>Model ID: <c>bytedance/seed-2.0-pro</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-2.0-pro</summary>
         public const string BytedanceSeed20Pro = "bytedance/seed-2.0-pro";
-        /// <summary>Model ID: <c>bytedance/seed-coder-8b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-coder-8b-instruct</summary>
-        public const string BytedanceSeedCoder8bInstruct = "bytedance/seed-coder-8b-instruct";
-        /// <summary>Model ID: <c>bytedance/seed-coder-8b-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-coder-8b-reasoning</summary>
-        public const string BytedanceSeedCoder8bReasoning = "bytedance/seed-coder-8b-reasoning";
-        /// <summary>Model ID: <c>bytedance/seed-oss-36b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-oss-36b-instruct</summary>
-        public const string BytedanceSeedOss36bInstruct = "bytedance/seed-oss-36b-instruct";
         /// <summary>Model ID: <c>bytedance/seed-translation</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-translation</summary>
         public const string BytedanceSeedTranslation = "bytedance/seed-translation";
-        /// <summary>Model ID: <c>bytedance/seedream-4.5</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seedream-4.5</summary>
-        public const string BytedanceSeedream45 = "bytedance/seedream-4.5";
-        /// <summary>Model ID: <c>cohere/c4ai-aya-expanse-32b</c>. Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-expanse-32b</summary>
-        public const string CohereC4aiAyaExpanse32b = "cohere/c4ai-aya-expanse-32b";
-        /// <summary>Model ID: <c>cohere/c4ai-aya-expanse-8b</c>. Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-expanse-8b</summary>
-        public const string CohereC4aiAyaExpanse8b = "cohere/c4ai-aya-expanse-8b";
-        /// <summary>Model ID: <c>cohere/c4ai-aya-vision-32b</c>. Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-vision-32b</summary>
-        public const string CohereC4aiAyaVision32b = "cohere/c4ai-aya-vision-32b";
-        /// <summary>Model ID: <c>cohere/c4ai-aya-vision-8b</c>. Model page: https://ai-stats.phaseo.app/models/cohere/c4ai-aya-vision-8b</summary>
-        public const string CohereC4aiAyaVision8b = "cohere/c4ai-aya-vision-8b";
-        /// <summary>Model ID: <c>cohere/command</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command</summary>
-        public const string CohereCommand = "cohere/command";
-        /// <summary>Model ID: <c>cohere/command-a</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-a</summary>
-        public const string CohereCommandA = "cohere/command-a";
-        /// <summary>Model ID: <c>cohere/command-a-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-a-reasoning</summary>
-        public const string CohereCommandAReasoning = "cohere/command-a-reasoning";
-        /// <summary>Model ID: <c>cohere/command-a-translate</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-a-translate</summary>
-        public const string CohereCommandATranslate = "cohere/command-a-translate";
-        /// <summary>Model ID: <c>cohere/command-a-vision</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-a-vision</summary>
-        public const string CohereCommandAVision = "cohere/command-a-vision";
-        /// <summary>Model ID: <c>cohere/command-light</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-light</summary>
-        public const string CohereCommandLight = "cohere/command-light";
-        /// <summary>Model ID: <c>cohere/command-r--2024-04-04</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-r--2024-04-04</summary>
-        public const string CohereCommandR20240404 = "cohere/command-r--2024-04-04";
-        /// <summary>Model ID: <c>cohere/command-r--2024-08-30</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-r--2024-08-30</summary>
-        public const string CohereCommandR20240830 = "cohere/command-r--2024-08-30";
-        /// <summary>Model ID: <c>cohere/command-r-2024-03-11</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-r-2024-03-11</summary>
-        public const string CohereCommandR20240311 = "cohere/command-r-2024-03-11";
-        /// <summary>Model ID: <c>cohere/command-r-2024-08-30</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-r-2024-08-30</summary>
-        public const string CohereCommandR20240830_2 = "cohere/command-r-2024-08-30";
-        /// <summary>Model ID: <c>cohere/command-r-7b</c>. Model page: https://ai-stats.phaseo.app/models/cohere/command-r-7b</summary>
-        public const string CohereCommandR7b = "cohere/command-r-7b";
-        /// <summary>Model ID: <c>cohere/embed-english-light-v2.0</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-light-v2.0</summary>
-        public const string CohereEmbedEnglishLightV20 = "cohere/embed-english-light-v2.0";
-        /// <summary>Model ID: <c>cohere/embed-english-light-v3</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-light-v3</summary>
-        public const string CohereEmbedEnglishLightV3 = "cohere/embed-english-light-v3";
-        /// <summary>Model ID: <c>cohere/embed-english-v2.0</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-v2.0</summary>
-        public const string CohereEmbedEnglishV20 = "cohere/embed-english-v2.0";
-        /// <summary>Model ID: <c>cohere/embed-english-v3</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-english-v3</summary>
-        public const string CohereEmbedEnglishV3 = "cohere/embed-english-v3";
-        /// <summary>Model ID: <c>cohere/embed-multilingual-light-v3</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-multilingual-light-v3</summary>
-        public const string CohereEmbedMultilingualLightV3 = "cohere/embed-multilingual-light-v3";
-        /// <summary>Model ID: <c>cohere/embed-multilingual-v2.0</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-multilingual-v2.0</summary>
-        public const string CohereEmbedMultilingualV20 = "cohere/embed-multilingual-v2.0";
-        /// <summary>Model ID: <c>cohere/embed-multilingual-v3</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-multilingual-v3</summary>
-        public const string CohereEmbedMultilingualV3 = "cohere/embed-multilingual-v3";
-        /// <summary>Model ID: <c>cohere/embed-v4</c>. Model page: https://ai-stats.phaseo.app/models/cohere/embed-v4</summary>
-        public const string CohereEmbedV4 = "cohere/embed-v4";
-        /// <summary>Model ID: <c>cohere/rerank-multilingual-v3</c>. Model page: https://ai-stats.phaseo.app/models/cohere/rerank-multilingual-v3</summary>
-        public const string CohereRerankMultilingualV3 = "cohere/rerank-multilingual-v3";
-        /// <summary>Model ID: <c>cohere/rerank-v3.5</c>. Model page: https://ai-stats.phaseo.app/models/cohere/rerank-v3.5</summary>
-        public const string CohereRerankV35 = "cohere/rerank-v3.5";
-        /// <summary>Model ID: <c>cohere/rerank-v4.0-fast</c>. Model page: https://ai-stats.phaseo.app/models/cohere/rerank-v4.0-fast</summary>
-        public const string CohereRerankV40Fast = "cohere/rerank-v4.0-fast";
-        /// <summary>Model ID: <c>cohere/rerank-v4.0-pro</c>. Model page: https://ai-stats.phaseo.app/models/cohere/rerank-v4.0-pro</summary>
-        public const string CohereRerankV40Pro = "cohere/rerank-v4.0-pro";
-        /// <summary>Model ID: <c>cohere/rerenk-english-v3</c>. Model page: https://ai-stats.phaseo.app/models/cohere/rerenk-english-v3</summary>
-        public const string CohereRerenkEnglishV3 = "cohere/rerenk-english-v3";
-        /// <summary>Model ID: <c>cursor/composer-1</c>. Model page: https://ai-stats.phaseo.app/models/cursor/composer-1</summary>
-        public const string CursorComposer1 = "cursor/composer-1";
-        /// <summary>Model ID: <c>cursor/composer-1.5</c>. Model page: https://ai-stats.phaseo.app/models/cursor/composer-1.5</summary>
-        public const string CursorComposer15 = "cursor/composer-1.5";
-        /// <summary>Model ID: <c>deepseek/deepseek-coder-v2-2024-06-14</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-coder-v2-2024-06-14</summary>
-        public const string DeepseekDeepseekCoderV220240614 = "deepseek/deepseek-coder-v2-2024-06-14";
-        /// <summary>Model ID: <c>deepseek/deepseek-coder-v2-2024-07-27</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-coder-v2-2024-07-27</summary>
-        public const string DeepseekDeepseekCoderV220240727 = "deepseek/deepseek-coder-v2-2024-07-27";
+        /// <summary>Model ID: <c>bytedance/seedance-2.0</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0</summary>
+        public const string BytedanceSeedance20 = "bytedance/seedance-2.0";
+        /// <summary>Model ID: <c>bytedance/seedance-2.0-fast</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast</summary>
+        public const string BytedanceSeedance20Fast = "bytedance/seedance-2.0-fast";
+        /// <summary>Model ID: <c>cogito/cogito-671b-v2.1</c>. Model page: https://ai-stats.phaseo.app/models/cogito/cogito-671b-v2.1</summary>
+        public const string CogitoCogito671bV21 = "cogito/cogito-671b-v2.1";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr</summary>
         public const string DeepseekDeepseekOcr = "deepseek/deepseek-ocr";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr-2</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr-2</summary>
         public const string DeepseekDeepseekOcr2 = "deepseek/deepseek-ocr-2";
-        /// <summary>Model ID: <c>deepseek/deepseek-r1-2025-01-20</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-2025-01-20</summary>
-        public const string DeepseekDeepseekR120250120 = "deepseek/deepseek-r1-2025-01-20";
-        /// <summary>Model ID: <c>deepseek/deepseek-r1-2025-05-28</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-2025-05-28</summary>
-        public const string DeepseekDeepseekR120250528 = "deepseek/deepseek-r1-2025-05-28";
-        /// <summary>Model ID: <c>deepseek/deepseek-r1-lite-preview</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-lite-preview</summary>
-        public const string DeepseekDeepseekR1LitePreview = "deepseek/deepseek-r1-lite-preview";
-        /// <summary>Model ID: <c>deepseek/deepseek-v2-2024-05-17</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2-2024-05-17</summary>
-        public const string DeepseekDeepseekV220240517 = "deepseek/deepseek-v2-2024-05-17";
-        /// <summary>Model ID: <c>deepseek/deepseek-v2-2024-06-28</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2-2024-06-28</summary>
-        public const string DeepseekDeepseekV220240628 = "deepseek/deepseek-v2-2024-06-28";
-        /// <summary>Model ID: <c>deepseek/deepseek-v2.5-2024-09-05</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2.5-2024-09-05</summary>
-        public const string DeepseekDeepseekV2520240905 = "deepseek/deepseek-v2.5-2024-09-05";
-        /// <summary>Model ID: <c>deepseek/deepseek-v2.5-2024-12-10</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v2.5-2024-12-10</summary>
-        public const string DeepseekDeepseekV2520241210 = "deepseek/deepseek-v2.5-2024-12-10";
-        /// <summary>Model ID: <c>deepseek/deepseek-v3-2024-12-26</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-2024-12-26</summary>
-        public const string DeepseekDeepseekV320241226 = "deepseek/deepseek-v3-2024-12-26";
-        /// <summary>Model ID: <c>deepseek/deepseek-v3-2025-03-24</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-2025-03-24</summary>
-        public const string DeepseekDeepseekV320250324 = "deepseek/deepseek-v3-2025-03-24";
+        /// <summary>Model ID: <c>deepseek/deepseek-prover-v2-671b</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-prover-v2-671b</summary>
+        public const string DeepseekDeepseekProverV2671b = "deepseek/deepseek-prover-v2-671b";
+        /// <summary>Model ID: <c>deepseek/deepseek-r1-0528</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-0528</summary>
+        public const string DeepseekDeepseekR10528 = "deepseek/deepseek-r1-0528";
+        /// <summary>Model ID: <c>deepseek/deepseek-r1-turbo</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-r1-turbo</summary>
+        public const string DeepseekDeepseekR1Turbo = "deepseek/deepseek-r1-turbo";
+        /// <summary>Model ID: <c>deepseek/deepseek-v3</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3</summary>
+        public const string DeepseekDeepseekV3 = "deepseek/deepseek-v3";
+        /// <summary>Model ID: <c>deepseek/deepseek-v3-0324</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-0324</summary>
+        public const string DeepseekDeepseekV30324 = "deepseek/deepseek-v3-0324";
+        /// <summary>Model ID: <c>deepseek/deepseek-v3-turbo</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3-turbo</summary>
+        public const string DeepseekDeepseekV3Turbo = "deepseek/deepseek-v3-turbo";
         /// <summary>Model ID: <c>deepseek/deepseek-v3.1</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.1</summary>
         public const string DeepseekDeepseekV31 = "deepseek/deepseek-v3.1";
         /// <summary>Model ID: <c>deepseek/deepseek-v3.1-terminus</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.1-terminus</summary>
@@ -296,140 +116,28 @@ namespace AiStatsSdk
         public const string DeepseekDeepseekV32Exp = "deepseek/deepseek-v3.2-exp";
         /// <summary>Model ID: <c>deepseek/deepseek-v3.2-speciale</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale</summary>
         public const string DeepseekDeepseekV32Speciale = "deepseek/deepseek-v3.2-speciale";
-        /// <summary>Model ID: <c>deepseek/deepseek-v4</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4</summary>
-        public const string DeepseekDeepseekV4 = "deepseek/deepseek-v4";
-        /// <summary>Model ID: <c>deepseek/deepseek-vl2</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2</summary>
-        public const string DeepseekDeepseekVl2 = "deepseek/deepseek-vl2";
-        /// <summary>Model ID: <c>deepseek/deepseek-vl2-small</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2-small</summary>
-        public const string DeepseekDeepseekVl2Small = "deepseek/deepseek-vl2-small";
-        /// <summary>Model ID: <c>deepseek/deepseek-vl2-tiny</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2-tiny</summary>
-        public const string DeepseekDeepseekVl2Tiny = "deepseek/deepseek-vl2-tiny";
-        /// <summary>Model ID: <c>eleven-labs/eleven-english-sts-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-english-sts-v2</summary>
-        public const string ElevenLabsElevenEnglishStsV2 = "eleven-labs/eleven-english-sts-v2";
-        /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2</summary>
-        public const string ElevenLabsElevenFlashV2 = "eleven-labs/eleven-flash-v2";
-        /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2.5</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2.5</summary>
-        public const string ElevenLabsElevenFlashV25 = "eleven-labs/eleven-flash-v2.5";
-        /// <summary>Model ID: <c>eleven-labs/eleven-monolingual-v1</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-monolingual-v1</summary>
-        public const string ElevenLabsElevenMonolingualV1 = "eleven-labs/eleven-monolingual-v1";
-        /// <summary>Model ID: <c>eleven-labs/eleven-multilingual-sts-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-sts-v2</summary>
-        public const string ElevenLabsElevenMultilingualStsV2 = "eleven-labs/eleven-multilingual-sts-v2";
-        /// <summary>Model ID: <c>eleven-labs/eleven-multilingual-ttv-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-ttv-v2</summary>
-        public const string ElevenLabsElevenMultilingualTtvV2 = "eleven-labs/eleven-multilingual-ttv-v2";
-        /// <summary>Model ID: <c>eleven-labs/eleven-multilingual-v1</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v1</summary>
-        public const string ElevenLabsElevenMultilingualV1 = "eleven-labs/eleven-multilingual-v1";
-        /// <summary>Model ID: <c>eleven-labs/eleven-multilingual-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v2</summary>
-        public const string ElevenLabsElevenMultilingualV2 = "eleven-labs/eleven-multilingual-v2";
-        /// <summary>Model ID: <c>eleven-labs/eleven-ttv-v3</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-ttv-v3</summary>
-        public const string ElevenLabsElevenTtvV3 = "eleven-labs/eleven-ttv-v3";
-        /// <summary>Model ID: <c>eleven-labs/eleven-turbo-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2</summary>
-        public const string ElevenLabsElevenTurboV2 = "eleven-labs/eleven-turbo-v2";
-        /// <summary>Model ID: <c>eleven-labs/eleven-turbo-v2.5</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2.5</summary>
-        public const string ElevenLabsElevenTurboV25 = "eleven-labs/eleven-turbo-v2.5";
-        /// <summary>Model ID: <c>eleven-labs/eleven-v3</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-v3</summary>
-        public const string ElevenLabsElevenV3 = "eleven-labs/eleven-v3";
-        /// <summary>Model ID: <c>eleven-labs/scribe-v1</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/scribe-v1</summary>
-        public const string ElevenLabsScribeV1 = "eleven-labs/scribe-v1";
-        /// <summary>Model ID: <c>eleven-labs/scribe-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/scribe-v2</summary>
-        public const string ElevenLabsScribeV2 = "eleven-labs/scribe-v2";
-        /// <summary>Model ID: <c>eleven-labs/scribe-v2-realtime</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/scribe-v2-realtime</summary>
-        public const string ElevenLabsScribeV2Realtime = "eleven-labs/scribe-v2-realtime";
-        /// <summary>Model ID: <c>essential-ai/rnj-1</c>. Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1</summary>
-        public const string EssentialAiRnj1 = "essential-ai/rnj-1";
-        /// <summary>Model ID: <c>google/chat-bison</c>. Model page: https://ai-stats.phaseo.app/models/google/chat-bison</summary>
-        public const string GoogleChatBison = "google/chat-bison";
-        /// <summary>Model ID: <c>google/code-gecko</c>. Model page: https://ai-stats.phaseo.app/models/google/code-gecko</summary>
-        public const string GoogleCodeGecko = "google/code-gecko";
-        /// <summary>Model ID: <c>google/embedding-001</c>. Model page: https://ai-stats.phaseo.app/models/google/embedding-001</summary>
-        public const string GoogleEmbedding001 = "google/embedding-001";
-        /// <summary>Model ID: <c>google/gemini-1.0-nano</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-nano</summary>
-        public const string GoogleGemini10Nano = "google/gemini-1.0-nano";
-        /// <summary>Model ID: <c>google/gemini-1.0-pro</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-pro</summary>
-        public const string GoogleGemini10Pro = "google/gemini-1.0-pro";
-        /// <summary>Model ID: <c>google/gemini-1.0-pro-vision-001</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-pro-vision-001</summary>
-        public const string GoogleGemini10ProVision001 = "google/gemini-1.0-pro-vision-001";
-        /// <summary>Model ID: <c>google/gemini-1.0-ultra</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.0-ultra</summary>
-        public const string GoogleGemini10Ultra = "google/gemini-1.0-ultra";
-        /// <summary>Model ID: <c>google/gemini-1.5-flash-001</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-001</summary>
-        public const string GoogleGemini15Flash001 = "google/gemini-1.5-flash-001";
-        /// <summary>Model ID: <c>google/gemini-1.5-flash-002</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-002</summary>
-        public const string GoogleGemini15Flash002 = "google/gemini-1.5-flash-002";
-        /// <summary>Model ID: <c>google/gemini-1.5-flash-8b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-8b</summary>
-        public const string GoogleGemini15Flash8b = "google/gemini-1.5-flash-8b";
-        /// <summary>Model ID: <c>google/gemini-1.5-flash-8b-exp-2024-08-27</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-8b-exp-2024-08-27</summary>
-        public const string GoogleGemini15Flash8bExp20240827 = "google/gemini-1.5-flash-8b-exp-2024-08-27";
-        /// <summary>Model ID: <c>google/gemini-1.5-flash-8b-exp-2024-09-24</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-8b-exp-2024-09-24</summary>
-        public const string GoogleGemini15Flash8bExp20240924 = "google/gemini-1.5-flash-8b-exp-2024-09-24";
-        /// <summary>Model ID: <c>google/gemini-1.5-flash-preview-2024-05-14</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-flash-preview-2024-05-14</summary>
-        public const string GoogleGemini15FlashPreview20240514 = "google/gemini-1.5-flash-preview-2024-05-14";
-        /// <summary>Model ID: <c>google/gemini-1.5-pro-001</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-001</summary>
-        public const string GoogleGemini15Pro001 = "google/gemini-1.5-pro-001";
-        /// <summary>Model ID: <c>google/gemini-1.5-pro-002</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-002</summary>
-        public const string GoogleGemini15Pro002 = "google/gemini-1.5-pro-002";
-        /// <summary>Model ID: <c>google/gemini-1.5-pro-exp-2024-08-01</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-exp-2024-08-01</summary>
-        public const string GoogleGemini15ProExp20240801 = "google/gemini-1.5-pro-exp-2024-08-01";
-        /// <summary>Model ID: <c>google/gemini-1.5-pro-exp-2024-08-27</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-1.5-pro-exp-2024-08-27</summary>
-        public const string GoogleGemini15ProExp20240827 = "google/gemini-1.5-pro-exp-2024-08-27";
+        /// <summary>Model ID: <c>deepseek/deepseek-v3.2-thinking</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-thinking</summary>
+        public const string DeepseekDeepseekV32Thinking = "deepseek/deepseek-v3.2-thinking";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4-flash</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash</summary>
+        public const string DeepseekDeepseekV4Flash = "deepseek/deepseek-v4-flash";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4-pro</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro</summary>
+        public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
+        /// <summary>Model ID: <c>google/embeddinggemma-300m</c>. Model page: https://ai-stats.phaseo.app/models/google/embeddinggemma-300m</summary>
+        public const string GoogleEmbeddinggemma300m = "google/embeddinggemma-300m";
         /// <summary>Model ID: <c>google/gemini-2.0-flash</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash</summary>
         public const string GoogleGemini20Flash = "google/gemini-2.0-flash";
-        /// <summary>Model ID: <c>google/gemini-2.0-flash-exp</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-exp</summary>
-        public const string GoogleGemini20FlashExp = "google/gemini-2.0-flash-exp";
-        /// <summary>Model ID: <c>google/gemini-2.0-flash-exp-image-generation</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-exp-image-generation</summary>
-        public const string GoogleGemini20FlashExpImageGeneration = "google/gemini-2.0-flash-exp-image-generation";
         /// <summary>Model ID: <c>google/gemini-2.0-flash-lite</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite</summary>
         public const string GoogleGemini20FlashLite = "google/gemini-2.0-flash-lite";
-        /// <summary>Model ID: <c>google/gemini-2.0-flash-live-001</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-live-001</summary>
-        public const string GoogleGemini20FlashLive001 = "google/gemini-2.0-flash-live-001";
-        /// <summary>Model ID: <c>google/gemini-2.0-flash-preview-image-generation</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-preview-image-generation</summary>
-        public const string GoogleGemini20FlashPreviewImageGeneration = "google/gemini-2.0-flash-preview-image-generation";
-        /// <summary>Model ID: <c>google/gemini-2.0-flash-thinking-exp-2024-12-19</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-thinking-exp-2024-12-19</summary>
-        public const string GoogleGemini20FlashThinkingExp20241219 = "google/gemini-2.0-flash-thinking-exp-2024-12-19";
-        /// <summary>Model ID: <c>google/gemini-2.0-flash-thinking-exp-2025-01-21</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-thinking-exp-2025-01-21</summary>
-        public const string GoogleGemini20FlashThinkingExp20250121 = "google/gemini-2.0-flash-thinking-exp-2025-01-21";
-        /// <summary>Model ID: <c>google/gemini-2.0-pro-exp</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-pro-exp</summary>
-        public const string GoogleGemini20ProExp = "google/gemini-2.0-pro-exp";
-        /// <summary>Model ID: <c>google/gemini-2.5-computer-use-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-computer-use-preview</summary>
-        public const string GoogleGemini25ComputerUsePreview = "google/gemini-2.5-computer-use-preview";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-exp-native-audio-thinking-dialog</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-exp-native-audio-thinking-dialog</summary>
-        public const string GoogleGemini25FlashExpNativeAudioThinkingDialog = "google/gemini-2.5-flash-exp-native-audio-thinking-dialog";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image</summary>
         public const string GoogleGemini25FlashImage = "google/gemini-2.5-flash-image";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image-preview</summary>
-        public const string GoogleGemini25FlashImagePreview = "google/gemini-2.5-flash-image-preview";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-lite-preview-2025-06-17</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17</summary>
         public const string GoogleGemini25FlashLitePreview20250617 = "google/gemini-2.5-flash-lite-preview-2025-06-17";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-lite-preview-2025-09-25</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25</summary>
         public const string GoogleGemini25FlashLitePreview20250925 = "google/gemini-2.5-flash-lite-preview-2025-09-25";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-native-audio-preview-2025-09-03</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-native-audio-preview-2025-09-03</summary>
-        public const string GoogleGemini25FlashNativeAudioPreview20250903 = "google/gemini-2.5-flash-native-audio-preview-2025-09-03";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-preview-2025-04-17</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-2025-04-17</summary>
-        public const string GoogleGemini25FlashPreview20250417 = "google/gemini-2.5-flash-preview-2025-04-17";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-preview-2025-05-20</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-2025-05-20</summary>
-        public const string GoogleGemini25FlashPreview20250520 = "google/gemini-2.5-flash-preview-2025-05-20";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-preview-2025-09-25</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-2025-09-25</summary>
-        public const string GoogleGemini25FlashPreview20250925 = "google/gemini-2.5-flash-preview-2025-09-25";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-preview-native-audio-dialog</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-native-audio-dialog</summary>
-        public const string GoogleGemini25FlashPreviewNativeAudioDialog = "google/gemini-2.5-flash-preview-native-audio-dialog";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-preview-tts-2025-05-20</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-tts-2025-05-20</summary>
-        public const string GoogleGemini25FlashPreviewTts20250520 = "google/gemini-2.5-flash-preview-tts-2025-05-20";
-        /// <summary>Model ID: <c>google/gemini-2.5-flash-preview-tts-2025-12-10</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-preview-tts-2025-12-10</summary>
-        public const string GoogleGemini25FlashPreviewTts20251210 = "google/gemini-2.5-flash-preview-tts-2025-12-10";
-        /// <summary>Model ID: <c>google/gemini-2.5-pro-experimental-2025-03-25</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-experimental-2025-03-25</summary>
-        public const string GoogleGemini25ProExperimental20250325 = "google/gemini-2.5-pro-experimental-2025-03-25";
-        /// <summary>Model ID: <c>google/gemini-2.5-pro-preview-2025-05-06</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-2025-05-06</summary>
-        public const string GoogleGemini25ProPreview20250506 = "google/gemini-2.5-pro-preview-2025-05-06";
-        /// <summary>Model ID: <c>google/gemini-2.5-pro-preview-2025-06-05</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-2025-06-05</summary>
-        public const string GoogleGemini25ProPreview20250605 = "google/gemini-2.5-pro-preview-2025-06-05";
-        /// <summary>Model ID: <c>google/gemini-2.5-pro-preview-tts</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-tts</summary>
-        public const string GoogleGemini25ProPreviewTts = "google/gemini-2.5-pro-preview-tts";
-        /// <summary>Model ID: <c>google/gemini-2.5-pro-preview-tts-2025-05-20</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro-preview-tts-2025-05-20</summary>
-        public const string GoogleGemini25ProPreviewTts20250520 = "google/gemini-2.5-pro-preview-tts-2025-05-20";
         /// <summary>Model ID: <c>google/gemini-3-flash-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview</summary>
         public const string GoogleGemini3FlashPreview = "google/gemini-3-flash-preview";
         /// <summary>Model ID: <c>google/gemini-3-pro-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview</summary>
         public const string GoogleGemini3ProImagePreview = "google/gemini-3-pro-image-preview";
-        /// <summary>Model ID: <c>google/gemini-3-pro-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-preview</summary>
-        public const string GoogleGemini3ProPreview = "google/gemini-3-pro-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview</summary>
         public const string GoogleGemini31FlashImagePreview = "google/gemini-3.1-flash-image-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-lite-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-preview</summary>
@@ -440,462 +148,130 @@ namespace AiStatsSdk
         public const string GoogleGemini31ProPreview = "google/gemini-3.1-pro-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-pro-preview-customtools</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-pro-preview-customtools</summary>
         public const string GoogleGemini31ProPreviewCustomtools = "google/gemini-3.1-pro-preview-customtools";
-        /// <summary>Model ID: <c>google/gemini-diffusion</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-diffusion</summary>
-        public const string GoogleGeminiDiffusion = "google/gemini-diffusion";
         /// <summary>Model ID: <c>google/gemini-embedding-001</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-001</summary>
         public const string GoogleGeminiEmbedding001 = "google/gemini-embedding-001";
+        /// <summary>Model ID: <c>google/gemini-embedding-2</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-2</summary>
+        public const string GoogleGeminiEmbedding2 = "google/gemini-embedding-2";
         /// <summary>Model ID: <c>google/gemini-embedding-2-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-2-preview</summary>
         public const string GoogleGeminiEmbedding2Preview = "google/gemini-embedding-2-preview";
-        /// <summary>Model ID: <c>google/gemini-embedding-exp-0307</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-exp-0307</summary>
-        public const string GoogleGeminiEmbeddingExp0307 = "google/gemini-embedding-exp-0307";
-        /// <summary>Model ID: <c>google/gemini-exp-1114</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-exp-1114</summary>
-        public const string GoogleGeminiExp1114 = "google/gemini-exp-1114";
-        /// <summary>Model ID: <c>google/gemini-exp-1121</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-exp-1121</summary>
-        public const string GoogleGeminiExp1121 = "google/gemini-exp-1121";
-        /// <summary>Model ID: <c>google/gemini-exp-1206</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-exp-1206</summary>
-        public const string GoogleGeminiExp1206 = "google/gemini-exp-1206";
-        /// <summary>Model ID: <c>google/gemini-live-2.5-flash-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-live-2.5-flash-preview</summary>
-        public const string GoogleGeminiLive25FlashPreview = "google/gemini-live-2.5-flash-preview";
-        /// <summary>Model ID: <c>google/gemini-robotics-er-1.5-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-robotics-er-1.5-preview</summary>
-        public const string GoogleGeminiRoboticsEr15Preview = "google/gemini-robotics-er-1.5-preview";
-        /// <summary>Model ID: <c>google/gemma-1-2b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-1-2b</summary>
-        public const string GoogleGemma12b = "google/gemma-1-2b";
-        /// <summary>Model ID: <c>google/gemma-1-7b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-1-7b</summary>
-        public const string GoogleGemma17b = "google/gemma-1-7b";
-        /// <summary>Model ID: <c>google/gemma-2-27b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-2-27b</summary>
-        public const string GoogleGemma227b = "google/gemma-2-27b";
-        /// <summary>Model ID: <c>google/gemma-2-2b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-2-2b</summary>
-        public const string GoogleGemma22b = "google/gemma-2-2b";
-        /// <summary>Model ID: <c>google/gemma-2-9b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-2-9b</summary>
-        public const string GoogleGemma29b = "google/gemma-2-9b";
+        /// <summary>Model ID: <c>google/gemini-robotics-er-1.6-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-robotics-er-1.6-preview</summary>
+        public const string GoogleGeminiRoboticsEr16Preview = "google/gemini-robotics-er-1.6-preview";
         /// <summary>Model ID: <c>google/gemma-3-12b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-12b</summary>
         public const string GoogleGemma312b = "google/gemma-3-12b";
-        /// <summary>Model ID: <c>google/gemma-3-1b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-1b</summary>
-        public const string GoogleGemma31b = "google/gemma-3-1b";
+        /// <summary>Model ID: <c>google/gemma-3-12b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-12b%3Afree</summary>
+        public const string GoogleGemma312bFree = "google/gemma-3-12b:free";
+        /// <summary>Model ID: <c>google/gemma-3-1b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-1b%3Afree</summary>
+        public const string GoogleGemma31bFree = "google/gemma-3-1b:free";
         /// <summary>Model ID: <c>google/gemma-3-27b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b</summary>
         public const string GoogleGemma327b = "google/gemma-3-27b";
+        /// <summary>Model ID: <c>google/gemma-3-27b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b%3Afree</summary>
+        public const string GoogleGemma327bFree = "google/gemma-3-27b:free";
         /// <summary>Model ID: <c>google/gemma-3-4b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-4b</summary>
         public const string GoogleGemma34b = "google/gemma-3-4b";
-        /// <summary>Model ID: <c>google/gemma-3n-e2b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e2b</summary>
-        public const string GoogleGemma3nE2b = "google/gemma-3n-e2b";
-        /// <summary>Model ID: <c>google/gemma-3n-e4b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b</summary>
-        public const string GoogleGemma3nE4b = "google/gemma-3n-e4b";
+        /// <summary>Model ID: <c>google/gemma-3-4b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-4b%3Afree</summary>
+        public const string GoogleGemma34bFree = "google/gemma-3-4b:free";
+        /// <summary>Model ID: <c>google/gemma-3n-e2b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e2b%3Afree</summary>
+        public const string GoogleGemma3nE2bFree = "google/gemma-3n-e2b:free";
+        /// <summary>Model ID: <c>google/gemma-3n-e4b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b%3Afree</summary>
+        public const string GoogleGemma3nE4bFree = "google/gemma-3n-e4b:free";
         /// <summary>Model ID: <c>google/gemma-4-26b-a4b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b</summary>
         public const string GoogleGemma426bA4b = "google/gemma-4-26b-a4b";
+        /// <summary>Model ID: <c>google/gemma-4-26b-a4b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b%3Afree</summary>
+        public const string GoogleGemma426bA4bFree = "google/gemma-4-26b-a4b:free";
         /// <summary>Model ID: <c>google/gemma-4-31b</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b</summary>
         public const string GoogleGemma431b = "google/gemma-4-31b";
-        /// <summary>Model ID: <c>google/image-generation-002</c>. Model page: https://ai-stats.phaseo.app/models/google/image-generation-002</summary>
-        public const string GoogleImageGeneration002 = "google/image-generation-002";
-        /// <summary>Model ID: <c>google/image-generation-005</c>. Model page: https://ai-stats.phaseo.app/models/google/image-generation-005</summary>
-        public const string GoogleImageGeneration005 = "google/image-generation-005";
-        /// <summary>Model ID: <c>google/image-generation-006</c>. Model page: https://ai-stats.phaseo.app/models/google/image-generation-006</summary>
-        public const string GoogleImageGeneration006 = "google/image-generation-006";
-        /// <summary>Model ID: <c>google/image-text</c>. Model page: https://ai-stats.phaseo.app/models/google/image-text</summary>
-        public const string GoogleImageText = "google/image-text";
-        /// <summary>Model ID: <c>google/imagen-3.0-generate-001</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-3.0-generate-001</summary>
-        public const string GoogleImagen30Generate001 = "google/imagen-3.0-generate-001";
-        /// <summary>Model ID: <c>google/imagen-3.0-generate-002</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-3.0-generate-002</summary>
-        public const string GoogleImagen30Generate002 = "google/imagen-3.0-generate-002";
-        /// <summary>Model ID: <c>google/imagen-4.0-fast-generate-001</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-fast-generate-001</summary>
-        public const string GoogleImagen40FastGenerate001 = "google/imagen-4.0-fast-generate-001";
-        /// <summary>Model ID: <c>google/imagen-4.0-fast-generate-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-fast-generate-preview</summary>
-        public const string GoogleImagen40FastGeneratePreview = "google/imagen-4.0-fast-generate-preview";
-        /// <summary>Model ID: <c>google/imagen-4.0-generate-001</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-generate-001</summary>
-        public const string GoogleImagen40Generate001 = "google/imagen-4.0-generate-001";
-        /// <summary>Model ID: <c>google/imagen-4.0-generate-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-generate-preview</summary>
-        public const string GoogleImagen40GeneratePreview = "google/imagen-4.0-generate-preview";
-        /// <summary>Model ID: <c>google/imagen-4.0-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-preview</summary>
-        public const string GoogleImagen40Preview = "google/imagen-4.0-preview";
-        /// <summary>Model ID: <c>google/imagen-4.0-ultra-generate-001</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-ultra-generate-001</summary>
-        public const string GoogleImagen40UltraGenerate001 = "google/imagen-4.0-ultra-generate-001";
-        /// <summary>Model ID: <c>google/imagen-4.0-ultra-generate-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-ultra-generate-preview</summary>
-        public const string GoogleImagen40UltraGeneratePreview = "google/imagen-4.0-ultra-generate-preview";
-        /// <summary>Model ID: <c>google/imagen-4.0-ultra-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/imagen-4.0-ultra-preview</summary>
-        public const string GoogleImagen40UltraPreview = "google/imagen-4.0-ultra-preview";
-        /// <summary>Model ID: <c>google/learnlm-1.5-pro-experimental</c>. Model page: https://ai-stats.phaseo.app/models/google/learnlm-1.5-pro-experimental</summary>
-        public const string GoogleLearnlm15ProExperimental = "google/learnlm-1.5-pro-experimental";
-        /// <summary>Model ID: <c>google/learnlm-2.0-flash-experimental</c>. Model page: https://ai-stats.phaseo.app/models/google/learnlm-2.0-flash-experimental</summary>
-        public const string GoogleLearnlm20FlashExperimental = "google/learnlm-2.0-flash-experimental";
-        /// <summary>Model ID: <c>google/lyria-1</c>. Model page: https://ai-stats.phaseo.app/models/google/lyria-1</summary>
-        public const string GoogleLyria1 = "google/lyria-1";
-        /// <summary>Model ID: <c>google/lyria-2</c>. Model page: https://ai-stats.phaseo.app/models/google/lyria-2</summary>
-        public const string GoogleLyria2 = "google/lyria-2";
-        /// <summary>Model ID: <c>google/lyria-3</c>. Model page: https://ai-stats.phaseo.app/models/google/lyria-3</summary>
-        public const string GoogleLyria3 = "google/lyria-3";
-        /// <summary>Model ID: <c>google/medgemma-1.5-4b</c>. Model page: https://ai-stats.phaseo.app/models/google/medgemma-1.5-4b</summary>
-        public const string GoogleMedgemma154b = "google/medgemma-1.5-4b";
-        /// <summary>Model ID: <c>google/multimodal-embedding-001</c>. Model page: https://ai-stats.phaseo.app/models/google/multimodal-embedding-001</summary>
-        public const string GoogleMultimodalEmbedding001 = "google/multimodal-embedding-001";
-        /// <summary>Model ID: <c>google/text-bison</c>. Model page: https://ai-stats.phaseo.app/models/google/text-bison</summary>
-        public const string GoogleTextBison = "google/text-bison";
-        /// <summary>Model ID: <c>google/text-embedding-004</c>. Model page: https://ai-stats.phaseo.app/models/google/text-embedding-004</summary>
-        public const string GoogleTextEmbedding004 = "google/text-embedding-004";
-        /// <summary>Model ID: <c>google/text-embedding-005</c>. Model page: https://ai-stats.phaseo.app/models/google/text-embedding-005</summary>
-        public const string GoogleTextEmbedding005 = "google/text-embedding-005";
-        /// <summary>Model ID: <c>google/text-embedding-gecko-001</c>. Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-001</summary>
-        public const string GoogleTextEmbeddingGecko001 = "google/text-embedding-gecko-001";
-        /// <summary>Model ID: <c>google/text-embedding-gecko-002</c>. Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-002</summary>
-        public const string GoogleTextEmbeddingGecko002 = "google/text-embedding-gecko-002";
-        /// <summary>Model ID: <c>google/text-embedding-gecko-003</c>. Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-003</summary>
-        public const string GoogleTextEmbeddingGecko003 = "google/text-embedding-gecko-003";
-        /// <summary>Model ID: <c>google/text-embedding-gecko-multilingual-001</c>. Model page: https://ai-stats.phaseo.app/models/google/text-embedding-gecko-multilingual-001</summary>
-        public const string GoogleTextEmbeddingGeckoMultilingual001 = "google/text-embedding-gecko-multilingual-001";
-        /// <summary>Model ID: <c>google/text-multilingual-embedding-002</c>. Model page: https://ai-stats.phaseo.app/models/google/text-multilingual-embedding-002</summary>
-        public const string GoogleTextMultilingualEmbedding002 = "google/text-multilingual-embedding-002";
-        /// <summary>Model ID: <c>google/translategemma-12b</c>. Model page: https://ai-stats.phaseo.app/models/google/translategemma-12b</summary>
-        public const string GoogleTranslategemma12b = "google/translategemma-12b";
-        /// <summary>Model ID: <c>google/translategemma-27b</c>. Model page: https://ai-stats.phaseo.app/models/google/translategemma-27b</summary>
-        public const string GoogleTranslategemma27b = "google/translategemma-27b";
-        /// <summary>Model ID: <c>google/translategemma-4b</c>. Model page: https://ai-stats.phaseo.app/models/google/translategemma-4b</summary>
-        public const string GoogleTranslategemma4b = "google/translategemma-4b";
-        /// <summary>Model ID: <c>google/veo-2</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-2</summary>
-        public const string GoogleVeo2 = "google/veo-2";
-        /// <summary>Model ID: <c>google/veo-3</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3</summary>
-        public const string GoogleVeo3 = "google/veo-3";
-        /// <summary>Model ID: <c>google/veo-3-fast</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3-fast</summary>
-        public const string GoogleVeo3Fast = "google/veo-3-fast";
-        /// <summary>Model ID: <c>google/veo-3.0-fast-generate-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3.0-fast-generate-preview</summary>
-        public const string GoogleVeo30FastGeneratePreview = "google/veo-3.0-fast-generate-preview";
-        /// <summary>Model ID: <c>google/veo-3.0-generate-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3.0-generate-preview</summary>
-        public const string GoogleVeo30GeneratePreview = "google/veo-3.0-generate-preview";
-        /// <summary>Model ID: <c>google/veo-3.1-fast-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3.1-fast-preview</summary>
-        public const string GoogleVeo31FastPreview = "google/veo-3.1-fast-preview";
-        /// <summary>Model ID: <c>google/veo-3.1-lite-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3.1-lite-preview</summary>
-        public const string GoogleVeo31LitePreview = "google/veo-3.1-lite-preview";
-        /// <summary>Model ID: <c>google/veo-3.1-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3.1-preview</summary>
-        public const string GoogleVeo31Preview = "google/veo-3.1-preview";
-        /// <summary>Model ID: <c>google/veo-3.2</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-3.2</summary>
-        public const string GoogleVeo32 = "google/veo-3.2";
-        /// <summary>Model ID: <c>google/veo-4</c>. Model page: https://ai-stats.phaseo.app/models/google/veo-4</summary>
-        public const string GoogleVeo4 = "google/veo-4";
-        /// <summary>Model ID: <c>ibm/granite-20b-code-instruct-8k</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-20b-code-instruct-8k</summary>
-        public const string IbmGranite20bCodeInstruct8k = "ibm/granite-20b-code-instruct-8k";
-        /// <summary>Model ID: <c>ibm/granite-3.0-1b-a400m-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-1b-a400m-instruct</summary>
-        public const string IbmGranite301bA400mInstruct = "ibm/granite-3.0-1b-a400m-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.0-2b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-2b-instruct</summary>
-        public const string IbmGranite302bInstruct = "ibm/granite-3.0-2b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.0-3b-a800m-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-3b-a800m-instruct</summary>
-        public const string IbmGranite303bA800mInstruct = "ibm/granite-3.0-3b-a800m-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.0-8b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.0-8b-instruct</summary>
-        public const string IbmGranite308bInstruct = "ibm/granite-3.0-8b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.1-1b-a400m-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-1b-a400m-instruct</summary>
-        public const string IbmGranite311bA400mInstruct = "ibm/granite-3.1-1b-a400m-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.1-2b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-2b-instruct</summary>
-        public const string IbmGranite312bInstruct = "ibm/granite-3.1-2b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.1-3b-a800m-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-3b-a800m-instruct</summary>
-        public const string IbmGranite313bA800mInstruct = "ibm/granite-3.1-3b-a800m-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.1-8b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.1-8b-instruct</summary>
-        public const string IbmGranite318bInstruct = "ibm/granite-3.1-8b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.2-2b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.2-2b-instruct</summary>
-        public const string IbmGranite322bInstruct = "ibm/granite-3.2-2b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.2-8b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.2-8b-instruct</summary>
-        public const string IbmGranite328bInstruct = "ibm/granite-3.2-8b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.2-8b-instruct-preview</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.2-8b-instruct-preview</summary>
-        public const string IbmGranite328bInstructPreview = "ibm/granite-3.2-8b-instruct-preview";
-        /// <summary>Model ID: <c>ibm/granite-3.3-2b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.3-2b-instruct</summary>
-        public const string IbmGranite332bInstruct = "ibm/granite-3.3-2b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-3.3-8b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3.3-8b-instruct</summary>
-        public const string IbmGranite338bInstruct = "ibm/granite-3.3-8b-instruct";
-        /// <summary>Model ID: <c>ibm/granite-34b-code-instruct-8b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-34b-code-instruct-8b</summary>
-        public const string IbmGranite34bCodeInstruct8b = "ibm/granite-34b-code-instruct-8b";
-        /// <summary>Model ID: <c>ibm/granite-3b-code-instruct-128k</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3b-code-instruct-128k</summary>
-        public const string IbmGranite3bCodeInstruct128k = "ibm/granite-3b-code-instruct-128k";
-        /// <summary>Model ID: <c>ibm/granite-3b-code-instruct-2k</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-3b-code-instruct-2k</summary>
-        public const string IbmGranite3bCodeInstruct2k = "ibm/granite-3b-code-instruct-2k";
-        /// <summary>Model ID: <c>ibm/granite-4.0-micro</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-micro</summary>
-        public const string IbmGranite40Micro = "ibm/granite-4.0-micro";
-        /// <summary>Model ID: <c>ibm/granite-4.0-small</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-small</summary>
-        public const string IbmGranite40Small = "ibm/granite-4.0-small";
-        /// <summary>Model ID: <c>ibm/granite-4.0-tiny</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-tiny</summary>
-        public const string IbmGranite40Tiny = "ibm/granite-4.0-tiny";
-        /// <summary>Model ID: <c>ibm/granite-4.0-tiny-preview</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-4.0-tiny-preview</summary>
-        public const string IbmGranite40TinyPreview = "ibm/granite-4.0-tiny-preview";
-        /// <summary>Model ID: <c>ibm/granite-8b-code-instruct-128k</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-8b-code-instruct-128k</summary>
-        public const string IbmGranite8bCodeInstruct128k = "ibm/granite-8b-code-instruct-128k";
-        /// <summary>Model ID: <c>ibm/granite-8b-code-instruct-4k</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-8b-code-instruct-4k</summary>
-        public const string IbmGranite8bCodeInstruct4k = "ibm/granite-8b-code-instruct-4k";
-        /// <summary>Model ID: <c>ibm/granite-embedding-107m-multilingual</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-107m-multilingual</summary>
-        public const string IbmGraniteEmbedding107mMultilingual = "ibm/granite-embedding-107m-multilingual";
-        /// <summary>Model ID: <c>ibm/granite-embedding-125m-english</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-125m-english</summary>
-        public const string IbmGraniteEmbedding125mEnglish = "ibm/granite-embedding-125m-english";
-        /// <summary>Model ID: <c>ibm/granite-embedding-278m-multilingual</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-278m-multilingual</summary>
-        public const string IbmGraniteEmbedding278mMultilingual = "ibm/granite-embedding-278m-multilingual";
-        /// <summary>Model ID: <c>ibm/granite-embedding-30m-english</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-30m-english</summary>
-        public const string IbmGraniteEmbedding30mEnglish = "ibm/granite-embedding-30m-english";
-        /// <summary>Model ID: <c>ibm/granite-embedding-english-r2</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-english-r2</summary>
-        public const string IbmGraniteEmbeddingEnglishR2 = "ibm/granite-embedding-english-r2";
-        /// <summary>Model ID: <c>ibm/granite-embedding-reranker-english-r2</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-reranker-english-r2</summary>
-        public const string IbmGraniteEmbeddingRerankerEnglishR2 = "ibm/granite-embedding-reranker-english-r2";
-        /// <summary>Model ID: <c>ibm/granite-embedding-small-english-r2</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-embedding-small-english-r2</summary>
-        public const string IbmGraniteEmbeddingSmallEnglishR2 = "ibm/granite-embedding-small-english-r2";
-        /// <summary>Model ID: <c>ibm/granite-guardian-3.0-2b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.0-2b</summary>
-        public const string IbmGraniteGuardian302b = "ibm/granite-guardian-3.0-2b";
-        /// <summary>Model ID: <c>ibm/granite-guardian-3.0-8b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.0-8b</summary>
-        public const string IbmGraniteGuardian308b = "ibm/granite-guardian-3.0-8b";
-        /// <summary>Model ID: <c>ibm/granite-guardian-3.1-2b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.1-2b</summary>
-        public const string IbmGraniteGuardian312b = "ibm/granite-guardian-3.1-2b";
-        /// <summary>Model ID: <c>ibm/granite-guardian-3.1-8b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.1-8b</summary>
-        public const string IbmGraniteGuardian318b = "ibm/granite-guardian-3.1-8b";
-        /// <summary>Model ID: <c>ibm/granite-guardian-3.2-5b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.2-5b</summary>
-        public const string IbmGraniteGuardian325b = "ibm/granite-guardian-3.2-5b";
-        /// <summary>Model ID: <c>ibm/granite-guardian-3.3-8b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-guardian-3.3-8b</summary>
-        public const string IbmGraniteGuardian338b = "ibm/granite-guardian-3.3-8b";
-        /// <summary>Model ID: <c>ibm/granite-speech-3.2-8b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-speech-3.2-8b</summary>
-        public const string IbmGraniteSpeech328b = "ibm/granite-speech-3.2-8b";
-        /// <summary>Model ID: <c>ibm/granite-speech-3.3-2b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-speech-3.3-2b</summary>
-        public const string IbmGraniteSpeech332b = "ibm/granite-speech-3.3-2b";
-        /// <summary>Model ID: <c>ibm/granite-speech-3.3-8b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-speech-3.3-8b</summary>
-        public const string IbmGraniteSpeech338b = "ibm/granite-speech-3.3-8b";
-        /// <summary>Model ID: <c>ibm/granite-vision-3.1-2b-preview</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.1-2b-preview</summary>
-        public const string IbmGraniteVision312bPreview = "ibm/granite-vision-3.1-2b-preview";
-        /// <summary>Model ID: <c>ibm/granite-vision-3.2-2b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.2-2b</summary>
-        public const string IbmGraniteVision322b = "ibm/granite-vision-3.2-2b";
-        /// <summary>Model ID: <c>ibm/granite-vision-3.3-2b</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.3-2b</summary>
-        public const string IbmGraniteVision332b = "ibm/granite-vision-3.3-2b";
-        /// <summary>Model ID: <c>ibm/granite-vision-3.3-2b-embedding</c>. Model page: https://ai-stats.phaseo.app/models/ibm/granite-vision-3.3-2b-embedding</summary>
-        public const string IbmGraniteVision332bEmbedding = "ibm/granite-vision-3.3-2b-embedding";
-        /// <summary>Model ID: <c>inception/mercury-2</c>. Model page: https://ai-stats.phaseo.app/models/inception/mercury-2</summary>
-        public const string InceptionMercury2 = "inception/mercury-2";
-        /// <summary>Model ID: <c>inclusionai/ring-1t-2.5</c>. Model page: https://ai-stats.phaseo.app/models/inclusionai/ring-1t-2.5</summary>
-        public const string InclusionaiRing1t25 = "inclusionai/ring-1t-2.5";
+        /// <summary>Model ID: <c>google/gemma-4-31b:free</c>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-31b%3Afree</summary>
+        public const string GoogleGemma431bFree = "google/gemma-4-31b:free";
+        /// <summary>Model ID: <c>google/lyria-3-clip-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/lyria-3-clip-preview</summary>
+        public const string GoogleLyria3ClipPreview = "google/lyria-3-clip-preview";
+        /// <summary>Model ID: <c>google/lyria-3-pro-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/lyria-3-pro-preview</summary>
+        public const string GoogleLyria3ProPreview = "google/lyria-3-pro-preview";
+        /// <summary>Model ID: <c>inclusionai/ling-2.6-1t</c>. Model page: https://ai-stats.phaseo.app/models/inclusionai/ling-2.6-1t</summary>
+        public const string InclusionaiLing261t = "inclusionai/ling-2.6-1t";
         /// <summary>Model ID: <c>kwaipilot/kat-coder-exp-72b-1010</c>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010</summary>
         public const string KwaipilotKatCoderExp72b1010 = "kwaipilot/kat-coder-exp-72b-1010";
         /// <summary>Model ID: <c>kwaipilot/kat-coder-pro</c>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro</summary>
         public const string KwaipilotKatCoderPro = "kwaipilot/kat-coder-pro";
+        /// <summary>Model ID: <c>kwaipilot/kat-coder-pro-v1</c>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v1</summary>
+        public const string KwaipilotKatCoderProV1 = "kwaipilot/kat-coder-pro-v1";
         /// <summary>Model ID: <c>kwaipilot/kat-coder-pro-v2</c>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2</summary>
         public const string KwaipilotKatCoderProV2 = "kwaipilot/kat-coder-pro-v2";
-        /// <summary>Model ID: <c>lg/exaone-3.0</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.0</summary>
-        public const string LgExaone30 = "lg/exaone-3.0";
-        /// <summary>Model ID: <c>lg/exaone-3.5-2.4b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.5-2.4b</summary>
-        public const string LgExaone3524b = "lg/exaone-3.5-2.4b";
-        /// <summary>Model ID: <c>lg/exaone-3.5-32b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.5-32b</summary>
-        public const string LgExaone3532b = "lg/exaone-3.5-32b";
-        /// <summary>Model ID: <c>lg/exaone-3.5-7.8b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-3.5-7.8b</summary>
-        public const string LgExaone3578b = "lg/exaone-3.5-7.8b";
-        /// <summary>Model ID: <c>lg/exaone-4.0-1.2b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-4.0-1.2b</summary>
-        public const string LgExaone4012b = "lg/exaone-4.0-1.2b";
-        /// <summary>Model ID: <c>lg/exaone-4.0-32b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-4.0-32b</summary>
-        public const string LgExaone4032b = "lg/exaone-4.0-32b";
-        /// <summary>Model ID: <c>lg/exaone-deep-2.4b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-deep-2.4b</summary>
-        public const string LgExaoneDeep24b = "lg/exaone-deep-2.4b";
-        /// <summary>Model ID: <c>lg/exaone-deep-32b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-deep-32b</summary>
-        public const string LgExaoneDeep32b = "lg/exaone-deep-32b";
-        /// <summary>Model ID: <c>lg/exaone-deep-7.8b</c>. Model page: https://ai-stats.phaseo.app/models/lg/exaone-deep-7.8b</summary>
-        public const string LgExaoneDeep78b = "lg/exaone-deep-7.8b";
-        /// <summary>Model ID: <c>lg/k-exaone</c>. Model page: https://ai-stats.phaseo.app/models/lg/k-exaone</summary>
-        public const string LgKExaone = "lg/k-exaone";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2-1.2b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-1.2b</summary>
-        public const string LiquidAiLfm212b = "liquid-ai/lfm-2-1.2b";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2-2.6b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-2.6b</summary>
-        public const string LiquidAiLfm226b = "liquid-ai/lfm-2-2.6b";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2-24b-a2b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b</summary>
-        public const string LiquidAiLfm224bA2b = "liquid-ai/lfm-2-24b-a2b";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2-350m</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-350m</summary>
-        public const string LiquidAiLfm2350m = "liquid-ai/lfm-2-350m";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2-700m</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-700m</summary>
-        public const string LiquidAiLfm2700m = "liquid-ai/lfm-2-700m";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2-8b-a1b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-8b-a1b</summary>
-        public const string LiquidAiLfm28bA1b = "liquid-ai/lfm-2-8b-a1b";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2.5-1.2b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-1.2b</summary>
-        public const string LiquidAiLfm2512b = "liquid-ai/lfm-2.5-1.2b";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2.5-1.2b-jp</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-1.2b-jp</summary>
-        public const string LiquidAiLfm2512bJp = "liquid-ai/lfm-2.5-1.2b-jp";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2.5-1.2b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-1.2b-thinking</summary>
-        public const string LiquidAiLfm2512bThinking = "liquid-ai/lfm-2.5-1.2b-thinking";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2.5-audio-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-audio-1.5b</summary>
-        public const string LiquidAiLfm25Audio15b = "liquid-ai/lfm-2.5-audio-1.5b";
-        /// <summary>Model ID: <c>liquid-ai/lfm-2.5-vl-1.6b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2.5-vl-1.6b</summary>
-        public const string LiquidAiLfm25Vl16b = "liquid-ai/lfm-2.5-vl-1.6b";
         /// <summary>Model ID: <c>meituan/longcat-flash-cat</c>. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat</summary>
         public const string MeituanLongcatFlashCat = "meituan/longcat-flash-cat";
-        /// <summary>Model ID: <c>meta/llama-2-13b-chat</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-2-13b-chat</summary>
-        public const string MetaLlama213bChat = "meta/llama-2-13b-chat";
-        /// <summary>Model ID: <c>meta/llama-2-70b-chat</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-2-70b-chat</summary>
-        public const string MetaLlama270bChat = "meta/llama-2-70b-chat";
-        /// <summary>Model ID: <c>meta/llama-2-7b-chat</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-2-7b-chat</summary>
-        public const string MetaLlama27bChat = "meta/llama-2-7b-chat";
         /// <summary>Model ID: <c>meta/llama-3-70b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b</summary>
         public const string MetaLlama370b = "meta/llama-3-70b";
         /// <summary>Model ID: <c>meta/llama-3-8b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-8b</summary>
         public const string MetaLlama38b = "meta/llama-3-8b";
-        /// <summary>Model ID: <c>meta/llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.1-405b</summary>
-        public const string MetaLlama31405b = "meta/llama-3.1-405b";
         /// <summary>Model ID: <c>meta/llama-3.1-70b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.1-70b</summary>
         public const string MetaLlama3170b = "meta/llama-3.1-70b";
         /// <summary>Model ID: <c>meta/llama-3.1-8b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.1-8b</summary>
         public const string MetaLlama318b = "meta/llama-3.1-8b";
-        /// <summary>Model ID: <c>meta/llama-3.2-11b-vision</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-11b-vision</summary>
-        public const string MetaLlama3211bVision = "meta/llama-3.2-11b-vision";
-        /// <summary>Model ID: <c>meta/llama-3.2-1b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-1b</summary>
-        public const string MetaLlama321b = "meta/llama-3.2-1b";
         /// <summary>Model ID: <c>meta/llama-3.2-3b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-3b</summary>
         public const string MetaLlama323b = "meta/llama-3.2-3b";
-        /// <summary>Model ID: <c>meta/llama-3.2-90b-vision</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.2-90b-vision</summary>
-        public const string MetaLlama3290bVision = "meta/llama-3.2-90b-vision";
         /// <summary>Model ID: <c>meta/llama-3.3-70b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3.3-70b</summary>
         public const string MetaLlama3370b = "meta/llama-3.3-70b";
         /// <summary>Model ID: <c>meta/llama-4-maverick</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-4-maverick</summary>
         public const string MetaLlama4Maverick = "meta/llama-4-maverick";
         /// <summary>Model ID: <c>meta/llama-4-scout</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-4-scout</summary>
         public const string MetaLlama4Scout = "meta/llama-4-scout";
-        /// <summary>Model ID: <c>microsoft/phi-1</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-1</summary>
-        public const string MicrosoftPhi1 = "microsoft/phi-1";
-        /// <summary>Model ID: <c>microsoft/phi-1.5</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-1.5</summary>
-        public const string MicrosoftPhi15 = "microsoft/phi-1.5";
-        /// <summary>Model ID: <c>microsoft/phi-2</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-2</summary>
-        public const string MicrosoftPhi2 = "microsoft/phi-2";
-        /// <summary>Model ID: <c>microsoft/phi-3-medium-128k-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-medium-128k-instruct</summary>
-        public const string MicrosoftPhi3Medium128kInstruct = "microsoft/phi-3-medium-128k-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3-medium-4k-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-medium-4k-instruct</summary>
-        public const string MicrosoftPhi3Medium4kInstruct = "microsoft/phi-3-medium-4k-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3-mini-128k-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-mini-128k-instruct</summary>
-        public const string MicrosoftPhi3Mini128kInstruct = "microsoft/phi-3-mini-128k-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3-small-128k-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-small-128k-instruct</summary>
-        public const string MicrosoftPhi3Small128kInstruct = "microsoft/phi-3-small-128k-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3-small-8k-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-small-8k-instruct</summary>
-        public const string MicrosoftPhi3Small8kInstruct = "microsoft/phi-3-small-8k-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3-vision-128k-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3-vision-128k-instruct</summary>
-        public const string MicrosoftPhi3Vision128kInstruct = "microsoft/phi-3-vision-128k-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3.5-mini-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3.5-mini-instruct</summary>
-        public const string MicrosoftPhi35MiniInstruct = "microsoft/phi-3.5-mini-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3.5-moe-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3.5-moe-instruct</summary>
-        public const string MicrosoftPhi35MoeInstruct = "microsoft/phi-3.5-moe-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-3.5-vision-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-3.5-vision-instruct</summary>
-        public const string MicrosoftPhi35VisionInstruct = "microsoft/phi-3.5-vision-instruct";
+        /// <summary>Model ID: <c>meta/llama-guard-4-12b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-guard-4-12b</summary>
+        public const string MetaLlamaGuard412b = "meta/llama-guard-4-12b";
+        /// <summary>Model ID: <c>meta/llama-prompt-guard-2-22m</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-prompt-guard-2-22m</summary>
+        public const string MetaLlamaPromptGuard222m = "meta/llama-prompt-guard-2-22m";
+        /// <summary>Model ID: <c>meta/llama-prompt-guard-2-86m</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-prompt-guard-2-86m</summary>
+        public const string MetaLlamaPromptGuard286m = "meta/llama-prompt-guard-2-86m";
         /// <summary>Model ID: <c>microsoft/phi-4</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4</summary>
         public const string MicrosoftPhi4 = "microsoft/phi-4";
         /// <summary>Model ID: <c>microsoft/phi-4-mini</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-mini</summary>
         public const string MicrosoftPhi4Mini = "microsoft/phi-4-mini";
-        /// <summary>Model ID: <c>microsoft/phi-4-mini-flash-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-mini-flash-reasoning</summary>
-        public const string MicrosoftPhi4MiniFlashReasoning = "microsoft/phi-4-mini-flash-reasoning";
-        /// <summary>Model ID: <c>microsoft/phi-4-mini-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-mini-reasoning</summary>
-        public const string MicrosoftPhi4MiniReasoning = "microsoft/phi-4-mini-reasoning";
-        /// <summary>Model ID: <c>microsoft/phi-4-multimodal-instruct</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-multimodal-instruct</summary>
-        public const string MicrosoftPhi4MultimodalInstruct = "microsoft/phi-4-multimodal-instruct";
-        /// <summary>Model ID: <c>microsoft/phi-4-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-reasoning</summary>
-        public const string MicrosoftPhi4Reasoning = "microsoft/phi-4-reasoning";
-        /// <summary>Model ID: <c>microsoft/phi-4-reasoning-plus</c>. Model page: https://ai-stats.phaseo.app/models/microsoft/phi-4-reasoning-plus</summary>
-        public const string MicrosoftPhi4ReasoningPlus = "microsoft/phi-4-reasoning-plus";
-        /// <summary>Model ID: <c>minimax/hailuo-02</c>. Model page: https://ai-stats.phaseo.app/models/minimax/hailuo-02</summary>
-        public const string MinimaxHailuo02 = "minimax/hailuo-02";
-        /// <summary>Model ID: <c>minimax/hailuo-2.3</c>. Model page: https://ai-stats.phaseo.app/models/minimax/hailuo-2.3</summary>
-        public const string MinimaxHailuo23 = "minimax/hailuo-2.3";
-        /// <summary>Model ID: <c>minimax/hailuo-2.3-fast</c>. Model page: https://ai-stats.phaseo.app/models/minimax/hailuo-2.3-fast</summary>
-        public const string MinimaxHailuo23Fast = "minimax/hailuo-2.3-fast";
-        /// <summary>Model ID: <c>minimax/i2v-01-director</c>. Model page: https://ai-stats.phaseo.app/models/minimax/i2v-01-director</summary>
-        public const string MinimaxI2v01Director = "minimax/i2v-01-director";
-        /// <summary>Model ID: <c>minimax/i2v-01-live</c>. Model page: https://ai-stats.phaseo.app/models/minimax/i2v-01-live</summary>
-        public const string MinimaxI2v01Live = "minimax/i2v-01-live";
-        /// <summary>Model ID: <c>minimax/image-01</c>. Model page: https://ai-stats.phaseo.app/models/minimax/image-01</summary>
-        public const string MinimaxImage01 = "minimax/image-01";
-        /// <summary>Model ID: <c>minimax/minimax-m1-40k</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m1-40k</summary>
-        public const string MinimaxMinimaxM140k = "minimax/minimax-m1-40k";
+        /// <summary>Model ID: <c>minimax/m2-her</c>. Model page: https://ai-stats.phaseo.app/models/minimax/m2-her</summary>
+        public const string MinimaxM2Her = "minimax/m2-her";
         /// <summary>Model ID: <c>minimax/minimax-m1-80k</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m1-80k</summary>
         public const string MinimaxMinimaxM180k = "minimax/minimax-m1-80k";
         /// <summary>Model ID: <c>minimax/minimax-m2</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2</summary>
         public const string MinimaxMinimaxM2 = "minimax/minimax-m2";
-        /// <summary>Model ID: <c>minimax/minimax-m2-her</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2-her</summary>
-        public const string MinimaxMinimaxM2Her = "minimax/minimax-m2-her";
         /// <summary>Model ID: <c>minimax/minimax-m2.1</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.1</summary>
         public const string MinimaxMinimaxM21 = "minimax/minimax-m2.1";
         /// <summary>Model ID: <c>minimax/minimax-m2.5</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.5</summary>
         public const string MinimaxMinimaxM25 = "minimax/minimax-m2.5";
+        /// <summary>Model ID: <c>minimax/minimax-m2.5-highspeed</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.5-highspeed</summary>
+        public const string MinimaxMinimaxM25Highspeed = "minimax/minimax-m2.5-highspeed";
         /// <summary>Model ID: <c>minimax/minimax-m2.7</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-m2.7</summary>
         public const string MinimaxMinimaxM27 = "minimax/minimax-m2.7";
-        /// <summary>Model ID: <c>minimax/minimax-text-01</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-text-01</summary>
-        public const string MinimaxMinimaxText01 = "minimax/minimax-text-01";
-        /// <summary>Model ID: <c>minimax/minimax-vl-01</c>. Model page: https://ai-stats.phaseo.app/models/minimax/minimax-vl-01</summary>
-        public const string MinimaxMinimaxVl01 = "minimax/minimax-vl-01";
-        /// <summary>Model ID: <c>minimax/music-1.5</c>. Model page: https://ai-stats.phaseo.app/models/minimax/music-1.5</summary>
-        public const string MinimaxMusic15 = "minimax/music-1.5";
-        /// <summary>Model ID: <c>minimax/music-2.0</c>. Model page: https://ai-stats.phaseo.app/models/minimax/music-2.0</summary>
-        public const string MinimaxMusic20 = "minimax/music-2.0";
-        /// <summary>Model ID: <c>minimax/music-2.5</c>. Model page: https://ai-stats.phaseo.app/models/minimax/music-2.5</summary>
-        public const string MinimaxMusic25 = "minimax/music-2.5";
         /// <summary>Model ID: <c>minimax/music-2.6</c>. Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6</summary>
         public const string MinimaxMusic26 = "minimax/music-2.6";
-        /// <summary>Model ID: <c>minimax/s2v-01</c>. Model page: https://ai-stats.phaseo.app/models/minimax/s2v-01</summary>
-        public const string MinimaxS2v01 = "minimax/s2v-01";
-        /// <summary>Model ID: <c>minimax/speech-01-hd</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-01-hd</summary>
-        public const string MinimaxSpeech01Hd = "minimax/speech-01-hd";
-        /// <summary>Model ID: <c>minimax/speech-01-turbo</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-01-turbo</summary>
-        public const string MinimaxSpeech01Turbo = "minimax/speech-01-turbo";
-        /// <summary>Model ID: <c>minimax/speech-02-hd</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-02-hd</summary>
-        public const string MinimaxSpeech02Hd = "minimax/speech-02-hd";
-        /// <summary>Model ID: <c>minimax/speech-02-turbo</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-02-turbo</summary>
-        public const string MinimaxSpeech02Turbo = "minimax/speech-02-turbo";
-        /// <summary>Model ID: <c>minimax/speech-2.5-hd-preview</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-2.5-hd-preview</summary>
-        public const string MinimaxSpeech25HdPreview = "minimax/speech-2.5-hd-preview";
-        /// <summary>Model ID: <c>minimax/speech-2.5-turbo-preview</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-2.5-turbo-preview</summary>
-        public const string MinimaxSpeech25TurboPreview = "minimax/speech-2.5-turbo-preview";
-        /// <summary>Model ID: <c>minimax/speech-2.6</c>. Model page: https://ai-stats.phaseo.app/models/minimax/speech-2.6</summary>
-        public const string MinimaxSpeech26 = "minimax/speech-2.6";
-        /// <summary>Model ID: <c>minimax/t2v-01-director</c>. Model page: https://ai-stats.phaseo.app/models/minimax/t2v-01-director</summary>
-        public const string MinimaxT2v01Director = "minimax/t2v-01-director";
-        /// <summary>Model ID: <c>mistral/codestral</c>. Model page: https://ai-stats.phaseo.app/models/mistral/codestral</summary>
-        public const string MistralCodestral = "mistral/codestral";
-        /// <summary>Model ID: <c>mistral/codestral-2024-05-29</c>. Model page: https://ai-stats.phaseo.app/models/mistral/codestral-2024-05-29</summary>
-        public const string MistralCodestral20240529 = "mistral/codestral-2024-05-29";
-        /// <summary>Model ID: <c>mistral/codestral-2025-01-13</c>. Model page: https://ai-stats.phaseo.app/models/mistral/codestral-2025-01-13</summary>
-        public const string MistralCodestral20250113 = "mistral/codestral-2025-01-13";
+        /// <summary>Model ID: <c>minimax/music-2.6-free</c>. Model page: https://ai-stats.phaseo.app/models/minimax/music-2.6-free</summary>
+        public const string MinimaxMusic26Free = "minimax/music-2.6-free";
         /// <summary>Model ID: <c>mistral/codestral-embed</c>. Model page: https://ai-stats.phaseo.app/models/mistral/codestral-embed</summary>
         public const string MistralCodestralEmbed = "mistral/codestral-embed";
-        /// <summary>Model ID: <c>mistral/codestral-mamba-7b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/codestral-mamba-7b</summary>
-        public const string MistralCodestralMamba7b = "mistral/codestral-mamba-7b";
-        /// <summary>Model ID: <c>mistral/devstral-2.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-2.0</summary>
-        public const string MistralDevstral20 = "mistral/devstral-2.0";
+        /// <summary>Model ID: <c>mistral/devstral-2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-2</summary>
+        public const string MistralDevstral2 = "mistral/devstral-2";
         /// <summary>Model ID: <c>mistral/devstral-medium-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-medium-1.0</summary>
         public const string MistralDevstralMedium10 = "mistral/devstral-medium-1.0";
-        /// <summary>Model ID: <c>mistral/devstral-small-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.0</summary>
-        public const string MistralDevstralSmall10 = "mistral/devstral-small-1.0";
         /// <summary>Model ID: <c>mistral/devstral-small-1.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1</summary>
         public const string MistralDevstralSmall11 = "mistral/devstral-small-1.1";
-        /// <summary>Model ID: <c>mistral/devstral-small-2.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-2.0</summary>
-        public const string MistralDevstralSmall20 = "mistral/devstral-small-2.0";
-        /// <summary>Model ID: <c>mistral/leanstral</c>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral</summary>
-        public const string MistralLeanstral = "mistral/leanstral";
-        /// <summary>Model ID: <c>mistral/magistral-medium-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.0</summary>
-        public const string MistralMagistralMedium10 = "mistral/magistral-medium-1.0";
-        /// <summary>Model ID: <c>mistral/magistral-medium-1.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.1</summary>
-        public const string MistralMagistralMedium11 = "mistral/magistral-medium-1.1";
+        /// <summary>Model ID: <c>mistral/devstral-small-2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-2</summary>
+        public const string MistralDevstralSmall2 = "mistral/devstral-small-2";
+        /// <summary>Model ID: <c>mistral/leanstral:free</c>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral%3Afree</summary>
+        public const string MistralLeanstralFree = "mistral/leanstral:free";
         /// <summary>Model ID: <c>mistral/magistral-medium-1.2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2</summary>
         public const string MistralMagistralMedium12 = "mistral/magistral-medium-1.2";
-        /// <summary>Model ID: <c>mistral/magistral-small-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.0</summary>
-        public const string MistralMagistralSmall10 = "mistral/magistral-small-1.0";
-        /// <summary>Model ID: <c>mistral/magistral-small-1.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.1</summary>
-        public const string MistralMagistralSmall11 = "mistral/magistral-small-1.1";
         /// <summary>Model ID: <c>mistral/magistral-small-1.2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.2</summary>
         public const string MistralMagistralSmall12 = "mistral/magistral-small-1.2";
-        /// <summary>Model ID: <c>mistral/mathstral-7b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mathstral-7b</summary>
-        public const string MistralMathstral7b = "mistral/mathstral-7b";
-        /// <summary>Model ID: <c>mistral/ministral-3.0-14b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3.0-14b</summary>
-        public const string MistralMinistral3014b = "mistral/ministral-3.0-14b";
-        /// <summary>Model ID: <c>mistral/ministral-3.0-3b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3.0-3b</summary>
-        public const string MistralMinistral303b = "mistral/ministral-3.0-3b";
-        /// <summary>Model ID: <c>mistral/ministral-3.0-8b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3.0-8b</summary>
-        public const string MistralMinistral308b = "mistral/ministral-3.0-8b";
-        /// <summary>Model ID: <c>mistral/ministral-3b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3b</summary>
-        public const string MistralMinistral3b = "mistral/ministral-3b";
-        /// <summary>Model ID: <c>mistral/ministral-8b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-8b</summary>
-        public const string MistralMinistral8b = "mistral/ministral-8b";
-        /// <summary>Model ID: <c>mistral/mistral-7b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-7b</summary>
-        public const string MistralMistral7b = "mistral/mistral-7b";
-        /// <summary>Model ID: <c>mistral/mistral-7b-2023-09-27</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-7b-2023-09-27</summary>
-        public const string MistralMistral7b20230927 = "mistral/mistral-7b-2023-09-27";
-        /// <summary>Model ID: <c>mistral/mistral-7b-2023-12-11</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-7b-2023-12-11</summary>
-        public const string MistralMistral7b20231211 = "mistral/mistral-7b-2023-12-11";
+        /// <summary>Model ID: <c>mistral/ministral-3-14b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b</summary>
+        public const string MistralMinistral314b = "mistral/ministral-3-14b";
+        /// <summary>Model ID: <c>mistral/ministral-3-3b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-3b</summary>
+        public const string MistralMinistral33b = "mistral/ministral-3-3b";
+        /// <summary>Model ID: <c>mistral/ministral-3-8b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-8b</summary>
+        public const string MistralMinistral38b = "mistral/ministral-3-8b";
+        /// <summary>Model ID: <c>mistral/mistral-3.1-24b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-3.1-24b</summary>
+        public const string MistralMistral3124b = "mistral/mistral-3.1-24b";
         /// <summary>Model ID: <c>mistral/mistral-embed</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-embed</summary>
         public const string MistralMistralEmbed = "mistral/mistral-embed";
-        /// <summary>Model ID: <c>mistral/mistral-large-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-1.0</summary>
-        public const string MistralMistralLarge10 = "mistral/mistral-large-1.0";
-        /// <summary>Model ID: <c>mistral/mistral-large-2.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-2.0</summary>
-        public const string MistralMistralLarge20 = "mistral/mistral-large-2.0";
         /// <summary>Model ID: <c>mistral/mistral-large-2.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-2.1</summary>
         public const string MistralMistralLarge21 = "mistral/mistral-large-2.1";
-        /// <summary>Model ID: <c>mistral/mistral-large-3.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-3.0</summary>
-        public const string MistralMistralLarge30 = "mistral/mistral-large-3.0";
-        /// <summary>Model ID: <c>mistral/mistral-medium-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-medium-1.0</summary>
-        public const string MistralMistralMedium10 = "mistral/mistral-medium-1.0";
+        /// <summary>Model ID: <c>mistral/mistral-large-3</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-large-3</summary>
+        public const string MistralMistralLarge3 = "mistral/mistral-large-3";
         /// <summary>Model ID: <c>mistral/mistral-medium-3.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-medium-3.0</summary>
         public const string MistralMistralMedium30 = "mistral/mistral-medium-3.0";
         /// <summary>Model ID: <c>mistral/mistral-medium-3.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-medium-3.1</summary>
@@ -906,270 +282,106 @@ namespace AiStatsSdk
         public const string MistralMistralModeration2 = "mistral/mistral-moderation-2";
         /// <summary>Model ID: <c>mistral/mistral-nemo-12b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-nemo-12b</summary>
         public const string MistralMistralNemo12b = "mistral/mistral-nemo-12b";
-        /// <summary>Model ID: <c>mistral/mistral-ocr</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-ocr</summary>
-        public const string MistralMistralOcr = "mistral/mistral-ocr";
-        /// <summary>Model ID: <c>mistral/mistral-ocr-2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-ocr-2</summary>
-        public const string MistralMistralOcr2 = "mistral/mistral-ocr-2";
-        /// <summary>Model ID: <c>mistral/mistral-saba</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-saba</summary>
-        public const string MistralMistralSaba = "mistral/mistral-saba";
-        /// <summary>Model ID: <c>mistral/mistral-small-1.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-1.0</summary>
-        public const string MistralMistralSmall10 = "mistral/mistral-small-1.0";
-        /// <summary>Model ID: <c>mistral/mistral-small-2.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-2.0</summary>
-        public const string MistralMistralSmall20 = "mistral/mistral-small-2.0";
-        /// <summary>Model ID: <c>mistral/mistral-small-3.0</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-3.0</summary>
-        public const string MistralMistralSmall30 = "mistral/mistral-small-3.0";
-        /// <summary>Model ID: <c>mistral/mistral-small-3.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-3.1</summary>
-        public const string MistralMistralSmall31 = "mistral/mistral-small-3.1";
+        /// <summary>Model ID: <c>mistral/mistral-nemo-2407</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-nemo-2407</summary>
+        public const string MistralMistralNemo2407 = "mistral/mistral-nemo-2407";
+        /// <summary>Model ID: <c>mistral/mistral-small-24b-2501</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-24b-2501</summary>
+        public const string MistralMistralSmall24b2501 = "mistral/mistral-small-24b-2501";
         /// <summary>Model ID: <c>mistral/mistral-small-3.2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-3.2</summary>
         public const string MistralMistralSmall32 = "mistral/mistral-small-3.2";
         /// <summary>Model ID: <c>mistral/mistral-small-4</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-4</summary>
         public const string MistralMistralSmall4 = "mistral/mistral-small-4";
         /// <summary>Model ID: <c>mistral/mistral-small-creative</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-creative</summary>
         public const string MistralMistralSmallCreative = "mistral/mistral-small-creative";
-        /// <summary>Model ID: <c>mistral/mixtral-8x22b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mixtral-8x22b</summary>
-        public const string MistralMixtral8x22b = "mistral/mixtral-8x22b";
         /// <summary>Model ID: <c>mistral/mixtral-8x7b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/mixtral-8x7b</summary>
         public const string MistralMixtral8x7b = "mistral/mixtral-8x7b";
-        /// <summary>Model ID: <c>mistral/ocr-3</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ocr-3</summary>
-        public const string MistralOcr3 = "mistral/ocr-3";
-        /// <summary>Model ID: <c>mistral/pixtral-12b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/pixtral-12b</summary>
-        public const string MistralPixtral12b = "mistral/pixtral-12b";
         /// <summary>Model ID: <c>mistral/pixtral-large</c>. Model page: https://ai-stats.phaseo.app/models/mistral/pixtral-large</summary>
         public const string MistralPixtralLarge = "mistral/pixtral-large";
-        /// <summary>Model ID: <c>mistral/voxtral-mini</c>. Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-mini</summary>
-        public const string MistralVoxtralMini = "mistral/voxtral-mini";
-        /// <summary>Model ID: <c>mistral/voxtral-mini-transcribe</c>. Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-mini-transcribe</summary>
-        public const string MistralVoxtralMiniTranscribe = "mistral/voxtral-mini-transcribe";
-        /// <summary>Model ID: <c>mistral/voxtral-mini-transcribe-2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-mini-transcribe-2</summary>
-        public const string MistralVoxtralMiniTranscribe2 = "mistral/voxtral-mini-transcribe-2";
-        /// <summary>Model ID: <c>mistral/voxtral-small</c>. Model page: https://ai-stats.phaseo.app/models/mistral/voxtral-small</summary>
-        public const string MistralVoxtralSmall = "mistral/voxtral-small";
-        /// <summary>Model ID: <c>moonshotai/kimi-k1.5</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k1.5</summary>
-        public const string MoonshotaiKimiK15 = "moonshotai/kimi-k1.5";
+        /// <summary>Model ID: <c>mistralai/mistral-nemo</c>. Model page: https://ai-stats.phaseo.app/models/mistralai/mistral-nemo</summary>
+        public const string MistralaiMistralNemo = "mistralai/mistral-nemo";
         /// <summary>Model ID: <c>moonshotai/kimi-k2</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2</summary>
         public const string MoonshotaiKimiK2 = "moonshotai/kimi-k2";
-        /// <summary>Model ID: <c>moonshotai/kimi-k2-2025-07-11</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-2025-07-11</summary>
-        public const string MoonshotaiKimiK220250711 = "moonshotai/kimi-k2-2025-07-11";
+        /// <summary>Model ID: <c>moonshotai/kimi-k2-0905</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-0905</summary>
+        public const string MoonshotaiKimiK20905 = "moonshotai/kimi-k2-0905";
+        /// <summary>Model ID: <c>moonshotai/kimi-k2-instruct</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-instruct</summary>
+        public const string MoonshotaiKimiK2Instruct = "moonshotai/kimi-k2-instruct";
+        /// <summary>Model ID: <c>moonshotai/kimi-k2-instruct-0905</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-instruct-0905</summary>
+        public const string MoonshotaiKimiK2Instruct0905 = "moonshotai/kimi-k2-instruct-0905";
         /// <summary>Model ID: <c>moonshotai/kimi-k2-thinking</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2-thinking</summary>
         public const string MoonshotaiKimiK2Thinking = "moonshotai/kimi-k2-thinking";
         /// <summary>Model ID: <c>moonshotai/kimi-k2.5</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.5</summary>
         public const string MoonshotaiKimiK25 = "moonshotai/kimi-k2.5";
         /// <summary>Model ID: <c>moonshotai/kimi-k2.6</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6</summary>
         public const string MoonshotaiKimiK26 = "moonshotai/kimi-k2.6";
-        /// <summary>Model ID: <c>moonshotai/kimi-linear-48b</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-linear-48b</summary>
-        public const string MoonshotaiKimiLinear48b = "moonshotai/kimi-linear-48b";
-        /// <summary>Model ID: <c>moonshotai/kimi-vl-a3b</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-vl-a3b</summary>
-        public const string MoonshotaiKimiVlA3b = "moonshotai/kimi-vl-a3b";
-        /// <summary>Model ID: <c>moonshotai/kimi-vl-a3b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-vl-a3b-thinking</summary>
-        public const string MoonshotaiKimiVlA3bThinking = "moonshotai/kimi-vl-a3b-thinking";
-        /// <summary>Model ID: <c>moonshotai/kimi-vl-a3b-thinking-2025-04-09</c>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-vl-a3b-thinking-2025-04-09</summary>
-        public const string MoonshotaiKimiVlA3bThinking20250409 = "moonshotai/kimi-vl-a3b-thinking-2025-04-09";
-        /// <summary>Model ID: <c>naver-hyperclova/hyperclova-x-seed-omni-8b</c>. Model page: https://ai-stats.phaseo.app/models/naver-hyperclova/hyperclova-x-seed-omni-8b</summary>
-        public const string NaverHyperclovaHyperclovaXSeedOmni8b = "naver-hyperclova/hyperclova-x-seed-omni-8b";
-        /// <summary>Model ID: <c>naver-hyperclova/hyperclova-x-seed-think-14b</c>. Model page: https://ai-stats.phaseo.app/models/naver-hyperclova/hyperclova-x-seed-think-14b</summary>
-        public const string NaverHyperclovaHyperclovaXSeedThink14b = "naver-hyperclova/hyperclova-x-seed-think-14b";
-        /// <summary>Model ID: <c>naver-hyperclova/hyperclova-x-seed-think-32b</c>. Model page: https://ai-stats.phaseo.app/models/naver-hyperclova/hyperclova-x-seed-think-32b</summary>
-        public const string NaverHyperclovaHyperclovaXSeedThink32b = "naver-hyperclova/hyperclova-x-seed-think-32b";
-        /// <summary>Model ID: <c>nous/hermes-2-llama-2-70b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-llama-2-70b</summary>
-        public const string NousHermes2Llama270b = "nous/hermes-2-llama-2-70b";
-        /// <summary>Model ID: <c>nous/hermes-2-pro-llama-3-70b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-pro-llama-3-70b</summary>
-        public const string NousHermes2ProLlama370b = "nous/hermes-2-pro-llama-3-70b";
-        /// <summary>Model ID: <c>nous/hermes-2-pro-llama-3-8b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-pro-llama-3-8b</summary>
-        public const string NousHermes2ProLlama38b = "nous/hermes-2-pro-llama-3-8b";
-        /// <summary>Model ID: <c>nous/hermes-2-pro-mistral-7b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-pro-mistral-7b</summary>
-        public const string NousHermes2ProMistral7b = "nous/hermes-2-pro-mistral-7b";
-        /// <summary>Model ID: <c>nous/hermes-2-theta-llama-3-70b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-theta-llama-3-70b</summary>
-        public const string NousHermes2ThetaLlama370b = "nous/hermes-2-theta-llama-3-70b";
-        /// <summary>Model ID: <c>nous/hermes-2-theta-llama-3-8b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-2-theta-llama-3-8b</summary>
-        public const string NousHermes2ThetaLlama38b = "nous/hermes-2-theta-llama-3-8b";
         /// <summary>Model ID: <c>nous/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b</summary>
         public const string NousHermes3Llama31405b = "nous/hermes-3-llama-3.1-405b";
-        /// <summary>Model ID: <c>nous/hermes-3-llama-3.1-70b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-70b</summary>
-        public const string NousHermes3Llama3170b = "nous/hermes-3-llama-3.1-70b";
-        /// <summary>Model ID: <c>nous/hermes-3-llama-3.1-8b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-8b</summary>
-        public const string NousHermes3Llama318b = "nous/hermes-3-llama-3.1-8b";
-        /// <summary>Model ID: <c>nous/hermes-3-llama-3.2-3b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.2-3b</summary>
-        public const string NousHermes3Llama323b = "nous/hermes-3-llama-3.2-3b";
-        /// <summary>Model ID: <c>nous/hermes-4-14b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-4-14b</summary>
-        public const string NousHermes414b = "nous/hermes-4-14b";
-        /// <summary>Model ID: <c>nous/hermes-4-405b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-4-405b</summary>
-        public const string NousHermes4405b = "nous/hermes-4-405b";
-        /// <summary>Model ID: <c>nous/hermes-4-70b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-4-70b</summary>
-        public const string NousHermes470b = "nous/hermes-4-70b";
-        /// <summary>Model ID: <c>nous/hermes-4.3-36b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-4.3-36b</summary>
-        public const string NousHermes4336b = "nous/hermes-4.3-36b";
-        /// <summary>Model ID: <c>nous/nomos-1</c>. Model page: https://ai-stats.phaseo.app/models/nous/nomos-1</summary>
-        public const string NousNomos1 = "nous/nomos-1";
-        /// <summary>Model ID: <c>nous/nouscoder-14b</c>. Model page: https://ai-stats.phaseo.app/models/nous/nouscoder-14b</summary>
-        public const string NousNouscoder14b = "nous/nouscoder-14b";
-        /// <summary>Model ID: <c>nvidia/llama-3.1-nemotron-70b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-70b-instruct</summary>
-        public const string NvidiaLlama31Nemotron70bInstruct = "nvidia/llama-3.1-nemotron-70b-instruct";
-        /// <summary>Model ID: <c>nvidia/llama-3.1-nemotron-nano-4b-v1.1</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-nano-4b-v1.1</summary>
-        public const string NvidiaLlama31NemotronNano4bV11 = "nvidia/llama-3.1-nemotron-nano-4b-v1.1";
-        /// <summary>Model ID: <c>nvidia/llama-3.1-nemotron-nano-8b-v1</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-nano-8b-v1</summary>
-        public const string NvidiaLlama31NemotronNano8bV1 = "nvidia/llama-3.1-nemotron-nano-8b-v1";
-        /// <summary>Model ID: <c>nvidia/llama-3.1-nemotron-ultra-253b-v1</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-ultra-253b-v1</summary>
-        public const string NvidiaLlama31NemotronUltra253bV1 = "nvidia/llama-3.1-nemotron-ultra-253b-v1";
-        /// <summary>Model ID: <c>nvidia/llama-3.3-nemotron-super-49b-v1</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.3-nemotron-super-49b-v1</summary>
-        public const string NvidiaLlama33NemotronSuper49bV1 = "nvidia/llama-3.3-nemotron-super-49b-v1";
+        /// <summary>Model ID: <c>nousresearch/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b</summary>
+        public const string NousresearchHermes3Llama31405b = "nousresearch/hermes-3-llama-3.1-405b";
+        /// <summary>Model ID: <c>nousresearch/hermes-3-llama-3.1-70b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-70b</summary>
+        public const string NousresearchHermes3Llama3170b = "nousresearch/hermes-3-llama-3.1-70b";
+        /// <summary>Model ID: <c>nousresearch/hermes-4-405b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-4-405b</summary>
+        public const string NousresearchHermes4405b = "nousresearch/hermes-4-405b";
+        /// <summary>Model ID: <c>nousresearch/hermes-4-70b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-4-70b</summary>
+        public const string NousresearchHermes470b = "nousresearch/hermes-4-70b";
+        /// <summary>Model ID: <c>nvidia/llama-3.1-nemotron-ultra-253b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.1-nemotron-ultra-253b</summary>
+        public const string NvidiaLlama31NemotronUltra253b = "nvidia/llama-3.1-nemotron-ultra-253b";
         /// <summary>Model ID: <c>nvidia/llama-3.3-nemotron-super-49b-v1.5</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/llama-3.3-nemotron-super-49b-v1.5</summary>
         public const string NvidiaLlama33NemotronSuper49bV15 = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
         /// <summary>Model ID: <c>nvidia/nemotron-3-nano-30b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-nano-30b-a3b</summary>
         public const string NvidiaNemotron3Nano30bA3b = "nvidia/nemotron-3-nano-30b-a3b";
         /// <summary>Model ID: <c>nvidia/nemotron-3-super-120b-a12b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b</summary>
         public const string NvidiaNemotron3Super120bA12b = "nvidia/nemotron-3-super-120b-a12b";
-        /// <summary>Model ID: <c>nvidia/nvidia-nemotron-nano-12b-v2</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2</summary>
-        public const string NvidiaNvidiaNemotronNano12bV2 = "nvidia/nvidia-nemotron-nano-12b-v2";
+        /// <summary>Model ID: <c>nvidia/nvidia-nemotron-3-nano-30b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b</summary>
+        public const string NvidiaNvidiaNemotron3Nano30bA3b = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
+        /// <summary>Model ID: <c>nvidia/nvidia-nemotron-nano-12b-v2-vl</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl</summary>
+        public const string NvidiaNvidiaNemotronNano12bV2Vl = "nvidia/nvidia-nemotron-nano-12b-v2-vl";
         /// <summary>Model ID: <c>nvidia/nvidia-nemotron-nano-9b-v2</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2</summary>
         public const string NvidiaNvidiaNemotronNano9bV2 = "nvidia/nvidia-nemotron-nano-9b-v2";
-        /// <summary>Model ID: <c>nvidia/openreasoning-nemotron-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-1.5b</summary>
-        public const string NvidiaOpenreasoningNemotron15b = "nvidia/openreasoning-nemotron-1.5b";
-        /// <summary>Model ID: <c>nvidia/openreasoning-nemotron-14b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-14b</summary>
-        public const string NvidiaOpenreasoningNemotron14b = "nvidia/openreasoning-nemotron-14b";
-        /// <summary>Model ID: <c>nvidia/openreasoning-nemotron-32b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-32b</summary>
-        public const string NvidiaOpenreasoningNemotron32b = "nvidia/openreasoning-nemotron-32b";
-        /// <summary>Model ID: <c>nvidia/openreasoning-nemotron-7b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/openreasoning-nemotron-7b</summary>
-        public const string NvidiaOpenreasoningNemotron7b = "nvidia/openreasoning-nemotron-7b";
-        /// <summary>Model ID: <c>openai/ada</c>. Model page: https://ai-stats.phaseo.app/models/openai/ada</summary>
-        public const string OpenaiAda = "openai/ada";
-        /// <summary>Model ID: <c>openai/babbage</c>. Model page: https://ai-stats.phaseo.app/models/openai/babbage</summary>
-        public const string OpenaiBabbage = "openai/babbage";
         /// <summary>Model ID: <c>openai/babbage-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/babbage-002</summary>
         public const string OpenaiBabbage002 = "openai/babbage-002";
         /// <summary>Model ID: <c>openai/chatgpt-4o</c>. Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o</summary>
         public const string OpenaiChatgpt4o = "openai/chatgpt-4o";
-        /// <summary>Model ID: <c>openai/chatgpt-image-latest</c>. Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-image-latest</summary>
-        public const string OpenaiChatgptImageLatest = "openai/chatgpt-image-latest";
-        /// <summary>Model ID: <c>openai/code-cushman-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-cushman-001</summary>
-        public const string OpenaiCodeCushman001 = "openai/code-cushman-001";
-        /// <summary>Model ID: <c>openai/code-cushman-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-cushman-002</summary>
-        public const string OpenaiCodeCushman002 = "openai/code-cushman-002";
-        /// <summary>Model ID: <c>openai/code-davinci-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-davinci-001</summary>
-        public const string OpenaiCodeDavinci001 = "openai/code-davinci-001";
-        /// <summary>Model ID: <c>openai/code-davinci-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-davinci-002</summary>
-        public const string OpenaiCodeDavinci002 = "openai/code-davinci-002";
-        /// <summary>Model ID: <c>openai/code-davinci-edit-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-davinci-edit-001</summary>
-        public const string OpenaiCodeDavinciEdit001 = "openai/code-davinci-edit-001";
-        /// <summary>Model ID: <c>openai/code-search-ada-code-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-search-ada-code-001</summary>
-        public const string OpenaiCodeSearchAdaCode001 = "openai/code-search-ada-code-001";
-        /// <summary>Model ID: <c>openai/code-search-ada-text-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-search-ada-text-001</summary>
-        public const string OpenaiCodeSearchAdaText001 = "openai/code-search-ada-text-001";
-        /// <summary>Model ID: <c>openai/code-search-babbage-code-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-search-babbage-code-001</summary>
-        public const string OpenaiCodeSearchBabbageCode001 = "openai/code-search-babbage-code-001";
-        /// <summary>Model ID: <c>openai/code-search-babbage-text-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/code-search-babbage-text-001</summary>
-        public const string OpenaiCodeSearchBabbageText001 = "openai/code-search-babbage-text-001";
-        /// <summary>Model ID: <c>openai/codex-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/codex-mini</summary>
-        public const string OpenaiCodexMini = "openai/codex-mini";
         /// <summary>Model ID: <c>openai/computer-use-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview</summary>
         public const string OpenaiComputerUsePreview = "openai/computer-use-preview";
-        /// <summary>Model ID: <c>openai/curie</c>. Model page: https://ai-stats.phaseo.app/models/openai/curie</summary>
-        public const string OpenaiCurie = "openai/curie";
-        /// <summary>Model ID: <c>openai/dall-e</c>. Model page: https://ai-stats.phaseo.app/models/openai/dall-e</summary>
-        public const string OpenaiDallE = "openai/dall-e";
-        /// <summary>Model ID: <c>openai/dall-e-2</c>. Model page: https://ai-stats.phaseo.app/models/openai/dall-e-2</summary>
-        public const string OpenaiDallE2 = "openai/dall-e-2";
-        /// <summary>Model ID: <c>openai/dall-e-3</c>. Model page: https://ai-stats.phaseo.app/models/openai/dall-e-3</summary>
-        public const string OpenaiDallE3 = "openai/dall-e-3";
-        /// <summary>Model ID: <c>openai/davinci</c>. Model page: https://ai-stats.phaseo.app/models/openai/davinci</summary>
-        public const string OpenaiDavinci = "openai/davinci";
         /// <summary>Model ID: <c>openai/davinci-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/davinci-002</summary>
         public const string OpenaiDavinci002 = "openai/davinci-002";
-        /// <summary>Model ID: <c>openai/gpt-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-1</summary>
-        public const string OpenaiGpt1 = "openai/gpt-1";
-        /// <summary>Model ID: <c>openai/gpt-2</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-2</summary>
-        public const string OpenaiGpt2 = "openai/gpt-2";
-        /// <summary>Model ID: <c>openai/gpt-3</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3</summary>
-        public const string OpenaiGpt3 = "openai/gpt-3";
-        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-0613</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-0613</summary>
-        public const string OpenaiGpt35Turbo0613 = "openai/gpt-3.5-turbo-0613";
-        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-16k-0613</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-16k-0613</summary>
-        public const string OpenaiGpt35Turbo16k0613 = "openai/gpt-3.5-turbo-16k-0613";
-        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-2023-11-06</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-2023-11-06</summary>
-        public const string OpenaiGpt35Turbo20231106 = "openai/gpt-3.5-turbo-2023-11-06";
-        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-2024-01-25</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-2024-01-25</summary>
-        public const string OpenaiGpt35Turbo20240125 = "openai/gpt-3.5-turbo-2024-01-25";
-        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-instruct</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-instruct</summary>
-        public const string OpenaiGpt35TurboInstruct = "openai/gpt-3.5-turbo-instruct";
-        /// <summary>Model ID: <c>openai/gpt-4</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4</summary>
-        public const string OpenaiGpt4 = "openai/gpt-4";
-        /// <summary>Model ID: <c>openai/gpt-4-2023-03-14</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-2023-03-14</summary>
-        public const string OpenaiGpt420230314 = "openai/gpt-4-2023-03-14";
-        /// <summary>Model ID: <c>openai/gpt-4-32k</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-32k</summary>
-        public const string OpenaiGpt432k = "openai/gpt-4-32k";
-        /// <summary>Model ID: <c>openai/gpt-4-32k-0314</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-32k-0314</summary>
-        public const string OpenaiGpt432k0314 = "openai/gpt-4-32k-0314";
-        /// <summary>Model ID: <c>openai/gpt-4-32k-0613</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-32k-0613</summary>
-        public const string OpenaiGpt432k0613 = "openai/gpt-4-32k-0613";
-        /// <summary>Model ID: <c>openai/gpt-4-turbo</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo</summary>
-        public const string OpenaiGpt4Turbo = "openai/gpt-4-turbo";
+        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-16k</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-16k</summary>
+        public const string OpenaiGpt35Turbo16k = "openai/gpt-3.5-turbo-16k";
+        /// <summary>Model ID: <c>openai/gpt-3.5-turbo-2023-03-21</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-3.5-turbo-2023-03-21</summary>
+        public const string OpenaiGpt35Turbo20230321 = "openai/gpt-3.5-turbo-2023-03-21";
+        /// <summary>Model ID: <c>openai/gpt-4-2023-06-13</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-2023-06-13</summary>
+        public const string OpenaiGpt420230613 = "openai/gpt-4-2023-06-13";
         /// <summary>Model ID: <c>openai/gpt-4-turbo-2023-03-14</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo-2023-03-14</summary>
         public const string OpenaiGpt4Turbo20230314 = "openai/gpt-4-turbo-2023-03-14";
         /// <summary>Model ID: <c>openai/gpt-4-turbo-2023-11-06</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo-2023-11-06</summary>
         public const string OpenaiGpt4Turbo20231106 = "openai/gpt-4-turbo-2023-11-06";
+        /// <summary>Model ID: <c>openai/gpt-4-turbo-2024-01-25</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4-turbo-2024-01-25</summary>
+        public const string OpenaiGpt4Turbo20240125 = "openai/gpt-4-turbo-2024-01-25";
         /// <summary>Model ID: <c>openai/gpt-4.1</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.1</summary>
         public const string OpenaiGpt41 = "openai/gpt-4.1";
         /// <summary>Model ID: <c>openai/gpt-4.1-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.1-mini</summary>
         public const string OpenaiGpt41Mini = "openai/gpt-4.1-mini";
         /// <summary>Model ID: <c>openai/gpt-4.1-nano</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.1-nano</summary>
         public const string OpenaiGpt41Nano = "openai/gpt-4.1-nano";
-        /// <summary>Model ID: <c>openai/gpt-4.5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4.5</summary>
-        public const string OpenaiGpt45 = "openai/gpt-4.5";
-        /// <summary>Model ID: <c>openai/gpt-4o</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o</summary>
-        public const string OpenaiGpt4o = "openai/gpt-4o";
         /// <summary>Model ID: <c>openai/gpt-4o-2024-05-13</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-2024-05-13</summary>
         public const string OpenaiGpt4o20240513 = "openai/gpt-4o-2024-05-13";
         /// <summary>Model ID: <c>openai/gpt-4o-2024-08-06</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-2024-08-06</summary>
         public const string OpenaiGpt4o20240806 = "openai/gpt-4o-2024-08-06";
-        /// <summary>Model ID: <c>openai/gpt-4o-audio</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-audio</summary>
-        public const string OpenaiGpt4oAudio = "openai/gpt-4o-audio";
-        /// <summary>Model ID: <c>openai/gpt-4o-audio-2024-10-01</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-audio-2024-10-01</summary>
-        public const string OpenaiGpt4oAudio20241001 = "openai/gpt-4o-audio-2024-10-01";
-        /// <summary>Model ID: <c>openai/gpt-4o-audio-2024-12-17</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-audio-2024-12-17</summary>
-        public const string OpenaiGpt4oAudio20241217 = "openai/gpt-4o-audio-2024-12-17";
+        /// <summary>Model ID: <c>openai/gpt-4o-2024-11-20</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-2024-11-20</summary>
+        public const string OpenaiGpt4o20241120 = "openai/gpt-4o-2024-11-20";
         /// <summary>Model ID: <c>openai/gpt-4o-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini</summary>
         public const string OpenaiGpt4oMini = "openai/gpt-4o-mini";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-audio-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-audio-preview</summary>
-        public const string OpenaiGpt4oMiniAudioPreview = "openai/gpt-4o-mini-audio-preview";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-realtime-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-realtime-preview</summary>
-        public const string OpenaiGpt4oMiniRealtimePreview = "openai/gpt-4o-mini-realtime-preview";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-search-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-search-preview</summary>
-        public const string OpenaiGpt4oMiniSearchPreview = "openai/gpt-4o-mini-search-preview";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-transcribe</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-transcribe</summary>
-        public const string OpenaiGpt4oMiniTranscribe = "openai/gpt-4o-mini-transcribe";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-transcribe-2025-03-20</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-transcribe-2025-03-20</summary>
-        public const string OpenaiGpt4oMiniTranscribe20250320 = "openai/gpt-4o-mini-transcribe-2025-03-20";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-tts</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-tts</summary>
-        public const string OpenaiGpt4oMiniTts = "openai/gpt-4o-mini-tts";
-        /// <summary>Model ID: <c>openai/gpt-4o-mini-tts-2025-03-20</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-mini-tts-2025-03-20</summary>
-        public const string OpenaiGpt4oMiniTts20250320 = "openai/gpt-4o-mini-tts-2025-03-20";
-        /// <summary>Model ID: <c>openai/gpt-4o-realtime-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-realtime-preview</summary>
-        public const string OpenaiGpt4oRealtimePreview = "openai/gpt-4o-realtime-preview";
-        /// <summary>Model ID: <c>openai/gpt-4o-realtime-preview-2024-10-01</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-realtime-preview-2024-10-01</summary>
-        public const string OpenaiGpt4oRealtimePreview20241001 = "openai/gpt-4o-realtime-preview-2024-10-01";
-        /// <summary>Model ID: <c>openai/gpt-4o-realtime-preview-2024-12-17</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-realtime-preview-2024-12-17</summary>
-        public const string OpenaiGpt4oRealtimePreview20241217 = "openai/gpt-4o-realtime-preview-2024-12-17";
-        /// <summary>Model ID: <c>openai/gpt-4o-search-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-search-preview</summary>
-        public const string OpenaiGpt4oSearchPreview = "openai/gpt-4o-search-preview";
-        /// <summary>Model ID: <c>openai/gpt-4o-transcribe</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-transcribe</summary>
-        public const string OpenaiGpt4oTranscribe = "openai/gpt-4o-transcribe";
-        /// <summary>Model ID: <c>openai/gpt-4o-transcribe-diarize</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-4o-transcribe-diarize</summary>
-        public const string OpenaiGpt4oTranscribeDiarize = "openai/gpt-4o-transcribe-diarize";
         /// <summary>Model ID: <c>openai/gpt-5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5</summary>
         public const string OpenaiGpt5 = "openai/gpt-5";
         /// <summary>Model ID: <c>openai/gpt-5-chat</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-chat</summary>
         public const string OpenaiGpt5Chat = "openai/gpt-5-chat";
         /// <summary>Model ID: <c>openai/gpt-5-codex</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-codex</summary>
         public const string OpenaiGpt5Codex = "openai/gpt-5-codex";
-        /// <summary>Model ID: <c>openai/gpt-5-codex-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-codex-mini</summary>
-        public const string OpenaiGpt5CodexMini = "openai/gpt-5-codex-mini";
         /// <summary>Model ID: <c>openai/gpt-5-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-mini</summary>
         public const string OpenaiGpt5Mini = "openai/gpt-5-mini";
         /// <summary>Model ID: <c>openai/gpt-5-nano</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-nano</summary>
         public const string OpenaiGpt5Nano = "openai/gpt-5-nano";
         /// <summary>Model ID: <c>openai/gpt-5-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-pro</summary>
         public const string OpenaiGpt5Pro = "openai/gpt-5-pro";
-        /// <summary>Model ID: <c>openai/gpt-5-search-api</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5-search-api</summary>
-        public const string OpenaiGpt5SearchApi = "openai/gpt-5-search-api";
         /// <summary>Model ID: <c>openai/gpt-5.1</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1</summary>
         public const string OpenaiGpt51 = "openai/gpt-5.1";
         /// <summary>Model ID: <c>openai/gpt-5.1-chat</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1-chat</summary>
@@ -1180,24 +392,18 @@ namespace AiStatsSdk
         public const string OpenaiGpt51CodexMax = "openai/gpt-5.1-codex-max";
         /// <summary>Model ID: <c>openai/gpt-5.1-codex-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1-codex-mini</summary>
         public const string OpenaiGpt51CodexMini = "openai/gpt-5.1-codex-mini";
-        /// <summary>Model ID: <c>openai/gpt-5.1-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.1-pro</summary>
-        public const string OpenaiGpt51Pro = "openai/gpt-5.1-pro";
         /// <summary>Model ID: <c>openai/gpt-5.2</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2</summary>
         public const string OpenaiGpt52 = "openai/gpt-5.2";
         /// <summary>Model ID: <c>openai/gpt-5.2-chat</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-chat</summary>
         public const string OpenaiGpt52Chat = "openai/gpt-5.2-chat";
         /// <summary>Model ID: <c>openai/gpt-5.2-codex</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-codex</summary>
         public const string OpenaiGpt52Codex = "openai/gpt-5.2-codex";
-        /// <summary>Model ID: <c>openai/gpt-5.2-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-mini</summary>
-        public const string OpenaiGpt52Mini = "openai/gpt-5.2-mini";
         /// <summary>Model ID: <c>openai/gpt-5.2-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.2-pro</summary>
         public const string OpenaiGpt52Pro = "openai/gpt-5.2-pro";
         /// <summary>Model ID: <c>openai/gpt-5.3-chat</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.3-chat</summary>
         public const string OpenaiGpt53Chat = "openai/gpt-5.3-chat";
         /// <summary>Model ID: <c>openai/gpt-5.3-codex</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.3-codex</summary>
         public const string OpenaiGpt53Codex = "openai/gpt-5.3-codex";
-        /// <summary>Model ID: <c>openai/gpt-5.3-codex-spark</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.3-codex-spark</summary>
-        public const string OpenaiGpt53CodexSpark = "openai/gpt-5.3-codex-spark";
         /// <summary>Model ID: <c>openai/gpt-5.4</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4</summary>
         public const string OpenaiGpt54 = "openai/gpt-5.4";
         /// <summary>Model ID: <c>openai/gpt-5.4-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-mini</summary>
@@ -1206,42 +412,28 @@ namespace AiStatsSdk
         public const string OpenaiGpt54Nano = "openai/gpt-5.4-nano";
         /// <summary>Model ID: <c>openai/gpt-5.4-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro</summary>
         public const string OpenaiGpt54Pro = "openai/gpt-5.4-pro";
-        /// <summary>Model ID: <c>openai/gpt-audio</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio</summary>
-        public const string OpenaiGptAudio = "openai/gpt-audio";
-        /// <summary>Model ID: <c>openai/gpt-audio-1.5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio-1.5</summary>
-        public const string OpenaiGptAudio15 = "openai/gpt-audio-1.5";
-        /// <summary>Model ID: <c>openai/gpt-audio-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio-mini</summary>
-        public const string OpenaiGptAudioMini = "openai/gpt-audio-mini";
-        /// <summary>Model ID: <c>openai/gpt-audio-mini-2025-10-06</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-audio-mini-2025-10-06</summary>
-        public const string OpenaiGptAudioMini20251006 = "openai/gpt-audio-mini-2025-10-06";
+        /// <summary>Model ID: <c>openai/gpt-5.5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5</summary>
+        public const string OpenaiGpt55 = "openai/gpt-5.5";
+        /// <summary>Model ID: <c>openai/gpt-5.5-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro</summary>
+        public const string OpenaiGpt55Pro = "openai/gpt-5.5-pro";
         /// <summary>Model ID: <c>openai/gpt-image-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1</summary>
         public const string OpenaiGptImage1 = "openai/gpt-image-1";
         /// <summary>Model ID: <c>openai/gpt-image-1-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1-mini</summary>
         public const string OpenaiGptImage1Mini = "openai/gpt-image-1-mini";
         /// <summary>Model ID: <c>openai/gpt-image-1.5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1.5</summary>
         public const string OpenaiGptImage15 = "openai/gpt-image-1.5";
+        /// <summary>Model ID: <c>openai/gpt-image-2</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-2</summary>
+        public const string OpenaiGptImage2 = "openai/gpt-image-2";
         /// <summary>Model ID: <c>openai/gpt-oss-120b</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-120b</summary>
         public const string OpenaiGptOss120b = "openai/gpt-oss-120b";
         /// <summary>Model ID: <c>openai/gpt-oss-20b</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-20b</summary>
         public const string OpenaiGptOss20b = "openai/gpt-oss-20b";
-        /// <summary>Model ID: <c>openai/gpt-oss-safeguard-120b</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-safeguard-120b</summary>
-        public const string OpenaiGptOssSafeguard120b = "openai/gpt-oss-safeguard-120b";
         /// <summary>Model ID: <c>openai/gpt-oss-safeguard-20b</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-oss-safeguard-20b</summary>
         public const string OpenaiGptOssSafeguard20b = "openai/gpt-oss-safeguard-20b";
-        /// <summary>Model ID: <c>openai/gpt-realtime</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime</summary>
-        public const string OpenaiGptRealtime = "openai/gpt-realtime";
-        /// <summary>Model ID: <c>openai/gpt-realtime-1.5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime-1.5</summary>
-        public const string OpenaiGptRealtime15 = "openai/gpt-realtime-1.5";
-        /// <summary>Model ID: <c>openai/gpt-realtime-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime-mini</summary>
-        public const string OpenaiGptRealtimeMini = "openai/gpt-realtime-mini";
-        /// <summary>Model ID: <c>openai/gpt-realtime-mini-2025-10-06</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-realtime-mini-2025-10-06</summary>
-        public const string OpenaiGptRealtimeMini20251006 = "openai/gpt-realtime-mini-2025-10-06";
         /// <summary>Model ID: <c>openai/o1</c>. Model page: https://ai-stats.phaseo.app/models/openai/o1</summary>
         public const string OpenaiO1 = "openai/o1";
         /// <summary>Model ID: <c>openai/o1-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/o1-mini</summary>
         public const string OpenaiO1Mini = "openai/o1-mini";
-        /// <summary>Model ID: <c>openai/o1-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/o1-preview</summary>
-        public const string OpenaiO1Preview = "openai/o1-preview";
         /// <summary>Model ID: <c>openai/o1-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/o1-pro</summary>
         public const string OpenaiO1Pro = "openai/o1-pro";
         /// <summary>Model ID: <c>openai/o3</c>. Model page: https://ai-stats.phaseo.app/models/openai/o3</summary>
@@ -1250,8 +442,6 @@ namespace AiStatsSdk
         public const string OpenaiO3DeepResearch = "openai/o3-deep-research";
         /// <summary>Model ID: <c>openai/o3-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/o3-mini</summary>
         public const string OpenaiO3Mini = "openai/o3-mini";
-        /// <summary>Model ID: <c>openai/o3-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/o3-preview</summary>
-        public const string OpenaiO3Preview = "openai/o3-preview";
         /// <summary>Model ID: <c>openai/o3-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/o3-pro</summary>
         public const string OpenaiO3Pro = "openai/o3-pro";
         /// <summary>Model ID: <c>openai/o4-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/o4-mini</summary>
@@ -1260,212 +450,98 @@ namespace AiStatsSdk
         public const string OpenaiO4MiniDeepResearch = "openai/o4-mini-deep-research";
         /// <summary>Model ID: <c>openai/omni-moderation</c>. Model page: https://ai-stats.phaseo.app/models/openai/omni-moderation</summary>
         public const string OpenaiOmniModeration = "openai/omni-moderation";
-        /// <summary>Model ID: <c>openai/sora-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/sora-1</summary>
-        public const string OpenaiSora1 = "openai/sora-1";
         /// <summary>Model ID: <c>openai/sora-2</c>. Model page: https://ai-stats.phaseo.app/models/openai/sora-2</summary>
         public const string OpenaiSora2 = "openai/sora-2";
-        /// <summary>Model ID: <c>openai/sora-2-2025-09-30</c>. Model page: https://ai-stats.phaseo.app/models/openai/sora-2-2025-09-30</summary>
-        public const string OpenaiSora220250930 = "openai/sora-2-2025-09-30";
         /// <summary>Model ID: <c>openai/sora-2-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/sora-2-pro</summary>
         public const string OpenaiSora2Pro = "openai/sora-2-pro";
-        /// <summary>Model ID: <c>openai/text-ada-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-ada-001</summary>
-        public const string OpenaiTextAda001 = "openai/text-ada-001";
-        /// <summary>Model ID: <c>openai/text-babbage-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-babbage-001</summary>
-        public const string OpenaiTextBabbage001 = "openai/text-babbage-001";
-        /// <summary>Model ID: <c>openai/text-curie-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-curie-001</summary>
-        public const string OpenaiTextCurie001 = "openai/text-curie-001";
-        /// <summary>Model ID: <c>openai/text-davinci-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-001</summary>
-        public const string OpenaiTextDavinci001 = "openai/text-davinci-001";
-        /// <summary>Model ID: <c>openai/text-davinci-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-002</summary>
-        public const string OpenaiTextDavinci002 = "openai/text-davinci-002";
-        /// <summary>Model ID: <c>openai/text-davinci-003</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-003</summary>
-        public const string OpenaiTextDavinci003 = "openai/text-davinci-003";
-        /// <summary>Model ID: <c>openai/text-davinci-edit-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-davinci-edit-001</summary>
-        public const string OpenaiTextDavinciEdit001 = "openai/text-davinci-edit-001";
         /// <summary>Model ID: <c>openai/text-embedding-3-large</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-embedding-3-large</summary>
         public const string OpenaiTextEmbedding3Large = "openai/text-embedding-3-large";
         /// <summary>Model ID: <c>openai/text-embedding-3-small</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-embedding-3-small</summary>
         public const string OpenaiTextEmbedding3Small = "openai/text-embedding-3-small";
         /// <summary>Model ID: <c>openai/text-embedding-ada-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-embedding-ada-002</summary>
         public const string OpenaiTextEmbeddingAda002 = "openai/text-embedding-ada-002";
-        /// <summary>Model ID: <c>openai/text-moderation-007</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-moderation-007</summary>
-        public const string OpenaiTextModeration007 = "openai/text-moderation-007";
-        /// <summary>Model ID: <c>openai/text-search-ada-doc-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-ada-doc-001</summary>
-        public const string OpenaiTextSearchAdaDoc001 = "openai/text-search-ada-doc-001";
-        /// <summary>Model ID: <c>openai/text-search-ada-query-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-ada-query-001</summary>
-        public const string OpenaiTextSearchAdaQuery001 = "openai/text-search-ada-query-001";
-        /// <summary>Model ID: <c>openai/text-search-babbage-doc-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-babbage-doc-001</summary>
-        public const string OpenaiTextSearchBabbageDoc001 = "openai/text-search-babbage-doc-001";
-        /// <summary>Model ID: <c>openai/text-search-babbage-query-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-babbage-query-001</summary>
-        public const string OpenaiTextSearchBabbageQuery001 = "openai/text-search-babbage-query-001";
-        /// <summary>Model ID: <c>openai/text-search-curie-doc-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-curie-doc-001</summary>
-        public const string OpenaiTextSearchCurieDoc001 = "openai/text-search-curie-doc-001";
-        /// <summary>Model ID: <c>openai/text-search-curie-query-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-curie-query-001</summary>
-        public const string OpenaiTextSearchCurieQuery001 = "openai/text-search-curie-query-001";
-        /// <summary>Model ID: <c>openai/text-search-davinci-doc-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-davinci-doc-001</summary>
-        public const string OpenaiTextSearchDavinciDoc001 = "openai/text-search-davinci-doc-001";
-        /// <summary>Model ID: <c>openai/text-search-davinci-query-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-search-davinci-query-001</summary>
-        public const string OpenaiTextSearchDavinciQuery001 = "openai/text-search-davinci-query-001";
-        /// <summary>Model ID: <c>openai/text-similarity-ada-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-ada-001</summary>
-        public const string OpenaiTextSimilarityAda001 = "openai/text-similarity-ada-001";
-        /// <summary>Model ID: <c>openai/text-similarity-babbage-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-babbage-001</summary>
-        public const string OpenaiTextSimilarityBabbage001 = "openai/text-similarity-babbage-001";
-        /// <summary>Model ID: <c>openai/text-similarity-curie-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-curie-001</summary>
-        public const string OpenaiTextSimilarityCurie001 = "openai/text-similarity-curie-001";
-        /// <summary>Model ID: <c>openai/text-similarity-davinci-001</c>. Model page: https://ai-stats.phaseo.app/models/openai/text-similarity-davinci-001</summary>
-        public const string OpenaiTextSimilarityDavinci001 = "openai/text-similarity-davinci-001";
-        /// <summary>Model ID: <c>openai/tts-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/tts-1</summary>
-        public const string OpenaiTts1 = "openai/tts-1";
-        /// <summary>Model ID: <c>openai/tts-1-hd</c>. Model page: https://ai-stats.phaseo.app/models/openai/tts-1-hd</summary>
-        public const string OpenaiTts1Hd = "openai/tts-1-hd";
-        /// <summary>Model ID: <c>openai/whisper-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/whisper-1</summary>
-        public const string OpenaiWhisper1 = "openai/whisper-1";
-        /// <summary>Model ID: <c>openai/whisper-3</c>. Model page: https://ai-stats.phaseo.app/models/openai/whisper-3</summary>
-        public const string OpenaiWhisper3 = "openai/whisper-3";
-        /// <summary>Model ID: <c>openai/whisper-3-turbo</c>. Model page: https://ai-stats.phaseo.app/models/openai/whisper-3-turbo</summary>
-        public const string OpenaiWhisper3Turbo = "openai/whisper-3-turbo";
-        /// <summary>Model ID: <c>prime-intellect/intellect-3</c>. Model page: https://ai-stats.phaseo.app/models/prime-intellect/intellect-3</summary>
-        public const string PrimeIntellectIntellect3 = "prime-intellect/intellect-3";
-        /// <summary>Model ID: <c>prime-intellect/intellect-3.1</c>. Model page: https://ai-stats.phaseo.app/models/prime-intellect/intellect-3.1</summary>
-        public const string PrimeIntellectIntellect31 = "prime-intellect/intellect-3.1";
-        /// <summary>Model ID: <c>qwen/code-qwen-1.5-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/code-qwen-1.5-7b</summary>
-        public const string QwenCodeQwen157b = "qwen/code-qwen-1.5-7b";
-        /// <summary>Model ID: <c>qwen/qvq-72b-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qvq-72b-preview</summary>
-        public const string QwenQvq72bPreview = "qwen/qvq-72b-preview";
-        /// <summary>Model ID: <c>qwen/qwen-1.8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-1.8b</summary>
-        public const string QwenQwen18b = "qwen/qwen-1.8b";
-        /// <summary>Model ID: <c>qwen/qwen-14b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-14b</summary>
-        public const string QwenQwen14b = "qwen/qwen-14b";
-        /// <summary>Model ID: <c>qwen/qwen-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-72b</summary>
-        public const string QwenQwen72b = "qwen/qwen-72b";
-        /// <summary>Model ID: <c>qwen/qwen-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-7b</summary>
-        public const string QwenQwen7b = "qwen/qwen-7b";
-        /// <summary>Model ID: <c>qwen/qwen-audio</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-audio</summary>
-        public const string QwenQwenAudio = "qwen/qwen-audio";
-        /// <summary>Model ID: <c>qwen/qwen-audio-chat</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-audio-chat</summary>
-        public const string QwenQwenAudioChat = "qwen/qwen-audio-chat";
-        /// <summary>Model ID: <c>qwen/qwen-image</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image</summary>
-        public const string QwenQwenImage = "qwen/qwen-image";
-        /// <summary>Model ID: <c>qwen/qwen-image-2512</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-2512</summary>
-        public const string QwenQwenImage2512 = "qwen/qwen-image-2512";
-        /// <summary>Model ID: <c>qwen/qwen-image-edit</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-edit</summary>
-        public const string QwenQwenImageEdit = "qwen/qwen-image-edit";
-        /// <summary>Model ID: <c>qwen/qwen-image-edit-2509</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-edit-2509</summary>
-        public const string QwenQwenImageEdit2509 = "qwen/qwen-image-edit-2509";
-        /// <summary>Model ID: <c>qwen/qwen-image-edit-2511</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-edit-2511</summary>
-        public const string QwenQwenImageEdit2511 = "qwen/qwen-image-edit-2511";
-        /// <summary>Model ID: <c>qwen/qwen-image-layered</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-image-layered</summary>
-        public const string QwenQwenImageLayered = "qwen/qwen-image-layered";
-        /// <summary>Model ID: <c>qwen/qwen-vl</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl</summary>
-        public const string QwenQwenVl = "qwen/qwen-vl";
-        /// <summary>Model ID: <c>qwen/qwen1.5-0.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-0.5b</summary>
-        public const string QwenQwen1505b = "qwen/qwen1.5-0.5b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-1.8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-1.8b</summary>
-        public const string QwenQwen1518b = "qwen/qwen1.5-1.8b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-110b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-110b</summary>
-        public const string QwenQwen15110b = "qwen/qwen1.5-110b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-14b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-14b</summary>
-        public const string QwenQwen1514b = "qwen/qwen1.5-14b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-32b</summary>
-        public const string QwenQwen1532b = "qwen/qwen1.5-32b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-4b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-4b</summary>
-        public const string QwenQwen154b = "qwen/qwen1.5-4b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-72b</summary>
-        public const string QwenQwen1572b = "qwen/qwen1.5-72b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-7b</summary>
-        public const string QwenQwen157b = "qwen/qwen1.5-7b";
-        /// <summary>Model ID: <c>qwen/qwen1.5-moe-a2.7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen1.5-moe-a2.7b</summary>
-        public const string QwenQwen15MoeA27b = "qwen/qwen1.5-moe-a2.7b";
-        /// <summary>Model ID: <c>qwen/qwen2-0.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-0.5b</summary>
-        public const string QwenQwen205b = "qwen/qwen2-0.5b";
-        /// <summary>Model ID: <c>qwen/qwen2-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-1.5b</summary>
-        public const string QwenQwen215b = "qwen/qwen2-1.5b";
-        /// <summary>Model ID: <c>qwen/qwen2-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-72b</summary>
-        public const string QwenQwen272b = "qwen/qwen2-72b";
+        /// <summary>Model ID: <c>primeintellect/intellect-3</c>. Model page: https://ai-stats.phaseo.app/models/primeintellect/intellect-3</summary>
+        public const string PrimeintellectIntellect3 = "primeintellect/intellect-3";
+        /// <summary>Model ID: <c>qwen/qvq-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qvq-max</summary>
+        public const string QwenQvqMax = "qwen/qvq-max";
+        /// <summary>Model ID: <c>qwen/qwen-3.6-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-3.6-plus</summary>
+        public const string QwenQwen36Plus = "qwen/qwen-3.6-plus";
+        /// <summary>Model ID: <c>qwen/qwen-flash</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-flash</summary>
+        public const string QwenQwenFlash = "qwen/qwen-flash";
+        /// <summary>Model ID: <c>qwen/qwen-flash-character</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-flash-character</summary>
+        public const string QwenQwenFlashCharacter = "qwen/qwen-flash-character";
+        /// <summary>Model ID: <c>qwen/qwen-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-max</summary>
+        public const string QwenQwenMax = "qwen/qwen-max";
+        /// <summary>Model ID: <c>qwen/qwen-mt-flash</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-flash</summary>
+        public const string QwenQwenMtFlash = "qwen/qwen-mt-flash";
+        /// <summary>Model ID: <c>qwen/qwen-mt-lite</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-lite</summary>
+        public const string QwenQwenMtLite = "qwen/qwen-mt-lite";
+        /// <summary>Model ID: <c>qwen/qwen-mt-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-plus</summary>
+        public const string QwenQwenMtPlus = "qwen/qwen-mt-plus";
+        /// <summary>Model ID: <c>qwen/qwen-mt-turbo</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-mt-turbo</summary>
+        public const string QwenQwenMtTurbo = "qwen/qwen-mt-turbo";
+        /// <summary>Model ID: <c>qwen/qwen-plus-2025-01-25</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-01-25</summary>
+        public const string QwenQwenPlus20250125 = "qwen/qwen-plus-2025-01-25";
+        /// <summary>Model ID: <c>qwen/qwen-plus-2025-04-28</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-04-28</summary>
+        public const string QwenQwenPlus20250428 = "qwen/qwen-plus-2025-04-28";
+        /// <summary>Model ID: <c>qwen/qwen-plus-2025-07-14</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-07-14</summary>
+        public const string QwenQwenPlus20250714 = "qwen/qwen-plus-2025-07-14";
+        /// <summary>Model ID: <c>qwen/qwen-plus-2025-07-28</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-07-28</summary>
+        public const string QwenQwenPlus20250728 = "qwen/qwen-plus-2025-07-28";
+        /// <summary>Model ID: <c>qwen/qwen-plus-2025-09-11</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-09-11</summary>
+        public const string QwenQwenPlus20250911 = "qwen/qwen-plus-2025-09-11";
+        /// <summary>Model ID: <c>qwen/qwen-plus-2025-12-01</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-2025-12-01</summary>
+        public const string QwenQwenPlus20251201 = "qwen/qwen-plus-2025-12-01";
+        /// <summary>Model ID: <c>qwen/qwen-plus-character</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-plus-character</summary>
+        public const string QwenQwenPlusCharacter = "qwen/qwen-plus-character";
+        /// <summary>Model ID: <c>qwen/qwen-turbo-2024-11-01</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-turbo-2024-11-01</summary>
+        public const string QwenQwenTurbo20241101 = "qwen/qwen-turbo-2024-11-01";
+        /// <summary>Model ID: <c>qwen/qwen-turbo-2025-04-28</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-turbo-2025-04-28</summary>
+        public const string QwenQwenTurbo20250428 = "qwen/qwen-turbo-2025-04-28";
+        /// <summary>Model ID: <c>qwen/qwen-vl-max-2025-04-08</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-max-2025-04-08</summary>
+        public const string QwenQwenVlMax20250408 = "qwen/qwen-vl-max-2025-04-08";
+        /// <summary>Model ID: <c>qwen/qwen-vl-max-2025-08-13</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-max-2025-08-13</summary>
+        public const string QwenQwenVlMax20250813 = "qwen/qwen-vl-max-2025-08-13";
+        /// <summary>Model ID: <c>qwen/qwen-vl-plus-2025-01-25</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-plus-2025-01-25</summary>
+        public const string QwenQwenVlPlus20250125 = "qwen/qwen-vl-plus-2025-01-25";
+        /// <summary>Model ID: <c>qwen/qwen-vl-plus-2025-05-07</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-plus-2025-05-07</summary>
+        public const string QwenQwenVlPlus20250507 = "qwen/qwen-vl-plus-2025-05-07";
+        /// <summary>Model ID: <c>qwen/qwen-vl-plus-2025-08-15</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-vl-plus-2025-08-15</summary>
+        public const string QwenQwenVlPlus20250815 = "qwen/qwen-vl-plus-2025-08-15";
         /// <summary>Model ID: <c>qwen/qwen2-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-7b</summary>
         public const string QwenQwen27b = "qwen/qwen2-7b";
-        /// <summary>Model ID: <c>qwen/qwen2-audio-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-audio-7b</summary>
-        public const string QwenQwen2Audio7b = "qwen/qwen2-audio-7b";
-        /// <summary>Model ID: <c>qwen/qwen2-math-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-1.5b</summary>
-        public const string QwenQwen2Math15b = "qwen/qwen2-math-1.5b";
-        /// <summary>Model ID: <c>qwen/qwen2-math-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-72b</summary>
-        public const string QwenQwen2Math72b = "qwen/qwen2-math-72b";
-        /// <summary>Model ID: <c>qwen/qwen2-math-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-7b</summary>
-        public const string QwenQwen2Math7b = "qwen/qwen2-math-7b";
-        /// <summary>Model ID: <c>qwen/qwen2-math-rm-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-math-rm-72b</summary>
-        public const string QwenQwen2MathRm72b = "qwen/qwen2-math-rm-72b";
-        /// <summary>Model ID: <c>qwen/qwen2-vl-2b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-vl-2b</summary>
-        public const string QwenQwen2Vl2b = "qwen/qwen2-vl-2b";
-        /// <summary>Model ID: <c>qwen/qwen2-vl-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-vl-72b</summary>
-        public const string QwenQwen2Vl72b = "qwen/qwen2-vl-72b";
-        /// <summary>Model ID: <c>qwen/qwen2-vl-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2-vl-7b</summary>
-        public const string QwenQwen2Vl7b = "qwen/qwen2-vl-7b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-0.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-0.5b</summary>
-        public const string QwenQwen2505b = "qwen/qwen2.5-0.5b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-1.5b</summary>
-        public const string QwenQwen2515b = "qwen/qwen2.5-1.5b";
         /// <summary>Model ID: <c>qwen/qwen2.5-14b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-14b</summary>
         public const string QwenQwen2514b = "qwen/qwen2.5-14b";
+        /// <summary>Model ID: <c>qwen/qwen2.5-14b-1m</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-14b-1m</summary>
+        public const string QwenQwen2514b1m = "qwen/qwen2.5-14b-1m";
         /// <summary>Model ID: <c>qwen/qwen2.5-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-32b</summary>
         public const string QwenQwen2532b = "qwen/qwen2.5-32b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-3b</summary>
-        public const string QwenQwen253b = "qwen/qwen2.5-3b";
         /// <summary>Model ID: <c>qwen/qwen2.5-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-72b</summary>
         public const string QwenQwen2572b = "qwen/qwen2.5-72b";
         /// <summary>Model ID: <c>qwen/qwen2.5-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-7b</summary>
         public const string QwenQwen257b = "qwen/qwen2.5-7b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-coder-0.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-0.5b</summary>
-        public const string QwenQwen25Coder05b = "qwen/qwen2.5-coder-0.5b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-coder-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-1.5b</summary>
-        public const string QwenQwen25Coder15b = "qwen/qwen2.5-coder-1.5b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-coder-14b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-14b</summary>
-        public const string QwenQwen25Coder14b = "qwen/qwen2.5-coder-14b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-coder-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-32b</summary>
-        public const string QwenQwen25Coder32b = "qwen/qwen2.5-coder-32b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-coder-3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-3b</summary>
-        public const string QwenQwen25Coder3b = "qwen/qwen2.5-coder-3b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-coder-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-coder-7b</summary>
-        public const string QwenQwen25Coder7b = "qwen/qwen2.5-coder-7b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-1.5b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-1.5b</summary>
-        public const string QwenQwen25Math15b = "qwen/qwen2.5-math-1.5b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-72b</summary>
-        public const string QwenQwen25Math72b = "qwen/qwen2.5-math-72b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-7b</summary>
-        public const string QwenQwen25Math7b = "qwen/qwen2.5-math-7b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-7b-prm800k</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-7b-prm800k</summary>
-        public const string QwenQwen25Math7bPrm800k = "qwen/qwen2.5-math-7b-prm800k";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-prm-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-prm-72b</summary>
-        public const string QwenQwen25MathPrm72b = "qwen/qwen2.5-math-prm-72b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-prm-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-prm-7b</summary>
-        public const string QwenQwen25MathPrm7b = "qwen/qwen2.5-math-prm-7b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-math-rm-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-math-rm-72b</summary>
-        public const string QwenQwen25MathRm72b = "qwen/qwen2.5-math-rm-72b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-omni-3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-omni-3b</summary>
-        public const string QwenQwen25Omni3b = "qwen/qwen2.5-omni-3b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-omni-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-omni-7b</summary>
-        public const string QwenQwen25Omni7b = "qwen/qwen2.5-omni-7b";
+        /// <summary>Model ID: <c>qwen/qwen2.5-7b-1m</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-7b-1m</summary>
+        public const string QwenQwen257b1m = "qwen/qwen2.5-7b-1m";
         /// <summary>Model ID: <c>qwen/qwen2.5-vl-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-32b</summary>
         public const string QwenQwen25Vl32b = "qwen/qwen2.5-vl-32b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-vl-3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-3b</summary>
-        public const string QwenQwen25Vl3b = "qwen/qwen2.5-vl-3b";
         /// <summary>Model ID: <c>qwen/qwen2.5-vl-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-72b</summary>
         public const string QwenQwen25Vl72b = "qwen/qwen2.5-vl-72b";
-        /// <summary>Model ID: <c>qwen/qwen2.5-vl-7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen2.5-vl-7b</summary>
-        public const string QwenQwen25Vl7b = "qwen/qwen2.5-vl-7b";
         /// <summary>Model ID: <c>qwen/qwen3-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-0.6b</summary>
         public const string QwenQwen306b = "qwen/qwen3-0.6b";
         /// <summary>Model ID: <c>qwen/qwen3-1.7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-1.7b</summary>
         public const string QwenQwen317b = "qwen/qwen3-1.7b";
         /// <summary>Model ID: <c>qwen/qwen3-14b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-14b</summary>
         public const string QwenQwen314b = "qwen/qwen3-14b";
-        /// <summary>Model ID: <c>qwen/qwen3-235b-a22b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b</summary>
-        public const string QwenQwen3235bA22b = "qwen/qwen3-235b-a22b";
         /// <summary>Model ID: <c>qwen/qwen3-235b-a22b-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b-2507</summary>
         public const string QwenQwen3235bA22b2507 = "qwen/qwen3-235b-a22b-2507";
+        /// <summary>Model ID: <c>qwen/qwen3-235b-a22b-instruct-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b-instruct-2507</summary>
+        public const string QwenQwen3235bA22bInstruct2507 = "qwen/qwen3-235b-a22b-instruct-2507";
         /// <summary>Model ID: <c>qwen/qwen3-235b-a22b-thinking-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-235b-a22b-thinking-2507</summary>
         public const string QwenQwen3235bA22bThinking2507 = "qwen/qwen3-235b-a22b-thinking-2507";
         /// <summary>Model ID: <c>qwen/qwen3-30b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b</summary>
         public const string QwenQwen330bA3b = "qwen/qwen3-30b-a3b";
+        /// <summary>Model ID: <c>qwen/qwen3-30b-a3b-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b-2507</summary>
+        public const string QwenQwen330bA3b2507 = "qwen/qwen3-30b-a3b-2507";
         /// <summary>Model ID: <c>qwen/qwen3-30b-a3b-instruct-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b-instruct-2507</summary>
         public const string QwenQwen330bA3bInstruct2507 = "qwen/qwen3-30b-a3b-instruct-2507";
         /// <summary>Model ID: <c>qwen/qwen3-30b-a3b-thinking-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-30b-a3b-thinking-2507</summary>
@@ -1474,108 +550,68 @@ namespace AiStatsSdk
         public const string QwenQwen332b = "qwen/qwen3-32b";
         /// <summary>Model ID: <c>qwen/qwen3-4b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b</summary>
         public const string QwenQwen34b = "qwen/qwen3-4b";
-        /// <summary>Model ID: <c>qwen/qwen3-4b-instruct-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b-instruct-2507</summary>
-        public const string QwenQwen34bInstruct2507 = "qwen/qwen3-4b-instruct-2507";
-        /// <summary>Model ID: <c>qwen/qwen3-4b-saferl</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b-saferl</summary>
-        public const string QwenQwen34bSaferl = "qwen/qwen3-4b-saferl";
-        /// <summary>Model ID: <c>qwen/qwen3-4b-thinking-2507</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-4b-thinking-2507</summary>
-        public const string QwenQwen34bThinking2507 = "qwen/qwen3-4b-thinking-2507";
         /// <summary>Model ID: <c>qwen/qwen3-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-8b</summary>
         public const string QwenQwen38b = "qwen/qwen3-8b";
-        /// <summary>Model ID: <c>qwen/qwen3-asr-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-asr-0.6b</summary>
-        public const string QwenQwen3Asr06b = "qwen/qwen3-asr-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-asr-1.7b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-asr-1.7b</summary>
-        public const string QwenQwen3Asr17b = "qwen/qwen3-asr-1.7b";
+        /// <summary>Model ID: <c>qwen/qwen3-coder</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder</summary>
+        public const string QwenQwen3Coder = "qwen/qwen3-coder";
         /// <summary>Model ID: <c>qwen/qwen3-coder-30b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-30b-a3b</summary>
         public const string QwenQwen3Coder30bA3b = "qwen/qwen3-coder-30b-a3b";
         /// <summary>Model ID: <c>qwen/qwen3-coder-480b-a35b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-480b-a35b</summary>
         public const string QwenQwen3Coder480bA35b = "qwen/qwen3-coder-480b-a35b";
+        /// <summary>Model ID: <c>qwen/qwen3-coder-flash</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-flash</summary>
+        public const string QwenQwen3CoderFlash = "qwen/qwen3-coder-flash";
         /// <summary>Model ID: <c>qwen/qwen3-coder-next</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-next</summary>
         public const string QwenQwen3CoderNext = "qwen/qwen3-coder-next";
-        /// <summary>Model ID: <c>qwen/qwen3-embedding-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-0.6b</summary>
-        public const string QwenQwen3Embedding06b = "qwen/qwen3-embedding-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-embedding-4b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-4b</summary>
-        public const string QwenQwen3Embedding4b = "qwen/qwen3-embedding-4b";
-        /// <summary>Model ID: <c>qwen/qwen3-embedding-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b</summary>
-        public const string QwenQwen3Embedding8b = "qwen/qwen3-embedding-8b";
-        /// <summary>Model ID: <c>qwen/qwen3-forcedaligner-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-forcedaligner-0.6b</summary>
-        public const string QwenQwen3Forcedaligner06b = "qwen/qwen3-forcedaligner-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-gen-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-gen-0.6b</summary>
-        public const string QwenQwen3GuardGen06b = "qwen/qwen3-guard-gen-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-gen-4b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-gen-4b</summary>
-        public const string QwenQwen3GuardGen4b = "qwen/qwen3-guard-gen-4b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-gen-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-gen-8b</summary>
-        public const string QwenQwen3GuardGen8b = "qwen/qwen3-guard-gen-8b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-stream-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-stream-0.6b</summary>
-        public const string QwenQwen3GuardStream06b = "qwen/qwen3-guard-stream-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-stream-4b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-stream-4b</summary>
-        public const string QwenQwen3GuardStream4b = "qwen/qwen3-guard-stream-4b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-stream-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-guard-stream-8b</summary>
-        public const string QwenQwen3GuardStream8b = "qwen/qwen3-guard-stream-8b";
+        /// <summary>Model ID: <c>qwen/qwen3-coder-plus-2025-07-22</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-07-22</summary>
+        public const string QwenQwen3CoderPlus20250722 = "qwen/qwen3-coder-plus-2025-07-22";
+        /// <summary>Model ID: <c>qwen/qwen3-coder-plus-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23</summary>
+        public const string QwenQwen3CoderPlus20250923 = "qwen/qwen3-coder-plus-2025-09-23";
+        /// <summary>Model ID: <c>qwen/qwen3-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max</summary>
+        public const string QwenQwen3Max = "qwen/qwen3-max";
+        /// <summary>Model ID: <c>qwen/qwen3-max-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2025-09-23</summary>
+        public const string QwenQwen3Max20250923 = "qwen/qwen3-max-2025-09-23";
+        /// <summary>Model ID: <c>qwen/qwen3-max-2026-01-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2026-01-23</summary>
+        public const string QwenQwen3Max20260123 = "qwen/qwen3-max-2026-01-23";
+        /// <summary>Model ID: <c>qwen/qwen3-max-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-preview</summary>
+        public const string QwenQwen3MaxPreview = "qwen/qwen3-max-preview";
         /// <summary>Model ID: <c>qwen/qwen3-max-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-thinking</summary>
         public const string QwenQwen3MaxThinking = "qwen/qwen3-max-thinking";
+        /// <summary>Model ID: <c>qwen/qwen3-next-80b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b</summary>
+        public const string QwenQwen3Next80b = "qwen/qwen3-next-80b";
+        /// <summary>Model ID: <c>qwen/qwen3-next-80b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b-a3b</summary>
+        public const string QwenQwen3Next80bA3b = "qwen/qwen3-next-80b-a3b";
         /// <summary>Model ID: <c>qwen/qwen3-next-80b-a3b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b-a3b-instruct</summary>
         public const string QwenQwen3Next80bA3bInstruct = "qwen/qwen3-next-80b-a3b-instruct";
         /// <summary>Model ID: <c>qwen/qwen3-next-80b-a3b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-next-80b-a3b-thinking</summary>
         public const string QwenQwen3Next80bA3bThinking = "qwen/qwen3-next-80b-a3b-thinking";
-        /// <summary>Model ID: <c>qwen/qwen3-omni-30b-a3b-captioner</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-30b-a3b-captioner</summary>
-        public const string QwenQwen3Omni30bA3bCaptioner = "qwen/qwen3-omni-30b-a3b-captioner";
-        /// <summary>Model ID: <c>qwen/qwen3-omni-30b-a3b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-30b-a3b-instruct</summary>
-        public const string QwenQwen3Omni30bA3bInstruct = "qwen/qwen3-omni-30b-a3b-instruct";
         /// <summary>Model ID: <c>qwen/qwen3-omni-30b-a3b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-30b-a3b-thinking</summary>
         public const string QwenQwen3Omni30bA3bThinking = "qwen/qwen3-omni-30b-a3b-thinking";
-        /// <summary>Model ID: <c>qwen/qwen3-omni-flash</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-flash</summary>
-        public const string QwenQwen3OmniFlash = "qwen/qwen3-omni-flash";
-        /// <summary>Model ID: <c>qwen/qwen3-omni-flash-2025-09-15</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-omni-flash-2025-09-15</summary>
-        public const string QwenQwen3OmniFlash20250915 = "qwen/qwen3-omni-flash-2025-09-15";
-        /// <summary>Model ID: <c>qwen/qwen3-reranker-0.6b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker-0.6b</summary>
-        public const string QwenQwen3Reranker06b = "qwen/qwen3-reranker-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-reranker-4b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker-4b</summary>
-        public const string QwenQwen3Reranker4b = "qwen/qwen3-reranker-4b";
-        /// <summary>Model ID: <c>qwen/qwen3-reranker-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker-8b</summary>
-        public const string QwenQwen3Reranker8b = "qwen/qwen3-reranker-8b";
-        /// <summary>Model ID: <c>qwen/qwen3-tts</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts</summary>
-        public const string QwenQwen3Tts = "qwen/qwen3-tts";
-        /// <summary>Model ID: <c>qwen/qwen3-tts-12hz-0.6b-base</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-0.6b-base</summary>
-        public const string QwenQwen3Tts12hz06bBase = "qwen/qwen3-tts-12hz-0.6b-base";
-        /// <summary>Model ID: <c>qwen/qwen3-tts-12hz-0.6b-customvoice</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-0.6b-customvoice</summary>
-        public const string QwenQwen3Tts12hz06bCustomvoice = "qwen/qwen3-tts-12hz-0.6b-customvoice";
-        /// <summary>Model ID: <c>qwen/qwen3-tts-12hz-1.7b-base</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-base</summary>
-        public const string QwenQwen3Tts12hz17bBase = "qwen/qwen3-tts-12hz-1.7b-base";
-        /// <summary>Model ID: <c>qwen/qwen3-tts-12hz-1.7b-voicedesign</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-tts-12hz-1.7b-voicedesign</summary>
-        public const string QwenQwen3Tts12hz17bVoicedesign = "qwen/qwen3-tts-12hz-1.7b-voicedesign";
+        /// <summary>Model ID: <c>qwen/qwen3-reranker</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-reranker</summary>
+        public const string QwenQwen3Reranker = "qwen/qwen3-reranker";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-235b-a22b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b</summary>
+        public const string QwenQwen3Vl235bA22b = "qwen/qwen3-vl-235b-a22b";
         /// <summary>Model ID: <c>qwen/qwen3-vl-235b-a22b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct</summary>
         public const string QwenQwen3Vl235bA22bInstruct = "qwen/qwen3-vl-235b-a22b-instruct";
         /// <summary>Model ID: <c>qwen/qwen3-vl-235b-a22b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-235b-a22b-thinking</summary>
         public const string QwenQwen3Vl235bA22bThinking = "qwen/qwen3-vl-235b-a22b-thinking";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-2b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-2b-instruct</summary>
-        public const string QwenQwen3Vl2bInstruct = "qwen/qwen3-vl-2b-instruct";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-2b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-2b-thinking</summary>
-        public const string QwenQwen3Vl2bThinking = "qwen/qwen3-vl-2b-thinking";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-30b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-30b-a3b</summary>
+        public const string QwenQwen3Vl30bA3b = "qwen/qwen3-vl-30b-a3b";
         /// <summary>Model ID: <c>qwen/qwen3-vl-30b-a3b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-30b-a3b-instruct</summary>
         public const string QwenQwen3Vl30bA3bInstruct = "qwen/qwen3-vl-30b-a3b-instruct";
         /// <summary>Model ID: <c>qwen/qwen3-vl-30b-a3b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-30b-a3b-thinking</summary>
         public const string QwenQwen3Vl30bA3bThinking = "qwen/qwen3-vl-30b-a3b-thinking";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-32b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-32b-instruct</summary>
-        public const string QwenQwen3Vl32bInstruct = "qwen/qwen3-vl-32b-instruct";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-32b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-32b-thinking</summary>
-        public const string QwenQwen3Vl32bThinking = "qwen/qwen3-vl-32b-thinking";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-4b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-4b-instruct</summary>
-        public const string QwenQwen3Vl4bInstruct = "qwen/qwen3-vl-4b-instruct";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-4b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-4b-thinking</summary>
-        public const string QwenQwen3Vl4bThinking = "qwen/qwen3-vl-4b-thinking";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-8b</summary>
+        public const string QwenQwen3Vl8b = "qwen/qwen3-vl-8b";
         /// <summary>Model ID: <c>qwen/qwen3-vl-8b-instruct</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-8b-instruct</summary>
         public const string QwenQwen3Vl8bInstruct = "qwen/qwen3-vl-8b-instruct";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-8b-thinking</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-8b-thinking</summary>
-        public const string QwenQwen3Vl8bThinking = "qwen/qwen3-vl-8b-thinking";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-embedding-2b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-embedding-2b</summary>
-        public const string QwenQwen3VlEmbedding2b = "qwen/qwen3-vl-embedding-2b";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-embedding-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-embedding-8b</summary>
-        public const string QwenQwen3VlEmbedding8b = "qwen/qwen3-vl-embedding-8b";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-reranker-2b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-reranker-2b</summary>
-        public const string QwenQwen3VlReranker2b = "qwen/qwen3-vl-reranker-2b";
-        /// <summary>Model ID: <c>qwen/qwen3-vl-reranker-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-reranker-8b</summary>
-        public const string QwenQwen3VlReranker8b = "qwen/qwen3-vl-reranker-8b";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-flash-2025-10-15</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-flash-2025-10-15</summary>
+        public const string QwenQwen3VlFlash20251015 = "qwen/qwen3-vl-flash-2025-10-15";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-flash-2026-01-22</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-flash-2026-01-22</summary>
+        public const string QwenQwen3VlFlash20260122 = "qwen/qwen3-vl-flash-2026-01-22";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-plus-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-plus-2025-09-23</summary>
+        public const string QwenQwen3VlPlus20250923 = "qwen/qwen3-vl-plus-2025-09-23";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-plus-2025-12-19</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-plus-2025-12-19</summary>
+        public const string QwenQwen3VlPlus20251219 = "qwen/qwen3-vl-plus-2025-12-19";
         /// <summary>Model ID: <c>qwen/qwen3.5-0.8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-0.8b</summary>
         public const string QwenQwen3508b = "qwen/qwen3.5-0.8b";
         /// <summary>Model ID: <c>qwen/qwen3.5-122b-a10b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-122b-a10b</summary>
@@ -1596,66 +632,28 @@ namespace AiStatsSdk
         public const string QwenQwen35Flash = "qwen/qwen3.5-flash";
         /// <summary>Model ID: <c>qwen/qwen3.5-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-plus</summary>
         public const string QwenQwen35Plus = "qwen/qwen3.5-plus";
+        /// <summary>Model ID: <c>qwen/qwen3.6-27b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-27b</summary>
+        public const string QwenQwen3627b = "qwen/qwen3.6-27b";
         /// <summary>Model ID: <c>qwen/qwen3.6-35b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-35b-a3b</summary>
         public const string QwenQwen3635bA3b = "qwen/qwen3.6-35b-a3b";
         /// <summary>Model ID: <c>qwen/qwen3.6-max-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-max-preview</summary>
         public const string QwenQwen36MaxPreview = "qwen/qwen3.6-max-preview";
         /// <summary>Model ID: <c>qwen/qwen3.6-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus</summary>
-        public const string QwenQwen36Plus = "qwen/qwen3.6-plus";
-        /// <summary>Model ID: <c>qwen/qwq-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b</summary>
-        public const string QwenQwq32b = "qwen/qwq-32b";
-        /// <summary>Model ID: <c>qwen/qwq-32b-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b-preview</summary>
-        public const string QwenQwq32bPreview = "qwen/qwq-32b-preview";
-        /// <summary>Model ID: <c>qwen/worldpm-72b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b</summary>
-        public const string QwenWorldpm72b = "qwen/worldpm-72b";
-        /// <summary>Model ID: <c>qwen/worldpm-72b-helpsteer2</c>. Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b-helpsteer2</summary>
-        public const string QwenWorldpm72bHelpsteer2 = "qwen/worldpm-72b-helpsteer2";
-        /// <summary>Model ID: <c>qwen/worldpm-72b-rlhflow</c>. Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b-rlhflow</summary>
-        public const string QwenWorldpm72bRlhflow = "qwen/worldpm-72b-rlhflow";
-        /// <summary>Model ID: <c>qwen/worldpm-72b-ultrafeedback</c>. Model page: https://ai-stats.phaseo.app/models/qwen/worldpm-72b-ultrafeedback</summary>
-        public const string QwenWorldpm72bUltrafeedback = "qwen/worldpm-72b-ultrafeedback";
-        /// <summary>Model ID: <c>relace/relace-search</c>. Model page: https://ai-stats.phaseo.app/models/relace/relace-search</summary>
-        public const string RelaceRelaceSearch = "relace/relace-search";
-        /// <summary>Model ID: <c>sourceful/riverflow-v2-fast-preview</c>. Model page: https://ai-stats.phaseo.app/models/sourceful/riverflow-v2-fast-preview</summary>
-        public const string SourcefulRiverflowV2FastPreview = "sourceful/riverflow-v2-fast-preview";
-        /// <summary>Model ID: <c>sourceful/riverflow-v2-max-preview</c>. Model page: https://ai-stats.phaseo.app/models/sourceful/riverflow-v2-max-preview</summary>
-        public const string SourcefulRiverflowV2MaxPreview = "sourceful/riverflow-v2-max-preview";
-        /// <summary>Model ID: <c>sourceful/riverflow-v2-standard-preview</c>. Model page: https://ai-stats.phaseo.app/models/sourceful/riverflow-v2-standard-preview</summary>
-        public const string SourcefulRiverflowV2StandardPreview = "sourceful/riverflow-v2-standard-preview";
+        public const string QwenQwen36Plus_2 = "qwen/qwen3.6-plus";
+        /// <summary>Model ID: <c>qwen/qwq-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus</summary>
+        public const string QwenQwqPlus = "qwen/qwq-plus";
+        /// <summary>Model ID: <c>qwen/text-embedding-v3</c>. Model page: https://ai-stats.phaseo.app/models/qwen/text-embedding-v3</summary>
+        public const string QwenTextEmbeddingV3 = "qwen/text-embedding-v3";
+        /// <summary>Model ID: <c>qwen/text-embedding-v4</c>. Model page: https://ai-stats.phaseo.app/models/qwen/text-embedding-v4</summary>
+        public const string QwenTextEmbeddingV4 = "qwen/text-embedding-v4";
+        /// <summary>Model ID: <c>qwen/wan2.7-t2v</c>. Model page: https://ai-stats.phaseo.app/models/qwen/wan2.7-t2v</summary>
+        public const string QwenWan27T2v = "qwen/wan2.7-t2v";
         /// <summary>Model ID: <c>stepfun/step-3.5-flash</c>. Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash</summary>
         public const string StepfunStep35Flash = "stepfun/step-3.5-flash";
-        /// <summary>Model ID: <c>suno/suno-v3.5</c>. Model page: https://ai-stats.phaseo.app/models/suno/suno-v3.5</summary>
-        public const string SunoSunoV35 = "suno/suno-v3.5";
-        /// <summary>Model ID: <c>suno/suno-v4</c>. Model page: https://ai-stats.phaseo.app/models/suno/suno-v4</summary>
-        public const string SunoSunoV4 = "suno/suno-v4";
-        /// <summary>Model ID: <c>suno/suno-v4.5</c>. Model page: https://ai-stats.phaseo.app/models/suno/suno-v4.5</summary>
-        public const string SunoSunoV45 = "suno/suno-v4.5";
-        /// <summary>Model ID: <c>suno/suno-v4.5-</c>. Model page: https://ai-stats.phaseo.app/models/suno/suno-v4.5-</summary>
-        public const string SunoSunoV45_2 = "suno/suno-v4.5-";
-        /// <summary>Model ID: <c>suno/suno-v4.5-all</c>. Model page: https://ai-stats.phaseo.app/models/suno/suno-v4.5-all</summary>
-        public const string SunoSunoV45All = "suno/suno-v4.5-all";
-        /// <summary>Model ID: <c>suno/suno-v5</c>. Model page: https://ai-stats.phaseo.app/models/suno/suno-v5</summary>
-        public const string SunoSunoV5 = "suno/suno-v5";
-        /// <summary>Model ID: <c>upstage/solar-pro</c>. Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro</summary>
-        public const string UpstageSolarPro = "upstage/solar-pro";
-        /// <summary>Model ID: <c>upstage/solar-pro-2</c>. Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2</summary>
-        public const string UpstageSolarPro2 = "upstage/solar-pro-2";
-        /// <summary>Model ID: <c>upstage/solar-pro-2-2025-07-10</c>. Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2-2025-07-10</summary>
-        public const string UpstageSolarPro220250710 = "upstage/solar-pro-2-2025-07-10";
-        /// <summary>Model ID: <c>upstage/solar-pro-2-2025-09-09</c>. Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2-2025-09-09</summary>
-        public const string UpstageSolarPro220250909 = "upstage/solar-pro-2-2025-09-09";
-        /// <summary>Model ID: <c>upstage/solar-pro-2-preview</c>. Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-2-preview</summary>
-        public const string UpstageSolarPro2Preview = "upstage/solar-pro-2-preview";
-        /// <summary>Model ID: <c>upstage/solar-pro-3</c>. Model page: https://ai-stats.phaseo.app/models/upstage/solar-pro-3</summary>
-        public const string UpstageSolarPro3 = "upstage/solar-pro-3";
-        /// <summary>Model ID: <c>vercel/v0-1.0-md</c>. Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.0-md</summary>
-        public const string VercelV010Md = "vercel/v0-1.0-md";
-        /// <summary>Model ID: <c>vercel/v0-1.5-lg</c>. Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-lg</summary>
-        public const string VercelV015Lg = "vercel/v0-1.5-lg";
-        /// <summary>Model ID: <c>vercel/v0-1.5-md</c>. Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-md</summary>
-        public const string VercelV015Md = "vercel/v0-1.5-md";
-        /// <summary>Model ID: <c>vercel/v0-1.5-sm</c>. Model page: https://ai-stats.phaseo.app/models/vercel/v0-1.5-sm</summary>
-        public const string VercelV015Sm = "vercel/v0-1.5-sm";
+        /// <summary>Model ID: <c>venice/venice-uncensored</c>. Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored</summary>
+        public const string VeniceVeniceUncensored = "venice/venice-uncensored";
+        /// <summary>Model ID: <c>venice/venice-uncensored-1.1</c>. Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored-1.1</summary>
+        public const string VeniceVeniceUncensored11 = "venice/venice-uncensored-1.1";
         /// <summary>Model ID: <c>voyage/rerank-1</c>. Model page: https://ai-stats.phaseo.app/models/voyage/rerank-1</summary>
         public const string VoyageRerank1 = "voyage/rerank-1";
         /// <summary>Model ID: <c>voyage/rerank-2</c>. Model page: https://ai-stats.phaseo.app/models/voyage/rerank-2</summary>
@@ -1712,78 +710,44 @@ namespace AiStatsSdk
         public const string VoyageVoyageMultimodal3 = "voyage/voyage-multimodal-3";
         /// <summary>Model ID: <c>voyage/voyage-multimodal-3.5</c>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5</summary>
         public const string VoyageVoyageMultimodal35 = "voyage/voyage-multimodal-3.5";
-        /// <summary>Model ID: <c>x-ai/grok-0</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-0</summary>
-        public const string XAiGrok0 = "x-ai/grok-0";
-        /// <summary>Model ID: <c>x-ai/grok-1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-1</summary>
-        public const string XAiGrok1 = "x-ai/grok-1";
-        /// <summary>Model ID: <c>x-ai/grok-1.5</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-1.5</summary>
-        public const string XAiGrok15 = "x-ai/grok-1.5";
-        /// <summary>Model ID: <c>x-ai/grok-1.5v</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-1.5v</summary>
-        public const string XAiGrok15v = "x-ai/grok-1.5v";
-        /// <summary>Model ID: <c>x-ai/grok-2</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2</summary>
-        public const string XAiGrok2 = "x-ai/grok-2";
-        /// <summary>Model ID: <c>x-ai/grok-2-image-1212</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-image-1212</summary>
-        public const string XAiGrok2Image1212 = "x-ai/grok-2-image-1212";
-        /// <summary>Model ID: <c>x-ai/grok-2-mini</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-mini</summary>
-        public const string XAiGrok2Mini = "x-ai/grok-2-mini";
-        /// <summary>Model ID: <c>x-ai/grok-2-vision-1212</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-vision-1212</summary>
-        public const string XAiGrok2Vision1212 = "x-ai/grok-2-vision-1212";
+        /// <summary>Model ID: <c>x-ai/grok-2-vision</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-vision</summary>
+        public const string XAiGrok2Vision = "x-ai/grok-2-vision";
         /// <summary>Model ID: <c>x-ai/grok-3</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3</summary>
         public const string XAiGrok3 = "x-ai/grok-3";
-        /// <summary>Model ID: <c>x-ai/grok-3-beta</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-beta</summary>
-        public const string XAiGrok3Beta = "x-ai/grok-3-beta";
         /// <summary>Model ID: <c>x-ai/grok-3-mini</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-mini</summary>
         public const string XAiGrok3Mini = "x-ai/grok-3-mini";
-        /// <summary>Model ID: <c>x-ai/grok-3-mini-beta</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-mini-beta</summary>
-        public const string XAiGrok3MiniBeta = "x-ai/grok-3-mini-beta";
         /// <summary>Model ID: <c>x-ai/grok-4</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4</summary>
         public const string XAiGrok4 = "x-ai/grok-4";
-        /// <summary>Model ID: <c>x-ai/grok-4-fast-non-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4-fast-non-reasoning</summary>
-        public const string XAiGrok4FastNonReasoning = "x-ai/grok-4-fast-non-reasoning";
-        /// <summary>Model ID: <c>x-ai/grok-4-fast-reasoning</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4-fast-reasoning</summary>
-        public const string XAiGrok4FastReasoning = "x-ai/grok-4-fast-reasoning";
-        /// <summary>Model ID: <c>x-ai/grok-4-heavy</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4-heavy</summary>
-        public const string XAiGrok4Heavy = "x-ai/grok-4-heavy";
-        /// <summary>Model ID: <c>x-ai/grok-4.1-non-thinking</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1-non-thinking</summary>
-        public const string XAiGrok41NonThinking = "x-ai/grok-4.1-non-thinking";
+        /// <summary>Model ID: <c>x-ai/grok-4.1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1</summary>
+        public const string XAiGrok41 = "x-ai/grok-4.1";
+        /// <summary>Model ID: <c>x-ai/grok-4.1-fast</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1-fast</summary>
+        public const string XAiGrok41Fast = "x-ai/grok-4.1-fast";
         /// <summary>Model ID: <c>x-ai/grok-4.1-thinking</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.1-thinking</summary>
         public const string XAiGrok41Thinking = "x-ai/grok-4.1-thinking";
-        /// <summary>Model ID: <c>x-ai/grok-4.20</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20</summary>
-        public const string XAiGrok420 = "x-ai/grok-4.20";
-        /// <summary>Model ID: <c>x-ai/grok-4.20-multi-agent-beta</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta</summary>
-        public const string XAiGrok420MultiAgentBeta = "x-ai/grok-4.20-multi-agent-beta";
-        /// <summary>Model ID: <c>x-ai/grok-4.3</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3</summary>
-        public const string XAiGrok43 = "x-ai/grok-4.3";
+        /// <summary>Model ID: <c>x-ai/grok-4.20-beta-0309</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309</summary>
+        public const string XAiGrok420Beta0309 = "x-ai/grok-4.20-beta-0309";
+        /// <summary>Model ID: <c>x-ai/grok-4.20-multi-agent-beta-0309</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309</summary>
+        public const string XAiGrok420MultiAgentBeta0309 = "x-ai/grok-4.20-multi-agent-beta-0309";
         /// <summary>Model ID: <c>x-ai/grok-code-fast-1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1</summary>
         public const string XAiGrokCodeFast1 = "x-ai/grok-code-fast-1";
-        /// <summary>Model ID: <c>x-ai/grok-imagine-image</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image</summary>
-        public const string XAiGrokImagineImage = "x-ai/grok-imagine-image";
-        /// <summary>Model ID: <c>x-ai/grok-imagine-image-pro</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image-pro</summary>
-        public const string XAiGrokImagineImagePro = "x-ai/grok-imagine-image-pro";
-        /// <summary>Model ID: <c>x-ai/grok-imagine-video</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-video</summary>
-        public const string XAiGrokImagineVideo = "x-ai/grok-imagine-video";
         /// <summary>Model ID: <c>xiaomi/mimo-v2-flash</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash</summary>
         public const string XiaomiMimoV2Flash = "xiaomi/mimo-v2-flash";
         /// <summary>Model ID: <c>xiaomi/mimo-v2-omni</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-omni</summary>
         public const string XiaomiMimoV2Omni = "xiaomi/mimo-v2-omni";
         /// <summary>Model ID: <c>xiaomi/mimo-v2-pro</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-pro</summary>
         public const string XiaomiMimoV2Pro = "xiaomi/mimo-v2-pro";
-        /// <summary>Model ID: <c>xiaomi/mimo-v2-tts</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-tts</summary>
-        public const string XiaomiMimoV2Tts = "xiaomi/mimo-v2-tts";
+        /// <summary>Model ID: <c>xiaomi/mimo-v2-tts:free</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-tts%3Afree</summary>
+        public const string XiaomiMimoV2TtsFree = "xiaomi/mimo-v2-tts:free";
+        /// <summary>Model ID: <c>xiaomi/mimo-v2.5</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5</summary>
+        public const string XiaomiMimoV25 = "xiaomi/mimo-v2.5";
+        /// <summary>Model ID: <c>xiaomi/mimo-v2.5-pro</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5-pro</summary>
+        public const string XiaomiMimoV25Pro = "xiaomi/mimo-v2.5-pro";
+        /// <summary>Model ID: <c>xiaomi/mimo-v2.5-tts:free</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5-tts%3Afree</summary>
+        public const string XiaomiMimoV25TtsFree = "xiaomi/mimo-v2.5-tts:free";
         /// <summary>Model ID: <c>z-ai/glm-4-32b</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-32b</summary>
         public const string ZAiGlm432b = "z-ai/glm-4-32b";
-        /// <summary>Model ID: <c>z-ai/glm-4-9b</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b</summary>
-        public const string ZAiGlm49b = "z-ai/glm-4-9b";
-        /// <summary>Model ID: <c>z-ai/glm-4-9b-2024-06-04</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b-2024-06-04</summary>
-        public const string ZAiGlm49b20240604 = "z-ai/glm-4-9b-2024-06-04";
-        /// <summary>Model ID: <c>z-ai/glm-4-9b-chat</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b-chat</summary>
-        public const string ZAiGlm49bChat = "z-ai/glm-4-9b-chat";
-        /// <summary>Model ID: <c>z-ai/glm-4-9b-chat-1m</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-9b-chat-1m</summary>
-        public const string ZAiGlm49bChat1m = "z-ai/glm-4-9b-chat-1m";
-        /// <summary>Model ID: <c>z-ai/glm-4.1v-9b</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.1v-9b</summary>
-        public const string ZAiGlm41v9b = "z-ai/glm-4.1v-9b";
-        /// <summary>Model ID: <c>z-ai/glm-4.1v-thinking-9b</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.1v-thinking-9b</summary>
-        public const string ZAiGlm41vThinking9b = "z-ai/glm-4.1v-thinking-9b";
+        /// <summary>Model ID: <c>z-ai/glm-4-7-flash:free</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4-7-flash%3Afree</summary>
+        public const string ZAiGlm47FlashFree = "z-ai/glm-4-7-flash:free";
         /// <summary>Model ID: <c>z-ai/glm-4.5</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.5</summary>
         public const string ZAiGlm45 = "z-ai/glm-4.5";
         /// <summary>Model ID: <c>z-ai/glm-4.5-air</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.5-air</summary>
@@ -1804,8 +768,6 @@ namespace AiStatsSdk
         public const string ZAiGlm47 = "z-ai/glm-4.7";
         /// <summary>Model ID: <c>z-ai/glm-4.7-flash</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4.7-flash</summary>
         public const string ZAiGlm47Flash = "z-ai/glm-4.7-flash";
-        /// <summary>Model ID: <c>z-ai/glm-4v-9b</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-4v-9b</summary>
-        public const string ZAiGlm4v9b = "z-ai/glm-4v-9b";
         /// <summary>Model ID: <c>z-ai/glm-5</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5</summary>
         public const string ZAiGlm5 = "z-ai/glm-5";
         /// <summary>Model ID: <c>z-ai/glm-5-code</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5-code</summary>
@@ -1816,7 +778,12 @@ namespace AiStatsSdk
         public const string ZAiGlm51 = "z-ai/glm-5.1";
         /// <summary>Model ID: <c>z-ai/glm-5v-turbo</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5v-turbo</summary>
         public const string ZAiGlm5vTurbo = "z-ai/glm-5v-turbo";
-        /// <summary>Model ID: <c>z-ai/glm-image</c>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image</summary>
-        public const string ZAiGlmImage = "z-ai/glm-image";
+        /// <summary>Model ID: <c>zai-org/glm-4.5-air</c>. Model page: https://ai-stats.phaseo.app/models/zai-org/glm-4.5-air</summary>
+        public const string ZaiOrgGlm45Air = "zai-org/glm-4.5-air";
+        /// <summary>Model ID: <c>zai/glm-5</c>. Model page: https://ai-stats.phaseo.app/models/zai/glm-5</summary>
+        public const string ZaiGlm5 = "zai/glm-5";
+        /// <summary>Deprecated alias for <c>deepseek/deepseek-v4</c>; use <c>deepseek/deepseek-v4-pro</c>. Scheduled for removal in the next major SDK release.</summary>
+        [System.Obsolete("Use DeepseekDeepseekV4Pro instead. Scheduled for removal in the next major SDK release.")]
+        public const string DeepseekDeepseekV4 = DeepseekDeepseekV4Pro;
     }
 }

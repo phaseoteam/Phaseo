@@ -68,6 +68,10 @@ export async function attemptProvider(
         ...ctx.meta,
         stream: ctx.meta.stream,
     } as ProviderExecuteArgs["meta"];
+    delete (meta as Record<string, unknown>).latency_ms;
+    delete (meta as Record<string, unknown>).generation_ms;
+    delete (ctx.meta as Record<string, unknown>).latency_ms;
+    delete (ctx.meta as Record<string, unknown>).generation_ms;
 
     await onCallStart(ctx.endpoint, adapter.name, baseModel);
 
@@ -104,12 +108,10 @@ export async function attemptProvider(
         }
 
         const duration = Math.round(performance.now() - t0);
-        const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
-        const latencyMs = typeof meta.latency_ms === "number" ? meta.latency_ms : undefined;
-        const generationMs = typeof meta.generation_ms === "number"
-            ? meta.generation_ms
-            : (latencyMs !== undefined ? Math.max(duration - latencyMs, 0) : duration);
-        const fallbackLatencyMs = endToEndMs - duration;
+        const latencyMs = typeof meta.latency_ms === "number"
+            ? Math.max(0, Math.min(Math.round(meta.latency_ms), duration))
+            : undefined;
+        const generationMs = duration;
 
         if (!ctx.stream) {
             ctx.meta.generation_ms = generationMs;
@@ -117,11 +119,7 @@ export async function attemptProvider(
             ctx.meta.generation_ms = meta.generation_ms;
         }
 
-        if (typeof meta.latency_ms === "number") {
-            ctx.meta.latency_ms = meta.latency_ms;
-        } else if (typeof ctx.meta.latency_ms !== "number") {
-            ctx.meta.latency_ms = fallbackLatencyMs;
-        }
+        ctx.meta.latency_ms = typeof latencyMs === "number" ? latencyMs : generationMs;
 
         // Record adapter roundtrip if not already recorded (first adapter)
         if (timing.timer.snapshot().adapter_roundtrip_ms === undefined) {
@@ -147,7 +145,7 @@ export async function attemptProvider(
                     ...r.normalized.meta,
                     throughput_tps: throughputTps,
                     generation_ms: generationMs,
-                    latency_ms: ctx.meta.latency_ms ?? fallbackLatencyMs,
+                    latency_ms: ctx.meta.latency_ms ?? generationMs,
                     finish_reason: r.bill?.finish_reason ?? null,
                 };
             }
@@ -160,7 +158,7 @@ export async function attemptProvider(
                     ...responseJson.meta,
                     throughput_tps: throughputTps,
                     generation_ms: generationMs,
-                    latency_ms: ctx.meta.latency_ms ?? fallbackLatencyMs,
+                    latency_ms: ctx.meta.latency_ms ?? generationMs,
                     finish_reason: r.bill?.finish_reason ?? null,
                 };
                 r.upstream = new Response(JSON.stringify(responseJson), {
@@ -177,8 +175,8 @@ export async function attemptProvider(
                 provider: adapter.name,
                 model: baseModel,
                 ok: true,
-                latency_ms: endToEndMs,      // End-to-end request time for health monitoring
-                generation_ms: generationMs, // Time from first token to final for non-stream
+                latency_ms: ctx.meta.latency_ms ?? generationMs,
+                generation_ms: generationMs,
                 tokens_in: tokensIn,
                 tokens_out: tokensOut,
             });
@@ -235,27 +233,21 @@ export async function attemptProvider(
         }
 
         // Calculate timings for error case
-        const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
-        const latencyMs = typeof meta.latency_ms === "number" ? meta.latency_ms : undefined;
-        const generationMs = typeof meta.generation_ms === "number"
-            ? meta.generation_ms
-            : (latencyMs !== undefined ? Math.max(duration - latencyMs, 0) : duration);
-        const fallbackLatencyMs = endToEndMs - generationMs;
+        const latencyMs = typeof meta.latency_ms === "number"
+            ? Math.max(0, Math.min(Math.round(meta.latency_ms), duration))
+            : undefined;
+        const generationMs = duration;
 
         if (!ctx.stream) {
             ctx.meta.generation_ms = generationMs;
         }
-        if (typeof meta.latency_ms === "number") {
-            ctx.meta.latency_ms = meta.latency_ms;
-        } else if (typeof ctx.meta.latency_ms !== "number") {
-            ctx.meta.latency_ms = fallbackLatencyMs;
-        }
+        ctx.meta.latency_ms = typeof latencyMs === "number" ? latencyMs : generationMs;
 
         await onCallEnd(ctx.endpoint, {
             provider: adapter.name,
             model: baseModel,
             ok: false,
-            latency_ms: endToEndMs,
+            latency_ms: ctx.meta.latency_ms ?? generationMs,
             generation_ms: generationMs,
         });
 

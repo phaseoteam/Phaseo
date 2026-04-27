@@ -1,5 +1,25 @@
 # @ai-stats/py-sdk
 
+## 2.0.1
+
+### Patch Changes
+
+- [#367](https://github.com/AI-Stats/AI-Stats/pull/367) [`4153c29`](https://github.com/AI-Stats/AI-Stats/commit/4153c293f05414e68dcfd4e0d6b84952b2ec6fcd) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate catalog model discovery from callable SDK helper IDs.
+
+  Request-side model identifiers are now treated as runtime strings so newly released
+  models can be used without waiting for an SDK release. Generated helper constants
+  are now sourced from the current callable-on-gateway snapshot instead of the full
+  catalog, and SDK release automation treats model helper churn as patch-level data
+  updates instead of forcing minor or major version jumps.
+
+## 2.0.0
+
+### Major Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes (model IDs removed (1) [qwen/qwen3-tts-tokenizer-12hz]).
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
 ## 1.2.0
 
 ### Minor Changes

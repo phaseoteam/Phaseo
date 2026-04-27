@@ -141,7 +141,49 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "deranked_lvl1",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash",
+    "provider_api_model_id": "venice:deepseek/deepseek-v4-flash",
+    "provider_model_slug": "deepseek-v4-flash",
+    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 384000,
+    "effective_from": "2026-04-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-pro",
+    "provider_api_model_id": "venice:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek-v4-pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 384000,
+    "effective_from": "2026-04-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
         "params": []
       }
     ]
@@ -465,6 +507,27 @@
       {
         "capability_id": "text.generate",
         "status": "deranked_lvl1",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "venice:moonshotai/kimi-k2.6",
+    "provider_model_slug": "kimi-k2-6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": true,
+    "quantization_scheme": "int4",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-04-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
         "params": []
       }
     ]
@@ -1095,6 +1158,27 @@
       {
         "capability_id": "text.generate",
         "status": "deranked_lvl1",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "venice:z-ai/glm-5.1",
+    "provider_model_slug": "zai-org-glm-5-1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": 24000,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
         "params": []
       }
     ]

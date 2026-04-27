@@ -4494,7 +4494,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3-haiku/model.json": {
-      "hash": "e39e3fccdb11f834174c2e755ec44912",
+      "hash": "7653183db3171580ecbb372de6c30ba8",
       "meta": {
         "model_id": "anthropic/claude-3-haiku",
         "organisation_id": "anthropic",
@@ -5622,7 +5622,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash/model.json": {
-      "hash": "3738977ab99a98283eaf8b6d3c93ab63",
+      "hash": "1c14b1a7c471fbf7fa754ec22dc5d94f",
       "meta": {
         "model_id": "google/gemini-2.0-flash",
         "organisation_id": "google",
@@ -5646,7 +5646,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-lite/model.json": {
-      "hash": "00c8539639b23dc584d30f43605514c4",
+      "hash": "83865b17cc98337a93b5004e99abbc11",
       "meta": {
         "model_id": "google/gemini-2.0-flash-lite",
         "organisation_id": "google",
@@ -5782,7 +5782,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-tts-2025-05-20/model.json": {
-      "hash": "46b64c87f4fd7c6ae46df6fbbd791e03",
+      "hash": "eed61a232aae9dbf109570f0928efa77",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-tts-2025-05-20",
         "organisation_id": "google",
@@ -5790,7 +5790,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-tts-2025-12-10/model.json": {
-      "hash": "ac903f2c34ad31ba2a36a0452cd0a689",
+      "hash": "c579699ff818ff8932707fb8e8a8cc5b",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-tts-2025-12-10",
         "organisation_id": "google",
@@ -5822,7 +5822,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-preview-tts/model.json": {
-      "hash": "f6f7c6cad611d8cd768336a51f28ad47",
+      "hash": "671e7ebef659f3f8d57c21143b4d06b2",
       "meta": {
         "model_id": "google/gemini-2.5-pro-preview-tts",
         "organisation_id": "google",
@@ -5830,7 +5830,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-preview-tts-2025-05-20/model.json": {
-      "hash": "7c4d5fd92448b803700366e59424eb76",
+      "hash": "a0f66eaf1406b7855f6ae5779fed969c",
       "meta": {
         "model_id": "google/gemini-2.5-pro-preview-tts-2025-05-20",
         "organisation_id": "google",
@@ -6198,7 +6198,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-1/model.json": {
-      "hash": "f642a03d57f8e71661417181b5add1c6",
+      "hash": "18e77c22b60cfb74508cb7cf59946a58",
       "meta": {
         "model_id": "google/lyria-1",
         "organisation_id": "google",
@@ -6206,7 +6206,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-2/model.json": {
-      "hash": "0c8bd05f3ea72d3bd6b238851c18eb5a",
+      "hash": "7ca4e012effadc487ceddb15df7bcb66",
       "meta": {
         "model_id": "google/lyria-2",
         "organisation_id": "google",
@@ -6214,7 +6214,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3/model.json": {
-      "hash": "5e6d8c3bbdca808c54288a95d2f090fe",
+      "hash": "ecc7edcfdbb76083776858617eb73c01",
       "meta": {
         "model_id": "google/lyria-3",
         "organisation_id": "google",
@@ -7358,7 +7358,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/minimax/music-1.5/model.json": {
-      "hash": "6e14e91b0b18cc7606067fea332189cc",
+      "hash": "0cfb6222609b191619425a7137ef129b",
       "meta": {
         "model_id": "minimax/music-1.5",
         "organisation_id": "minimax",
@@ -7366,7 +7366,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/minimax/music-2.0/model.json": {
-      "hash": "71ef1e60ab1d9ae27c9a0047178eb033",
+      "hash": "e1fafd78e7ec54c3a8fb9b4933e317a3",
       "meta": {
         "model_id": "minimax/music-2.0",
         "organisation_id": "minimax",
@@ -7374,7 +7374,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/minimax/music-2.5/model.json": {
-      "hash": "84c9c35ac1f16a69f42aeb66a220f871",
+      "hash": "3856d7dcbdacdc7e19035c07e8d53e64",
       "meta": {
         "model_id": "minimax/music-2.5",
         "organisation_id": "minimax",
@@ -7502,7 +7502,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/devstral-medium-1.0/model.json": {
-      "hash": "fd497d6a5ba24970e0654fa2cb1fd65f",
+      "hash": "c00204f6acf38776170ccac9f5789005",
       "meta": {
         "model_id": "mistral/devstral-medium-1.0",
         "organisation_id": "mistral",
@@ -7518,7 +7518,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/devstral-small-1.1/model.json": {
-      "hash": "08b24a6a7e375772f7e32b23e7315111",
+      "hash": "8f571b010f917e61c561d866b0041a87",
       "meta": {
         "model_id": "mistral/devstral-small-1.1",
         "organisation_id": "mistral",
@@ -7526,7 +7526,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/devstral-small-2.0/model.json": {
-      "hash": "05fb8238088f4eafc2ab7859431b1cbf",
+      "hash": "569375d78ef04bb71bde41aec01de7ae",
       "meta": {
         "model_id": "mistral/devstral-small-2.0",
         "organisation_id": "mistral",
@@ -7686,7 +7686,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-large-2.1/model.json": {
-      "hash": "d19e69d171d7a7615c19ff829950a4ce",
+      "hash": "227a4f3a00b03aa69692e0171b26bc3c",
       "meta": {
         "model_id": "mistral/mistral-large-2.1",
         "organisation_id": "mistral",
@@ -7726,7 +7726,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-moderation/model.json": {
-      "hash": "988f83b96a697a594e30ac1fbc2d6841",
+      "hash": "219b638385a142f396222f97f543f18e",
       "meta": {
         "model_id": "mistral/mistral-moderation",
         "organisation_id": "mistral",
@@ -7758,7 +7758,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-ocr-2/model.json": {
-      "hash": "63fb3211e5305652b8b6833858f68e19",
+      "hash": "156acd3ad506880e472c041a16b65bfd",
       "meta": {
         "model_id": "mistral/mistral-ocr-2",
         "organisation_id": "mistral",
@@ -7782,7 +7782,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-small-2.0/model.json": {
-      "hash": "e6d83ecad0ec293e9af50ad0635f8594",
+      "hash": "81da06ca88ecb08c9dd2fd56e58296f1",
       "meta": {
         "model_id": "mistral/mistral-small-2.0",
         "organisation_id": "mistral",
@@ -7822,7 +7822,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-small-creative/model.json": {
-      "hash": "e4477a0ff85a1a28e286435af3b12d09",
+      "hash": "079711fcae111e23736346e78cc8808d",
       "meta": {
         "model_id": "mistral/mistral-small-creative",
         "organisation_id": "mistral",
@@ -7862,7 +7862,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/pixtral-large/model.json": {
-      "hash": "f0d3087acb3767aeccc4e350f22e6884",
+      "hash": "3bd48847f6942f1c41e3f404818deafa",
       "meta": {
         "model_id": "mistral/pixtral-large",
         "organisation_id": "mistral",
@@ -7870,7 +7870,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/voxtral-mini/model.json": {
-      "hash": "65d3a68165572681dd952113b1c9626f",
+      "hash": "d146cb5c61f5f4c6f145a17aaae1a8be",
       "meta": {
         "model_id": "mistral/voxtral-mini",
         "organisation_id": "mistral",
@@ -7878,7 +7878,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/voxtral-mini-transcribe/model.json": {
-      "hash": "6d5fdb03cd530931882d9451acd281b8",
+      "hash": "e144470c98d40227586ab6532a41c69e",
       "meta": {
         "model_id": "mistral/voxtral-mini-transcribe",
         "organisation_id": "mistral",
@@ -7886,7 +7886,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/voxtral-mini-transcribe-2/model.json": {
-      "hash": "d25f71bbf6683f99f63b5ec6cf6b98ad",
+      "hash": "db488fe4955505c55ed33c0efcf33336",
       "meta": {
         "model_id": "mistral/voxtral-mini-transcribe-2",
         "organisation_id": "mistral",
@@ -8654,7 +8654,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-mini-transcribe/model.json": {
-      "hash": "fb550b12dc26ad0c892252aa24580c1d",
+      "hash": "b9c71391dc305ba349ce9b51a21dfe83",
       "meta": {
         "model_id": "openai/gpt-4o-mini-transcribe",
         "organisation_id": "openai",
@@ -8662,7 +8662,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-mini-transcribe-2025-03-20/model.json": {
-      "hash": "636e61a34414e89b7f557f3a3e0e5041",
+      "hash": "0c226cd6b8f9f1ad03f6e8a66912604b",
       "meta": {
         "model_id": "openai/gpt-4o-mini-transcribe-2025-03-20",
         "organisation_id": "openai",
@@ -8670,7 +8670,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-mini-tts/model.json": {
-      "hash": "649e0cbf904698c1060db927a5231120",
+      "hash": "aee4bd05fdfe12962f6aa01a46182ce7",
       "meta": {
         "model_id": "openai/gpt-4o-mini-tts",
         "organisation_id": "openai",
@@ -8678,7 +8678,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-mini-tts-2025-03-20/model.json": {
-      "hash": "3cd7719eb79a46801334ca923771068a",
+      "hash": "fa1c0a875a49c834c4fb0d732fe07de5",
       "meta": {
         "model_id": "openai/gpt-4o-mini-tts-2025-03-20",
         "organisation_id": "openai",
@@ -8718,7 +8718,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-transcribe/model.json": {
-      "hash": "8fb34e2d64f5f2a67c3f924f7be05775",
+      "hash": "44b0ad72ed85eac169b2ef43e082e341",
       "meta": {
         "model_id": "openai/gpt-4o-transcribe",
         "organisation_id": "openai",
@@ -8726,7 +8726,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-transcribe-diarize/model.json": {
-      "hash": "ed34060abbc2a83cdf3b44a46bc3c930",
+      "hash": "e3555da7feb44a6ee2489806daa1a375",
       "meta": {
         "model_id": "openai/gpt-4o-transcribe-diarize",
         "organisation_id": "openai",
@@ -9374,7 +9374,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/tts-1/model.json": {
-      "hash": "74a2a502f3baf9bcd8fb33a898971ec8",
+      "hash": "8fd70aeed092c1c78bb3350d1244a8e3",
       "meta": {
         "model_id": "openai/tts-1",
         "organisation_id": "openai",
@@ -9382,7 +9382,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/tts-1-hd/model.json": {
-      "hash": "d5aadeaadb80576381999f3072cca10f",
+      "hash": "9af29632b4eed61610707a745e1a7446",
       "meta": {
         "model_id": "openai/tts-1-hd",
         "organisation_id": "openai",
@@ -10254,7 +10254,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-tts/model.json": {
-      "hash": "cb0298dd33125ade06a6a7fef0dd1adc",
+      "hash": "b654f8aa2c7909d109e6f55eb6791fb0",
       "meta": {
         "model_id": "qwen/qwen3-tts",
         "organisation_id": "qwen",
@@ -10262,7 +10262,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-tts-12hz-0.6b-base/model.json": {
-      "hash": "6d06723f9077707ae837c10ffd789c36",
+      "hash": "e28bf7c952913f3484f39ed557e2bc5a",
       "meta": {
         "model_id": "qwen/qwen3-tts-12hz-0.6b-base",
         "organisation_id": "qwen",
@@ -10270,7 +10270,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-tts-12hz-0.6b-customvoice/model.json": {
-      "hash": "c55499d59fc049181320994e356c63eb",
+      "hash": "e8abd0ca5f8aa6367f42b59831811b95",
       "meta": {
         "model_id": "qwen/qwen3-tts-12hz-0.6b-customvoice",
         "organisation_id": "qwen",
@@ -10278,7 +10278,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-tts-12hz-1.7b-base/model.json": {
-      "hash": "058eb3b5db393c506c57472e19ffad98",
+      "hash": "2dcbf018cdc41c2c4744eb66ef90a0f5",
       "meta": {
         "model_id": "qwen/qwen3-tts-12hz-1.7b-base",
         "organisation_id": "qwen",
@@ -10286,7 +10286,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-tts-12hz-1.7b-voicedesign/model.json": {
-      "hash": "1eda5d3ccb01a4062b5ffaac77708001",
+      "hash": "b29d94ad22f7e1fa8ad6af50d9519389",
       "meta": {
         "model_id": "qwen/qwen3-tts-12hz-1.7b-voicedesign",
         "organisation_id": "qwen",
@@ -11174,7 +11174,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/xiaomi/mimo-v2-tts/model.json": {
-      "hash": "0604c78a9582d427120a0c95fc2b6f5b",
+      "hash": "55a37a3ee1f47ba417aefc3ce5c9e42c",
       "meta": {
         "model_id": "xiaomi/mimo-v2-tts",
         "organisation_id": "xiaomi",
@@ -11473,7 +11473,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "a12a24f5bdbdfd8d4acdc084830f811c",
+      "hash": "92b644219575ce086fd368dbdd70f1a3",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -11525,7 +11525,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "b6b583eb1c2a4e34e3a0fb87b7f6e635",
+      "hash": "622e10d46176b604abec5f4dd2b28231",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -11551,7 +11551,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/baseten/models.json": {
-      "hash": "abaaa1117a6f2ab0cbcefd9b5ec0d55f",
+      "hash": "e8903c611242050073ea2f287d27a702",
       "meta": {
         "api_provider_id": "baseten",
         "kind": "provider_models"
@@ -11577,7 +11577,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/byteplus/models.json": {
-      "hash": "b91205b260814c0e43a0b401c1a4ba95",
+      "hash": "1f24befabddc1e7ab303eee7d634bc1f",
       "meta": {
         "api_provider_id": "byteplus",
         "kind": "provider_models"
@@ -11590,7 +11590,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cerebras/models.json": {
-      "hash": "0bc619fc1a741ffdc6ced75dc34bfcfe",
+      "hash": "4a3b979a76455edf2445120dc744d710",
       "meta": {
         "api_provider_id": "cerebras",
         "kind": "provider_models"
@@ -11640,7 +11640,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepinfra/models.json": {
-      "hash": "21c1d477755e4ed68446bea7ca011fed",
+      "hash": "5bd534d2c4363961c61cbbdb8e5f8bbf",
       "meta": {
         "api_provider_id": "deepinfra",
         "kind": "provider_models"
@@ -11653,7 +11653,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepseek/models.json": {
-      "hash": "f4c76672e96109fdd038f0ee76cadb4c",
+      "hash": "9427f4710bfd41f30a8530b7413fb73f",
       "meta": {
         "api_provider_id": "deepseek",
         "kind": "provider_models"
@@ -11679,7 +11679,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/fireworks/models.json": {
-      "hash": "c6226196043cda9d28cc1d81bf171128",
+      "hash": "59e70349f039189d1d2573ca8480983c",
       "meta": {
         "api_provider_id": "fireworks",
         "kind": "provider_models"
@@ -11698,7 +11698,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/gmicloud/models.json": {
-      "hash": "fa3b32233cd5f6892475121bcdf90b04",
+      "hash": "3b60009143a901e11fd5dd6933883ad9",
       "meta": {
         "api_provider_id": "gmicloud",
         "kind": "provider_models"
@@ -11711,7 +11711,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "eff981f265162807e3058b6c138c3874",
+      "hash": "8fd0c858bd76c2542c6d6d52030de740",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -11724,7 +11724,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-vertex/models.json": {
-      "hash": "92453d56898ec275ab63cc2c6f4b2360",
+      "hash": "fec409f2ecdf37989e967bcd20a3b541",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -11832,7 +11832,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/mistral/models.json": {
-      "hash": "46762e851072de6e35aeb8dbc872aad0",
+      "hash": "b460aa0b476d5b5463ea180704f32b6c",
       "meta": {
         "api_provider_id": "mistral",
         "kind": "provider_models"
@@ -11845,7 +11845,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/moonshotai/models.json": {
-      "hash": "ece68d1fd55252b1741932a3fbf11de6",
+      "hash": "579e0835c8d46614f3bb6cc63f79b6ab",
       "meta": {
         "api_provider_id": "moonshotai",
         "kind": "provider_models"
@@ -11909,7 +11909,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/models.json": {
-      "hash": "f21dfa4225592866ffe73f76106ae28d",
+      "hash": "b47efaab3ca790d7ea68967ccb08c364",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -11928,7 +11928,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/openai/models.json": {
-      "hash": "f644a0c350fc86269177f3ea67023063",
+      "hash": "341d366f7f5b2da7dbef6adb77a3c29d",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -12016,7 +12016,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice/models.json": {
-      "hash": "8636ac37dde4bb61c0a21edb6cd8c506",
+      "hash": "203a91d85b1650f5a747217d0af1707b",
       "meta": {
         "api_provider_id": "venice",
         "kind": "provider_models"
@@ -12029,7 +12029,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/models.json": {
-      "hash": "8045be5669ddaf741b4d88b6c9ce813c",
+      "hash": "da18a57d9098f13c14381472b9eda707",
       "meta": {
         "api_provider_id": "venice/e2ee",
         "kind": "provider_models"
@@ -12081,7 +12081,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/xiaomi/models.json": {
-      "hash": "705249bce32382930c0b5d074c1d5ea0",
+      "hash": "7834e6a930d5c7d283c4783e7019c98e",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -18421,13 +18421,13 @@
       }
     },
     "../../packages/data/catalog/src/data/organisations/cogito/organisation.json": {
-      "hash": "dfefdd168e5c21787f3d849340e2ca0a",
+      "hash": "ddd4d02f2e13e192362beefc4a3f4ff0",
       "meta": {
         "organisation_id": "cogito"
       }
     },
     "../../packages/data/catalog/src/data/organisations/venice/organisation.json": {
-      "hash": "3e9722a7b512b82a7180202cdcc6f520",
+      "hash": "7f682b6d878e288b8b18b3a4b27d15ee",
       "meta": {
         "organisation_id": "venice"
       }
@@ -18441,7 +18441,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/baidu/ernie-4.5-vl-28b-a3b-thinking/model.json": {
-      "hash": "6d7944760914c2385bad2cc98281edd2",
+      "hash": "c2ee53274376445a92b11aeda2906a6f",
       "meta": {
         "model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
         "organisation_id": "baidu",
@@ -18449,7 +18449,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/black-forest-labs/flux-1-dev/model.json": {
-      "hash": "f86f76c2c0cca1af29be6c7ca4e8c5f5",
+      "hash": "6185e932d7ec1e7668c52ac96d4123a5",
       "meta": {
         "model_id": "black-forest-labs/flux-1-dev",
         "organisation_id": "black-forest-labs",
@@ -18457,7 +18457,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/black-forest-labs/flux-1-kontext-max/model.json": {
-      "hash": "262f7696ba38bd85ef041ea5dc28e508",
+      "hash": "89dc0a241cee303d4c0f0cad46578fd7",
       "meta": {
         "model_id": "black-forest-labs/flux-1-kontext-max",
         "organisation_id": "black-forest-labs",
@@ -18465,7 +18465,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/black-forest-labs/flux-1-kontext-pro/model.json": {
-      "hash": "9d946b804e5274fdeada77e45bac8036",
+      "hash": "21577b1391465aafebc28a7b91fb8c49",
       "meta": {
         "model_id": "black-forest-labs/flux-1-kontext-pro",
         "organisation_id": "black-forest-labs",
@@ -18473,7 +18473,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/black-forest-labs/flux-1-schnell/model.json": {
-      "hash": "56aaaf1711848025d24395072be09116",
+      "hash": "6ac2386f800938c353099b6f90a9340d",
       "meta": {
         "model_id": "black-forest-labs/flux-1-schnell",
         "organisation_id": "black-forest-labs",
@@ -18481,7 +18481,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/black-forest-labs/flux-1.1-pro/model.json": {
-      "hash": "9efe44bc32193478630a1b44aec98ec9",
+      "hash": "806bf70bff29b98ee57de205c085ed6e",
       "meta": {
         "model_id": "black-forest-labs/flux-1.1-pro",
         "organisation_id": "black-forest-labs",
@@ -18489,7 +18489,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/black-forest-labs/flux-1.1-pro-ultra/model.json": {
-      "hash": "4e1462b219edd3deb3a8a9ecff56640e",
+      "hash": "af9c50262913dbb5508cdade8cad5882",
       "meta": {
         "model_id": "black-forest-labs/flux-1.1-pro-ultra",
         "organisation_id": "black-forest-labs",
@@ -18497,7 +18497,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedance-1.0-pro/model.json": {
-      "hash": "247e98db2ac8308648adb85808b3fe32",
+      "hash": "976240ad73355ee396279bd1b1498fc0",
       "meta": {
         "model_id": "bytedance/seedance-1.0-pro",
         "organisation_id": "bytedance",
@@ -18505,7 +18505,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedance-1.0-pro-fast/model.json": {
-      "hash": "75ad497b333cfa54e06c9f8d4457a7a2",
+      "hash": "2653bb68c154aa6e99cd86352f6f74ac",
       "meta": {
         "model_id": "bytedance/seedance-1.0-pro-fast",
         "organisation_id": "bytedance",
@@ -18513,7 +18513,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedance-1.5-pro/model.json": {
-      "hash": "5c6682f1cfd46c67fd3597d7514bb79e",
+      "hash": "3396dba03c11c25246840b479e17c9bd",
       "meta": {
         "model_id": "bytedance/seedance-1.5-pro",
         "organisation_id": "bytedance",
@@ -18537,7 +18537,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedream-4.0/model.json": {
-      "hash": "c6e59af43614365ccb7883c8f276a3be",
+      "hash": "be81b75a104c706db36cb295ede0ee65",
       "meta": {
         "model_id": "bytedance/seedream-4.0",
         "organisation_id": "bytedance",
@@ -18545,7 +18545,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedream-5.0/model.json": {
-      "hash": "1ed80026c84867b17f9a422bb6e19423",
+      "hash": "46475e89f061a042be8e679c738aec83",
       "meta": {
         "model_id": "bytedance/seedream-5.0",
         "organisation_id": "bytedance",
@@ -18553,7 +18553,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cogito/cogito-671b-v2.1/model.json": {
-      "hash": "7a951ca606235dfbca8afe6389a835a8",
+      "hash": "7b8aff345713439084db97f66e3ae6e5",
       "meta": {
         "model_id": "cogito/cogito-671b-v2.1",
         "organisation_id": "cogito",
@@ -18561,7 +18561,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/command-r-plus/model.json": {
-      "hash": "b62e0ad4c7099648a51b61574c1dea90",
+      "hash": "36610a86f442344a762e3b94520180dd",
       "meta": {
         "model_id": "cohere/command-r-plus",
         "organisation_id": "cohere",
@@ -18569,7 +18569,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/command-r7b/model.json": {
-      "hash": "43143200a45fc6038e128473efaad76f",
+      "hash": "4f8263788b425e7fdc758733eeac8731",
       "meta": {
         "model_id": "cohere/command-r7b",
         "organisation_id": "cohere",
@@ -18577,7 +18577,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/tiny-aya-earth/model.json": {
-      "hash": "551396c3fa63b8499e391703fbf8ec12",
+      "hash": "18c27540337239f810dbf7515b6bfcad",
       "meta": {
         "model_id": "cohere/tiny-aya-earth",
         "organisation_id": "cohere",
@@ -18585,7 +18585,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/tiny-aya-fire/model.json": {
-      "hash": "009d5181c3299b6a76782533eae45833",
+      "hash": "ccbfc8de69e2564a6afc806747e29d46",
       "meta": {
         "model_id": "cohere/tiny-aya-fire",
         "organisation_id": "cohere",
@@ -18593,7 +18593,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/tiny-aya-global/model.json": {
-      "hash": "7dbf26e33f3495e2b98d42fc29aa9c69",
+      "hash": "2e79c39520635bde3c7161a77554be31",
       "meta": {
         "model_id": "cohere/tiny-aya-global",
         "organisation_id": "cohere",
@@ -18601,7 +18601,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/tiny-aya-water/model.json": {
-      "hash": "afe81e48d15a9d1abbd930c84d68c786",
+      "hash": "57aed32fb68bcd221893878396e39657",
       "meta": {
         "model_id": "cohere/tiny-aya-water",
         "organisation_id": "cohere",
@@ -18609,7 +18609,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-prover-v2-671b/model.json": {
-      "hash": "f246719bcffb20b4fdad5577e8af9155",
+      "hash": "bc120995a507d548217d0222608a8b5b",
       "meta": {
         "model_id": "deepseek/deepseek-prover-v2-671b",
         "organisation_id": "deepseek",
@@ -18617,7 +18617,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-r1/model.json": {
-      "hash": "30d72b020d6d51e633f3b608ff5f26e3",
+      "hash": "06ff1afd018338277ac73236e95d8dd8",
       "meta": {
         "model_id": "deepseek/deepseek-r1",
         "organisation_id": "deepseek",
@@ -18625,7 +18625,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-r1-turbo/model.json": {
-      "hash": "35a27180a0010cd94ae69a1e9307aca2",
+      "hash": "a9ff34baad29563800acc51f3000617c",
       "meta": {
         "model_id": "deepseek/deepseek-r1-turbo",
         "organisation_id": "deepseek",
@@ -18633,7 +18633,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3/model.json": {
-      "hash": "03cfb28ce8abd9b76760743ec24e05f4",
+      "hash": "2da65af41aa583d840f1da612d47fdc3",
       "meta": {
         "model_id": "deepseek/deepseek-v3",
         "organisation_id": "deepseek",
@@ -18641,7 +18641,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3-turbo/model.json": {
-      "hash": "9f1fa426b2dd3834eaa50b254bfc114e",
+      "hash": "9f08dfedb45ede9cdd6f4c0d1c366dce",
       "meta": {
         "model_id": "deepseek/deepseek-v3-turbo",
         "organisation_id": "deepseek",
@@ -18649,7 +18649,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3.2-thinking/model.json": {
-      "hash": "1bf3d1141a5aba3bae21fa4859889ddc",
+      "hash": "b9887cfa4b59f2ee43c3a1ae92ff04bb",
       "meta": {
         "model_id": "deepseek/deepseek-v3.2-thinking",
         "organisation_id": "deepseek",
@@ -18657,7 +18657,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/elevenlabs/music/model.json": {
-      "hash": "7120004b279b509273d4a4d537008b52",
+      "hash": "138444550578128ff0ba3f40c3a3b514",
       "meta": {
         "model_id": "elevenlabs/music",
         "organisation_id": "eleven-labs",
@@ -18665,7 +18665,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/embeddinggemma-300m/model.json": {
-      "hash": "97ea99af107e23c191100994a4dbdbd9",
+      "hash": "c03aa67846f82243ba023f17b2dd8f0a",
       "meta": {
         "model_id": "google/embeddinggemma-300m",
         "organisation_id": "google",
@@ -18673,7 +18673,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3.1-flash-tts-preview/model.json": {
-      "hash": "0c932987dfd7215faf01bdd93516b03a",
+      "hash": "00712fd6c7bd511e0645201586010ae5",
       "meta": {
         "model_id": "google/gemini-3.1-flash-tts-preview",
         "organisation_id": "google",
@@ -18689,7 +18689,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemma-3-270m/model.json": {
-      "hash": "8204368094db93487934e29c1ca83966",
+      "hash": "93a7c90aab90cbf1898229d0cc339c63",
       "meta": {
         "model_id": "google/gemma-3-270m",
         "organisation_id": "google",
@@ -18697,7 +18697,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3-clip-preview/model.json": {
-      "hash": "88a3ca0d6a18236d9b6e2752e94f06a6",
+      "hash": "cd2a8e61303943258b62a50d4df95ff1",
       "meta": {
         "model_id": "google/lyria-3-clip-preview",
         "organisation_id": "google",
@@ -18705,7 +18705,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3-pro-preview/model.json": {
-      "hash": "37cb3fdfd70ae51e37fc2f2f55c2a166",
+      "hash": "9f2dec5f67b6b7b911c2c0cf0283fc88",
       "meta": {
         "model_id": "google/lyria-3-pro-preview",
         "organisation_id": "google",
@@ -18713,7 +18713,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3-8b-lite/model.json": {
-      "hash": "9a671a6ce490018d08aea6c8ed1b5285",
+      "hash": "8263c272b22ad3fd01a1a29c38db2774",
       "meta": {
         "model_id": "meta/llama-3-8b-lite",
         "organisation_id": "meta",
@@ -18721,7 +18721,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-guard-3-8b/model.json": {
-      "hash": "16688f4ff9d6a872ee2c1b47d998cfcf",
+      "hash": "5338aff52afd803b23ab4c32d17b2392",
       "meta": {
         "model_id": "meta/llama-guard-3-8b",
         "organisation_id": "meta",
@@ -18729,7 +18729,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-guard-4-12b/model.json": {
-      "hash": "45140126e44b5da97e9e77a5163e151a",
+      "hash": "58b820735057b8b0d7f2f7a3b2d4b86f",
       "meta": {
         "model_id": "meta/llama-guard-4-12b",
         "organisation_id": "meta",
@@ -18737,7 +18737,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-prompt-guard-2-22m/model.json": {
-      "hash": "5e760edd61f02554839c321049c531ea",
+      "hash": "1ee81443206e0d1c2a784e00dd5d58d0",
       "meta": {
         "model_id": "meta/llama-prompt-guard-2-22m",
         "organisation_id": "meta",
@@ -18745,7 +18745,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-prompt-guard-2-86m/model.json": {
-      "hash": "85d1bdf16e2ab401c6e1dff3b3714627",
+      "hash": "ca552f381f9749be1318c774756f230c",
       "meta": {
         "model_id": "meta/llama-prompt-guard-2-86m",
         "organisation_id": "meta",
@@ -18753,7 +18753,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/minimax/minimax-m2.5-highspeed/model.json": {
-      "hash": "581d33d90395e20775188bd91de158bb",
+      "hash": "32085bea0f0be51b912074ca1d3f6f6f",
       "meta": {
         "model_id": "minimax/minimax-m2.5-highspeed",
         "organisation_id": "minimax",
@@ -18761,7 +18761,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/minimax/music-2.6/model.json": {
-      "hash": "ec13d01644069679d6d7471eb7c9516d",
+      "hash": "f5ab7067b3df3e532e280e81fbbff028",
       "meta": {
         "model_id": "minimax/music-2.6",
         "organisation_id": "minimax",
@@ -18769,7 +18769,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/magistral-small-2506/model.json": {
-      "hash": "a67b4efddfbdec22264f0d153da20c3e",
+      "hash": "719c3e663f19163d93ff8b407a540971",
       "meta": {
         "model_id": "mistral/magistral-small-2506",
         "organisation_id": "mistral",
@@ -18777,7 +18777,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/ministral-3-14b-2512/model.json": {
-      "hash": "aa55273ca872ffe45eab2f95749c7cf0",
+      "hash": "7d25e247b8b63339bc9cac53a7872fbb",
       "meta": {
         "model_id": "mistral/ministral-3-14b-2512",
         "organisation_id": "mistral",
@@ -18785,7 +18785,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-3.1-24b/model.json": {
-      "hash": "ff88825066fc0e12ab6905ab6bfae019",
+      "hash": "868160a2e524ff5add83d6a2af20fb45",
       "meta": {
         "model_id": "mistral/mistral-3.1-24b",
         "organisation_id": "mistral",
@@ -18793,7 +18793,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-8b-2512/model.json": {
-      "hash": "95e8c9be2b185f5869491a16a35604eb",
+      "hash": "5c11931aad81dd179fa9a9545492a75c",
       "meta": {
         "model_id": "mistral/mistral-8b-2512",
         "organisation_id": "mistral",
@@ -18801,7 +18801,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-nemo-2407/model.json": {
-      "hash": "f19c225c2142722e14e2162e40b8413c",
+      "hash": "7229e350f24f9c18add5f60b8cf2d28e",
       "meta": {
         "model_id": "mistral/mistral-nemo-2407",
         "organisation_id": "mistral",
@@ -18809,7 +18809,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/mistral-small-24b-2501/model.json": {
-      "hash": "0d4e14adfd3e787c59096149c195082b",
+      "hash": "2df60168cb4e900789043af9acad0496",
       "meta": {
         "model_id": "mistral/mistral-small-24b-2501",
         "organisation_id": "mistral",
@@ -18817,7 +18817,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistralai/mistral-nemo/model.json": {
-      "hash": "8fd0bf19ff118841ce07f0630d12921e",
+      "hash": "e3725ab17f4830009931995c2d783b28",
       "meta": {
         "model_id": "mistralai/mistral-nemo",
         "organisation_id": "mistral",
@@ -18833,7 +18833,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/nousresearch/hermes-3-llama-3.1-405b/model.json": {
-      "hash": "e6311e3a4a6fac11d0d207193208b435",
+      "hash": "6a96a50cbb4284c8f6a80a41e171902a",
       "meta": {
         "model_id": "nousresearch/hermes-3-llama-3.1-405b",
         "organisation_id": "nous",
@@ -18841,7 +18841,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/nvidia/nemotron-nano-9b-v2/model.json": {
-      "hash": "75b05546ab186f02ba877c119fe2f755",
+      "hash": "bbf2cff2e6eddcc6ecc9e51e7c4c55bb",
       "meta": {
         "model_id": "nvidia/nemotron-nano-9b-v2",
         "organisation_id": "nvidia",
@@ -18849,7 +18849,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/nvidia/nvidia-nemotron-nano-12b-v2-vl/model.json": {
-      "hash": "6ed41fe8da3a232f968e4260ca04ec52",
+      "hash": "934c74bd8ce4d7f456a2b746008354ba",
       "meta": {
         "model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
         "organisation_id": "nvidia",
@@ -18857,7 +18857,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-3.5-turbo-16k/model.json": {
-      "hash": "131685357345ea1b6d22bbc1edc4d852",
+      "hash": "22537fb3b3c40d66c0b9401ffd56e562",
       "meta": {
         "model_id": "openai/gpt-3.5-turbo-16k",
         "organisation_id": "openai",
@@ -18881,7 +18881,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/whisper-large-v3/model.json": {
-      "hash": "ddd7f6dfaab18cf310dbfaf1004e9f81",
+      "hash": "2b6a6576c241001c861138e3322c4c22",
       "meta": {
         "model_id": "openai/whisper-large-v3",
         "organisation_id": "openai",
@@ -18889,7 +18889,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/whisper-large-v3-turbo/model.json": {
-      "hash": "6057f3449b86c510706b07dfd7d3150e",
+      "hash": "af8dc16c17864647a20cc23c9909ec14",
       "meta": {
         "model_id": "openai/whisper-large-v3-turbo",
         "organisation_id": "openai",
@@ -18897,7 +18897,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qvq-max/model.json": {
-      "hash": "965eb22298c7f351cc69373a6fefa4c1",
+      "hash": "1341c5426c3e23b2081cd99b9fea90f9",
       "meta": {
         "model_id": "qwen/qvq-max",
         "organisation_id": "qwen",
@@ -18905,7 +18905,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-flash/model.json": {
-      "hash": "e8ae23418f8fccdec1499f96690a3562",
+      "hash": "29e1bcbb7f755771033cf19e8708d0da",
       "meta": {
         "model_id": "qwen/qwen-flash",
         "organisation_id": "qwen",
@@ -18913,7 +18913,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-flash-character/model.json": {
-      "hash": "0fd1ec9969e79a7688ed2d9a610f0cca",
+      "hash": "293cf8e2501e16a18fbd00e806381aa5",
       "meta": {
         "model_id": "qwen/qwen-flash-character",
         "organisation_id": "qwen",
@@ -18921,7 +18921,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-image-edit-max/model.json": {
-      "hash": "a8c418da370ec2d25004898530988af2",
+      "hash": "57d2a41a7fccfc10d9be07700ab7173a",
       "meta": {
         "model_id": "qwen/qwen-image-edit-max",
         "organisation_id": "qwen",
@@ -18929,7 +18929,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-image-max/model.json": {
-      "hash": "3b55dfaa986a81375d7d11ae9f43b31c",
+      "hash": "d75e9d97ff58d201cc36a6fe2fb75a9a",
       "meta": {
         "model_id": "qwen/qwen-image-max",
         "organisation_id": "qwen",
@@ -18937,7 +18937,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-image-plus/model.json": {
-      "hash": "3ace250a295651fd94a3d7895cc0cf48",
+      "hash": "af3570232c075e142852a8448271fc6a",
       "meta": {
         "model_id": "qwen/qwen-image-plus",
         "organisation_id": "qwen",
@@ -18945,7 +18945,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-max/model.json": {
-      "hash": "39605aab3bc4dcf5f751648a7e23d815",
+      "hash": "547fda03f5cf3d9f877192e3bee16661",
       "meta": {
         "model_id": "qwen/qwen-max",
         "organisation_id": "qwen",
@@ -18953,7 +18953,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-mt-flash/model.json": {
-      "hash": "8cd1cca1bb03a7b7b44e2a6e50dabc34",
+      "hash": "299a6096451148cd4a86141d3714fab8",
       "meta": {
         "model_id": "qwen/qwen-mt-flash",
         "organisation_id": "qwen",
@@ -18961,7 +18961,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-mt-lite/model.json": {
-      "hash": "add8717e54997b299ae6acf41fe096f8",
+      "hash": "80738480fd08a4bd106229786c0269c6",
       "meta": {
         "model_id": "qwen/qwen-mt-lite",
         "organisation_id": "qwen",
@@ -18969,7 +18969,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-mt-plus/model.json": {
-      "hash": "1c0b71636ebd09ab853c5d1bd1910208",
+      "hash": "a1cc6d311e8778437b5fc027c76f2833",
       "meta": {
         "model_id": "qwen/qwen-mt-plus",
         "organisation_id": "qwen",
@@ -18977,7 +18977,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-mt-turbo/model.json": {
-      "hash": "5a2bced06316688a34cde880e301a9d0",
+      "hash": "808ca71e4b4ae9d12d8dd20df2a0809b",
       "meta": {
         "model_id": "qwen/qwen-mt-turbo",
         "organisation_id": "qwen",
@@ -18985,7 +18985,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-omni-turbo/model.json": {
-      "hash": "1c2ec218d498e953cd0e12197e837c37",
+      "hash": "6854497bae4c800df5f5e3045c6a93c7",
       "meta": {
         "model_id": "qwen/qwen-omni-turbo",
         "organisation_id": "qwen",
@@ -18993,7 +18993,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-2025-01-25/model.json": {
-      "hash": "deff61b95a64a3dfa575faa50a0455cb",
+      "hash": "769aba46456dac9c31c77bf3954d3296",
       "meta": {
         "model_id": "qwen/qwen-plus-2025-01-25",
         "organisation_id": "qwen",
@@ -19001,7 +19001,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-2025-04-28/model.json": {
-      "hash": "7b47850ee8c7066ed462cc16d46ae921",
+      "hash": "5db093bf6581e94bc7bcce0f0559e70c",
       "meta": {
         "model_id": "qwen/qwen-plus-2025-04-28",
         "organisation_id": "qwen",
@@ -19009,7 +19009,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-2025-07-14/model.json": {
-      "hash": "70fad80e936e286cc86c11db3f59b547",
+      "hash": "6633d1fb01fb45f5f7f4165e2c586715",
       "meta": {
         "model_id": "qwen/qwen-plus-2025-07-14",
         "organisation_id": "qwen",
@@ -19017,7 +19017,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-2025-07-28/model.json": {
-      "hash": "5a07ab8ce8300d63d464f6e763a4d355",
+      "hash": "9d53a9d88e8b59fadedfdf2f3714643d",
       "meta": {
         "model_id": "qwen/qwen-plus-2025-07-28",
         "organisation_id": "qwen",
@@ -19025,7 +19025,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-2025-09-11/model.json": {
-      "hash": "66b567803e21e5607a223b365c499886",
+      "hash": "2f6f69d17435b754678987b44ea4bb0c",
       "meta": {
         "model_id": "qwen/qwen-plus-2025-09-11",
         "organisation_id": "qwen",
@@ -19033,7 +19033,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-2025-12-01/model.json": {
-      "hash": "249a068581f6f45c9d39b460b39718c6",
+      "hash": "5daa33014862d9637ce8b3a535b83a83",
       "meta": {
         "model_id": "qwen/qwen-plus-2025-12-01",
         "organisation_id": "qwen",
@@ -19041,7 +19041,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-plus-character/model.json": {
-      "hash": "455a891dad5876e58f5adbd0ca72459d",
+      "hash": "ee1090af7baa55569321b9ca2cfb94db",
       "meta": {
         "model_id": "qwen/qwen-plus-character",
         "organisation_id": "qwen",
@@ -19049,7 +19049,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-turbo-2024-11-01/model.json": {
-      "hash": "a5d040eed46ba582d45aa8e2c8d4ac65",
+      "hash": "8493c4822bcd9e93754b5231b7533ee6",
       "meta": {
         "model_id": "qwen/qwen-turbo-2024-11-01",
         "organisation_id": "qwen",
@@ -19057,7 +19057,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-turbo-2025-04-28/model.json": {
-      "hash": "2c76bb8b4ed0761c2199fb5451aef1c2",
+      "hash": "2a4828f9b83da505b7059c045f2c6b46",
       "meta": {
         "model_id": "qwen/qwen-turbo-2025-04-28",
         "organisation_id": "qwen",
@@ -19065,7 +19065,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-vl-max-2025-04-08/model.json": {
-      "hash": "ba8c745ce15e0bdcf546316fd4e33366",
+      "hash": "710090263067976ef6f383ce1ab52032",
       "meta": {
         "model_id": "qwen/qwen-vl-max-2025-04-08",
         "organisation_id": "qwen",
@@ -19073,7 +19073,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-vl-max-2025-08-13/model.json": {
-      "hash": "c508ef23ad12a8814ad35d50dd75610b",
+      "hash": "5baa3d74a1bf13d13208b15f7c4064b3",
       "meta": {
         "model_id": "qwen/qwen-vl-max-2025-08-13",
         "organisation_id": "qwen",
@@ -19081,7 +19081,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-vl-plus-2025-01-25/model.json": {
-      "hash": "1132dc4dcd7cd72517ea5a5bfe71925c",
+      "hash": "a331348c6510eb97211de8e5efce5070",
       "meta": {
         "model_id": "qwen/qwen-vl-plus-2025-01-25",
         "organisation_id": "qwen",
@@ -19089,7 +19089,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-vl-plus-2025-05-07/model.json": {
-      "hash": "9a001f493c2c094c344084bc8ec52c93",
+      "hash": "bffff698cbc5883526c2b72072381883",
       "meta": {
         "model_id": "qwen/qwen-vl-plus-2025-05-07",
         "organisation_id": "qwen",
@@ -19097,7 +19097,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen-vl-plus-2025-08-15/model.json": {
-      "hash": "c7bf66552a5e37d584a68881df2a0401",
+      "hash": "687cffc9ab3c6ad7ffe4cc4128d4fa87",
       "meta": {
         "model_id": "qwen/qwen-vl-plus-2025-08-15",
         "organisation_id": "qwen",
@@ -19105,7 +19105,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-30b/model.json": {
-      "hash": "a2f2d749ff9e7f7821213093958020e3",
+      "hash": "b350d613d04c57d911dd480240c1c51b",
       "meta": {
         "model_id": "qwen/qwen3-30b",
         "organisation_id": "qwen",
@@ -19113,7 +19113,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-30b-a3b-2507/model.json": {
-      "hash": "ca52f55382f771599e016f7eb013a21c",
+      "hash": "26f12e0ec8bacf83031e53ce4e562d5b",
       "meta": {
         "model_id": "qwen/qwen3-30b-a3b-2507",
         "organisation_id": "qwen",
@@ -19121,7 +19121,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-coder/model.json": {
-      "hash": "0e36e60285f0a261b7ff3f65e6f3c2b8",
+      "hash": "4e19f336a70744e1698fc68d4e1be4a9",
       "meta": {
         "model_id": "qwen/qwen3-coder",
         "organisation_id": "qwen",
@@ -19129,7 +19129,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-coder-flash/model.json": {
-      "hash": "2b95d354375db6fde7b3501468fbcbc5",
+      "hash": "5b28d300c2f239374d51a3789b6bdfc2",
       "meta": {
         "model_id": "qwen/qwen3-coder-flash",
         "organisation_id": "qwen",
@@ -19137,7 +19137,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-coder-plus-2025-07-22/model.json": {
-      "hash": "d88a34d6c6d47011c128d7e818032e67",
+      "hash": "74b104bc5118c7e4f4a73a606d13db90",
       "meta": {
         "model_id": "qwen/qwen3-coder-plus-2025-07-22",
         "organisation_id": "qwen",
@@ -19145,7 +19145,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-coder-plus-2025-09-23/model.json": {
-      "hash": "f95ee3675027f93e111109f3951a7c17",
+      "hash": "eb699762b09b0d2f0acebb21bdc49d6c",
       "meta": {
         "model_id": "qwen/qwen3-coder-plus-2025-09-23",
         "organisation_id": "qwen",
@@ -19153,7 +19153,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-max/model.json": {
-      "hash": "9bb2a979020fe176177f07d76ecc32cf",
+      "hash": "86c564eecc6df4566dbfd71b1ee8789a",
       "meta": {
         "model_id": "qwen/qwen3-max",
         "organisation_id": "qwen",
@@ -19161,7 +19161,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-max-2025-09-23/model.json": {
-      "hash": "c605a8df54019a2514bb3a0c71bf4a5b",
+      "hash": "9ea0e9537a2e087a037b5ac312c6dcd6",
       "meta": {
         "model_id": "qwen/qwen3-max-2025-09-23",
         "organisation_id": "qwen",
@@ -19169,7 +19169,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-max-2026-01-23/model.json": {
-      "hash": "1bfb5c2fcd4a778a9e8ad3e5fb2f3fb0",
+      "hash": "9ef3bc0a5e2f2fb296e35edeb5b5d92d",
       "meta": {
         "model_id": "qwen/qwen3-max-2026-01-23",
         "organisation_id": "qwen",
@@ -19177,7 +19177,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-max-preview/model.json": {
-      "hash": "e9b727a2fb2aa36cfa5613926bdf7f86",
+      "hash": "e7ae3304ceae64bf89b7f1b7b8966cd6",
       "meta": {
         "model_id": "qwen/qwen3-max-preview",
         "organisation_id": "qwen",
@@ -19185,7 +19185,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-next-80b/model.json": {
-      "hash": "b754ad19d5bebaa8ab8d9c528893c234",
+      "hash": "83be3eb844b0ec70f5789d6a64bc911d",
       "meta": {
         "model_id": "qwen/qwen3-next-80b",
         "organisation_id": "qwen",
@@ -19193,7 +19193,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-next-80b-a3b/model.json": {
-      "hash": "f4db00c2724205b055f1aa0886ffd3ef",
+      "hash": "198c264dfeca0f8d4ff7917bea556a62",
       "meta": {
         "model_id": "qwen/qwen3-next-80b-a3b",
         "organisation_id": "qwen",
@@ -19201,7 +19201,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-omni-30b-a3b/model.json": {
-      "hash": "c166877ccfbb612dc68f3790c822f6c0",
+      "hash": "e3070effc27f49dfaa546a0bc44aed09",
       "meta": {
         "model_id": "qwen/qwen3-omni-30b-a3b",
         "organisation_id": "qwen",
@@ -19209,7 +19209,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-235b-a22b/model.json": {
-      "hash": "99ec005a015719299d7474e851cd4ff4",
+      "hash": "d2effbe3f17171060d28f50f6e4ae311",
       "meta": {
         "model_id": "qwen/qwen3-vl-235b-a22b",
         "organisation_id": "qwen",
@@ -19217,7 +19217,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-30b-a3b/model.json": {
-      "hash": "2f294dcd01e08560c8cd344777d691bf",
+      "hash": "bee33a4715b8804595d1ba96a3e8aa16",
       "meta": {
         "model_id": "qwen/qwen3-vl-30b-a3b",
         "organisation_id": "qwen",
@@ -19225,7 +19225,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-32b/model.json": {
-      "hash": "e430189dde0db0749a1f6c8f92d100af",
+      "hash": "1c95dfeff89b55ba6a2a85a41d5b5d50",
       "meta": {
         "model_id": "qwen/qwen3-vl-32b",
         "organisation_id": "qwen",
@@ -19233,7 +19233,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-8b/model.json": {
-      "hash": "c7b2231e54cc063d3fbac8bd6653ca27",
+      "hash": "1bf8b623f9e174272aae6903406c5f30",
       "meta": {
         "model_id": "qwen/qwen3-vl-8b",
         "organisation_id": "qwen",
@@ -19241,7 +19241,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-flash-2025-10-15/model.json": {
-      "hash": "57de619d99f8aa86920ad71542d6913b",
+      "hash": "3d7cee91548882df2262a6f0db9b0480",
       "meta": {
         "model_id": "qwen/qwen3-vl-flash-2025-10-15",
         "organisation_id": "qwen",
@@ -19249,7 +19249,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-flash-2026-01-22/model.json": {
-      "hash": "851a79af49578c5ab7621cf245ae2792",
+      "hash": "4081e3298de11b06a743b4884d9aadba",
       "meta": {
         "model_id": "qwen/qwen3-vl-flash-2026-01-22",
         "organisation_id": "qwen",
@@ -19257,7 +19257,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-plus-2025-09-23/model.json": {
-      "hash": "40281e4ef91f267e9aa92ac158f557fd",
+      "hash": "54c00a5f6f1184242d26dfa96c29d1d9",
       "meta": {
         "model_id": "qwen/qwen3-vl-plus-2025-09-23",
         "organisation_id": "qwen",
@@ -19265,7 +19265,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwen3-vl-plus-2025-12-19/model.json": {
-      "hash": "ff18c5306d82c0d621dd8c6966d7612e",
+      "hash": "d0b37e976acb73427c4d0aee807ebca3",
       "meta": {
         "model_id": "qwen/qwen3-vl-plus-2025-12-19",
         "organisation_id": "qwen",
@@ -19273,7 +19273,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/qwq-plus/model.json": {
-      "hash": "621d83958aaf550afa92c290ada066f6",
+      "hash": "2f54b2c34ef110a3bf929ba4abb2157f",
       "meta": {
         "model_id": "qwen/qwq-plus",
         "organisation_id": "qwen",
@@ -19281,7 +19281,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/text-embedding-v3/model.json": {
-      "hash": "f1c7be4cd61b3c0dd9bd6f588ef331a1",
+      "hash": "c9a8e7f3f4b2145c5cc9415e6d20c5da",
       "meta": {
         "model_id": "qwen/text-embedding-v3",
         "organisation_id": "qwen",
@@ -19289,7 +19289,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/qwen/text-embedding-v4/model.json": {
-      "hash": "cee60f5245a335c41ca8c3f96fb8703c",
+      "hash": "317f5916714073efeb51f4d4b91d4250",
       "meta": {
         "model_id": "qwen/text-embedding-v4",
         "organisation_id": "qwen",
@@ -19305,7 +19305,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/stepfun/step-tts-2/model.json": {
-      "hash": "1cc68ef88acc10899a4e6873199558c4",
+      "hash": "507a07a5977f063602839789c799cea7",
       "meta": {
         "model_id": "stepfun/step-tts-2",
         "organisation_id": "stepfun",
@@ -19313,7 +19313,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/venice/venice-uncensored/model.json": {
-      "hash": "acf7e5b46c8417cde579d828fa01f8ae",
+      "hash": "5481f505578a6be02b45f6b994cf2066",
       "meta": {
         "model_id": "venice/venice-uncensored",
         "organisation_id": "venice",
@@ -19321,7 +19321,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/venice/venice-uncensored-1.1/model.json": {
-      "hash": "d049f1492e22f426625b09603df6a323",
+      "hash": "10e6dcebb6816373519e4442753142ba",
       "meta": {
         "model_id": "venice/venice-uncensored-1.1",
         "organisation_id": "venice",
@@ -19329,7 +19329,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-4.1-fast/model.json": {
-      "hash": "89ab9a806b16c9115489df9b74ca1fef",
+      "hash": "b1b22f63956d53a59ec9c159cb9380c6",
       "meta": {
         "model_id": "x-ai/grok-4.1-fast",
         "organisation_id": "x-ai",
@@ -19876,6 +19876,264 @@
       "meta": {
         "plan_id": "z-ai-glm-coding-pro",
         "organisation_id": "z-ai"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/google/deep-research-max-preview-04-2026/model.json": {
+      "hash": "71d1fcf583e13fe3e1d69e10b6e1ba37",
+      "meta": {
+        "model_id": "google/deep-research-max-preview-04-2026",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/google/deep-research-preview-04-2026/model.json": {
+      "hash": "a762ea3ac8afed4526117b4059dc8525",
+      "meta": {
+        "model_id": "google/deep-research-preview-04-2026",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/moonshotai/kimi-k2.6/model.json": {
+      "hash": "e9f62f852efc566450c2ef2d73001449",
+      "meta": {
+        "model_id": "moonshotai/kimi-k2.6",
+        "organisation_id": "moonshotai",
+        "previous_model_id": "moonshotai/kimi-k2.5"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/openai/gpt-image-2/model.json": {
+      "hash": "941ec3a714f31dad631818a221afb564",
+      "meta": {
+        "model_id": "openai/gpt-image-2",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-image-1.5"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/qwen/qwen3.6-max-preview/model.json": {
+      "hash": "54093e11cacd765a163c7b6f3bc39c8c",
+      "meta": {
+        "model_id": "qwen/qwen3.6-max-preview",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3.6-max-preview/text.generate/pricing.json": {
+      "hash": "9a8d265a67141468aa61d0142697c54e",
+      "meta": {
+        "api_provider_id": "alibaba-cloud",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3.6-max-preview",
+        "model_key": "alibaba-cloud:qwen/qwen3.6-max-preview:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k2.6/text.generate/pricing.json": {
+      "hash": "bf258192f268cac5e01c0697675c54ab",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.6",
+        "model_key": "atlascloud:moonshotai/kimi-k2.6:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/baseten/moonshotai-kimi-k2.6/text.generate/pricing.json": {
+      "hash": "80de0226767de86debb3ea2b1c6d9c9e",
+      "meta": {
+        "api_provider_id": "baseten",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.6",
+        "model_key": "baseten:moonshotai/kimi-k2.6:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/fireworks/moonshotai-kimi-k2.6/text.generate/pricing.json": {
+      "hash": "6da875a951576c873033ed8f05a78ada",
+      "meta": {
+        "api_provider_id": "fireworks",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.6",
+        "model_key": "fireworks:moonshotai/kimi-k2.6:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/gmicloud/moonshotai-kimi-k2.6/text.generate/pricing.json": {
+      "hash": "a9654e95e66c99a3ce876ac6ffcd2ee6",
+      "meta": {
+        "api_provider_id": "gmicloud",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.6",
+        "model_key": "gmicloud:moonshotai/kimi-k2.6:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/moonshotai/moonshotai-kimi-k2.6/text.generate/pricing.json": {
+      "hash": "549ca68c73c485c1f92c6f95d7a074a7",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.6",
+        "model_key": "moonshotai:moonshotai/kimi-k2.6:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2.6/text.generate/pricing.json": {
+      "hash": "f6e76b96d36ae1c469eda7c3e1237fcc",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.6",
+        "model_key": "novita:moonshotai/kimi-k2.6:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-2/images.edits/pricing.json": {
+      "hash": "6ba803ce7035a00cac6627ebb65ac662",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "images.edits",
+        "model_id": "openai/gpt-image-2",
+        "model_key": "openai:openai/gpt-image-2:images.edits"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-2/images.generations/pricing.json": {
+      "hash": "4e2d3f70c09cfe6ec3b46da619e36dd2",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "images.generations",
+        "model_id": "openai/gpt-image-2",
+        "model_key": "openai:openai/gpt-image-2:images.generations"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/deepseek/deepseek-v4-flash/model.json": {
+      "hash": "912bafacb2f9781143939f2acabe539d",
+      "meta": {
+        "model_id": "deepseek/deepseek-v4-flash",
+        "organisation_id": "deepseek",
+        "previous_model_id": "deepseek/deepseek-v3.2"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/crofai/api_provider.json": {
+      "hash": "1e04ce579d3cf5d33a8aa2a95e044bcc",
+      "meta": {
+        "api_provider_id": "crofai"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/crofai/models.json": {
+      "hash": "b5b9ff93681d17a71b53d1930c318a47",
+      "meta": {
+        "api_provider_id": "crofai",
+        "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "84780de3b99da229a926feaffaa52f50",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "atlascloud:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepinfra/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "7facb5936eedd555a3e09be7d112151d",
+      "meta": {
+        "api_provider_id": "deepinfra",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "deepinfra:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "474564602c51cd3cce8116ebdfb5023b",
+      "meta": {
+        "api_provider_id": "deepseek",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "deepseek:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "e09e57ab4a6878600b462bfc3a634cfc",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "novita:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/venice/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "4ff4190c2d9d982c89dd269d25486c5d",
+      "meta": {
+        "api_provider_id": "venice",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "venice:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/deepseek/deepseek-v4-pro/model.json": {
+      "hash": "5979785d3ac4f7df700d529ecd28ef78",
+      "meta": {
+        "model_id": "deepseek/deepseek-v4-pro",
+        "organisation_id": "deepseek",
+        "previous_model_id": "deepseek/deepseek-v3.2"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "33bf3b1b5332e00ca137aab9bf0d2d0f",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "atlascloud:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/crofai/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "ad689378f53f75aa746b31d775641944",
+      "meta": {
+        "api_provider_id": "crofai",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "crofai:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepinfra/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "b997fd00553ee1e2f191c539a3caf2a1",
+      "meta": {
+        "api_provider_id": "deepinfra",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "deepinfra:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "6c49af63035998b9bc98b31f2d91d7c9",
+      "meta": {
+        "api_provider_id": "deepseek",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "deepseek:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/gmicloud/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "20c55ac324e63af4d9c97cede607a1d3",
+      "meta": {
+        "api_provider_id": "gmicloud",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "gmicloud:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "14ca691681cfd36e1c26857b41e12e18",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "novita:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/venice/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "211c8cf19948894ad7a51b87e0992d38",
+      "meta": {
+        "api_provider_id": "venice",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "venice:deepseek/deepseek-v4-pro:text.generate"
       }
     }
   }

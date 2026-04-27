@@ -78,6 +78,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         downstreamClosed = true;
     });
 
+    const resolveRequestStartMs = () => {
+        if (typeof ctx.meta.upstreamStartMs === "number") return ctx.meta.upstreamStartMs;
+        if (typeof ctx.meta.startedAtMs === "number") return ctx.meta.startedAtMs;
+        return null;
+    };
+
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
     const writeJson = async (obj: unknown, eventName?: string | null) => {
         if (downstreamClosed) return;
@@ -106,8 +112,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             });
         }
 
-        if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
-            ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
+        if (typeof ctx.meta.generation_ms !== "number") {
+            const requestStartMs = resolveRequestStartMs();
+            ctx.meta.generation_ms = requestStartMs !== null
+                ? Math.max(0, Math.round(Date.now() - requestStartMs))
+                : Math.max(0, Math.round(performance.now() - tStart));
         }
         dispatchBackground(
             Promise.resolve(
@@ -184,12 +193,17 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (firstFrameAt === null) {
                         firstFrameAt = performance.now();
                         firstFrameAtMs = Date.now();
-                        if (typeof ctx.meta.latency_ms !== "number") {
-                            if (typeof ctx.meta.upstreamStartMs === "number") {
-                                ctx.meta.latency_ms = Math.round(firstFrameAtMs - ctx.meta.upstreamStartMs);
-                            } else {
-                                ctx.meta.latency_ms = Math.round(firstFrameAt - tStart);
-                            }
+                        // For streamed responses, latency means upstream request start -> first frame
+                        // emitted back to the client. Provider adapters may record earlier upstream
+                        // timings, so overwrite here with the actual downstream first-frame timing.
+                        const requestStartMs = resolveRequestStartMs();
+                        if (requestStartMs !== null) {
+                            ctx.meta.latency_ms = Math.max(
+                                0,
+                                Math.round(firstFrameAtMs - requestStartMs),
+                            );
+                        } else {
+                            ctx.meta.latency_ms = Math.max(0, Math.round(firstFrameAt - tStart));
                         }
                     }
 
@@ -248,11 +262,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (isFinalSnapshot) {
                         sawFinalUsage = true;
                         if (typeof ctx.meta.generation_ms !== "number") {
-                            if (firstFrameAt !== null) {
-                                ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
-                            } else if (typeof ctx.meta.upstreamStartMs === "number") {
-                                ctx.meta.generation_ms = Math.round(Date.now() - ctx.meta.upstreamStartMs);
-                            }
+                            const requestStartMs = resolveRequestStartMs();
+                            ctx.meta.generation_ms = requestStartMs !== null
+                                ? Math.max(0, Math.round(Date.now() - requestStartMs))
+                                : Math.max(0, Math.round(performance.now() - tStart));
                         }
                     }
 

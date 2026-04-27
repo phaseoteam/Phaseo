@@ -1,7 +1,7 @@
 {
 	"name": "@ai-stats/sdk",
 	"description": "AI Stats Gateway SDK for TypeScript/JavaScript",
-	"version": "1.2.0",
+	"version": "2.0.1",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
@@ -52,7 +52,7 @@
 	},
 	"dependencies": {},
 	"devDependencies": {
-		"@types/node": "^25.5.0",
+		"@types/node": "^25.6.0",
 		"rimraf": "^6.0.0",
 		"ts-node": "^10.9.2",
 		"tsx": "^4.7.0",

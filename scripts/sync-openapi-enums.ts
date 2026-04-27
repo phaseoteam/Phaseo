@@ -7,6 +7,7 @@ const OPENAPI_PATH = path.join(ROOT, "apps", "docs", "openapi", "v1", "openapi.y
 const DATA_ROOT = path.join(ROOT, "packages", "data", "catalog", "src", "data");
 const MANIFEST_PATH = path.join(DATA_ROOT, "manifest.json");
 const BENCHMARKS_DIR = path.join(DATA_ROOT, "benchmarks");
+const API_PROVIDERS_DIR = path.join(DATA_ROOT, "api_providers");
 
 function readYaml(file: string): any {
   return yaml.load(fs.readFileSync(file, "utf8"));
@@ -25,6 +26,62 @@ function loadModelIds(): string[] {
   const models = manifest.models ?? {};
   const modelIds = Object.values(models).flat().filter(Boolean) as string[];
   return uniqSorted(modelIds);
+}
+
+function parseEffectiveDate(value: unknown): Date | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = /^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(trimmed)
+    ? `${trimmed}Z`
+    : trimmed;
+  const parsed = new Date(normalized);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+function withinEffectiveWindow(
+  effectiveFrom: unknown,
+  effectiveTo: unknown,
+  now: Date
+): boolean {
+  const from = parseEffectiveDate(effectiveFrom);
+  const to = parseEffectiveDate(effectiveTo);
+  if (from && Number.isFinite(from.getTime()) && now < from) return false;
+  if (to && Number.isFinite(to.getTime()) && now >= to) return false;
+  return true;
+}
+
+function loadCallableModelIds(): string[] {
+  if (!fs.existsSync(API_PROVIDERS_DIR)) return [];
+  const now = new Date();
+  const modelIds = new Set<string>();
+
+  for (const entry of fs.readdirSync(API_PROVIDERS_DIR, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const file = path.join(API_PROVIDERS_DIR, entry.name, "models.json");
+    if (!fs.existsSync(file)) continue;
+
+    const items = readJson(file);
+    if (!Array.isArray(items)) continue;
+
+    for (const item of items) {
+      if (!item || typeof item !== "object") continue;
+      if (item.is_active_gateway !== true) continue;
+      if (!withinEffectiveWindow(item.effective_from, item.effective_to, now)) continue;
+
+      const modelId =
+        typeof item.api_model_id === "string" && item.api_model_id.trim()
+          ? item.api_model_id.trim()
+          : typeof item.internal_model_id === "string" && item.internal_model_id.trim()
+            ? item.internal_model_id.trim()
+            : null;
+
+      if (modelId) modelIds.add(modelId);
+    }
+  }
+
+  return uniqSorted(Array.from(modelIds));
 }
 
 function loadOrganisationIds(): string[] {
@@ -63,6 +120,7 @@ function applyOrganisationSchema(target: any) {
 
 function main() {
   const modelIds = loadModelIds();
+  const callableModelIds = loadCallableModelIds();
   const organisationIds = loadOrganisationIds();
   const benchmarkIds = loadBenchmarkIds();
 
@@ -72,10 +130,19 @@ function main() {
     throw new Error("Schemas not found in OpenAPI document");
   }
 
-  if (!schemas.ModelId) {
-    schemas.ModelId = { type: "string", description: "Model identifier.", enum: [] };
-  }
-  schemas.ModelId.enum = modelIds;
+  schemas.ModelId = {
+    type: "string",
+    description:
+      "Model identifier. This is a runtime string so newly released models can be used without waiting for an SDK update.",
+    example: callableModelIds[0] ?? "openai/gpt-5",
+  };
+
+  schemas.KnownModelId = {
+    type: "string",
+    description:
+      "Known callable model identifier snapshot used for SDK helper constants and autocomplete.",
+    enum: callableModelIds,
+  };
 
   schemas.OrganisationId = { type: "string", description: "Organisation identifier.", enum: organisationIds };
   applyOrganisationSchema(schemas.GatewayModel?.properties?.organisation);
@@ -106,7 +173,9 @@ function main() {
   }
 
   fs.writeFileSync(OPENAPI_PATH, yaml.dump(openapi, { indent: 2 }), "utf8");
-  console.log(`Synced enums -> models: ${modelIds.length}, organisations: ${organisationIds.length}, benchmarks: ${benchmarkIds.length}`);
+  console.log(
+    `Synced schemas -> catalog models: ${modelIds.length}, callable helper models: ${callableModelIds.length}, organisations: ${organisationIds.length}, benchmarks: ${benchmarkIds.length}`
+  );
 }
 
 main();
