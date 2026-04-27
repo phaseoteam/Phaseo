@@ -11473,7 +11473,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "787ad781370998bb2003a5b2b2e56a81",
+      "hash": "92b644219575ce086fd368dbdd70f1a3",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -11525,7 +11525,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "9b1e1327b0334e132cd8a4f28d97a51d",
+      "hash": "622e10d46176b604abec5f4dd2b28231",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -11577,7 +11577,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/byteplus/models.json": {
-      "hash": "b91205b260814c0e43a0b401c1a4ba95",
+      "hash": "1f24befabddc1e7ab303eee7d634bc1f",
       "meta": {
         "api_provider_id": "byteplus",
         "kind": "provider_models"
@@ -11590,7 +11590,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cerebras/models.json": {
-      "hash": "0bc619fc1a741ffdc6ced75dc34bfcfe",
+      "hash": "4a3b979a76455edf2445120dc744d710",
       "meta": {
         "api_provider_id": "cerebras",
         "kind": "provider_models"
@@ -11640,7 +11640,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepinfra/models.json": {
-      "hash": "21c1d477755e4ed68446bea7ca011fed",
+      "hash": "5bd534d2c4363961c61cbbdb8e5f8bbf",
       "meta": {
         "api_provider_id": "deepinfra",
         "kind": "provider_models"
@@ -11653,7 +11653,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepseek/models.json": {
-      "hash": "f4c76672e96109fdd038f0ee76cadb4c",
+      "hash": "9427f4710bfd41f30a8530b7413fb73f",
       "meta": {
         "api_provider_id": "deepseek",
         "kind": "provider_models"
@@ -11679,7 +11679,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/fireworks/models.json": {
-      "hash": "cb0e777bfba1023d0819337f58b08e4d",
+      "hash": "59e70349f039189d1d2573ca8480983c",
       "meta": {
         "api_provider_id": "fireworks",
         "kind": "provider_models"
@@ -11698,7 +11698,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/gmicloud/models.json": {
-      "hash": "9e2569ae807b226dbcfea3335d527973",
+      "hash": "3b60009143a901e11fd5dd6933883ad9",
       "meta": {
         "api_provider_id": "gmicloud",
         "kind": "provider_models"
@@ -11711,7 +11711,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "24fa7ddb9a2975f94f9e3233c7fd8b33",
+      "hash": "8fd0c858bd76c2542c6d6d52030de740",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -11724,7 +11724,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-vertex/models.json": {
-      "hash": "92453d56898ec275ab63cc2c6f4b2360",
+      "hash": "fec409f2ecdf37989e967bcd20a3b541",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -11909,7 +11909,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/models.json": {
-      "hash": "19132c2ebfba020a2ccd10ad9127a49b",
+      "hash": "b47efaab3ca790d7ea68967ccb08c364",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -11928,7 +11928,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/openai/models.json": {
-      "hash": "c5df089560e789dc076509529202e5d0",
+      "hash": "341d366f7f5b2da7dbef6adb77a3c29d",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -12016,7 +12016,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice/models.json": {
-      "hash": "8636ac37dde4bb61c0a21edb6cd8c506",
+      "hash": "203a91d85b1650f5a747217d0af1707b",
       "meta": {
         "api_provider_id": "venice",
         "kind": "provider_models"
@@ -12029,7 +12029,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/models.json": {
-      "hash": "8045be5669ddaf741b4d88b6c9ce813c",
+      "hash": "da18a57d9098f13c14381472b9eda707",
       "meta": {
         "api_provider_id": "venice/e2ee",
         "kind": "provider_models"
@@ -12081,7 +12081,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/xiaomi/models.json": {
-      "hash": "705249bce32382930c0b5d074c1d5ea0",
+      "hash": "7834e6a930d5c7d283c4783e7019c98e",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -19997,6 +19997,143 @@
         "capability_id": "images.generations",
         "model_id": "openai/gpt-image-2",
         "model_key": "openai:openai/gpt-image-2:images.generations"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/deepseek/deepseek-v4-flash/model.json": {
+      "hash": "912bafacb2f9781143939f2acabe539d",
+      "meta": {
+        "model_id": "deepseek/deepseek-v4-flash",
+        "organisation_id": "deepseek",
+        "previous_model_id": "deepseek/deepseek-v3.2"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/crofai/api_provider.json": {
+      "hash": "1e04ce579d3cf5d33a8aa2a95e044bcc",
+      "meta": {
+        "api_provider_id": "crofai"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/crofai/models.json": {
+      "hash": "b5b9ff93681d17a71b53d1930c318a47",
+      "meta": {
+        "api_provider_id": "crofai",
+        "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "84780de3b99da229a926feaffaa52f50",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "atlascloud:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepinfra/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "7facb5936eedd555a3e09be7d112151d",
+      "meta": {
+        "api_provider_id": "deepinfra",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "deepinfra:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "474564602c51cd3cce8116ebdfb5023b",
+      "meta": {
+        "api_provider_id": "deepseek",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "deepseek:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "e09e57ab4a6878600b462bfc3a634cfc",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "novita:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/venice/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "4ff4190c2d9d982c89dd269d25486c5d",
+      "meta": {
+        "api_provider_id": "venice",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "venice:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/deepseek/deepseek-v4-pro/model.json": {
+      "hash": "5979785d3ac4f7df700d529ecd28ef78",
+      "meta": {
+        "model_id": "deepseek/deepseek-v4-pro",
+        "organisation_id": "deepseek",
+        "previous_model_id": "deepseek/deepseek-v3.2"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "33bf3b1b5332e00ca137aab9bf0d2d0f",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "atlascloud:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/crofai/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "ad689378f53f75aa746b31d775641944",
+      "meta": {
+        "api_provider_id": "crofai",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "crofai:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepinfra/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "b997fd00553ee1e2f191c539a3caf2a1",
+      "meta": {
+        "api_provider_id": "deepinfra",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "deepinfra:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "6c49af63035998b9bc98b31f2d91d7c9",
+      "meta": {
+        "api_provider_id": "deepseek",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "deepseek:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/gmicloud/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "20c55ac324e63af4d9c97cede607a1d3",
+      "meta": {
+        "api_provider_id": "gmicloud",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "gmicloud:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "14ca691681cfd36e1c26857b41e12e18",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "novita:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/venice/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "211c8cf19948894ad7a51b87e0992d38",
+      "meta": {
+        "api_provider_id": "venice",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "venice:deepseek/deepseek-v4-pro:text.generate"
       }
     }
   }
