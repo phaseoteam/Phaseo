@@ -13,11 +13,42 @@ import {
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_VERSION_L1_TTL_MS = 1_000;
-const KEY_LOOKUP_L1_TTL_MS = 1_000;
+const KEY_VERSION_L1_TTL_MS = 5_000;
+const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
+const HMAC_KEY_CACHE_MAX_ENTRIES = 16;
+const AUTH_SUCCESS_L1_TTL_MS = 15_000;
+const AUTH_SUCCESS_L1_MAX_ENTRIES = 5_000;
 
 /* -------------------- Web Crypto HMAC helpers -------------------- */
+
+const hmacKeyCache = new Map<string, CryptoKey>();
+
+function ttlWithJitter(baseMs: number): number {
+    return baseMs + Math.floor(Math.random() * baseMs * 0.2);
+}
+
+async function getHmacKey(cacheKey: string, keyBytes: Uint8Array): Promise<CryptoKey> {
+    const cached = hmacKeyCache.get(cacheKey);
+    if (cached) return cached;
+
+    const raw = new Uint8Array(keyBytes.byteLength);
+    raw.set(keyBytes);
+    const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        raw.buffer,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+
+    if (hmacKeyCache.size >= HMAC_KEY_CACHE_MAX_ENTRIES) {
+        const oldestKey = hmacKeyCache.keys().next().value;
+        if (oldestKey) hmacKeyCache.delete(oldestKey);
+    }
+    hmacKeyCache.set(cacheKey, cryptoKey);
+    return cryptoKey;
+}
 
 /**
  * Compute HMAC-SHA256 of `message` using a raw key (as bytes).
@@ -27,20 +58,8 @@ const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
  * - We need to validate API keys without storing secrets in plaintext.
  * - HMAC + pepper lets us safely verify user-provided secrets.
  */
-async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array): Promise<string> {
-    // Ensure we have a real ArrayBuffer (avoid SharedArrayBuffer quirks).
-    const raw = new Uint8Array(keyBytes.byteLength);
-    raw.set(keyBytes);
-
-    // Import the raw bytes into a WebCrypto HMAC key.
-    const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        raw.buffer,                         // must be an ArrayBuffer
-        { name: "HMAC", hash: "SHA-256" }, // HMAC-SHA256
-        false,                              // not extractable
-        ["sign"]                            // only used for signing
-    );
-
+async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array, cacheKey: string): Promise<string> {
+    const cryptoKey = await getHmacKey(cacheKey, keyBytes);
     // Compute the MAC (message authentication code).
     const mac = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message));
 
@@ -56,7 +75,7 @@ async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array): Promi
  * This is the "Node-compatible" mode (mirrors createHmac).
  */
 function hmacUtf8(message: string, pepperUtf8: string) {
-    return hmacHexWithKeyBytes(message, enc.encode(pepperUtf8));
+    return hmacHexWithKeyBytes(message, enc.encode(pepperUtf8), `utf8:${pepperUtf8}`);
 }
 
 // Optional decoders: allow peppers stored as hex or base64url.
@@ -85,7 +104,7 @@ async function secretMatchesStoredHash(secret: string, storedHash: string, peppe
 
     const hex = decodeHex(pepper);
     if (hex) {
-        const digestHex = await hmacHexWithKeyBytes(secret, hex);
+        const digestHex = await hmacHexWithKeyBytes(secret, hex, `hex:${pepper}`);
         if (ctEqualHex(digestHex, storedHash)) {
             return true;
         }
@@ -93,7 +112,7 @@ async function secretMatchesStoredHash(secret: string, storedHash: string, peppe
 
     const b64 = decodeBase64Url(pepper);
     if (b64) {
-        const digestB64 = await hmacHexWithKeyBytes(secret, b64);
+        const digestB64 = await hmacHexWithKeyBytes(secret, b64, `b64url:${pepper}`);
         if (ctEqualHex(digestB64, storedHash)) {
             return true;
         }
@@ -195,7 +214,13 @@ type KeyLookupL1Entry = {
     value: KeyLookupL1Value;
     expiresAt: number;
 };
+type AuthSuccessL1Value = Omit<AuthSuccess, "ok" | "internal">;
+type AuthSuccessL1Entry = {
+    value: AuthSuccessL1Value;
+    expiresAt: number;
+};
 const keyLookupL1Cache = new Map<string, KeyLookupL1Entry>();
+const authSuccessL1Cache = new Map<string, AuthSuccessL1Entry>();
 
 function keyLookupL1Key(kid: string, versionToken: string): string {
     return `${kid}:${versionToken}`;
@@ -230,7 +255,48 @@ function writeKeyLookupL1(kid: string, versionToken: string, value: KeyLookupL1V
     pruneKeyLookupL1(now);
     keyLookupL1Cache.set(keyLookupL1Key(kid, versionToken), {
         value,
-        expiresAt: now + KEY_LOOKUP_L1_TTL_MS,
+        expiresAt: now + ttlWithJitter(KEY_LOOKUP_L1_TTL_MS),
+    });
+}
+
+async function sha256Base64Url(input: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", enc.encode(input));
+    const bytes = new Uint8Array(digest);
+    let binary = "";
+    for (const b of bytes) {
+        binary += String.fromCharCode(b);
+    }
+    return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+}
+
+function readAuthSuccessL1(key: string): AuthSuccessL1Value | null {
+    const entry = authSuccessL1Cache.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= Date.now()) {
+        authSuccessL1Cache.delete(key);
+        return null;
+    }
+    return entry.value;
+}
+
+function writeAuthSuccessL1(key: string, value: AuthSuccessL1Value): void {
+    const now = Date.now();
+    for (const [entryKey, entry] of authSuccessL1Cache.entries()) {
+        if (entry.expiresAt <= now) {
+            authSuccessL1Cache.delete(entryKey);
+        }
+    }
+    while (authSuccessL1Cache.size >= AUTH_SUCCESS_L1_MAX_ENTRIES) {
+        const oldestKey = authSuccessL1Cache.keys().next().value;
+        if (!oldestKey) break;
+        authSuccessL1Cache.delete(oldestKey);
+    }
+    authSuccessL1Cache.set(key, {
+        value,
+        expiresAt: now + ttlWithJitter(AUTH_SUCCESS_L1_TTL_MS),
     });
 }
 
@@ -250,7 +316,7 @@ async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
     try {
         const versionToken = await keyVersionToken("kid", kid, {
             useL1Cache: true,
-            l1TtlMs: KEY_VERSION_L1_TTL_MS,
+            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
         });
         const l1 = readKeyLookupL1(kid, versionToken);
         if (l1 !== null) return l1;
@@ -277,7 +343,7 @@ async function cacheKey(kid: string, row: KeyRow) {
     try {
         versionToken = await keyVersionToken("kid", kid, {
             useL1Cache: true,
-            l1TtlMs: KEY_VERSION_L1_TTL_MS,
+            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
         });
         await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
             expirationTtl: KEY_CACHE_TTL_SECONDS,
@@ -330,6 +396,27 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
+
+    const authSecretTag = await sha256Base64Url(parsed.secret);
+    const authVersionToken = useKvCache
+        ? await keyVersionToken("kid", parsed.kid, {
+            useL1Cache: true,
+            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
+        })
+        : null;
+    const authSuccessCacheKey = authVersionToken
+        ? `${parsed.kid}:${authVersionToken}:${authSecretTag}`
+        : null;
+    const cachedSuccess = authSuccessCacheKey
+        ? readAuthSuccessL1(authSuccessCacheKey)
+        : null;
+    if (cachedSuccess) {
+        return {
+            ok: true,
+            ...cachedSuccess,
+            internal: isInternalRequestAuthorized(req, bindings),
+        };
+    }
 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();
@@ -470,12 +557,19 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         } as AuthSuccess;
     };
 
-    if (matchedPepper.source === "previous") {
-        const nextHash = await hmacUtf8(parsed.secret, activePepper);
-        return success(nextHash);
+    const result = matchedPepper.source === "previous"
+        ? await success(await hmacUtf8(parsed.secret, activePepper))
+        : await success();
+    if (result.ok && authSuccessCacheKey) {
+        writeAuthSuccessL1(authSuccessCacheKey, {
+            workspaceId: result.workspaceId,
+            apiKeyId: result.apiKeyId,
+            apiKeyRef: result.apiKeyRef,
+            apiKeyKid: result.apiKeyKid,
+            userId: result.userId ?? null,
+        });
     }
-
-    return success();
+    return result;
 }
 
 /* -------------------- OAuth JWT Authentication -------------------- */

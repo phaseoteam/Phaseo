@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import type { GatewayHeroVariant } from "@/lib/statsig/shared";
 import { WordRotate } from "@/components/ui/word-rotate";
 import { Logo } from "@/components/Logo";
 import {
@@ -292,12 +293,12 @@ export function Hero({
 	stats,
 	tokensWindowHours = 24,
 	popularModels,
-	showExperimentalHero = false,
+	heroVariant = "classic",
 }: {
 	stats?: GatewayHeroStats;
 	tokensWindowHours?: number;
 	popularModels?: ModelCardType[];
-	showExperimentalHero?: boolean;
+	heroVariant?: GatewayHeroVariant;
 }) {
 	const roundTo = (value: number | null, step: number) => {
 		if (value == null) return null;
@@ -359,7 +360,7 @@ export function Hero({
 	return (
 		<section className="w-full">
 			<div className="mx-auto px-6 pb-16 lg:px-8">
-				{showExperimentalHero ? (
+				{heroVariant === "experimental" ? (
 					<ExperimentalHeroIntro heroStats={heroStats} />
 				) : (
 					<ClassicHeroIntro heroStats={heroStats} />

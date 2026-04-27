@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Image, { type ImageProps } from "next/image";
+import { Building2 } from "lucide-react";
 import { resolveLogo, type LogoVariant, type LogoTheme } from "@/lib/logos";
 
 type LogoImageProps = Omit<ImageProps, "src" | "alt"> & {
@@ -11,16 +12,67 @@ type LogoImageProps = Omit<ImageProps, "src" | "alt"> & {
 	fallbackToColor?: boolean;
 };
 
+function DefaultLogoFallback({
+	className,
+	fill,
+	width,
+	height,
+	label,
+}: {
+	className?: string;
+	fill?: boolean;
+	width?: ImageProps["width"];
+	height?: ImageProps["height"];
+	label: string;
+}) {
+	const style: CSSProperties = {};
+	if (!fill) {
+		if (typeof width === "number") style.width = `${width}px`;
+		if (typeof width === "string") style.width = width;
+		if (typeof height === "number") style.height = `${height}px`;
+		if (typeof height === "string") style.height = height;
+	}
+
+	return (
+		<span
+			role="img"
+			aria-label={label}
+			className={[
+				fill ? "absolute inset-0" : "inline-flex",
+				"items-center justify-center rounded-sm bg-muted/50 text-muted-foreground/80",
+				className,
+			]
+				.filter(Boolean)
+				.join(" ")}
+			style={style}
+		>
+			<Building2 className="h-2/3 w-2/3" aria-hidden />
+		</span>
+	);
+}
+
 export function Logo({
 	id,
 	alt,
 	variant = "auto",
 	forceTheme,
-	fallback = null,
+	fallback,
 	fallbackToColor = true,
 	className,
 	...imageProps
 }: LogoImageProps) {
+	const label = alt ?? id;
+	const fallbackNode =
+		fallback ?? (
+			<DefaultLogoFallback
+				className={className}
+				fill={imageProps.fill}
+				width={imageProps.width}
+				height={imageProps.height}
+				label={label}
+			/>
+		);
+
 	// If a theme is forced, render a single static variant
 	if (forceTheme) {
 		const resolved = resolveLogo(id, {
@@ -29,7 +81,7 @@ export function Logo({
 			fallbackToColor,
 		});
 
-		if (!resolved.src) return fallback;
+		if (!resolved.src) return fallbackNode;
 
 		return (
 			<Image
@@ -54,9 +106,9 @@ export function Logo({
 		fallbackToColor,
 	});
 
-	if (!light.src && !dark.src) return fallback;
+	if (!light.src && !dark.src) return fallbackNode;
 
-	const label = alt ?? light.label ?? dark.label;
+	const mergedLabel = alt ?? light.label ?? dark.label;
 
 	// If both variants resolve to the same asset (e.g. colour-only logo),
 	// just render a single image.
@@ -64,7 +116,7 @@ export function Logo({
 		return (
 			<Image
 				src={light.src}
-				alt={label}
+				alt={mergedLabel}
 				className={className}
 				{...imageProps}
 			/>
@@ -76,7 +128,7 @@ export function Logo({
 			{light.src && (
 				<Image
 					src={light.src}
-					alt={label}
+					alt={mergedLabel}
 					className={[className, "block dark:hidden"]
 						.filter(Boolean)
 						.join(" ")}
@@ -86,7 +138,7 @@ export function Logo({
 			{dark.src && (
 				<Image
 					src={dark.src}
-					alt={label}
+					alt={mergedLabel}
 					className={[className, "hidden dark:block"]
 						.filter(Boolean)
 						.join(" ")}
