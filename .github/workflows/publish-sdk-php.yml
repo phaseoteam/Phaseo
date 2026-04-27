@@ -9,23 +9,31 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   publish-php:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Create GitHub App token (AI Stats Bot)
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3
+        with:
+          app-id: ${{ secrets.AI_STATS_APP_ID }}
+          private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: "22"
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@728c6c6b8cf02c2e48117716a91ee48313958a19
         with:
           php-version: "8.2"
 
@@ -73,6 +81,7 @@ jobs:
       - name: Create and push SDK tag
         env:
           VERSION: ${{ steps.version.outputs.value }}
+          GH_APP_TOKEN: ${{ steps.app-token.outputs.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -85,7 +94,7 @@ jobs:
           if git ls-remote --tags origin "$tag" | grep -q "$tag"; then
             echo "Tag already exists on origin: $tag"
           else
-            git push origin "$tag"
+            git push "https://x-access-token:${GH_APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$tag"
           fi
 
       - name: Sync PHP split repo and publish split tag

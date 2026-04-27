@@ -18,16 +18,16 @@ jobs:
         name: Validate data
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
@@ -48,9 +48,9 @@ jobs:
         outputs:
             data-changed: ${{ steps.filter.outputs.data }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-            - uses: dorny/paths-filter@v4
+            - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d
               id: filter
               with:
                   filters: |
@@ -62,16 +62,16 @@ jobs:
         needs: data
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
@@ -109,16 +109,16 @@ jobs:
             matrix:
                 app: [api, docs, web]
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -153,16 +153,16 @@ jobs:
         needs: openapi-lint
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -188,16 +188,16 @@ jobs:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -252,18 +252,18 @@ jobs:
                     - sdk: ruby
                       name: Generate Ruby SDK
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
               with:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -313,10 +313,10 @@ jobs:
         needs: sdk-gen
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Set up Python for SDK builds
-              uses: actions/setup-python@v6
+              uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
               with:
                   python-version: "3.12"
 
@@ -327,13 +327,13 @@ jobs:
                   python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -356,17 +356,17 @@ jobs:
             matrix:
                 sdk: [go, csharp, java, php, ruby]
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -378,19 +378,19 @@ jobs:
 
             - name: Setup Go
               if: matrix.sdk == 'go'
-              uses: actions/setup-go@v6
+              uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
               with:
                   go-version: "1.23"
 
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@v5
+              uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
               with:
                   dotnet-version: "8.0.x"
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@v5
+              uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
               with:
                   distribution: "temurin"
                   java-version: "17"
@@ -398,13 +398,13 @@ jobs:
 
             - name: Setup PHP
               if: matrix.sdk == 'php'
-              uses: shivammathur/setup-php@v2
+              uses: shivammathur/setup-php@728c6c6b8cf02c2e48117716a91ee48313958a19
               with:
                   php-version: "8.2"
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@v1
+              uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f
               with:
                   ruby-version: "3.2"
 
@@ -418,18 +418,17 @@ jobs:
         if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'chore/auto-model-statuses')
         permissions:
             contents: read
-            deployments: write
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -460,8 +459,7 @@ jobs:
             - apps
         if: github.ref == 'refs/heads/main'
         permissions:
-            contents: write
-            deployments: write
+            contents: read
         strategy:
             matrix:
                 include:
@@ -472,16 +470,16 @@ jobs:
                     - target: docs
                       name: Deploy Docs
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -548,7 +546,7 @@ jobs:
 
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
-              uses: cloudflare/wrangler-action@v3
+              uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -575,25 +573,25 @@ jobs:
             pull-requests: write
             id-token: write
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
               with:
                   fetch-depth: 0
 
             - name: Create GitHub App token (AI Stats Bot)
               id: app-token
-              uses: actions/create-github-app-token@v3
+              uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3
               with:
                   app-id: ${{ secrets.AI_STATS_APP_ID }}
                   private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: 24
                   registry-url: https://registry.npmjs.org
@@ -637,7 +635,7 @@ jobs:
 
             - name: Create release PR / publish
               id: changesets
-              uses: changesets/action@v1
+              uses: changesets/action@6a0a831ff30acef54f2c6aa1cbbc1096b066edaf
               with:
                   version: pnpm run changeset:version
                   publish: pnpm run changeset:publish
@@ -648,7 +646,7 @@ jobs:
 
             - name: Set up Python (for PyPI publish)
               if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
-              uses: actions/setup-python@v6
+              uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
               with:
                   python-version: 3.12
 
@@ -662,7 +660,7 @@ jobs:
 
             - name: Publish Python SDK to PyPI (Trusted Publishing)
               if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
-              uses: pypa/gh-action-pypi-publish@release/v1
+              uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
               with:
                   packages-dir: packages/sdk/sdk-py/dist
                   skip-existing: true

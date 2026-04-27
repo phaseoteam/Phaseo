@@ -6,6 +6,9 @@ on:
   pull_request_review_comment:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
   opencode:
     if: |
@@ -21,12 +24,12 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
 
       - name: Run opencode
-        uses: anomalyco/opencode/github@latest
+        uses: anomalyco/opencode/github@2c14fc5586fe0b88e5c04732d2e846769cc35671
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
