@@ -11,6 +11,9 @@ export type GatewayBindings = {
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
     AXIOM_WIDE_DATASET?: string;
+    AXIOM_SUCCESS_SAMPLE_RATE?: string;
+    AXIOM_DETAIL_SAMPLE_RATE?: string;
+    AXIOM_SLOW_REQUEST_MS?: string;
     OPENAI_API_KEY?: string;
     OPENAI_BASE_URL?: string;
     OPENAI_WEBHOOK_SECRET?: string;
