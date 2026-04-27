@@ -3,7 +3,13 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Ban, CheckCircle2, XCircle } from "lucide-react";
+import {
+	AlertTriangle,
+	Ban,
+	CheckCircle2,
+	Clock3,
+	XCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
 	HoverCard,
@@ -133,6 +139,7 @@ function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | nu
 
 const PROVIDER_STATUS_PRIORITY_ORDER = [
 	"active",
+	"coming_soon",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
@@ -161,6 +168,12 @@ const PROVIDER_STATUS_META: Record<
 		icon: CheckCircle2,
 		iconClass: "text-green-600",
 		description: "Active on gateway.",
+	},
+	coming_soon: {
+		label: "Coming Soon",
+		icon: Clock3,
+		iconClass: "text-blue-600",
+		description: "Provider support is coming soon.",
 	},
 	deranked_lvl1: {
 		label: "Deranked Level 1",
@@ -224,6 +237,7 @@ function resolveGatewayStatus(
 		normalizeGatewayStatusValue(capabilityStatus);
 
 	if (normalizedCapabilityStatus === "disabled") return "disabled";
+	if (normalizedCapabilityStatus === "coming_soon") return "coming_soon";
 	if (normalizedCapabilityStatus.startsWith("deranked")) {
 		return normalizedCapabilityStatus;
 	}
@@ -302,6 +316,7 @@ export default function ProviderCard({
 		statusKey === "active" && leavingSoonRule?.effective_to
 			? `${statusMeta.description} Leaving on ${formatLeavingDate(leavingSoonRule.effective_to, now)}`
 			: statusMeta.description;
+	const isComingSoonProvider = statusKey === "coming_soon";
 
 	const isFreePlan = plan === "free";
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
@@ -747,9 +762,22 @@ export default function ProviderCard({
 			<CardContent className="px-4 pb-4 pt-0">
 				<div className="grid grid-cols-1 gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
 					{!hasPlanPricing ? (
-						<div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-							Pricing is not available for the selected tier on this provider.
-						</div>
+						isComingSoonProvider ? (
+							<div className="rounded-md border border-blue-200/80 bg-blue-50/60 px-3 py-2 text-xs text-blue-900 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-100">
+								<div className="inline-flex items-center gap-1.5 font-semibold">
+									<Clock3 className="h-3.5 w-3.5" />
+									Coming Soon
+								</div>
+								<p className="mt-1 text-[11px] leading-snug text-blue-800/90 dark:text-blue-200/90">
+									This provider is not live for the selected tier yet. Pricing will
+									appear once availability starts.
+								</p>
+							</div>
+						) : (
+							<div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+								Pricing is not available for the selected tier on this provider.
+							</div>
+						)
 					) : null}
 					{isFreePlan && (
 						<div className="px-1 py-1">
