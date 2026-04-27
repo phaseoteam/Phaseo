@@ -291,10 +291,15 @@ function createResponsesStreamFromChat(
     let usage: any = undefined;
     const outputItems: any[] = [];
 
-    const debugEnabled = (args.meta as any)?.debug === true;
+    const debugEnabled = args.meta.debug?.enabled === true;
     
     const emit = async (event: string, payload: any) => {
-        console.log(`[xiaomi-adapter] emitting event: ${event}`, JSON.stringify(payload).slice(0, 200));
+        if (debugEnabled) {
+            console.log(
+                `[xiaomi-adapter] emitting event: ${event}`,
+                JSON.stringify(payload).slice(0, 200)
+            );
+        }
         await writer.write(
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`)
         );
@@ -370,7 +375,12 @@ function createResponsesStreamFromChat(
                         }
                         if (typeof delta?.reasoning_content === "string") {
                             reasoningText += delta.reasoning_content;
-                            console.log(`[xiaomi-adapter] reasoning_content delta:`, delta.reasoning_content.slice(0, 100));
+                            if (debugEnabled) {
+                                console.log(
+                                    `[xiaomi-adapter] reasoning_content delta:`,
+                                    delta.reasoning_content.slice(0, 100)
+                                );
+                            }
                             await emit("response.reasoning.delta", {
                                 delta: delta.reasoning_content,
                                 output_index: 0,
@@ -450,7 +460,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const bill = createBill(res);
 
-    const debugEnabled = (args.meta as any)?.debug === true;
+    const debugEnabled = args.meta.debug?.enabled === true;
     if (debugEnabled) {
         const bodyText = await res.clone().text();
         console.log("[xiaomi-adapter] upstream response", {
@@ -482,7 +492,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const json: Record<string, unknown> = await res.json();
     const normalized = buildResponsesPayload(args, json, bill.upstream_id, reasoningConfig);
-    console.log('[xiaomi-adapter] normalized response output:', JSON.stringify(normalized.output, null, 2));
+    if (debugEnabled) {
+        console.log(
+            "[xiaomi-adapter] normalized response output:",
+            JSON.stringify(normalized.output, null, 2)
+        );
+    }
     
     if (normalized?.usage) {
         const priced = computeBill(normalized.usage, args.pricingCard);
