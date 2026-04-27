@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath } from "next/cache";
 import {
 	requireAuthenticatedUser,
@@ -22,7 +22,7 @@ export async function updateRoutingSettings({
 	alphaChannelEnabled,
 }: UpdateRoutingSettingsInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) {
 		throw new Error("Missing workspace id");
 	}

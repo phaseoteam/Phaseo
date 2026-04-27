@@ -15,61 +15,6 @@ interface ActionResult {
 	error?: string;
 }
 
-async function loadAuthorizationDetails(args: {
-	supabase: Awaited<ReturnType<typeof createClient>>;
-	authorizationId: string;
-	userId: string;
-}): Promise<any | null> {
-	const { supabase, authorizationId, userId } = args;
-
-	const { data: authorization, error: authError } = await supabase
-		.from("oauth_authorizations")
-		.select("id, user_id, client_id, workspace_id, scopes, created_at, last_used_at")
-		.eq("id", authorizationId)
-		.eq("user_id", userId)
-		.is("revoked_at", null)
-		.maybeSingle();
-
-	if (authError || !authorization) {
-		return null;
-	}
-
-	const [appMetaResult, workspaceResult] = await Promise.all([
-		supabase
-			.from("oauth_app_metadata")
-			.select("name, description, logo_url, homepage_url, status")
-			.eq("client_id", authorization.client_id)
-			.maybeSingle(),
-		supabase
-			.from("workspaces")
-			.select("name")
-			.eq("id", authorization.workspace_id)
-			.maybeSingle(),
-	]);
-
-	if (appMetaResult.error || !appMetaResult.data) {
-		return null;
-	}
-	if (appMetaResult.data.status !== "active") {
-		return null;
-	}
-
-	return {
-		authorization_id: authorization.id,
-		user_id: authorization.user_id,
-		client_id: authorization.client_id,
-		workspace_id: authorization.workspace_id,
-		scopes: authorization.scopes,
-		authorized_at: authorization.created_at,
-		last_used_at: authorization.last_used_at,
-		app_name: appMetaResult.data.name,
-		app_description: appMetaResult.data.description,
-		app_logo_url: appMetaResult.data.logo_url,
-		app_homepage_url: appMetaResult.data.homepage_url,
-		team_name: workspaceResult.data?.name ?? "Unknown workspace",
-	};
-}
-
 /**
  * Revoke OAuth authorization
  *
@@ -137,12 +82,14 @@ export async function getAuthorizationDetailsAction(
 			return { error: "Unauthorized" };
 		}
 
-		const authorization = await loadAuthorizationDetails({
-			supabase,
-			authorizationId,
-			userId: user.id,
-		});
-		if (!authorization) {
+		// Fetch authorization details
+		const { data: authorization, error: authError } = await supabase
+			.from("user_authorized_apps")
+			.select("*")
+			.eq("authorization_id", authorizationId)
+			.single();
+
+		if (authError || !authorization) {
 			return { error: "Authorization not found" };
 		}
 

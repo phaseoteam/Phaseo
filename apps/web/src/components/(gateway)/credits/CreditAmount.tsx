@@ -8,12 +8,10 @@ interface CreditAmountProps {
 }
 
 export function CreditAmount({ value, className = "" }: CreditAmountProps) {
-	const safeValue = Number.isFinite(value) ? value : 0;
-
 	return (
 		<span className={`tabular-nums ${className}`}>
 			<NumberFlow
-				value={safeValue}
+				value={value}
 				locales="en-US"
 				format={{
 					style: "currency",

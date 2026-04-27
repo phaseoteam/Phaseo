@@ -127,144 +127,6 @@ function collapsePlanModelVariants(modelId: string, variants: RawPlanModel[]): R
     };
 }
 
-function normalizeComparableValue(value: unknown): unknown {
-    if (value === undefined) return null;
-    if (Array.isArray(value)) return value.map(normalizeComparableValue);
-    if (value && typeof value === "object") {
-        const out: Record<string, unknown> = {};
-        for (const key of Object.keys(value as Record<string, unknown>).sort()) {
-            out[key] = normalizeComparableValue((value as Record<string, unknown>)[key]);
-        }
-        return out;
-    }
-    return value;
-}
-
-function stableRowSignature(row: unknown): string {
-    return JSON.stringify(normalizeComparableValue(row));
-}
-
-function stableRowSetSignature(rows: unknown[]): string[] {
-    return rows.map(stableRowSignature).sort();
-}
-
-async function planStateMatchesDatabase(
-    supa: ReturnType<typeof client>,
-    planRow: {
-        plan_uuid: string;
-        plan_id: string;
-        name: string;
-        organisation_id: string;
-        description: string | null;
-        frequency: string;
-        price: number;
-        currency: string;
-        link: string | null;
-        other_info: unknown;
-    },
-    modelRows: Array<{
-        plan_uuid: string;
-        model_id: string;
-        model_info: unknown;
-        rate_limit: unknown;
-        other_info: unknown;
-    }>,
-    featureRows: Array<{
-        plan_uuid: string;
-        feature_name: string;
-        feature_value: unknown;
-        feature_description: string | null;
-        other_info: unknown;
-    }>
-): Promise<boolean> {
-    const planRes = await supa
-        .from("data_subscription_plans")
-        .select(
-            "plan_id,name,organisation_id,description,frequency,price,currency,link,other_info"
-        )
-        .eq("plan_uuid", planRow.plan_uuid)
-        .maybeSingle();
-    const existingPlan = assertOk(planRes, "select data_subscription_plans by plan_uuid") as
-        | {
-              plan_id: string;
-              name: string;
-              organisation_id: string;
-              description: string | null;
-              frequency: string;
-              price: number;
-              currency: string;
-              link: string | null;
-              other_info: unknown;
-          }
-        | null;
-
-    if (!existingPlan) return false;
-
-    const expectedPlan = {
-        plan_id: planRow.plan_id,
-        name: planRow.name,
-        organisation_id: planRow.organisation_id,
-        description: planRow.description,
-        frequency: planRow.frequency,
-        price: planRow.price,
-        currency: planRow.currency,
-        link: planRow.link,
-        other_info: planRow.other_info,
-    };
-
-    if (stableRowSignature(expectedPlan) !== stableRowSignature(existingPlan)) return false;
-
-    const existingModels = assertOk(
-        await supa
-            .from("data_subscription_plan_models")
-            .select("model_id,model_info,rate_limit,other_info")
-            .eq("plan_uuid", planRow.plan_uuid),
-        "select data_subscription_plan_models by plan_uuid"
-    ) as Array<{
-        model_id: string;
-        model_info: unknown;
-        rate_limit: unknown;
-        other_info: unknown;
-    }>;
-
-    const expectedModelSet = stableRowSetSignature(
-        modelRows.map((row) => ({
-            model_id: row.model_id,
-            model_info: row.model_info,
-            rate_limit: row.rate_limit,
-            other_info: row.other_info,
-        }))
-    );
-    const existingModelSet = stableRowSetSignature(existingModels);
-    if (expectedModelSet.length !== existingModelSet.length) return false;
-    if (expectedModelSet.some((value, index) => value !== existingModelSet[index])) return false;
-
-    const existingFeatures = assertOk(
-        await supa
-            .from("data_subscription_plan_features")
-            .select("feature_name,feature_value,feature_description,other_info")
-            .eq("plan_uuid", planRow.plan_uuid),
-        "select data_subscription_plan_features by plan_uuid"
-    ) as Array<{
-        feature_name: string;
-        feature_value: unknown;
-        feature_description: string | null;
-        other_info: unknown;
-    }>;
-
-    const expectedFeatureSet = stableRowSetSignature(
-        featureRows.map((row) => ({
-            feature_name: row.feature_name,
-            feature_value: row.feature_value,
-            feature_description: row.feature_description,
-            other_info: row.other_info,
-        }))
-    );
-    const existingFeatureSet = stableRowSetSignature(existingFeatures);
-    if (expectedFeatureSet.length !== existingFeatureSet.length) return false;
-    return !expectedFeatureSet.some((value, index) => value !== existingFeatureSet[index]);
-}
-
 export async function loadSubscriptionPlans(tracker: ChangeTracker) {
     const supa = client();
     const { modelIds: knownModelIds, normalizedModelIdToModelId } = await loadKnownModelIds(supa);
@@ -274,7 +136,6 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
     const planUuids = new Set<string>();
     const dirs = await listDirs(DIR_SUBSCRIPTION_PLANS);
     let touched = false;
-    let restoredOutOfSyncPlans = 0;
     for (const d of dirs) {
         const fp = join(d, "plan.json");
         const { data: j, hash } = await readJsonWithHash<any>(fp);
@@ -297,6 +158,8 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
                 continue;
             }
 
+            const shouldWrite = change.status !== "unchanged";
+
             // Insert/update the subscription plan
             const planRow = {
                 plan_uuid: generateDeterministicUUID(`${j.plan_id}-${option.frequency}-${j.organisation_id}`),
@@ -312,15 +175,19 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
             };
 
             planUuids.add(planRow.plan_uuid);
+            if (!shouldWrite) continue;
+            touched = true;
+
+            if (isDryRun()) {
+                logWrite("public.data_subscription_plans", "UPSERT", planRow, { onConflict: "plan_uuid" });
+            } else {
+                const res = await supa
+                    .from("data_subscription_plans")
+                    .upsert(planRow, { onConflict: "plan_uuid" });
+                assertOk(res, "upsert data_subscription_plans");
+            }
 
             // Insert/update the plan models
-            const expectedModelRows: Array<{
-                plan_uuid: string;
-                model_id: string;
-                model_info: unknown;
-                rate_limit: unknown;
-                other_info: unknown;
-            }> = [];
             if (j.models && Array.isArray(j.models)) {
                 const groupedModels = new Map<string, RawPlanModel[]>();
                 for (const rawModel of j.models as RawPlanModel[]) {
@@ -357,79 +224,54 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
                             to: resolvedModelId,
                         });
                     }
-                    expectedModelRows.push({
+                    const modelRow = {
                         plan_uuid: planRow.plan_uuid,
                         model_id: resolvedModelId,
                         model_info: model.model_info ?? {},
                         rate_limit: model.rate_limit ?? {},
                         other_info: model.other_info ?? {},
-                    });
+                    };
+
+                    if (!shouldWrite) continue;
+
+                    if (isDryRun()) {
+                        logWrite("public.data_subscription_plan_models", "UPSERT", modelRow, { onConflict: "plan_uuid,model_id" });
+                    } else {
+                        const res = await supa
+                            .from("data_subscription_plan_models")
+                            .upsert(modelRow, { onConflict: "plan_uuid,model_id" });
+                        assertOk(res, "upsert data_subscription_plan_models");
+                    }
                 }
             }
 
             // Insert/update the plan features (details)
-            const expectedFeatureRows: Array<{
-                plan_uuid: string;
-                feature_name: string;
-                feature_value: unknown;
-                feature_description: string | null;
-                other_info: unknown;
-            }> = [];
             if (j.features && Array.isArray(j.features)) {
                 for (const detail of j.features) {
                     if (!detail.feature_name) {
                         console.error(`Skipping feature in ${d}: missing feature_name`);
                         continue;
                     }
-                    expectedFeatureRows.push({
+                    const featureRow = {
                         plan_uuid: planRow.plan_uuid,
                         feature_name: detail.feature_name,
                         feature_value: detail.feature_value ?? null,
                         feature_description: detail.feature_description ?? null,
                         other_info: detail.other_info ?? {},
-                    });
+                    };
+
+                    if (!shouldWrite) continue;
+
+                    if (isDryRun()) {
+                        logWrite("public.data_subscription_plan_features", "UPSERT", featureRow, { onConflict: "plan_uuid,feature_name" });
+                    } else {
+                        const res = await supa
+                            .from("data_subscription_plan_features")
+                            .upsert(featureRow, { onConflict: "plan_uuid,feature_name" });
+                        assertOk(res, "upsert data_subscription_plan_features");
+                    }
                 }
             }
-
-            let shouldWrite = change.status !== "unchanged";
-            if (!shouldWrite) {
-                const matches = await planStateMatchesDatabase(
-                    supa,
-                    planRow,
-                    expectedModelRows,
-                    expectedFeatureRows
-                );
-                if (!matches) {
-                    shouldWrite = true;
-                    restoredOutOfSyncPlans += 1;
-                }
-            }
-            if (!shouldWrite) continue;
-
-            touched = true;
-
-            if (isDryRun()) {
-                logWrite("public.data_subscription_plans", "UPSERT", planRow, { onConflict: "plan_uuid" });
-                for (const modelRow of expectedModelRows) {
-                    logWrite("public.data_subscription_plan_models", "UPSERT", modelRow, {
-                        onConflict: "plan_uuid,model_id",
-                    });
-                }
-                for (const featureRow of expectedFeatureRows) {
-                    logWrite("public.data_subscription_plan_features", "UPSERT", featureRow, {
-                        onConflict: "plan_uuid,feature_name",
-                    });
-                }
-                continue;
-            }
-
-            const res = await supa
-                .rpc("replace_subscription_plan_bundle", {
-                    p_plan: planRow,
-                    p_models: expectedModelRows,
-                    p_features: expectedFeatureRows,
-                });
-            assertOk(res, "upsert data_subscription_plans");
         }
     }
 
@@ -457,11 +299,6 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
                 : "";
         console.warn(
             `[subscription-plans-import] Skipped ${missingModelRefs.length} model reference(s) because model_id was not found in data_models.\n${details}${suffix}`
-        );
-    }
-    if (restoredOutOfSyncPlans > 0) {
-        console.warn(
-            `[subscription-plans-import] Restored ${restoredOutOfSyncPlans} out-of-sync plan definition(s) even though their source files were unchanged.`
         );
     }
 

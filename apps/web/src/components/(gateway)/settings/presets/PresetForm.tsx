@@ -44,7 +44,7 @@ interface PresetFormProps {
 	models: ModelCard[];
 	providers: APIProviderCard[];
 	currentUserId?: string | null;
-	currentWorkspaceId?: string | null;
+	currentTeamId?: string | null;
 }
 
 type ReasoningEffort = "low" | "medium" | "high";
@@ -88,7 +88,7 @@ export default function PresetForm({
 	models,
 	providers,
 	currentUserId,
-	currentWorkspaceId,
+	currentTeamId,
 }: PresetFormProps) {
 	const [loading, setLoading] = useState(false);
 	const [modelSearch, setModelSearch] = useState("");
@@ -182,7 +182,7 @@ export default function PresetForm({
 			toast.error("Preset name is required");
 			return;
 		}
-		if (!currentUserId || !currentWorkspaceId) {
+		if (!currentUserId || !currentTeamId) {
 			toast.error("You must be signed in and in a workspace to create a preset.");
 			return;
 		}
@@ -237,7 +237,7 @@ export default function PresetForm({
 				visibility,
 				config,
 				creatorUserId: currentUserId,
-				workspaceId: currentWorkspaceId,
+				workspaceId: currentTeamId,
 			});
 			toast.success("Preset created");
 			router.push("/settings/presets");

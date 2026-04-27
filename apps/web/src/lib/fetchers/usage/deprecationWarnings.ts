@@ -146,7 +146,7 @@ export async function getDeprecationWarningsForTeam(
 
 	const recentModelsSafe = recentErr ? [] : (recentModels ?? []);
 
-	// usage surfaces may return API ids (e.g. anthropic/claude-3.5-haiku) while
+	// gateway_requests model ids may be API ids (e.g. anthropic/claude-3.5-haiku) while
 	// lifecycle metadata lives on internal model ids. Resolve via data_api_provider_models.
 	const usedModelIds = Array.from(
 		new Set(

@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "hmmt-2026-feb",
-  "benchmark_name": "HMMT 2026 Feb",
-  "category": "math",
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",
-  "total_models": 2
-}

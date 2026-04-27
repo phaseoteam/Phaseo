@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "ctf-challenge-tasks",
-  "benchmark_name": "CTF Challenge Tasks",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/introducing-gpt-5-5/",
-  "total_models": 1
-}

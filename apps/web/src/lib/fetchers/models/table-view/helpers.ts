@@ -181,7 +181,6 @@ export const normalizeCapabilityStatus = (value: unknown): string => {
         .toLowerCase()
         .replace(/[\s-]+/g, "_");
     if (!normalized) return "";
-    if (normalized === "comingsoon") return "coming_soon";
     if (normalized === "not_active") return "inactive";
     if (normalized === "de_ranked" || normalized === "deranked") {
         return "deranked_lvl1";
@@ -202,7 +201,6 @@ export const resolveGatewayStatus = (
     if (normalizedCapabilityStatus.startsWith("deranked")) {
         return normalizedCapabilityStatus;
     }
-    if (normalizedCapabilityStatus === "coming_soon") return "coming_soon";
     if (
         normalizedCapabilityStatus &&
         normalizedCapabilityStatus !== "active" &&

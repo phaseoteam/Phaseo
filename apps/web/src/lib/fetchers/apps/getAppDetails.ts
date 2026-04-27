@@ -1,8 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 
-const PAGE_SIZE = 5000;
-
 export type AppDetails = {
 	id: string;
 	title: string;
@@ -17,32 +15,6 @@ export type AppDetails = {
 	total_tokens: number;
 	total_requests: number;
 };
-
-function toRecord(value: unknown): Record<string, unknown> | null {
-	if (!value || typeof value !== "object") return null;
-	return value as Record<string, unknown>;
-}
-
-function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
-	if (!usage) return 0;
-	const raw = usage[key];
-	const parsed = Number(raw);
-	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function getTotalTokensFromUsage(usageValue: unknown): number {
-	const usage = toRecord(usageValue);
-	const directTotal =
-		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
-	if (directTotal > 0) return directTotal;
-
-	return (
-		readUsageInt(usage, "input_tokens") +
-		readUsageInt(usage, "output_tokens") +
-		readUsageInt(usage, "prompt_tokens") +
-		readUsageInt(usage, "completion_tokens")
-	);
-}
 
 export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 	try {
@@ -60,38 +32,30 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 			return null;
 		}
 
-		// Get usage stats directly from raw requests
+		// Get aggregated usage stats
+		const { data: stats, error: statsError } = await supabase
+			.from("gateway_usage_rollup_daily_app")
+			.select("requests, success_requests, total_tokens")
+			.eq("app_id", appId);
+
+		if (statsError) {
+			console.error("Error fetching app stats:", statsError);
+			return null;
+		}
+
+		// Calculate totals
 		let totalTokens = 0;
-		let totalRequests = 0;
-		for (let offset = 0; ; offset += PAGE_SIZE) {
-			const { data: requestRows, error: requestError } = await supabase
-				.from("gateway_requests")
-				.select("usage, success")
-				.eq("app_id", appId)
-				.order("created_at", { ascending: true })
-				.range(offset, offset + PAGE_SIZE - 1);
+		let totalSuccessfulRequests = 0;
 
-			if (requestError) {
-				console.error("Error fetching app stats from gateway_requests:", requestError);
-				return null;
-			}
-
-			if (!Array.isArray(requestRows) || requestRows.length === 0) break;
-
-			for (const row of requestRows) {
-				const success = Boolean((row as any)?.success);
-				if (!success) continue;
-				totalRequests += 1;
-				totalTokens += getTotalTokensFromUsage((row as any)?.usage);
-			}
-
-			if (requestRows.length < PAGE_SIZE) break;
+		for (const row of stats || []) {
+			totalTokens += Number((row as any)?.total_tokens ?? 0);
+			totalSuccessfulRequests += Number((row as any)?.success_requests ?? 0);
 		}
 
 		return {
 			...app,
 			total_tokens: totalTokens,
-			total_requests: totalRequests,
+			total_requests: totalSuccessfulRequests,
 		};
 	} catch (err) {
 		console.error("Unexpected error fetching app details:", err);

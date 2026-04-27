@@ -11,10 +11,6 @@ export type GatewayBindings = {
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
     AXIOM_WIDE_DATASET?: string;
-    AXIOM_SUCCESS_SAMPLE_RATE?: string;
-    AXIOM_DETAIL_SAMPLE_RATE?: string;
-    AXIOM_SLOW_REQUEST_MS?: string;
-    AXIOM_LOG_FAILURE_COOLDOWN_MS?: string;
     OPENAI_API_KEY?: string;
     OPENAI_BASE_URL?: string;
     OPENAI_WEBHOOK_SECRET?: string;
@@ -196,7 +192,6 @@ export type GatewayBindings = {
     EMAIL_OUTBOX_DRAIN_LIMIT?: string;
     VIDEO_API_ENABLED?: string;
     PRICING_MONITOR_ENABLED?: string;
-    WORKSPACE_INVOICING_ENABLED?: string;
     ENTERPRISE_INVOICING_ENABLED?: string;
     STRIPE_SECRET_KEY?: string;
     TEST_STRIPE_SECRET_KEY?: string;

@@ -834,25 +834,6 @@ export async function handleError({
         return null;
     })();
     const providerForAudit = providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
-    const structuredOutputRequested =
-        Boolean(
-            (typeof body?.response_format === "object" &&
-                body?.response_format &&
-                ["json_object", "json_schema"].includes(
-                    String(body.response_format.type ?? "").toLowerCase(),
-                )) ||
-            (typeof body?.response_format === "string" &&
-                ["json_object", "json_schema"].includes(
-                    String(body.response_format).toLowerCase(),
-                )) ||
-            (typeof body?.text?.format === "object" &&
-                body?.text?.format &&
-                ["json_object", "json_schema"].includes(
-                    String(body.text.format.type ?? "").toLowerCase(),
-                ))
-        );
-    const requestedToolCount =
-        Array.isArray(body?.tools) ? body.tools.length : 0;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
@@ -892,13 +873,6 @@ export async function handleError({
             : (body?.timing?.before?.total_ms ? Math.round(body.timing.before.total_ms) : null),
         generationMs: ctx ? (executeAdapterMs ? Math.round(executeAdapterMs) : null) : null,
         internalLatencyMs,
-        requestToolCount: requestedToolCount > 0 ? requestedToolCount : null,
-        requestToolResultCount: null,
-        outputToolCallCount: null,
-        toolCallRequest: requestedToolCount > 0,
-        toolCallError: requestedToolCount > 0,
-        structuredOutputRequested,
-        structuredOutputError: structuredOutputRequested,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
         keyId: ctx?.meta?.apiKeyId ?? null,
         requestMethod: requestMeta.requestMethod,

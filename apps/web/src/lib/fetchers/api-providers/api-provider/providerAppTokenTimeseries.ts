@@ -17,12 +17,6 @@ type ProviderAppRollupRow = {
 	total_tokens: number | null;
 };
 
-type ProviderAppRequestRow = {
-	created_at: string;
-	app_id: string | null;
-	usage: unknown;
-};
-
 type AppMetaRow = {
 	id: string;
 	title: string | null;
@@ -68,32 +62,6 @@ function buildDayBuckets(since: Date, days: number): string[] {
 	return buckets;
 }
 
-function toRecord(value: unknown): Record<string, unknown> | null {
-	if (!value || typeof value !== "object") return null;
-	return value as Record<string, unknown>;
-}
-
-function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
-	if (!usage) return 0;
-	const raw = usage[key];
-	const parsed = Number(raw);
-	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function getTotalTokensFromUsage(usageValue: unknown): number {
-	const usage = toRecord(usageValue);
-	const directTotal =
-		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
-	if (directTotal > 0) return directTotal;
-
-	return (
-		readUsageInt(usage, "input_tokens") +
-		readUsageInt(usage, "output_tokens") +
-		readUsageInt(usage, "prompt_tokens") +
-		readUsageInt(usage, "completion_tokens")
-	);
-}
-
 function isUnknownAppIdentity(appId: string, title: string | null | undefined): boolean {
 	const normalizedId = appId.trim().toLowerCase();
 	const normalizedTitle = (title ?? "").trim().toLowerCase();
@@ -136,14 +104,17 @@ async function fetchProviderAppRollupRows(
 	for (let page = 0, from = 0; page < Math.max(1, maxPages); page += 1, from += PAGE_SIZE) {
 		pagesFetched += 1;
 		const to = from + PAGE_SIZE - 1;
-		const query = supabase
-			.from("gateway_requests")
-			.select("created_at, app_id, usage")
+		let query = supabase
+			.from("gateway_usage_rollup_15m_provider_app")
+			.select("bucket_15m, app_id, total_tokens")
 			.eq("provider", apiProviderId)
-			.gte("created_at", sinceIso)
-			.lte("created_at", nowIso)
-			.order("created_at", { ascending: true })
+			.gte("bucket_15m", sinceIso)
+			.lte("bucket_15m", nowIso)
+			.order("bucket_15m", { ascending: true })
 			.range(from, to);
+		if (Array.isArray(appIds) && appIds.length > 0) {
+			query = query.in("app_id", appIds);
+		}
 		const { data, error } = await query;
 
 		if (error) {
@@ -157,19 +128,7 @@ async function fetchProviderAppRollupRows(
 			break;
 		}
 
-		for (const row of (data ?? []) as ProviderAppRequestRow[]) {
-			const appId = String(row?.app_id ?? "").trim();
-			if (!appId) continue;
-			if (Array.isArray(appIds) && appIds.length > 0 && !appIds.includes(appId)) {
-				continue;
-			}
-
-			rows.push({
-				bucket_15m: String(row.created_at ?? "").trim(),
-				app_id: appId,
-				total_tokens: getTotalTokensFromUsage(row.usage),
-			});
-		}
+		rows.push(...(data as ProviderAppRollupRow[]));
 		if (data.length < PAGE_SIZE) {
 			hitPageCap = false;
 			break;

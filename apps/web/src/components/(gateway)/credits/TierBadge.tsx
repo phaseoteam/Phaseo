@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/hover-card";
 import { ArrowUpRight } from "lucide-react";
 
+const HIDE_ENTERPRISE_REFERENCES = true;
+
 type TierBadgeProps = {
 	href: string;
 	tierName: string;
@@ -35,7 +37,9 @@ export function TierBadge({
 	topTier = false,
 }: TierBadgeProps) {
 	const hasSavings = savingsPoints > 0;
-	const displayTierName = tierName || "Standard";
+	const displayTierName = HIDE_ENTERPRISE_REFERENCES ? "Standard" : tierName;
+	const showNextTierHint =
+		!HIDE_ENTERPRISE_REFERENCES && nextTierName && remainingFormatted;
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
@@ -78,12 +82,15 @@ export function TierBadge({
 					)}
 
 					{topTier ? (
-						<p className="text-xs text-muted-foreground">
-							All workspaces use the same standard pricing.
-						</p>
+						!HIDE_ENTERPRISE_REFERENCES ? (
+							<p className="text-xs text-muted-foreground">
+								You're on Enterprise tier. Reach out if you
+								need custom pricing or dedicated support.
+							</p>
+						) : null
 					) : (
 						<>
-							{nextTierName && remainingFormatted && (
+							{showNextTierHint && (
 								<p className="text-xs text-muted-foreground">
 									Spend {remainingFormatted} more this month to
 									unlock {nextTierName} tier next month

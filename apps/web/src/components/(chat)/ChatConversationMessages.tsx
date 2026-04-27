@@ -71,7 +71,6 @@ import {
 	sanitizeHttpMediaUrl,
 	stripMarkdownLink,
 } from "./chatConversationHelpers";
-import type { ResolvedChatroomTheme } from "@/components/(chat)/playground/chat-playground-core";
 
 const ATTACHMENT_PLACEHOLDER_PATTERN = /^\[(Attachment|Attachments)\]/i;
 
@@ -97,7 +96,7 @@ type ChatConversationMessagesProps = {
 	modelDisplayNameById: Record<string, string>;
 	modelOrgIdById: Record<string, string>;
 	modelLinkById: Record<string, string>;
-	theme: ResolvedChatroomTheme;
+	accentColor: string;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
@@ -119,7 +118,7 @@ export function ChatConversationMessages({
 	modelDisplayNameById,
 	modelOrgIdById,
 	modelLinkById,
-	theme,
+	accentColor,
 	onEditMessage,
 	onRetryAssistant,
 	onBranchAssistant,
@@ -326,16 +325,11 @@ export function ChatConversationMessages({
 				ATTACHMENT_PLACEHOLDER_PATTERN.test(
 					message.content.trim(),
 				);
-			const userBubbleStyle = isUser
-				? {
-						backgroundColor: theme.accentColor,
-						color: theme.userBubbleText,
-					}
-				: {
-						backgroundColor: theme.assistantBubbleBackground,
-						borderColor: theme.assistantBubbleBorder,
-						color: theme.assistantBubbleText,
-					};
+			const hasAccent = Boolean(accentColor);
+			const userBubbleStyle =
+				isUser && hasAccent
+					? { backgroundColor: accentColor }
+					: undefined;
 
 			return (
 				<div
@@ -376,7 +370,11 @@ export function ChatConversationMessages({
 					<div
 						className={cn(
 							"max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-							isUser ? "" : "border",
+							isUser
+								? hasAccent
+									? "text-background"
+									: "bg-foreground text-background"
+								: "border border-border bg-muted text-foreground",
 						)}
 						style={userBubbleStyle}
 					>
@@ -882,7 +880,7 @@ export function ChatConversationMessages({
 		modelDisplayNameById,
 		modelOrgIdById,
 		modelLinkById,
-		theme,
+		accentColor,
 		onCopy,
 		handleCopyForMessage,
 		copiedMessageKey,

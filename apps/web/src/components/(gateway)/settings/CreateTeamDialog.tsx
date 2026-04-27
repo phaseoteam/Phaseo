@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
 	Dialog,
 	DialogTrigger,
@@ -24,68 +23,34 @@ import {
 import { toast } from "sonner";
 import AcceptInviteDialog from "./AcceptInviteDialog";
 import { createTeamAction } from "@/app/(dashboard)/settings/teams/actions";
-import { setActiveWorkspaceAction } from "@/app/(dashboard)/actions";
 
 export default function CreateTeamDialog({
 	currentUserId,
 }: {
 	currentUserId?: string;
 }) {
-	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [acceptOpen, setAcceptOpen] = useState(false);
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 
-	async function switchToWorkspace(workspaceId: string, workspaceName: string) {
-		await toast.promise(setActiveWorkspaceAction(workspaceId), {
-			loading: `Switching to ${workspaceName}...`,
-			success: (result) => {
-				if (!result?.ok) {
-					throw new Error(result?.error || "Failed to switch workspace");
-				}
-				router.push(
-					`/settings/workspaces/general?workspace_id=${encodeURIComponent(workspaceId)}`,
-				);
-				router.refresh();
-				return `Switched to ${workspaceName}`;
-			},
-			error: (error) =>
-				error instanceof Error && error.message
-					? error.message
-					: `Failed to switch to ${workspaceName}`,
-		});
-	}
-
 	async function onCreate(e?: React.FormEvent) {
 		e?.preventDefault();
 		// require user and at least 2 non-whitespace characters
 		if (!currentUserId) return;
-		const trimmedName = name.trim();
-		if (!trimmedName || trimmedName.length < 2) return;
-		const toastId = toast.loading(`Creating ${trimmedName}...`);
+		if (!name || name.trim().length < 2) return;
 
 		try {
 			setLoading(true);
-			const createdWorkspace = await createTeamAction(trimmedName, currentUserId);
+			// call server action
+			await createTeamAction(name, currentUserId);
 			setOpen(false);
 			setName("");
-			toast.success(`Workspace "${trimmedName}" created`, {
-				id: toastId,
-				duration: 8000,
-				action: {
-					label: "Switch now",
-					onClick: () => {
-						if (!createdWorkspace?.id) return;
-						void switchToWorkspace(createdWorkspace.id, trimmedName);
-					},
-				},
-			});
 		} catch (err: any) {
 			const message =
 				err?.message ?? "Could not create workspace right now. Please try again.";
-			toast.error(message, { id: toastId });
+			toast.error(message);
 		} finally {
 			setLoading(false);
 		}

@@ -1,5 +1,6 @@
-// Single-tier pricing model: Standard (5%).
-// All workspaces use the same fee and feature set.
+// Two-tier pricing system: Basic (5%) and Enterprise (5%)
+// Backend team tier is the source-of-truth.
+// Spend values are used for progress/projection in UI.
 
 export type GatewayTier = {
 	key: string;
@@ -11,11 +12,20 @@ export type GatewayTier = {
 
 export const GATEWAY_TIERS: readonly GatewayTier[] = [
 	{
-		key: "standard",
-		name: "Standard",
+		key: "basic",
+		name: "Basic",
 		threshold: 0,
 		feePct: 5.0,
-		description: "Single-plan pricing for every workspace.",
+		description:
+			"Standard pricing for all teams. Automatic Enterprise qualification after $10k in a calendar month.",
+	},
+	{
+		key: "enterprise",
+		name: "Enterprise",
+		threshold: 10_000, // $10k threshold
+		feePct: 5.0,
+		description:
+			"Premium pricing for high-volume teams with calendar-month qualification and lock-window grace.",
 	},
 ] as const;
 
@@ -37,34 +47,69 @@ export type TierComputation = {
 	nextDiscountDelta: number;
 	projectedIndex: number;
 	projected: GatewayTier;
-	// Legacy compatibility fields (always false in single-tier mode)
+	// Two-tier specific fields
 	isEnterprise: boolean;
 	willUpgradeNextMonth: boolean;
-	willDowngradeRisk: boolean;
+	willDowngradeRisk: boolean; // True if on Enterprise but MTD < threshold
 };
 
 export function computeTierInfo({
-	lastMonth: _lastMonth,
-	mtd: _mtd,
-	currentTierKey: _currentTierKey,
+	lastMonth,
+	mtd,
+	currentTierKey,
 	tiers = GATEWAY_TIERS,
 }: ComputeArgs): TierComputation {
-	const current = tiers[0];
-	if (!current) throw new Error("No tiers configured");
+	const tierCount = tiers.length;
+	if (tierCount === 0) throw new Error("No tiers configured");
+
+	const [basicTier, enterpriseTier] = tiers;
+	const enterpriseThreshold = enterpriseTier.threshold;
+
+	// Current tier: prefer backend source-of-truth when present.
+	const normalizedCurrentTier = String(currentTierKey ?? "").trim().toLowerCase();
+	const isEnterprise =
+		normalizedCurrentTier === "enterprise"
+			? true
+			: normalizedCurrentTier === "basic"
+				? false
+				: lastMonth >= enterpriseThreshold;
+	const currentIndex = isEnterprise ? 1 : 0;
+	const current = tiers[currentIndex];
+	const topTier = currentIndex === tierCount - 1;
+	const next = topTier ? null : tiers[currentIndex + 1];
+
+	// Projected tier is based on MTD (what next month will be)
+	const willUpgradeNextMonth = mtd >= enterpriseThreshold && !isEnterprise;
+	const projectedIndex = mtd >= enterpriseThreshold ? 1 : 0;
+	const projected = tiers[projectedIndex];
+
+	// Downgrade risk: on Enterprise but MTD < threshold
+	const willDowngradeRisk = isEnterprise && mtd < enterpriseThreshold;
+
+	// Savings vs Basic tier
+	const baseFee = basicTier.feePct;
+	const savingVsBase = Math.max(0, baseFee - current.feePct);
+	const projectedSavings =
+		savingVsBase > 0 ? Math.max(0, (mtd * savingVsBase) / 100) : 0;
+	const nextDiscountDelta =
+		!topTier && next ? Math.max(0, current.feePct - next.feePct) : 0;
+
+	// Progress toward Enterprise tier (if on Basic)
+	const remainingToNext = !topTier && next ? Math.max(next.threshold - mtd, 0) : 0;
 
 	return {
-		currentIndex: 0,
+		currentIndex,
 		current,
-		next: null,
-		topTier: true,
-		remainingToNext: 0,
-		savingVsBase: 0,
-		projectedSavings: 0,
-		nextDiscountDelta: 0,
-		projectedIndex: 0,
-		projected: current,
-		isEnterprise: false,
-		willUpgradeNextMonth: false,
-		willDowngradeRisk: false,
+		next,
+		topTier,
+		remainingToNext,
+		savingVsBase,
+		projectedSavings,
+		nextDiscountDelta,
+		projectedIndex,
+		projected,
+		isEnterprise,
+		willUpgradeNextMonth,
+		willDowngradeRisk,
 	};
 }

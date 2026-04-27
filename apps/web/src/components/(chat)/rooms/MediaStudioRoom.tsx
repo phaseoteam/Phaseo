@@ -856,7 +856,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 	const isImageRoom = roomId === "image";
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const filteredModels = useMemo(
-		() => filterModelsForRoom(models, roomId),
+		() => filterModelsForRoom(models, roomId).filter((model) => model.isAvailable),
 		[models, roomId],
 	);
 	const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
@@ -908,11 +908,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				activeModelId)) ||
 		"Select model";
 	const openComposerModelPicker = () => {
-		const fallbackModelId =
-			filteredModels.find((model) => model.isAvailable)?.modelId ??
-			filteredModels[0]?.modelId;
 		const targetModelId =
-			activeModelId || selectedModelIds[0] || fallbackModelId;
+			activeModelId || selectedModelIds[0] || filteredModels[0]?.modelId;
 		if (!targetModelId) return;
 		if (!selectedModelIds.includes(targetModelId)) {
 			setSelectedModelIds((prev) =>
@@ -1618,25 +1615,6 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						});
 
 						if (!response.ok) {
-							const contentType =
-								(response.headers.get("content-type") ?? "").toLowerCase();
-							if (contentType.includes("application/json")) {
-								try {
-									const payload = (await response.clone().json()) as
-										| Record<string, unknown>
-										| null;
-									const reason = toOptionalString(payload?.reason);
-									const message = toOptionalString(payload?.message);
-									const errorCode = toOptionalString(payload?.error);
-									const detail = message ?? reason ?? errorCode;
-									if (detail) throw new Error(detail);
-								} catch (parseError) {
-									if (parseError instanceof Error && parseError.message) {
-										throw parseError;
-									}
-									// Fall back to response.text()/status below.
-								}
-							}
 							const text = await response.text();
 							throw new Error(text || `Request failed (${response.status})`);
 						}

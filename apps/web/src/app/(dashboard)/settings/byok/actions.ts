@@ -6,7 +6,8 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { encryptSecret } from "@/lib/byok/crypto";
 import { validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
-import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
+import { cookies } from "next/headers";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
     requireAuthenticatedUser,
     requireWorkspaceMembership,
@@ -38,7 +39,9 @@ export async function createByokKeyAction(
     // Derive metadata & ciphertext
     const enc = encryptSecret(value);
 
-    const activeWorkspaceId = await getActiveWorkspaceIdFromCookieRaw();
+    // Get workspace_id from session/user (example)
+    const cookieStore = await cookies();
+    const activeWorkspaceId = cookieStore.get('activeWorkspaceId')?.value;
     if (!activeWorkspaceId) throw new Error("No active workspace selected");
     await requireWorkspaceMembership(supabase, user.id, activeWorkspaceId, ["owner", "admin"]);
 
@@ -236,7 +239,7 @@ export async function deleteByokKeyAction(id: string) {
 
 export async function updateByokFallbackAction(enabled: boolean) {
     const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+    const workspaceId = await getWorkspaceIdFromCookie();
     if (!workspaceId) {
         throw new Error("Missing workspace id");
     }

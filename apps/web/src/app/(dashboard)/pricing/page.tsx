@@ -61,6 +61,12 @@ type FAQSection = {
 	items: FAQItem[];
 };
 
+function getTierByKey(key: "basic" | "enterprise") {
+	const tier = GATEWAY_TIERS.find((entry) => entry.key === key);
+	if (!tier) throw new Error(`Missing required gateway tier: ${key}`);
+	return tier;
+}
+
 function PlanCell({ cell }: { cell: Cell }) {
 	if (cell.type === "text") {
 		return <span className="text-xs text-muted-foreground">{cell.value}</span>;
@@ -119,8 +125,8 @@ function PlanCell({ cell }: { cell: Cell }) {
 	);
 }
 
-const standardTier = GATEWAY_TIERS[0];
-const standardFeeText = `${(standardTier?.feePct ?? 5).toFixed(1)}% on credit purchases`;
+const basicTier = getTierByKey("basic");
+const enterpriseTier = getTierByKey("enterprise");
 const HIDE_ENTERPRISE_REFERENCES = true;
 const SHOW_ENTERPRISE_PLAN = !HIDE_ENTERPRISE_REFERENCES;
 const SHOW_ENTERPRISE_PREVIEW_ROWS = false;
@@ -165,10 +171,10 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 			{
 				feature: "Credit purchase fee",
 				free: { type: "text", value: "0% (no top-up required)" },
-				payg: { type: "text", value: standardFeeText },
+				payg: { type: "text", value: `${basicTier.feePct.toFixed(1)}% on credit purchases` },
 				enterprise: {
 					type: "text",
-					value: standardFeeText,
+					value: `${enterpriseTier.feePct.toFixed(1)}% on credit purchases`,
 				},
 			},
 			{
@@ -502,7 +508,7 @@ export default function PricingPage() {
 					<div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 						<Button asChild className="h-10">
 							<Link href="/settings/tiers">
-								View Pricing
+								View Your Tier
 								<ArrowRight className="ml-2 h-4 w-4" />
 							</Link>
 						</Button>
@@ -623,7 +629,7 @@ export default function PricingPage() {
 						<CardHeader className="space-y-2">
 							<CardTitle className="text-2xl tracking-tight">Ready to get started?</CardTitle>
 							<p className="text-sm leading-6 text-muted-foreground">
-								Start with Pay As You Go on the standard 5% top-up fee.
+								Start with Pay As You Go and upgrade automatically as your usage grows.
 							</p>
 						</CardHeader>
 						<CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -635,7 +641,7 @@ export default function PricingPage() {
 							</Button>
 							<Button asChild variant="outline" className="h-10">
 								<Link href="/contact">
-									Contact support
+									Talk to sales
 									<ArrowRight className="ml-2 h-4 w-4" />
 								</Link>
 							</Button>

@@ -53,8 +53,6 @@ import {
 } from "@/components/(chat)/playground/capability-utils";
 import {
 	APP_HEADERS,
-	DEFAULT_PERSONALIZATION_FONT_FAMILY,
-	DEFAULT_PERSONALIZATION_THEME_PRESET,
 	DEFAULT_SETTINGS,
 	STORAGE_KEYS,
 	TEMP_CHAT_ID,
@@ -73,11 +71,9 @@ import {
 	isModelExpired,
 	normalizeBaseUrl,
 	nowIso,
-	resolveChatroomTheme,
 	shouldRequestImageModalities,
 	type ModelOption,
 	type PersonalizationSettings,
-	type ResolvedChatroomTheme,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
@@ -197,14 +193,8 @@ function ChatPlaygroundContent({
 			name: "",
 			role: "",
 			notes: "",
-			themePreset: DEFAULT_PERSONALIZATION_THEME_PRESET,
-			fontFamily: DEFAULT_PERSONALIZATION_FONT_FAMILY,
 			accentColor: "#111111",
 		});
-	const chatroomTheme = useMemo<ResolvedChatroomTheme>(
-		() => resolveChatroomTheme(personalization),
-		[personalization],
-	);
 
 	const modelOptions = useMemo(() => {
 		const map = new Map<string, ModelOption>();
@@ -663,6 +653,10 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationNotes,
 				) ?? "";
+			const storedAccent =
+				window.localStorage.getItem(
+					STORAGE_KEYS.personalizationAccent,
+				) ?? "#111111";
 			const resolvedModel =
 				(queryModelIsValid && queryModelId) ||
 				(storedModel &&
@@ -677,9 +671,7 @@ function ChatPlaygroundContent({
 				name: storedPersonalName,
 				role: storedPersonalRole,
 				notes: storedPersonalNotes,
-				themePreset: DEFAULT_PERSONALIZATION_THEME_PRESET,
-				fontFamily: DEFAULT_PERSONALIZATION_FONT_FAMILY,
-				accentColor: "#111111",
+				accentColor: storedAccent,
 			});
 
 			const chats = await getAllChats("text");
@@ -732,6 +724,10 @@ function ChatPlaygroundContent({
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationNotes,
 			personalization.notes,
+		);
+		window.localStorage.setItem(
+			STORAGE_KEYS.personalizationAccent,
+			personalization.accentColor,
 		);
 	}, [personalization]);
 
@@ -1318,17 +1314,11 @@ function ChatPlaygroundContent({
 								if (typeof payload.message === "string") {
 									errorMessage = payload.message;
 								} else if (
-									typeof payload.reason === "string"
-								) {
-									errorMessage = payload.reason;
-								} else if (
 									typeof payload.error === "string"
 								) {
 									errorMessage = payload.error;
 								}
-								if (typeof payload.reason === "string") {
-									errorCode = payload.reason;
-								} else if (typeof payload.error === "string") {
+								if (typeof payload.error === "string") {
 									errorCode = payload.error;
 								}
 							}
@@ -1828,8 +1818,6 @@ function ChatPlaygroundContent({
 					err instanceof Error
 						? err.message
 						: "Failed to send message.";
-				const normalizedMessage = message.trim();
-				const lowerMessage = normalizedMessage.toLowerCase();
 				const errorCode =
 					typeof (err as { code?: unknown })?.code === "string"
 						? (err as { code: string }).code
@@ -1841,28 +1829,10 @@ function ChatPlaygroundContent({
 					message.includes('"description":"all_candidates_failed"') ||
 					message.includes('"errorCode":"upstream_error"') ||
 					message.includes("all_candidates_failed");
-				const isAuthError =
-					errorCode === "invalid_secret" ||
-					errorCode === "key_not_found_or_revoked" ||
-					errorCode === "unauthorised" ||
-					errorCode === "unauthorized" ||
-					lowerMessage.includes("invalid secret") ||
-					lowerMessage.includes("invalid_secret") ||
-					lowerMessage.includes("unauthorised") ||
-					lowerMessage.includes("unauthorized");
-				const surfacedMessage =
-					normalizedMessage === "invalid_secret"
-						? "Invalid secret"
-						: normalizedMessage === "key_not_found_or_revoked"
-							? "API key not found or revoked"
-							: normalizedMessage === "unauthorized" ||
-								  normalizedMessage === "unauthorised"
-								? "Unauthorized"
-							: normalizedMessage;
 				const errorContent = isGatewayError
 					? "All Providers Failed"
-					: isGatewayUnavailable || isAuthError
-						? surfacedMessage
+					: isGatewayUnavailable
+						? message
 						: "Internal Server Error";
 				if (latestThread) {
 					const existingMessage = latestThread.messages.find(
@@ -2995,22 +2965,8 @@ function ChatPlaygroundContent({
 	]);
 
 	return (
-		<div
-			className="flex h-full min-h-0 w-full overflow-hidden text-foreground"
-			style={{
-				backgroundColor: chatroomTheme.appBackground,
-				color: chatroomTheme.textColor,
-				fontFamily: chatroomTheme.fontFamilyValue,
-			}}
-		>
-			<Sidebar
-				collapsible="icon"
-				className="top-[var(--site-notice-height,0px)] bottom-0 h-auto border-r"
-				style={{
-					borderColor: chatroomTheme.sidebarBorder,
-					backgroundColor: chatroomTheme.sidebarBackground,
-				}}
-			>
+		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
+			<Sidebar collapsible="icon" className="border-r border-border bg-background">
 				<ChatSidebar
 					groupedThreads={groupedThreads}
 					threads={threads}
@@ -3028,10 +2984,7 @@ function ChatPlaygroundContent({
 				/>
 				<SidebarRail />
 			</Sidebar>
-			<SidebarInset
-				className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden"
-				style={{ backgroundColor: chatroomTheme.canvasBackground }}
-			>
+			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
 				<ChatHeader
 					activeThread={activeThread}
 					modelOptions={modelOptions}
@@ -3068,7 +3021,6 @@ function ChatPlaygroundContent({
 					modelSupportsAudioInputById={modelSupportsAudioInputById}
 					requiredCapability={activeModelCapability}
 					requireAudioInput={composerRequiresAudioInput}
-					theme={chatroomTheme}
 				/>
 				<ChatConversation
 					activeThread={activeThread}
@@ -3109,7 +3061,7 @@ function ChatPlaygroundContent({
 					modelOrgIdById={modelOrgIdById}
 					modelLinkById={modelLinkById}
 					isAuthenticated={isAuthenticated}
-					theme={chatroomTheme}
+					accentColor={personalization.accentColor}
 					selectedOrgId={selectedOrgId}
 					selectedModelId={activeThread?.modelId ?? ""}
 					selectedModelLabel={selectedModelLabel}
