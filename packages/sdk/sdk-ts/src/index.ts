@@ -257,7 +257,7 @@ export class AIStats {
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "2.0.0");
+    this.telemetry = new TelemetryCapture(opts.devtools, "2.0.1");
 
   }
 
