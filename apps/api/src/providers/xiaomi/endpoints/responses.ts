@@ -291,7 +291,7 @@ function createResponsesStreamFromChat(
     let usage: any = undefined;
     const outputItems: any[] = [];
 
-    const debugEnabled = (args.meta as any)?.debug === true;
+    const debugEnabled = args.meta.debug?.enabled === true;
     
     const emit = async (event: string, payload: any) => {
         if (debugEnabled) {
@@ -545,7 +545,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const bill = createBill(res);
 
-    const debugEnabled = (args.meta as any)?.debug === true;
+    const debugEnabled = args.meta.debug?.enabled === true;
     if (debugEnabled) {
         const bodyText = await res.clone().text();
         console.log("[xiaomi-adapter] upstream response", {
