@@ -3,7 +3,6 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { classifyAuthMethodFromSession } from "@/lib/auth/method";
 import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";
-import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import type { createClient } from "@/utils/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -23,11 +22,6 @@ export type FinalizePostLoginResult = {
 	redirectPath: string;
 	workspaceId?: string;
 	userId: string;
-	createdPersonalTeam: boolean;
-};
-
-type PersonalWorkspaceProvisionResult = {
-	workspaceId: string;
 	createdPersonalTeam: boolean;
 };
 
@@ -144,24 +138,23 @@ async function sendSignupDiscordWebhook(args: {
 }
 
 async function ensureWalletRow(
+	supabaseAdmin: ReturnType<typeof createAdminClient>,
 	workspaceId: string,
-	userId: string,
-	email: string | null | undefined,
-	displayName: string,
 ) {
-	await ensureWorkspaceStripeWallet({
-		workspaceId,
-		userId,
-		email: email ?? undefined,
-		name: displayName,
-	});
+	await supabaseAdmin.from("wallets").upsert(
+		{ workspace_id: workspaceId },
+		{
+			onConflict: "workspace_id",
+			ignoreDuplicates: true,
+		},
+	);
 }
 
-async function legacyGetOrCreatePersonalWorkspace(opts: {
+async function getOrCreatePersonalTeamId(opts: {
 	supabaseAdmin: ReturnType<typeof createAdminClient>;
 	userId: string;
 	displayName: string;
-}): Promise<PersonalWorkspaceProvisionResult> {
+}) {
 	const { supabaseAdmin, userId, displayName } = opts;
 	let createdPersonalTeam = false;
 
@@ -170,12 +163,6 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 			{ workspace_id: workspaceId, user_id: userId, role: "owner" },
 			{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
 		);
-	};
-
-	const ensureWorkspaceSettings = async (workspaceId: string) => {
-		await supabaseAdmin
-			.from("workspace_settings")
-			.upsert({ workspace_id: workspaceId }, { onConflict: "workspace_id" });
 	};
 
 	const hasTeamAccess = async (workspaceId: string): Promise<boolean> => {
@@ -222,7 +209,6 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 	const defaultWorkspaceId = String(userRow?.default_workspace_id ?? "").trim();
 	if (defaultWorkspaceId) {
 		if (await hasTeamAccess(defaultWorkspaceId)) {
-			await ensureWorkspaceSettings(defaultWorkspaceId);
 			return { workspaceId: defaultWorkspaceId, createdPersonalTeam };
 		}
 
@@ -232,7 +218,7 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 			.eq("user_id", userId)
 			.eq("default_workspace_id", defaultWorkspaceId);
 
-		console.warn("post_login_default_workspace_invalid", {
+		console.warn("post_login_default_team_invalid", {
 			userId,
 			defaultWorkspaceId,
 		});
@@ -248,7 +234,6 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 
 	if (ownedTeam?.id) {
 		await ensureOwnerMembership(ownedTeam.id);
-		await ensureWorkspaceSettings(ownedTeam.id);
 		await supabaseAdmin
 			.from("users")
 			.update({ default_workspace_id: ownedTeam.id })
@@ -270,7 +255,6 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 
 	if (personalCandidate && personalCandidate[0]?.id) {
 		await ensureOwnerMembership(personalCandidate[0].id);
-		await ensureWorkspaceSettings(personalCandidate[0].id);
 		await supabaseAdmin
 			.from("users")
 			.update({ default_workspace_id: personalCandidate[0].id })
@@ -313,11 +297,10 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 	}
 
 	if (!workspaceId) {
-		throw new Error("Could not obtain a workspace id");
+		throw new Error("Could not obtain a team id");
 	}
 
 	await ensureOwnerMembership(workspaceId);
-	await ensureWorkspaceSettings(workspaceId);
 
 	await supabaseAdmin
 		.from("users")
@@ -328,45 +311,6 @@ async function legacyGetOrCreatePersonalWorkspace(opts: {
 	return {
 		workspaceId,
 		createdPersonalTeam,
-	};
-}
-
-async function provisionPersonalWorkspace(opts: {
-	supabaseAdmin: ReturnType<typeof createAdminClient>;
-	userId: string;
-	displayName: string;
-}): Promise<PersonalWorkspaceProvisionResult> {
-	const { supabaseAdmin, userId, displayName } = opts;
-	const { data, error } = await supabaseAdmin.rpc("provision_personal_workspace", {
-		p_user_id: userId,
-		p_display_name: displayName,
-	});
-
-	if (error) {
-		const message = String(error.message ?? "");
-		const missingRpc =
-			message.includes("provision_personal_workspace") &&
-			message.toLowerCase().includes("schema cache");
-		if (!missingRpc) {
-			throw new Error(`provision_personal_workspace_failed:${message || "unknown"}`);
-		}
-
-		console.warn(
-			"[post-login] provision_personal_workspace rpc unavailable, falling back to legacy provisioning",
-			{ userId },
-		);
-		return legacyGetOrCreatePersonalWorkspace(opts);
-	}
-
-	const row = Array.isArray(data) ? (data[0] ?? null) : data;
-	const workspaceId = String((row as any)?.workspace_id ?? "").trim();
-	if (!workspaceId) {
-		throw new Error("provision_personal_workspace_empty");
-	}
-
-	return {
-		workspaceId,
-		createdPersonalTeam: Boolean((row as any)?.created_workspace),
 	};
 }
 
@@ -406,7 +350,7 @@ export async function finalizePostLogin(
 
 	const supabaseAdmin = createAdminClient();
 
-	const provisionedTeam = await provisionPersonalWorkspace({
+	const provisionedTeam = await getOrCreatePersonalTeamId({
 		supabaseAdmin,
 		userId: user.id,
 		displayName,
@@ -414,12 +358,7 @@ export async function finalizePostLogin(
 	const workspaceId = provisionedTeam.workspaceId;
 
 	try {
-		await ensureWalletRow(
-			workspaceId,
-			user.id,
-			user.email,
-			displayName,
-		);
+		await ensureWalletRow(supabaseAdmin, workspaceId);
 	} catch (error) {
 		console.error("Failed to ensure wallet row during post-login finalize", {
 			source: input.source,
@@ -469,6 +408,42 @@ export async function finalizePostLogin(
 		} else {
 			await Promise.allSettled(notificationTasks);
 		}
+	}
+
+	try {
+		const { data: teamRow } = await supabaseAdmin
+			.from("workspaces")
+			.select("tier,billing_mode")
+			.eq("id", workspaceId)
+			.maybeSingle();
+
+		const isEnterprise =
+			String(teamRow?.tier ?? "").toLowerCase() === "enterprise";
+		const isInvoiceMode =
+			String(teamRow?.billing_mode ?? "wallet").toLowerCase() === "invoice";
+
+		if (isEnterprise && isInvoiceMode) {
+			const { data: profileRow } = await supabaseAdmin
+				.from("workspace_invoice_profiles")
+				.select("enabled")
+				.eq("workspace_id", workspaceId)
+				.maybeSingle();
+
+			if (!profileRow?.enabled) {
+				return {
+					redirectPath: "/settings/credits/onboarding",
+					workspaceId,
+					userId: user.id,
+					createdPersonalTeam: provisionedTeam.createdPersonalTeam,
+				};
+			}
+		}
+	} catch (error) {
+		console.error("Failed invoice onboarding check during post-login finalize", {
+			source: input.source,
+			workspaceId,
+			error: error instanceof Error ? error.message : String(error),
+		});
 	}
 
 	try {

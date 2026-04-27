@@ -393,90 +393,6 @@ function createResponsesStreamFromChat(
     });
 }
 
-async function bufferResponsesFromChatStream(
-    res: Response,
-    args: ProviderExecuteArgs,
-    bill: ReturnType<typeof createBill>,
-    reasoningConfig?: { effort?: string; summary?: string } | null,
-) {
-    if (!res.body) {
-        throw new Error("xiaomi_stream_missing_body");
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    const tStart = performance.now();
-    let buffer = "";
-    let firstFrameMs: number | null = null;
-
-    let responseId: string | null = null;
-    let created = Math.floor(Date.now() / 1000);
-    let outputText = "";
-    let reasoningText = "";
-    let finishReason: string | null = null;
-    let usage: any = undefined;
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        if (firstFrameMs === null) {
-            firstFrameMs = Math.round(performance.now() - tStart);
-        }
-        buffer += decoder.decode(value, { stream: true });
-        const frames = buffer.split(/\n\n/);
-        buffer = frames.pop() ?? "";
-        for (const raw of frames) {
-            const data = parseSseBlock(raw);
-            if (!data || data === "[DONE]") continue;
-            let payload: any;
-            try {
-                payload = JSON.parse(data);
-            } catch {
-                continue;
-            }
-            if (payload?.id) responseId = payload.id;
-            if (typeof payload?.created === "number") created = payload.created;
-            if (payload?.usage) usage = payload.usage;
-            const choices = Array.isArray(payload?.choices) ? payload.choices : [];
-            for (const choice of choices) {
-                if (choice?.finish_reason) finishReason = choice.finish_reason;
-                const delta = choice?.delta ?? {};
-                if (typeof delta?.content === "string") {
-                    outputText += delta.content;
-                }
-                if (typeof delta?.reasoning_content === "string") {
-                    reasoningText += delta.reasoning_content;
-                }
-            }
-        }
-    }
-
-    const normalized = buildResponsesPayload(args, {
-        id: responseId,
-        created,
-        choices: [{
-            message: {
-                content: outputText,
-                reasoning_content: reasoningText,
-            },
-            index: 0,
-            finish_reason: finishReason,
-        }],
-        usage,
-    }, bill.upstream_id, reasoningConfig);
-
-    if (normalized?.usage) {
-        const priced = computeBill(normalized.usage, args.pricingCard);
-        normalized.usage.pricing_breakdown = priced.pricing;
-        bill.cost_cents = priced.pricing.total_cents;
-        bill.currency = priced.pricing.currency;
-        bill.usage = priced;
-    }
-    bill.finish_reason = finishReason;
-
-    return { normalized, firstFrameMs };
-}
-
 function createBill(res: Response) {
     return {
         cost_cents: 0,
@@ -507,8 +423,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         top_p: body.top_p,
         frequency_penalty: body.frequency_penalty,
         presence_penalty: body.presence_penalty,
-        // Always stream upstream for text execution; caller preference only controls response shaping.
-        stream: true,
+        stream: Boolean(args.stream),
         tools: body.tools,
         tool_choice: body.tool_choice,
         parallel_tool_calls: body.parallel_tool_calls,
@@ -565,16 +480,23 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         };
     }
 
-    const { normalized, firstFrameMs } = await bufferResponsesFromChatStream(
-        res,
-        args,
-        bill,
-        reasoningConfig,
-    );
-    if (firstFrameMs !== null) {
-        args.meta.latency_ms = firstFrameMs;
+    const json: Record<string, unknown> = await res.json();
+    const normalized = buildResponsesPayload(args, json, bill.upstream_id, reasoningConfig);
+    console.log('[xiaomi-adapter] normalized response output:', JSON.stringify(normalized.output, null, 2));
+    
+    if (normalized?.usage) {
+        const priced = computeBill(normalized.usage, args.pricingCard);
+        normalized.usage.pricing_breakdown = priced.pricing;
+        bill.cost_cents = priced.pricing.total_cents;
+        bill.currency = priced.pricing.currency;
+        bill.usage = priced;
     }
     
+    const choices = json.choices as XiaomiChoice[] | undefined;
+    if (Array.isArray(choices) && choices.length) {
+        bill.finish_reason = choices[choices.length - 1]?.finish_reason ?? null;
+    }
+
     return {
         kind: "completed",
         upstream: new Response(JSON.stringify(normalized), {

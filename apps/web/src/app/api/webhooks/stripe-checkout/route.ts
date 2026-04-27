@@ -222,13 +222,93 @@ function mapStripeRefundStatus(status?: string | null): "Pending" | "Succeeded" 
     return "Pending";
 }
 
+function mapStripeInvoiceStatus(
+    status?: Stripe.Invoice.Status | null
+): "draft" | "open" | "paid" | "void" | "uncollectible" {
+    const normalized = String(status ?? "").toLowerCase();
+    if (normalized === "open") return "open";
+    if (normalized === "paid") return "paid";
+    if (normalized === "void") return "void";
+    if (normalized === "uncollectible") return "uncollectible";
+    return "draft";
+}
+
+function invoiceMetadataValue(invoice: Stripe.Invoice, key: string): string | null {
+    const raw = invoice.metadata?.[key];
+    return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+}
+
+function unixToIso(value?: number | null): string | null {
+    if (value == null || !Number.isFinite(Number(value))) return null;
+    return new Date(Number(value) * 1000).toISOString();
+}
+
 async function upsertTeamInvoiceFromStripeInvoice(args: {
     supabase: ReturnType<typeof getSupabase>;
     invoice: Stripe.Invoice;
     forceStatus?: "draft" | "open" | "paid" | "void" | "uncollectible";
 }) {
-    // Invoicing persistence is disabled while invoicing remains in "coming soon" state.
-    void args;
+    const { supabase, invoice, forceStatus } = args;
+    const stripeInvoiceId = invoice.id;
+    if (!stripeInvoiceId) return;
+
+    const { data: existing } = await supabase
+        .from("workspace_invoices")
+        .select("workspace_id,period_start,period_end")
+        .eq("stripe_invoice_id", stripeInvoiceId)
+        .maybeSingle();
+
+    const workspaceId =
+        existing?.workspace_id ??
+        invoiceMetadataValue(invoice, "workspace_id");
+    if (!workspaceId) {
+        console.warn("[stripe-webhook] invoice event missing workspace_id metadata", {
+            stripeInvoiceId,
+            eventStatus: invoice.status ?? null,
+        });
+        return;
+    }
+
+    const periodStart =
+        existing?.period_start ??
+        invoiceMetadataValue(invoice, "period_start") ??
+        invoiceMetadataValue(invoice, "cycle_start") ??
+        unixToIso((invoice as any).period_start);
+    const periodEnd =
+        existing?.period_end ??
+        invoiceMetadataValue(invoice, "period_end") ??
+        invoiceMetadataValue(invoice, "cycle_end") ??
+        unixToIso((invoice as any).period_end);
+
+    if (!periodStart || !periodEnd) {
+        console.warn("[stripe-webhook] invoice event missing period metadata", {
+            stripeInvoiceId,
+            workspaceId,
+        });
+        return;
+    }
+
+    const status = forceStatus ?? mapStripeInvoiceStatus(invoice.status);
+    const amountNanos = Number(invoice.amount_due ?? invoice.total ?? 0) * 10_000_000;
+    const row = {
+        workspace_id: workspaceId,
+        period_start: periodStart,
+        period_end: periodEnd,
+        amount_nanos: Math.max(0, Number.isFinite(amountNanos) ? amountNanos : 0),
+        currency: "USD",
+        status,
+        stripe_invoice_id: stripeInvoiceId,
+        stripe_invoice_number: invoice.number ?? null,
+        due_at: unixToIso(invoice.due_date),
+        issued_at: unixToIso(invoice.status_transitions?.finalized_at),
+        paid_at: unixToIso(invoice.status_transitions?.paid_at),
+        updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("workspace_invoices").upsert([row], {
+        onConflict: "workspace_id,period_start,period_end",
+    });
+    if (error) throw error;
 }
 
 export async function POST(req: Request) {
@@ -344,9 +424,22 @@ export async function POST(req: Request) {
                 // Stripe amounts are in cents; convert to nanos (1 USD = 1e9 nanos).
                 const grossNanos = grossCents * 10_000_000;
 
+                // Fetch the team's CURRENT tier from database (includes instant upgrades)
+                const { data: teamData, error: teamErr } = await supabase
+                    .from('workspaces')
+                    .select('tier')
+                    .eq('id', wallet.workspace_id)
+                    .single();
+
+                if (teamErr) {
+                    console.error(`[stripe-webhook] Failed to fetch team tier:`, teamErr);
+                }
+
                 // PAYG top-up fee is now a flat 5% across tiers.
+                const tier = teamData?.tier ?? 'basic';
                 const feePct = 5.0;
-                console.log(`[stripe-webhook] Workspace ${wallet.workspace_id} fee: ${feePct}%`);
+
+                console.log(`[stripe-webhook] Team ${wallet.workspace_id} tier: ${tier}, fee: ${feePct}%`);
 
                 if (paymentMethodId && stripeCustomerId) {
                     try {
@@ -625,9 +718,10 @@ export async function POST(req: Request) {
             case "invoice.created":
             case "invoice.finalized":
             case "invoice.updated": {
+                const invoice = event.data.object as Stripe.Invoice;
                 await upsertTeamInvoiceFromStripeInvoice({
                     supabase,
-                    invoice: event.data.object as Stripe.Invoice,
+                    invoice,
                 });
                 break;
             }

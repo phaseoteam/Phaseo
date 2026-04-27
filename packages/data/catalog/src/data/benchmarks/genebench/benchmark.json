@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "genebench",
-  "benchmark_name": "GeneBench",
-  "category": "science",
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/introducing-gpt-5-5/",
-  "total_models": 2
-}

@@ -17,15 +17,6 @@ if (!Array.isArray(modelIds) || modelIds.length === 0) {
 	throw new Error("Could not find components.schemas.ModelId.enum in OpenAPI spec.");
 }
 
-const legacyModelAliases = [
-	{
-		fromId: "deepseek/deepseek-v4",
-		toId: "deepseek/deepseek-v4-pro",
-		deprecatedOn: "2026-04-24",
-		removeIn: "the next major SDK release",
-	},
-];
-
 /** @type {Array<{id: string; upper: string; pascal: string; url: string}>} */
 const entries = [];
 const usedUpper = new Map();
@@ -49,63 +40,49 @@ for (const rawId of modelIds) {
 	});
 }
 
-const entryById = new Map(entries.map((entry) => [entry.id, entry]));
-const aliases = legacyModelAliases.map((alias) => {
-	const from = enrichAliasEntry(alias.fromId, usedUpper, usedPascal);
-	const to = entryById.get(alias.toId);
-	if (!to) {
-		throw new Error(`Legacy alias target not found in OpenAPI spec: ${alias.toId}`);
-	}
-	return {
-		...alias,
-		from,
-		to,
-	};
-});
-
 await writeFile(
 	"packages/sdk/sdk-ts/src/modelIds.ts",
-	renderTs(entries, aliases)
+	renderTs(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-py/src/ai_stats/model_ids.py",
-	renderPy(entries, aliases)
+	renderPy(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-go/model_ids.go",
-	renderGo(entries, aliases)
+	renderGo(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-csharp/ModelIds.cs",
-	renderCsharp(entries, aliases)
+	renderCsharp(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-java/src/ai/stats/sdk/ModelIds.java",
-	renderJava(entries, aliases)
+	renderJava(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-php/src/ModelIds.php",
-	renderPhp(entries, aliases)
+	renderPhp(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-ruby/lib/ai_stats_sdk/model_ids.rb",
-	renderRuby(entries, aliases)
+	renderRuby(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-rust/src/model_ids.rs",
-	renderRust(entries, aliases)
+	renderRust(entries)
 );
 
 await writeFile(
 	"packages/sdk/sdk-cpp/src/gen/model_ids.hpp",
-	renderCpp(entries, aliases)
+	renderCpp(entries)
 );
 
 console.log(`Generated model-id constants for ${entries.length} models.`);
@@ -147,15 +124,6 @@ function uniqueName(base, registry) {
 	return `${base}_${current + 1}`;
 }
 
-function enrichAliasEntry(id, usedUpperRegistry, usedPascalRegistry) {
-	return {
-		id,
-		upper: uniqueName(toUpperSnake(id), usedUpperRegistry),
-		pascal: uniqueName(toPascal(id), usedPascalRegistry),
-		url: modelPageUrl(id),
-	};
-}
-
 async function writeFile(relativePath, contents) {
 	const fullPath = path.join(repoRoot, relativePath);
 	await fs.mkdir(path.dirname(fullPath), { recursive: true });
@@ -170,19 +138,13 @@ function renderHeader(commentPrefix) {
 	].join("\n");
 }
 
-function renderTs(items, aliases) {
+function renderTs(items) {
 	const lines = [renderHeader("//").trimEnd(), "", 'import type { ModelId } from "./oapi-gen/models/ModelId.js";', "", "/** Known model ID constants for editor autocomplete and hover docs. */", "export const ModelIds = {",];
 
 	for (const item of items) {
 		lines.push(
 			`  /** Model ID: \`${item.id}\`. Model page: ${item.url} */`,
 			`  ${item.upper}: "${item.id}",`
-		);
-	}
-	for (const alias of aliases) {
-		lines.push(
-			`  /** @deprecated Deprecated alias for \`${alias.from.id}\`; use \`${alias.to.id}\`. Scheduled for removal in ${alias.removeIn}. */`,
-			`  ${alias.from.upper}: "${alias.to.id}",`
 		);
 	}
 	lines.push(
@@ -195,7 +157,7 @@ function renderTs(items, aliases) {
 	return lines.join("\n");
 }
 
-function renderPy(items, aliases) {
+function renderPy(items) {
 	const lines = [renderHeader("#").trimEnd(), "", "from __future__ import annotations", "", "from typing import Final", "", '"""Known model ID constants for editor autocomplete and hover docs."""', "", "class ModelIds:", '    """Known model ID constants for editor autocomplete and hover docs."""', "",];
 
 	for (const item of items) {
@@ -206,24 +168,12 @@ function renderPy(items, aliases) {
 			""
 		);
 	}
-	for (const alias of aliases) {
-		lines.push(
-			`    # Deprecated on ${alias.deprecatedOn}. Use ${alias.to.upper} instead.`,
-			`    # Scheduled for removal in ${alias.removeIn}.`,
-			`    ${alias.from.upper}: Final[str] = ${alias.to.upper}`,
-			""
-		);
-	}
 
 	lines.push(
 		"MODEL_IDS: Final[tuple[str, ...]] = tuple(",
-		"    (",
-	);
-	for (const item of items) {
-		lines.push(`        ModelIds.${item.upper},`);
-	}
-	lines.push(
-		"    )",
+		"    getattr(ModelIds, name)",
+		"    for name in dir(ModelIds)",
+		'    if name.isupper() and isinstance(getattr(ModelIds, name), str)',
 		")",
 		"",
 		"__all__ = [\"ModelIds\", \"MODEL_IDS\"]",
@@ -232,19 +182,13 @@ function renderPy(items, aliases) {
 	return lines.join("\n");
 }
 
-function renderGo(items, aliases) {
+function renderGo(items) {
 	const lines = [renderHeader("//").trimEnd(), "", "package aistats", "", "import gen \"github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen\"", "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
 	for (const item of items) {
 		lines.push(
 			`	// Model ID: ${item.id}`,
 			`	// Model page: ${item.url}`,
 			`	ModelID${item.pascal} gen.ModelId = "${item.id}"`,
-		);
-	}
-	for (const alias of aliases) {
-		lines.push(
-			`	// Deprecated alias for ${alias.from.id}; use ${alias.to.id}. Remove in ${alias.removeIn}.`,
-			`	ModelID${alias.from.pascal} gen.ModelId = ModelID${alias.to.pascal}`,
 		);
 	}
 	lines.push(")", "", "var KnownModelIDs = []gen.ModelId{");
@@ -255,7 +199,7 @@ function renderGo(items, aliases) {
 	return lines.join("\n");
 }
 
-function renderCsharp(items, aliases) {
+function renderCsharp(items) {
 	const lines = [renderHeader("//").trimEnd(), "", "namespace AiStatsSdk", "{", "    /// <summary>Known model ID constants for editor autocomplete and hover docs.</summary>", "    public static class ModelIds", "    {",];
 	for (const item of items) {
 		lines.push(
@@ -263,18 +207,11 @@ function renderCsharp(items, aliases) {
 			`        public const string ${item.pascal} = "${escapeCsharp(item.id)}";`,
 		);
 	}
-	for (const alias of aliases) {
-		lines.push(
-			`        /// <summary>Deprecated alias for <c>${alias.from.id}</c>; use <c>${alias.to.id}</c>. Scheduled for removal in ${alias.removeIn}.</summary>`,
-			`        [System.Obsolete("Use ${alias.to.pascal} instead. Scheduled for removal in ${alias.removeIn}.")]`,
-			`        public const string ${alias.from.pascal} = ${alias.to.pascal};`,
-		);
-	}
 	lines.push("    }", "}", "");
 	return lines.join("\n");
 }
 
-function renderJava(items, aliases) {
+function renderJava(items) {
 	const lines = [renderHeader("//").trimEnd(), "", "package ai.stats.sdk;", "", "/** Known model ID constants for editor autocomplete and hover docs. */", "public final class ModelIds {", "    private ModelIds() {}", "",];
 	for (const item of items) {
 		lines.push(
@@ -283,19 +220,11 @@ function renderJava(items, aliases) {
 			""
 		);
 	}
-	for (const alias of aliases) {
-		lines.push(
-			`    /** Deprecated alias for <code>${alias.from.id}</code>; use <code>${alias.to.id}</code>. Scheduled for removal in ${alias.removeIn}. */`,
-			"    @Deprecated",
-			`    public static final String ${alias.from.upper} = ${alias.to.upper};`,
-			""
-		);
-	}
 	lines.push("}");
 	return lines.join("\n");
 }
 
-function renderPhp(items, aliases) {
+function renderPhp(items) {
 	const lines = ["<?php", "declare(strict_types=1);", "", "// This file is generated by scripts/sdk/generate-model-id-constants.mjs.", "// Do not edit manually.", "", "namespace AIStats\\Sdk;", "", "final class ModelIds", "{",];
 	for (const item of items) {
 		lines.push(
@@ -304,20 +233,11 @@ function renderPhp(items, aliases) {
 			""
 		);
 	}
-	for (const alias of aliases) {
-		lines.push(
-			"    /**",
-			`     * @deprecated Use ${alias.to.upper} instead. Scheduled for removal in ${alias.removeIn}.`,
-			"     */",
-			`    public const ${alias.from.upper} = self::${alias.to.upper};`,
-			""
-		);
-	}
 	lines.push("}");
 	return lines.join("\n");
 }
 
-function renderRuby(items, aliases) {
+function renderRuby(items) {
 	const lines = [renderHeader("#").trimEnd(), "", "module AIStatsSdk", "  module ModelIds",];
 	for (const item of items) {
 		lines.push(
@@ -326,34 +246,17 @@ function renderRuby(items, aliases) {
 			`    ${item.upper} = "${item.id}"`,
 		);
 	}
-	for (const alias of aliases) {
-		lines.push(
-			`    # Deprecated alias for ${alias.from.id}; use ${alias.to.upper}. Remove in ${alias.removeIn}.`,
-			`    ${alias.from.upper} = ${alias.to.upper}`,
-		);
-	}
-	lines.push("  end", "", "  MODEL_IDS = [");
-	for (const item of items) {
-		lines.push(`    ModelIds::${item.upper},`);
-	}
-	lines.push("  ].freeze", "end", "");
+	lines.push("  end", "", "  MODEL_IDS = ModelIds.constants.map { |name| ModelIds.const_get(name) }.freeze", "end", "");
 	return lines.join("\n");
 }
 
-function renderRust(items, aliases) {
+function renderRust(items) {
 	const lines = [renderHeader("//").trimEnd(), "", "/// Known model ID constants for editor autocomplete and hover docs.", "pub mod model_ids {",];
 	for (const item of items) {
 		lines.push(
 			`    /// Model ID: \`${item.id}\`.`,
 			`    /// Model page: ${item.url}`,
 			`    pub const ${item.upper}: &str = "${escapeRust(item.id)}";`,
-		);
-	}
-	for (const alias of aliases) {
-		lines.push(
-			`    /// Deprecated alias for \`${alias.from.id}\`; use \`${alias.to.id}\`.`,
-			`    #[deprecated(note = "Use ${alias.to.upper} instead. Scheduled for removal in ${alias.removeIn}.")]`,
-			`    pub const ${alias.from.upper}: &str = ${alias.to.upper};`,
 		);
 	}
 	lines.push("", "    pub const ALL: &[&str] = &[");
@@ -364,19 +267,13 @@ function renderRust(items, aliases) {
 	return lines.join("\n");
 }
 
-function renderCpp(items, aliases) {
+function renderCpp(items) {
 	const lines = [renderHeader("//").trimEnd(), "#pragma once", "", "#include <array>", "#include <string_view>", "", "namespace ai_stats::sdk::model_ids {",];
 	for (const item of items) {
 		lines.push(
 			`// Model ID: ${item.id}`,
 			`// Model page: ${item.url}`,
 			`inline constexpr std::string_view ${item.upper} = "${escapeCpp(item.id)}";`,
-		);
-	}
-	for (const alias of aliases) {
-		lines.push(
-			`// Deprecated alias for ${alias.from.id}; use ${alias.to.id}. Remove in ${alias.removeIn}.`,
-			`inline constexpr std::string_view ${alias.from.upper} = ${alias.to.upper};`,
 		);
 	}
 	lines.push("", `inline constexpr std::array<std::string_view, ${items.length}> ALL = {`);

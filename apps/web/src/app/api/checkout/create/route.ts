@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 export async function POST(req: NextRequest) {
     try {
@@ -9,12 +9,12 @@ export async function POST(req: NextRequest) {
             typeof workspace_id === "string" && workspace_id.trim().length > 0
                 ? workspace_id.trim()
                 : undefined;
-        const { workspaceId, customerId } = await requireActiveWorkspaceStripeCustomer({
+        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer({
             createIfMissing: true,
         });
 
         if (requestedTeamId && requestedTeamId !== workspaceId) {
-            return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
+            return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
         }
 
         // Derive a base URL: prefer NEXT_PUBLIC_BASE_URL, fall back to request origin, then localhost.
@@ -137,8 +137,8 @@ export async function POST(req: NextRequest) {
         if (e?.message === "unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        if (e?.message === "missing_workspace") {
-            return NextResponse.json({ error: "Missing workspace" }, { status: 400 });
+        if (e?.message === "missing_team") {
+            return NextResponse.json({ error: "Missing team" }, { status: 400 });
         }
         // log full error server-side for debugging
         // eslint-disable-next-line no-console

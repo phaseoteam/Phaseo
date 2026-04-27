@@ -18,13 +18,6 @@ type GatewayMarketingRollupRow = {
 	latency_samples: number | null;
 };
 
-type GatewayMarketingRequestRow = {
-	created_at: string;
-	success: boolean | null;
-	usage: unknown;
-	latency_ms: number | null;
-};
-
 export type GatewayTimeseriesPoint = {
 	timestamp: string;
 	requests: number;
@@ -109,32 +102,6 @@ function normalizeBucketHour(value: string | null): string | null {
 	return raw;
 }
 
-function toRecord(value: unknown): Record<string, unknown> | null {
-	if (!value || typeof value !== "object") return null;
-	return value as Record<string, unknown>;
-}
-
-function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
-	if (!usage) return 0;
-	const raw = usage[key];
-	const parsed = Number(raw);
-	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function getTotalTokensFromUsage(usageValue: unknown): number {
-	const usage = toRecord(usageValue);
-	const directTotal =
-		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
-	if (directTotal > 0) return directTotal;
-
-	return (
-		readUsageInt(usage, "input_tokens") +
-		readUsageInt(usage, "output_tokens") +
-		readUsageInt(usage, "prompt_tokens") +
-		readUsageInt(usage, "completion_tokens")
-	);
-}
-
 async function fetchActiveGatewayModels(
 	client: SupabaseClient,
 	now = new Date(),
@@ -164,59 +131,15 @@ async function fetchGatewayMarketingRollup(
 	client: SupabaseClient,
 	hours = HOURS_DEFAULT,
 ): Promise<GatewayMarketingRollupRow[]> {
-	const fromIso = new Date(
-		Date.now() - Math.max(1, Math.round(hours)) * 60 * 60 * 1000,
-	).toISOString();
-	const rows: GatewayMarketingRequestRow[] = [];
-	const PAGE_SIZE = 5000;
+	const { data, error } = await client.rpc("get_gateway_marketing_rollup", {
+		p_hours: hours,
+	});
 
-	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const { data, error } = await client
-			.from("gateway_requests")
-			.select("created_at, success, usage, latency_ms")
-			.gte("created_at", fromIso)
-			.order("created_at", { ascending: true })
-			.range(offset, offset + PAGE_SIZE - 1);
-
-		if (error) {
-			throw new Error(error.message ?? "Failed to load gateway marketing rows");
-		}
-		if (!Array.isArray(data) || data.length === 0) break;
-		rows.push(...(data as GatewayMarketingRequestRow[]));
-		if (data.length < PAGE_SIZE) break;
+	if (error) {
+		throw new Error(error.message ?? "Failed to load gateway marketing rollup");
 	}
 
-	const byHour = new Map<string, GatewayMarketingRollupRow>();
-	for (const row of rows) {
-		const bucket = normalizeBucketHour(String(row?.created_at ?? ""));
-		if (!bucket) continue;
-
-		const current = byHour.get(bucket) ?? {
-			bucket_hour: bucket,
-			requests: 0,
-			success_requests: 0,
-			total_tokens: 0,
-			latency_sum_ms: 0,
-			latency_samples: 0,
-		};
-
-		current.requests = coerceNumber(current.requests, 0) + 1;
-		if (row?.success) {
-			current.success_requests = coerceNumber(current.success_requests, 0) + 1;
-		}
-		current.total_tokens =
-			coerceNumber(current.total_tokens, 0) + getTotalTokensFromUsage(row?.usage);
-		const latency = Number(row?.latency_ms ?? 0);
-		if (Number.isFinite(latency) && latency > 0) {
-			current.latency_sum_ms = coerceNumber(current.latency_sum_ms, 0) + latency;
-			current.latency_samples = coerceNumber(current.latency_samples, 0) + 1;
-		}
-		byHour.set(bucket, current);
-	}
-
-	return Array.from(byHour.values()).sort((a, b) =>
-		String(a.bucket_hour ?? "").localeCompare(String(b.bucket_hour ?? "")),
-	);
+	return (data ?? []) as GatewayMarketingRollupRow[];
 }
 
 function buildMetricsFromRollup(

@@ -6,7 +6,7 @@ import {
     requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 
-export async function setActiveWorkspaceAction(workspaceId: string) {
+export async function SwapTeam(workspaceId: string) {
     try {
         if (!workspaceId || typeof workspaceId !== 'string') {
             return { ok: false, error: 'workspaceId required' };
@@ -14,7 +14,7 @@ export async function setActiveWorkspaceAction(workspaceId: string) {
         const { supabase, user } = await requireAuthenticatedUser();
         await requireWorkspaceMembership(supabase, user.id, workspaceId);
         const cookieStore: any = await cookies();
-        cookieStore.set({
+        await cookieStore.set({
             name: 'activeWorkspaceId',
             value: workspaceId,
             httpOnly: true,
@@ -25,15 +25,7 @@ export async function setActiveWorkspaceAction(workspaceId: string) {
         });
 
         return { ok: true };
-    } catch (error) {
-        const reason =
-            error instanceof Error && error.message
-                ? error.message
-                : "failed to set cookie";
-        console.warn("[workspace-switch] failed", {
-            workspaceId,
-            reason,
-        });
-        return { ok: false, error: reason };
+    } catch {
+        return { ok: false, error: 'failed to set cookie' };
     }
 }

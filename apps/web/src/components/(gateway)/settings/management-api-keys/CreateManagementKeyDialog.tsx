@@ -26,67 +26,42 @@ import { toast } from "sonner";
 
 export default function CreateManagementKeyDialog({
 	currentUserId,
-	currentWorkspaceId,
-	workspaces,
+	currentTeamId,
+	teams,
 }: {
 	currentUserId?: string | null;
-	currentWorkspaceId?: string | null;
-	workspaces?: Array<{ id: string | null; name: string }>;
+	currentTeamId?: string | null;
+	teams?: Array<{ id: string | null; name: string }>;
 }) {
-	const resolveInitialWorkspaceId = React.useCallback(() => {
-		const normalizedCurrent = String(currentWorkspaceId ?? "").trim();
-		if (normalizedCurrent) return normalizedCurrent;
-		for (const workspace of workspaces ?? []) {
-			const workspaceId = String(workspace?.id ?? "").trim();
-			if (workspaceId) return workspaceId;
-		}
-		return null;
-	}, [currentWorkspaceId, workspaces]);
-
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
-	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
-		resolveInitialWorkspaceId()
+	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
+		currentTeamId ?? null
 	);
 
 	const missingContext = !currentUserId;
 	const canCreate =
-		!!name &&
-		!loading &&
-		!missingContext &&
-		typeof selectedWorkspaceId === "string" &&
-		selectedWorkspaceId.trim().length > 0;
-
-	React.useEffect(() => {
-		const nextWorkspaceId = resolveInitialWorkspaceId();
-		if (nextWorkspaceId !== selectedWorkspaceId) {
-			setSelectedWorkspaceId(nextWorkspaceId);
-		}
-	}, [resolveInitialWorkspaceId, selectedWorkspaceId]);
+		!!name && !loading && !missingContext && selectedTeamId !== undefined;
 
 	async function onCreate(e?: React.FormEvent) {
 		e?.preventDefault();
 		if (!name) return;
-		if (
-			!currentUserId ||
-			typeof selectedWorkspaceId !== "string" ||
-			selectedWorkspaceId.trim().length === 0
-		) {
+		if (!currentUserId || selectedTeamId === undefined) {
 			setPlainKey(null);
 			setLoading(false);
-			toast.error(
-				"Missing workspace context. Select a workspace in the header and try again.",
-			);
+			alert("Missing user or workspace context. Make sure you are signed in.");
 			return;
 		}
 		try {
 			setLoading(true);
+			const teamArg =
+				selectedTeamId === null ? "" : (selectedTeamId as string);
 			const res: any = await createManagementKeyAction({
 				name,
 				creatorUserId: currentUserId as string,
-				workspaceId: selectedWorkspaceId,
+				workspaceId: teamArg,
 				scopes: JSON.stringify([])
 			});
 			setPlainKey(res?.plaintext ?? null);
@@ -150,7 +125,7 @@ export default function CreateManagementKeyDialog({
 
 				{!plainKey ? (
 					<form onSubmit={onCreate} className="space-y-4">
-						{workspaces && workspaces.length > 0 ? (
+						{teams && teams.length > 0 ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -159,8 +134,8 @@ export default function CreateManagementKeyDialog({
 										className="w-full flex items-center justify-between"
 									>
 										<span>
-											{workspaces.find(
-												(workspace) => workspace.id === selectedWorkspaceId
+											{teams.find(
+												(t) => t.id === selectedTeamId
 											)?.name || "Personal"}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
@@ -171,14 +146,14 @@ export default function CreateManagementKeyDialog({
 									align="start"
 									className="w-full"
 								>
-									{workspaces.map((workspace) => (
+									{teams.map((t) => (
 										<DropdownMenuItem
-											key={String(workspace.id ?? "__null")}
+											key={String(t.id ?? "__null")}
 											onSelect={() =>
-												setSelectedWorkspaceId(workspace.id ?? null)
+												setSelectedTeamId(t.id ?? null)
 											}
 										>
-											{workspace.name}
+											{t.name}
 										</DropdownMenuItem>
 									))}
 								</DropdownMenuContent>

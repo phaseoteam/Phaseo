@@ -4742,8 +4742,7 @@ components:
         - deepseek/deepseek-v3.2
         - deepseek/deepseek-v3.2-exp
         - deepseek/deepseek-v3.2-speciale
-        - deepseek/deepseek-v4-flash
-        - deepseek/deepseek-v4-pro
+        - deepseek/deepseek-v4
         - deepseek/deepseek-vl2
         - deepseek/deepseek-vl2-small
         - deepseek/deepseek-vl2-tiny
@@ -5653,9 +5652,7 @@ components:
         - android-control-low-em
         - androidworld
         - androidworld-sr
-        - apex
         - apex-agents
-        - apex-shortlist
         - arc
         - arc-agi
         - arc-agi-1
@@ -5692,7 +5689,6 @@ components:
         - biobench
         - biolp-bench
         - bird-sql-(dev)
-        - bixbench
         - blink
         - boolq
         - browsecomp
@@ -5719,12 +5715,10 @@ components:
         - charxiv-rq
         - chest-imagenome-anatomy-iou
         - chexpert-cxr-top5-macro-f1
-        - chinese-simpleqa
         - cl-bench
         - claw-eval
         - cloningscenarios
         - cluewsc
-        - cmath
         - cmmlu
         - cnmo-2024
         - codeforces
@@ -5736,7 +5730,6 @@ components:
         - complexfuncbench
         - confabulations
         - contphy
-        - corpusqa-1m
         - countbench
         - covost2
         - covost2-en-zh
@@ -5749,7 +5742,6 @@ components:
         - cruxeval-o
         - csimpleqa
         - ct-dataset-1-macro-accuracy
-        - ctf-challenge-tasks
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
@@ -5787,12 +5779,10 @@ components:
         - eqbench
         - erqa
         - evalplus
-        - expert-swe
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
         - facts-grounding
-        - facts-parametric
         - factscore
         - factscore-halluciation-rate
         - fiction-live-bench
@@ -5821,7 +5811,6 @@ components:
         - galileo-agent
         - gdpval-aa
         - gdpval-mm
-        - genebench
         - giantsteps-tempo
         - global-mmlu-lite
         - global-pica
@@ -5830,12 +5819,8 @@ components:
         - gpqa
         - gpqa-diamond
         - graphwalks-bfs->128k
-        - graphwalks-bfs-1m-f1
-        - graphwalks-bfs-256k-f1
         - graphwalks-bfs-lt-128k
         - graphwalks-parents->128k
-        - graphwalks-parents-1m-f1
-        - graphwalks-parents-256k-f1
         - graphwalks-parents-lt-128k
         - gsm8k
         - gsm8k-chat
@@ -5852,7 +5837,6 @@ components:
         - hle-verified
         - hle-vl
         - hmmt-2025
-        - hmmt-2026-feb
         - hmmt-feb-2025
         - hmmt-feb-2026
         - hmmt-feb-26
@@ -5879,7 +5863,6 @@ components:
         - intergps
         - internal-api-instruction-following-(hard)
         - inverse-ifeval
-        - investment-banking-modeling
         - iq-bench
         - ivebench-consistency-vs-kling-o1
         - ivebench-consistency-vs-runway-aleph
@@ -6017,7 +6000,6 @@ components:
         - multichallenge-(o3-mini-grader)
         - multilf
         - multilingual-mmlu
-        - multiloko
         - multipl-e
         - musiccaps
         - mvbench
@@ -6054,7 +6036,6 @@ components:
         - openai-mrcr-2-needle-256k
         - openai-mrcr-8-needle-128k
         - openai-mrcr-8-needle-1m
-        - openai-mrcr-v2-8-needle
         - openai-mrcr:-2-needle-128k
         - openai-mrcr:-2-needle-1m
         - openbookqa

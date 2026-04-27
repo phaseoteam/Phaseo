@@ -23,13 +23,17 @@ export type ProviderRuntimeStats = {
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
 
-type RuntimeRequestRow = {
-	created_at: string;
+type RuntimeRollupRow = {
+	bucket_15m: string;
 	provider: string;
-	success: boolean | null;
-	usage: unknown;
-	latency_ms: number | null;
-	throughput: number | null;
+	requests: number | null;
+	success_requests: number | null;
+	input_tokens: number | null;
+	output_tokens: number | null;
+	latency_sum_ms: number | null;
+	latency_samples: number | null;
+	throughput_sum: number | null;
+	throughput_samples: number | null;
 };
 
 type GatewayRequestUsageRow = {
@@ -93,15 +97,6 @@ function readNestedNumber(
 	const value = record[key];
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
-}
-
-function readUsageTokens(usage: unknown, keys: string[]): number {
-	const record = toRecord(usage);
-	for (const key of keys) {
-		const value = readNestedNumber(record, key);
-		if (value != null && value > 0) return Math.floor(value);
-	}
-	return 0;
 }
 
 function extractCachedReadTokensFromUsage(usage: unknown): number | null {
@@ -206,27 +201,27 @@ async function fetchRuntimeRollupRows(
 	providerIds: string[],
 	fromIso: string,
 	toIso: string,
-): Promise<RuntimeRequestRow[]> {
-	const rows: RuntimeRequestRow[] = [];
+): Promise<RuntimeRollupRow[]> {
+	const rows: RuntimeRollupRow[] = [];
 	for (let offset = 0; ; offset += PAGE_SIZE) {
 		const to = offset + PAGE_SIZE - 1;
 		const { data, error } = await client
-			.from("gateway_requests")
+			.from("gateway_usage_rollup_15m_model_provider")
 			.select(
-				"created_at, provider, success, usage, latency_ms, throughput",
+				"bucket_15m, provider, requests, success_requests, input_tokens, output_tokens, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
 			)
-			.in("model_id", modelIds)
+			.in("canonical_model_id", modelIds)
 			.in("provider", providerIds)
-			.gte("created_at", fromIso)
-			.lte("created_at", toIso)
-			.order("created_at", { ascending: true })
+			.gte("bucket_15m", fromIso)
+			.lte("bucket_15m", toIso)
+			.order("bucket_15m", { ascending: true })
 			.range(offset, to);
 
 		if (error) {
-			throw new Error(error.message ?? "Failed to fetch model provider runtime rows");
+			throw new Error(error.message ?? "Failed to fetch model provider runtime rollups");
 		}
 		if (!Array.isArray(data) || data.length === 0) break;
-		rows.push(...(data as RuntimeRequestRow[]));
+		rows.push(...(data as RuntimeRollupRow[]));
 		if (data.length < PAGE_SIZE) break;
 	}
 	return rows;
@@ -290,7 +285,7 @@ export async function getModelProviderRuntimeStats(args: {
 	);
 
 	const client = createAdminClient();
-	let rows: RuntimeRequestRow[];
+	let rows: RuntimeRollupRow[];
 	try {
 		rows = await fetchRuntimeRollupRows(client, modelIds, providerIds, fromIso, toIso);
 	} catch (error) {
@@ -324,28 +319,18 @@ export async function getModelProviderRuntimeStats(args: {
 		const providerId = String(row?.provider ?? "").trim();
 		if (!providerId) continue;
 
-		const bucketDate = new Date(String(row?.created_at ?? ""));
+		const bucketDate = new Date(String(row?.bucket_15m ?? ""));
 		if (!Number.isFinite(bucketDate.getTime())) continue;
 
 		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
-		const requests = 1;
-		const successful = row?.success ? 1 : 0;
-		const inputTokens = readUsageTokens(row?.usage, [
-			"input_tokens",
-			"input_text_tokens",
-			"prompt_tokens",
-		]);
-		const outputTokens = readUsageTokens(row?.usage, [
-			"output_tokens",
-			"output_text_tokens",
-			"completion_tokens",
-		]);
-		const latency = toNumber(row?.latency_ms);
-		const throughput = toNumber(row?.throughput);
-		const latencySamples = Number.isFinite(latency) && latency > 0 ? 1 : 0;
-		const throughputSamples = Number.isFinite(throughput) && throughput > 0 ? 1 : 0;
-		const latencySum = latencySamples > 0 ? latency : 0;
-		const throughputSum = throughputSamples > 0 ? throughput : 0;
+		const requests = toInt(row.requests);
+		const successful = toInt(row.success_requests);
+		const inputTokens = toInt(row.input_tokens);
+		const outputTokens = toInt(row.output_tokens);
+		const latencySum = toNumber(row.latency_sum_ms);
+		const latencySamples = toInt(row.latency_samples);
+		const throughputSum = toNumber(row.throughput_sum);
+		const throughputSamples = toInt(row.throughput_samples);
 
 		aggregate.requests3d += requests;
 		aggregate.successful3d += successful;

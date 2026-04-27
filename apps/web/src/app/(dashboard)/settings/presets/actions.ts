@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
 	requireActingUser,
@@ -286,9 +286,9 @@ export async function forkPresetAction(sourcePresetId: string) {
 		throw new Error("AUTH_REQUIRED");
 	}
 
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) {
-		throw new Error("WORKSPACE_REQUIRED");
+		throw new Error("TEAM_REQUIRED");
 	}
 
 	const { data: source, error } = await supabase
@@ -486,7 +486,7 @@ export async function getPresetById(id: string) {
 	return data;
 }
 
-export async function listPresetsByWorkspace(workspaceId: string) {
+export async function listPresetsByTeam(workspaceId: string) {
 	if (!workspaceId || typeof workspaceId !== "string") {
 		throw new Error("Valid workspace ID is required");
 	}
@@ -507,5 +507,3 @@ export async function listPresetsByWorkspace(workspaceId: string) {
 
 	return data;
 }
-
-export const listPresetsByTeam = listPresetsByWorkspace;

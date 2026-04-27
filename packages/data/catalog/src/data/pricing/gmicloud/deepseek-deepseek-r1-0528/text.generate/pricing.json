@@ -9,25 +9,23 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.7,
+      "price_per_unit": 0.4,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100,
-      "effective_from": "2026-04-24T00:00:00"
+      "priority": 100
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2.3,
+      "price_per_unit": 1.8,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100,
-      "effective_from": "2026-04-24T00:00:00"
+      "priority": 100
     }
   ]
 }

@@ -58,7 +58,6 @@ export const MODEL_CAPABILITY_OPTIONS = [
 
 export const CAPABILITY_STATUS_OPTIONS = [
   "active",
-  "coming_soon",
   "deranked_lvl1",
   "deranked_lvl2",
   "deranked_lvl3",
@@ -72,8 +71,6 @@ export function normalizeCapabilityStatus(
 ): CapabilityStatusOption {
   const normalized = (value ?? "").trim().toLowerCase()
 
-  if (normalized === "coming_soon" || normalized === "comingsoon")
-    return "coming_soon"
   if (normalized === "disabled") return "disabled"
   if (normalized === "deranked_lvl1" || normalized === "deranked_lvl_1")
     return "deranked_lvl1"

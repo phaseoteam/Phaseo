@@ -7,10 +7,6 @@ import {
 	Network,
 	ArrowRight,
 	Globe2,
-	Cpu,
-	Route,
-	ShieldCheck,
-	Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,13 +50,6 @@ type GatewayHeroStats = {
 	supportedProviders: number | null;
 };
 
-type HeroStatItem = {
-	label: string;
-	value: string;
-	icon: React.ElementType;
-	accent: string;
-};
-
 function StatCard({
 	label,
 	value,
@@ -95,209 +84,14 @@ function StatCard({
 	);
 }
 
-function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" }) {
-	return (
-		<div className="mt-10 flex flex-wrap items-center gap-4">
-			<Button
-				asChild
-				size="lg"
-				className={
-					ctaVariant === "experimental"
-						? "h-12 gap-2 bg-emerald-600 px-6 text-base font-medium text-white shadow-lg shadow-emerald-700/20 hover:bg-emerald-500"
-						: "h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800"
-				}
-			>
-				<Link href={SALES_HREF}>
-					Start free
-					<ArrowRight className="h-4 w-4" />
-				</Link>
-			</Button>
-			<Button
-				asChild
-				size="lg"
-				variant="outline"
-				className="h-12 gap-2 border-zinc-300 px-6 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-			>
-				<Link href={DOCS_HREF}>
-					<Globe2 className="h-4 w-4" />
-					View documentation
-				</Link>
-			</Button>
-		</div>
-	);
-}
-
-function ClassicHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
-	return (
-		<>
-			<div className="mx-auto max-w-4xl text-center">
-				<h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
-					The Single API For{" "}
-					<span className="relative">
-						<WordRotate
-							words={[
-								"AI Models",
-								"LLMs",
-								"Vision Models",
-								"Audio Models",
-								"Embeddings",
-								"Agents",
-							]}
-							duration={4000}
-						/>
-					</span>
-				</h1>
-
-				<p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-					Unify 30+ AI providers behind one API. Route intelligently by
-					latency, cost, and availability. Ship production workloads with
-					confidence.
-				</p>
-
-				<div className="flex justify-center">
-					<HeroActions ctaVariant="classic" />
-				</div>
-			</div>
-
-			<div className="mx-auto mt-16 max-w-5xl">
-				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{heroStats.map((s) => (
-						<StatCard
-							key={s.label}
-							label={s.label}
-							value={s.value}
-							icon={s.icon}
-							accent={s.accent}
-						/>
-					))}
-				</div>
-			</div>
-		</>
-	);
-}
-
-function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
-	return (
-		<div className="relative overflow-hidden rounded-[2.25rem] border border-emerald-200/60 bg-[linear-gradient(130deg,#f6fffb_0%,#f7f8ff_42%,#fff9ef_100%)] p-6 shadow-xl shadow-zinc-900/5 dark:border-emerald-900/50 dark:bg-zinc-950 sm:p-10">
-			<div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald-300/30 blur-3xl dark:bg-emerald-700/20" />
-			<div className="pointer-events-none absolute -bottom-20 left-20 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-700/20" />
-
-			<div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-				<div>
-					<Badge className="rounded-full border border-emerald-300/70 bg-white/90 px-3 py-1 text-xs uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-300">
-						Experimental Gateway Hero
-					</Badge>
-
-					<h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
-						Routing Infrastructure For{" "}
-						<span className="relative whitespace-nowrap text-emerald-700 dark:text-emerald-300">
-							<WordRotate
-								words={[
-									"Production AI",
-									"Latency SLAs",
-									"Multi-Cloud Failover",
-									"Cost Controls",
-								]}
-								duration={4200}
-							/>
-						</span>
-					</h1>
-
-					<p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Keep your current model stack, remove provider lock-in, and ship
-						with tighter control over routing, reliability, and spend under one
-						unified API contract.
-					</p>
-
-					<HeroActions ctaVariant="experimental" />
-
-					<div className="mt-8 grid gap-3 sm:grid-cols-3">
-						{heroStats.map((s) => (
-							<div
-								key={`chip-${s.label}`}
-								className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
-							>
-								<p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-									{s.label}
-								</p>
-								<p className="mt-1 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-									{s.value}
-								</p>
-							</div>
-						))}
-					</div>
-				</div>
-
-				<div className="rounded-3xl border border-zinc-900/10 bg-zinc-950 p-6 text-zinc-100 shadow-2xl shadow-zinc-950/20 dark:border-zinc-800 dark:shadow-black/40">
-					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-						Routing cockpit
-					</p>
-					<div className="mt-5 space-y-4">
-						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
-							<div className="mt-0.5 rounded-xl bg-emerald-500/20 p-2">
-								<Route className="h-4 w-4 text-emerald-300" />
-							</div>
-							<div>
-								<p className="text-sm font-semibold">Policy-driven routing</p>
-								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
-									Route by latency budget, model quality, and provider health
-									in real time.
-								</p>
-							</div>
-						</div>
-						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
-							<div className="mt-0.5 rounded-xl bg-sky-500/20 p-2">
-								<Cpu className="h-4 w-4 text-sky-300" />
-							</div>
-							<div>
-								<p className="text-sm font-semibold">Model portability</p>
-								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
-									Swap providers without rewriting your SDK integration layer.
-								</p>
-							</div>
-						</div>
-						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
-							<div className="mt-0.5 rounded-xl bg-amber-500/20 p-2">
-								<ShieldCheck className="h-4 w-4 text-amber-300" />
-							</div>
-							<div>
-								<p className="text-sm font-semibold">Production guardrails</p>
-								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
-									Enforce rate limits, spending boundaries, and fallback rules
-									with one control plane.
-								</p>
-							</div>
-						</div>
-					</div>
-
-					<div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
-						<div className="mb-2 flex items-center justify-between text-xs font-medium text-zinc-400">
-							<span>Live request efficiency</span>
-							<span className="inline-flex items-center gap-1 text-emerald-300">
-								<Zap className="h-3.5 w-3.5" />
-								Stable
-							</span>
-						</div>
-						<div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-							<div className="h-full w-[82%] rounded-full bg-gradient-to-r from-emerald-400 to-sky-400" />
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
-}
-
 export function Hero({
 	stats,
 	tokensWindowHours = 24,
 	popularModels,
-	showExperimentalHero = false,
 }: {
 	stats?: GatewayHeroStats;
 	tokensWindowHours?: number;
 	popularModels?: ModelCardType[];
-	showExperimentalHero?: boolean;
 }) {
 	const roundTo = (value: number | null, step: number) => {
 		if (value == null) return null;
@@ -351,7 +145,7 @@ export function Hero({
 			icon: Network,
 			accent: "#8b5cf6",
 		},
-	] as HeroStatItem[];
+	];
 
 	const featuredModels =
 		popularModels && popularModels.length > 0 ? popularModels : [];
@@ -359,11 +153,68 @@ export function Hero({
 	return (
 		<section className="w-full">
 			<div className="mx-auto px-6 pb-16 lg:px-8">
-				{showExperimentalHero ? (
-					<ExperimentalHeroIntro heroStats={heroStats} />
-				) : (
-					<ClassicHeroIntro heroStats={heroStats} />
-				)}
+				<div className="mx-auto max-w-4xl text-center">
+					<h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
+						The Single API For{" "}
+						<span className="relative">
+							<WordRotate
+								words={[
+									"AI Models",
+									"LLMs",
+									"Vision Models",
+									"Audio Models",
+									"Embeddings",
+									"Agents",
+								]}
+								duration={4000}
+							/>
+						</span>
+					</h1>
+
+					<p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+						Unify 30+ AI providers behind one API. Route intelligently by
+						latency, cost, and availability. Ship production workloads with
+						confidence.
+					</p>
+
+					<div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+						<Button
+							asChild
+							size="lg"
+							className="h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800"
+						>
+							<Link href={SALES_HREF}>
+								Start free
+								<ArrowRight className="h-4 w-4" />
+							</Link>
+						</Button>
+						<Button
+							asChild
+							size="lg"
+							variant="outline"
+							className="h-12 gap-2 border-zinc-200 px-6 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+						>
+							<Link href={DOCS_HREF}>
+								<Globe2 className="h-4 w-4" />
+								View documentation
+							</Link>
+						</Button>
+					</div>
+				</div>
+
+				<div className="mx-auto mt-16 max-w-5xl">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{heroStats.map((s) => (
+							<StatCard
+								key={s.label}
+								label={s.label}
+								value={s.value}
+								icon={s.icon}
+								accent={s.accent}
+							/>
+						))}
+					</div>
+				</div>
 
 				<div className="my-8 border-y border-zinc-200/60 bg-zinc-50/50 py-8 dark:border-zinc-800/70 dark:bg-zinc-950/40">
 					<div className="mx-auto max-w-7xl px-6 lg:px-8">

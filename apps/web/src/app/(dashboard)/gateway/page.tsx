@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { getGatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { getModelCardsByIdsCached } from "@/lib/fetchers/models/getModelCardsByIds";
-import { gatewayNewHeroFlag } from "@/lib/flags";
 
 import { Hero } from "@/components/landingPage/Gateway/Hero";
 import { Features } from "@/components/landingPage/Gateway/Features";
@@ -38,19 +37,17 @@ export default async function GatewayMarketingPage() {
 			false
 		),
 	]);
-	const showExperimentalHero = await gatewayNewHeroFlag();
 
 	return (
 		<div className="container mx-auto flex flex-col items-center pt-16 sm:pt-20">
 			{/* Hero with stats, provider marquee, and popular models */}
-			<Hero
-				stats={{
-					...gatewayMetrics.summary,
-				}}
-				tokensWindowHours={monthlyWindowHours}
-				popularModels={popularModels}
-				showExperimentalHero={showExperimentalHero}
-			/>
+		<Hero
+			stats={{
+				...gatewayMetrics.summary,
+			}}
+			tokensWindowHours={monthlyWindowHours}
+			popularModels={popularModels}
+		/>
 
 			{/* Features grid showing key capabilities */}
 			<Features />

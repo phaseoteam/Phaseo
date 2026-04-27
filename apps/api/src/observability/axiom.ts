@@ -6,32 +6,6 @@ import { getBindings } from "@/runtime/env";
 
 export type WideEvent = Record<string, unknown>;
 let warnedMissingWideDataset = false;
-let lastAxiomTransportErrorAt = 0;
-let suppressedAxiomTransportErrors = 0;
-
-function parsePositiveInteger(value: string | undefined, fallback: number): number {
-    if (!value) return fallback;
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function logAxiomTransportError(message: string, payload?: Record<string, unknown>) {
-    const bindings = getBindings();
-    const cooldownMs = parsePositiveInteger(bindings.AXIOM_LOG_FAILURE_COOLDOWN_MS, 60_000);
-    const now = Date.now();
-    if (now - lastAxiomTransportErrorAt < cooldownMs) {
-        suppressedAxiomTransportErrors += 1;
-        return;
-    }
-
-    const suppressed = suppressedAxiomTransportErrors;
-    suppressedAxiomTransportErrors = 0;
-    lastAxiomTransportErrorAt = now;
-    console.error(message, {
-        ...(payload ?? {}),
-        ...(suppressed > 0 ? { suppressed_count: suppressed } : {}),
-    });
-}
 
 export async function sendAxiomWideEvent(event: WideEvent) {
     const bindings = getBindings();
@@ -64,19 +38,17 @@ export async function sendAxiomWideEvent(event: WideEvent) {
 
         if (!res.ok) {
             const body = await res.text().catch(() => "");
-            logAxiomTransportError("[observability] Axiom wide event ingest failed", {
+            console.error("[observability] Axiom wide event ingest failed", {
                 status: res.status,
                 response: body.slice(0, 300),
             });
         }
     } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
-            logAxiomTransportError("[observability] Axiom wide event timeout");
+            console.error("[observability] Axiom wide event timeout");
             return;
         }
-        logAxiomTransportError("[observability] Axiom wide event error", {
-            error: err instanceof Error ? err.message : String(err),
-        });
+        console.error("[observability] Axiom wide event error", err);
     } finally {
         clearTimeout(timeoutId);
     }

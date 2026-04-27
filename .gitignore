@@ -29,7 +29,6 @@ guides/private/
 *.tmp
 *.tmp.*
 /tmp
-.entire/logs/entire.log
 .codex/tmp/
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/

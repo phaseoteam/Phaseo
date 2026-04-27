@@ -71,11 +71,6 @@ function setToArrayOrNull(value: Set<string>): string[] | null {
     return list.length ? list : null;
 }
 
-function hasUsablePricingCard(pricingByProvider: Record<string, any>, providerId: string): boolean {
-    const card = pricingByProvider[providerId];
-    return Boolean(card && Array.isArray(card.rules) && card.rules.length > 0);
-}
-
 type ProviderModalitiesRow = {
     provider_id: string | null;
     provider_model_slug: string | null;
@@ -508,38 +503,11 @@ export async function fetchGatewayContext(args: {
                 api_key_id: args.apiKeyId,
             };
 
-            const callPrimary = () =>
-                supabase.rpc(
-                    "gateway_fetch_request_context_with_reservations",
-                    rpcArgs,
-                );
-            const callFallback = () =>
-                supabase.rpc(
-                    "gateway_fetch_request_context",
-                    rpcArgs,
-                );
-
-            let { data, error } = await callPrimary();
-            if (error) {
-                const message = String(error.message ?? "");
-                const missingReservationsRpc =
-                    message.includes(
-                        "gateway_fetch_request_context_with_reservations",
-                    ) &&
-                    message.toLowerCase().includes("schema cache");
-                if (missingReservationsRpc) {
-                    console.warn(
-                        "[context] reservations rpc unavailable; falling back to base context rpc",
-                        { workspaceId: args.workspaceId, endpoint: endpointCapability },
-                    );
-                    const fallback = await callFallback();
-                    data = fallback.data;
-                    error = fallback.error;
-                }
-            }
-
+            const { data, error } = await supabase.rpc(
+                "gateway_fetch_request_context_with_reservations",
+                rpcArgs,
+            );
             if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
-
             const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
             if (!payload) throw new Error("gateway_context_rpc_empty");
 
@@ -620,7 +588,7 @@ export async function fetchGatewayContext(args: {
                         .map((provider) => provider.providerId)
                         .filter((providerId) => {
                             if (!providerId) return false;
-                            if (!hasUsablePricingCard(pricingByProvider, providerId)) return true;
+                            if (!pricingByProvider[providerId]) return true;
                             return contextCapability !== args.endpoint;
                         })
                 )
@@ -693,7 +661,7 @@ export async function fetchGatewayContext(args: {
                 new Set(
                     (parsed.providers ?? [])
                         .map((provider) => provider.providerId)
-                        .filter((providerId) => providerId && !hasUsablePricingCard(pricingByProvider, providerId))
+                        .filter((providerId) => providerId && !pricingByProvider[providerId])
                 )
             );
             if (missingProviders.length > 0) {

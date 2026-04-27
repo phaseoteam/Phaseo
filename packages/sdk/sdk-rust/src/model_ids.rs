@@ -438,12 +438,9 @@ pub mod model_ids {
     /// Model ID: `deepseek/deepseek-v3.2-speciale`.
     /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale
     pub const DEEPSEEK_DEEPSEEK_V3_2_SPECIALE: &str = "deepseek/deepseek-v3.2-speciale";
-    /// Model ID: `deepseek/deepseek-v4-flash`.
-    /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash
-    pub const DEEPSEEK_DEEPSEEK_V4_FLASH: &str = "deepseek/deepseek-v4-flash";
-    /// Model ID: `deepseek/deepseek-v4-pro`.
-    /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
-    pub const DEEPSEEK_DEEPSEEK_V4_PRO: &str = "deepseek/deepseek-v4-pro";
+    /// Model ID: `deepseek/deepseek-v4`.
+    /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4
+    pub const DEEPSEEK_DEEPSEEK_V4: &str = "deepseek/deepseek-v4";
     /// Model ID: `deepseek/deepseek-vl2`.
     /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2
     pub const DEEPSEEK_DEEPSEEK_VL2: &str = "deepseek/deepseek-vl2";
@@ -2724,9 +2721,6 @@ pub mod model_ids {
     /// Model ID: `z-ai/glm-image`.
     /// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
     pub const Z_AI_GLM_IMAGE: &str = "z-ai/glm-image";
-    /// Deprecated alias for `deepseek/deepseek-v4`; use `deepseek/deepseek-v4-pro`.
-    #[deprecated(note = "Use DEEPSEEK_DEEPSEEK_V4_PRO instead. Scheduled for removal in the next major SDK release.")]
-    pub const DEEPSEEK_DEEPSEEK_V4: &str = DEEPSEEK_DEEPSEEK_V4_PRO;
 
     pub const ALL: &[&str] = &[
         AI21_JAMBA_2_3B,
@@ -2874,8 +2868,7 @@ pub mod model_ids {
         DEEPSEEK_DEEPSEEK_V3_2,
         DEEPSEEK_DEEPSEEK_V3_2_EXP,
         DEEPSEEK_DEEPSEEK_V3_2_SPECIALE,
-        DEEPSEEK_DEEPSEEK_V4_FLASH,
-        DEEPSEEK_DEEPSEEK_V4_PRO,
+        DEEPSEEK_DEEPSEEK_V4,
         DEEPSEEK_DEEPSEEK_VL2,
         DEEPSEEK_DEEPSEEK_VL2_SMALL,
         DEEPSEEK_DEEPSEEK_VL2_TINY,

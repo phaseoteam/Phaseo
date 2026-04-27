@@ -110,10 +110,7 @@ begin
     -- Extract model from preset config (fallback to preset's default model)
     base_model := coalesce(
       preset_data->'config'->>'defaultModel',
-      preset_data->'config'->>'default_model',
-      preset_data->'config'->>'model',
-      preset_data->'config'->'models'->>0,
-      preset_data->'config'->'allowedModels'->>0
+      preset_data->'config'->>'model'
     );
 
     if base_model is null then

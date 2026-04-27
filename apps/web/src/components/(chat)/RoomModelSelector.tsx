@@ -551,14 +551,6 @@ export function RoomModelSelector({
 			setSearchValue("");
 		}
 	};
-	const handleModelOptionSelect = useCallback(
-		(option: ModelOption) => {
-			if (option.gatewayStatus === "inactive") return;
-			onSelectModel(option.modelId);
-			setOpen(false);
-		},
-		[onSelectModel],
-	);
 
 	return (
 		<div className="flex items-center gap-1">
@@ -650,8 +642,10 @@ export function RoomModelSelector({
 									<ModelSelectorItem
 										key={option.modelId}
 										value={option.modelId}
-										onSelect={() => handleModelOptionSelect(option)}
-										disabled={option.gatewayStatus === "inactive"}
+										onSelect={() => {
+											onSelectModel(option.modelId);
+											setOpen(false);
+										}}
 										keywords={buildSearchKeywords(option)}
 										className={cn(
 											"flex items-center gap-3",
@@ -682,8 +676,10 @@ export function RoomModelSelector({
 										<ModelSelectorItem
 											key={option.modelId}
 											value={option.modelId}
-											onSelect={() => handleModelOptionSelect(option)}
-											disabled={option.gatewayStatus === "inactive"}
+											onSelect={() => {
+												onSelectModel(option.modelId);
+												setOpen(false);
+											}}
 											keywords={buildSearchKeywords(option)}
 											className={cn(
 												"flex items-center gap-3",
@@ -715,8 +711,10 @@ export function RoomModelSelector({
 										<ModelSelectorItem
 											key={option.modelId}
 											value={option.modelId}
-											onSelect={() => handleModelOptionSelect(option)}
-											disabled={option.gatewayStatus === "inactive"}
+											onSelect={() => {
+												onSelectModel(option.modelId);
+												setOpen(false);
+											}}
 											keywords={buildSearchKeywords(option)}
 											className={cn(
 												"flex items-center gap-3",
@@ -753,8 +751,10 @@ export function RoomModelSelector({
 												<ModelSelectorItem
 													key={option.modelId}
 													value={option.modelId}
-													onSelect={() => handleModelOptionSelect(option)}
-													disabled
+													onSelect={() => {
+														onSelectModel(option.modelId);
+														setOpen(false);
+													}}
 													keywords={buildSearchKeywords(option)}
 													className={cn(
 														"flex items-center gap-3 opacity-60",

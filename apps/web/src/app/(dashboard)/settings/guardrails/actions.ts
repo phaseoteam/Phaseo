@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getActiveWorkspaceIdFromCookieRaw } from "@/utils/workspaceCookie";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
@@ -24,7 +24,7 @@ export async function updateGlobalGuardrailsSettings(
 	payload: GlobalGuardrailsSettingsPayload,
 ) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
@@ -101,7 +101,7 @@ export type GuardrailUpsertPayload = {
 
 export async function createGuardrail(payload: GuardrailUpsertPayload) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
@@ -170,7 +170,7 @@ export async function createGuardrail(payload: GuardrailUpsertPayload) {
 export async function updateGuardrail(id: string, payload: GuardrailUpsertPayload) {
 	if (!id) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
@@ -238,7 +238,7 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 export async function deleteGuardrail(id: string) {
 	if (!id) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
@@ -256,7 +256,7 @@ export async function deleteGuardrail(id: string) {
 export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 	if (!guardrailId) throw new Error("Missing guardrail id");
 	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getActiveWorkspaceIdFromCookieRaw();
+	const workspaceId = await getWorkspaceIdFromCookie();
 	if (!workspaceId) throw new Error("Missing workspace id");
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 

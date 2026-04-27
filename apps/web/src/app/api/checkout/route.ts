@@ -1,6 +1,6 @@
 import { getStripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
-import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 // Minimal Stripe integration. Requires STRIPE_SECRET_KEY in environment.
 // Creates a Checkout session for a single one-time payment in cents (integer) passed as { amount }
@@ -14,11 +14,11 @@ export async function POST(req: NextRequest) {
             typeof body?.workspace_id === "string" && body.workspace_id.trim().length > 0
                 ? body.workspace_id.trim()
                 : null;
-        const { workspaceId, customerId } = await requireActiveWorkspaceStripeCustomer({
+        const { workspaceId, customerId } = await requireActiveTeamStripeCustomer({
             createIfMissing: true,
         });
         if (requestedTeamId && requestedTeamId !== workspaceId) {
-            return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
+            return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
         }
         if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 500) {
             return NextResponse.json({ error: "Invalid purchase amount. Minimum $5 (500 cents)." }, { status: 400 });
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
         if (err?.message === "unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        if (err?.message === "missing_workspace") {
-            return NextResponse.json({ error: "Missing workspace" }, { status: 400 });
+        if (err?.message === "missing_team") {
+            return NextResponse.json({ error: "Missing team" }, { status: 400 });
         }
         // don't leak internals; return generic message
         return NextResponse.json({ error: err?.message || "unknown" }, { status: 500 });

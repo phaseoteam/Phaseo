@@ -37,16 +37,9 @@ export default async function ModelPricing({
 		}),
 	]);
 
-	// Keep pricing/detail pages aligned with `/models`: only show providers once
-	// the capability rows for this model have actually been imported.
+	// Show providers with model mappings even when pricing rules are missing.
 	const providersForDisplay = (providers || []).filter(
-		(provider) =>
-			Array.isArray(provider.provider_models) &&
-			provider.provider_models.some(
-				(providerModel) =>
-					Boolean(providerModel.endpoint) &&
-					providerModel.endpoint !== "unmapped"
-			)
+		(p) => Array.isArray(p.provider_models) && p.provider_models.length > 0
 	);
 
 	const runtimeStats = await getModelProviderRuntimeStatsCached({

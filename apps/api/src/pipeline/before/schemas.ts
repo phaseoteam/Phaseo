@@ -188,48 +188,23 @@ const providerSchema = z
 const presetConfigSchema = z
     .object({
         systemPrompt: z.string().nullable().optional(),
-        system_prompt: z.string().nullable().optional(),
         allowedModels: z.array(z.string()).nullable().optional(),
-        models: z.array(z.string()).nullable().optional(),
         defaultModel: z.string().nullable().optional(),
-        default_model: z.string().nullable().optional(),
         model: z.string().nullable().optional(),
         allowedProviders: z.array(z.string()).nullable().optional(),
-        only_providers: z.array(z.string()).nullable().optional(),
         deniedProviders: z.array(z.string()).nullable().optional(),
-        ignore_providers: z.array(z.string()).nullable().optional(),
         defaultParams: z.record(z.string(), z.any()).nullable().optional(),
-        parameters: z.record(z.string(), z.any()).nullable().optional(),
         providerPreferences: z.record(z.string(), z.number()).nullable().optional(),
-        provider_preferences: z.record(z.string(), z.number()).nullable().optional(),
-        reasoning: z.record(z.string(), z.any()).nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
-        systemPrompt: config.systemPrompt ?? config.system_prompt ?? null,
-        allowedModels: config.allowedModels ?? config.models ?? null,
-        defaultModel:
-            config.defaultModel ??
-            config.default_model ??
-            config.model ??
-            config.models?.[0] ??
-            null,
+        systemPrompt: config.systemPrompt ?? null,
+        allowedModels: config.allowedModels ?? null,
+        defaultModel: config.defaultModel ?? config.model ?? null,
         model: config.model ?? null,
-        allowedProviders: config.allowedProviders ?? config.only_providers ?? null,
-        deniedProviders: config.deniedProviders ?? config.ignore_providers ?? null,
-        defaultParams:
-            config.defaultParams ??
-            (
-                config.parameters || config.reasoning
-                    ? {
-                        ...(config.parameters ?? {}),
-                        ...(config.reasoning ? { reasoning: config.reasoning } : {}),
-                    }
-                    : null
-            ),
-        providerPreferences:
-            config.providerPreferences ??
-            config.provider_preferences ??
-            null,
+        allowedProviders: config.allowedProviders ?? null,
+        deniedProviders: config.deniedProviders ?? null,
+        defaultParams: config.defaultParams ?? null,
+        providerPreferences: config.providerPreferences ?? null,
     }));
 
 const presetDataSchema = z

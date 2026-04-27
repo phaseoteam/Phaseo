@@ -442,12 +442,9 @@ const (
 	// Model ID: deepseek/deepseek-v3.2-speciale
 	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v3.2-speciale
 	ModelIDDeepseekDeepseekV32Speciale gen.ModelId = "deepseek/deepseek-v3.2-speciale"
-	// Model ID: deepseek/deepseek-v4-flash
-	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-flash
-	ModelIDDeepseekDeepseekV4Flash gen.ModelId = "deepseek/deepseek-v4-flash"
-	// Model ID: deepseek/deepseek-v4-pro
-	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
-	ModelIDDeepseekDeepseekV4Pro gen.ModelId = "deepseek/deepseek-v4-pro"
+	// Model ID: deepseek/deepseek-v4
+	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4
+	ModelIDDeepseekDeepseekV4 gen.ModelId = "deepseek/deepseek-v4"
 	// Model ID: deepseek/deepseek-vl2
 	// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-vl2
 	ModelIDDeepseekDeepseekVl2 gen.ModelId = "deepseek/deepseek-vl2"
@@ -2728,8 +2725,6 @@ const (
 	// Model ID: z-ai/glm-image
 	// Model page: https://ai-stats.phaseo.app/models/z-ai/glm-image
 	ModelIDZAiGlmImage gen.ModelId = "z-ai/glm-image"
-	// Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
-	ModelIDDeepseekDeepseekV4 gen.ModelId = ModelIDDeepseekDeepseekV4Pro
 )
 
 var KnownModelIDs = []gen.ModelId{
@@ -2878,8 +2873,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDDeepseekDeepseekV32,
 	ModelIDDeepseekDeepseekV32Exp,
 	ModelIDDeepseekDeepseekV32Speciale,
-	ModelIDDeepseekDeepseekV4Flash,
-	ModelIDDeepseekDeepseekV4Pro,
+	ModelIDDeepseekDeepseekV4,
 	ModelIDDeepseekDeepseekVl2,
 	ModelIDDeepseekDeepseekVl2Small,
 	ModelIDDeepseekDeepseekVl2Tiny,

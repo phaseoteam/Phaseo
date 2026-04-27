@@ -4,13 +4,13 @@ import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 import { getStripe } from "@/lib/stripe";
 
-type ActiveWorkspaceStripeCustomer = {
+type ActiveTeamStripeCustomer = {
     workspaceId: string;
     customerId: string;
     userId: string;
 };
 
-type RequireActiveWorkspaceStripeCustomerOptions = {
+type RequireActiveTeamStripeCustomerOptions = {
     createIfMissing?: boolean;
 };
 
@@ -72,9 +72,9 @@ async function findOrCreateStripeCustomer(args: {
     return customerId;
 }
 
-export async function requireActiveWorkspaceStripeCustomer(
-    options: RequireActiveWorkspaceStripeCustomerOptions = {}
-): Promise<ActiveWorkspaceStripeCustomer> {
+export async function requireActiveTeamStripeCustomer(
+    options: RequireActiveTeamStripeCustomerOptions = {}
+): Promise<ActiveTeamStripeCustomer> {
     const supabase = await createClient();
     const {
         data: { user },
@@ -87,7 +87,7 @@ export async function requireActiveWorkspaceStripeCustomer(
 
     const workspaceId = await getWorkspaceIdFromCookie();
     if (!workspaceId) {
-        throw new Error("missing_workspace");
+        throw new Error("missing_team");
     }
 
     try {
@@ -147,37 +147,4 @@ export async function requireActiveWorkspaceStripeCustomer(
         customerId: String(wallet.stripe_customer_id),
         userId: user.id,
     };
-}
-
-export async function ensureWorkspaceStripeWallet(args?: {
-    workspaceId?: string;
-    userId?: string;
-    email?: string | null;
-    name?: string;
-}) {
-    if (args?.workspaceId && args?.userId) {
-        const customerId = await findOrCreateStripeCustomer({
-            workspaceId: args.workspaceId,
-            userId: args.userId,
-            email: args.email ?? undefined,
-            name: args.name,
-        });
-
-        const admin = createAdminClient();
-        const { error } = await admin
-            .from("wallets")
-            .upsert(
-                { workspace_id: args.workspaceId, stripe_customer_id: customerId },
-                { onConflict: "workspace_id", ignoreDuplicates: false }
-            );
-        if (error) throw error;
-
-        return {
-            workspaceId: args.workspaceId,
-            customerId,
-            userId: args.userId,
-        };
-    }
-
-    return requireActiveWorkspaceStripeCustomer({ createIfMissing: true });
 }
