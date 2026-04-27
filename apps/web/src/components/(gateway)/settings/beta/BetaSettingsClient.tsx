@@ -101,7 +101,9 @@ export default function BetaSettingsClient({
 					>
 						<div className="min-w-0 pr-4">
 							<div className="flex flex-wrap items-center gap-2">
-								<p className="text-sm font-medium">{feature.title}</p>
+								<p id={`${feature.key}-label`} className="text-sm font-medium">
+									{feature.title}
+								</p>
 								{feature.kind && feature.kind !== "toggle" ? (
 									<Badge variant="outline" className="text-[10px] uppercase">
 										{feature.kind}
@@ -113,11 +115,16 @@ export default function BetaSettingsClient({
 									</Badge>
 								) : null}
 							</div>
-							<p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+							<p
+								id={`${feature.key}-description`}
+								className="mt-1 text-sm leading-relaxed text-muted-foreground"
+							>
 								{feature.description}
 							</p>
 						</div>
 						<Switch
+							aria-labelledby={`${feature.key}-label`}
+							aria-describedby={`${feature.key}-description`}
 							checked={enabled}
 							disabled={savingKey !== null}
 							onCheckedChange={(next) => void toggleFeature(feature.key, next)}

@@ -187,7 +187,7 @@ function StatsigUserSync() {
 	return null;
 }
 
-function buildStatsigClient(
+async function buildStatsigClient(
 	clientKey: string,
 	user: StatsigUser,
 	values: string,
@@ -203,7 +203,7 @@ function buildStatsigClient(
 			: [],
 	});
 
-	(client as any).dataAdapter.setData(values);
+	await (client as any).dataAdapter.setData(values);
 	client.initializeSync();
 	return client;
 }
@@ -240,10 +240,29 @@ export default function MyStatsig({
 		};
 	}, []);
 
-	const client = React.useMemo(
-		() => buildStatsigClient(clientKey, user, values, analyticsConsent),
-		[clientKey, user, values, analyticsConsent]
-	);
+	const [client, setClient] = React.useState<StatsigClient | null>(null);
+
+	React.useEffect(() => {
+		let active = true;
+
+		void buildStatsigClient(clientKey, user, values, analyticsConsent)
+			.then((nextClient) => {
+				if (active) {
+					setClient(nextClient);
+				}
+			})
+			.catch((error) => {
+				console.error("Failed to initialize Statsig client", error);
+			});
+
+		return () => {
+			active = false;
+		};
+	}, [clientKey, user, values, analyticsConsent]);
+
+	if (!client) {
+		return null;
+	}
 
 	return (
 		<StatsigProvider client={client}>

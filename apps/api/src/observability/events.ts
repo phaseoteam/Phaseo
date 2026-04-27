@@ -814,8 +814,8 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             attempted_providers_json: includeDetailedPayloads
                 ? stringifyForAxiom(attemptSignals.attemptedProviders)
                 : null,
-            attempt_success_count: attemptSignals.successCount || null,
-            attempt_failure_count: attemptSignals.failureCount || null,
+            attempt_success_count: attemptSignals.successCount ?? null,
+            attempt_failure_count: attemptSignals.failureCount ?? null,
             attempt_total_duration_ms: attemptSignals.totalDurationMs,
             attempt_max_duration_ms: attemptSignals.maxDurationMs,
             attempt_outcomes_json: includeDetailedPayloads

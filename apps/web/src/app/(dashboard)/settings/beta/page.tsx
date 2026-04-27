@@ -29,11 +29,14 @@ export default async function BetaSettingsPage() {
 		);
 	}
 
-	const { data: profileRow } = await supabase
+	const { data: profileRow, error } = await supabase
 		.from("users")
 		.select("beta_opt_in, beta_features")
 		.eq("user_id", user.id)
 		.maybeSingle();
+	if (error) {
+		throw new Error(`Failed to load beta preferences for ${user.id}: ${error.message}`);
+	}
 
 	return (
 		<div className="space-y-6">

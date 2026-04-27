@@ -542,6 +542,7 @@ async function attemptProviderWithIR(
 
 		const normalizedCapability = normalizeCapability(ctx.capability);
 		const isTextGenerate = normalizedCapability === "text.generate";
+		const modelForReasoning = providerModelSlug?.trim() || baseModel;
 
 		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
 			isTextGenerate
@@ -552,7 +553,7 @@ async function attemptProviderWithIR(
 					{
 						capabilityParams: candidate.capabilityParams,
 						providerMaxOutputTokens: candidate.maxOutputTokens,
-						modelForReasoning: providerModelSlug ?? baseModel,
+						modelForReasoning,
 					},
 				)
 				: ir,

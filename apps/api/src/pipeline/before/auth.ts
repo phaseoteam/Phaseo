@@ -13,7 +13,7 @@ import {
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_VERSION_L1_TTL_MS = 30_000;
+const KEY_VERSION_L1_TTL_MS = 5_000;
 const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
 const HMAC_KEY_CACHE_MAX_ENTRIES = 16;
