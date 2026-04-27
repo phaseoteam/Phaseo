@@ -79,6 +79,7 @@ async function materializeStreamResultToCompleted(args: {
 	requestId: string;
 	model: string;
 	result: any;
+	startedAtMs?: number;
 }): Promise<any> {
 	const stream = args.result.stream ?? args.result.upstream?.body ?? null;
 	if (!stream) {
@@ -90,6 +91,7 @@ async function materializeStreamResultToCompleted(args: {
 		requestId: args.requestId,
 		model: args.model,
 		provider: args.result.provider,
+		startedAtMs: args.startedAtMs,
 	});
 	return {
 		...args.result,
@@ -98,6 +100,20 @@ async function materializeStreamResultToCompleted(args: {
 		stream: null,
 		usageFinalizer: null,
 		rawResponse: consumed.rawResponse,
+		generationTimeMs:
+			typeof consumed.totalMs === "number"
+				? consumed.totalMs
+				: args.result.generationTimeMs,
+		timing: {
+			latencyMs:
+				typeof consumed.firstFrameMs === "number"
+					? consumed.firstFrameMs
+					: args.result?.timing?.latencyMs,
+			generationMs:
+				typeof consumed.totalMs === "number"
+					? consumed.totalMs
+					: args.result?.timing?.generationMs,
+		},
 		bill: {
 			...args.result.bill,
 			usage:
@@ -194,7 +210,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					requestId: pre.ctx.requestId,
 					model: pre.ctx.model,
 					result: exec.result,
+					startedAtMs: pre.ctx.meta.upstreamStartMs ?? pre.ctx.meta.startedAtMs,
 				});
+				if (typeof exec.result?.timing?.latencyMs === "number") {
+					pre.ctx.meta.latency_ms = exec.result.timing.latencyMs;
+				}
+				if (typeof exec.result?.timing?.generationMs === "number") {
+					pre.ctx.meta.generation_ms = exec.result.timing.generationMs;
+				}
 			} catch (error) {
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
@@ -285,7 +308,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							requestId: pre.ctx.requestId,
 							model: pre.ctx.model,
 							result: followUpResult,
+							startedAtMs: pre.ctx.meta.upstreamStartMs ?? pre.ctx.meta.startedAtMs,
 						});
+						if (typeof followUpResult?.timing?.latencyMs === "number") {
+							pre.ctx.meta.latency_ms = followUpResult.timing.latencyMs;
+						}
+						if (typeof followUpResult?.timing?.generationMs === "number") {
+							pre.ctx.meta.generation_ms = followUpResult.timing.generationMs;
+						}
 					} catch (error) {
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();

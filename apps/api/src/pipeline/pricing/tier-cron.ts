@@ -1,11 +1,11 @@
 /**
- * Monthly Dormant Team Cleanup Cron Job
- * Purpose: Clean up dormant Enterprise teams that stopped making requests
+ * Legacy workspace pricing cleanup cron
+ * Purpose: Retained as a compatibility shim after the flat 5% pricing rollout
  * Schedule: Runs at 00:00 UTC on the 1st of each month
  *
  * HOW IT WORKS:
- * - Active teams: Tier calculated in real-time before each request (context.sql)
- * - Dormant teams: Cleaned up monthly via this cron (prevents indefinite Enterprise status)
+ * - Current pricing is single-tier and this job is effectively a no-op
+ * - The RPC remains in place so older operational hooks do not break
  *
  * Setup Instructions (Option 1 - Preferred):
  * Use Supabase's built-in pg_cron extension:
@@ -20,7 +20,7 @@
  * 2. Export the handleScheduledEvent function
  * 3. Ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set
  *
- * See TIER-SYSTEM.md for full documentation.
+ * See TIER-SYSTEM.md for the current pricing model summary.
  */
 
 import { getSupabaseAdmin } from "@/runtime/env";
@@ -40,23 +40,21 @@ export interface TierCleanupResult {
 }
 
 /**
- * Execute monthly cleanup for dormant Enterprise teams
- * Calls the Supabase RPC function cleanup_dormant_enterprise_workspaces()
+ * Execute the legacy pricing cleanup RPC.
+ * Calls the Supabase RPC function cleanup_dormant_enterprise_workspaces().
  *
- * Active teams are handled by per-request tier calculation in context.sql
- * This cron handles teams that stopped making requests while on Enterprise tier
+ * In single-tier mode this returns an empty/no-op result.
  */
 export async function executeDormantTeamCleanup(): Promise<TierCleanupResult> {
     try {
         const supabase = getSupabaseAdmin();
 
-        console.log("[tier-cron] Starting dormant Enterprise team cleanup...");
+        console.log("[tier-cron] Running legacy workspace pricing cleanup...");
 
-        // Call the RPC function to cleanup dormant teams
         const { data, error } = await supabase.rpc("cleanup_dormant_enterprise_workspaces");
 
         if (error) {
-            console.error("[tier-cron] Error cleaning up dormant teams:", error);
+            console.error("[tier-cron] Error running compatibility cleanup:", error);
             return {
                 success: false,
                 total_teams_checked: 0,
@@ -67,7 +65,7 @@ export async function executeDormantTeamCleanup(): Promise<TierCleanupResult> {
             };
         }
 
-        console.log("[tier-cron] Cleanup completed successfully:", {
+        console.log("[tier-cron] Compatibility cleanup completed:", {
             checked: data.total_teams_checked,
             downgraded: data.teams_downgraded,
         });
@@ -105,9 +103,11 @@ export async function handleScheduledEvent(event: ScheduledEvent): Promise<void>
     const result = await executeDormantTeamCleanup();
 
     if (result.success) {
-        console.log(`[tier-cron] ✅ Checked ${result.total_teams_checked} Enterprise teams, downgraded ${result.teams_downgraded}`);
+        console.log(
+            `[tier-cron] Completed compatibility cleanup: checked ${result.total_teams_checked}, downgraded ${result.teams_downgraded}`
+        );
     } else {
-        console.error(`[tier-cron] ❌ Failed: ${result.error}`);
+        console.error(`[tier-cron] Failed: ${result.error}`);
     }
 }
 
@@ -116,7 +116,6 @@ export async function handleScheduledEvent(event: ScheduledEvent): Promise<void>
  * Can be called via: POST /api/admin/cleanup-dormant-teams
  */
 export async function handleManualTrigger(request: Request): Promise<Response> {
-    // Verify authorization (you should add proper auth here)
     const authHeader = request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -124,8 +123,6 @@ export async function handleManualTrigger(request: Request): Promise<Response> {
             headers: { "Content-Type": "application/json" },
         });
     }
-
-    // TODO: Verify the bearer token against your admin secret
 
     console.log("[tier-cron] Manual cleanup trigger requested");
 

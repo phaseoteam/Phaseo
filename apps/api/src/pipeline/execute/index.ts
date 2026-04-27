@@ -262,9 +262,18 @@ export type IRRequestResult = {
 	byokKeyId?: string | null;
 	mappedRequest?: string;
 	rawResponse?: any;
+	timing?: {
+		latencyMs?: number;
+		generationMs?: number;
+	};
 };
 
 export type RequestResult = IRRequestResult;
+
+function normalizeTimingValue(value: number | null | undefined): number | undefined {
+	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+	return Math.max(0, Math.round(value));
+}
 
 /**
  * Execute request using IR pipeline
@@ -502,6 +511,8 @@ async function attemptProviderWithIR(
 		t0 = performance.now();
 
 		ctx.meta.upstreamStartMs = Date.now();
+		delete (ctx.meta as Record<string, unknown>).latency_ms;
+		delete (ctx.meta as Record<string, unknown>).generation_ms;
 		const executorResolveStart = performance.now();
 		const executor = resolveProviderExecutor(candidate.providerId, ctx.capability);
 		timing.timer.record(
@@ -630,12 +641,6 @@ async function attemptProviderWithIR(
 		);
 
 		if (executorResult.timing) {
-			if (typeof executorResult.timing.latencyMs === "number") {
-				ctx.meta.latency_ms = executorResult.timing.latencyMs;
-			}
-			if (typeof executorResult.timing.generationMs === "number") {
-				ctx.meta.generation_ms = executorResult.timing.generationMs;
-			}
 			if (typeof executorResult.timing.requestBuildMs === "number") {
 				timing.timer.record(`${attemptPrefix}_request_build`, executorResult.timing.requestBuildMs);
 			}
@@ -648,6 +653,14 @@ async function attemptProviderWithIR(
 		}
 		timing.timer.end("adapter_start");
 		const generationTimeMs = Math.round(performance.now() - t0);
+		const normalizedLatencyMs = normalizeTimingValue(executorResult.timing?.latencyMs);
+
+		if (typeof normalizedLatencyMs === "number") {
+			ctx.meta.latency_ms = Math.min(normalizedLatencyMs, generationTimeMs);
+		}
+		if (!ctx.stream) {
+			ctx.meta.generation_ms = generationTimeMs;
+		}
 
 		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
 		const usageForMetrics = executorResult.kind === "completed"
@@ -678,7 +691,7 @@ async function attemptProviderWithIR(
 				provider: candidate.providerId,
 				model: baseModel,
 				ok: executorResult.upstream.ok,
-				latency_ms: endToEndMs,
+				latency_ms: ctx.meta.latency_ms ?? generationTimeMs,
 				generation_ms: ctx.meta.generation_ms ?? generationTimeMs,
 				tokens_in: tokensIn,
 				tokens_out: tokensOut,
@@ -755,6 +768,7 @@ async function attemptProviderWithIR(
 			byokKeyId: executorResult.byokKeyId,
 			mappedRequest: executorResult.mappedRequest,
 			rawResponse: executorResult.rawResponse,
+			timing: executorResult.timing,
 		};
 		(result as any).healthContext = {
 			provider: candidate.providerId,
@@ -837,12 +851,13 @@ async function attemptProviderWithIR(
 			was_probe: isProbe,
 		});
 		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
+		const failureLatencyMs = Math.round(performance.now() - t0);
 		await onCallEnd(ctx.endpoint, {
 			provider: candidate.providerId,
 			model: baseModel,
 			ok: false,
-			latency_ms: endToEndMs,
-			generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
+			latency_ms: ctx.meta.latency_ms ?? failureLatencyMs,
+			generation_ms: ctx.meta.generation_ms ?? failureLatencyMs,
 		});
 		if (isProbe) {
 			await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, false);

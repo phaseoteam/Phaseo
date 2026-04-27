@@ -1,7 +1,11 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
 import { featureOrder } from "@/lib/config/featureLabels";
-import type { MonitorModelData, MonitorModelFilters, GatewayProvider, GatewayModel } from "./types";
+import type {
+	GatewayProvider,
+	MonitorModelData,
+	MonitorModelFilters,
+} from "@/lib/fetchers/models/table-view/types";
 import {
 	parseModalities,
 	extractFeatureKeys,
@@ -10,233 +14,63 @@ import {
 	normalizeCapabilityStatus,
 	normalizeEndpoint,
 	resolveGatewayStatus,
-	toUsdPerMillion,
 } from "./helpers";
 
 export type { MonitorModelData } from "./types";
 
-function normalizePricingDisplayUnit(
-	meterRaw: unknown,
-	unitRaw: unknown,
-): string | null {
-	const meter = String(meterRaw ?? "")
-		.trim()
-		.toLowerCase();
-	const unit = String(unitRaw ?? "")
-		.trim()
-		.toLowerCase();
-
-	if (
-		meter.includes("token") ||
-		unit === "token" ||
-		unit === "tokens"
-	) {
-		return "1M tokens";
-	}
-	if (["second", "seconds", "sec", "secs", "s"].includes(unit)) {
-		return "second";
-	}
-	if (["minute", "minutes", "min", "mins", "m"].includes(unit)) {
-		return "minute";
-	}
-	if (["hour", "hours", "hr", "hrs", "h"].includes(unit)) {
-		return "hour";
-	}
-	if (["image", "images"].includes(unit)) {
-		return "image";
-	}
-	if (["video", "videos"].includes(unit)) {
-		return "video";
-	}
-	if (["character", "characters", "char", "chars"].includes(unit)) {
-		return "character";
-	}
-
-	return unit || null;
+function toNullableNumber(value: unknown): number | null {
+	if (value === null || value === undefined) return null;
+	const numericValue = Number(value);
+	return Number.isFinite(numericValue) ? numericValue : null;
 }
 
-function toDisplayPrice(
-	pricePerUnitRaw: unknown,
-	unitSizeRaw: unknown,
-	meterRaw: unknown,
-	unitRaw: unknown,
-): { value: number; unit: string } | null {
-	const pricePerUnit = Number(pricePerUnitRaw ?? Number.NaN);
-	const unitSize = Number(unitSizeRaw ?? Number.NaN);
-	if (!Number.isFinite(pricePerUnit) || pricePerUnit < 0) return null;
-	if (!Number.isFinite(unitSize) || unitSize <= 0) return null;
-
-	const normalizedUnit = normalizePricingDisplayUnit(meterRaw, unitRaw);
-	if (!normalizedUnit) return null;
-
-	if (normalizedUnit === "1M tokens") {
-		return {
-			value: toUsdPerMillion(pricePerUnit, unitSize),
-			unit: normalizedUnit,
-		};
-	}
-
-	// Normalize all time-based pricing to per-second so comparisons are valid.
-	if (normalizedUnit === "minute") {
-		return {
-			value: pricePerUnit / unitSize / 60,
-			unit: "second",
-		};
-	}
-	if (normalizedUnit === "hour") {
-		return {
-			value: pricePerUnit / unitSize / 3600,
-			unit: "second",
-		};
-	}
-
-	return {
-		value: pricePerUnit / unitSize,
-		unit: normalizedUnit,
-	};
-}
-
-function getStandardIoMeterMeta(
-	meterRaw: unknown,
-): { side: "input" | "output"; label: string; priority: number } | null {
-	const meter = String(meterRaw ?? "")
-		.trim()
-		.toLowerCase();
-
-	if (meter === "input_text_tokens" || meter === "input_tokens") {
-		return { side: "input", label: "Text Input", priority: 0 };
-	}
-	if (meter === "input_audio_tokens") {
-		return { side: "input", label: "Audio Input", priority: 1 };
-	}
-	if (meter === "input_image_tokens") {
-		return { side: "input", label: "Image Input", priority: 2 };
-	}
-	if (meter === "input_video_tokens") {
-		return { side: "input", label: "Video Input", priority: 3 };
-	}
-	if (meter === "output_text_tokens" || meter === "output_tokens") {
-		return { side: "output", label: "Text Output", priority: 0 };
-	}
-	if (meter === "output_audio_tokens") {
-		return { side: "output", label: "Audio Output", priority: 1 };
-	}
-	if (meter === "output_image_tokens") {
-		return { side: "output", label: "Image Output", priority: 2 };
-	}
-	if (meter === "output_video_tokens") {
-		return { side: "output", label: "Video Output", priority: 3 };
-	}
-	return null;
-}
-
-async function fetchProviderModelsPaginated({
-	supabase,
-	selectClause,
-	pageSize = 1000,
-}: {
-	supabase: ReturnType<typeof createAdminClient>;
-	selectClause: string;
-	pageSize?: number;
-}): Promise<{ data: any[] | null; error: any | null }> {
-	const rows: any[] = [];
-
-	for (let from = 0; ; from += pageSize) {
-		const to = from + pageSize - 1;
-		const { data, error } = await supabase
-			.from("data_api_provider_models")
-			.select(selectClause)
-			.not("api_model_id", "is", null)
-			.order("provider_api_model_id", { ascending: true })
-			.range(from, to);
-
-		if (error) {
-			return { data: null, error };
-		}
-		if (!Array.isArray(data) || data.length === 0) {
-			break;
-		}
-
-		rows.push(...data);
-		if (data.length < pageSize) {
-			break;
-		}
-	}
-
-	return { data: rows, error: null };
-}
-
-async function fetchPricingRulesByModelKeysInBatches({
-	supabase,
-	modelKeys,
-	batchSize = 120,
-}: {
-	supabase: ReturnType<typeof createAdminClient>;
-	modelKeys: string[];
-	batchSize?: number;
-}): Promise<
-	Array<{
-		model_key: string;
-		meter: string;
-		unit: string | null;
-		unit_size: number;
-		price_per_unit: number;
-		pricing_plan: string | null;
-		effective_from: string | null;
-		effective_to: string | null;
-	}>
-> {
-	const rows: Array<{
-		model_key: string;
-		meter: string;
-		unit: string | null;
-		unit_size: number;
-		price_per_unit: number;
-		pricing_plan: string | null;
-		effective_from: string | null;
-		effective_to: string | null;
-	}> = [];
-	const nowIso = new Date().toISOString();
-	const activePricingWindowClause = [
-		"and(effective_from.is.null,effective_to.is.null)",
-		`and(effective_from.is.null,effective_to.gt.${nowIso})`,
-		`and(effective_from.lte.${nowIso},effective_to.is.null)`,
-		`and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
-	].join(",");
-
-	for (let i = 0; i < modelKeys.length; i += batchSize) {
-		const batch = modelKeys.slice(i, i + batchSize);
-		if (!batch.length) continue;
-
-		const { data, error } = await supabase
-			.from("data_api_pricing_rules")
-			.select(`
-        model_key,
-        meter,
-        unit,
-        unit_size,
-        price_per_unit,
-        pricing_plan,
-        effective_from,
-        effective_to
-      `)
-			.in("model_key", batch)
-			.or(activePricingWindowClause)
-			.order("effective_from", { ascending: false });
-
-		if (error) {
-			throw new Error(
-				`Fetching pricing batch failed at index ${i}: ${error.message ?? String(error)}`,
-			);
-		}
-
-		if (Array.isArray(data) && data.length > 0) {
-			rows.push(...data);
-		}
-	}
-
-	return rows;
-}
+type MonitorModelRpcRow = {
+	model_id: string | null;
+	model_name: string | null;
+	model_release_date: string | null;
+	model_retirement_date: string | null;
+	model_status: string | null;
+	model_input_types: unknown;
+	model_output_types: unknown;
+	organisation_id: string | null;
+	organisation_name: string | null;
+	hidden: boolean | null;
+	provider_api_model_id: string | null;
+	provider_id: string | null;
+	api_model_id: string | null;
+	provider_model_slug: string | null;
+	is_active_gateway: boolean | null;
+	input_modalities: unknown;
+	output_modalities: unknown;
+	quantization_scheme: string | null;
+	context_length: number | null;
+	provider_max_output_tokens: number | null;
+	effective_from: string | null;
+	effective_to: string | null;
+	capability_id: string | null;
+	capability_params: unknown;
+	capability_status: string | null;
+	capability_max_input_tokens: number | null;
+	capability_max_output_tokens: number | null;
+	api_provider_name: string | null;
+	provider_link: string | null;
+	input_price: number | null;
+	output_price: number | null;
+	standard_input_price: number | null;
+	standard_output_price: number | null;
+	standard_input_price_label: string | null;
+	standard_input_price_unit: string | null;
+	standard_output_price_label: string | null;
+	standard_output_price_unit: string | null;
+	from_price: number | null;
+	from_price_unit: string | null;
+	pricing_tier: string | null;
+	is_free_variant: boolean | null;
+	weekly_tokens_model: number | null;
+	weekly_tokens_model_provider: number | null;
+	weekly_throughput_model: number | null;
+	weekly_latency_model: number | null;
+};
 
 export async function getMonitorModels(
 	filters: MonitorModelFilters = {},
@@ -251,420 +85,67 @@ export async function getMonitorModels(
 }> {
 	"use cache";
 
-	cacheLife("hours");
+	cacheLife("minutes");
 	cacheTag("models:monitor");
 	cacheTag("monitor-models");
+	cacheTag("data:data_api_model_aliases");
+	cacheTag("data:data_api_provider_model_capabilities");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:data_api_pricing_rules");
 	cacheTag("data:models");
 	cacheTag("data:api_providers");
 
 	const supabase = createAdminClient();
-	const baseSelect = `
-		provider_api_model_id,
-		provider_id,
-		model_id,
-		api_model_id,
-		provider_model_slug,
-		is_active_gateway,
-		input_modalities,
-		output_modalities,
-		quantization_scheme,
-		context_length,
-		max_output_tokens,
-		effective_from,
-		effective_to,
-		capabilities: data_api_provider_model_capabilities!inner(
-			capability_id,
-			params,
-			status,
-			max_input_tokens,
-			max_output_tokens
-		),
-		provider: data_api_providers(
-			api_provider_id,
-			api_provider_name,
-			link
-		)
-	`;
-	const legacySelect = `
-		provider_api_model_id,
-		provider_id,
-		api_model_id,
-		provider_model_slug,
-		is_active_gateway,
-		input_modalities,
-		output_modalities,
-		effective_from,
-		effective_to,
-		capabilities: data_api_provider_model_capabilities!inner(
-			capability_id,
-			params,
-			status,
-			max_input_tokens,
-			max_output_tokens
-		),
-		provider: data_api_providers(
-			api_provider_id,
-			api_provider_name,
-			link
-		)
-	`;
-
-	let providerModels: any[] | null = null;
-	let providerModelsError: any = null;
-	{
-		const res = await fetchProviderModelsPaginated({
-			supabase,
-			selectClause: baseSelect,
-			pageSize: 1000,
-		});
-		providerModels = res.data ?? null;
-		providerModelsError = res.error;
-	}
-
-	const providerModelLegacySchemaMissing =
-		/(model_id|context_length|max_output_tokens|quantization_scheme)/i.test(
-			String(providerModelsError?.message ?? ""),
-		);
-	if (providerModelsError && providerModelLegacySchemaMissing) {
-		const res = await fetchProviderModelsPaginated({
-			supabase,
-			selectClause: legacySelect,
-			pageSize: 1000,
-		});
-		providerModels = res.data ?? null;
-		providerModelsError = res.error;
-	}
-
-	if (providerModelsError) {
-		throw providerModelsError;
-	}
-
-	const modelIds = Array.from(
-		new Set(
-			(providerModels ?? [])
-				.map((pm: any) => {
-					const modelId = String(pm?.model_id ?? pm?.api_model_id ?? "").trim();
-					return modelId.length > 0 ? modelId : null;
-				})
-				.filter((modelId): modelId is string => Boolean(modelId)),
-		),
+	const { data: rpcRows, error: rpcError } = await supabase.rpc(
+		"get_monitor_model_rows",
+		{ p_include_hidden: includeHidden },
 	);
 
-	const { data: modelRows, error: modelRowsError } = modelIds.length
-		? await supabase
-				.from("data_models")
-				.select(
-					`
-					model_id,
-					name,
-					release_date,
-					retirement_date,
-					status,
-					input_types,
-					output_types,
-					hidden,
-					organisation: data_organisations!data_models_organisation_id_fkey(
-						organisation_id,
-						name
-					)
-					`,
-				)
-				.in("model_id", modelIds)
-		: { data: [] as any[], error: null as any };
-
-	if (modelRowsError) {
-		throw modelRowsError;
+	if (rpcError) {
+		throw rpcError;
 	}
 
-	const modelById = new Map<string, any>();
-	for (const row of modelRows ?? []) {
-		const modelId = String((row as any)?.model_id ?? "").trim();
-		if (!modelId) continue;
-		modelById.set(modelId, row);
-	}
-
-	const ctxByModelId = new Map<
-		string,
-		{ context: number; maxOutput: number; quantization?: string }
-	>();
-
-	const gatewayModelsData: GatewayModel[] = [];
-	const modelKeysSet = new Set<string>();
-	const providerModelByKey = new Map<string, any>();
-
-	for (const pm of providerModels ?? []) {
-		const modelId =
-			pm.model_id ??
-			pm.api_model_id ??
-			"";
-		const modelRow = modelById.get(modelId) ?? null;
-		if (!includeHidden && modelRow?.hidden) continue;
-		const capabilities: any[] = Array.isArray(pm.capabilities)
-			? pm.capabilities
-			: [];
-
-		if (modelId && !ctxByModelId.has(modelId)) {
-			const providerContext = Number(pm.context_length);
-			const providerMaxOutput = Number(pm.max_output_tokens);
-			const capMaxInput = capabilities.reduce((max: number, capability: any) => {
-				const value = Number((capability as any)?.max_input_tokens);
-				return Number.isFinite(value) && value > max ? value : max;
-			}, 0);
-			const capMaxOutput = capabilities.reduce((max: number, capability: any) => {
-				const value = Number((capability as any)?.max_output_tokens);
-				return Number.isFinite(value) && value > max ? value : max;
-			}, 0);
-			const context = Number.isFinite(providerContext) && providerContext > 0
-				? providerContext
-				: capMaxInput;
-			const maxOutput = Number.isFinite(providerMaxOutput) && providerMaxOutput > 0
-				? providerMaxOutput
-				: capMaxOutput;
-			const quantizationRaw = pm.quantization_scheme;
-			const quantization =
-				typeof quantizationRaw === "string" && quantizationRaw.trim()
-					? quantizationRaw
-					: undefined;
-			ctxByModelId.set(modelId, { context, maxOutput, quantization });
-		}
-
-		const providerRaw = Array.isArray(pm.provider)
-			? pm.provider[0]
-			: pm.provider;
-		const providerInfo: GatewayProvider = providerRaw
-			? {
-				api_provider_name: providerRaw.api_provider_name ?? null,
-				link: providerRaw.link ?? null,
-			}
-			: null;
-
-		const providerModelKey = `${pm.provider_id}:${pm.api_model_id}`;
-		if (pm.provider_id && pm.api_model_id) {
-			providerModelByKey.set(providerModelKey, pm);
-		}
-
-		for (const cap of capabilities) {
-			if (!cap?.capability_id) continue;
-			const key = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
-			modelKeysSet.add(key);
-
-			gatewayModelsData.push(
-				normalizeGatewayModel({
-					model_id: modelId,
-					api_model_id: pm.api_model_id,
-					api_provider_id: pm.provider_id,
-					key,
-					endpoint: cap.capability_id,
-					is_active_gateway: pm.is_active_gateway,
-					capability_status: cap.status ?? null,
-					input_modalities: pm.input_modalities,
-					output_modalities: pm.output_modalities,
-					params: cap.params ?? {},
-					provider: providerInfo,
-				})
-			);
-		}
-	}
-
-	const modelKeys = Array.from(modelKeysSet);
-
-	let pricingData:
-		| Array<{
-			model_key: string;
-			meter: string;
-			unit: string | null;
-			unit_size: number;
-			price_per_unit: number;
-			pricing_plan: string | null;
-			effective_from: string | null;
-			effective_to: string | null;
-		}>
-		| null = [];
-
-	if (modelKeys.length) {
-		pricingData = await fetchPricingRulesByModelKeysInBatches({
-			supabase,
-			modelKeys,
-			batchSize: 120,
-		});
-	}
-
-	const pricingByKey = new Map<
-		string,
-		{
-			inputPrice: number;
-			outputPrice: number;
-			standardInputPrice: number | null;
-			standardOutputPrice: number | null;
-			standardInputPriceLabel: string | null;
-			standardInputPriceUnit: string | null;
-			standardOutputPriceLabel: string | null;
-			standardOutputPriceUnit: string | null;
-			standardInputPriority: number;
-			standardOutputPriority: number;
-			tier: string;
-			fromPrice: number | null;
-			fromPriceUnit: string | null;
-		}
-	>();
-	const freeByKey = new Map<string, boolean>();
-	for (const p of pricingData ?? []) {
-		if (p.model_key) {
-			if (String(p.model_key).toLowerCase().includes(":free:")) {
-				freeByKey.set(p.model_key, true);
-			}
-		}
-		if (!pricingByKey.has(p.model_key)) {
-			pricingByKey.set(p.model_key, {
-				inputPrice: 0,
-				outputPrice: 0,
-				standardInputPrice: null,
-				standardOutputPrice: null,
-				standardInputPriceLabel: null,
-				standardInputPriceUnit: null,
-				standardOutputPriceLabel: null,
-				standardOutputPriceUnit: null,
-				standardInputPriority: Number.POSITIVE_INFINITY,
-				standardOutputPriority: Number.POSITIVE_INFINITY,
-				tier: "standard",
-				fromPrice: null,
-				fromPriceUnit: null,
-			});
-		}
-		const prices = pricingByKey.get(p.model_key)!;
-		const displayPrice = toDisplayPrice(
-			p.price_per_unit,
-			p.unit_size,
-			p.meter,
-			p.unit,
-		);
-		const normalizedPricingPlan = String(p.pricing_plan ?? "standard")
-			.trim()
-			.toLowerCase();
-		const isStandardPricingPlan =
-			normalizedPricingPlan === "" || normalizedPricingPlan === "standard";
-		if (
-			(p.meter === "input_text_tokens" || p.meter === "input_tokens") &&
-			prices.inputPrice === 0
-		) {
-			prices.inputPrice = toUsdPerMillion(p.price_per_unit, p.unit_size);
-			prices.tier = p.pricing_plan || "standard";
-		}
-		if (
-			isStandardPricingPlan &&
-			displayPrice
-		) {
-			const meterMeta = getStandardIoMeterMeta(p.meter);
-			if (meterMeta?.side === "input") {
-				const shouldReplaceInput =
-					prices.standardInputPrice === null ||
-					meterMeta.priority < prices.standardInputPriority ||
-					(meterMeta.priority === prices.standardInputPriority &&
-						displayPrice.value < prices.standardInputPrice);
-				if (shouldReplaceInput) {
-					prices.standardInputPrice = displayPrice.value;
-					prices.standardInputPriceLabel = meterMeta.label;
-					prices.standardInputPriceUnit = displayPrice.unit;
-					prices.standardInputPriority = meterMeta.priority;
-				}
-			}
-			if (meterMeta?.side === "output") {
-				const shouldReplaceOutput =
-					prices.standardOutputPrice === null ||
-					meterMeta.priority < prices.standardOutputPriority ||
-					(meterMeta.priority === prices.standardOutputPriority &&
-						displayPrice.value < prices.standardOutputPrice);
-				if (shouldReplaceOutput) {
-					prices.standardOutputPrice = displayPrice.value;
-					prices.standardOutputPriceLabel = meterMeta.label;
-					prices.standardOutputPriceUnit = displayPrice.unit;
-					prices.standardOutputPriority = meterMeta.priority;
-				}
-			}
-		}
-		if (
-			(p.meter === "output_text_tokens" || p.meter === "output_tokens") &&
-			prices.outputPrice === 0
-		) {
-			prices.outputPrice = toUsdPerMillion(p.price_per_unit, p.unit_size);
-			if (prices.tier === "standard") {
-				prices.tier = p.pricing_plan || "standard";
-			}
-		}
-		if (!displayPrice) continue;
-		if (prices.fromPrice === null || !prices.fromPriceUnit) {
-			prices.fromPrice = displayPrice.value;
-			prices.fromPriceUnit = displayPrice.unit;
-			continue;
-		}
-		// Only compare numeric values within the same display unit.
-		if (
-			prices.fromPriceUnit === displayPrice.unit &&
-			displayPrice.value < prices.fromPrice
-		) {
-			prices.fromPrice = displayPrice.value;
-			prices.fromPriceUnit = displayPrice.unit;
-		}
-	}
-
+	const featureOrderIndexForRow = new Map(
+		featureOrder.map((feature, index) => [feature, index]),
+	);
 	const allModels: MonitorModelData[] = [];
-	for (const gatewayModel of gatewayModelsData ?? []) {
-		const pm = providerModelByKey.get(
-			`${gatewayModel.api_provider_id}:${gatewayModel.api_model_id}`
-		);
-		const modelId =
-			pm?.model_id ??
-			pm?.api_model_id ??
-			gatewayModel.model_id ??
-			"";
-		const modelRow = modelById.get(modelId) ?? null;
 
-		const { context, maxOutput, quantization } =
-			ctxByModelId.get(modelId) ?? {
-				context: 0,
-				maxOutput: 0,
-				quantization: undefined,
-			};
+	for (const raw of (rpcRows ?? []) as MonitorModelRpcRow[]) {
+		const row = raw as MonitorModelRpcRow;
+		const modelId = String(row.model_id ?? row.api_model_id ?? "").trim();
+		if (!modelId) continue;
 
-		const baseInputModalities = parseModalities(modelRow?.input_types);
-		const baseOutputModalities = parseModalities(modelRow?.output_types);
-		const gatewayInputModalities = parseModalities(gatewayModel.input_modalities);
-		const gatewayOutputModalities = parseModalities(gatewayModel.output_modalities);
+		const providerInfo: GatewayProvider =
+			row.api_provider_name || row.provider_link
+				? {
+					api_provider_name: row.api_provider_name ?? null,
+					link: row.provider_link ?? null,
+				}
+				: null;
 
-		const prices =
-			(gatewayModel?.key
-				? pricingByKey.get(gatewayModel.key)
-				: undefined) ?? {
-				inputPrice: 0,
-				outputPrice: 0,
-				standardInputPrice: null,
-				standardOutputPrice: null,
-				standardInputPriceLabel: null,
-				standardInputPriceUnit: null,
-				standardOutputPriceLabel: null,
-				standardOutputPriceUnit: null,
-				standardInputPriority: Number.POSITIVE_INFINITY,
-				standardOutputPriority: Number.POSITIVE_INFINITY,
-				tier: "standard",
-				fromPrice: null,
-				fromPriceUnit: null,
-			};
+		const gatewayModel = normalizeGatewayModel({
+			model_id: modelId,
+			api_model_id: row.api_model_id,
+			api_provider_id: row.provider_id,
+			key: row.provider_id && row.api_model_id && row.capability_id
+				? `${row.provider_id}:${row.api_model_id}:${row.capability_id}`
+				: "",
+			endpoint: row.capability_id,
+			is_active_gateway: row.is_active_gateway,
+			capability_status: row.capability_status,
+			input_modalities: row.input_modalities,
+			output_modalities: row.output_modalities,
+			params: row.capability_params ?? {},
+			provider: providerInfo,
+		});
 
-		const extractedFeatures = extractFeatureKeys(gatewayModel?.params);
-		const supportedParameters = extractSupportedParameters(gatewayModel?.params);
-		const isFreeVariant =
-			(gatewayModel?.key ? freeByKey.get(gatewayModel.key) : false) ||
-			(Boolean(gatewayModel?.api_model_id) &&
-				String(gatewayModel?.api_model_id).includes(":free"));
+		const extractedFeatures = extractFeatureKeys(gatewayModel.params);
+		const supportedParameters = extractSupportedParameters(gatewayModel.params);
+		const isFreeVariant = Boolean(row.is_free_variant);
 		const normalizedFeatures = new Set<string>(
-			extractedFeatures.map((feature) => String(feature))
+			extractedFeatures.map((feature) => String(feature)),
 		);
 		if (isFreeVariant) normalizedFeatures.add("free");
-		const featureOrderIndexForRow = new Map(
-			featureOrder.map((feature, index) => [feature, index])
-		);
 		const sortedFeatures = Array.from(normalizedFeatures).sort((a, b) => {
 			const aIndex = featureOrderIndexForRow.get(a);
 			const bIndex = featureOrderIndexForRow.get(b);
@@ -677,58 +158,92 @@ export async function getMonitorModels(
 		});
 
 		const providerName =
-			gatewayModel.provider?.api_provider_name ||
-			gatewayModel.api_provider_id;
-		const organisationRecord = Array.isArray(modelRow?.organisation)
-			? (modelRow?.organisation[0] as any)
-			: (modelRow?.organisation as any);
+			gatewayModel.provider?.api_provider_name || gatewayModel.api_provider_id;
+		const providerContext = Number(row.context_length ?? Number.NaN);
+		const providerMaxOutput = Number(
+			row.provider_max_output_tokens ?? Number.NaN,
+		);
+		const capMaxInput = Number(row.capability_max_input_tokens ?? Number.NaN);
+		const capMaxOutput = Number(row.capability_max_output_tokens ?? Number.NaN);
+		const context =
+			Number.isFinite(providerContext) && providerContext > 0
+				? providerContext
+				: Number.isFinite(capMaxInput) && capMaxInput > 0
+					? capMaxInput
+					: 0;
+		const maxOutput =
+			Number.isFinite(providerMaxOutput) && providerMaxOutput > 0
+				? providerMaxOutput
+				: Number.isFinite(capMaxOutput) && capMaxOutput > 0
+					? capMaxOutput
+					: 0;
+		const quantization =
+			typeof row.quantization_scheme === "string" &&
+			row.quantization_scheme.trim()
+				? row.quantization_scheme
+				: undefined;
 
-		const rawEndpoint = gatewayModel?.endpoint || gatewayModel?.key || "";
 		const monitorModel: MonitorModelData = {
 			id: `${modelId}-${gatewayModel.api_provider_id}-${gatewayModel.key}`,
-			model: modelRow?.name || modelId || "",
+			model: String(row.model_name ?? modelId).trim() || modelId,
 			modelId,
-			apiModelId: pm?.api_model_id ?? gatewayModel.api_model_id ?? undefined,
-			organisationId: organisationRecord?.organisation_id || undefined,
-			organisationName: organisationRecord?.name || undefined,
+			apiModelId: row.api_model_id ?? undefined,
+			organisationId: row.organisation_id ?? undefined,
+			organisationName: row.organisation_name ?? undefined,
 			provider: {
 				name: providerName ?? gatewayModel.api_provider_id,
 				id: gatewayModel.api_provider_id,
-				inputPrice: prices.inputPrice,
-				outputPrice: prices.outputPrice,
-				standardInputPrice: prices.standardInputPrice,
-				standardOutputPrice: prices.standardOutputPrice,
-				standardInputPriceLabel: prices.standardInputPriceLabel,
-				standardInputPriceUnit: prices.standardInputPriceUnit,
-				standardOutputPriceLabel: prices.standardOutputPriceLabel,
-				standardOutputPriceUnit: prices.standardOutputPriceUnit,
-				fromPrice: prices.fromPrice,
-				fromPriceUnit: prices.fromPriceUnit,
+				inputPrice: Number(row.input_price ?? 0) || 0,
+				outputPrice: Number(row.output_price ?? 0) || 0,
+				standardInputPrice: Number.isFinite(Number(row.standard_input_price))
+					? Number(row.standard_input_price)
+					: null,
+				standardOutputPrice: Number.isFinite(Number(row.standard_output_price))
+					? Number(row.standard_output_price)
+					: null,
+				standardInputPriceLabel: row.standard_input_price_label ?? null,
+				standardInputPriceUnit: row.standard_input_price_unit ?? null,
+				standardOutputPriceLabel: row.standard_output_price_label ?? null,
+				standardOutputPriceUnit: row.standard_output_price_unit ?? null,
+				fromPrice: Number.isFinite(Number(row.from_price))
+					? Number(row.from_price)
+					: null,
+				fromPriceUnit: row.from_price_unit ?? null,
 				features: sortedFeatures,
 			},
-			endpoint: normalizeEndpoint(rawEndpoint),
+			endpoint: normalizeEndpoint(String(row.capability_id ?? "")),
 			gatewayStatus: resolveGatewayStatus(
-				gatewayModel?.is_active_gateway,
-				gatewayModel?.capability_status,
+				gatewayModel.is_active_gateway,
+				gatewayModel.capability_status,
 			),
-			inputModalities:
-				gatewayInputModalities.length > 0
-					? gatewayInputModalities
-					: baseInputModalities,
-			outputModalities:
-				gatewayOutputModalities.length > 0
-					? gatewayOutputModalities
-					: baseOutputModalities,
+			inputModalities: (() => {
+				const gatewayValues = parseModalities(gatewayModel.input_modalities);
+				return gatewayValues.length > 0
+					? gatewayValues
+					: parseModalities(row.model_input_types);
+			})(),
+			outputModalities: (() => {
+				const gatewayValues = parseModalities(gatewayModel.output_modalities);
+				return gatewayValues.length > 0
+					? gatewayValues
+					: parseModalities(row.model_output_types);
+			})(),
 			context,
 			maxOutput,
 			quantization,
 			supportedParameters,
-			effectiveFrom: pm?.effective_from ?? undefined,
-			tier: isFreeVariant ? "free" : prices.tier || "standard",
-			added: modelRow?.release_date || undefined,
-			retired: modelRow?.retirement_date
-				? new Date(modelRow.retirement_date).toISOString().split("T")[0]
+			effectiveFrom: row.effective_from ?? undefined,
+			tier: isFreeVariant ? "free" : String(row.pricing_tier ?? "standard"),
+			added: row.model_release_date ?? undefined,
+			retired: row.model_retirement_date
+				? new Date(row.model_retirement_date).toISOString().split("T")[0]
 				: undefined,
+			weeklyTokensModel: toNullableNumber(row.weekly_tokens_model),
+			weeklyTokensModelProvider: toNullableNumber(
+				row.weekly_tokens_model_provider,
+			),
+			weeklyThroughputModel: toNullableNumber(row.weekly_throughput_model),
+			weeklyLatencyModel: toNullableNumber(row.weekly_latency_model),
 		};
 
 		allModels.push(monitorModel);

@@ -160,13 +160,25 @@ function toStringArray(value: unknown): string[] {
     return [];
 }
 
+function parseEffectiveDate(value: unknown): Date | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const normalized = /^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(trimmed)
+        ? `${trimmed}Z`
+        : trimmed;
+    const parsed = new Date(normalized);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
 function withinEffectiveWindow(
     effectiveFrom: string | null | undefined,
     effectiveTo: string | null | undefined,
     now: Date
 ): boolean {
-    const from = effectiveFrom ? new Date(effectiveFrom) : null;
-    const to = effectiveTo ? new Date(effectiveTo) : null;
+    const from = parseEffectiveDate(effectiveFrom);
+    const to = parseEffectiveDate(effectiveTo);
     if (from && Number.isFinite(from.getTime()) && now < from) return false;
     if (to && Number.isFinite(to.getTime()) && now >= to) return false;
     return true;

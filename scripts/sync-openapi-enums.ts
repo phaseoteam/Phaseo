@@ -28,19 +28,25 @@ function loadModelIds(): string[] {
   return uniqSorted(modelIds);
 }
 
+function parseEffectiveDate(value: unknown): Date | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = /^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(trimmed)
+    ? `${trimmed}Z`
+    : trimmed;
+  const parsed = new Date(normalized);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
 function withinEffectiveWindow(
   effectiveFrom: unknown,
   effectiveTo: unknown,
   now: Date
 ): boolean {
-  const from =
-    typeof effectiveFrom === "string" && effectiveFrom.trim()
-      ? new Date(effectiveFrom)
-      : null;
-  const to =
-    typeof effectiveTo === "string" && effectiveTo.trim()
-      ? new Date(effectiveTo)
-      : null;
+  const from = parseEffectiveDate(effectiveFrom);
+  const to = parseEffectiveDate(effectiveTo);
   if (from && Number.isFinite(from.getTime()) && now < from) return false;
   if (to && Number.isFinite(to.getTime()) && now >= to) return false;
   return true;
@@ -128,7 +134,7 @@ function main() {
     type: "string",
     description:
       "Model identifier. This is a runtime string so newly released models can be used without waiting for an SDK update.",
-    examples: callableModelIds.slice(0, 5),
+    example: callableModelIds[0] ?? "openai/gpt-5",
   };
 
   schemas.KnownModelId = {

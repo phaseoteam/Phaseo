@@ -502,6 +502,12 @@ const (
 	// Model ID: nvidia/nvidia-nemotron-nano-9b-v2
 	// Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2
 	ModelIDNvidiaNvidiaNemotronNano9bV2 gen.ModelId = "nvidia/nvidia-nemotron-nano-9b-v2"
+	// Model ID: openai/babbage-002
+	// Model page: https://ai-stats.phaseo.app/models/openai/babbage-002
+	ModelIDOpenaiBabbage002 gen.ModelId = "openai/babbage-002"
+	// Model ID: openai/chatgpt-4o
+	// Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o
+	ModelIDOpenaiChatgpt4o gen.ModelId = "openai/chatgpt-4o"
 	// Model ID: openai/computer-use-preview
 	// Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview
 	ModelIDOpenaiComputerUsePreview gen.ModelId = "openai/computer-use-preview"
@@ -610,6 +616,12 @@ const (
 	// Model ID: openai/gpt-5.4-pro
 	// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro
 	ModelIDOpenaiGpt54Pro gen.ModelId = "openai/gpt-5.4-pro"
+	// Model ID: openai/gpt-5.5
+	// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5
+	ModelIDOpenaiGpt55 gen.ModelId = "openai/gpt-5.5"
+	// Model ID: openai/gpt-5.5-pro
+	// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro
+	ModelIDOpenaiGpt55Pro gen.ModelId = "openai/gpt-5.5-pro"
 	// Model ID: openai/gpt-image-1
 	// Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1
 	ModelIDOpenaiGptImage1 gen.ModelId = "openai/gpt-image-1"
@@ -1329,6 +1341,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDNvidiaNvidiaNemotron3Nano30bA3b,
 	ModelIDNvidiaNvidiaNemotronNano12bV2Vl,
 	ModelIDNvidiaNvidiaNemotronNano9bV2,
+	ModelIDOpenaiBabbage002,
+	ModelIDOpenaiChatgpt4o,
 	ModelIDOpenaiComputerUsePreview,
 	ModelIDOpenaiDavinci002,
 	ModelIDOpenaiGpt35Turbo16k,
@@ -1365,6 +1379,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDOpenaiGpt54Mini,
 	ModelIDOpenaiGpt54Nano,
 	ModelIDOpenaiGpt54Pro,
+	ModelIDOpenaiGpt55,
+	ModelIDOpenaiGpt55Pro,
 	ModelIDOpenaiGptImage1,
 	ModelIDOpenaiGptImage1Mini,
 	ModelIDOpenaiGptImage15,

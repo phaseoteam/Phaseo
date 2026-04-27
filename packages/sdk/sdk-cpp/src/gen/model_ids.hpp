@@ -501,6 +501,12 @@ inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL = "nvidi
 // Model ID: nvidia/nvidia-nemotron-nano-9b-v2
 // Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2
 inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2 = "nvidia/nvidia-nemotron-nano-9b-v2";
+// Model ID: openai/babbage-002
+// Model page: https://ai-stats.phaseo.app/models/openai/babbage-002
+inline constexpr std::string_view OPENAI_BABBAGE_002 = "openai/babbage-002";
+// Model ID: openai/chatgpt-4o
+// Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o
+inline constexpr std::string_view OPENAI_CHATGPT_4O = "openai/chatgpt-4o";
 // Model ID: openai/computer-use-preview
 // Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview
 inline constexpr std::string_view OPENAI_COMPUTER_USE_PREVIEW = "openai/computer-use-preview";
@@ -609,6 +615,12 @@ inline constexpr std::string_view OPENAI_GPT_5_4_NANO = "openai/gpt-5.4-nano";
 // Model ID: openai/gpt-5.4-pro
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro
 inline constexpr std::string_view OPENAI_GPT_5_4_PRO = "openai/gpt-5.4-pro";
+// Model ID: openai/gpt-5.5
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5
+inline constexpr std::string_view OPENAI_GPT_5_5 = "openai/gpt-5.5";
+// Model ID: openai/gpt-5.5-pro
+// Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro
+inline constexpr std::string_view OPENAI_GPT_5_5_PRO = "openai/gpt-5.5-pro";
 // Model ID: openai/gpt-image-1
 // Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1
 inline constexpr std::string_view OPENAI_GPT_IMAGE_1 = "openai/gpt-image-1";
@@ -1161,7 +1173,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 384> ALL = {
+inline constexpr std::array<std::string_view, 388> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_1_0,
@@ -1327,6 +1339,8 @@ inline constexpr std::array<std::string_view, 384> ALL = {
 	NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
 	NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
 	NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,
+	OPENAI_BABBAGE_002,
+	OPENAI_CHATGPT_4O,
 	OPENAI_COMPUTER_USE_PREVIEW,
 	OPENAI_DAVINCI_002,
 	OPENAI_GPT_3_5_TURBO_16K,
@@ -1363,6 +1377,8 @@ inline constexpr std::array<std::string_view, 384> ALL = {
 	OPENAI_GPT_5_4_MINI,
 	OPENAI_GPT_5_4_NANO,
 	OPENAI_GPT_5_4_PRO,
+	OPENAI_GPT_5_5,
+	OPENAI_GPT_5_5_PRO,
 	OPENAI_GPT_IMAGE_1,
 	OPENAI_GPT_IMAGE_1_MINI,
 	OPENAI_GPT_IMAGE_1_5,

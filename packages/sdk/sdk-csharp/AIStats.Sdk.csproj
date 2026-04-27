@@ -6,7 +6,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <PackageId>AI.Stats.Sdk</PackageId>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Authors>AI Stats</Authors>
     <Company>AI Stats</Company>
     <Description>Official AI Stats SDK for .NET.</Description>

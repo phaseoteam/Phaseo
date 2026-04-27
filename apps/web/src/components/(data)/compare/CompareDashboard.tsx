@@ -20,6 +20,9 @@ type QuickComparison = {
 	logos: string[];
 };
 
+const buildQuickComparisonKey = (comparison: QuickComparison): string =>
+	`${comparison.title}:${comparison.modelIds.join("|")}`;
+
 const decodeModelIdFromUrl = (value: string): string => {
 	const trimmed = value?.trim();
 	if (!trimmed) return "";
@@ -269,14 +272,14 @@ export default function CompareDashboard({
 							{previewComparisons.length ? (
 								previewComparisons.map((comparison) => (
 									<Link
-										key={comparison.title}
+										key={buildQuickComparisonKey(comparison)}
 										href={buildQuickComparisonHref(comparison.modelIds)}
 										className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/50 p-4 transition hover:border-primary"
 									>
 										<div className="flex flex-wrap items-center gap-2">
-											{comparison.logos.map((logoId) => (
+											{comparison.logos.map((logoId, index) => (
 												<ProviderLogo
-													key={`${comparison.title}-${logoId}`}
+													key={`${comparison.modelIds[index] ?? index}-${logoId}`}
 													id={logoId}
 													alt={`${logoId} logo`}
 													size="sm"

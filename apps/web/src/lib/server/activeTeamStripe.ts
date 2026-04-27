@@ -8,6 +8,8 @@ type ActiveWorkspaceStripeCustomer = {
     workspaceId: string;
     customerId: string;
     userId: string;
+    userEmail: string | null;
+    userDisplayName: string | null;
 };
 
 type RequireActiveWorkspaceStripeCustomerOptions = {
@@ -135,6 +137,8 @@ export async function requireActiveWorkspaceStripeCustomer(
             workspaceId,
             customerId,
             userId: user.id,
+            userEmail: user.email ?? null,
+            userDisplayName: deriveCustomerName(user) ?? null,
         };
     }
 
@@ -146,6 +150,8 @@ export async function requireActiveWorkspaceStripeCustomer(
         workspaceId: String(wallet.workspace_id),
         customerId: String(wallet.stripe_customer_id),
         userId: user.id,
+        userEmail: user.email ?? null,
+        userDisplayName: deriveCustomerName(user) ?? null,
     };
 }
 

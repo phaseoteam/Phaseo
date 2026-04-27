@@ -336,6 +336,10 @@ namespace AiStatsSdk
         public const string NvidiaNvidiaNemotronNano12bV2Vl = "nvidia/nvidia-nemotron-nano-12b-v2-vl";
         /// <summary>Model ID: <c>nvidia/nvidia-nemotron-nano-9b-v2</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2</summary>
         public const string NvidiaNvidiaNemotronNano9bV2 = "nvidia/nvidia-nemotron-nano-9b-v2";
+        /// <summary>Model ID: <c>openai/babbage-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/babbage-002</summary>
+        public const string OpenaiBabbage002 = "openai/babbage-002";
+        /// <summary>Model ID: <c>openai/chatgpt-4o</c>. Model page: https://ai-stats.phaseo.app/models/openai/chatgpt-4o</summary>
+        public const string OpenaiChatgpt4o = "openai/chatgpt-4o";
         /// <summary>Model ID: <c>openai/computer-use-preview</c>. Model page: https://ai-stats.phaseo.app/models/openai/computer-use-preview</summary>
         public const string OpenaiComputerUsePreview = "openai/computer-use-preview";
         /// <summary>Model ID: <c>openai/davinci-002</c>. Model page: https://ai-stats.phaseo.app/models/openai/davinci-002</summary>
@@ -408,6 +412,10 @@ namespace AiStatsSdk
         public const string OpenaiGpt54Nano = "openai/gpt-5.4-nano";
         /// <summary>Model ID: <c>openai/gpt-5.4-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.4-pro</summary>
         public const string OpenaiGpt54Pro = "openai/gpt-5.4-pro";
+        /// <summary>Model ID: <c>openai/gpt-5.5</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5</summary>
+        public const string OpenaiGpt55 = "openai/gpt-5.5";
+        /// <summary>Model ID: <c>openai/gpt-5.5-pro</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-5.5-pro</summary>
+        public const string OpenaiGpt55Pro = "openai/gpt-5.5-pro";
         /// <summary>Model ID: <c>openai/gpt-image-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1</summary>
         public const string OpenaiGptImage1 = "openai/gpt-image-1";
         /// <summary>Model ID: <c>openai/gpt-image-1-mini</c>. Model page: https://ai-stats.phaseo.app/models/openai/gpt-image-1-mini</summary>
