@@ -284,6 +284,42 @@ export type ProviderEnablementDiagnostics = {
     }>;
 };
 
+export type ProviderAttemptLog = {
+    attempt_number: number;
+    provider: string;
+    endpoint: Endpoint;
+    model: string;
+    provider_model_slug?: string | null;
+    outcome:
+        | "success"
+        | "upstream_non_2xx"
+        | "error"
+        | "retryable_error"
+        | "blocked"
+        | "no_pricing"
+        | "unsupported_executor";
+    type?: string | null;
+    duration_ms: number;
+    status?: number | null;
+    status_text?: string | null;
+    retryable?: boolean | null;
+    key_source?: "gateway" | "byok" | null;
+    byok_key_id?: string | null;
+    upstream_url?: string | null;
+    upstream_error_code?: string | null;
+    upstream_error_type?: string | null;
+    upstream_error_message?: string | null;
+    upstream_error_description?: string | null;
+    upstream_error_param?: string | null;
+    upstream_payload_preview?: string | null;
+    response_kind?: "completed" | "stream" | null;
+    was_probe?: boolean;
+    fallback_attempted?: boolean;
+    request_build_ms?: number | null;
+    upstream_headers_ms?: number | null;
+    retry_delay_ms?: number | null;
+};
+
 /**
  * The main context object passed through the entire pipeline
  * Contains all information needed for request processing
@@ -322,6 +358,8 @@ export type PipelineContext = {
     timing?: Record<string, number>;
     timer?: Timer;
     routingDiagnostics?: Record<string, any> | null;
+    attemptErrors?: Array<Record<string, unknown>>;
+    providerAttempts?: ProviderAttemptLog[];
     // Enrichment data for observability (wide events)
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;

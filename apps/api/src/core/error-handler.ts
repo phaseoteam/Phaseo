@@ -100,6 +100,7 @@ function toExecuteFailureSample(
 
 function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
     const attemptErrors = ctx ? (ctx as any).attemptErrors ?? null : null;
+    const providerAttempts = ctx ? ctx.providerAttempts ?? null : null;
     const safeAttemptErrors = Array.isArray(attemptErrors)
         ? attemptErrors.map((entry) => {
             if (!entry || typeof entry !== "object") return entry;
@@ -128,8 +129,43 @@ function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
             };
         })
         : attemptErrors;
+    const safeProviderAttempts = Array.isArray(providerAttempts)
+        ? providerAttempts.map((entry) => {
+            if (!entry || typeof entry !== "object") return entry;
+            const e = entry as Record<string, unknown>;
+            return {
+                attempt_number: e.attempt_number ?? null,
+                provider: e.provider ?? null,
+                endpoint: e.endpoint ?? null,
+                model: e.model ?? null,
+                provider_model_slug: e.provider_model_slug ?? null,
+                outcome: e.outcome ?? null,
+                type: e.type ?? null,
+                duration_ms: e.duration_ms ?? null,
+                status: e.status ?? null,
+                status_text: e.status_text ?? null,
+                retryable: e.retryable ?? null,
+                key_source: e.key_source ?? null,
+                byok_key_id: e.byok_key_id ?? null,
+                upstream_url: e.upstream_url ?? null,
+                upstream_error_code: e.upstream_error_code ?? null,
+                upstream_error_type: e.upstream_error_type ?? null,
+                upstream_error_message: e.upstream_error_message ?? null,
+                upstream_error_description: e.upstream_error_description ?? null,
+                upstream_error_param: e.upstream_error_param ?? null,
+                upstream_payload_preview: e.upstream_payload_preview ?? null,
+                response_kind: e.response_kind ?? null,
+                was_probe: e.was_probe ?? null,
+                fallback_attempted: e.fallback_attempted ?? null,
+                request_build_ms: e.request_build_ms ?? null,
+                upstream_headers_ms: e.upstream_headers_ms ?? null,
+                retry_delay_ms: e.retry_delay_ms ?? null,
+            };
+        })
+        : providerAttempts;
     const details = {
         upstream_error: redactErrorValue(body ?? null),
+        provider_attempts: safeProviderAttempts,
         attempt_errors: safeAttemptErrors,
     };
     try {
@@ -707,6 +743,7 @@ export async function handleError({
 
         errorPayload.debug = {
             upstream: body,
+            provider_attempts: redactErrorValue(ctx?.providerAttempts ?? null),
             attempt_errors: redactErrorValue((ctx as any)?.attemptErrors ?? null),
             routing: routingDebug,
         };
@@ -747,6 +784,7 @@ export async function handleError({
                     provider_candidate_build_diagnostics: sanitizeForAxiom(
                         ctx?.providerCandidateBuildDiagnostics ?? null,
                     ),
+                    provider_attempts: sanitizeForAxiom(ctx?.providerAttempts ?? null),
                     attempt_errors: sanitizeForAxiom((ctx as any)?.attemptErrors ?? null),
                     routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
                     routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),

@@ -93,6 +93,55 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.store).toBe(false);
 	});
 
+	it("uses native chat completions for OpenAI chat requests without reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/chat/completions",
+			response: new Response([
+				`data: ${JSON.stringify({
+					id: "chatcmpl_native_1",
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: "gpt-5.4-nano",
+					choices: [{ index: 0, delta: { role: "assistant", content: "hello" }, finish_reason: null }],
+				})}`,
+				"",
+				`data: ${JSON.stringify({
+					id: "chatcmpl_native_1",
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: "gpt-5.4-nano",
+					choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+					usage: { prompt_tokens: 4, completion_tokens: 3, total_tokens: 7 },
+				})}`,
+				"",
+				"data: [DONE]",
+				"",
+			].join("\n"), {
+				status: 200,
+				headers: { "Content-Type": "text/event-stream" },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-5.4-nano",
+				stream: true,
+				maxTokens: 128,
+			}),
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("stream");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/chat/completions");
+		expect(mock.calls[0]?.bodyJson?.max_completion_tokens).toBe(128);
+		expect(mock.calls[0]?.bodyJson?.max_tokens).toBeUndefined();
+		expect(mock.calls[0]?.bodyJson?.metadata).toBeUndefined();
+		expect(mock.calls[0]?.bodyJson?.stream).toBe(true);
+	});
+
 	it("streams over HTTP responses endpoint when tools are present", async () => {
 		const streamBody = [
 			"event: response.created",

@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
 import ThroughputLiveChart from "./ThroughputLiveChart";
 
@@ -12,7 +15,9 @@ type Benefit = {
 	visual: "models" | "uptime" | "observability" | "database";
 };
 
-const BENEFITS: Benefit[] = [
+type QuickstartVariant = "default" | "beta";
+
+const BENEFITS_DEFAULT: Benefit[] = [
 	{
 		title: "Open Model Intelligence",
 		body: "Explore benchmarks, pricing, and provider coverage to make better build decisions.",
@@ -102,6 +107,10 @@ const PROVIDERS = [
 	"nousresearch",
 ] as const;
 
+const BENEFITS_BETA: Benefit[] = BENEFITS_DEFAULT.filter(
+	(benefit) => benefit.visual !== "observability"
+);
+
 const GRID_COLUMNS = 8;
 const GRID_ROWS = 7;
 const FEATURED_PROVIDER_IDS = [
@@ -121,6 +130,27 @@ const FEATURED_PROVIDER_IDS = [
 	"moonshotai",
 	"cerebras",
 	"cohere",
+] as const;
+
+const MAX_AVAILABILITY_PROVIDER_IDS = [
+	"openai",
+	"anthropic",
+	"google",
+	"google-vertex",
+	"deepseek",
+	"x-ai",
+	"mistral",
+	"groq",
+	"amazon-bedrock",
+	"azure",
+	"nvidia",
+	"perplexity",
+	"together",
+	"moonshotai",
+	"cerebras",
+	"novita",
+	"gmicloud",
+	"venice",
 ] as const;
 
 function getCenterFirstIndexes(columns: number, rows: number) {
@@ -185,9 +215,27 @@ const ROUTE_PATHS = [
 	{ d: "M110 0 C110 20, 190 28, 190 82", delay: "2.5s" },
 ] as const;
 
-function LogoToken({ id, label, size = 14 }: { id: string; label: string; size?: number }) {
+function LogoToken({
+	id,
+	label,
+	size = 14,
+	shape = "circle",
+	compact = false,
+}: {
+	id: string;
+	label: string;
+	size?: number;
+	shape?: "circle" | "card";
+	compact?: boolean;
+}) {
+	const baseSizeClass = compact ? "h-5 w-5" : "h-6 w-6";
+	const shellClass =
+		shape === "card"
+			? `group flex ${baseSizeClass} items-center justify-center rounded-md border border-zinc-200/80 bg-transparent transition-colors hover:bg-zinc-50/70 dark:border-zinc-800/80 dark:hover:bg-zinc-900/60`
+			: `group flex ${baseSizeClass} items-center justify-center rounded-full border border-zinc-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-all duration-200 hover:scale-[1.04] hover:border-zinc-300 hover:shadow-[0_8px_20px_rgba(15,23,42,0.12)] dark:border-zinc-700 dark:bg-zinc-950 dark:shadow-none dark:hover:border-zinc-600`;
+
 	return (
-		<div className="group flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-all duration-200 hover:scale-[1.04] hover:border-zinc-300 hover:shadow-[0_8px_20px_rgba(15,23,42,0.12)] dark:border-zinc-700 dark:bg-zinc-950 dark:shadow-none dark:hover:border-zinc-600">
+		<div className={shellClass}>
 			<span className="relative" style={{ width: size, height: size }}>
 				<Logo
 					id={id}
@@ -207,13 +255,28 @@ function VisualStage({ children }: { children: ReactNode }) {
 	return <div className="relative flex h-full items-center justify-center overflow-hidden">{children}</div>;
 }
 
-function ModelsVisual() {
+function ModelsVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
+	const compactBetaIconSize = 12;
+
 	return (
 		<VisualStage>
 			<div className="flex h-full w-full items-center justify-center overflow-hidden">
-				<div className="grid w-max grid-cols-8 auto-rows-max place-items-center gap-x-3.25 gap-y-2.25">
+				<div
+					className={
+						variant === "beta"
+							? "grid w-max grid-cols-10 auto-rows-max place-items-center gap-x-2 gap-y-1.5"
+							: "grid w-max grid-cols-8 auto-rows-max place-items-center gap-x-3.25 gap-y-2.25"
+					}
+				>
 					{MODELS_VISUAL_PROVIDERS.map((providerId) => (
-						<LogoToken key={providerId} id={providerId} label={providerId} />
+						<LogoToken
+							key={providerId}
+							id={providerId}
+							label={providerId}
+							shape={variant === "beta" ? "card" : "circle"}
+							size={variant === "beta" ? compactBetaIconSize : 14}
+							compact={variant === "beta"}
+						/>
 					))}
 				</div>
 			</div>
@@ -239,11 +302,93 @@ function RequestPulse({ d, delay }: { d: string; delay: string }) {
 	);
 }
 
-function UptimeVisual() {
+function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
+	if (variant === "beta") {
+		return (
+			<VisualStage>
+				<div className="flex h-full w-full flex-col items-center justify-center gap-3 px-2">
+					<div className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white px-2.5 py-1 text-[10px] font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+						<span className="relative h-3 w-3">
+							<Logo
+								id="openai"
+								alt="OpenAI"
+								variant="color"
+								fill
+								sizes="12px"
+								className="object-contain object-center"
+							/>
+						</span>
+						<span>openai/gpt-oss-120b</span>
+					</div>
+					<div className="grid grid-cols-6 gap-x-2 gap-y-2">
+						{MAX_AVAILABILITY_PROVIDER_IDS.map((providerId) => (
+							<LogoToken
+								key={providerId}
+								id={providerId}
+								label={providerId}
+								shape="card"
+								size={12}
+								compact
+							/>
+						))}
+					</div>
+				</div>
+			</VisualStage>
+		);
+	}
+
+	if (false) {
+		return (
+			<VisualStage>
+				<div className="w-full max-w-[272px] space-y-2.5">
+					<div className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+						<span className="relative h-3.5 w-3.5">
+							<Logo
+								id="openai"
+								alt="OpenAI"
+								variant="color"
+								fill
+								sizes="14px"
+								className="object-contain object-center"
+							/>
+						</span>
+						<span>openai/gpt-oss-120b</span>
+					</div>
+					<div className="rounded-2xl border border-zinc-200/80 bg-white/96 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950/96">
+						<div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
+							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">App</p>
+							</div>
+							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
+							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">AI Stats</p>
+							</div>
+							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
+							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">Providers</p>
+							</div>
+						</div>
+						<div className="mt-2.5 flex items-center justify-center gap-1.5">
+							<LogoToken id="openai" label="OpenAI" shape="card" compact size={12} />
+							<LogoToken id="groq" label="Groq" shape="card" compact size={12} />
+							<LogoToken id="cerebras" label="Cerebras" shape="card" compact size={12} />
+							<LogoToken id="novita" label="Novita" shape="card" compact size={12} />
+							<LogoToken id="deepseek" label="DeepSeek" shape="card" compact size={12} />
+						</div>
+						<div className="mt-2 rounded-lg border border-zinc-200/80 bg-zinc-50/70 px-2 py-1.5 text-center text-[10px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300">
+							Health-aware routing with automatic failover
+						</div>
+					</div>
+				</div>
+			</VisualStage>
+		);
+	}
+
+	const badgeRounding = "rounded-full";
 	return (
 		<VisualStage>
 			<div className="flex h-full w-full flex-col items-center justify-center">
-				<div className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+				<div className={`inline-flex items-center gap-1.5 border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 ${badgeRounding}`}>
 					<span className="relative h-3.5 w-3.5">
 						<Logo
 							id="openai"
@@ -371,7 +516,135 @@ function ObservabilityVisual() {
 	);
 }
 
-function DatabaseVisual() {
+const BETA_OPEN_MODEL_INTEL = [
+	{
+		providerId: "openai",
+		model: "openai/gpt-5.5",
+		latencyMs: 472,
+		throughputTps: 184,
+		inputPrice: 1.25,
+		outputPrice: 10.0,
+	},
+	{
+		providerId: "anthropic",
+		model: "anthropic/claude-opus-4.7",
+		latencyMs: 534,
+		throughputTps: 168,
+		inputPrice: 3.0,
+		outputPrice: 15.0,
+	},
+	{
+		providerId: "google",
+		model: "google/gemini-3.1-pro",
+		latencyMs: 441,
+		throughputTps: 201,
+		inputPrice: 1.0,
+		outputPrice: 8.0,
+	},
+	{
+		providerId: "deepseek",
+		model: "deepseek/deepseek-v4-flash",
+		latencyMs: 356,
+		throughputTps: 233,
+		inputPrice: 0.14,
+		outputPrice: 0.28,
+	},
+] as const;
+
+function BetaDatabaseVisual() {
+	const [activeIndex, setActiveIndex] = useState(0);
+	const [nextIndex, setNextIndex] = useState<number | null>(null);
+	const [isSliding, setIsSliding] = useState(false);
+
+	useEffect(() => {
+		const timer = setInterval(() => {
+			setNextIndex((activeIndex + 1) % BETA_OPEN_MODEL_INTEL.length);
+			setIsSliding(true);
+		}, 2600);
+		return () => clearInterval(timer);
+	}, [activeIndex]);
+
+	useEffect(() => {
+		if (!isSliding || nextIndex === null) return;
+
+		const timeout = setTimeout(() => {
+			setActiveIndex(nextIndex);
+			setNextIndex(null);
+			setIsSliding(false);
+		}, 320);
+
+		return () => clearTimeout(timeout);
+	}, [isSliding, nextIndex]);
+
+	const currentModel = BETA_OPEN_MODEL_INTEL[activeIndex];
+	const incomingModel =
+		BETA_OPEN_MODEL_INTEL[nextIndex ?? activeIndex] ?? BETA_OPEN_MODEL_INTEL[0];
+
+	return (
+		<div className="w-full max-w-[238px] space-y-1">
+			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
+				<div className="flex items-center gap-2">
+					<LogoToken
+						id={currentModel.providerId}
+						label={currentModel.providerId}
+						shape="card"
+						size={11}
+						compact
+					/>
+					<div className="relative h-4 min-w-0 flex-1 overflow-hidden">
+						<div
+							className={`absolute inset-0 space-y-0 ${isSliding ? "transition-transform duration-300 ease-out" : "transition-none"}`}
+							style={{ transform: isSliding ? "translateY(-100%)" : "translateY(0%)" }}
+						>
+							<p className="h-4 truncate text-[11px] font-semibold leading-4 text-zinc-950 dark:text-zinc-50">
+								{currentModel.model}
+							</p>
+							<p className="h-4 truncate text-[11px] font-semibold leading-4 text-zinc-950 dark:text-zinc-50">
+								{incomingModel.model}
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
+				<div className="flex items-center justify-between gap-3">
+					<span className="text-[10px] text-zinc-500 dark:text-zinc-400">Latency</span>
+					<span className="text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+						<NumberFlow value={currentModel.latencyMs} />ms
+					</span>
+				</div>
+			</div>
+			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
+				<div className="flex items-center justify-between gap-3">
+					<span className="text-[10px] text-zinc-500 dark:text-zinc-400">Throughput</span>
+					<span className="text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+						<NumberFlow value={currentModel.throughputTps} /> tok/s
+					</span>
+				</div>
+			</div>
+			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
+				<div className="flex items-center justify-between gap-3">
+					<span className="text-[10px] text-zinc-500 dark:text-zinc-400">Pricing</span>
+					<span className="text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+						$<NumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} /> · $
+						<NumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+					</span>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function DatabaseVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
+	if (variant === "beta") {
+		return (
+			<VisualStage>
+				<BetaDatabaseVisual />
+			</VisualStage>
+		);
+	}
+
 	return (
 		<VisualStage>
 			<div className="w-full max-w-[232px] space-y-1.5">
@@ -402,32 +675,45 @@ function DatabaseVisual() {
 	);
 }
 
-function BenefitVisual({ visual }: { visual: Benefit["visual"] }) {
+function BenefitVisual({
+	visual,
+	variant = "default",
+}: {
+	visual: Benefit["visual"];
+	variant?: QuickstartVariant;
+}) {
 	switch (visual) {
 		case "models":
-			return <ModelsVisual />;
+			return <ModelsVisual variant={variant} />;
 		case "uptime":
-			return <UptimeVisual />;
+			return <UptimeVisual variant={variant} />;
 		case "observability":
+			if (variant === "beta") return null;
 			return <ObservabilityVisual />;
 		case "database":
 		default:
-			return <DatabaseVisual />;
+			return <DatabaseVisual variant={variant} />;
 	}
 }
 
-export default function HomeQuickstartSection() {
+export default function HomeQuickstartSection({
+	variant = "default",
+}: {
+	variant?: QuickstartVariant;
+}) {
+	const benefits = variant === "beta" ? BENEFITS_BETA : BENEFITS_DEFAULT;
+
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-				{BENEFITS.map((benefit) => (
+			<div className={`grid gap-5 md:grid-cols-2 ${variant === "beta" ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
+				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}
 						href={benefit.href}
 						className="group min-w-0 overflow-hidden rounded-[1.75rem] border border-zinc-200/80 bg-white transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10 dark:focus-visible:ring-zinc-100/10"
 					>
 						<div className="h-48 border-b border-zinc-200/80 bg-white px-2 py-3 dark:border-zinc-800 dark:bg-zinc-950">
-							<BenefitVisual visual={benefit.visual} />
+							<BenefitVisual visual={benefit.visual} variant={variant} />
 						</div>
 						<div className="space-y-4 px-6 py-5 text-left">
 							<div className="space-y-2">

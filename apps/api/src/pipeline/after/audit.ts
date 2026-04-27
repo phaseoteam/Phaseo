@@ -10,6 +10,10 @@ import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from 
 import { emitGatewayRequestEvent } from "@observability/events";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 
+function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
+    return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
+}
+
 // ============================================================================
 // REQUEST & ROUTING ENRICHMENT (Wide Event Context)
 // ============================================================================
@@ -88,6 +92,7 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
         const candidates = ctx.providers ?? [];
         const paramDiagnostics = ctx.paramRoutingDiagnostics ?? null;
         const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : [];
+        const providerAttempts = getProviderAttempts(ctx);
         const attemptErrors: any[] = Array.isArray((ctx as any).attemptErrors)
             ? (ctx as any).attemptErrors
             : [];
@@ -95,20 +100,23 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
             ? (ctx as any).routingSnapshot
             : [];
         const now = Date.now();
-        const attempts = attemptErrors.length || null;
-        const failed_providers = attemptErrors
+        const attempts = providerAttempts.length || attemptErrors.length || null;
+        const failedAttempts = providerAttempts.filter(
+            (entry: any) => entry?.outcome !== "success",
+        );
+        const failed_providers = (failedAttempts.length > 0 ? failedAttempts : attemptErrors)
             .map((e: any) => e?.provider)
             .filter((value: unknown) => typeof value === "string");
-        const failure_reasons = attemptErrors
-            .map((e: any) => e?.reason ?? e?.type ?? null)
+        const failure_reasons = (failedAttempts.length > 0 ? failedAttempts : attemptErrors)
+            .map((e: any) => e?.outcome ?? e?.reason ?? e?.type ?? null)
             .filter((value: unknown) => typeof value === "string");
         const circuitBreakerOpenFromSnapshot = routingSnapshot.some((entry: any) => {
             if (!entry || typeof entry !== "object") return false;
             if (entry.breaker !== "open") return false;
             return Number(entry.breaker_until_ms ?? 0) > now;
         });
-        const circuitBreakerBlocked = attemptErrors.some(
-            (e: any) => (e?.type ?? e?.reason) === "blocked",
+        const circuitBreakerBlocked = (providerAttempts.length > 0 ? providerAttempts : attemptErrors).some(
+            (e: any) => (e?.outcome ?? e?.type ?? e?.reason) === "blocked",
         );
         const healthContext = (result as any)?.healthContext;
 
@@ -157,6 +165,7 @@ function buildTransformSnapshot(
 	options?: BuildTransformSnapshotOptions,
 ) {
 	const attemptErrors = Array.isArray((ctx as any).attemptErrors) ? (ctx as any).attemptErrors : null;
+	const providerAttempts = Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : null;
 	const routingSnapshot = Array.isArray((ctx as any).routingSnapshot) ? (ctx as any).routingSnapshot : null;
 	const routingDiagnostics = (ctx as any).routingDiagnostics ?? null;
 	const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : null;
@@ -195,6 +204,7 @@ function buildTransformSnapshot(
 		param_routing_diagnostics: paramRoutingDiagnostics,
 		provider_enablement_diagnostics: providerEnablementDiagnostics,
 		provider_candidate_build_diagnostics: providerCandidateBuildDiagnostics,
+		provider_attempts: sanitizeForAxiom(providerAttempts),
 		attempt_errors: sanitizeForAxiom(attemptErrors),
 		routing_snapshot: sanitizeForAxiom(routingSnapshot),
 		routing_diagnostics: sanitizeForAxiom(routingDiagnostics),

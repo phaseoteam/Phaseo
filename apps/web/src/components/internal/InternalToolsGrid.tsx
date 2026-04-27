@@ -19,6 +19,7 @@ import {
 	RefreshCcw,
 	Gift,
 	Bell,
+	Gauge,
 } from "lucide-react";
 
 const internalTools = [
@@ -84,6 +85,15 @@ const internalTools = [
 		icon: Bell,
 		href: "/internal/model-discovery-notifier",
 		comingSoon: false,
+	},
+	{
+		id: "gateway-benchmark",
+		title: "Gateway Benchmark",
+		description:
+			"Run side-by-side public streaming comparisons between AI Stats Gateway and OpenRouter.",
+		icon: Gauge,
+		href: "/internal/gateway-benchmark",
+		comingSoon: true,
 	},
 	{
 		id: "analytics",

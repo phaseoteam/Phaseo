@@ -566,6 +566,20 @@ describe("irToOpenAIChat", () => {
 		expect(request.parallel_tool_calls).toBe(false);
 	});
 
+	it("omits parallel tool call control when no tools are present", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5.4-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			parallelToolCalls: false,
+		} as any, "gpt-5.4-nano", "openai");
+
+		expect(request.parallel_tool_calls).toBeUndefined();
+	});
+
 	it("maps Mistral developer role and random_seed", () => {
 		const request = irToOpenAIChat({
 			model: "mistral/mistral-large-latest",
@@ -679,6 +693,21 @@ describe("irToOpenAIChat", () => {
 		} as any, "gpt-5-nano", "openai");
 
 		expect(request.service_tier).toBe("default");
+	});
+
+	it("maps OpenAI chat max tokens to max_completion_tokens", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5.4-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			maxTokens: 128,
+		} as any, "gpt-5.4-nano", "openai");
+
+		expect(request.max_completion_tokens).toBe(128);
+		expect(request.max_tokens).toBeUndefined();
 	});
 
 	it("maps DeepSeek assistant reasoning_content and keeps json_object response_format", () => {

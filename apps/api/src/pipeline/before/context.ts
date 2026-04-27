@@ -56,6 +56,7 @@ const PRESET_CACHE_PREFIX = "gateway:preset";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
+const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
 
@@ -441,7 +442,7 @@ export async function fetchGatewayContext(args: {
         const keyVersionStartedAt = performance.now();
         versionToken = await keyVersionToken("id", args.apiKeyId, {
             useL1Cache: true,
-            l1TtlMs: 1000,
+            l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
         });
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }

@@ -37,17 +37,16 @@ export default async function GatewayMarketingPage() {
 			false
 		),
 	]);
-
 	return (
 		<div className="container mx-auto flex flex-col items-center pt-16 sm:pt-20">
 			{/* Hero with stats, provider marquee, and popular models */}
-		<Hero
-			stats={{
-				...gatewayMetrics.summary,
-			}}
-			tokensWindowHours={monthlyWindowHours}
-			popularModels={popularModels}
-		/>
+			<Hero
+				stats={{
+					...gatewayMetrics.summary,
+				}}
+				tokensWindowHours={monthlyWindowHours}
+				popularModels={popularModels}
+			/>
 
 			{/* Features grid showing key capabilities */}
 			<Features />
