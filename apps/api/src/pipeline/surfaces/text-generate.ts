@@ -79,40 +79,42 @@ async function materializeStreamResultToCompleted(args: {
 	requestId: string;
 	model: string;
 	result: any;
-	startedAtMs?: number;
 }): Promise<any> {
 	const stream = args.result.stream ?? args.result.upstream?.body ?? null;
 	if (!stream) {
 		throw new Error("gateway_stream_materialization_missing_body");
 	}
+	const materializeStartedAt = performance.now();
 	const consumed = await consumeTextProtocolStreamToIR({
 		protocol: args.protocol,
 		stream,
 		requestId: args.requestId,
 		model: args.model,
 		provider: args.result.provider,
-		startedAtMs: args.startedAtMs,
 	});
+	const materializedGenerationMs = Math.max(
+		0,
+		Math.round(performance.now() - materializeStartedAt),
+	);
 	return {
 		...args.result,
 		kind: "completed" as const,
 		ir: consumed.ir,
 		stream: null,
 		usageFinalizer: null,
+		generationTimeMs: Math.max(
+			typeof args.result.generationTimeMs === "number" ? args.result.generationTimeMs : 0,
+			materializedGenerationMs,
+		),
 		rawResponse: consumed.rawResponse,
-		generationTimeMs:
-			typeof consumed.totalMs === "number"
-				? consumed.totalMs
-				: args.result.generationTimeMs,
 		timing: {
-			latencyMs:
-				typeof consumed.firstFrameMs === "number"
-					? consumed.firstFrameMs
-					: args.result?.timing?.latencyMs,
-			generationMs:
-				typeof consumed.totalMs === "number"
-					? consumed.totalMs
-					: args.result?.timing?.generationMs,
+			...(args.result.timing ?? {}),
+			generationMs: Math.max(
+				typeof args.result.timing?.generationMs === "number"
+					? args.result.timing.generationMs
+					: 0,
+				materializedGenerationMs,
+			),
 		},
 		bill: {
 			...args.result.bill,
@@ -210,14 +212,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					requestId: pre.ctx.requestId,
 					model: pre.ctx.model,
 					result: exec.result,
-					startedAtMs: pre.ctx.meta.upstreamStartMs ?? pre.ctx.meta.startedAtMs,
 				});
-				if (typeof exec.result?.timing?.latencyMs === "number") {
-					pre.ctx.meta.latency_ms = exec.result.timing.latencyMs;
-				}
-				if (typeof exec.result?.timing?.generationMs === "number") {
-					pre.ctx.meta.generation_ms = exec.result.timing.generationMs;
-				}
 			} catch (error) {
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
@@ -308,14 +303,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							requestId: pre.ctx.requestId,
 							model: pre.ctx.model,
 							result: followUpResult,
-							startedAtMs: pre.ctx.meta.upstreamStartMs ?? pre.ctx.meta.startedAtMs,
 						});
-						if (typeof followUpResult?.timing?.latencyMs === "number") {
-							pre.ctx.meta.latency_ms = followUpResult.timing.latencyMs;
-						}
-						if (typeof followUpResult?.timing?.generationMs === "number") {
-							pre.ctx.meta.generation_ms = followUpResult.timing.generationMs;
-						}
 					} catch (error) {
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();

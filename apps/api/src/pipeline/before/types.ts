@@ -320,6 +320,14 @@ export type ProviderAttemptLog = {
     retry_delay_ms?: number | null;
 };
 
+export type WorkspacePolicy = {
+    providerAllowlist: string[] | null;
+    providerBlocklist: string[] | null;
+    allowedApiModels: string[] | null;
+    enforceAllowed: boolean;
+    activeGuardrailIds: string[];
+};
+
 /**
  * The main context object passed through the entire pipeline
  * Contains all information needed for request processing

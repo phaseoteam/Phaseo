@@ -773,7 +773,12 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	}
 
 	if (irWithRequestMetadata.stream) {
-		const stream = resolveStreamForProtocol(res, args, route);
+		const stream =
+			useNativeChatRoute &&
+			route === "chat" &&
+			res.body
+				? res.body
+				: resolveStreamForProtocol(res, args, route);
 		return {
 			kind: "stream",
 			stream,

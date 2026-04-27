@@ -495,7 +495,7 @@ function extractAttemptSignals(args: EventArgs): AttemptSignals {
         const type = typeof attempt?.type === "string"
             ? attempt.type
             : (typeof attempt?.reason === "string" ? attempt.reason : null);
-        if (type) typeSet.add(type);
+        if (type && outcome !== "success") typeSet.add(type);
         const status = Number(attempt?.status ?? NaN);
         if (Number.isFinite(status)) statusSet.add(status);
         const duration = asNumber(attempt?.duration_ms);

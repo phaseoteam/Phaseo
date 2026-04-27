@@ -93,7 +93,7 @@ const internalTools = [
 			"Run side-by-side public streaming comparisons between AI Stats Gateway and OpenRouter.",
 		icon: Gauge,
 		href: "/internal/gateway-benchmark",
-		comingSoon: true,
+		comingSoon: false,
 	},
 	{
 		id: "analytics",

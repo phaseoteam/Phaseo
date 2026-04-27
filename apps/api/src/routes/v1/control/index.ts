@@ -18,6 +18,7 @@ import { creditsRoutes } from "./credits";
 import { managementRoutes } from "./management";
 import { keysRoutes } from "./keys";
 import oauthClientsRoutes from "./oauth-clients";
+import { workspacePolicyRoutes } from "./workspace-policy";
 
 export const platformRouter = new Hono<Env>();
 
@@ -33,6 +34,7 @@ platformRouter.route("/credits", creditsRoutes);
 platformRouter.route("/activity", analyticsRoutes);
 platformRouter.route("/management", managementRoutes);
 platformRouter.route("/keys", keysRoutes);
+platformRouter.route("/workspaces", workspacePolicyRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
 platformRouter.route("/", placeholdersRoutes);
 
