@@ -136,9 +136,11 @@ export function readStoredBetaOptIn(): boolean {
 }
 
 export function writeStoredBetaOptIn(value: boolean): void {
+	const previous = readStoredBetaProfile();
 	writeStoredBetaProfile({
-		...readStoredBetaProfile(),
+		...previous,
 		betaOptIn: value,
+		betaFeatures: value ? previous.betaFeatures : {},
 	});
 }
 

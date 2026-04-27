@@ -43,11 +43,14 @@ export const getServerStatsigProfile = cache(
 		}
 
 		const supabase = await createClient();
-		const { data: profileRow } = await supabase
+		const { data: profileRow, error } = await supabase
 			.from("users")
 			.select("beta_opt_in, beta_features")
 			.eq("user_id", userId)
 			.maybeSingle();
+		if (error) {
+			throw new Error(`Failed to load Statsig profile: ${error.message}`);
+		}
 
 		return {
 			betaOptIn: Boolean(profileRow?.beta_opt_in),

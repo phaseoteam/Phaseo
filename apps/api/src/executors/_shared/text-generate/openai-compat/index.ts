@@ -81,7 +81,6 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	// Use upstream start time from pipeline (set before executor is called)
 	// Falls back to current time if not provided (backward compatibility)
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
-	const requestBuildStartMs = Date.now();
 	// Resolve API key (gateway or BYOK)
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
@@ -118,6 +117,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		targetRoute: "responses" | "chat",
 		payload: Record<string, any>,
 	) => {
+		const requestBuildStartMs = Date.now();
 		const sanitized = sanitizeOpenAICompatRequest({
 			providerId: args.providerId,
 			route: targetRoute,
