@@ -294,7 +294,12 @@ function createResponsesStreamFromChat(
     const debugEnabled = (args.meta as any)?.debug === true;
     
     const emit = async (event: string, payload: any) => {
-        console.log(`[xiaomi-adapter] emitting event: ${event}`, JSON.stringify(payload).slice(0, 200));
+        if (debugEnabled) {
+            console.log(
+                `[xiaomi-adapter] emitting event: ${event}`,
+                JSON.stringify(payload).slice(0, 200)
+            );
+        }
         await writer.write(
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`)
         );
@@ -370,7 +375,12 @@ function createResponsesStreamFromChat(
                         }
                         if (typeof delta?.reasoning_content === "string") {
                             reasoningText += delta.reasoning_content;
-                            console.log(`[xiaomi-adapter] reasoning_content delta:`, delta.reasoning_content.slice(0, 100));
+                            if (debugEnabled) {
+                                console.log(
+                                    `[xiaomi-adapter] reasoning_content delta:`,
+                                    delta.reasoning_content.slice(0, 100)
+                                );
+                            }
                             await emit("response.reasoning.delta", {
                                 delta: delta.reasoning_content,
                                 output_index: 0,
