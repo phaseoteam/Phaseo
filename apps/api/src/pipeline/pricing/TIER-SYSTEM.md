@@ -37,8 +37,8 @@ The repo still retains some compatibility surfaces named around "tiers" so older
 
 The active database behavior is defined by the Supabase migrations:
 
-- [20260423120000_single_tier_workspace_pricing.sql](/E:/ai-stats-public/supabase/migrations/20260423120000_single_tier_workspace_pricing.sql)
-- [20260423170000_workspace_pricing_invoicing_cleanup.sql](/E:/ai-stats-public/supabase/migrations/20260423170000_workspace_pricing_invoicing_cleanup.sql)
+- `supabase/migrations/20260423120000_single_tier_workspace_pricing.sql`
+- `supabase/migrations/20260423170000_workspace_pricing_invoicing_cleanup.sql`
 
 Those migrations:
 

@@ -59,7 +59,14 @@ begin
     consecutive_low_spend_months = 0,
     enterprise_lock_through_month = null,
     tier_low_streak_evaluated_month = null
-  where id = p_workspace_id;
+  where id = p_workspace_id
+    and (
+      tier is distinct from 'basic'
+      or tier_updated_at is null
+      or consecutive_low_spend_months is distinct from 0
+      or enterprise_lock_through_month is not null
+      or tier_low_streak_evaluated_month is not null
+    );
 
   perform p_spend_30d_nanos;
   return 'basic';
