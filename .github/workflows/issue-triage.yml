@@ -6,6 +6,9 @@ on:
     issue_comment:
         types: [created]
 
+permissions:
+    contents: read
+
 jobs:
     triage:
         name: AI issue triage
@@ -22,11 +25,11 @@ jobs:
             contents: read
             issues: write
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
               with:
                   persist-credentials: false
 
-            - uses: anomalyco/opencode/github@latest
+            - uses: anomalyco/opencode/github@2c14fc5586fe0b88e5c04732d2e846769cc35671
               env:
                   OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               with:

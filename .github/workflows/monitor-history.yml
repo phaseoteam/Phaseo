@@ -19,14 +19,14 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
               with:
                   fetch-depth: 0 # needed to diff before..after reliably
                   persist-credentials: false
 
             - name: Create GitHub App token (AI Stats Bot)
               id: app-token
-              uses: actions/create-github-app-token@v3
+              uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3
               with:
                   app-id: ${{ secrets.AI_STATS_APP_ID }}
                   private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
@@ -43,12 +43,12 @@ jobs:
                   echo "email=${email}" >> "$GITHUB_OUTPUT"
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: "22"
 
@@ -109,7 +109,7 @@ jobs:
             - name: Create or update pull request
               if: steps.check-changes.outputs.changes == 'true'
               id: cpr
-              uses: peter-evans/create-pull-request@v8
+              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
               with:
                   token: ${{ steps.app-token.outputs.token }}
                   commit-message: "chore: update monitor history"
