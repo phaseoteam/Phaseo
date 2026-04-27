@@ -92,20 +92,19 @@ function getTabSet(
 	) {
 		return [
 			{
-				href: "/settings/workspaces/general",
-				label: "General",
+				href: "/settings/workspaces/members",
+				label: "Members",
 				match: [
 					"/settings/workspaces",
 					"/settings/workspaces/members",
-					"/settings/workspaces/settings",
 					"/settings/teams",
 					"/settings/teams/members",
-					"/settings/teams/settings",
 				],
 			},
 			{
-				href: "/settings/workspaces/access",
-				label: "Access",
+				href: "/settings/workspaces/settings",
+				label: "Workspace Settings",
+				match: ["/settings/teams/settings"],
 			},
 		];
 	}

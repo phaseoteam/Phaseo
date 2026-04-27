@@ -17,10 +17,6 @@ type ChatGatewayContext = {
 	apiKey: string;
 };
 
-type ResolveChatGatewayContextOptions = {
-	forceHashSync?: boolean;
-};
-
 export class ChatGatewayAuthError extends Error {
 	status: number;
 	code: string;
@@ -78,8 +74,7 @@ function resolvePepper(): string {
 	}
 }
 
-function shouldForceChatHashSync(forceFromCaller = false): boolean {
-	if (forceFromCaller) return true;
+function shouldForceChatHashSync(): boolean {
 	const raw = String(process.env[FORCE_CHAT_HASH_SYNC_FLAG] ?? "").trim().toLowerCase();
 	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
@@ -115,16 +110,7 @@ async function findTeamIdForUser(userId: string): Promise<string> {
 			.eq("workspace_id", workspaceId)
 			.limit(1)
 			.maybeSingle();
-		if (!error && data?.workspace_id) return true;
-
-		const { data: ownedWorkspace, error: ownerError } = await supabase
-			.from("workspaces")
-			.select("id")
-			.eq("id", workspaceId)
-			.eq("owner_user_id", userId)
-			.limit(1)
-			.maybeSingle();
-		return !ownerError && Boolean(ownedWorkspace?.id);
+		return !error && Boolean(data?.workspace_id);
 	};
 
 	if (cookieTeamId && (await isMember(cookieTeamId))) {
@@ -141,38 +127,26 @@ async function findTeamIdForUser(userId: string): Promise<string> {
 		return defaultWorkspaceId;
 	}
 
-	const [{ data: membershipRow }, { data: ownedWorkspace }] = await Promise.all([
-		supabase
-			.from("workspace_members")
-			.select("workspace_id")
-			.eq("user_id", userId)
-			.limit(1)
-			.maybeSingle(),
-		supabase
-			.from("workspaces")
-			.select("id")
-			.eq("owner_user_id", userId)
-			.limit(1)
-			.maybeSingle(),
-	]);
-
-	const fallbackWorkspaceId =
-		String(membershipRow?.workspace_id ?? "").trim() ||
-		String(ownedWorkspace?.id ?? "").trim();
-	if (!fallbackWorkspaceId) {
+	const { data: membershipRow, error: membershipError } = await supabase
+		.from("workspace_members")
+		.select("workspace_id")
+		.eq("user_id", userId)
+		.limit(1)
+		.maybeSingle();
+	if (membershipError || !membershipRow?.workspace_id) {
 		throw new ChatGatewayAuthError(
 			403,
 			"no_workspace_membership",
 			"You must be a member of a team to use chat",
 		);
 	}
-	return fallbackWorkspaceId;
+	return String(membershipRow.workspace_id);
 }
 
 async function ensureManagedGatewayKey(args: {
 	workspaceId: string;
 	userId: string;
-}, options: ResolveChatGatewayContextOptions = {}): Promise<string> {
+}): Promise<string> {
 	const admin = createAdminClient();
 	const pepper = resolvePepper();
 	const derived = deriveTeamScopedGatewayKey({ workspaceId: args.workspaceId });
@@ -248,7 +222,7 @@ async function ensureManagedGatewayKey(args: {
 	// Do not rewrite hash by default: during pepper rotations, Vercel and
 	// Cloudflare can briefly diverge. Forcing hash rewrites on each request can
 	// create auth flapping. Only sync hashes when explicitly requested.
-	if (shouldForceChatHashSync(options.forceHashSync === true)) {
+	if (shouldForceChatHashSync()) {
 		const storedHash = String(existing.hash ?? "").toLowerCase().trim();
 		if (storedHash !== expectedHash) {
 			updates.hash = expectedHash;
@@ -303,9 +277,7 @@ async function invalidateGatewayKeyCache(keyId: string): Promise<void> {
 	}
 }
 
-export async function resolveChatGatewayContext(
-	options: ResolveChatGatewayContextOptions = {},
-): Promise<ChatGatewayContext> {
+export async function resolveChatGatewayContext(): Promise<ChatGatewayContext> {
 	const supabase = await createClient();
 	const {
 		data: { user },
@@ -321,10 +293,7 @@ export async function resolveChatGatewayContext(
 	}
 
 	const workspaceId = await findTeamIdForUser(user.id);
-	const apiKey = await ensureManagedGatewayKey(
-		{ workspaceId, userId: user.id },
-		options,
-	);
+	const apiKey = await ensureManagedGatewayKey({ workspaceId, userId: user.id });
 
 	return {
 		userId: user.id,

@@ -4748,9 +4748,7 @@ components:
         - android-control-low-em
         - androidworld
         - androidworld-sr
-        - apex
         - apex-agents
-        - apex-shortlist
         - arc
         - arc-agi
         - arc-agi-1
@@ -4787,7 +4785,6 @@ components:
         - biobench
         - biolp-bench
         - bird-sql-(dev)
-        - bixbench
         - blink
         - boolq
         - browsecomp
@@ -4814,12 +4811,10 @@ components:
         - charxiv-rq
         - chest-imagenome-anatomy-iou
         - chexpert-cxr-top5-macro-f1
-        - chinese-simpleqa
         - cl-bench
         - claw-eval
         - cloningscenarios
         - cluewsc
-        - cmath
         - cmmlu
         - cnmo-2024
         - codeforces
@@ -4831,7 +4826,6 @@ components:
         - complexfuncbench
         - confabulations
         - contphy
-        - corpusqa-1m
         - countbench
         - covost2
         - covost2-en-zh
@@ -4844,7 +4838,6 @@ components:
         - cruxeval-o
         - csimpleqa
         - ct-dataset-1-macro-accuracy
-        - ctf-challenge-tasks
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
@@ -4882,12 +4875,10 @@ components:
         - eqbench
         - erqa
         - evalplus
-        - expert-swe
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
         - facts-grounding
-        - facts-parametric
         - factscore
         - factscore-halluciation-rate
         - fiction-live-bench
@@ -4916,7 +4907,6 @@ components:
         - galileo-agent
         - gdpval-aa
         - gdpval-mm
-        - genebench
         - giantsteps-tempo
         - global-mmlu-lite
         - global-pica
@@ -4925,12 +4915,8 @@ components:
         - gpqa
         - gpqa-diamond
         - graphwalks-bfs->128k
-        - graphwalks-bfs-1m-f1
-        - graphwalks-bfs-256k-f1
         - graphwalks-bfs-lt-128k
         - graphwalks-parents->128k
-        - graphwalks-parents-1m-f1
-        - graphwalks-parents-256k-f1
         - graphwalks-parents-lt-128k
         - gsm8k
         - gsm8k-chat
@@ -4947,7 +4933,6 @@ components:
         - hle-verified
         - hle-vl
         - hmmt-2025
-        - hmmt-2026-feb
         - hmmt-feb-2025
         - hmmt-feb-2026
         - hmmt-feb-26
@@ -4974,7 +4959,6 @@ components:
         - intergps
         - internal-api-instruction-following-(hard)
         - inverse-ifeval
-        - investment-banking-modeling
         - iq-bench
         - ivebench-consistency-vs-kling-o1
         - ivebench-consistency-vs-runway-aleph
@@ -5112,7 +5096,6 @@ components:
         - multichallenge-(o3-mini-grader)
         - multilf
         - multilingual-mmlu
-        - multiloko
         - multipl-e
         - musiccaps
         - mvbench
@@ -5149,7 +5132,6 @@ components:
         - openai-mrcr-2-needle-256k
         - openai-mrcr-8-needle-128k
         - openai-mrcr-8-needle-1m
-        - openai-mrcr-v2-8-needle
         - openai-mrcr:-2-needle-128k
         - openai-mrcr:-2-needle-1m
         - openbookqa
@@ -5939,7 +5921,6 @@ components:
         - google/gemini-3.1-pro-preview
         - google/gemini-3.1-pro-preview-customtools
         - google/gemini-embedding-001
-        - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
         - google/gemini-robotics-er-1.6-preview
         - google/gemma-3-12b
@@ -5957,7 +5938,6 @@ components:
         - google/gemma-4-31b:free
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
-        - inclusionai/ling-2.6-1t
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
         - kwaipilot/kat-coder-pro-v1
@@ -6181,7 +6161,6 @@ components:
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
         - qwen/qwen3.5-plus-2026-04-20
-        - qwen/qwen3.6-27b
         - qwen/qwen3.6-35b-a3b
         - qwen/qwen3.6-max-preview
         - qwen/qwen3.6-plus
@@ -6234,9 +6213,6 @@ components:
         - xiaomi/mimo-v2-omni
         - xiaomi/mimo-v2-pro
         - xiaomi/mimo-v2-tts:free
-        - xiaomi/mimo-v2.5
-        - xiaomi/mimo-v2.5-pro
-        - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
         - z-ai/glm-4.5

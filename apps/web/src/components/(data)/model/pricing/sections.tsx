@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Badge } from "@/components/ui/badge";
 import { ArrowDownRight, ArrowUpRight, CalendarClock, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -39,17 +40,14 @@ function renderDiscountFooter(basePrice?: number | null, discountEndsAt?: string
 	if (basePrice == null) return null;
 	const countdown = formatCountdown(discountEndsAt);
 	return (
-		<span
-			className="text-[11px] text-muted-foreground line-through tabular-nums"
-			aria-label={
-				countdown
-					? `List price ${fmtUSD(basePrice)}. ${countdown}.`
-					: `List price ${fmtUSD(basePrice)}.`
-			}
-		>
-			{fmtUSD(basePrice)}
-			{countdown ? <span className="sr-only"> {countdown}.</span> : null}
-		</span>
+		<div className="flex items-center justify-between">
+			<span className="line-through tabular-nums">{fmtUSD(basePrice)}</span>
+			{countdown ? (
+				<Badge variant="secondary" className="text-[0.6rem] tracking-wide">
+					{countdown}
+				</Badge>
+			) : null}
+		</div>
 	);
 }
 
@@ -253,7 +251,6 @@ export function TierTiles({
 	const renderTierRow = (tier: TokenTier, key: string | number) => (
 		<div key={key} className="space-y-0.5">
 			<div className="flex items-baseline gap-1">
-				{tier.basePer1M != null ? renderDiscountFooter(tier.basePer1M, tier.discountEndsAt) : null}
 				<span
 					className={
 						tier.basePer1M != null
@@ -279,6 +276,11 @@ export function TierTiles({
 					);
 				})()}
 			</div>
+			{tier.basePer1M != null ? (
+				<div className="text-xs text-muted-foreground">
+					{renderDiscountFooter(tier.basePer1M, tier.discountEndsAt)}
+				</div>
+			) : null}
 		</div>
 	);
 
@@ -424,7 +426,6 @@ export function ImageGenSection({
 									return (
 										<div key={`${row.quality}-${label}-${itemIndex}`} className="space-y-0.5">
 											<div className="flex items-baseline gap-1">
-												{item.basePrice != null ? renderDiscountFooter(item.basePrice, item.discountEndsAt) : null}
 												<span
 													className={
 														item.basePrice != null
@@ -436,6 +437,11 @@ export function ImageGenSection({
 												</span>
 												<span className="text-xs text-muted-foreground">{label}</span>
 											</div>
+											{item.basePrice != null ? (
+												<div className="text-xs text-muted-foreground">
+													{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+												</div>
+											) : null}
 										</div>
 									);
 								})}
@@ -598,7 +604,6 @@ export function VideoGenSection({
 											{sortedItems.map((item, index) => (
 												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
 													<div className="flex items-baseline gap-1">
-														{item.basePrice != null ? renderDiscountFooter(item.basePrice, item.discountEndsAt) : null}
 														<span
 															className={
 																item.basePrice != null
@@ -610,6 +615,11 @@ export function VideoGenSection({
 														</span>
 														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
+													{item.basePrice != null ? (
+														<div className="text-xs text-muted-foreground">
+															{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+														</div>
+													) : null}
 												</div>
 											))}
 										</div>
@@ -653,7 +663,6 @@ export function VideoGenSection({
 										{sortedColumnItems.map((item, index) => (
 											<div key={`${column.key}-${item.unit}-${item.resolution}-${index}`} className="space-y-0.5">
 												<div className="flex items-baseline gap-1">
-													{item.basePrice != null ? renderDiscountFooter(item.basePrice, item.discountEndsAt) : null}
 													<span
 														className={
 															item.basePrice != null
@@ -665,6 +674,11 @@ export function VideoGenSection({
 													</span>
 													<span className="text-xs text-muted-foreground">{item.resolution}</span>
 												</div>
+												{item.basePrice != null ? (
+													<div className="text-xs text-muted-foreground">
+														{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+													</div>
+												) : null}
 											</div>
 										))}
 									</div>
@@ -699,7 +713,6 @@ export function VideoGenSection({
 											{sortedItems.map((item, index) => (
 												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
 													<div className="flex items-baseline gap-1">
-														{item.basePrice != null ? renderDiscountFooter(item.basePrice, item.discountEndsAt) : null}
 														<span
 															className={
 																item.basePrice != null
@@ -711,6 +724,11 @@ export function VideoGenSection({
 														</span>
 														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
+													{item.basePrice != null ? (
+														<div className="text-xs text-muted-foreground">
+															{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+														</div>
+													) : null}
 												</div>
 											))}
 										</div>
@@ -772,21 +790,25 @@ export function InputsSection({
 					const label = item.label && item.label !== "All usage" ? item.label : "All usage";
 					return (
 						<div key={`${item.unit}-${label}-${index}`} className="space-y-0.5">
-						<div className="flex items-baseline gap-1">
-							{item.basePrice != null ? renderDiscountFooter(item.basePrice, item.discountEndsAt) : null}
-							<span
-								className={
-									item.basePrice != null
+							<div className="flex items-baseline gap-1">
+								<span
+									className={
+										item.basePrice != null
 											? "text-xs font-semibold text-emerald-600 tabular-nums"
 											: "text-xs font-semibold text-foreground tabular-nums"
 									}
 								>
 									{formatUsdAligned(item.price, sharedDecimals)}
-							</span>
-							<span className="text-xs text-muted-foreground">{label}</span>
-							{hasSingleUnit ? null : <span className="text-xs text-muted-foreground/80">({item.unit})</span>}
+								</span>
+								<span className="text-xs text-muted-foreground">{label}</span>
+								{hasSingleUnit ? null : <span className="text-xs text-muted-foreground/80">({item.unit})</span>}
+							</div>
+							{item.basePrice != null ? (
+								<div className="text-xs text-muted-foreground">
+									{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
+								</div>
+							) : null}
 						</div>
-					</div>
 					);
 				})}
 			</div>
@@ -811,7 +833,6 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 				{rows.map((t, i) => (
 					<div key={`cache-write-${i}`} className="space-y-0.5">
 						<div className="flex items-baseline gap-1">
-							{t.basePer1M != null ? renderDiscountFooter(t.basePer1M, t.discountEndsAt) : null}
 							<span
 								className={
 									t.basePer1M != null
@@ -823,6 +844,11 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 							</span>
 							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
 						</div>
+						{t.basePer1M != null ? (
+							<div className="text-xs text-muted-foreground">
+								{renderDiscountFooter(t.basePer1M, t.discountEndsAt)}
+							</div>
+						) : null}
 					</div>
 				))}
 			</div>
@@ -855,9 +881,6 @@ export function RequestsSection({
 				{rows.map((t, i) => (
 					<div key={`request-${i}`} className="space-y-0.5">
 						<div className="flex items-baseline gap-1">
-							{t.basePrice != null || t.basePer1M != null
-								? renderDiscountFooter(t.basePrice ?? t.basePer1M, t.discountEndsAt)
-								: null}
 							<span
 								className={
 									t.basePrice != null || t.basePer1M != null
@@ -869,6 +892,11 @@ export function RequestsSection({
 							</span>
 							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
 						</div>
+						{t.basePrice != null || t.basePer1M != null ? (
+							<div className="text-xs text-muted-foreground">
+								{renderDiscountFooter(t.basePrice ?? t.basePer1M, t.discountEndsAt)}
+							</div>
+						) : null}
 					</div>
 				))}
 			</div>

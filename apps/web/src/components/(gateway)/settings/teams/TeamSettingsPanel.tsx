@@ -4,9 +4,26 @@ import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+	Card,
+	CardHeader,
+	CardTitle,
+	CardContent,
+	CardFooter,
+	CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+	Select,
+	SelectTrigger,
+	SelectValue,
+	SelectContent,
+	SelectItem,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
 	AlertDialog,
@@ -23,7 +40,10 @@ import { Loader2, Trash2 } from "lucide-react";
 import {
 	updateTeamAction,
 	deleteTeamAction,
+	updateTeamSsoSettingsAction,
+	type TeamSsoMode,
 } from "@/app/(dashboard)/settings/teams/actions";
+import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 type Team = { id: string; name: string };
 type MembersByTeam = Record<
@@ -35,30 +55,70 @@ type Props = {
 	teams: Team[];
 	membersByTeam: MembersByTeam;
 	workspaceId?: string | undefined | null;
+	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 	personalTeamId?: string | null;
 	walletBalances?: Record<string, number>;
+	teamSsoSettingsByTeam?: Record<string, TeamSsoSettingsRow>;
 };
 
 type Settings = {
 	teamName: string;
+	ssoEnabled: boolean;
+	ssoEnforced: boolean;
+	ssoMode: TeamSsoMode;
+	ssoProviderIdentifier: string;
+	ssoDomains: string;
 };
 
 const DEFAULTS: Settings = {
 	teamName: "",
+	ssoEnabled: false,
+	ssoEnforced: false,
+	ssoMode: "none",
+	ssoProviderIdentifier: "",
+	ssoDomains: "",
 };
 
 const schema = z.object({
 	teamName: z.string().trim().min(1, "Workspace name is required").max(60),
 });
 
+function normalizeMode(value: unknown): TeamSsoMode {
+	const raw = String(value ?? "").trim().toLowerCase();
+	if (raw === "saml") return "saml";
+	if (raw === "custom_oidc") return "custom_oidc";
+	return "none";
+}
+
+function parseDomains(raw: string): string[] {
+	return raw
+		.split(/[,\n]/)
+		.map((domain) => domain.trim())
+		.filter(Boolean);
+}
+
+function normalizeSettings(settings: Settings): Settings {
+	const domains = parseDomains(settings.ssoDomains);
+	return {
+		...settings,
+		teamName: settings.teamName.trim(),
+		ssoEnforced: settings.ssoEnabled ? settings.ssoEnforced : false,
+		ssoMode: normalizeMode(settings.ssoMode),
+		ssoProviderIdentifier: settings.ssoProviderIdentifier.trim(),
+		ssoDomains: domains.join(", "),
+	};
+}
+
 export default function TeamSettingsPanel({
 	teams,
 	membersByTeam,
 	workspaceId,
+	onTeamChange,
 	currentUserId,
 	personalTeamId,
 	walletBalances,
+	teamSsoSettingsByTeam,
 }: Props) {
 	const fallbackTeamId =
 		(workspaceId && teams.some((t) => t.id === workspaceId)
@@ -83,6 +143,7 @@ export default function TeamSettingsPanel({
 	const currentTeamBalance =
 		fallbackTeamId && walletBalances ? walletBalances[fallbackTeamId] ?? 0 : 0;
 
+	const [loading, setLoading] = React.useState(false);
 	const [saving, setSaving] = React.useState(false);
 	const [deleting, setDeleting] = React.useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -90,24 +151,37 @@ export default function TeamSettingsPanel({
 	const [settings, setSettings] = React.useState<Settings>(DEFAULTS);
 	const [initial, setInitial] = React.useState<Settings>(DEFAULTS);
 
-	const hasChanges = settings.teamName.trim() !== initial.teamName.trim();
+	const hasChanges =
+		JSON.stringify(normalizeSettings(initial)) !==
+		JSON.stringify(normalizeSettings(settings));
 
 	React.useEffect(() => {
-		if (!fallbackTeamId) return;
-		const team = teams.find((entry) => entry.id === fallbackTeamId);
-		const next = {
-			teamName: team?.name ?? "",
+		if (!workspaceId) return;
+		const team = teams.find((entry) => entry.id === workspaceId);
+		const ssoRow = teamSsoSettingsByTeam?.[workspaceId];
+		const next: Settings = {
+			teamName: team?.name ?? DEFAULTS.teamName,
+			ssoEnabled: Boolean(ssoRow?.sso_enabled),
+			ssoEnforced: Boolean(ssoRow?.sso_enforced),
+			ssoMode: normalizeMode(ssoRow?.sso_mode),
+			ssoProviderIdentifier: String(
+				ssoRow?.sso_provider_identifier ?? "",
+			),
+			ssoDomains: Array.isArray(ssoRow?.sso_domains)
+				? ssoRow!.sso_domains.join(", ")
+				: "",
 		};
 		setSettings(next);
 		setInitial(next);
-	}, [fallbackTeamId, teams]);
+		setLoading(false);
+	}, [workspaceId, teams, teamSsoSettingsByTeam]);
 
-	function updateTeamName(value: string) {
-		setSettings((prev) => ({ ...prev, teamName: value }));
+	function update<K extends keyof Settings>(key: K, value: Settings[K]) {
+		setSettings((prev) => ({ ...prev, [key]: value }));
 	}
 
 	async function handleSave() {
-		if (!fallbackTeamId) return;
+		if (!workspaceId) return;
 		if (isPersonalTeam) {
 			toast.error("Personal workspace settings cannot be edited.");
 			return;
@@ -124,18 +198,28 @@ export default function TeamSettingsPanel({
 			return;
 		}
 
-		const normalizedTeamName = parsed.data.teamName.trim();
 		setSaving(true);
 		try {
 			await toast.promise(
 				(async () => {
-					if (normalizedTeamName !== initial.teamName.trim()) {
-						await updateTeamAction(fallbackTeamId, normalizedTeamName);
+					const normalized = normalizeSettings(settings);
+					const initialNormalized = normalizeSettings(initial);
+
+					if (normalized.teamName !== initialNormalized.teamName) {
+						await updateTeamAction(workspaceId, normalized.teamName);
 					}
 
-					const next = { teamName: normalizedTeamName };
-					setSettings(next);
-					setInitial(next);
+					await updateTeamSsoSettingsAction(workspaceId, {
+						ssoEnabled: normalized.ssoEnabled,
+						ssoEnforced: normalized.ssoEnforced,
+						ssoMode: normalized.ssoMode,
+						ssoProviderIdentifier:
+							normalized.ssoProviderIdentifier || null,
+						ssoDomains: parseDomains(normalized.ssoDomains),
+					});
+
+					setSettings(normalized);
+					setInitial(normalized);
 				})(),
 				{
 					loading: "Saving workspace settings...",
@@ -154,14 +238,14 @@ export default function TeamSettingsPanel({
 	}
 
 	async function handleDeleteTeam() {
-		if (!fallbackTeamId) return;
+		if (!workspaceId) return;
 		if (isPersonalTeam) {
 			toast.error("Personal workspace cannot be deleted.");
 			return;
 		}
 		setDeleting(true);
 		try {
-			await toast.promise(deleteTeamAction(fallbackTeamId), {
+			await toast.promise(deleteTeamAction(workspaceId), {
 				loading: "Deleting workspace...",
 				success: "Workspace deleted",
 				error: (error: any) => error?.message || "Could not delete workspace",
@@ -175,101 +259,236 @@ export default function TeamSettingsPanel({
 	if (!fallbackTeamId) return null;
 
 	return (
-		<section className={cn("space-y-5", !canEdit && "opacity-90")}>
-			<div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
-				<div>
-					<h2 className="flex items-center gap-2 text-base font-semibold">
-						General
-						{isPersonalTeam ? (
-							<Badge
-								variant="secondary"
-								className="text-[0.6rem] font-semibold uppercase"
-							>
-								Personal
-							</Badge>
-						) : null}
-					</h2>
-					<p className="text-sm text-muted-foreground">
-						Configure basic workspace settings.
-					</p>
-					{isPersonalTeam ? (
-						<p className="mt-1 text-xs text-muted-foreground">
-							Your personal workspace is immutable and always serves as your
-							default.
-						</p>
-					) : null}
-				</div>
-			</div>
-
-			<div className="max-w-2xl space-y-2">
-				<Label htmlFor="teamName">Workspace name</Label>
-				<Input
-					id="teamName"
-					value={settings.teamName}
-					onChange={(event) => updateTeamName(event.target.value)}
-					disabled={!canEdit || saving}
-					placeholder="e.g. Personal, Engineering, Growth"
-					maxLength={60}
-				/>
-			</div>
-
-			<div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-2 text-xs text-muted-foreground">
-					<AlertDialog
-						open={deleteDialogOpen}
-						onOpenChange={setDeleteDialogOpen}
+		<section className="space-y-4">
+			<Card className={cn(!canEdit && "opacity-90")}>
+				<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+					<div>
+						<CardTitle className="flex items-center gap-2">
+							General
+							{isPersonalTeam ? (
+								<Badge
+									variant="secondary"
+									className="text-[0.6rem] font-semibold uppercase"
+								>
+									Personal
+								</Badge>
+							) : null}
+						</CardTitle>
+						<CardDescription>
+							Configure your workspace basics and enterprise SSO scaffold.
+							{isPersonalTeam ? (
+								<span className="mt-1 block text-xs text-muted-foreground">
+									Your personal workspace is immutable and always serves as your
+									default.
+								</span>
+							) : null}
+						</CardDescription>
+					</div>
+					<Select
+						value={fallbackTeamId}
+						onValueChange={(value) => onTeamChange?.(value)}
 					>
-						<AlertDialogTrigger asChild>
-							<Button
-								variant="destructive"
-								disabled={!canDeleteWorkspace || saving}
+						<SelectTrigger className="w-full sm:w-[240px]">
+							<SelectValue placeholder="Select workspace..." />
+						</SelectTrigger>
+						<SelectContent>
+							{teams.map((team) => (
+								<SelectItem key={team.id} value={team.id}>
+									{team.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</CardHeader>
+
+				<Separator />
+
+				<CardContent className="grid max-w-2xl gap-6 pt-6">
+					<div className="grid gap-2">
+						<Label htmlFor="teamName">Workspace name</Label>
+						<Input
+							id="teamName"
+							value={settings.teamName}
+							onChange={(event) => update("teamName", event.target.value)}
+							disabled={!canEdit || loading}
+							placeholder="e.g. Personal, Engineering, Growth"
+							maxLength={60}
+						/>
+					</div>
+
+					<Separator />
+
+					<div className="space-y-4">
+						<div className="space-y-1">
+							<div className="flex items-center gap-2">
+								<h3 className="text-sm font-semibold">Enterprise SSO</h3>
+								<Badge variant="outline">Scaffold</Badge>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								Configuration is saved now, but sign-in enforcement remains
+								disabled until rollout is enabled.
+							</p>
+						</div>
+
+						<div className="rounded-md border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
+							Status: Coming soon. This section prepares workspace-level SSO settings
+							for future enforcement.
+						</div>
+
+						<div className="grid gap-3">
+							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
+								<div className="min-w-0">
+									<p className="text-sm font-medium">Enable SSO configuration</p>
+									<p className="text-xs text-muted-foreground">
+										Turn on workspace SSO settings storage.
+									</p>
+								</div>
+								<Switch
+									checked={settings.ssoEnabled}
+									onCheckedChange={(checked) =>
+										update("ssoEnabled", Boolean(checked))
+									}
+									disabled={!canEdit || loading}
+								/>
+							</div>
+
+							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
+								<div className="min-w-0">
+									<p className="text-sm font-medium">Require SSO for members</p>
+									<p className="text-xs text-muted-foreground">
+										Future policy target: SSO-required by workspace.
+									</p>
+								</div>
+								<Switch
+									checked={settings.ssoEnforced}
+									onCheckedChange={(checked) =>
+										update("ssoEnforced", Boolean(checked))
+									}
+									disabled={!canEdit || loading || !settings.ssoEnabled}
+								/>
+							</div>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="ssoMode">SSO mode</Label>
+							<Select
+								value={settings.ssoMode}
+								onValueChange={(value) =>
+									update("ssoMode", normalizeMode(value))
+								}
+								disabled={!canEdit || loading}
 							>
-								<Trash2 className="mr-2 h-4 w-4" />
-								Delete workspace
-							</Button>
-						</AlertDialogTrigger>
-						<AlertDialogContent>
-							<AlertDialogHeader>
-								<AlertDialogTitle>Delete workspace?</AlertDialogTitle>
-								<AlertDialogDescription>
-									This will permanently remove the workspace and all related data.
-									Type <span className="font-semibold">DELETE WORKSPACE</span> to
-									confirm.
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<ConfirmDeleteTeam
-								onConfirm={handleDeleteTeam}
-								deleting={deleting}
-								remainingBalance={currentTeamBalance}
+								<SelectTrigger id="ssoMode">
+									<SelectValue placeholder="Select SSO mode..." />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="none">None</SelectItem>
+									<SelectItem value="saml">SAML (Enterprise SSO)</SelectItem>
+									<SelectItem value="custom_oidc">
+										Custom OIDC Provider
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="ssoProviderIdentifier">
+								Provider identifier (optional)
+							</Label>
+							<Input
+								id="ssoProviderIdentifier"
+								value={settings.ssoProviderIdentifier}
+								onChange={(event) =>
+									update("ssoProviderIdentifier", event.target.value)
+								}
+								disabled={!canEdit || loading}
+								placeholder={
+									settings.ssoMode === "custom_oidc"
+										? "custom:your-oidc-provider"
+										: "Supabase SSO provider UUID (optional)"
+								}
 							/>
-						</AlertDialogContent>
-					</AlertDialog>
-				</div>
+							<p className="text-xs text-muted-foreground">
+								Use a provider UUID for SAML or a `custom:*` provider for OIDC.
+							</p>
+						</div>
 
-				<div className="flex items-center gap-2">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={handleReset}
-						disabled={!hasChanges || saving}
-					>
-						Reset
-					</Button>
-					<Button
-						onClick={handleSave}
-						disabled={!hasChanges || saving || !canEdit}
-					>
-						{saving ? (
-							<>
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Saving...
-							</>
-						) : (
-							"Save changes"
-						)}
-					</Button>
-				</div>
-			</div>
+						<div className="grid gap-2">
+							<Label htmlFor="ssoDomains">Allowed work domains</Label>
+							<Input
+								id="ssoDomains"
+								value={settings.ssoDomains}
+								onChange={(event) =>
+									update("ssoDomains", event.target.value)
+								}
+								disabled={!canEdit || loading}
+								placeholder="company.com, example.org"
+							/>
+							<p className="text-xs text-muted-foreground">
+								Comma-separated domains used for domain-based SSO lookup.
+							</p>
+						</div>
+					</div>
+				</CardContent>
+
+				<CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
+						<AlertDialog
+							open={deleteDialogOpen}
+							onOpenChange={setDeleteDialogOpen}
+						>
+							<AlertDialogTrigger asChild>
+								<Button
+									variant="destructive"
+									disabled={!canDeleteWorkspace || loading}
+								>
+									<Trash2 className="mr-2 h-4 w-4" />
+									Delete workspace
+								</Button>
+							</AlertDialogTrigger>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>Delete workspace?</AlertDialogTitle>
+									<AlertDialogDescription>
+										This will permanently remove the workspace and all related data.
+										Type <span className="font-semibold">DELETE WORKSPACE</span> to
+										confirm.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<ConfirmDeleteTeam
+									onConfirm={handleDeleteTeam}
+									deleting={deleting}
+									remainingBalance={currentTeamBalance}
+								/>
+							</AlertDialogContent>
+						</AlertDialog>
+					</div>
+
+					<div className="flex items-center gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={handleReset}
+							disabled={!hasChanges || saving || loading}
+						>
+							Reset
+						</Button>
+						<Button
+							onClick={handleSave}
+							disabled={!hasChanges || saving || loading || !canEdit}
+						>
+							{saving ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Saving...
+								</>
+							) : (
+								"Save changes"
+							)}
+						</Button>
+					</div>
+				</CardFooter>
+			</Card>
 		</section>
 	);
 }

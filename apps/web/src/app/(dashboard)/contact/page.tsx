@@ -61,12 +61,13 @@ async function ContactPersonalization() {
 	let defaultInternalId = "";
 	if (workspaceId) {
 		try {
-			const { data: teamResult } = await supabase
-				.from("workspaces")
-				.select("slug")
-				.eq("id", workspaceId)
-				.single();
-			tierLabel = "Standard";
+			const [{ data: prev }, { data: teamResult }] = await Promise.all([
+				supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+				supabase.from("workspaces").select("slug").eq("id", workspaceId).single(),
+			]);
+			const lastMonthCents = Number(prev ?? 0);
+			const lastMonthUsd = lastMonthCents / 1_000_000_000;
+			tierLabel = lastMonthUsd >= 10000 ? "Enterprise" : "Basic";
 			defaultInternalId = teamResult?.slug ?? workspaceId ?? "";
 		} catch (error) {
 			console.warn("[contact] failed to load tier label", error);

@@ -376,7 +376,7 @@ export default function EnterpriseInvoices(props: {
 							Invoice details
 						</DialogTitle>
 						<DialogDescription>
-							Detailed billing record for this invoice.
+							Detailed billing record for this enterprise invoice.
 						</DialogDescription>
 					</DialogHeader>
 					{selectedInvoice ? (

@@ -93,7 +93,6 @@ type CapabilityState = {
     api_provider_id: string;
     capability_id: string;
     ruleReplacements: Array<{ model_key: string; rows: PricingRuleRow[] }>;
-    unchangedCandidates: Array<{ model_key: string; rows: PricingRuleRow[] }>;
 };
 
 type PricingRuleRow = {
@@ -124,7 +123,6 @@ export async function loadPricing(
     let queuedModelKeys = 0;
 
     const capabilities = new Map<string, CapabilityState>();
-    let restoredMissingModelKeys = 0;
 
     const providerDirs = await listDirs(DIR_PRICING);
 
@@ -161,7 +159,6 @@ export async function loadPricing(
                     api_provider_id,
                     capability_id,
                     ruleReplacements: [],
-                    unchangedCandidates: [],
                 };
 
                 // Per-file duplicate handling (exact dupes get :occur suffix; near-dupes differ by hash)
@@ -204,53 +201,9 @@ export async function loadPricing(
                     capabilityState.ruleReplacements.push({ model_key: computedKey, rows: desiredRules });
                     hasChanges = true;
                     queuedModelKeys += 1;
-                } else if (desiredRules.length > 0) {
-                    capabilityState.unchangedCandidates.push({
-                        model_key: computedKey,
-                        rows: desiredRules,
-                    });
                 }
 
                 capabilities.set(capabilityKey, capabilityState);
-            }
-        }
-    }
-
-    if (!isDryRun() && !forceFull) {
-        for (const capabilityState of capabilities.values()) {
-            if (!capabilityState.unchangedCandidates.length) continue;
-
-            const existingRuleCounts = new Map<string, number>();
-            for (const group of chunk(
-                capabilityState.unchangedCandidates.map((candidate) => candidate.model_key),
-                500
-            )) {
-                const rows = assertOk(
-                    await supa
-                        .from("data_api_pricing_rules")
-                        .select("model_key")
-                        .in("model_key", group),
-                    "select data_api_pricing_rules (model_key)"
-                ) as Array<{ model_key?: string | null }>;
-
-                for (const row of rows) {
-                    if (typeof row?.model_key === "string" && row.model_key) {
-                        existingRuleCounts.set(
-                            row.model_key,
-                            (existingRuleCounts.get(row.model_key) ?? 0) + 1
-                        );
-                    }
-                }
-            }
-
-            for (const candidate of capabilityState.unchangedCandidates) {
-                const existingCount = existingRuleCounts.get(candidate.model_key) ?? 0;
-                const expectedCount = candidate.rows.length;
-                if (existingCount === expectedCount) continue;
-                capabilityState.ruleReplacements.push(candidate);
-                hasChanges = true;
-                queuedModelKeys += 1;
-                restoredMissingModelKeys += 1;
             }
         }
     }
@@ -335,6 +288,6 @@ export async function loadPricing(
     }
 
     console.log(
-        `[pricing-import] Applied pricing updates. scanned_files=${scannedFiles} queued_model_keys=${queuedModelKeys} restored_missing_model_keys=${restoredMissingModelKeys} keep_model_keys=${pricingRuleKeys.size} full_mode=${forceFull ? "yes" : "no"} model_filter=${modelId ?? "none"}`
+        `[pricing-import] Applied pricing updates. scanned_files=${scannedFiles} queued_model_keys=${queuedModelKeys} keep_model_keys=${pricingRuleKeys.size} full_mode=${forceFull ? "yes" : "no"} model_filter=${modelId ?? "none"}`
     );
 }

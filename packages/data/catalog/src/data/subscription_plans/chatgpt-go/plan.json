@@ -26,19 +26,25 @@
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.4-mini",
-      "model_info": "Thinking (+ Menu)",
+      "model_id": "openai/gpt-5-mini",
+      "model_info": null,
       "rate_limit": "Fallback After GPT-5.3 Limit",
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.3-codex",
+      "model_id": "openai/gpt-5.4-mini",
+      "model_info": "Thinking Mode (+ Menu)",
+      "rate_limit": "10 Messages / 5 Hours",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.1-codex-max",
       "model_info": null,
       "rate_limit": "Limited-Time Access",
       "other_info": "Accessible Through Codex"
     },
     {
-      "model_id": "openai/gpt-5-codex-mini",
+      "model_id": "openai/gpt-5.1-codex-mini",
       "model_info": null,
       "rate_limit": "Limited-Time Access",
       "other_info": "Accessible Through Codex"

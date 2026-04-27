@@ -70,9 +70,9 @@ export type RequestMeta = {
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
     // Performance metrics
-    throughput_tps?: number;      // Output tokens per second during generation
-    generation_ms?: number;       // Time from first streamed frame to final streamed frame
-    latency_ms?: number;          // Time from request receipt to first streamed frame / first response byte
+    throughput_tps?: number;      // Tokens per second
+    generation_ms?: number;       // Provider processing time
+    latency_ms?: number;          // End-to-end request time
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before
     beforeContextCacheStatus?: "hit" | "miss" | "bypass";

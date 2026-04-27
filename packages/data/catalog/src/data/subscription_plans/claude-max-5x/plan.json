@@ -38,7 +38,7 @@
       "other_info": null
     },
     {
-      "model_id": "anthropic/claude-opus-4.7",
+      "model_id": "anthropic/claude-opus-4.5",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

@@ -7,7 +7,7 @@ import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPric
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
 import PricingInsights from "@/components/(data)/model/pricing/PricingInsights";
 
-const PLAN_ORDER = ["free", "standard", "list", "batch", "flex", "priority"];
+const PLAN_ORDER = ["free", "standard", "batch", "flex", "priority"];
 
 function getPreferredPlan(plans: string[]): string {
 	if (plans.includes("standard")) return "standard";
