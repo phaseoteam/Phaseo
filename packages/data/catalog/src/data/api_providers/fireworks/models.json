@@ -148,7 +148,7 @@
     "provider_api_model_id": "fireworks:deepseek/deepseek-v4-pro",
     "provider_model_slug": "accounts/fireworks/models/deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -159,7 +159,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
