@@ -21,7 +21,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -65,7 +65,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -112,7 +112,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -156,7 +156,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -191,7 +191,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -257,7 +257,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -327,7 +327,7 @@ jobs:
                   python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -359,7 +359,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -422,7 +422,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -473,7 +473,7 @@ jobs:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
@@ -585,7 +585,7 @@ jobs:
                   private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
