@@ -1,0 +1,18 @@
+{
+  "model_id": "qwen/qwen3.5-plus-2026-04-20",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.5 Plus (2026-04-20)",
+  "status": "Available",
+  "previous_model_id": "qwen/qwen3.5-plus-2026-02-15",
+  "announced_date": "2026-04-20T00:00:00",
+  "release_date": "2026-04-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen3.5-plus-2026-04-20",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
