@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
 	AppWindow,
 	BarChart3,
+	Beaker,
 	CreditCard,
 	KeyRound,
 	Package,
@@ -42,17 +43,19 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: User,
 				match: ["/settings/account"],
 			},
-            {
+			{
 				href: "/settings/workspaces",
 				label: "Workspaces",
 				icon: Users,
 				match: ["/settings/workspaces", "/settings/teams"],
 			},
-        ],
-    },
-	{
-		heading: undefined,
-		items: [
+			{
+				href: "/settings/beta",
+				label: "Beta",
+				icon: Beaker,
+				badge: "Beta",
+				match: ["/settings/beta"],
+			},
 			{
 				href: "/settings/keys",
 				label: "API",
@@ -69,11 +72,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/privacy",
 				],
 			},
-		],
-	},
-    {
-        heading: undefined,
-        items: [
 			{
 				href: "/settings/credits",
 				label: "Billing",

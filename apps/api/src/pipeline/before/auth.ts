@@ -13,7 +13,7 @@ import {
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_VERSION_L1_TTL_MS = 30_000;
+const KEY_VERSION_L1_TTL_MS = 5_000;
 const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
 const HMAC_KEY_CACHE_MAX_ENTRIES = 16;
@@ -397,8 +397,19 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
-    const authSuccessCacheKey = `${parsed.kid}:${await sha256Base64Url(parsed.secret)}`;
-    const cachedSuccess = readAuthSuccessL1(authSuccessCacheKey);
+    const authSecretTag = await sha256Base64Url(parsed.secret);
+    const authVersionToken = useKvCache
+        ? await keyVersionToken("kid", parsed.kid, {
+            useL1Cache: true,
+            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
+        })
+        : null;
+    const authSuccessCacheKey = authVersionToken
+        ? `${parsed.kid}:${authVersionToken}:${authSecretTag}`
+        : null;
+    const cachedSuccess = authSuccessCacheKey
+        ? readAuthSuccessL1(authSuccessCacheKey)
+        : null;
     if (cachedSuccess) {
         return {
             ok: true,
@@ -549,7 +560,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     const result = matchedPepper.source === "previous"
         ? await success(await hmacUtf8(parsed.secret, activePepper))
         : await success();
-    if (result.ok) {
+    if (result.ok && authSuccessCacheKey) {
         writeAuthSuccessL1(authSuccessCacheKey, {
             workspaceId: result.workspaceId,
             apiKeyId: result.apiKeyId,

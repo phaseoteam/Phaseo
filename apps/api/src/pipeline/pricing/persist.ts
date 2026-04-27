@@ -166,9 +166,9 @@ export async function recordUsageAndCharge(args: {
             // Trigger auto-recharge
             // NOTE: The amount charged is the raw auto_top_up_amount
             // The Stripe webhook will:
-            // 1. Fetch the team's current tier from database (uses rolling 30-day calculation)
-            // 2. Apply reverse calculation: net = gross / (1 + tier_fee_rate)
-            // 3. Credit wallet with net amount (after tier-based fee deduction)
+            // 1. Apply reverse calculation: net = gross / (1 + fee_rate)
+            // 2. Use the flat 5% top-up fee
+            // 3. Credit wallet with net amount after the fee deduction
             const stripe = getStripe();
             const minTopUpNanos = 1 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {

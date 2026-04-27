@@ -248,7 +248,7 @@ function getSupabase() {
     });
 }
 
-/* Fees: Reverse-engineer the original amount from the total received, then apply tier-based fee */
+/* Fees: Reverse-engineer the original amount from the total received, then apply the flat top-up fee. */
 function computeNetAndFeeFromGross(grossNanos: number, feePct: number) {
     const minFeeNanos = 1_000_000_000; // $1 in nanos
 

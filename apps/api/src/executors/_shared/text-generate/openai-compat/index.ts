@@ -118,6 +118,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		targetRoute: "responses" | "chat",
 		payload: Record<string, any>,
 	) => {
+		const requestBuildStartMs = Date.now();
 		const sanitized = sanitizeOpenAICompatRequest({
 			providerId: args.providerId,
 			route: targetRoute,

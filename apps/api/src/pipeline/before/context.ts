@@ -56,7 +56,7 @@ const PRESET_CACHE_PREFIX = "gateway:preset";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
-const CONTEXT_KEY_VERSION_L1_TTL_MS = 30_000;
+const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
 

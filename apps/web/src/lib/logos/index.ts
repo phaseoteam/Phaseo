@@ -199,8 +199,6 @@ export function resolveLogo(
 		if (pathToKeyMap.has(assumedPath)) {
 			key = pathToKeyMap.get(assumedPath);
 			assets = logoManifest[key!];
-		} else {
-			assets = { color: assumedPath };
 		}
 	}
 

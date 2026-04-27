@@ -448,6 +448,17 @@ async function attemptProviderWithIR(
 			duration_ms: Math.round(performance.now() - attemptStartedAt),
 			was_probe: false,
 		});
+		recordProviderAttempt(ctx, {
+			attempt_number: attemptNumber,
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			model: baseModel,
+			provider_model_slug: null,
+			outcome: "blocked",
+			type: "blocked",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			was_probe: false,
+		});
 		return { ok: false, skip: "blocked" };
 	}
 	const isProbe = admission === "probe";
@@ -475,6 +486,8 @@ async function attemptProviderWithIR(
 			endpoint: ctx.endpoint,
 			attempt_number: attemptNumber,
 			type: "no_pricing",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			was_probe: isProbe,
 		});
 		recordProviderAttempt(ctx, {
 			attempt_number: attemptNumber,
@@ -502,6 +515,8 @@ async function attemptProviderWithIR(
 		t0 = performance.now();
 
 		ctx.meta.upstreamStartMs = Date.now();
+		delete (ctx.meta as Record<string, unknown>).latency_ms;
+		delete (ctx.meta as Record<string, unknown>).generation_ms;
 		const executorResolveStart = performance.now();
 		const executor = resolveProviderExecutor(candidate.providerId, ctx.capability);
 		timing.timer.record(
@@ -531,6 +546,7 @@ async function attemptProviderWithIR(
 
 		const normalizedCapability = normalizeCapability(ctx.capability);
 		const isTextGenerate = normalizedCapability === "text.generate";
+		const modelForReasoning = providerModelSlug?.trim() || baseModel;
 
 		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
 			isTextGenerate
@@ -541,7 +557,7 @@ async function attemptProviderWithIR(
 					{
 						capabilityParams: candidate.capabilityParams,
 						providerMaxOutputTokens: candidate.maxOutputTokens,
-						modelForReasoning: providerModelSlug ?? baseModel,
+						modelForReasoning,
 					},
 				)
 				: ir,
