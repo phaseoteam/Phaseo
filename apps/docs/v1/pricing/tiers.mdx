@@ -1,6 +1,6 @@
 ---
 title: "Pricing Tiers"
-description: "Understand credit purchase fees, tier qualification, and how Gateway billing works"
+description: "Understand the flat 5% credit purchase fee and how Gateway billing works"
 ---
 
 # Pricing Tiers
@@ -8,60 +8,37 @@ description: "Understand credit purchase fees, tier qualification, and how Gatew
 Gateway billing has two parts:
 
 1. **Model usage pricing**: credits are consumed at model prices shown in the catalog.
-2. **Credit purchase fee**: a tier-based fee is applied only when buying credits.
+2. **Credit purchase fee**: a flat **5% top-up fee** is applied only when buying credits.
 
-## Tier Overview
+## Current Plan
 
-<CardGroup cols={2}>
-  <Card title="Basic Tier" icon="tag">
-    **7% credit purchase fee**
+<Card title="Standard Plan" icon="tag">
+  **5% credit purchase fee**
 
-    Default tier for teams. Applies when you top up credits.
-  </Card>
+  All workspaces use the same standard plan. There is no separate enterprise fee schedule for self-serve Gateway usage.
+</Card>
 
-  <Card title="Enterprise Tier" icon="star">
-    **5% credit purchase fee**
-
-    Reduced top-up fee for high-volume teams.
-  </Card>
-</CardGroup>
-
-## How Qualification Works
-
-Tier qualification is based on **calendar-month spend**:
+## How Billing Works
 
 <Steps>
-  <Step title="Track monthly spend">
-    We track your team's Gateway spend during the current calendar month.
+  <Step title="Buy credits">
+    When you top up, a **5% platform fee** is applied to the purchase.
   </Step>
 
-  <Step title="Apply threshold">
-    - Monthly spend **>= $10,000**: Enterprise tier (5% top-up fee)
-    - Monthly spend **< $10,000**: Basic tier (7% top-up fee)
+  <Step title="Use the Gateway">
+    Requests consume credits at the model prices listed in the catalog.
   </Step>
 
-  <Step title="Apply fee on top-up">
-    The active tier fee is applied when credits are purchased.
-    Model requests then consume credits at listed model rates.
+  <Step title="Review usage">
+    Your dashboard shows the current top-up fee, credit balance, and recent spend.
   </Step>
 </Steps>
-
-## Grace Period
-
-Enterprise teams include a **3-month grace period** to avoid rapid tier changes during short-term spend dips.
-
-<Info>
-  **Active teams**: tier status is reflected from backend billing state.
-
-  **Low-spend streaks**: extended time below threshold can move teams back to Basic.
-</Info>
 
 ## Example
 
 | Scenario | Top-Up Amount | Applied Fee | Credits Added (before usage) |
 |---|---:|---:|---:|
-| Basic tier | $100 | 7% ($7) | $100 credits |
-| Enterprise tier | $100 | 5% ($5) | $100 credits |
+| Standard plan | $100 | 5% ($5) | $100 credits |
 | Free model usage | No top-up | $0 | Uses free model allowance |
 
 ## Frequently Asked Questions
@@ -72,26 +49,26 @@ Enterprise teams include a **3-month grace period** to avoid rapid tier changes 
   </Accordion>
 
   <Accordion title="Do you mark up token pricing beyond model rates?">
-    Model usage rates follow the catalog pricing. The separate platform fee is the top-up fee shown by your active tier.
+    Model usage rates follow the catalog pricing. The separate platform fee is the 5% top-up fee applied when credits are purchased.
   </Accordion>
 
-  <Accordion title="When does my tier change?">
-    Tier status follows monthly spend qualification and backend billing state. You can view your current tier in settings.
+  <Accordion title="Is there an enterprise fee tier?">
+    Not for the current self-serve Gateway plan. All workspaces use the same 5% top-up fee.
   </Accordion>
 
-  <Accordion title="Can I request custom enterprise terms?">
-    Yes. For committed volume, invoicing, or procurement requirements, contact sales.
+  <Accordion title="Can I request custom commercial terms?">
+    Yes. For invoicing, procurement, or bespoke commercial requirements, contact sales.
   </Accordion>
 </AccordionGroup>
 
-## Viewing Your Tier
+## Viewing Your Pricing
 
-Check your current tier and top-up fee in your dashboard:
+Check your current top-up fee and billing status in your dashboard:
 
 1. Navigate to **Settings -> Pricing & Tiers**
-2. View your current fee rate and qualification progress
-3. Review monthly spend trends and upgrade path
+2. View the current fee rate and recent usage
+3. Review credit balance and spend trends
 
 <Card title="Questions?" icon="question">
-  Need help with billing or tiers? Contact support at support@example.com or join our [Discord community](https://discord.gg/aQyywCvgZ5).
+  Need help with billing or pricing? Contact support at support@example.com or join our [Discord community](https://discord.gg/aQyywCvgZ5).
 </Card>
