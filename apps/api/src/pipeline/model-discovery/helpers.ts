@@ -16,8 +16,8 @@ type ProviderConfig = {
 	providerId: string;
 	providerName: string;
 	modelsEndpoint: string;
-	apiKeyEnv: string[];
-	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization";
+	apiKeyEnv?: string[];
+	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
 };
 
 type ProviderChange = {
@@ -35,7 +35,7 @@ type DiscoveredModel = {
 	pricingDetails: unknown | null;
 };
 
-type AtlasCloudModelSnapshot = {
+type ProviderApiModelSnapshot = {
 	contextLength: number | null;
 	maxCompletionTokens: number | null;
 	pricingDetails: unknown | null;
@@ -224,7 +224,10 @@ export function toNullableInteger(value: unknown): number | null {
 	return null;
 }
 
-export function extractAtlasCloudModelSnapshot(modelDetails: Record<string, unknown> | null, pricingDetails: unknown | null): AtlasCloudModelSnapshot {
+export function extractProviderApiModelSnapshot(
+	modelDetails: Record<string, unknown> | null,
+	pricingDetails: unknown | null
+): ProviderApiModelSnapshot {
 	const contextLength = modelDetails
 		? toNullableInteger(modelDetails.contextLength ?? modelDetails.context_length)
 		: null;
@@ -239,7 +242,7 @@ export function extractAtlasCloudModelSnapshot(modelDetails: Record<string, unkn
 	};
 }
 
-export function hasAtlasCloudSnapshotValue(snapshot: AtlasCloudModelSnapshot): boolean {
+export function hasProviderApiSnapshotValue(snapshot: ProviderApiModelSnapshot): boolean {
 	return (
 		snapshot.contextLength !== null ||
 		snapshot.maxCompletionTokens !== null ||
@@ -251,7 +254,10 @@ export function formatSnapshotValue(value: number | null): string {
 	return value === null ? "null" : String(value);
 }
 
-export function buildAtlasCloudSnapshotDiff(previous: AtlasCloudModelSnapshot, current: AtlasCloudModelSnapshot): string[] {
+export function buildProviderApiModelSnapshotDiff(
+	previous: ProviderApiModelSnapshot,
+	current: ProviderApiModelSnapshot
+): string[] {
 	const changes: string[] = [];
 	if (previous.contextLength !== current.contextLength) {
 		changes.push(`contextLength: ${formatSnapshotValue(previous.contextLength)} -> ${formatSnapshotValue(current.contextLength)}`);
@@ -482,7 +488,7 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 	return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export async function fetchProviderModels(provider: ProviderConfig, apiKey: string): Promise<DiscoveredModel[]> {
+export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
@@ -492,26 +498,34 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey: stri
 
 		switch (provider.authStyle ?? "bearer") {
 			case "anthropic":
+				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
 				headers["x-api-key"] = apiKey;
 				headers["anthropic-version"] = "2023-06-01";
 				break;
 			case "google_api_key_query": {
+				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
 				const parsed = new URL(provider.modelsEndpoint);
 				parsed.searchParams.set("key", apiKey);
 				url = parsed.toString();
 				break;
 			}
 			case "clarifai_key":
+				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
 				headers["Authorization"] = `Key ${apiKey}`;
 				break;
 			case "elevenlabs":
+				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
 				headers["xi-api-key"] = apiKey;
 				break;
 			case "api_key_authorization":
+				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
 				headers["Authorization"] = `Api-Key ${apiKey}`;
+				break;
+			case "none":
 				break;
 			case "bearer":
 			default:
+				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
 				headers["Authorization"] = `Bearer ${apiKey}`;
 				break;
 		}

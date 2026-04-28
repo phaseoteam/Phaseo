@@ -11,6 +11,7 @@ import type { ProviderDefinition } from "./providers/_shared";
 
 const EXPECTED_PLATFORM_NAMES = [
     "AI21",
+    "AkashML",
     "AionLabs",
     "Alibaba Cloud",
     "Amazon Bedrock",
@@ -26,6 +27,7 @@ const EXPECTED_PLATFORM_NAMES = [
     "Clarifai",
     "Cloudflare",
     "Cohere",
+    "CrofAI",
     "Crusoe",
     "DeepInfra",
     "DeepSeek",
@@ -41,6 +43,7 @@ const EXPECTED_PLATFORM_NAMES = [
     "Inceptron",
     "Infermatic",
     "Inflection",
+    "IonRouter",
     "MiniMax",
     "Mistral",
     "Moonshot AI",

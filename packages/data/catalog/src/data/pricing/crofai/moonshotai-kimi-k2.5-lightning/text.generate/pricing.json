@@ -1,8 +1,8 @@
 {
-  "key": "crofai:deepseek/deepseek-v4-pro:text.generate",
+  "key": "crofai:moonshotai/kimi-k2.5-lightning:text.generate",
   "api_provider_id": "crofai",
   "provider_slug": "crofai",
-  "api_model_id": "deepseek/deepseek-v4-pro",
+  "api_model_id": "moonshotai/kimi-k2.5-lightning",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -15,7 +15,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00"
+      "effective_from": "2026-04-27T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -24,22 +24,22 @@
       "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Derived from CrofAI pricing page cache pricing display.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00"
+      "effective_from": "2026-04-27T00:00:00"
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2.15,
+      "price_per_unit": 3,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00"
+      "effective_from": "2026-04-27T00:00:00"
     }
   ]
 }
