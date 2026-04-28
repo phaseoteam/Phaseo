@@ -2,17 +2,30 @@
   "model_id": "qwen/qwen2.5-vl-32b",
   "organisation_id": "qwen",
   "name": "Qwen 2.5 VL 32B Instruct",
-  "status": null,
+  "status": "Available",
   "previous_model_id": null,
-  "announced_date": null,
-  "release_date": null,
+  "announced_date": "2025-03-24T00:00:00",
+  "release_date": "2025-03-24T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
-  "input_types": null,
-  "output_types": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image",
+  "output_types": "text",
   "api_model_id": "qwen/qwen2.5-vl-32b",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwen2.5-vl-32b/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2502.13923"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct"
+    }
+  ],
   "details": [
     {
       "name": "input_context_length",
@@ -24,7 +37,7 @@
     },
     {
       "name": "parameter_count",
-      "value": 72000000000
+      "value": 33000000000
     }
   ],
   "benchmarks": [

@@ -1,0 +1,31 @@
+{
+  "key": "siliconflow:qwen/qwen3-coder-480b-a35b:text.generate",
+  "api_provider_id": "siliconflow",
+  "provider_slug": "siliconflow",
+  "api_model_id": "qwen/qwen3-coder-480b-a35b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "organisation_id": "inflection",
+  "name": "Inflection AI",
+  "country_code": "US",
+  "description": "Inflection AI develops the Pi family of conversational models and enterprise-focused instruction-following variants.",
+  "colour": "#22C55E",
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.inflection.ai/"
+    },
+    {
+      "platform": "documentation",
+      "url": "https://developers.inflection.ai/docs/authentication"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/inflection-ai/"
+    }
+  ]
+}

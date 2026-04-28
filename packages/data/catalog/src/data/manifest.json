@@ -214,7 +214,8 @@
       "deepseek/deepseek-v3.2",
       "deepseek/deepseek-v3.2-exp",
       "deepseek/deepseek-v3.2-speciale",
-      "deepseek/deepseek-v4",
+      "deepseek/deepseek-v4-flash",
+      "deepseek/deepseek-v4-pro",
       "deepseek/deepseek-vl2",
       "deepseek/deepseek-vl2-small",
       "deepseek/deepseek-vl2-tiny"

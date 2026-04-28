@@ -2,8 +2,8 @@
   "api_provider_id": "inflection",
   "api_provider_name": "Inflection",
   "description": null,
-  "link": "https://developers.inflection.ai/",
+  "link": "https://developers.inflection.ai/docs/authentication",
   "country_code": "US",
-  "status": "NotReady",
+  "status": "Active",
   "colour": "#22C55E"
 }

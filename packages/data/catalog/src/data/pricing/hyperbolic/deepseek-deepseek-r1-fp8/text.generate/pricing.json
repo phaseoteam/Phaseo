@@ -1,0 +1,20 @@
+{
+  "key": "hyperbolic:deepseek/deepseek-r1-fp8:text.generate",
+  "api_provider_id": "hyperbolic",
+  "provider_slug": "hyperbolic",
+  "api_model_id": "deepseek/deepseek-r1-fp8",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Hyperbolic publishes a single blended per-token rate.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

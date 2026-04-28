@@ -1,0 +1,9 @@
+{
+  "api_provider_id": "canopy-wave",
+  "api_provider_name": "Canopy Wave",
+  "description": null,
+  "link": "https://canopywave.com/",
+  "country_code": "US",
+  "status": "NotReady",
+  "colour": "#80B224"
+}
