@@ -9,6 +9,48 @@ export interface SupportedModelsStats {
     recentCount: number;
 }
 
+type VisibleModelStatRow = {
+    model_id: string | null;
+    organisation_id: string | null;
+    announcement_date: string | null;
+    release_date: string | null;
+};
+
+type ActiveGatewayModelRow = {
+    model_id?: string | null;
+    internal_model_id?: string | null;
+    api_model_id?: string | null;
+};
+
+const PAGE_SIZE = 1000;
+
+function toDateMs(value: string | null | undefined): number | null {
+    if (!value) return null;
+    const ms = Date.parse(String(value).trim());
+    return Number.isNaN(ms) ? null : ms;
+}
+
+async function fetchAllRows<T>(
+    fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+) {
+    const rows: T[] = [];
+    let from = 0;
+
+    while (true) {
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await fetchPage(from, to);
+        if (error) throw error;
+
+        const page = Array.isArray(data) ? data : [];
+        rows.push(...page);
+
+        if (page.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+    }
+
+    return rows;
+}
+
 async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats> {
     const supabase = await createClient();
 
@@ -23,35 +65,59 @@ async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats>
     };
 
     try {
-        const [modelsRes, orgsRes, apiModelsRes, recentRes] = await Promise.all([
-            applyHiddenFilter(
-                supabase.from('data_models').select('*', { count: 'exact', head: true }),
-                includeHidden
+        const [visibleModels, apiProviderModels] = await Promise.all([
+            fetchAllRows<VisibleModelStatRow>((from, to) =>
+                applyHiddenFilter(
+                    supabase
+                        .from('data_models')
+                        .select('model_id, organisation_id, announcement_date, release_date')
+                        .range(from, to),
+                    includeHidden
+                )
             ),
-            supabase.from('data_organisations').select('*', { count: 'exact', head: true }),
-            supabase
-                .from('data_api_provider_models')
-                .select('*', { count: 'exact', head: true })
-                .eq('is_active_gateway', true),
-            applyHiddenFilter(
+            fetchAllRows<ActiveGatewayModelRow>((from, to) =>
                 supabase
-                    .from('data_models')
-                    .select('*', { count: 'exact', head: true })
-                    .gte('created_at', cutoff),
-                includeHidden
+                    .from('data_api_provider_models')
+                    .select('model_id, internal_model_id, api_model_id')
+                    .eq('is_active_gateway', true)
+                    .range(from, to)
             ),
         ]);
+        const visibleModelIds = new Set(
+            visibleModels
+                .map((model) => model.model_id)
+                .filter((modelId): modelId is string => typeof modelId === 'string' && modelId.length > 0)
+        );
+        const organisationIds = new Set(
+            visibleModels
+                .map((model) => model.organisation_id)
+                .filter(
+                    (organisationId): organisationId is string =>
+                        typeof organisationId === 'string' && organisationId.length > 0
+                )
+        );
+        const activeGatewayModels = new Set(
+            apiProviderModels
+                .map((model) => model.model_id ?? model.internal_model_id ?? model.api_model_id)
+                .filter((modelId): modelId is string => typeof modelId === 'string' && visibleModelIds.has(modelId))
+        );
+        const cutoffMs = Date.parse(cutoff);
+        const nowMs = now;
+        const recentCount = visibleModels.filter((model) => {
+            const announcementMs = toDateMs(model.announcement_date);
+            const releaseMs = toDateMs(model.release_date);
 
-        const getCount = (res: { count: number | null; error: any } | any) => {
-            if (res?.error) return 0;
-            return res.count ?? 0;
-        };
+            const isRecent = (dateMs: number | null) =>
+                dateMs !== null && dateMs >= cutoffMs && dateMs <= nowMs;
+
+            return isRecent(announcementMs) || isRecent(releaseMs);
+        }).length;
 
         return {
-            modelsCount: getCount(modelsRes),
-            orgsCount: getCount(orgsRes),
-            apiCount: getCount(apiModelsRes),
-            recentCount: getCount(recentRes),
+            modelsCount: visibleModels.length,
+            orgsCount: organisationIds.size,
+            apiCount: activeGatewayModels.size,
+            recentCount,
         };
     } catch (err) {
         // swallow and return defaults; caller will handle fallback behaviour

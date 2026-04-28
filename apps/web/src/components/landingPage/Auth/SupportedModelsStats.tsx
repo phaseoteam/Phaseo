@@ -3,12 +3,6 @@ import Link from "next/link";
 import { getSupportedModelsStatsCached } from "@/lib/fetchers/landing/sign-in/getSupportedModelsStats";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-function roundBucket(value: number, bucket: number) {
-	if (bucket <= 0) return { value, rounded: false } as const;
-	const roundedValue = Math.round(value / bucket) * bucket;
-	return { value: roundedValue, rounded: roundedValue !== value } as const;
-}
-
 function formatWithK(value: number) {
 	if (value >= 1000) {
 		const v = value / 1000;
@@ -36,33 +30,25 @@ export default async function SupportedModelsStats() {
 		// noop - fallback to defaults
 	}
 
-	const modelsRounded = roundBucket(modelsCount, 25);
-	const orgsRounded = roundBucket(orgsCount, 10);
-	const apiRounded = roundBucket(apiCount, 25);
-
 	const stats = [
 		{
 			label: "Total Models",
-			raw: modelsRounded.value,
-			rounded: modelsRounded.rounded,
+			raw: modelsCount,
 			route: "/models",
 		},
 		{
 			label: "Organisations",
-			raw: orgsRounded.value,
-			rounded: orgsRounded.rounded,
+			raw: orgsCount,
 			route: "/providers",
 		},
 		{
 			label: "API Models",
-			raw: apiRounded.value,
-			rounded: apiRounded.rounded,
+			raw: apiCount,
 			route: "/prices",
 		},
 		{
 			label: "New (90d)",
 			raw: recentCount,
-			rounded: false,
 			route: "/models",
 		},
 	];
@@ -81,7 +67,6 @@ export default async function SupportedModelsStats() {
 							<CardTitle className="text-2xl font-bold">
 								<span className="text-2xl font-bold tabular-nums">
 									{formatWithK(stat.raw)}
-									{stat.rounded ? "+" : ""}
 								</span>
 							</CardTitle>
 						</CardHeader>
