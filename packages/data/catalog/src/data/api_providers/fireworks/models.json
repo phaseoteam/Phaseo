@@ -354,6 +354,27 @@
     ]
   },
   {
+    "api_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "provider_api_model_id": "fireworks:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "provider_model_slug": "accounts/fireworks/models/nvidia-nemotron-3-nano-omni-30b-a3b",
+    "internal_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "fireworks:openai/gpt-oss-120b",
     "provider_model_slug": "accounts/fireworks/models/gpt-oss-120b",
