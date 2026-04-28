@@ -1220,6 +1220,7 @@ const (
 	KnownModelIdNvidiaLlama31NemotronUltra253b KnownModelId = "nvidia/llama-3.1-nemotron-ultra-253b"
 	KnownModelIdNvidiaLlama33NemotronSuper49bV15 KnownModelId = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
 	KnownModelIdNvidiaNemotron3Nano30bA3b KnownModelId = "nvidia/nemotron-3-nano-30b-a3b"
+	KnownModelIdNvidiaNemotron3NanoOmni30bA3bReasoning KnownModelId = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 	KnownModelIdNvidiaNemotron3Super120bA12b KnownModelId = "nvidia/nemotron-3-super-120b-a12b"
 	KnownModelIdNvidiaNvidiaNemotron3Nano30bA3b KnownModelId = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
 	KnownModelIdNvidiaNvidiaNemotronNano12bV2Vl KnownModelId = "nvidia/nvidia-nemotron-nano-12b-v2-vl"
