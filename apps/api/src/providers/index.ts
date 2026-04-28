@@ -82,6 +82,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     novita: createOpenAICompatibleAdapter("novita"),
     parasail: createOpenAICompatibleAdapter("parasail"),
     phala: createOpenAICompatibleAdapter("phala"),
+    poolside: createOpenAICompatibleAdapter("poolside"),
     qwen: createOpenAICompatibleAdapter("qwen"),
     sambanova: createOpenAICompatibleAdapter("sambanova"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),

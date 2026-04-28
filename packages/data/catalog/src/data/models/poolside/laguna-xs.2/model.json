@@ -1,0 +1,27 @@
+{
+  "model_id": "poolside/laguna-xs.2",
+  "organisation_id": "poolside",
+  "name": "Laguna XS.2",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "poolside/laguna-xs.2",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://poolside.ai/models"
+    },
+    {
+      "platform": "documentation",
+      "url": "https://docs.poolside.ai/release-notes/laguna-xs2"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

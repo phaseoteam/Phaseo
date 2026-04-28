@@ -1,0 +1,9 @@
+{
+  "api_provider_id": "poolside",
+  "api_provider_name": "Poolside",
+  "description": "OpenAI-compatible API for Poolside's Laguna coding models.",
+  "link": "https://poolside.ai/models",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#111111"
+}
