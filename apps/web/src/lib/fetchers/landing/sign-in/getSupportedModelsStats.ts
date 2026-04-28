@@ -9,6 +9,25 @@ export interface SupportedModelsStats {
     recentCount: number;
 }
 
+type VisibleModelStatRow = {
+    model_id: string | null;
+    organisation_id: string | null;
+    announcement_date: string | null;
+    release_date: string | null;
+};
+
+type ActiveGatewayModelRow = {
+    model_id?: string | null;
+    internal_model_id?: string | null;
+    api_model_id?: string | null;
+};
+
+function toDateMs(value: string | null | undefined): number | null {
+    if (!value) return null;
+    const ms = Date.parse(String(value).trim());
+    return Number.isNaN(ms) ? null : ms;
+}
+
 async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats> {
     const supabase = await createClient();
 
@@ -23,23 +42,17 @@ async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats>
     };
 
     try {
-        const [modelsRes, orgsRes, apiModelsRes, recentRes] = await Promise.all([
-            applyHiddenFilter(
-                supabase.from('data_models').select('*', { count: 'exact', head: true }),
-                includeHidden
-            ),
-            supabase.from('data_organisations').select('*', { count: 'exact', head: true }),
-            supabase
-                .from('data_api_provider_models')
-                .select('*', { count: 'exact', head: true })
-                .eq('is_active_gateway', true),
+        const [modelsRes, apiModelsRes] = await Promise.all([
             applyHiddenFilter(
                 supabase
                     .from('data_models')
-                    .select('*', { count: 'exact', head: true })
-                    .gte('created_at', cutoff),
+                    .select('model_id, organisation_id, announcement_date, release_date', { count: 'exact' }),
                 includeHidden
             ),
+            supabase
+                .from('data_api_provider_models')
+                .select('model_id, internal_model_id, api_model_id')
+                .eq('is_active_gateway', true),
         ]);
 
         const getCount = (res: { count: number | null; error: any } | any) => {
@@ -47,11 +60,42 @@ async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats>
             return res.count ?? 0;
         };
 
+        const visibleModels: VisibleModelStatRow[] = Array.isArray(modelsRes.data) ? modelsRes.data : [];
+        const visibleModelIds = new Set(
+            visibleModels
+                .map((model) => model.model_id)
+                .filter((modelId): modelId is string => typeof modelId === 'string' && modelId.length > 0)
+        );
+        const organisationIds = new Set(
+            visibleModels
+                .map((model) => model.organisation_id)
+                .filter(
+                    (organisationId): organisationId is string =>
+                        typeof organisationId === 'string' && organisationId.length > 0
+                )
+        );
+        const activeGatewayModels = new Set(
+            ((Array.isArray(apiModelsRes.data) ? apiModelsRes.data : []) as ActiveGatewayModelRow[])
+                .map((model) => model.model_id ?? model.internal_model_id ?? model.api_model_id)
+                .filter((modelId): modelId is string => typeof modelId === 'string' && visibleModelIds.has(modelId))
+        );
+        const cutoffMs = Date.parse(cutoff);
+        const nowMs = now;
+        const recentCount = visibleModels.filter((model) => {
+            const announcementMs = toDateMs(model.announcement_date);
+            const releaseMs = toDateMs(model.release_date);
+
+            const isRecent = (dateMs: number | null) =>
+                dateMs !== null && dateMs >= cutoffMs && dateMs <= nowMs;
+
+            return isRecent(announcementMs) || isRecent(releaseMs);
+        }).length;
+
         return {
-            modelsCount: getCount(modelsRes),
-            orgsCount: getCount(orgsRes),
-            apiCount: getCount(apiModelsRes),
-            recentCount: getCount(recentRes),
+            modelsCount: visibleModels.length,
+            orgsCount: organisationIds.size,
+            apiCount: activeGatewayModels.size,
+            recentCount,
         };
     } catch (err) {
         // swallow and return defaults; caller will handle fallback behaviour
