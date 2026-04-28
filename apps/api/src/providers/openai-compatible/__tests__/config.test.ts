@@ -60,6 +60,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("perplexity", "sonar")).toBe("chat");
+		expect(resolveOpenAICompatRoute("poolside", "poolside/laguna-m.1")).toBe("chat");
 		expect(resolveOpenAICompatRoute("together", "meta-llama/Llama-3.3-70B-Instruct-Turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("venice", "venice-uncensored")).toBe("responses");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
@@ -379,6 +380,17 @@ describe("openAICompatUrl", () => {
 		);
 		expect(openAICompatUrl("perplexity", "/embeddings")).toBe(
 			"https://api.perplexity.ai/v1/embeddings",
+		);
+	});
+
+	it("builds poolside chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			POOLSIDE_API_KEY: "test-poolside-key",
+		} as any);
+
+		expect(openAICompatUrl("poolside", "/chat/completions")).toBe(
+			"https://inference.poolside.ai/v1/chat/completions",
 		);
 	});
 

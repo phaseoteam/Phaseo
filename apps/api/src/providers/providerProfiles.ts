@@ -124,6 +124,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "friendli",
 		textOnly: true,
 	},
+	{
+		id: "poolside",
+		textOnly: true,
+	},
 ];
 
 const PROFILE_INDEX = new Map<string, ProviderProfile>();

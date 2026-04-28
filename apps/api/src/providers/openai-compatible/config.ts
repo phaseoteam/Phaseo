@@ -517,6 +517,14 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "PERPLEXITY_BASE_URL",
         supportsResponses: false,
     },
+    poolside: {
+        providerId: "poolside",
+        baseUrl: "https://inference.poolside.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "POOLSIDE_API_KEY",
+        baseUrlEnv: "POOLSIDE_BASE_URL",
+        supportsResponses: false,
+    },
     liquid: {
         providerId: "liquid",
         baseUrl: "https://api.liquid.ai",
