@@ -359,6 +359,79 @@ export async function createAnthropicMessage(
   });
 }
 
+export type CreateApiKeyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    disabled?: boolean;
+    expires_at?: string | null;
+    include_byok_in_limit?: boolean;
+    limit?: number | null;
+    limit_reset?: "daily" | "weekly" | "monthly";
+    name: string;
+    scopes?: string | string[];
+    soft_blocked?: boolean;
+    workspace_id?: string;
+  };
+};
+
+/**
+ * Creates a new API key in the authenticated workspace. Management API key required.
+ */
+export async function createApiKey(
+  client: Client,
+  args: CreateApiKeyParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    disabled: boolean;
+    expires_at: string | null;
+    hash: string;
+    id: string;
+    key: string;
+    label: string | null;
+    last_used_at: string | null;
+    name: string | null;
+    prefix: string | null;
+    scopes: string | string[];
+    soft_blocked: boolean;
+    status: string | null;
+    updated_at: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/keys";
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      disabled: boolean;
+      expires_at: string | null;
+      hash: string;
+      id: string;
+      key: string;
+      label: string | null;
+      last_used_at: string | null;
+      name: string | null;
+      prefix: string | null;
+      scopes: string | string[];
+      soft_blocked: boolean;
+      status: string | null;
+      updated_at: string | null;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateBatchParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -1095,60 +1168,6 @@ export async function createImageEdit(
       revised_prompt?: string;
       url?: string;
     }[];
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type CreateManagementKeyParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    created_by?: string;
-    name: string;
-    scopes?: string | string[];
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-};
-
-/**
- * Creates a new management API key.
- */
-export async function createManagementKey(
-  client: Client,
-  args: CreateManagementKeyParams = {},
-): Promise<{
-  key: {
-    created_at?: string;
-    id?: string;
-    key?: string;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  };
-  ok: true;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/management/keys";
-  return client.request<{
-    key: {
-      created_at?: string;
-      id?: string;
-      key?: string;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    };
-    ok: true;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -2150,7 +2169,53 @@ export async function createVideoAlias(
   });
 }
 
-export type DeleteManagementKeyParams = {
+export type CreateWorkspaceParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    name: string;
+    slug?: string;
+  };
+};
+
+/**
+ * Creates a new workspace for the authenticated owner. Management API key required.
+ */
+export async function createWorkspace(
+  client: Client,
+  args: CreateWorkspaceParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    id: string;
+    name: string | null;
+    slug: string | null;
+    updated_at: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workspaces";
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      id: string;
+      name: string | null;
+      slug: string | null;
+      updated_at: string | null;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteApiKeyParams = {
   path?: {
     id: string;
   };
@@ -2160,20 +2225,18 @@ export type DeleteManagementKeyParams = {
 };
 
 /**
- * Permanently deletes a management API key.
+ * Deletes an API key in the authenticated workspace. Management API key required.
  */
-export async function deleteManagementKey(
+export async function deleteApiKey(
   client: Client,
-  args: DeleteManagementKeyParams = {},
+  args: DeleteApiKeyParams = {},
 ): Promise<{
-  message: string;
-  ok: true;
+  deleted: true;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
-    message: string;
-    ok: true;
+    deleted: true;
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -2244,6 +2307,37 @@ export async function deleteVideoAlias(
     deleted?: boolean;
     id?: string;
     object?: string;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteWorkspaceParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a workspace by UUID or slug. Management API key required.
+ */
+export async function deleteWorkspace(
+  client: Client,
+  args: DeleteWorkspaceParams = {},
+): Promise<{
+  deleted: true;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    deleted: true;
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -2404,49 +2498,62 @@ export async function generateMusicAlias(
 export type GetActivityParams = {
   path?: Record<string, never>;
   query?: {
-    date?: string;
+    days?: number;
+    limit?: number;
+    offset?: number;
+    workspace_id?: string;
   };
   headers?: Record<string, never>;
   body?: never;
 };
 
 /**
- * Returns user activity data grouped by endpoint for the last 30 completed UTC days.
+ * Returns recent request activity for the authenticated workspace. Management API key required.
  */
 export async function getActivity(
   client: Client,
   args: GetActivityParams = {},
 ): Promise<{
-  data: {
-    byok_usage_inference: number;
-    completion_tokens: number;
-    date: string;
-    endpoint_id: string;
-    model: string;
-    model_permaslug: string;
-    prompt_tokens: number;
-    provider_name: string;
-    reasoning_tokens: number;
-    requests: number;
-    usage: number;
+  activity: {
+    cost_cents: number;
+    endpoint: string | null;
+    latency_ms: number | null;
+    model: string | null;
+    provider: string | null;
+    request_id: string | null;
+    timestamp: string | null;
+    usage: {
+      [key: string]: unknown;
+    } | null;
   }[];
+  limit: number;
+  offset: number;
+  ok: true;
+  period_days: number;
+  total: number;
+  total_cost_cents: number;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/activity";
   return client.request<{
-    data: {
-      byok_usage_inference: number;
-      completion_tokens: number;
-      date: string;
-      endpoint_id: string;
-      model: string;
-      model_permaslug: string;
-      prompt_tokens: number;
-      provider_name: string;
-      reasoning_tokens: number;
-      requests: number;
-      usage: number;
+    activity: {
+      cost_cents: number;
+      endpoint: string | null;
+      latency_ms: number | null;
+      model: string | null;
+      provider: string | null;
+      request_id: string | null;
+      timestamp: string | null;
+      usage: {
+        [key: string]: unknown;
+      } | null;
     }[];
+    limit: number;
+    offset: number;
+    ok: true;
+    period_days: number;
+    total: number;
+    total_cost_cents: number;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -2511,38 +2618,168 @@ export async function getActivityAlias(
   });
 }
 
+export type GetApiKeyParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns metadata for one API key in the authenticated workspace. Management API key required.
+ */
+export async function getApiKey(
+  client: Client,
+  args: GetApiKeyParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    disabled: boolean;
+    expires_at: string | null;
+    hash: string;
+    id: string;
+    label: string | null;
+    last_used_at: string | null;
+    name: string | null;
+    prefix: string | null;
+    scopes: string | string[];
+    soft_blocked: boolean;
+    status: string | null;
+    updated_at: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      disabled: boolean;
+      expires_at: string | null;
+      hash: string;
+      id: string;
+      label: string | null;
+      last_used_at: string | null;
+      name: string | null;
+      prefix: string | null;
+      scopes: string | string[];
+      soft_blocked: boolean;
+      status: string | null;
+      updated_at: string | null;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetCreditsParams = {
   path?: Record<string, never>;
   query?: {
-    team_id: string;
+    workspace_id?: string;
   };
   headers?: Record<string, never>;
   body?: never;
 };
 
 /**
- * Returns the remaining credits and usage statistics for a team.
+ * Returns remaining credits and usage statistics for the authenticated workspace. Management API key required.
  */
 export async function getCredits(
   client: Client,
   args: GetCreditsParams = {},
 ): Promise<{
-  credits?: {
-    remaining?: number;
-    thirty_day_requests?: number;
-    thirty_day_usage?: number;
+  credits: {
+    available_nanos: number;
+    balance_nanos: number;
+    remaining: number;
+    reserved_nanos: number;
+    thirty_day_requests: number;
+    thirty_day_usage: number | null;
   };
-  ok?: boolean;
+  ok: true;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/credits";
   return client.request<{
-    credits?: {
-      remaining?: number;
-      thirty_day_requests?: number;
-      thirty_day_usage?: number;
+    credits: {
+      available_nanos: number;
+      balance_nanos: number;
+      remaining: number;
+      reserved_nanos: number;
+      thirty_day_requests: number;
+      thirty_day_usage: number | null;
     };
-    ok?: boolean;
+    ok: true;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetCurrentApiKeyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns metadata for the currently authenticated standard Gateway API key.
+ */
+export async function getCurrentApiKey(
+  client: Client,
+  args: GetCurrentApiKeyParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    disabled: boolean;
+    expires_at: string | null;
+    hash: string;
+    id: string;
+    label: string | null;
+    last_used_at: string | null;
+    name: string | null;
+    prefix: string | null;
+    scopes: string | string[];
+    soft_blocked: boolean;
+    status: string | null;
+    updated_at: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/key";
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      disabled: boolean;
+      expires_at: string | null;
+      hash: string;
+      id: string;
+      label: string | null;
+      last_used_at: string | null;
+      name: string | null;
+      prefix: string | null;
+      scopes: string | string[];
+      soft_blocked: boolean;
+      status: string | null;
+      updated_at: string | null;
+      workspace_id: string;
+    };
   }>({
     method: "GET",
     path: resolvedPath,
@@ -2622,61 +2859,6 @@ export async function getGeneration(
       prompt_tokens?: number;
       total_tokens?: number;
     } | null;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type GetManagementKeyParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns details of a specific management API key.
- */
-export async function getManagementKey(
-  client: Client,
-  args: GetManagementKeyParams = {},
-): Promise<{
-  key: {
-    created_at?: string;
-    created_by?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-  ok: true;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
-  return client.request<{
-    key: {
-      created_at?: string;
-      created_by?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      soft_blocked?: boolean;
-      status?: "active" | "disabled" | "revoked";
-      team_id?: string;
-    };
-    ok: true;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -3079,36 +3261,7 @@ export async function getVideoContentAlias(
   });
 }
 
-export type HealthzParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns the health status of the API.
- */
-export async function healthz(
-  client: Client,
-  args: HealthzParams = {},
-): Promise<{
-  status: string;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/health";
-  return client.request<{
-    status: string;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type InvalidateGatewayKeyCacheParams = {
+export type GetWorkspaceParams = {
   path?: {
     id: string;
   };
@@ -3118,42 +3271,102 @@ export type InvalidateGatewayKeyCacheParams = {
 };
 
 /**
- * Bumps cache version for key id/kid and invalidates key cache entries.
+ * Returns a workspace by UUID or slug. Management API key required.
  */
-export async function invalidateGatewayKeyCache(
+export async function getWorkspace(
   client: Client,
-  args: InvalidateGatewayKeyCacheParams = {},
+  args: GetWorkspaceParams = {},
 ): Promise<{
-  cache_version: {
-    id: number;
-    kid: number | null;
-  };
-  key: {
+  data: {
+    created_at: string | null;
+    created_by: string | null;
     id: string;
-    kid?: string | null;
-    status?: string | null;
-    team_id: string;
+    name: string | null;
+    slug: string | null;
+    updated_at: string | null;
   };
-  message: string;
-  ok: true;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}/invalidate`;
+  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
-    cache_version: {
-      id: number;
-      kid: number | null;
-    };
-    key: {
+    data: {
+      created_at: string | null;
+      created_by: string | null;
       id: string;
-      kid?: string | null;
-      status?: string | null;
-      team_id: string;
+      name: string | null;
+      slug: string | null;
+      updated_at: string | null;
     };
-    message: string;
-    ok: true;
   }>({
-    method: "POST",
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListApiKeysParams = {
+  path?: Record<string, never>;
+  query?: {
+    include_disabled?: boolean;
+    limit?: number;
+    offset?: number;
+    workspace_id?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists API keys for the authenticated workspace. Management API key required.
+ */
+export async function listApiKeys(
+  client: Client,
+  args: ListApiKeysParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    disabled: boolean;
+    expires_at: string | null;
+    hash: string;
+    id: string;
+    label: string | null;
+    last_used_at: string | null;
+    name: string | null;
+    prefix: string | null;
+    scopes: string | string[];
+    soft_blocked: boolean;
+    status: string | null;
+    updated_at: string | null;
+    workspace_id: string;
+  }[];
+  total_count: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/keys";
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      disabled: boolean;
+      expires_at: string | null;
+      hash: string;
+      id: string;
+      label: string | null;
+      last_used_at: string | null;
+      name: string | null;
+      prefix: string | null;
+      scopes: string | string[];
+      soft_blocked: boolean;
+      status: string | null;
+      updated_at: string | null;
+      workspace_id: string;
+    }[];
+    total_count: number;
+  }>({
+    method: "GET",
     path: resolvedPath,
     query,
     headers,
@@ -3394,63 +3607,6 @@ export async function listFiles(
   const { path, query, headers, body } = args;
   const resolvedPath = "/files";
   return client.request<unknown>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type ListManagementKeysParams = {
-  path?: Record<string, never>;
-  query?: {
-    limit?: number;
-    offset?: number;
-    team_id?: string;
-  };
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns all management API keys for a team.
- */
-export async function listManagementKeys(
-  client: Client,
-  args: ListManagementKeysParams = {},
-): Promise<{
-  keys: {
-    created_at?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  }[];
-  limit: number;
-  offset: number;
-  ok: true;
-  total: number;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/management/keys";
-  return client.request<{
-    keys: {
-      created_at?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    }[];
-    limit: number;
-    offset: number;
-    ok: true;
-    total: number;
-  }>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4244,6 +4400,54 @@ export async function listVideosAlias(
   });
 }
 
+export type ListWorkspacesParams = {
+  path?: Record<string, never>;
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists workspaces owned by the authenticated management key owner. Management API key required.
+ */
+export async function listWorkspaces(
+  client: Client,
+  args: ListWorkspacesParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    id: string;
+    name: string | null;
+    slug: string | null;
+    updated_at: string | null;
+  }[];
+  total_count: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workspaces";
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      id: string;
+      name: string | null;
+      slug: string | null;
+      updated_at: string | null;
+    }[];
+    total_count: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type OpenResponsesWebSocketParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -4393,7 +4597,79 @@ export async function retrieveFileContent(
   });
 }
 
-export type UpdateManagementKeyParams = {
+export type UpdateApiKeyParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    disabled?: boolean;
+    expires_at?: string | null;
+    include_byok_in_limit?: boolean;
+    limit?: number | null;
+    limit_reset?: "daily" | "weekly" | "monthly";
+    name?: string;
+    scopes?: string | string[];
+    soft_blocked?: boolean;
+  };
+};
+
+/**
+ * Updates API key metadata or status. Management API key required.
+ */
+export async function updateApiKey(
+  client: Client,
+  args: UpdateApiKeyParams = {},
+): Promise<{
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    disabled: boolean;
+    expires_at: string | null;
+    hash: string;
+    id: string;
+    label: string | null;
+    last_used_at: string | null;
+    name: string | null;
+    prefix: string | null;
+    scopes: string | string[];
+    soft_blocked: boolean;
+    status: string | null;
+    updated_at: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      disabled: boolean;
+      expires_at: string | null;
+      hash: string;
+      id: string;
+      label: string | null;
+      last_used_at: string | null;
+      name: string | null;
+      prefix: string | null;
+      scopes: string | string[];
+      soft_blocked: boolean;
+      status: string | null;
+      updated_at: string | null;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateWorkspaceParams = {
   path?: {
     id: string;
   };
@@ -4401,26 +4677,37 @@ export type UpdateManagementKeyParams = {
   headers?: Record<string, never>;
   body?: {
     name?: string;
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
+    slug?: string;
   };
 };
 
 /**
- * Updates the name, status, or blocked state of a management API key.
+ * Updates workspace metadata. Management API key required.
  */
-export async function updateManagementKey(
+export async function updateWorkspace(
   client: Client,
-  args: UpdateManagementKeyParams = {},
+  args: UpdateWorkspaceParams = {},
 ): Promise<{
-  message: string;
-  ok: true;
+  data: {
+    created_at: string | null;
+    created_by: string | null;
+    id: string;
+    name: string | null;
+    slug: string | null;
+    updated_at: string | null;
+  };
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
-    message: string;
-    ok: true;
+    data: {
+      created_at: string | null;
+      created_by: string | null;
+      id: string;
+      name: string | null;
+      slug: string | null;
+      updated_at: string | null;
+    };
   }>({
     method: "PATCH",
     path: resolvedPath,

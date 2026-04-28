@@ -130,6 +130,118 @@ module AiStats
     # @!attribute [rw] output_tokens
     #   @return [Integer, nil]
     AnthropicUsage = Struct.new(:input_tokens, :output_tokens, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] disabled
+    #   @return [Boolean]
+    # @!attribute [rw] expires_at
+    #   @return [String, nil]
+    # @!attribute [rw] hash
+    #   @return [String]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] label
+    #   @return [String, nil]
+    # @!attribute [rw] last_used_at
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] prefix
+    #   @return [String, nil]
+    # @!attribute [rw] scopes
+    #   @return [String, Array<String>]
+    # @!attribute [rw] soft_blocked
+    #   @return [Boolean]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    ApiKey = Struct.new(:created_at, :created_by, :disabled, :expires_at, :hash, :id, :label, :last_used_at, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :workspace_id, keyword_init: true)
+    # @!attribute [rw] disabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] expires_at
+    #   @return [String, nil]
+    # @!attribute [rw] include_byok_in_limit
+    #   @return [Boolean, nil]
+    # @!attribute [rw] limit
+    #   @return [Float, nil]
+    # @!attribute [rw] limit_reset
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] scopes
+    #   @return [String, Array<String>, nil]
+    # @!attribute [rw] soft_blocked
+    #   @return [Boolean, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String, nil]
+    ApiKeyCreateRequest = Struct.new(:disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :name, :scopes, :soft_blocked, :workspace_id, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] total_count
+    #   @return [Integer]
+    ApiKeyListResponse = Struct.new(:data, :total_count, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ApiKeyResponse = Struct.new(:data, keyword_init: true)
+    ApiKeyScopeValue = Object
+    # @!attribute [rw] disabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] expires_at
+    #   @return [String, nil]
+    # @!attribute [rw] include_byok_in_limit
+    #   @return [Boolean, nil]
+    # @!attribute [rw] limit
+    #   @return [Float, nil]
+    # @!attribute [rw] limit_reset
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] scopes
+    #   @return [String, Array<String>, nil]
+    # @!attribute [rw] soft_blocked
+    #   @return [Boolean, nil]
+    ApiKeyUpdateRequest = Struct.new(:disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :name, :scopes, :soft_blocked, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] disabled
+    #   @return [Boolean]
+    # @!attribute [rw] expires_at
+    #   @return [String, nil]
+    # @!attribute [rw] hash
+    #   @return [String]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] key
+    #   @return [String]
+    # @!attribute [rw] label
+    #   @return [String, nil]
+    # @!attribute [rw] last_used_at
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] prefix
+    #   @return [String, nil]
+    # @!attribute [rw] scopes
+    #   @return [String, Array<String>]
+    # @!attribute [rw] soft_blocked
+    #   @return [Boolean]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    ApiKeyWithValue = Struct.new(:created_at, :created_by, :disabled, :expires_at, :hash, :id, :key, :label, :last_used_at, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :workspace_id, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ApiKeyWithValueResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] input_audio
     #   @return [Hash{String => Object}]
     # @!attribute [rw] type
@@ -371,6 +483,11 @@ module AiStats
     # @!attribute [rw] tool_calls
     #   @return [Array<Hash{String => Object}>, nil]
     ChatMessage = Struct.new(:audios, :content, :images, :name, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    # @!attribute [rw] credits
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] ok
+    #   @return [String]
+    CreditsResponse = Struct.new(:credits, :ok, keyword_init: true)
     # @!attribute [rw] deprecation_date
     #   @return [String, nil]
     # @!attribute [rw] hidden
@@ -406,6 +523,9 @@ module AiStats
     # @!attribute [rw] trace_level
     #   @return [String, nil]
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
+    # @!attribute [rw] deleted
+    #   @return [String]
+    DeletedResponse = Struct.new(:deleted, keyword_init: true)
     # @!attribute [rw] embedding
     #   @return [Array<Float>, nil]
     # @!attribute [rw] index
@@ -541,9 +661,6 @@ module AiStats
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     GenerationResponse = Struct.new(:app_id, :byok, :cost_nanos, :currency, :endpoint, :error_code, :error_message, :generation_ms, :key_id, :latency_ms, :model_id, :native_response_id, :pricing_lines, :provider, :request_id, :status_code, :stream, :success, :team_id, :throughput, :usage, keyword_init: true)
-    # @!attribute [rw] status
-    #   @return [String]
-    HealthCheckResponse = Struct.new(:status, keyword_init: true)
     # @!attribute [rw] b64_json
     #   @return [String, nil]
     # @!attribute [rw] revised_prompt
@@ -1354,5 +1471,68 @@ module AiStats
     # @!attribute [rw] access
     #   @return [String, nil]
     VideoOutputConfig = Struct.new(:access, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] slug
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    Workspace = Struct.new(:created_at, :created_by, :id, :name, :slug, :updated_at, keyword_init: true)
+    # @!attribute [rw] cost_cents
+    #   @return [Float]
+    # @!attribute [rw] endpoint
+    #   @return [String, nil]
+    # @!attribute [rw] latency_ms
+    #   @return [Integer, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] provider
+    #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] timestamp
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    WorkspaceActivityEntry = Struct.new(:cost_cents, :endpoint, :latency_ms, :model, :provider, :request_id, :timestamp, :usage, keyword_init: true)
+    # @!attribute [rw] activity
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] limit
+    #   @return [Integer]
+    # @!attribute [rw] offset
+    #   @return [Integer]
+    # @!attribute [rw] ok
+    #   @return [String]
+    # @!attribute [rw] period_days
+    #   @return [Integer]
+    # @!attribute [rw] total
+    #   @return [Integer]
+    # @!attribute [rw] total_cost_cents
+    #   @return [Float]
+    WorkspaceActivityResponse = Struct.new(:activity, :limit, :offset, :ok, :period_days, :total, :total_cost_cents, keyword_init: true)
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] slug
+    #   @return [String, nil]
+    WorkspaceCreateRequest = Struct.new(:name, :slug, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] total_count
+    #   @return [Integer]
+    WorkspaceListResponse = Struct.new(:data, :total_count, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    WorkspaceResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] slug
+    #   @return [String, nil]
+    WorkspaceUpdateRequest = Struct.new(:name, :slug, keyword_init: true)
   end
 end

@@ -34,6 +34,11 @@ inline Response CreateAnthropicMessage(Client& client, const std::map<std::strin
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateBatch(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batches";
 	return client.request("POST", resolved_path, body);
@@ -61,11 +66,6 @@ inline Response CreateImage(Client& client, const std::map<std::string, std::str
 
 inline Response CreateImageEdit(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/images/edits";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -114,8 +114,13 @@ inline Response CreateVideoAlias(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
-inline Response DeleteManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
+inline Response CreateWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workspaces";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response DeleteApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -126,6 +131,11 @@ inline Response DeleteVideo(Client& client, const std::map<std::string, std::str
 
 inline Response DeleteVideoAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/video/generations/" + (path.count("video_id") ? path.at("video_id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workspaces/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -149,18 +159,23 @@ inline Response GetActivityAlias(Client& client, const std::map<std::string, std
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response GetApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys/" + (path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response GetCredits(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/credits";
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response GetGeneration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/generations";
+inline Response GetCurrentApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/key";
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response GetManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
+inline Response GetGeneration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/generations";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -199,14 +214,14 @@ inline Response GetVideoContentAlias(Client& client, const std::map<std::string,
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response Healthz(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/health";
+inline Response GetWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workspaces/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response InvalidateGatewayKeyCache(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/keys/" + (path.count("id") ? path.at("id") : std::string{}) + "/invalidate";
-	return client.request("POST", resolved_path, body);
+inline Response ListApiKeys(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys";
+	return client.request("GET", resolved_path, body);
 }
 
 inline Response ListDataModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
@@ -221,11 +236,6 @@ inline Response ListEndpoints(Client& client, const std::map<std::string, std::s
 
 inline Response ListFiles(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/files";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response ListManagementKeys(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -274,6 +284,11 @@ inline Response ListVideosAlias(Client& client, const std::map<std::string, std:
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListWorkspaces(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workspaces";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response OpenResponsesWebSocket(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/responses/ws";
 	return client.request("GET", resolved_path, body);
@@ -299,8 +314,13 @@ inline Response RetrieveFileContent(Client& client, const std::map<std::string, 
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response UpdateManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
+inline Response UpdateApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys/" + (path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workspaces/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

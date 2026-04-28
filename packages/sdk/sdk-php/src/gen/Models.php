@@ -163,6 +163,140 @@ class AnthropicUsage
 	public $output_tokens;
 }
 
+class ApiKey
+{
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var bool */
+	public $disabled;
+	/** @var string|null */
+	public $expires_at;
+	/** @var string */
+	public $hash;
+	/** @var string */
+	public $id;
+	/** @var string|null */
+	public $label;
+	/** @var string|null */
+	public $last_used_at;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $prefix;
+	/** @var string|array */
+	public $scopes;
+	/** @var bool */
+	public $soft_blocked;
+	/** @var string|null */
+	public $status;
+	/** @var string|null */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class ApiKeyCreateRequest
+{
+	/** @var bool|null */
+	public $disabled;
+	/** @var string|null */
+	public $expires_at;
+	/** @var bool|null */
+	public $include_byok_in_limit;
+	/** @var float|null */
+	public $limit;
+	/** @var string|null */
+	public $limit_reset;
+	/** @var string */
+	public $name;
+	/** @var string|array|null */
+	public $scopes;
+	/** @var bool|null */
+	public $soft_blocked;
+	/** @var string|null */
+	public $workspace_id;
+}
+
+class ApiKeyListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var int */
+	public $total_count;
+}
+
+class ApiKeyResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ApiKeyScopeValue { }
+
+class ApiKeyUpdateRequest
+{
+	/** @var bool|null */
+	public $disabled;
+	/** @var string|null */
+	public $expires_at;
+	/** @var bool|null */
+	public $include_byok_in_limit;
+	/** @var float|null */
+	public $limit;
+	/** @var string|null */
+	public $limit_reset;
+	/** @var string|null */
+	public $name;
+	/** @var string|array|null */
+	public $scopes;
+	/** @var bool|null */
+	public $soft_blocked;
+}
+
+class ApiKeyWithValue
+{
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var bool */
+	public $disabled;
+	/** @var string|null */
+	public $expires_at;
+	/** @var string */
+	public $hash;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $key;
+	/** @var string|null */
+	public $label;
+	/** @var string|null */
+	public $last_used_at;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $prefix;
+	/** @var string|array */
+	public $scopes;
+	/** @var bool */
+	public $soft_blocked;
+	/** @var string|null */
+	public $status;
+	/** @var string|null */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class ApiKeyWithValueResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
 class AudioContentPart
 {
 	/** @var array<string, mixed> */
@@ -453,6 +587,14 @@ class ChatMessage
 	public $tool_calls;
 }
 
+class CreditsResponse
+{
+	/** @var array<string, mixed> */
+	public $credits;
+	/** @var string */
+	public $ok;
+}
+
 class DataModel
 {
 	/** @var string|null */
@@ -493,6 +635,12 @@ class DebugOptions
 	public $trace;
 	/** @var string|null */
 	public $trace_level;
+}
+
+class DeletedResponse
+{
+	/** @var string */
+	public $deleted;
 }
 
 class Embedding
@@ -661,12 +809,6 @@ class GenerationResponse
 	public $throughput;
 	/** @var array<string, mixed>|null */
 	public $usage;
-}
-
-class HealthCheckResponse
-{
-	/** @var string */
-	public $status;
 }
 
 class Image
@@ -1681,4 +1823,88 @@ class VideoOutputConfig
 {
 	/** @var string|null */
 	public $access;
+}
+
+class Workspace
+{
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $id;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $slug;
+	/** @var string|null */
+	public $updated_at;
+}
+
+class WorkspaceActivityEntry
+{
+	/** @var float */
+	public $cost_cents;
+	/** @var string|null */
+	public $endpoint;
+	/** @var int|null */
+	public $latency_ms;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $provider;
+	/** @var string|null */
+	public $request_id;
+	/** @var string|null */
+	public $timestamp;
+	/** @var array<string, mixed>|null */
+	public $usage;
+}
+
+class WorkspaceActivityResponse
+{
+	/** @var array */
+	public $activity;
+	/** @var int */
+	public $limit;
+	/** @var int */
+	public $offset;
+	/** @var string */
+	public $ok;
+	/** @var int */
+	public $period_days;
+	/** @var int */
+	public $total;
+	/** @var float */
+	public $total_cost_cents;
+}
+
+class WorkspaceCreateRequest
+{
+	/** @var string */
+	public $name;
+	/** @var string|null */
+	public $slug;
+}
+
+class WorkspaceListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var int */
+	public $total_count;
+}
+
+class WorkspaceResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class WorkspaceUpdateRequest
+{
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $slug;
 }

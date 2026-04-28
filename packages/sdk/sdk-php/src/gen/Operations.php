@@ -45,6 +45,13 @@ function createAnthropicMessage(Client $client, ?array $path = null, ?array $que
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createApiKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/keys";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createBatch(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -84,13 +91,6 @@ function createImageEdit(Client $client, ?array $path = null, ?array $query = nu
 {
 	$path = $path ?? [];
 	$resolvedPath = "/images/edits";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
-function createManagementKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/management/keys";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -157,10 +157,17 @@ function createVideoAlias(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
-function deleteManagementKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function createWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/management/keys/{$path["id"]}";
+	$resolvedPath = "/workspaces";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteApiKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/keys/{$path["id"]}";
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -175,6 +182,13 @@ function deleteVideoAlias(Client $client, ?array $path = null, ?array $query = n
 {
 	$path = $path ?? [];
 	$resolvedPath = "/video/generations/{$path["video_id"]}";
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/workspaces/{$path["id"]}";
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -206,6 +220,13 @@ function getActivityAlias(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getApiKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/keys/{$path["id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getCredits(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -213,17 +234,17 @@ function getCredits(Client $client, ?array $path = null, ?array $query = null, ?
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getCurrentApiKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/key";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getGeneration(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/generations";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function getManagementKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/management/keys/{$path["id"]}";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -276,18 +297,18 @@ function getVideoContentAlias(Client $client, ?array $path = null, ?array $query
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function healthz(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function getWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/health";
+	$resolvedPath = "/workspaces/{$path["id"]}";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function invalidateGatewayKeyCache(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function listApiKeys(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/keys/{$path["id"]}/invalidate";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+	$resolvedPath = "/keys";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
 function listDataModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -308,13 +329,6 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 {
 	$path = $path ?? [];
 	$resolvedPath = "/files";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function listManagementKeys(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/management/keys";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -381,6 +395,13 @@ function listVideosAlias(Client $client, ?array $path = null, ?array $query = nu
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listWorkspaces(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/workspaces";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function openResponsesWebSocket(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -416,10 +437,17 @@ function retrieveFileContent(Client $client, ?array $path = null, ?array $query 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function updateManagementKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function updateApiKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/management/keys/{$path["id"]}";
+	$resolvedPath = "/keys/{$path["id"]}";
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/workspaces/{$path["id"]}";
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

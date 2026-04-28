@@ -90,6 +90,81 @@ type AnthropicUsage struct {
 	OutputTokens *int `json:"output_tokens,omitempty"`
 }
 
+type ApiKey struct {
+	CreatedAt *string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Disabled bool `json:"disabled"`
+	ExpiresAt *string `json:"expires_at"`
+	Hash string `json:"hash"`
+	Id string `json:"id"`
+	Label *string `json:"label"`
+	LastUsedAt *string `json:"last_used_at"`
+	Name *string `json:"name"`
+	Prefix *string `json:"prefix"`
+	Scopes interface{} `json:"scopes"`
+	SoftBlocked bool `json:"soft_blocked"`
+	Status *string `json:"status"`
+	UpdatedAt *string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type ApiKeyCreateRequest struct {
+	Disabled *bool `json:"disabled,omitempty"`
+	ExpiresAt *string `json:"expires_at,omitempty"`
+	IncludeByokInLimit *bool `json:"include_byok_in_limit,omitempty"`
+	Limit *float64 `json:"limit,omitempty"`
+	LimitReset *string `json:"limit_reset,omitempty"`
+	Name string `json:"name"`
+	Scopes interface{} `json:"scopes,omitempty"`
+	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	WorkspaceId *string `json:"workspace_id,omitempty"`
+}
+
+type ApiKeyListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+	TotalCount int `json:"total_count"`
+}
+
+type ApiKeyResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ApiKeyScopeValue = interface{}
+
+type ApiKeyUpdateRequest struct {
+	Disabled *bool `json:"disabled,omitempty"`
+	ExpiresAt *string `json:"expires_at,omitempty"`
+	IncludeByokInLimit *bool `json:"include_byok_in_limit,omitempty"`
+	Limit *float64 `json:"limit,omitempty"`
+	LimitReset *string `json:"limit_reset,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Scopes interface{} `json:"scopes,omitempty"`
+	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+}
+
+type ApiKeyWithValue struct {
+	CreatedAt *string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Disabled bool `json:"disabled"`
+	ExpiresAt *string `json:"expires_at"`
+	Hash string `json:"hash"`
+	Id string `json:"id"`
+	Key string `json:"key"`
+	Label *string `json:"label"`
+	LastUsedAt *string `json:"last_used_at"`
+	Name *string `json:"name"`
+	Prefix *string `json:"prefix"`
+	Scopes interface{} `json:"scopes"`
+	SoftBlocked bool `json:"soft_blocked"`
+	Status *string `json:"status"`
+	UpdatedAt *string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type ApiKeyWithValueResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
 type AudioContentPart struct {
 	InputAudio map[string]interface{} `json:"input_audio"`
 	Type string `json:"type"`
@@ -850,6 +925,11 @@ type ChatMessage struct {
 	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
 }
 
+type CreditsResponse struct {
+	Credits map[string]interface{} `json:"credits"`
+	Ok string `json:"ok"`
+}
+
 type DataModel struct {
 	DeprecationDate *string `json:"deprecation_date,omitempty"`
 	Hidden *bool `json:"hidden,omitempty"`
@@ -872,6 +952,10 @@ type DebugOptions struct {
 	ReturnUpstreamResponse *bool `json:"return_upstream_response,omitempty"`
 	Trace *bool `json:"trace,omitempty"`
 	TraceLevel *string `json:"trace_level,omitempty"`
+}
+
+type DeletedResponse struct {
+	Deleted string `json:"deleted"`
 }
 
 type Embedding struct {
@@ -967,10 +1051,6 @@ type GenerationResponse struct {
 	TeamId *string `json:"team_id,omitempty"`
 	Throughput *float64 `json:"throughput,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
-}
-
-type HealthCheckResponse struct {
-	Status string `json:"status"`
 }
 
 type Image struct {
@@ -1220,6 +1300,7 @@ const (
 	KnownModelIdNvidiaLlama31NemotronUltra253b KnownModelId = "nvidia/llama-3.1-nemotron-ultra-253b"
 	KnownModelIdNvidiaLlama33NemotronSuper49bV15 KnownModelId = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
 	KnownModelIdNvidiaNemotron3Nano30bA3b KnownModelId = "nvidia/nemotron-3-nano-30b-a3b"
+	KnownModelIdNvidiaNemotron3NanoOmni30bA3bReasoning KnownModelId = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 	KnownModelIdNvidiaNemotron3Super120bA12b KnownModelId = "nvidia/nemotron-3-super-120b-a12b"
 	KnownModelIdNvidiaNvidiaNemotron3Nano30bA3b KnownModelId = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
 	KnownModelIdNvidiaNvidiaNemotronNano12bV2Vl KnownModelId = "nvidia/nvidia-nemotron-nano-12b-v2-vl"
@@ -2007,4 +2088,53 @@ type VideoOutput struct {
 
 type VideoOutputConfig struct {
 	Access *string `json:"access,omitempty"`
+}
+
+type Workspace struct {
+	CreatedAt *string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Id string `json:"id"`
+	Name *string `json:"name"`
+	Slug *string `json:"slug"`
+	UpdatedAt *string `json:"updated_at"`
+}
+
+type WorkspaceActivityEntry struct {
+	CostCents float64 `json:"cost_cents"`
+	Endpoint *string `json:"endpoint"`
+	LatencyMs *int `json:"latency_ms"`
+	Model *string `json:"model"`
+	Provider *string `json:"provider"`
+	RequestId *string `json:"request_id"`
+	Timestamp *string `json:"timestamp"`
+	Usage *map[string]interface{} `json:"usage"`
+}
+
+type WorkspaceActivityResponse struct {
+	Activity []map[string]interface{} `json:"activity"`
+	Limit int `json:"limit"`
+	Offset int `json:"offset"`
+	Ok string `json:"ok"`
+	PeriodDays int `json:"period_days"`
+	Total int `json:"total"`
+	TotalCostCents float64 `json:"total_cost_cents"`
+}
+
+type WorkspaceCreateRequest struct {
+	Name string `json:"name"`
+	Slug *string `json:"slug,omitempty"`
+}
+
+type WorkspaceListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+	TotalCount int `json:"total_count"`
+}
+
+type WorkspaceResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type WorkspaceUpdateRequest struct {
+	Name *string `json:"name,omitempty"`
+	Slug *string `json:"slug,omitempty"`
 }

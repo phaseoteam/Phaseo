@@ -92,6 +92,21 @@ func CreateAnthropicMessage(client *Client, path map[string]string, query map[st
 	return out, nil
 }
 
+func CreateApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func CreateBatch(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
 	resolvedPath := "/batches"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -169,21 +184,6 @@ func CreateImage(client *Client, path map[string]string, query map[string]string
 
 func CreateImageEdit(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/images/edits"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func CreateManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/management/keys"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -332,8 +332,23 @@ func CreateVideoAlias(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
-func DeleteManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/management/keys/" + url.PathEscape(path["id"])
+func CreateWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workspaces"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -364,6 +379,21 @@ func DeleteVideo(client *Client, path map[string]string, query map[string]string
 
 func DeleteVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -437,6 +467,21 @@ func GetActivityAlias(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
+func GetApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys/" + url.PathEscape(path["id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func GetCredits(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/credits"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -452,8 +497,8 @@ func GetCredits(client *Client, path map[string]string, query map[string]string,
 	return out, nil
 }
 
-func GetGeneration(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/generations"
+func GetCurrentApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/key"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -467,8 +512,8 @@ func GetGeneration(client *Client, path map[string]string, query map[string]stri
 	return out, nil
 }
 
-func GetManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/management/keys/" + url.PathEscape(path["id"])
+func GetGeneration(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/generations"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -587,8 +632,8 @@ func GetVideoContentAlias(client *Client, path map[string]string, query map[stri
 	return out, nil
 }
 
-func Healthz(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/health"
+func GetWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -602,9 +647,9 @@ func Healthz(client *Client, path map[string]string, query map[string]string, he
 	return out, nil
 }
 
-func InvalidateGatewayKeyCache(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/keys/" + url.PathEscape(path["id"]) + "/invalidate"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
+func ListApiKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
 		return zero, err
@@ -657,21 +702,6 @@ func ListFiles(client *Client, path map[string]string, query map[string]string, 
 	var out interface{}
 	if err := DecodeJSON(data, &out); err != nil {
 		var zero interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func ListManagementKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/management/keys"
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -812,6 +842,21 @@ func ListVideosAlias(client *Client, path map[string]string, query map[string]st
 	return out, nil
 }
 
+func ListWorkspaces(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workspaces"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func OpenResponsesWebSocket(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
 	resolvedPath := "/responses/ws"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -887,8 +932,23 @@ func RetrieveFileContent(client *Client, path map[string]string, query map[strin
 	return out, nil
 }
 
-func UpdateManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/management/keys/" + url.PathEscape(path["id"])
+func UpdateApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys/" + url.PathEscape(path["id"])
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UpdateWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

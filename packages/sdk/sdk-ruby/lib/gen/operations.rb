@@ -39,6 +39,12 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createApiKey(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/keys"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createBatch(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/batches"
@@ -72,12 +78,6 @@ module AiStats
       def self.createImageEdit(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/images/edits"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/management/keys"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -135,9 +135,15 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.deleteManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.createWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/management/keys/#{path["id"]}"
+        resolved_path = "/workspaces"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteApiKey(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/keys/#{path["id"]}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -150,6 +156,12 @@ module AiStats
       def self.deleteVideoAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/video/generations/#{path["video_id"]}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/workspaces/#{path["id"]}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -177,21 +189,27 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.getApiKey(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/keys/#{path["id"]}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.getCredits(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/credits"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.getGeneration(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.getCurrentApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/generations"
+        resolved_path = "/key"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.getManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.getGeneration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/management/keys/#{path["id"]}"
+        resolved_path = "/generations"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -237,16 +255,16 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.healthz(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.getWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/health"
+        resolved_path = "/workspaces/#{path["id"]}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.invalidateGatewayKeyCache(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.listApiKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/keys/#{path["id"]}/invalidate"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+        resolved_path = "/keys"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.listDataModels(client, path: nil, query: nil, headers: nil, body: nil)
@@ -264,12 +282,6 @@ module AiStats
       def self.listFiles(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/files"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.listManagementKeys(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/management/keys"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -327,6 +339,12 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listWorkspaces(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/workspaces"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.openResponsesWebSocket(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/responses/ws"
@@ -357,9 +375,15 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.updateManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.updateApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/management/keys/#{path["id"]}"
+        resolved_path = "/keys/#{path["id"]}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/workspaces/#{path["id"]}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
