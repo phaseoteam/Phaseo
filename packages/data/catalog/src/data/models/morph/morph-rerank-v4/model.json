@@ -1,0 +1,23 @@
+{
+  "model_id": "morph/morph-rerank-v4",
+  "organisation_id": "morph",
+  "name": "Morph Rerank V4",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "rerank",
+  "api_model_id": "morph/morph-rerank-v4",
+  "links": [
+    {
+      "platform": "documentation",
+      "url": "https://docs.morphllm.com/models/rerank"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

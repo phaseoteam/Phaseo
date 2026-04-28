@@ -1,274 +1,818 @@
 [
   {
-    "api_model_id": "minimax/minimax-m2.5",
-    "provider_api_model_id": "ionrouter:minimax/minimax-m2.5",
-    "provider_model_slug": "minimax-m2.5",
-    "internal_model_id": "minimax/minimax-m2.5",
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "ionrouter:glm-5",
+    "provider_model_slug": "glm-5",
+    "internal_model_id": "z-ai/glm-5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
     "api_model_id": "moonshotai/kimi-k2.5",
-    "provider_api_model_id": "ionrouter:moonshotai/kimi-k2.5",
+    "provider_api_model_id": "ionrouter:kimi-k2.5",
     "provider_model_slug": "kimi-k2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
-    "api_model_id": "openai/gpt-oss-120b",
-    "provider_api_model_id": "ionrouter:openai/gpt-oss-120b",
-    "provider_model_slug": "gpt-oss-120b",
-    "internal_model_id": "openai/gpt-oss-120b",
+    "api_model_id": "minimax/minimax-m2.5",
+    "provider_api_model_id": "ionrouter:minimax-m2.5",
+    "provider_model_slug": "minimax-m2.5",
+    "internal_model_id": "minimax/minimax-m2.5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-14b",
-    "provider_api_model_id": "ionrouter:qwen/qwen2.5-14b",
-    "provider_model_slug": "qwen2.5-14b",
-    "internal_model_id": "qwen/qwen2.5-14b",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-32b",
-    "provider_api_model_id": "ionrouter:qwen/qwen2.5-32b",
-    "provider_model_slug": "qwen2.5-32b",
-    "internal_model_id": "qwen/qwen2.5-32b",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-7b",
-    "provider_api_model_id": "ionrouter:qwen/qwen2.5-7b",
-    "provider_model_slug": "qwen2.5-7b",
-    "internal_model_id": "qwen/qwen2.5-7b",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
     "api_model_id": "qwen/qwen3.5-122b-a10b",
-    "provider_api_model_id": "ionrouter:qwen/qwen3.5-122b-a10b",
+    "provider_api_model_id": "ionrouter:qwen3.5-122b-a10b",
     "provider_model_slug": "qwen3.5-122b-a10b",
     "internal_model_id": "qwen/qwen3.5-122b-a10b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
-    "api_model_id": "qwen/qwen3.5-27b",
-    "provider_api_model_id": "ionrouter:qwen/qwen3.5-27b",
-    "provider_model_slug": "qwen3.5-27b",
-    "internal_model_id": "qwen/qwen3.5-27b",
+    "api_model_id": "openai/gpt-oss-120b",
+    "provider_api_model_id": "ionrouter:gpt-oss-120b",
+    "provider_model_slug": "gpt-oss-120b",
+    "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
     "api_model_id": "qwen/qwen3.5-35b-a3b",
-    "provider_api_model_id": "ionrouter:qwen/qwen3.5-35b-a3b",
+    "provider_api_model_id": "ionrouter:qwen3.5-35b-a3b",
     "provider_model_slug": "qwen3.5-35b-a3b",
     "internal_model_id": "qwen/qwen3.5-35b-a3b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-14b",
-    "provider_api_model_id": "ionrouter:qwen/qwen3-14b",
-    "provider_model_slug": "qwen3-14b",
-    "internal_model_id": "qwen/qwen3-14b",
+    "api_model_id": "qwen/qwen3.5-27b",
+    "provider_api_model_id": "ionrouter:qwen3.5-27b",
+    "provider_model_slug": "qwen3.5-27b",
+    "internal_model_id": "qwen/qwen3.5-27b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
     "api_model_id": "qwen/qwen3-30b-a3b",
-    "provider_api_model_id": "ionrouter:qwen/qwen3-30b-a3b",
+    "provider_api_model_id": "ionrouter:qwen3-30b-a3b",
     "provider_model_slug": "qwen3-30b-a3b",
     "internal_model_id": "qwen/qwen3-30b-a3b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-32b",
+    "provider_api_model_id": "ionrouter:qwen2.5-32b",
+    "provider_model_slug": "qwen2.5-32b",
+    "internal_model_id": "qwen/qwen2.5-32b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek-r1-14b",
+    "provider_api_model_id": "ionrouter:deepseek-r1-14b",
+    "provider_model_slug": "deepseek-r1-14b",
+    "internal_model_id": "",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-14b",
+    "provider_api_model_id": "ionrouter:qwen3-14b",
+    "provider_model_slug": "qwen3-14b",
+    "internal_model_id": "qwen/qwen3-14b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-14b",
+    "provider_api_model_id": "ionrouter:qwen2.5-14b",
+    "provider_model_slug": "qwen2.5-14b",
+    "internal_model_id": "qwen/qwen2.5-14b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
     "api_model_id": "qwen/qwen3-8b",
-    "provider_api_model_id": "ionrouter:qwen/qwen3-8b",
+    "provider_api_model_id": "ionrouter:qwen3-8b",
     "provider_model_slug": "qwen3-8b",
     "internal_model_id": "qwen/qwen3-8b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
   {
-    "api_model_id": "z-ai/glm-5",
-    "provider_api_model_id": "ionrouter:z-ai/glm-5",
-    "provider_model_slug": "glm-5",
-    "internal_model_id": "z-ai/glm-5",
+    "api_model_id": "qwen/qwen2.5-7b",
+    "provider_api_model_id": "ionrouter:qwen2.5-7b",
+    "provider_model_slug": "qwen2.5-7b",
+    "internal_model_id": "qwen/qwen2.5-7b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-03-25T00:00:00",
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-8b",
+    "provider_api_model_id": "ionrouter:qwen3-vl-8b",
+    "provider_model_slug": "qwen3-vl-8b",
+    "internal_model_id": "qwen/qwen3-vl-8b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-30b-a3b",
+    "provider_api_model_id": "ionrouter:qwen3-vl-30b-a3b",
+    "provider_model_slug": "qwen3-vl-30b-a3b",
+    "internal_model_id": "qwen/qwen3-vl-30b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-vl-7b",
+    "provider_api_model_id": "ionrouter:qwen2.5-vl-7b",
+    "provider_model_slug": "qwen2.5-vl-7b",
+    "internal_model_id": "qwen/qwen2.5-vl-7b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "internvl3.5-8b",
+    "provider_api_model_id": "ionrouter:internvl3.5-8b",
+    "provider_model_slug": "internvl3.5-8b",
+    "internal_model_id": "",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "allenai/molmo-2-8b",
+    "provider_api_model_id": "ionrouter:molmo2-8b",
+    "provider_model_slug": "molmo2-8b",
+    "internal_model_id": "allenai/molmo-2-8b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   }

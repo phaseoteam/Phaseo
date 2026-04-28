@@ -1,558 +1,423 @@
 [
   {
-    "api_model_id": "arcee-ai/trinity-mini",
-    "provider_api_model_id": "together:arcee-ai/trinity-mini",
-    "provider_model_slug": "trinity-mini",
-    "internal_model_id": "arcee-ai/trinity-mini",
+    "api_model_id": "cogito/cogito-671b-v2.1",
+    "provider_api_model_id": "together:cogito/cogito-671b-v2.1",
+    "provider_model_slug": "deepcogito/cogito-v2-1-671b",
+    "internal_model_id": "cogito/cogito-671b-v2.1",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 163840,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "deepseek/deepseek-r1",
-    "provider_api_model_id": "together:deepseek/deepseek-r1",
-    "provider_model_slug": "deepseek-r1",
-    "internal_model_id": "deepseek/deepseek-r1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "deepseek/deepseek-r1-0528",
     "provider_api_model_id": "together:deepseek/deepseek-r1-0528",
-    "provider_model_slug": "deepseek-r1-0528",
+    "provider_model_slug": "deepseek-ai/DeepSeek-R1",
     "internal_model_id": "deepseek/deepseek-r1-2025-05-28",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 163839,
+    "max_output_tokens": 163839,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "deepseek/deepseek-v3.1",
     "provider_api_model_id": "together:deepseek/deepseek-v3.1",
-    "provider_model_slug": "deepseek-v3.1",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1",
     "internal_model_id": "deepseek/deepseek-v3.1",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "essentialai/rnj-1-instruct",
-    "provider_api_model_id": "together:essentialai/rnj-1-instruct",
-    "provider_model_slug": "rnj-1-instruct",
+    "api_model_id": "deepseek/deepseek-v4-pro",
+    "provider_api_model_id": "together:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 512000,
+    "max_output_tokens": 512000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "essential-ai/rnj-1",
+    "provider_api_model_id": "together:essential-ai/rnj-1",
+    "provider_model_slug": "essentialai/rnj-1-instruct",
     "internal_model_id": "essential-ai/rnj-1",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "BF16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "google/gemma-1-2b",
-    "provider_api_model_id": "together:google/gemma-1-2b",
-    "provider_model_slug": "gemma-1-2b",
-    "internal_model_id": "google/gemma-1-2b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "google/gemma-2-9b",
-    "provider_api_model_id": "together:google/gemma-2-9b",
-    "provider_model_slug": "gemma-2-9b",
-    "internal_model_id": "google/gemma-2-9b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "google/gemma-3-1b",
-    "provider_api_model_id": "together:google/gemma-3-1b",
-    "provider_model_slug": "gemma-3-1b",
-    "internal_model_id": "google/gemma-3-1b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "google/gemma-3-270m",
-    "provider_api_model_id": "together:google/gemma-3-270m",
-    "provider_model_slug": "gemma-3-270m",
-    "internal_model_id": "",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "google/gemma-3-4b",
-    "provider_api_model_id": "together:google/gemma-3-4b",
-    "provider_model_slug": "gemma-3-4b",
-    "internal_model_id": "google/gemma-3-4b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-3n-e4b",
     "provider_api_model_id": "together:google/gemma-3n-e4b",
-    "provider_model_slug": "gemma-3n-e4b",
+    "provider_model_slug": "google/gemma-3n-E4B-it",
     "internal_model_id": "google/gemma-3n-e4b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "meta/llama-3.1-405b",
-    "provider_api_model_id": "together:meta/llama-3.1-405b",
-    "provider_model_slug": "llama-3.1-405b",
-    "internal_model_id": "meta/llama-3.1-405b",
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "together:google/gemma-4-31b",
+    "provider_model_slug": "google/gemma-4-31B-it",
+    "internal_model_id": "google/gemma-4-31b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "meta/llama-3.1-70b",
-    "provider_api_model_id": "together:meta/llama-3.1-70b",
-    "provider_model_slug": "llama-3.1-70b",
-    "internal_model_id": "meta/llama-3.1-70b",
+    "api_model_id": "liquid-ai/lfm-2-24b-a2b",
+    "provider_api_model_id": "together:liquid-ai/lfm-2-24b-a2b",
+    "provider_model_slug": "LiquidAI/LFM2-24B-A2B",
+    "internal_model_id": "liquid-ai/lfm-2-24b-a2b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "meta/llama-3.1-8b",
-    "provider_api_model_id": "together:meta/llama-3.1-8b",
-    "provider_model_slug": "llama-3.1-8b",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "meta/llama-3.2-1b",
-    "provider_api_model_id": "together:meta/llama-3.2-1b",
-    "provider_model_slug": "llama-3.2-1b",
-    "internal_model_id": "meta/llama-3.2-1b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "meta/llama-3.2-3b",
-    "provider_api_model_id": "together:meta/llama-3.2-3b",
-    "provider_model_slug": "llama-3.2-3b",
-    "internal_model_id": "meta/llama-3.2-3b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "meta/llama-3.3-70b",
-    "provider_api_model_id": "together:meta/llama-3.3-70b",
-    "provider_model_slug": "llama-3.3-70b",
-    "internal_model_id": "meta/llama-3.3-70b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "meta/llama-3-8b-lite",
     "provider_api_model_id": "together:meta/llama-3-8b-lite",
-    "provider_model_slug": "llama-3-8b-lite",
-    "internal_model_id": "",
+    "provider_model_slug": "meta-llama/Meta-Llama-3-8B-Instruct-Lite",
+    "internal_model_id": "meta/llama-3-8b-lite",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "meta/llama-4-maverick",
-    "provider_api_model_id": "together:meta/llama-4-maverick",
-    "provider_model_slug": "llama-4-maverick",
-    "internal_model_id": "meta/llama-4-maverick",
+    "api_model_id": "meta/llama-3.3-70b",
+    "provider_api_model_id": "together:meta/llama-3.3-70b",
+    "provider_model_slug": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    "internal_model_id": "meta/llama-3.3-70b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "meta/llama-4-scout",
-    "provider_api_model_id": "together:meta/llama-4-scout",
-    "provider_model_slug": "llama-4-scout",
-    "internal_model_id": "meta/llama-4-scout",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "minimax/minimax-m2.5",
     "provider_api_model_id": "together:minimax/minimax-m2.5",
-    "provider_model_slug": "minimax-m2.5",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.5",
     "internal_model_id": "minimax/minimax-m2.5",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 228700,
+    "max_output_tokens": 228700,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "mistral/magistral-small-2506",
-    "provider_api_model_id": "together:mistral/magistral-small-2506",
-    "provider_model_slug": "magistral-small-2506",
-    "internal_model_id": "",
+    "api_model_id": "minimax/minimax-m2.7",
+    "provider_api_model_id": "together:minimax/minimax-m2.7",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.7",
+    "internal_model_id": "minimax/minimax-m2.7",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "mistral/ministral-3-14b-2512",
-    "provider_api_model_id": "together:mistral/ministral-3-14b-2512",
-    "provider_model_slug": "ministral-3-14b-2512",
-    "internal_model_id": "",
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "together:moonshotai/kimi-k2.5",
+    "provider_model_slug": "moonshotai/Kimi-K2.5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "mistral/mistral-small-24b-2501",
-    "provider_api_model_id": "together:mistral/mistral-small-24b-2501",
-    "provider_model_slug": "mistral-small-24b-2501",
-    "internal_model_id": "",
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "together:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/Kimi-K2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "mistral/mixtral-8x22b",
-    "provider_api_model_id": "together:mistral/mixtral-8x22b",
-    "provider_model_slug": "mixtral-8x22b",
-    "internal_model_id": "mistral/mixtral-8x22b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "mistral/mixtral-8x7b",
-    "provider_api_model_id": "together:mistral/mixtral-8x7b",
-    "provider_model_slug": "mixtral-8x7b",
-    "internal_model_id": "mistral/mixtral-8x7b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "moonshotai/kimi-k2-0905",
-    "provider_api_model_id": "together:moonshotai/kimi-k2-0905",
-    "provider_model_slug": "kimi-k2-0905",
-    "internal_model_id": "moonshotai/kimi-k2",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "moonshotai/kimi-k2-thinking",
-    "provider_api_model_id": "together:moonshotai/kimi-k2-thinking",
-    "provider_model_slug": "kimi-k2-thinking",
-    "internal_model_id": "moonshotai/kimi-k2-thinking",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "nvidia/nemotron-nano-9b-v2",
-    "provider_api_model_id": "together:nvidia/nemotron-nano-9b-v2",
-    "provider_model_slug": "nemotron-nano-9b-v2",
-    "internal_model_id": "",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "together:openai/gpt-oss-120b",
-    "provider_model_slug": "gpt-oss-120b",
+    "provider_model_slug": "openai/gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "MXFP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "together:openai/gpt-oss-20b",
-    "provider_model_slug": "gpt-oss-20b",
+    "provider_model_slug": "openai/gpt-oss-20b",
     "internal_model_id": "openai/gpt-oss-20b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "MXFP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-1.5b",
-    "provider_api_model_id": "together:qwen/qwen2.5-1.5b",
-    "provider_model_slug": "qwen2.5-1.5b",
-    "internal_model_id": "qwen/qwen2.5-1.5b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-14b",
-    "provider_api_model_id": "together:qwen/qwen2.5-14b",
-    "provider_model_slug": "qwen2.5-14b",
-    "internal_model_id": "qwen/qwen2.5-14b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-32b",
-    "provider_api_model_id": "together:qwen/qwen2.5-32b",
-    "provider_model_slug": "qwen2.5-32b",
-    "internal_model_id": "qwen/qwen2.5-32b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-3b",
-    "provider_api_model_id": "together:qwen/qwen2.5-3b",
-    "provider_model_slug": "qwen2.5-3b",
-    "internal_model_id": "qwen/qwen2.5-3b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-72b",
-    "provider_api_model_id": "together:qwen/qwen2.5-72b",
-    "provider_model_slug": "qwen2.5-72b",
-    "internal_model_id": "qwen/qwen2.5-72b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen2.5-7b",
     "provider_api_model_id": "together:qwen/qwen2.5-7b",
-    "provider_model_slug": "qwen2.5-7b",
+    "provider_model_slug": "Qwen/Qwen2.5-7B-Instruct-Turbo",
     "internal_model_id": "qwen/qwen2.5-7b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-480b-a35b",
+    "provider_api_model_id": "together:qwen/qwen3-coder-480b-a35b",
+    "provider_model_slug": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
+    "internal_model_id": "qwen/qwen3-coder-480b-a35b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 256000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-next",
+    "provider_api_model_id": "together:qwen/qwen3-coder-next",
+    "provider_model_slug": "Qwen/Qwen3-Coder-Next-FP8",
+    "internal_model_id": "qwen/qwen3-coder-next",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3.5-397b-a17b",
@@ -560,179 +425,41 @@
     "provider_model_slug": "Qwen/Qwen3.5-397B-A17B",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
-    "api_model_id": "qwen/qwen3-0.6b",
-    "provider_api_model_id": "together:qwen/qwen3-0.6b",
-    "provider_model_slug": "qwen3-0.6b",
-    "internal_model_id": "qwen/qwen3-0.6b",
+    "api_model_id": "qwen/qwen3.5-9b",
+    "provider_api_model_id": "together:qwen/qwen3.5-9b",
+    "provider_model_slug": "Qwen/Qwen3.5-9B",
+    "internal_model_id": "qwen/qwen3.5-9b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": "qwen3-235b-a22b-2507",
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-thinking-2507",
-    "provider_model_slug": "qwen3-235b-a22b-thinking-2507",
-    "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-coder-next",
-    "provider_api_model_id": "together:qwen/qwen3-coder-next",
-    "provider_model_slug": "qwen3-coder-next",
-    "internal_model_id": "qwen/qwen3-coder-next",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-coder-480b-a35b",
-    "provider_api_model_id": "together:qwen/qwen3-coder-480b-a35b",
-    "provider_model_slug": "qwen3-coder-480b-a35b",
-    "internal_model_id": "qwen/qwen3-coder-480b-a35b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b",
-    "provider_api_model_id": "together:qwen/qwen3-next-80b-a3b",
-    "provider_model_slug": "qwen3-next-80b-a3b",
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "provider_api_model_id": "together:qwen/qwen3-next-80b-a3b-thinking",
-    "provider_model_slug": "qwen3-next-80b-a3b-thinking",
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-32b",
-    "provider_api_model_id": "together:qwen/qwen3-vl-32b",
-    "provider_model_slug": "qwen3-vl-32b",
-    "internal_model_id": "",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-8b",
-    "provider_api_model_id": "together:qwen/qwen3-vl-8b",
-    "provider_model_slug": "qwen3-vl-8b",
-    "internal_model_id": "qwen/qwen3-vl-8b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "z-ai/glm-4.5-air",
-    "provider_api_model_id": "together:z-ai/glm-4.5-air",
-    "provider_model_slug": "glm-4.5-air",
-    "internal_model_id": "z-ai/glm-4.5-air",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "z-ai/glm-4.7",
-    "provider_api_model_id": "together:z-ai/glm-4.7",
-    "provider_model_slug": "glm-4.7",
-    "internal_model_id": "z-ai/glm-4.7",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "z-ai/glm-5",
@@ -743,10 +470,37 @@
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 202752,
+    "max_output_tokens": 202752,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "together:z-ai/glm-5.1",
+    "provider_model_slug": "zai-org/GLM-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

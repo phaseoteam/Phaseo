@@ -2,8 +2,8 @@
   "api_provider_id": "morph",
   "api_provider_name": "Morph",
   "description": null,
-  "link": "https://www.morphllm.com/",
+  "link": "https://www.morphllm.com/pricing",
   "country_code": "US",
-  "status": "NotReady",
+  "status": "Active",
   "colour": "#EC4899"
 }

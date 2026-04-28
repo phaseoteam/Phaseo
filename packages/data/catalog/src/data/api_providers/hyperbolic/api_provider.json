@@ -2,8 +2,8 @@
   "api_provider_id": "hyperbolic",
   "api_provider_name": "Hyperbolic",
   "description": null,
-  "link": "https://docs.hyperbolic.ai/",
+  "link": "https://docs.hyperbolic.xyz/docs/supported-models",
   "country_code": "US",
-  "status": "NotReady",
+  "status": "Active",
   "colour": "#8B5CF6"
 }

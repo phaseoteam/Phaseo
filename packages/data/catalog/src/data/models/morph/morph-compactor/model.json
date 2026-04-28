@@ -1,0 +1,23 @@
+{
+  "model_id": "morph/morph-compactor",
+  "organisation_id": "morph",
+  "name": "Morph Compactor",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "morph/morph-compactor",
+  "links": [
+    {
+      "platform": "documentation",
+      "url": "https://www.morphllm.com/products/compact.md"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

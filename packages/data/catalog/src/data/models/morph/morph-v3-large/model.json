@@ -1,0 +1,23 @@
+{
+  "model_id": "morph/morph-v3-large",
+  "organisation_id": "morph",
+  "name": "Morph V3 Large",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "morph/morph-v3-large",
+  "links": [
+    {
+      "platform": "documentation",
+      "url": "https://www.morphllm.com/products/fastapply.md"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

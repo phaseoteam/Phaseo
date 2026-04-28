@@ -1,0 +1,20 @@
+{
+  "key": "hyperbolic:segmind/sd-1b:image.generate",
+  "api_provider_id": "hyperbolic",
+  "provider_slug": "hyperbolic",
+  "api_model_id": "segmind/sd-1b",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Base public rate for a standard 1024x1024 image at 25 steps.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

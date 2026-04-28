@@ -291,6 +291,9 @@ export const logoManifest = {
 		light: "/logos/suno_light.svg",
 		dark: "/logos/suno_dark.svg",
 	},
+	tencent: {
+		color: "/logos/hunyuan.svg",
+	},
 	together: {
 		color: "/logos/together.svg",
 	},

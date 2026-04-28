@@ -1,0 +1,32 @@
+{
+  "model_id": "tencent/hy3-preview",
+  "organisation_id": "tencent",
+  "name": "Hy3 Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-23T00:00:00",
+  "release_date": "2026-04-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Tencent Hy Community License Agreement",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "tencent/hy3-preview",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/tencent/Hy3-preview"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    },
+    {
+      "name": "parameter_count",
+      "value": 295000000000
+    }
+  ],
+  "benchmarks": []
+}

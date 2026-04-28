@@ -1,0 +1,21 @@
+{
+  "organisation_id": "tencent",
+  "name": "Tencent Hunyuan",
+  "country_code": "CN",
+  "description": "Tencent Hunyuan develops open and proprietary AI models for reasoning, multimodal understanding, coding, and agentic workloads through Tencent's Hunyuan model team.",
+  "colour": "#0055E9",
+  "organisation_links": [
+    {
+      "platform": "github",
+      "url": "https://github.com/Tencent-Hunyuan"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/tencent"
+    },
+    {
+      "platform": "website",
+      "url": "https://hunyuan.tencent.com/"
+    }
+  ]
+}
