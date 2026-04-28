@@ -22,10 +22,31 @@ type ActiveGatewayModelRow = {
     api_model_id?: string | null;
 };
 
+const PAGE_SIZE = 1000;
+
 function toDateMs(value: string | null | undefined): number | null {
     if (!value) return null;
     const ms = Date.parse(String(value).trim());
     return Number.isNaN(ms) ? null : ms;
+}
+
+async function fetchAllRows<T>(fetchPage: (from: number, to: number) => Promise<{ data: T[] | null; error: unknown }>) {
+    const rows: T[] = [];
+    let from = 0;
+
+    while (true) {
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await fetchPage(from, to);
+        if (error) throw error;
+
+        const page = Array.isArray(data) ? data : [];
+        rows.push(...page);
+
+        if (page.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+    }
+
+    return rows;
 }
 
 async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats> {
@@ -42,25 +63,24 @@ async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats>
     };
 
     try {
-        const [modelsRes, apiModelsRes] = await Promise.all([
-            applyHiddenFilter(
-                supabase
-                    .from('data_models')
-                    .select('model_id, organisation_id, announcement_date, release_date', { count: 'exact' }),
-                includeHidden
+        const [visibleModels, apiProviderModels] = await Promise.all([
+            fetchAllRows<VisibleModelStatRow>((from, to) =>
+                applyHiddenFilter(
+                    supabase
+                        .from('data_models')
+                        .select('model_id, organisation_id, announcement_date, release_date')
+                        .range(from, to),
+                    includeHidden
+                )
             ),
-            supabase
-                .from('data_api_provider_models')
-                .select('model_id, internal_model_id, api_model_id')
-                .eq('is_active_gateway', true),
+            fetchAllRows<ActiveGatewayModelRow>((from, to) =>
+                supabase
+                    .from('data_api_provider_models')
+                    .select('model_id, internal_model_id, api_model_id')
+                    .eq('is_active_gateway', true)
+                    .range(from, to)
+            ),
         ]);
-
-        const getCount = (res: { count: number | null; error: any } | any) => {
-            if (res?.error) return 0;
-            return res.count ?? 0;
-        };
-
-        const visibleModels: VisibleModelStatRow[] = Array.isArray(modelsRes.data) ? modelsRes.data : [];
         const visibleModelIds = new Set(
             visibleModels
                 .map((model) => model.model_id)
@@ -75,7 +95,7 @@ async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats>
                 )
         );
         const activeGatewayModels = new Set(
-            ((Array.isArray(apiModelsRes.data) ? apiModelsRes.data : []) as ActiveGatewayModelRow[])
+            apiProviderModels
                 .map((model) => model.model_id ?? model.internal_model_id ?? model.api_model_id)
                 .filter((modelId): modelId is string => typeof modelId === 'string' && visibleModelIds.has(modelId))
         );
