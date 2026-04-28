@@ -27,18 +27,24 @@ import { toast } from "sonner";
 export default function CreateKeyDialog({
 	currentUserId,
 	currentTeamId,
+	currentWorkspaceId,
 	teams,
+	workspaces,
 }: {
 	currentUserId?: string | null;
 	currentTeamId?: string | null;
+	currentWorkspaceId?: string | null;
 	teams?: Array<{ id: string | null; name: string }>;
+	workspaces?: Array<{ id: string | null; name: string }>;
 }) {
+	const resolvedTeams = workspaces ?? teams;
+	const resolvedCurrentTeamId = currentWorkspaceId ?? currentTeamId ?? null;
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
-		currentTeamId ?? null
+		resolvedCurrentTeamId
 	);
 
 	const missingContext = !currentUserId;
@@ -126,7 +132,7 @@ export default function CreateKeyDialog({
 				{!plainKey ? (
 					<form onSubmit={onCreate} className="space-y-4">
 						{/* Team selector (dropdown placed above name input) */}
-						{teams && teams.length > 0 ? (
+						{resolvedTeams && resolvedTeams.length > 0 ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -135,7 +141,7 @@ export default function CreateKeyDialog({
 										className="w-full flex items-center justify-between"
 									>
 										<span>
-											{teams.find(
+											{resolvedTeams.find(
 												(t) => t.id === selectedTeamId
 											)?.name || "Personal"}
 										</span>
@@ -147,7 +153,7 @@ export default function CreateKeyDialog({
 									align="start"
 									className="w-full"
 								>
-									{teams.map((t) => (
+									{resolvedTeams.map((t) => (
 										<DropdownMenuItem
 											key={String(t.id ?? "__null")}
 											onSelect={() =>

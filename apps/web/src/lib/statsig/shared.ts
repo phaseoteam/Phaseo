@@ -5,19 +5,24 @@ export const BETA_OPT_IN_STORAGE_KEY = "ai_stats_beta_opt_in";
 export const BETA_PROFILE_STORAGE_KEY = "ai_stats_beta_profile";
 export const BETA_OPT_IN_CHANGED_EVENT = "ai-stats-beta-opt-in-changed";
 export const BETA_PROFILE_CHANGED_EVENT = "ai-stats-beta-profile-changed";
-export const NEW_GATEWAY_HERO_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_GATE ?? "gateway_new_hero";
-export const NEW_GATEWAY_HERO_EXPERIMENT =
+export const NEW_LANDING_PAGE_GATE =
+	process.env.NEXT_PUBLIC_STATSIG_LANDING_PAGE_GATE ??
+	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_GATE ??
+	"gateway_new_hero";
+export const NEW_LANDING_PAGE_EXPERIMENT =
+	process.env.NEXT_PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT ??
 	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT ??
 	"gateway_hero_experiment";
+export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;
+export const NEW_GATEWAY_HERO_EXPERIMENT = NEW_LANDING_PAGE_EXPERIMENT;
 
 export const WEB_BETA_FEATURES = [
 	{
-		key: NEW_GATEWAY_HERO_GATE,
+		key: NEW_LANDING_PAGE_GATE,
 		kind: "toggle",
-		title: "New homepage hero",
+		title: "Experimental landing page",
 		description:
-			"Replaces the current homepage hero with a more gateway-led headline, updated supporting copy, and stronger routing-first emphasis.",
+			"Applies the experimental homepage treatment across the landing page, including the hero, supporting cards, and gateway-first positioning.",
 	},
 ] as const;
 

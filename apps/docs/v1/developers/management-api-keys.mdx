@@ -1,14 +1,15 @@
 ---
 title: Management API Keys
-description: Manage API keys programmatically with the management endpoints.
+description: Create management API keys in the dashboard and use them for elevated administration APIs.
 ---
 
-Use the Management API Keys endpoints to create, list, inspect, update, and delete
-keys for your team.
+Management API keys are elevated credentials for administration APIs.
+
+Create and manage management API keys in the AI Stats dashboard only.
 
 ## Authentication
 
-Authenticate with a standard AI Stats API key:
+Management API requests authenticate with a management API key:
 
 ```http
 Authorization: Bearer aistats_v1_sk_<kid>_<secret>
@@ -20,92 +21,21 @@ Base URL:
 https://api.phaseo.app/v1
 ```
 
-## Endpoints
+## What they are for
 
-- `GET /management/keys`
-- `POST /management/keys`
-- `GET /management/keys/{id}`
-- `PATCH /management/keys/{id}`
-- `DELETE /management/keys/{id}`
+- Credits and balance access
+- Activity and reporting access
+- Elevated key-management actions
+- Elevated workspace-management actions
+- Guardrails APIs when they ship
 
-## Create a key
+## How to get one
 
-```bash
-curl -X POST https://api.phaseo.app/v1/management/keys \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "CI pipeline key",
-    "scopes": ["read","write"],
-    "status": "active"
-  }'
-```
-
-Example response:
-
-```json
-{
-  "ok": true,
-  "key": {
-    "id": "pk_...",
-    "name": "CI pipeline key",
-    "prefix": "abc123",
-    "status": "active",
-    "scopes": "[\"read\",\"write\"]",
-    "created_at": "2026-02-18T00:00:00.000Z",
-    "key": "aistats_v1_sk_<kid>_<secret>"
-  }
-}
-```
-
-## List keys
-
-```bash
-curl "https://api.phaseo.app/v1/management/keys?limit=50&offset=0" \
-  -H "Authorization: Bearer $AI_STATS_API_KEY"
-```
-
-Optional query params:
-- `team_id`
-- `limit` (max `250`)
-- `offset`
-
-## Get one key
-
-```bash
-curl https://api.phaseo.app/v1/management/keys/<key-id> \
-  -H "Authorization: Bearer $AI_STATS_API_KEY"
-```
-
-## Update a key
-
-```bash
-curl -X PATCH https://api.phaseo.app/v1/management/keys/<key-id> \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Updated key name",
-    "status": "disabled",
-    "soft_blocked": true
-  }'
-```
-
-Allowed status values:
-- `active`
-- `disabled`
-- `revoked`
-
-## Delete a key
-
-```bash
-curl -X DELETE https://api.phaseo.app/v1/management/keys/<key-id> \
-  -H "Authorization: Bearer $AI_STATS_API_KEY"
-```
+Create the key in the AI Stats dashboard under management key settings, then store it in your server-side secret manager.
 
 ## Notes
 
-- `scopes` can be sent as a string or a string array.
-- `team_id` is optional for standard team-scoped requests.
-- For strict request/response schemas, use the API reference pages under
-  `API Reference -> Control and Management -> Management API Keys`.
+- Management API keys cannot be created, listed, updated, or deleted through the public API.
+- Do not use management API keys for normal inference traffic.
+- Keep management keys server-side only.
 

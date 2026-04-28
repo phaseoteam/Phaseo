@@ -374,13 +374,6 @@
 										]
 									},
 									{
-										"group": "Health",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/health"
-										]
-									},
-									{
 										"group": "Activity",
 										"expanded": false,
 										"pages": [
@@ -395,6 +388,13 @@
 										]
 									},
 									{
+										"group": "Guardrails",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/guardrails"
+										]
+									},
+									{
 										"group": "Generation",
 										"expanded": false,
 										"pages": [
@@ -402,21 +402,26 @@
 										]
 									},
 									{
-										"group": "Management Keys",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/management/index"
-										]
-									},
-									{
 										"group": "API Keys",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/management/keys-create",
-											"v1/api-reference/endpoint/management/keys-list",
-											"v1/api-reference/endpoint/management/keys-get",
-											"v1/api-reference/endpoint/management/keys-update",
-											"v1/api-reference/endpoint/management/keys-delete"
+											"v1/api-reference/endpoint/key-current",
+											"v1/api-reference/endpoint/keys-list",
+											"v1/api-reference/endpoint/keys-create",
+											"v1/api-reference/endpoint/keys-get",
+											"v1/api-reference/endpoint/keys-delete",
+											"v1/api-reference/endpoint/keys-update"
+										]
+									},
+									{
+										"group": "Workspaces",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/workspaces-list",
+											"v1/api-reference/endpoint/workspaces-create",
+											"v1/api-reference/endpoint/workspaces-get",
+											"v1/api-reference/endpoint/workspaces-delete",
+											"v1/api-reference/endpoint/workspaces-update"
 										]
 									}
 								]
@@ -513,8 +518,7 @@
 										"group": "Admin",
 										"pages": [
 											"v1/sdk-reference/typescript/models",
-											"v1/sdk-reference/typescript/generation",
-											"v1/sdk-reference/typescript/health"
+											"v1/sdk-reference/typescript/generation"
 										]
 									}
 								]
@@ -537,8 +541,7 @@
 											"v1/sdk-reference/python/chat-completions",
 											"v1/sdk-reference/python/embeddings",
 											"v1/sdk-reference/python/moderations",
-											"v1/sdk-reference/python/models",
-											"v1/sdk-reference/python/health"
+											"v1/sdk-reference/python/models"
 										]
 									},
 									{
@@ -609,8 +612,7 @@
 										"group": "Admin",
 										"pages": [
 											"v1/sdk-reference/go/models",
-											"v1/sdk-reference/go/generation",
-											"v1/sdk-reference/go/health"
+											"v1/sdk-reference/go/generation"
 										]
 									}
 								]
@@ -667,8 +669,7 @@
 										"group": "Admin",
 										"pages": [
 											"v1/sdk-reference/csharp/models",
-											"v1/sdk-reference/csharp/generation",
-											"v1/sdk-reference/csharp/health"
+											"v1/sdk-reference/csharp/generation"
 										]
 									}
 								]
@@ -725,8 +726,7 @@
 										"group": "Admin",
 										"pages": [
 											"v1/sdk-reference/php/models",
-											"v1/sdk-reference/php/generation",
-											"v1/sdk-reference/php/health"
+											"v1/sdk-reference/php/generation"
 										]
 									}
 								]
@@ -783,8 +783,7 @@
 										"group": "Admin",
 										"pages": [
 											"v1/sdk-reference/ruby/models",
-											"v1/sdk-reference/ruby/generation",
-											"v1/sdk-reference/ruby/health"
+											"v1/sdk-reference/ruby/generation"
 										]
 									}
 								]
@@ -841,8 +840,7 @@
 										"group": "Admin",
 										"pages": [
 											"v1/sdk-reference/java/models",
-											"v1/sdk-reference/java/generation",
-											"v1/sdk-reference/java/health"
+											"v1/sdk-reference/java/generation"
 										]
 									}
 								]

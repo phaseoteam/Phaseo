@@ -69,6 +69,15 @@ const internalTools = [
 		comingSoon: false,
 	},
 	{
+		id: "security-reports",
+		title: "Security Reports",
+		description:
+			"Review leaked-key incident reports, revoke compromised keys, and close false positives.",
+		icon: Shield,
+		href: "/internal/security-reports",
+		comingSoon: false,
+	},
+	{
 		id: "promo-credits",
 		title: "Promo Credits",
 		description:
@@ -93,7 +102,7 @@ const internalTools = [
 			"Run side-by-side public streaming comparisons between AI Stats Gateway and OpenRouter.",
 		icon: Gauge,
 		href: "/internal/gateway-benchmark",
-		comingSoon: false,
+		comingSoon: true,
 	},
 	{
 		id: "analytics",

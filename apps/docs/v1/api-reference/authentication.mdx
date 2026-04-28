@@ -32,9 +32,11 @@ curl https://api.phaseo.app/v1/responses \
 - Store keys in a secrets manager, not in browser code.
 - Use separate keys per app/environment for safer rotation.
 
-## Management keys API
+## Management keys
 
-For programmatic key lifecycle operations, use the [Management Keys](./endpoint/management/index.mdx) endpoints under Administration APIs.
+Management API keys are created and managed in the AI Stats dashboard, not through the public API.
+
+Use them for elevated administration endpoints such as [Credits](./endpoint/credits.mdx) and [Activity](./endpoint/activity.mdx), and for future control-plane APIs like guardrails, key management, and workspace management.
 
 ## Authentication failures
 

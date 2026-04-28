@@ -4,6 +4,10 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import AccountMFAClient from "@/components/(gateway)/settings/account/AccountMFAClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
+export const metadata = {
+	title: "MFA - Settings",
+};
+
 export default function AccountMFAPage() {
 	return (
 		<div className="space-y-6">

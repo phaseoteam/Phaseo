@@ -61,10 +61,73 @@ function renderLowBalanceEmail(payload: Record<string, unknown> | null): {
 	};
 }
 
+function renderSecurityLeakedKeyEmail(payload: Record<string, unknown> | null): {
+	subject: string;
+	html: string;
+	text: string;
+} {
+	const workspaceName =
+		typeof payload?.workspace_name === "string" && payload.workspace_name.trim()
+			? payload.workspace_name.trim()
+			: "your workspace";
+	const keyPreview =
+		typeof payload?.key_preview === "string" && payload.key_preview.trim()
+			? payload.key_preview.trim()
+			: "the reported key";
+	const source =
+		typeof payload?.reported_source === "string" && payload.reported_source.trim()
+			? payload.reported_source.trim()
+			: "an external source";
+	const evidenceUrl =
+		typeof payload?.evidence_url === "string" && payload.evidence_url.trim()
+			? payload.evidence_url.trim()
+			: null;
+	const autoRevoked = payload?.auto_revoked === true;
+	const subject = autoRevoked
+		? "Security alert: exposed API key revoked"
+		: "Security alert: exposed API key reported";
+	const lead = autoRevoked
+		? `An AI Stats API key for ${workspaceName} was reported as publicly exposed and has been revoked.`
+		: `An AI Stats API key for ${workspaceName} was reported as publicly exposed.`;
+	const actionLine = autoRevoked
+		? "Create a replacement key and update any environments that were using the exposed key."
+		: "Review the key immediately and rotate or revoke it if the exposure is legitimate.";
+
+	return {
+		subject,
+		html: [
+			"<div style=\"font-family: ui-sans-serif, system-ui; line-height: 1.5;\">",
+			`<h2 style="margin: 0 0 12px;">${subject}</h2>`,
+			`<p style="margin: 0 0 12px;">${lead}</p>`,
+			`<p style="margin: 0 0 12px;"><strong>Key:</strong> ${keyPreview}</p>`,
+			`<p style="margin: 0 0 12px;"><strong>Reported source:</strong> ${source}</p>`,
+			evidenceUrl
+				? `<p style="margin: 0 0 12px;"><strong>Evidence:</strong> <a href="${evidenceUrl}">${evidenceUrl}</a></p>`
+				: "",
+			`<p style="margin: 0;">${actionLine}</p>`,
+			"</div>",
+		].join(""),
+		text: [
+			subject,
+			"",
+			lead,
+			`Key: ${keyPreview}`,
+			`Reported source: ${source}`,
+			evidenceUrl ? `Evidence: ${evidenceUrl}` : null,
+			"",
+			actionLine,
+		]
+			.filter(Boolean)
+			.join("\n"),
+	};
+}
+
 function renderEmailForRow(row: OutboxRow): {
 	subject: string;
-	templateId: string;
-	variables: Record<string, string | number>;
+	templateId?: string;
+	variables?: Record<string, string | number>;
+	html?: string;
+	text?: string;
 } {
 	const bindings = getBindings();
 	if (row.template === "welcome" || row.kind === "welcome") {
@@ -106,6 +169,14 @@ function renderEmailForRow(row: OutboxRow): {
 				LOW_BALANCE_THRESHOLD: thresholdUsd ?? "",
 				WORKSPACE_NAME: teamName,
 			},
+		};
+	}
+	if (row.template === "security_leaked_key" || row.kind === "security_leaked_key") {
+		const rendered = renderSecurityLeakedKeyEmail(row.payload ?? {});
+		return {
+			subject: row.subject ?? rendered.subject,
+			html: rendered.html,
+			text: rendered.text,
 		};
 	}
 	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
@@ -170,11 +241,20 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 			}
 
 			const rendered = renderEmailForRow(row);
-			await sendEmail({
-				to: row.to_email,
-				subject: rendered.subject,
-				template: { id: rendered.templateId, variables: rendered.variables },
-			});
+			if (rendered.templateId) {
+				await sendEmail({
+					to: row.to_email,
+					subject: rendered.subject,
+					template: { id: rendered.templateId, variables: rendered.variables },
+				});
+			} else {
+				await sendEmail({
+					to: row.to_email,
+					subject: rendered.subject,
+					html: rendered.html,
+					text: rendered.text,
+				});
+			}
 
 			const { error: updateErr } = await supabase
 				.from("email_outbox")

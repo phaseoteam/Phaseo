@@ -13,42 +13,11 @@ import {
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_VERSION_L1_TTL_MS = 5_000;
-const KEY_LOOKUP_L1_TTL_MS = 30_000;
+const KEY_VERSION_L1_TTL_MS = 1_000;
+const KEY_LOOKUP_L1_TTL_MS = 1_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
-const HMAC_KEY_CACHE_MAX_ENTRIES = 16;
-const AUTH_SUCCESS_L1_TTL_MS = 15_000;
-const AUTH_SUCCESS_L1_MAX_ENTRIES = 5_000;
 
 /* -------------------- Web Crypto HMAC helpers -------------------- */
-
-const hmacKeyCache = new Map<string, CryptoKey>();
-
-function ttlWithJitter(baseMs: number): number {
-    return baseMs + Math.floor(Math.random() * baseMs * 0.2);
-}
-
-async function getHmacKey(cacheKey: string, keyBytes: Uint8Array): Promise<CryptoKey> {
-    const cached = hmacKeyCache.get(cacheKey);
-    if (cached) return cached;
-
-    const raw = new Uint8Array(keyBytes.byteLength);
-    raw.set(keyBytes);
-    const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        raw.buffer,
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-    );
-
-    if (hmacKeyCache.size >= HMAC_KEY_CACHE_MAX_ENTRIES) {
-        const oldestKey = hmacKeyCache.keys().next().value;
-        if (oldestKey) hmacKeyCache.delete(oldestKey);
-    }
-    hmacKeyCache.set(cacheKey, cryptoKey);
-    return cryptoKey;
-}
 
 /**
  * Compute HMAC-SHA256 of `message` using a raw key (as bytes).
@@ -58,8 +27,20 @@ async function getHmacKey(cacheKey: string, keyBytes: Uint8Array): Promise<Crypt
  * - We need to validate API keys without storing secrets in plaintext.
  * - HMAC + pepper lets us safely verify user-provided secrets.
  */
-async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array, cacheKey: string): Promise<string> {
-    const cryptoKey = await getHmacKey(cacheKey, keyBytes);
+async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array): Promise<string> {
+    // Ensure we have a real ArrayBuffer (avoid SharedArrayBuffer quirks).
+    const raw = new Uint8Array(keyBytes.byteLength);
+    raw.set(keyBytes);
+
+    // Import the raw bytes into a WebCrypto HMAC key.
+    const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        raw.buffer,                         // must be an ArrayBuffer
+        { name: "HMAC", hash: "SHA-256" }, // HMAC-SHA256
+        false,                              // not extractable
+        ["sign"]                            // only used for signing
+    );
+
     // Compute the MAC (message authentication code).
     const mac = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message));
 
@@ -75,7 +56,7 @@ async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array, cacheK
  * This is the "Node-compatible" mode (mirrors createHmac).
  */
 function hmacUtf8(message: string, pepperUtf8: string) {
-    return hmacHexWithKeyBytes(message, enc.encode(pepperUtf8), `utf8:${pepperUtf8}`);
+    return hmacHexWithKeyBytes(message, enc.encode(pepperUtf8));
 }
 
 // Optional decoders: allow peppers stored as hex or base64url.
@@ -104,7 +85,7 @@ async function secretMatchesStoredHash(secret: string, storedHash: string, peppe
 
     const hex = decodeHex(pepper);
     if (hex) {
-        const digestHex = await hmacHexWithKeyBytes(secret, hex, `hex:${pepper}`);
+        const digestHex = await hmacHexWithKeyBytes(secret, hex);
         if (ctEqualHex(digestHex, storedHash)) {
             return true;
         }
@@ -112,7 +93,7 @@ async function secretMatchesStoredHash(secret: string, storedHash: string, peppe
 
     const b64 = decodeBase64Url(pepper);
     if (b64) {
-        const digestB64 = await hmacHexWithKeyBytes(secret, b64, `b64url:${pepper}`);
+        const digestB64 = await hmacHexWithKeyBytes(secret, b64);
         if (ctEqualHex(digestB64, storedHash)) {
             return true;
         }
@@ -206,6 +187,7 @@ type KeyRow = {
     status: string;
     hash: string;
     expires_at?: string | null;
+    soft_blocked?: boolean | null;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -214,15 +196,7 @@ type KeyLookupL1Entry = {
     value: KeyLookupL1Value;
     expiresAt: number;
 };
-type AuthSuccessL1Value = Omit<AuthSuccess, "ok" | "internal"> & {
-    keyExpiresAt?: string | null;
-};
-type AuthSuccessL1Entry = {
-    value: AuthSuccessL1Value;
-    expiresAt: number;
-};
 const keyLookupL1Cache = new Map<string, KeyLookupL1Entry>();
-const authSuccessL1Cache = new Map<string, AuthSuccessL1Entry>();
 
 function keyLookupL1Key(kid: string, versionToken: string): string {
     return `${kid}:${versionToken}`;
@@ -257,52 +231,7 @@ function writeKeyLookupL1(kid: string, versionToken: string, value: KeyLookupL1V
     pruneKeyLookupL1(now);
     keyLookupL1Cache.set(keyLookupL1Key(kid, versionToken), {
         value,
-        expiresAt: now + ttlWithJitter(KEY_LOOKUP_L1_TTL_MS),
-    });
-}
-
-async function sha256Base64Url(input: string): Promise<string> {
-    const digest = await crypto.subtle.digest("SHA-256", enc.encode(input));
-    const bytes = new Uint8Array(digest);
-    let binary = "";
-    for (const b of bytes) {
-        binary += String.fromCharCode(b);
-    }
-    return btoa(binary)
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-}
-
-function readAuthSuccessL1(key: string): AuthSuccessL1Value | null {
-    const entry = authSuccessL1Cache.get(key);
-    if (!entry) return null;
-    if (entry.expiresAt <= Date.now()) {
-        authSuccessL1Cache.delete(key);
-        return null;
-    }
-    if (isExpiredKey(entry.value.keyExpiresAt)) {
-        authSuccessL1Cache.delete(key);
-        return null;
-    }
-    return entry.value;
-}
-
-function writeAuthSuccessL1(key: string, value: AuthSuccessL1Value): void {
-    const now = Date.now();
-    for (const [entryKey, entry] of authSuccessL1Cache.entries()) {
-        if (entry.expiresAt <= now) {
-            authSuccessL1Cache.delete(entryKey);
-        }
-    }
-    while (authSuccessL1Cache.size >= AUTH_SUCCESS_L1_MAX_ENTRIES) {
-        const oldestKey = authSuccessL1Cache.keys().next().value;
-        if (!oldestKey) break;
-        authSuccessL1Cache.delete(oldestKey);
-    }
-    authSuccessL1Cache.set(key, {
-        value,
-        expiresAt: now + ttlWithJitter(AUTH_SUCCESS_L1_TTL_MS),
+        expiresAt: now + KEY_LOOKUP_L1_TTL_MS,
     });
 }
 
@@ -318,11 +247,33 @@ function isExpiredKey(expiresAt?: string | null): boolean {
     return ts <= Date.now();
 }
 
+function readBearerToken(req: Request): string | null {
+    const authorizationHeader = req.headers.get("authorization") ?? undefined;
+    if (!authorizationHeader?.startsWith("Bearer ")) {
+        return null;
+    }
+    const token = authorizationHeader.slice(7).trim();
+    return token.length > 0 ? token : null;
+}
+
+async function findMatchingPepperCandidate(args: {
+    secret: string;
+    storedHash: string;
+    pepperCandidates: KeyPepperCandidate[];
+}): Promise<KeyPepperCandidate | null> {
+    for (const candidate of args.pepperCandidates) {
+        if (await secretMatchesStoredHash(args.secret, args.storedHash, candidate.value)) {
+            return candidate;
+        }
+    }
+    return null;
+}
+
 async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
     try {
         const versionToken = await keyVersionToken("kid", kid, {
             useL1Cache: true,
-            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
+            l1TtlMs: KEY_VERSION_L1_TTL_MS,
         });
         const l1 = readKeyLookupL1(kid, versionToken);
         if (l1 !== null) return l1;
@@ -349,7 +300,7 @@ async function cacheKey(kid: string, row: KeyRow) {
     try {
         versionToken = await keyVersionToken("kid", kid, {
             useL1Cache: true,
-            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
+            l1TtlMs: KEY_VERSION_L1_TTL_MS,
         });
         await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
             expirationTtl: KEY_CACHE_TTL_SECONDS,
@@ -380,11 +331,10 @@ async function cacheKey(kid: string, row: KeyRow) {
  */
 export async function authenticate(req: Request, options: AuthenticateOptions = {}): Promise<AuthSuccess | AuthFailure> {
     // 1. Ensure proper "Bearer ..." format.
-    const authorizationHeader = req.headers.get("authorization") ?? undefined;
-    if (!authorizationHeader?.startsWith("Bearer ")) {
+    const token = readBearerToken(req);
+    if (!token) {
         return { ok: false, reason: "missing_or_invalid_authorization_header" };
     }
-    const token = authorizationHeader.slice(7).trim();
 
     // 2. Route to OAuth or API key authentication
     // Check if token is a JWT (3 dot-separated parts, not starting with aistats_)
@@ -402,27 +352,6 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
-
-    const authSecretTag = await sha256Base64Url(parsed.secret);
-    const authVersionToken = useKvCache
-        ? await keyVersionToken("kid", parsed.kid, {
-            useL1Cache: true,
-            l1TtlMs: ttlWithJitter(KEY_VERSION_L1_TTL_MS),
-        })
-        : null;
-    const authSuccessCacheKey = authVersionToken
-        ? `${parsed.kid}:${authVersionToken}:${authSecretTag}`
-        : null;
-    const cachedSuccess = authSuccessCacheKey
-        ? readAuthSuccessL1(authSuccessCacheKey)
-        : null;
-    if (cachedSuccess) {
-        return {
-            ok: true,
-            ...cachedSuccess,
-            internal: isInternalRequestAuthorized(req, bindings),
-        };
-    }
 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();
@@ -489,16 +418,11 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         return { ok: false, reason: "server_misconfig_missing_pepper" };
     }
 
-    const findMatchingPepper = async (hash: string): Promise<KeyPepperCandidate | null> => {
-        for (const candidate of pepperCandidates) {
-            if (await secretMatchesStoredHash(parsed.secret, hash, candidate.value)) {
-                return candidate;
-            }
-        }
-        return null;
-    };
-
-    let matchedPepper: KeyPepperCandidate | null = await findMatchingPepper(stored);
+    let matchedPepper: KeyPepperCandidate | null = await findMatchingPepperCandidate({
+        secret: parsed.secret,
+        storedHash: stored,
+        pepperCandidates,
+    });
 
     // If hash compare failed against cached row, refresh from DB once and retry.
     if (!matchedPepper && keyRowSource === "cache") {
@@ -511,7 +435,11 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         keyRow = freshKeyRow;
         keyRowSource = "db";
         stored = String(keyRow.hash).toLowerCase().trim();
-        matchedPepper = await findMatchingPepper(stored);
+        matchedPepper = await findMatchingPepperCandidate({
+            secret: parsed.secret,
+            storedHash: stored,
+            pepperCandidates,
+        });
 
         if (useKvCache) {
             await cacheKey(parsed.kid, keyRow);
@@ -563,20 +491,104 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         } as AuthSuccess;
     };
 
-    const result = matchedPepper.source === "previous"
-        ? await success(await hmacUtf8(parsed.secret, activePepper))
-        : await success();
-    if (result.ok && authSuccessCacheKey) {
-        writeAuthSuccessL1(authSuccessCacheKey, {
-            workspaceId: result.workspaceId,
-            apiKeyId: result.apiKeyId,
-            apiKeyRef: result.apiKeyRef,
-            apiKeyKid: result.apiKeyKid,
-            userId: result.userId ?? null,
-            keyExpiresAt: keyRow.expires_at ?? null,
-        });
+    if (matchedPepper.source === "previous") {
+        const nextHash = await hmacUtf8(parsed.secret, activePepper);
+        return success(nextHash);
     }
-    return result;
+
+    return success();
+}
+
+export async function authenticateManagement(
+    req: Request,
+    options: AuthenticateOptions = {},
+): Promise<AuthSuccess | AuthFailure> {
+    const token = readBearerToken(req);
+    if (!token) {
+        return { ok: false, reason: "missing_or_invalid_authorization_header" };
+    }
+    if (isJWTFormat(token)) {
+        return { ok: false, reason: "management_key_required" };
+    }
+
+    const parsed = parseV2(token);
+    if (!parsed) return { ok: false, reason: "invalid_key_format" };
+    if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
+
+    const bindings = getBindings();
+    const supabase = getSupabaseAdmin();
+    const useKvCache = options.useKvCache ?? false;
+
+    const { data, error } = await supabase
+        .from("management_keys")
+        .select("*")
+        .eq("kid", parsed.kid)
+        .maybeSingle();
+
+    if (error) return { ok: false, reason: "db_error" };
+    if (!data) return { ok: false, reason: "key_not_found_or_revoked" };
+
+    const keyRow = data as KeyRow;
+    if (keyRow.status !== "active") {
+        return { ok: false, reason: "key_not_found_or_revoked" };
+    }
+    if (Boolean(keyRow.soft_blocked)) {
+        return { ok: false, reason: "key_soft_blocked" };
+    }
+    if (isExpiredKey(keyRow.expires_at)) {
+        return { ok: false, reason: "key_expired" };
+    }
+
+    const activePepper = resolveActiveKeyPepper(bindings);
+    const pepperCandidates = resolveKeyPepperCandidates(bindings);
+    if (!activePepper || pepperCandidates.length === 0) {
+        return { ok: false, reason: "server_misconfig_missing_pepper" };
+    }
+
+    const stored = String(keyRow.hash).toLowerCase().trim();
+    const matchedPepper = await findMatchingPepperCandidate({
+        secret: parsed.secret,
+        storedHash: stored,
+        pepperCandidates,
+    });
+    if (!matchedPepper) {
+        return { ok: false, reason: "invalid_secret" };
+    }
+
+    const internal = isInternalRequestAuthorized(req, bindings);
+    const nextHash = matchedPepper.source === "previous"
+        ? await hmacUtf8(parsed.secret, activePepper)
+        : null;
+
+    dispatchBackground((async () => {
+        configureRuntime(bindings);
+        try {
+            const updatePayload: Record<string, unknown> = {
+                last_used_at: new Date().toISOString(),
+            };
+            if (nextHash && nextHash !== stored) {
+                updatePayload.hash = nextHash;
+            }
+            await supabase
+                .from("management_keys")
+                .update(updatePayload)
+                .eq("id", keyRow.id);
+        } finally {
+            clearRuntime();
+        }
+    })());
+
+    void useKvCache;
+
+    return {
+        ok: true,
+        workspaceId: keyRow.workspace_id,
+        apiKeyId: keyRow.id,
+        apiKeyRef: `mgmt_kid_${parsed.kid}`,
+        apiKeyKid: parsed.kid,
+        userId: null,
+        internal,
+    };
 }
 
 /* -------------------- OAuth JWT Authentication -------------------- */

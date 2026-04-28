@@ -3,7 +3,11 @@
 const DEFAULT_API_URL = "http://localhost:8787";
 
 function getControlKey(): string | null {
-    return process.env.GATEWAY_CONTROL_KEY ?? process.env.AI_STATS_GATEWAY_KEY ?? null;
+    return process.env.GATEWAY_MANAGEMENT_KEY
+        ?? process.env.AI_STATS_MANAGEMENT_KEY
+        ?? process.env.GATEWAY_CONTROL_KEY
+        ?? process.env.AI_STATS_GATEWAY_KEY
+        ?? null;
 }
 
 function getControlSecret(): string | null {

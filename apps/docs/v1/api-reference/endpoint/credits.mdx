@@ -4,6 +4,6 @@ badge: "Beta"
 openapi: "GET /credits"
 description: "How the Gateway tracks and bills for requests."
 ---
-Credit tracking is handled by the AI Stats Dashboard under **Gateway -> Credits**. Every Gateway response includes a `usage` block with token counts and cost metadata so that you can reconcile the per-request spend before the dashboard invoices your team.
-
-Use the dashboard to top up, configure auto top-up, and view the per-category billing breakdown that matches the `model`, `provider`, and `endpoint` values returned from the API.
+<Note>
+This endpoint requires a management API key. Standard Gateway API keys are not accepted.
+</Note>

@@ -24,45 +24,80 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
+function toIsoFromDateTimeLocalInput(value: string): string | null {
+	if (!value) return null;
+	const date = new Date(value);
+	if (!Number.isFinite(date.getTime())) return null;
+	return date.toISOString();
+}
+
 export default function CreateManagementKeyDialog({
 	currentUserId,
-	currentTeamId,
-	teams,
+	currentWorkspaceId,
+	workspaces,
 }: {
 	currentUserId?: string | null;
-	currentTeamId?: string | null;
-	teams?: Array<{ id: string | null; name: string }>;
+	currentWorkspaceId?: string | null;
+	workspaces?: Array<{ id: string | null; name: string }>;
 }) {
+	const resolveInitialWorkspaceId = React.useCallback(() => {
+		const normalizedCurrent = String(currentWorkspaceId ?? "").trim();
+		if (normalizedCurrent) return normalizedCurrent;
+		for (const workspace of workspaces ?? []) {
+			const workspaceId = String(workspace?.id ?? "").trim();
+			if (workspaceId) return workspaceId;
+		}
+		return null;
+	}, [currentWorkspaceId, workspaces]);
+
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
+	const [expiresAtLocal, setExpiresAtLocal] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
-	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
-		currentTeamId ?? null
+	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
+		resolveInitialWorkspaceId()
 	);
+	const expiresAt = toIsoFromDateTimeLocalInput(expiresAtLocal);
 
 	const missingContext = !currentUserId;
 	const canCreate =
-		!!name && !loading && !missingContext && selectedTeamId !== undefined;
+		!!name &&
+		!loading &&
+		!missingContext &&
+		typeof selectedWorkspaceId === "string" &&
+		selectedWorkspaceId.trim().length > 0;
+
+	React.useEffect(() => {
+		const nextWorkspaceId = resolveInitialWorkspaceId();
+		if (nextWorkspaceId !== selectedWorkspaceId) {
+			setSelectedWorkspaceId(nextWorkspaceId);
+		}
+	}, [resolveInitialWorkspaceId, selectedWorkspaceId]);
 
 	async function onCreate(e?: React.FormEvent) {
 		e?.preventDefault();
 		if (!name) return;
-		if (!currentUserId || selectedTeamId === undefined) {
+		if (
+			!currentUserId ||
+			typeof selectedWorkspaceId !== "string" ||
+			selectedWorkspaceId.trim().length === 0
+		) {
 			setPlainKey(null);
 			setLoading(false);
-			alert("Missing user or workspace context. Make sure you are signed in.");
+			toast.error(
+				"Missing workspace context. Select a workspace in the header and try again.",
+			);
 			return;
 		}
 		try {
 			setLoading(true);
-			const teamArg =
-				selectedTeamId === null ? "" : (selectedTeamId as string);
 			const res: any = await createManagementKeyAction({
 				name,
 				creatorUserId: currentUserId as string,
-				workspaceId: teamArg,
-				scopes: JSON.stringify([])
+				workspaceId: selectedWorkspaceId,
+				scopes: JSON.stringify([]),
+				expiresAt,
 			});
 			setPlainKey(res?.plaintext ?? null);
 		} catch (err: any) {
@@ -83,6 +118,7 @@ export default function CreateManagementKeyDialog({
 	function onClose() {
 		setOpen(false);
 		setName("");
+		setExpiresAtLocal("");
 		setPlainKey(null);
 	}
 
@@ -125,7 +161,7 @@ export default function CreateManagementKeyDialog({
 
 				{!plainKey ? (
 					<form onSubmit={onCreate} className="space-y-4">
-						{teams && teams.length > 0 ? (
+						{workspaces && workspaces.length > 1 ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -134,8 +170,8 @@ export default function CreateManagementKeyDialog({
 										className="w-full flex items-center justify-between"
 									>
 										<span>
-											{teams.find(
-												(t) => t.id === selectedTeamId
+											{workspaces.find(
+												(workspace) => workspace.id === selectedWorkspaceId
 											)?.name || "Personal"}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
@@ -146,14 +182,14 @@ export default function CreateManagementKeyDialog({
 									align="start"
 									className="w-full"
 								>
-									{teams.map((t) => (
+									{workspaces.map((workspace) => (
 										<DropdownMenuItem
-											key={String(t.id ?? "__null")}
+											key={String(workspace.id ?? "__null")}
 											onSelect={() =>
-												setSelectedTeamId(t.id ?? null)
+												setSelectedWorkspaceId(workspace.id ?? null)
 											}
 										>
-											{t.name}
+											{workspace.name}
 										</DropdownMenuItem>
 									))}
 								</DropdownMenuContent>
@@ -164,6 +200,17 @@ export default function CreateManagementKeyDialog({
 							onChange={(e) => setName(e.target.value)}
 							placeholder="Key name (e.g. production management)"
 						/>
+						<div className="space-y-2">
+							<Input
+								type="datetime-local"
+								value={expiresAtLocal}
+								onChange={(e) => setExpiresAtLocal(e.target.value)}
+								placeholder="Optional expiry"
+							/>
+							<p className="text-xs text-muted-foreground">
+								Optional. Leave blank to keep this management key active until you revoke or pause it.
+							</p>
+						</div>
 						<DialogFooter>
 							<DialogClose asChild>
 								<Button

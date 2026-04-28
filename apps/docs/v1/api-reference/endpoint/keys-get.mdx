@@ -1,0 +1,11 @@
+---
+title: "Get API Key"
+badge: "Beta"
+openapi: "GET /keys/{id}"
+description: "Retrieve a single API key by id or hash."
+---
+<Note>
+This endpoint requires a management API key. Standard Gateway API keys are not accepted.
+</Note>
+
+Returns metadata for one API key in the authenticated workspace. The `{id}` path segment may be either the internal key id or the key hash returned by the API.

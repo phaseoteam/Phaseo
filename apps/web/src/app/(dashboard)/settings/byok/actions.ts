@@ -6,7 +6,6 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { encryptSecret } from "@/lib/byok/crypto";
 import { validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
-import { cookies } from "next/headers";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
     requireAuthenticatedUser,
@@ -39,9 +38,7 @@ export async function createByokKeyAction(
     // Derive metadata & ciphertext
     const enc = encryptSecret(value);
 
-    // Get workspace_id from session/user (example)
-    const cookieStore = await cookies();
-    const activeWorkspaceId = cookieStore.get('activeWorkspaceId')?.value;
+    const activeWorkspaceId = await getWorkspaceIdFromCookie();
     if (!activeWorkspaceId) throw new Error("No active workspace selected");
     await requireWorkspaceMembership(supabase, user.id, activeWorkspaceId, ["owner", "admin"]);
 

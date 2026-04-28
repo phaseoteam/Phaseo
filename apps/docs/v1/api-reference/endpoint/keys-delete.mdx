@@ -1,0 +1,11 @@
+---
+title: "Delete API Key"
+badge: "Beta"
+openapi: "DELETE /keys/{id}"
+description: "Delete an API key in the authenticated workspace."
+---
+<Note>
+This endpoint requires a management API key. Standard Gateway API keys are not accepted.
+</Note>
+
+Deletion is permanent from the public API perspective. The response confirms the key was deleted.

@@ -26,17 +26,33 @@ export type CreateManagementKeyInput = {
 	creatorUserId: string;
 	workspaceId: string;
 	scopes?: string;
+	expiresAt?: string | null;
 };
 
 export type UpdateManagementKeyInput = {
 	name?: string;
 	paused?: boolean;
+	expiresAt?: string | null;
 };
+
+function parseOptionalExpiry(expiresAt: string | null | undefined): string | null | undefined {
+	if (expiresAt === undefined) return undefined;
+	if (expiresAt === null || String(expiresAt).trim() === "") {
+		return null;
+	}
+
+	const parsed = new Date(expiresAt);
+	if (Number.isNaN(parsed.getTime())) {
+		throw new Error("Invalid expiry time");
+	}
+
+	return parsed.toISOString();
+}
 
 export async function createManagementKeyAction(
 	input: CreateManagementKeyInput
 ) {
-	const { name, creatorUserId, workspaceId, scopes = "[]" } = input;
+	const { name, creatorUserId, workspaceId, scopes = "[]", expiresAt } = input;
 
 	if (!name || typeof name !== "string") {
 		throw new Error("Name is required");
@@ -68,6 +84,7 @@ export async function createManagementKeyAction(
 		prefix,
 		status: "active",
 		scopes,
+		expires_at: parseOptionalExpiry(expiresAt) ?? null,
 		created_by: creatorUserId,
 		created_at: new Date().toISOString(),
 	};
@@ -122,6 +139,11 @@ export async function updateManagementKeyAction(
 
 	if (typeof updates.paused === "boolean") {
 		updateObj.status = updates.paused ? "paused" : "active";
+	}
+
+	const parsedExpiresAt = parseOptionalExpiry(updates.expiresAt);
+	if (parsedExpiresAt !== undefined) {
+		updateObj.expires_at = parsedExpiresAt;
 	}
 
 	if (Object.keys(updateObj).length === 0) {

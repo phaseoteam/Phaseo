@@ -4,7 +4,7 @@
  * Provides programmatic API access to OAuth client management.
  * This allows developers to manage their OAuth apps via API (not just web UI).
  *
- * Authentication: Requires valid API key with appropriate permissions
+ * Authentication: Requires valid management API key
  * Authorization: Team-scoped (can only manage own team's OAuth apps)
  *
  * Endpoints:
@@ -20,25 +20,10 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
 import { z } from "zod";
-import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
+import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 
 const app = new Hono<Env>();
-
-function extractUserIdFromBearer(req: Request): string | null {
-	const authHeader = req.headers.get("authorization");
-	if (!authHeader?.startsWith("Bearer ")) return null;
-	const token = authHeader.slice(7).trim();
-	const parts = token.split(".");
-	if (parts.length !== 3) return null;
-	try {
-		const payloadRaw = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-		const padded = payloadRaw + "===".slice((payloadRaw.length + 3) % 4);
-		const payload = JSON.parse(atob(padded));
-		return typeof payload?.user_id === "string" ? payload.user_id : null;
-	} catch {
-		return null;
-	}
-}
+const PAGE_SIZE = 5000;
 
 function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { workspaceId: string | null; userId: string | null } {
 	return {
@@ -50,13 +35,13 @@ function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { workspaceI
 app.use("*", async (c, next) => {
 	configureRuntime(c.env);
 	try {
-		const auth = await guardAuth(c.req.raw, { useKvCache: false });
+		const auth = await guardManagementAuth(c.req.raw, { useKvCache: false });
 		if (!auth.ok) {
 			return (auth as GuardErr).response;
 		}
 		c.set("ctx", {
 			workspaceId: auth.value.workspaceId,
-			userId: extractUserIdFromBearer(c.req.raw),
+			userId: auth.value.userId ?? null,
 			apiKeyId: auth.value.apiKeyId,
 			apiKeyRef: auth.value.apiKeyRef,
 			apiKeyKid: auth.value.apiKeyKid,
@@ -89,6 +74,130 @@ const updateOAuthClientSchema = z.object({
 	redirect_uris: z.array(z.string().url()).min(1).optional(),
 });
 
+async function attachOAuthAppStats(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	apps: any[],
+): Promise<any[]> {
+	if (!Array.isArray(apps) || apps.length === 0) return [];
+
+	const clientIds = apps
+		.map((row) => String(row?.client_id ?? "").trim())
+		.filter(Boolean);
+	if (!clientIds.length) return apps;
+
+	const statsByClientId = new Map<
+		string,
+		{
+			active_authorizations: number;
+			total_authorizations: number;
+			last_used_at: string | null;
+			requests_last_30d: number;
+		}
+	>();
+
+	for (const clientId of clientIds) {
+		statsByClientId.set(clientId, {
+			active_authorizations: 0,
+			total_authorizations: 0,
+			last_used_at: null,
+			requests_last_30d: 0,
+		});
+	}
+
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await supabase
+			.from("oauth_authorizations")
+			.select("client_id, revoked_at, last_used_at")
+			.in("client_id", clientIds)
+			.order("created_at", { ascending: true })
+			.range(offset, offset + PAGE_SIZE - 1);
+
+		if (error) {
+			throw new Error(error.message ?? "Failed to load OAuth authorization stats");
+		}
+		if (!Array.isArray(data) || data.length === 0) break;
+
+		for (const row of data) {
+			const clientId = String((row as any)?.client_id ?? "").trim();
+			if (!clientId) continue;
+			const stats = statsByClientId.get(clientId);
+			if (!stats) continue;
+
+			stats.total_authorizations += 1;
+			if ((row as any)?.revoked_at == null) {
+				stats.active_authorizations += 1;
+			}
+
+			const lastUsedAt = String((row as any)?.last_used_at ?? "").trim();
+			if (!lastUsedAt) continue;
+			if (!stats.last_used_at || lastUsedAt > stats.last_used_at) {
+				stats.last_used_at = lastUsedAt;
+			}
+		}
+
+		if (data.length < PAGE_SIZE) break;
+	}
+
+	const thirtyDaysAgo = new Date();
+	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+	const fromIso = thirtyDaysAgo.toISOString();
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await supabase
+			.from("gateway_requests")
+			.select("oauth_client_id")
+			.in("oauth_client_id", clientIds)
+			.gte("created_at", fromIso)
+			.order("created_at", { ascending: true })
+			.range(offset, offset + PAGE_SIZE - 1);
+
+		if (error) {
+			throw new Error(error.message ?? "Failed to load OAuth usage stats");
+		}
+		if (!Array.isArray(data) || data.length === 0) break;
+
+		for (const row of data) {
+			const clientId = String((row as any)?.oauth_client_id ?? "").trim();
+			if (!clientId) continue;
+			const stats = statsByClientId.get(clientId);
+			if (!stats) continue;
+			stats.requests_last_30d += 1;
+		}
+
+		if (data.length < PAGE_SIZE) break;
+	}
+
+	return apps.map((appRow) => {
+		const clientId = String(appRow?.client_id ?? "").trim();
+		const stats = statsByClientId.get(clientId);
+		return {
+			...appRow,
+			active_authorizations: stats?.active_authorizations ?? 0,
+			total_authorizations: stats?.total_authorizations ?? 0,
+			last_used_at: stats?.last_used_at ?? null,
+			requests_last_30d: stats?.requests_last_30d ?? 0,
+		};
+	});
+}
+
+async function resolveCreatorUserId(workspaceId: string): Promise<string> {
+	const supabase = getSupabaseAdmin();
+	const { data, error } = await supabase
+		.from("workspaces")
+		.select("owner_user_id")
+		.eq("id", workspaceId)
+		.maybeSingle();
+
+	if (error) {
+		throw new Error(error.message ?? "Failed to resolve workspace owner");
+	}
+
+	const ownerUserId = String((data as { owner_user_id?: unknown } | null)?.owner_user_id ?? "").trim();
+	if (!ownerUserId) {
+		throw new Error("Workspace owner is required to create OAuth apps");
+	}
+	return ownerUserId;
+}
+
 /**
  * POST /v1/oauth-clients
  *
@@ -100,15 +209,6 @@ app.post("/", async (c) => {
 		const authCtx = readAuthContext(c.get("ctx"));
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
-		}
-		if (!authCtx.userId) {
-			return c.json(
-				{
-					error: "user_token_required",
-					message: "OAuth client creation requires a user-scoped OAuth token",
-				},
-				400
-			);
 		}
 
 		// Parse and validate input
@@ -126,6 +226,7 @@ app.post("/", async (c) => {
 		}
 
 		const input = parsed.data;
+		const createdBy = authCtx.userId ?? await resolveCreatorUserId(authCtx.workspaceId);
 
 		// Create OAuth client using Supabase Admin SDK
 		const supabase = getSupabaseAdmin();
@@ -156,7 +257,7 @@ app.post("/", async (c) => {
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
 				terms_of_service_url: input.terms_of_service_url,
-				created_by: authCtx.userId,
+				created_by: createdBy,
 				status: "active",
 			})
 			.select()
@@ -198,18 +299,20 @@ app.get("/", async (c) => {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
-		// Fetch OAuth apps for team from database view
+		// Fetch OAuth apps for workspace and attach derived stats
 		const supabase = getSupabaseAdmin();
-		const { data: apps, error: appsError } = await supabase
-			.from("oauth_apps_with_stats")
+		const { data: appMetadataRows, error: appsError } = await supabase
+			.from("oauth_app_metadata")
 			.select("*")
 			.eq("workspace_id", authCtx.workspaceId)
+			.eq("status", "active")
 			.order("created_at", { ascending: false });
 
 		if (appsError) {
 			console.error("Error fetching OAuth apps:", appsError);
 			return c.json({ error: "Failed to fetch OAuth apps" }, 500);
 		}
+		const apps = await attachOAuthAppStats(supabase, appMetadataRows ?? []);
 
 		return c.json({
 			data: apps || [],
@@ -239,19 +342,22 @@ app.get("/:clientId", async (c) => {
 
 		const clientId = c.req.param("clientId");
 
-		// Fetch OAuth app with stats
+		// Fetch OAuth app metadata and attach derived stats
 		const supabase = getSupabaseAdmin();
-		const { data: app, error: appError } = await supabase
-			.from("oauth_apps_with_stats")
+		const { data: appMetadata, error: appError } = await supabase
+			.from("oauth_app_metadata")
 			.select("*")
 			.eq("client_id", clientId)
 			.eq("workspace_id", authCtx.workspaceId)
-			.single();
+			.eq("status", "active")
+			.maybeSingle();
 
-		if (appError || !app) {
+		if (appError || !appMetadata) {
 			console.error("Error fetching OAuth app:", appError);
 			return c.json({ error: "OAuth app not found" }, 404);
 		}
+		const withStats = await attachOAuthAppStats(supabase, [appMetadata]);
+		const app = withStats[0];
 
 		return c.json(app);
 	} catch (error: any) {
