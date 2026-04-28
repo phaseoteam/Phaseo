@@ -214,7 +214,8 @@
       "deepseek/deepseek-v3.2",
       "deepseek/deepseek-v3.2-exp",
       "deepseek/deepseek-v3.2-speciale",
-      "deepseek/deepseek-v4",
+      "deepseek/deepseek-v4-flash",
+      "deepseek/deepseek-v4-pro",
       "deepseek/deepseek-vl2",
       "deepseek/deepseek-vl2-small",
       "deepseek/deepseek-vl2-tiny"
@@ -1010,7 +1011,12 @@
       "xiaomi/mimo-v2-flash",
       "xiaomi/mimo-v2-omni",
       "xiaomi/mimo-v2-pro",
-      "xiaomi/mimo-v2-tts"
+      "xiaomi/mimo-v2-tts",
+      "xiaomi/mimo-v2.5",
+      "xiaomi/mimo-v2.5-base",
+      "xiaomi/mimo-v2.5-pro",
+      "xiaomi/mimo-v2.5-pro-base",
+      "xiaomi/mimo-v2.5-tts"
     ],
     "z-ai": [
       "z-ai/glm-4-32b",
