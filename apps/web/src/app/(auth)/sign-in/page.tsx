@@ -1,6 +1,6 @@
 // app/(auth)/sign-in/page.tsx
-import Link from "next/link";
 import ProviderLogos from "@/components/(gateway)/auth/providers";
+import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
 import SupportedModelsStats from "@/components/landingPage/Auth/SupportedModelsStats";
 import KeyModels from "@/components/landingPage/Auth/KeyModels";
 import { Suspense } from "react";
@@ -36,20 +36,14 @@ export default async function Page({ searchParams }: SignInPageProps) {
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
 			{/* LEFT COL */}
-			<div className="relative flex flex-col p-6 md:p-10">
+			<div className="flex flex-col p-6 md:p-10">
 				{/* Brand link overlayed top-left; doesn’t push content down */}
-				<Link
-					href="/"
-					className="absolute left-6 top-6 md:left-10 md:top-10 z-10 inline-flex items-center gap-2 font-medium"
-					aria-label="AI Stats home"
-				>
-					<span className="inline text-2xl font-semibold tracking-tight select-none">
-						AI Stats
-					</span>
-				</Link>
+				<div className="shrink-0">
+					<AuthWordmark />
+				</div>
 
 				{/* Centre the login card */}
-				<div className="flex flex-1 items-center justify-center">
+				<div className="flex flex-1 items-start justify-center pt-4 md:items-center md:pt-0">
 					<div className="mx-auto w-full max-w-xs">
 						<Suspense fallback={<div>Loading…</div>}>
 							<Login
