@@ -1170,11 +1170,15 @@ paths:
         - Gateway
       operationId: getCredits
       summary: Get remaining credits
-      description: Returns remaining credits and usage statistics for the authenticated workspace. Management API key required.
+      description: >-
+        Returns remaining credits and usage statistics for the authenticated
+        workspace. Management API key required.
       parameters:
         - name: workspace_id
           in: query
-          description: Optional workspace override. Must match the authenticated workspace unless using an internal control caller.
+          description: >-
+            Optional workspace override. Must match the authenticated workspace
+            unless using an internal control caller.
           schema:
             type: string
             format: uuid
@@ -1210,7 +1214,9 @@ paths:
         - Gateway
       operationId: getCurrentApiKey
       summary: Get current API key
-      description: Returns metadata for the currently authenticated standard Gateway API key.
+      description: >-
+        Returns metadata for the currently authenticated standard Gateway API
+        key.
       responses:
         '200':
           description: Current API key metadata
@@ -1243,7 +1249,9 @@ paths:
         - Gateway
       operationId: listApiKeys
       summary: List API keys
-      description: Lists API keys for the authenticated workspace. Management API key required.
+      description: >-
+        Lists API keys for the authenticated workspace. Management API key
+        required.
       parameters:
         - name: include_disabled
           in: query
@@ -1268,7 +1276,9 @@ paths:
             maximum: 250
         - name: workspace_id
           in: query
-          description: Optional workspace override. Must match the authenticated workspace unless using an internal control caller.
+          description: >-
+            Optional workspace override. Must match the authenticated workspace
+            unless using an internal control caller.
           schema:
             type: string
             format: uuid
@@ -1303,7 +1313,9 @@ paths:
         - Gateway
       operationId: createApiKey
       summary: Create a new API key
-      description: Creates a new API key in the authenticated workspace. Management API key required.
+      description: >-
+        Creates a new API key in the authenticated workspace. Management API key
+        required.
       requestBody:
         required: true
         content:
@@ -1348,7 +1360,9 @@ paths:
         - Gateway
       operationId: getApiKey
       summary: Get a single API key
-      description: Returns metadata for one API key in the authenticated workspace. Management API key required.
+      description: >-
+        Returns metadata for one API key in the authenticated workspace.
+        Management API key required.
       parameters:
         - name: id
           in: path
@@ -1438,7 +1452,9 @@ paths:
         - Gateway
       operationId: deleteApiKey
       summary: Delete an API key
-      description: Deletes an API key in the authenticated workspace. Management API key required.
+      description: >-
+        Deletes an API key in the authenticated workspace. Management API key
+        required.
       parameters:
         - name: id
           in: path
@@ -1478,11 +1494,15 @@ paths:
         - Gateway
       operationId: getActivity
       summary: Get recent activity
-      description: Returns recent request activity for the authenticated workspace. Management API key required.
+      description: >-
+        Returns recent request activity for the authenticated workspace.
+        Management API key required.
       parameters:
         - name: workspace_id
           in: query
-          description: Optional workspace override. Must match the authenticated workspace unless using an internal control caller.
+          description: >-
+            Optional workspace override. Must match the authenticated workspace
+            unless using an internal control caller.
           schema:
             type: string
             format: uuid
@@ -1546,7 +1566,9 @@ paths:
         - Gateway
       operationId: listWorkspaces
       summary: List workspaces
-      description: Lists workspaces owned by the authenticated management key owner. Management API key required.
+      description: >-
+        Lists workspaces owned by the authenticated management key owner.
+        Management API key required.
       parameters:
         - name: offset
           in: query
@@ -1588,7 +1610,9 @@ paths:
         - Gateway
       operationId: createWorkspace
       summary: Create a workspace
-      description: Creates a new workspace for the authenticated owner. Management API key required.
+      description: >-
+        Creates a new workspace for the authenticated owner. Management API key
+        required.
       requestBody:
         required: true
         content:
@@ -4919,9 +4943,7 @@ components:
         - android-control-low-em
         - androidworld
         - androidworld-sr
-        - apex
         - apex-agents
-        - apex-shortlist
         - arc
         - arc-agi
         - arc-agi-1
@@ -4958,7 +4980,6 @@ components:
         - biobench
         - biolp-bench
         - bird-sql-(dev)
-        - bixbench
         - blink
         - boolq
         - browsecomp
@@ -4985,12 +5006,10 @@ components:
         - charxiv-rq
         - chest-imagenome-anatomy-iou
         - chexpert-cxr-top5-macro-f1
-        - chinese-simpleqa
         - cl-bench
         - claw-eval
         - cloningscenarios
         - cluewsc
-        - cmath
         - cmmlu
         - cnmo-2024
         - codeforces
@@ -5002,7 +5021,6 @@ components:
         - complexfuncbench
         - confabulations
         - contphy
-        - corpusqa-1m
         - countbench
         - covost2
         - covost2-en-zh
@@ -5015,7 +5033,6 @@ components:
         - cruxeval-o
         - csimpleqa
         - ct-dataset-1-macro-accuracy
-        - ctf-challenge-tasks
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
@@ -5053,12 +5070,10 @@ components:
         - eqbench
         - erqa
         - evalplus
-        - expert-swe
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
         - facts-grounding
-        - facts-parametric
         - factscore
         - factscore-halluciation-rate
         - fiction-live-bench
@@ -5087,7 +5102,6 @@ components:
         - galileo-agent
         - gdpval-aa
         - gdpval-mm
-        - genebench
         - giantsteps-tempo
         - global-mmlu-lite
         - global-pica
@@ -5096,12 +5110,8 @@ components:
         - gpqa
         - gpqa-diamond
         - graphwalks-bfs->128k
-        - graphwalks-bfs-1m-f1
-        - graphwalks-bfs-256k-f1
         - graphwalks-bfs-lt-128k
         - graphwalks-parents->128k
-        - graphwalks-parents-1m-f1
-        - graphwalks-parents-256k-f1
         - graphwalks-parents-lt-128k
         - gsm8k
         - gsm8k-chat
@@ -5118,7 +5128,6 @@ components:
         - hle-verified
         - hle-vl
         - hmmt-2025
-        - hmmt-2026-feb
         - hmmt-feb-2025
         - hmmt-feb-2026
         - hmmt-feb-26
@@ -5145,7 +5154,6 @@ components:
         - intergps
         - internal-api-instruction-following-(hard)
         - inverse-ifeval
-        - investment-banking-modeling
         - iq-bench
         - ivebench-consistency-vs-kling-o1
         - ivebench-consistency-vs-runway-aleph
@@ -5283,7 +5291,6 @@ components:
         - multichallenge-(o3-mini-grader)
         - multilf
         - multilingual-mmlu
-        - multiloko
         - multipl-e
         - musiccaps
         - mvbench
@@ -5320,7 +5327,6 @@ components:
         - openai-mrcr-2-needle-256k
         - openai-mrcr-8-needle-128k
         - openai-mrcr-8-needle-1m
-        - openai-mrcr-v2-8-needle
         - openai-mrcr:-2-needle-128k
         - openai-mrcr:-2-needle-1m
         - openbookqa
@@ -5680,7 +5686,9 @@ components:
           description: Period used for the spend limit window.
         include_byok_in_limit:
           type: boolean
-          description: Accepted for compatibility. Current AI Stats behavior always excludes BYOK from this limit field.
+          description: >-
+            Accepted for compatibility. Current AI Stats behavior always
+            excludes BYOK from this limit field.
         expires_at:
           type: string
           format: date-time
@@ -5714,7 +5722,9 @@ components:
           description: Period used for the spend limit window.
         include_byok_in_limit:
           type: boolean
-          description: Accepted for compatibility. Current AI Stats behavior always excludes BYOK from this limit field.
+          description: >-
+            Accepted for compatibility. Current AI Stats behavior always
+            excludes BYOK from this limit field.
         expires_at:
           type: string
           format: date-time
@@ -5796,7 +5806,7 @@ components:
           example: Production
         slug:
           type: string
-          pattern: '^[a-z0-9-]+$'
+          pattern: ^[a-z0-9-]+$
           minLength: 1
           maxLength: 50
           example: production
@@ -5810,7 +5820,7 @@ components:
           maxLength: 100
         slug:
           type: string
-          pattern: '^[a-z0-9-]+$'
+          pattern: ^[a-z0-9-]+$
           minLength: 1
           maxLength: 50
       additionalProperties: false
@@ -6462,7 +6472,10 @@ components:
         - aion-labs/aion-2.0
         - aion-labs/aion-2.5
         - aion-labs/aion-rp-llama-3.1-8b
+        - allenai/molmo-2-8b
         - allenai/olmo-3.1-32b
+        - allenai/olmocr-2-7b-1025
+        - anthropic/claude-3.7-sonnet
         - anthropic/claude-haiku-4.5
         - anthropic/claude-opus-4
         - anthropic/claude-opus-4.1
@@ -6497,10 +6510,13 @@ components:
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
         - cogito/cogito-671b-v2.1
+        - deepseek-r1-14b
         - deepseek/deepseek-ocr
         - deepseek/deepseek-ocr-2
         - deepseek/deepseek-prover-v2-671b
         - deepseek/deepseek-r1-0528
+        - deepseek/deepseek-r1-2025-05-28
+        - deepseek/deepseek-r1-distill-llama-70b
         - deepseek/deepseek-r1-turbo
         - deepseek/deepseek-v3
         - deepseek/deepseek-v3-0324
@@ -6513,12 +6529,13 @@ components:
         - deepseek/deepseek-v3.2-thinking
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
-        - google/embeddinggemma-300m
         - google/gemini-2.0-flash
         - google/gemini-2.0-flash-lite
+        - google/gemini-2.5-flash
         - google/gemini-2.5-flash-image
         - google/gemini-2.5-flash-lite-preview-2025-06-17
         - google/gemini-2.5-flash-lite-preview-2025-09-25
+        - google/gemini-2.5-pro
         - google/gemini-3-flash-preview
         - google/gemini-3-pro-image-preview
         - google/gemini-3.1-flash-image-preview
@@ -6527,7 +6544,6 @@ components:
         - google/gemini-3.1-pro-preview
         - google/gemini-3.1-pro-preview-customtools
         - google/gemini-embedding-001
-        - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
         - google/gemini-robotics-er-1.6-preview
         - google/gemma-3-12b
@@ -6545,7 +6561,8 @@ components:
         - google/gemma-4-31b:free
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
-        - inclusionai/ling-2.6-1t
+        - gryphe/mythomax-l2-13b
+        - internvl3.5-8b
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
         - kwaipilot/kat-coder-pro-v1
@@ -6555,6 +6572,7 @@ components:
         - meta/llama-3-8b
         - meta/llama-3.1-70b
         - meta/llama-3.1-8b
+        - meta/llama-3.2-11b-vision
         - meta/llama-3.2-3b
         - meta/llama-3.3-70b
         - meta/llama-4-maverick
@@ -6613,9 +6631,11 @@ components:
         - nousresearch/hermes-3-llama-3.1-70b
         - nousresearch/hermes-4-405b
         - nousresearch/hermes-4-70b
+        - nvidia/llama-3.1-nemotron-70b-instruct
         - nvidia/llama-3.1-nemotron-ultra-253b
         - nvidia/llama-3.3-nemotron-super-49b-v1.5
         - nvidia/nemotron-3-nano-30b-a3b
+        - nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
         - nvidia/nemotron-3-super-120b-a12b
         - nvidia/nvidia-nemotron-3-nano-30b-a3b
         - nvidia/nvidia-nemotron-nano-12b-v2-vl
@@ -6682,6 +6702,11 @@ components:
         - openai/text-embedding-3-large
         - openai/text-embedding-3-small
         - openai/text-embedding-ada-002
+        - paddlepaddle/paddleocr-vl-0.9b
+        - poolside/laguna-m.1
+        - poolside/laguna-m.1:free
+        - poolside/laguna-xs.2
+        - poolside/laguna-xs.2:free
         - primeintellect/intellect-3
         - qwen/qvq-max
         - qwen/qwen-3.6-plus
@@ -6715,6 +6740,7 @@ components:
         - qwen/qwen2.5-7b-1m
         - qwen/qwen2.5-vl-32b
         - qwen/qwen2.5-vl-72b
+        - qwen/qwen2.5-vl-7b
         - qwen/qwen3-0.6b
         - qwen/qwen3-1.7b
         - qwen/qwen3-14b
@@ -6769,7 +6795,6 @@ components:
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
         - qwen/qwen3.5-plus-2026-04-20
-        - qwen/qwen3.6-27b
         - qwen/qwen3.6-35b-a3b
         - qwen/qwen3.6-max-preview
         - qwen/qwen3.6-plus
@@ -6777,6 +6802,9 @@ components:
         - qwen/text-embedding-v3
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
+        - sao10k/l3-8b-lunaris-v1-turbo
+        - sao10k/l3.1-70b-euryale-v2.2
+        - sao10k/l3.3-70b-euryale-v2.3
         - stepfun/step-3.5-flash
         - venice/venice-uncensored
         - venice/venice-uncensored-1.1
@@ -6822,9 +6850,6 @@ components:
         - xiaomi/mimo-v2-omni
         - xiaomi/mimo-v2-pro
         - xiaomi/mimo-v2-tts:free
-        - xiaomi/mimo-v2.5
-        - xiaomi/mimo-v2.5-pro
-        - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
         - z-ai/glm-4.5
