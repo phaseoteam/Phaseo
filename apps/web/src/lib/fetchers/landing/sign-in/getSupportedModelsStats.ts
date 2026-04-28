@@ -30,7 +30,9 @@ function toDateMs(value: string | null | undefined): number | null {
     return Number.isNaN(ms) ? null : ms;
 }
 
-async function fetchAllRows<T>(fetchPage: (from: number, to: number) => Promise<{ data: T[] | null; error: unknown }>) {
+async function fetchAllRows<T>(
+    fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+) {
     const rows: T[] = [];
     let from = 0;
 
