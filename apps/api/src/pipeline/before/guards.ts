@@ -420,13 +420,13 @@ export function makeMeta(input: {
     const debug: DebugOptions | undefined = input.debug || debugEnabled
         ? { ...input.debug, enabled: debugEnabled }
         : undefined;
-    return {
-        apiKeyId: input.apiKeyId,
-        apiKeyRef: input.apiKeyRef,
     const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
     const testId = nodeEnv === "test"
         ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
         : null;
+    return {
+        apiKeyId: input.apiKeyId,
+        apiKeyRef: input.apiKeyRef,
         apiKeyKid: input.apiKeyKid,
         authMethod: input.authMethod ?? "api_key",
         oauthClientId: input.oauthClientId ?? null,
@@ -454,6 +454,7 @@ export function makeMeta(input: {
         appName,
         requestUserId,
         sessionId,
+        testId,
         trace,
         requestMethod: input.req.method ?? null,
         accept,
@@ -472,4 +473,3 @@ export function makeMeta(input: {
         beta: input.beta,
     };
 }
-        testId,

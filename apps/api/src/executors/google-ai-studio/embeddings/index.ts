@@ -86,7 +86,7 @@ function assertEmbeddingMediaPart(part: IREmbeddingsContentPart, geminiPart: Rec
 }
 
 function resolvedBaseUrl(): string {
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseRoot = String(
 		bindings.GOOGLE_AI_STUDIO_BASE_URL ||
 		bindings.GOOGLE_BASE_URL ||

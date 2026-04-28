@@ -19,7 +19,7 @@ import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 const ANTHROPIC_FAST_MODE_BETA = "fast-mode-2026-02-01";
 
 function anthropicBaseUrl(): string {
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	return String(bindings.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "");
 }
 

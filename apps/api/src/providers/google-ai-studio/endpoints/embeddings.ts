@@ -127,11 +127,16 @@ function mapGoogleToGatewayEmbeddings(json: any, model: string, usageOverride?: 
     };
 }
 
-async function fetchTokenCount(key: string, modelForUrl: string, inputs: unknown[]) {
+async function fetchTokenCount(
+    key: string,
+    modelForUrl: string,
+    inputs: unknown[],
+    extraHeaders?: Record<string, string>,
+) {
     const contents = inputs.map((input) => normalizeEmbeddingInput(coerceInput(input)));
     const res = await fetch(`${resolveBaseUrl()}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
         method: "POST",
-        headers: baseHeaders(key, upstreamTestHeaders(args.meta)),
+        headers: baseHeaders(key, extraHeaders),
         body: JSON.stringify({ contents }),
     });
     const json = await res.clone().json().catch(() => null);
@@ -194,7 +199,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const json = await res.clone().json().catch(() => null);
     let usage = json ? extractEmbeddingUsage(json) : undefined;
     if (!usage) {
-        const totalTokens = await fetchTokenCount(key, modelForUrl, inputs);
+        const totalTokens = await fetchTokenCount(key, modelForUrl, inputs, upstreamTestHeaders(args.meta));
         if (typeof totalTokens === "number" && totalTokens > 0) {
             usage = {
                 embedding_tokens: totalTokens,
