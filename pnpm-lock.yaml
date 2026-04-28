@@ -99,6 +99,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20260420.1
         version: 4.20260423.1
+      '@copilotkit/aimock':
+        specifier: 1.15.1
+        version: 1.15.1(jest@30.3.0(@types/node@25.6.0)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.2)))(vitest@4.1.4)
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -1331,6 +1334,19 @@ packages:
 
   '@cloudflare/workers-types@4.20260423.1':
     resolution: {integrity: sha512-SHIc0NeJMtn0sW043eWtMxYFbJ9VPSLkcx+FEqCk0uZLD3HrWT+5xWhm6EYiOYDg0vnrlXNHcu2ly/01zDh3bw==}
+
+  '@copilotkit/aimock@1.15.1':
+    resolution: {integrity: sha512-DG9p6fKdYmuTW0zaUe9iDbgB/CM3SWhpdhVBrszQ6+L2UW4+DZB0gvICFQXRWhVXMpqxEkI9Pqhm/MtMb8li9A==}
+    engines: {node: '>=24.0.0'}
+    hasBin: true
+    peerDependencies:
+      jest: '>=29'
+      vitest: '>=3'
+    peerDependenciesMeta:
+      jest:
+        optional: true
+      vitest:
+        optional: true
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -11699,6 +11715,11 @@ snapshots:
     optional: true
 
   '@cloudflare/workers-types@4.20260423.1': {}
+
+  '@copilotkit/aimock@1.15.1(jest@30.3.0(@types/node@25.6.0)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.2)))(vitest@4.1.4)':
+    optionalDependencies:
+      jest: 30.3.0(@types/node@25.6.0)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.2))
+      vitest: 4.1.4(@opentelemetry/api@1.9.0)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@25.6.0)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

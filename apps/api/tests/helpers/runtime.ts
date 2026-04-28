@@ -58,6 +58,7 @@ export function setupTestRuntime() {
         GOOGLE_AI_STUDIO_BASE_URL: "https://api.google-ai-studio.example",
         GOOGLE_BASE_URL: "https://api.google.example",
         ANTHROPIC_API_KEY: "test-anthropic-key",
+        ANTHROPIC_BASE_URL: "https://api.anthropic.example",
         X_AI_API_KEY: "test-xai-key",
         AI21_API_KEY: "test-ai21-key",
         AI21_BASE_URL: "https://api.ai21.example",

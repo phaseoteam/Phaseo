@@ -9,6 +9,7 @@ import { sanitizePayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 
 
@@ -60,7 +61,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const req = mapGatewayToOpenAIImages(modifiedBody);
     const res = await fetch(openAICompatUrl(args.providerId, "/images/generations"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key),
+        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(req),
     });
     const bill = {

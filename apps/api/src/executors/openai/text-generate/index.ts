@@ -15,6 +15,7 @@ import {
 	resolveOpenAICompatKey,
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
@@ -539,10 +540,18 @@ function withOpenAIRequestMetadata(
 	return next;
 }
 
-function openAIRequestHeaders(providerId: string, requestId: string): Record<string, string> | undefined {
-	if (providerId !== "openai") return undefined;
+function openAIRequestHeaders(
+	providerId: string,
+	requestId: string,
+	testId?: string | null,
+): Record<string, string> | undefined {
+	const testHeaders = upstreamTestHeaders({ testId });
+	if (providerId !== "openai") {
+		return Object.keys(testHeaders).length > 0 ? testHeaders : undefined;
+	}
 	return {
 		"Idempotency-Key": requestId,
+		...testHeaders,
 	};
 }
 
@@ -741,7 +750,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		headers: openAICompatHeaders(
 			args.providerId,
 			keyInfo.key,
-			openAIRequestHeaders(args.providerId, args.requestId),
+			openAIRequestHeaders(args.providerId, args.requestId, args.meta.testId),
 		),
 		body: requestBody,
 	});

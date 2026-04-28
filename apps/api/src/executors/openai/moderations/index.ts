@@ -5,6 +5,7 @@
 import type { IRModerationsRequest, IRModerationsResponse, IRModerationsResult } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
 
 function normalizeModelName(model?: string | null): string {
@@ -44,6 +45,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, key, {
 			"Idempotency-Key": args.requestId,
+			...upstreamTestHeaders(args.meta),
 		}),
 		body: JSON.stringify(requestBody),
 	});

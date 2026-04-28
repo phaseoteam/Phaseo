@@ -10,12 +10,18 @@ import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from
 import type { IRChatRequest, IRChatResponse, IRChoice, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 
 const ANTHROPIC_FAST_MODE_BETA = "fast-mode-2026-02-01";
+
+function anthropicBaseUrl(): string {
+	const bindings = getBindings() as Record<string, string | undefined>;
+	return String(bindings.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "");
+}
 
 /**
  * Executes IR requests using Anthropic Messages API
@@ -54,13 +60,14 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		const anthropicBeta = requestBody.speed === "fast" ? ANTHROPIC_FAST_MODE_BETA : undefined;
 
 		// Execute upstream call
-		const res = await fetch("https://api.anthropic.com/v1/messages", {
+		const res = await fetch(`${anthropicBaseUrl()}/v1/messages`, {
 			method: "POST",
 			headers: {
 				"x-api-key": keyInfo.key,
 				"Content-Type": "application/json",
 				"anthropic-version": "2023-06-01",
 				...(anthropicBeta ? { "anthropic-beta": anthropicBeta } : {}),
+				...upstreamTestHeaders(args.meta),
 			},
 			body: requestPayloadJson,
 		});

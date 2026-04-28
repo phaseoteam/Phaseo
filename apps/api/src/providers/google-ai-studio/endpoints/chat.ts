@@ -15,11 +15,16 @@ import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
 import { normalizeGoogleUsage } from "../usage";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 /* ================== Config ================== */
 
 const GOOGLE = "https://generativelanguage.googleapis.com";
 const MAX_REMOTE_ASSET_BYTES = 5 * 1024 * 1024; // 5 MB guardrail for inlining assets
+
+function resolveGoogleBaseUrl(): string {
+    return getBindings().GOOGLE_AI_STUDIO_BASE_URL ?? getBindings().GOOGLE_BASE_URL ?? GOOGLE;
+}
 
 type GatewayToolCall = NonNullable<GatewayCompletionsChoice["message"]["tool_calls"]>[number];
 
@@ -788,7 +793,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const model = args.model;
     const providerModel = args.providerModelSlug || args.model;
-    const urlBase = `${GOOGLE}/v1beta/models/${encodeURIComponent(providerModel)}`;
+    const urlBase = `${resolveGoogleBaseUrl()}/v1beta/models/${encodeURIComponent(providerModel)}`;
     const endpoint = `:streamGenerateContent`;
 
     const url = `${urlBase}${endpoint}?alt=sse&key=${encodeURIComponent(key)}`;
@@ -796,6 +801,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
         "Accept": "text/event-stream",
+        ...upstreamTestHeaders(args.meta),
     };
 
     const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(req) });

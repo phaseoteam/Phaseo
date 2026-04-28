@@ -7,6 +7,7 @@ import { AudioSpeechSchema, type AudioSpeechRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { validateOpenAIVoiceForModel } from "../voices";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 function invalidVoiceResponse(voice: string, model: string, supported: string[]): Response {
     return new Response(
@@ -109,7 +110,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const res = await fetch(openAICompatUrl(args.providerId, "/audio/speech"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, keyInfo.key),
+        headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(requestBody),
     });
 

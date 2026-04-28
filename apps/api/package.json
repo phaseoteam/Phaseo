@@ -12,6 +12,8 @@
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
 		"test": "pnpm exec vitest run",
+		"test:aimock": "tsx scripts/run-aimock-tests.ts",
+		"test:aimock:record": "tsx scripts/run-aimock-tests.ts --record",
 		"test:live": "pnpm exec vitest run tests/integration/openai-gpt5-nano.live.spec.ts",
 		"test:live:gpt5-4-mini-nano": "pnpm exec vitest run tests/integration/openai-gpt5-4-mini-nano.live.spec.ts",
 		"test:live:gpt5-4-nano-tools": "pnpm exec vitest run tests/integration/openai-gpt5-4-nano-tools.live.spec.ts",
@@ -48,6 +50,7 @@
 	"devDependencies": {
 		"@anthropic-ai/sdk": "^0.90.0",
 		"@cloudflare/workers-types": "^4.20260420.1",
+		"@copilotkit/aimock": "1.15.1",
 		"dotenv": "^17.4.2",
 		"eslint": "^10.0.3",
 		"openai": "^6.34.0",

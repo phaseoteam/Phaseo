@@ -6,6 +6,7 @@ import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 function normalizeModelName(model?: string | null): string {
     if (!model) return "";
@@ -66,7 +67,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         }
     }
 
-    const headers = openAICompatHeaders(args.providerId, keyInfo.key);
+    const headers = openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta));
     delete (headers as any)["Content-Type"];
 
     const res = await fetch(openAICompatUrl(args.providerId, "/audio/transcriptions"), {

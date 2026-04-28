@@ -64,6 +64,7 @@ export type ExecutorExecuteArgs = {
 		sessionId?: string | null;
 		requestUserId?: string | null;
 		trace?: Record<string, unknown> | null;
+		testId?: string | null;
 		authMethod?: "api_key" | "oauth";
 		oauthClientId?: string | null;
 		oauthUserId?: string | null;

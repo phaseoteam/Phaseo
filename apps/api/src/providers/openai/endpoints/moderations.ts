@@ -8,6 +8,7 @@ import { ModerationsSchema, type ModerationsRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 
 
@@ -53,7 +54,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const startedAt = Date.now();
     const res = await fetch(openAICompatUrl(args.providerId, "/moderations"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key),
+        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(req),
     });
     const latencyMs = Date.now() - startedAt;

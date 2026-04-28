@@ -10,8 +10,13 @@ import { getBindings } from "@/runtime/env";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
 import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeGoogleUsage } from "../usage";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 const GOOGLE = "https://generativelanguage.googleapis.com";
+
+function resolveGoogleBaseUrl(): string {
+    return getBindings().GOOGLE_AI_STUDIO_BASE_URL ?? getBindings().GOOGLE_BASE_URL ?? GOOGLE;
+}
 
 async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
     return resolveProviderKey(args, () => getBindings().GOOGLE_AI_STUDIO_API_KEY);
@@ -121,12 +126,13 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     };
 
     const req = mapToGoogleRequest(body);
-    const streamUrl = `${GOOGLE}/v1beta/models/${encodeURIComponent(body.model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(keyInfo.key)}`;
+    const streamUrl = `${resolveGoogleBaseUrl()}/v1beta/models/${encodeURIComponent(body.model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(keyInfo.key)}`;
     const res = await fetch(streamUrl, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
+            ...upstreamTestHeaders(args.meta),
         },
         body: JSON.stringify(req),
     });

@@ -16,6 +16,7 @@ import {
 	resolveOpenAICompatKey,
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
 import {
@@ -141,7 +142,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		const fetchStartMs = Date.now();
 		const response = await fetch(openAICompatUrl(args.providerId, endpointForRoute(targetRoute)), {
 			method: "POST",
-			headers: openAICompatHeaders(args.providerId, keyInfo.key),
+			headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
 			body: requestBody,
 		});
 

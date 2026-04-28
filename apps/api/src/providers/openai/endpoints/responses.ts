@@ -8,6 +8,7 @@ import { ResponsesSchema } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 
 
@@ -114,7 +115,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, keyInfo.key),
+        headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(payload),
     });
 

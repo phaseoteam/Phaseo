@@ -6,6 +6,7 @@
 import { z } from "zod";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
+import { getBindings } from "@/runtime/env";
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
 import { fetchGatewayContext } from "./context";
@@ -422,6 +423,10 @@ export function makeMeta(input: {
     return {
         apiKeyId: input.apiKeyId,
         apiKeyRef: input.apiKeyRef,
+    const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
+    const testId = nodeEnv === "test"
+        ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
+        : null;
         apiKeyKid: input.apiKeyKid,
         authMethod: input.authMethod ?? "api_key",
         oauthClientId: input.oauthClientId ?? null,
@@ -467,3 +472,4 @@ export function makeMeta(input: {
         beta: input.beta,
     };
 }
+        testId,

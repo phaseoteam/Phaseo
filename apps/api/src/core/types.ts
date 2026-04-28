@@ -46,6 +46,7 @@ export type RequestMeta = {
     requestUserId?: string | null;
     sessionId?: string | null;
     trace?: Record<string, unknown> | null;
+    testId?: string | null;
     requestMethod?: string | null;
     accept?: string | null;
     requestUrl?: string | null;

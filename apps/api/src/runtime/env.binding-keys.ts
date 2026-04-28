@@ -23,6 +23,7 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GOOGLE_AI_STUDIO_BASE_URL",
     "GOOGLE_BASE_URL",
     "ANTHROPIC_API_KEY",
+    "ANTHROPIC_BASE_URL",
     "KEY_PEPPER",
     "KEY_PEPPER_ACTIVE",
     "KEY_PEPPER_PREVIOUS",
