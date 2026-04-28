@@ -21,7 +21,7 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-v4-pro",
+    "api_model_id": "deepseek/deepseek-v4-pro-precision",
     "provider_api_model_id": "crofai:deepseek-v4-pro-precision",
     "provider_model_slug": "deepseek-v4-pro-precision",
     "internal_model_id": "deepseek/deepseek-v4-pro",
@@ -105,7 +105,7 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-5.1",
+    "api_model_id": "z-ai/glm-5.1-precision",
     "provider_api_model_id": "crofai:glm-5.1-precision",
     "provider_model_slug": "glm-5.1-precision",
     "internal_model_id": "z-ai/glm-5.1",
@@ -168,7 +168,7 @@
     ]
   },
   {
-    "api_model_id": "moonshotai/kimi-k2.6",
+    "api_model_id": "moonshotai/kimi-k2.6-precision",
     "provider_api_model_id": "crofai:kimi-k2.6-precision",
     "provider_model_slug": "kimi-k2.6-precision",
     "internal_model_id": "moonshotai/kimi-k2.6",
