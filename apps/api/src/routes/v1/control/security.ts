@@ -286,7 +286,7 @@ async function invalidateGatewayKeyCache(candidate: KeyCandidate): Promise<void>
 
 async function applyLeakedKeyRevocation(candidate: KeyCandidate): Promise<void> {
 	const supabase = getSupabaseAdmin();
-	await supabase
+	const { error } = await supabase
 		.from(candidate.table)
 		.update({
 			status: "compromised",
@@ -296,6 +296,9 @@ async function applyLeakedKeyRevocation(candidate: KeyCandidate): Promise<void> 
 		})
 		.eq("id", candidate.id)
 		.eq("workspace_id", candidate.workspace_id);
+	if (error) {
+		throw new Error(error.message || `Failed to revoke leaked ${candidate.table} entry`);
+	}
 	await invalidateGatewayKeyCache(candidate);
 }
 

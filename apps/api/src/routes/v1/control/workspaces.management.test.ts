@@ -14,6 +14,10 @@ const state = vi.hoisted(() => ({
 	workspaces: [] as Array<Record<string, unknown> | null>,
 	users: [] as Array<Record<string, unknown> | null>,
 	workspaceSettingsUpserts: [] as Array<Record<string, unknown>>,
+	workspaceMembersUpserts: [] as Array<Record<string, unknown>>,
+	workspaceMembersUpsertError: null as { message: string } | null,
+	workspaceSettingsUpsertError: null as { message: string } | null,
+	workspacesInserted: [] as Array<Record<string, unknown>>,
 	keyCount: 0,
 	deletes: [] as Array<{ table: string; column: string; value: unknown }>,
 	userHasPaidWorkspaceAccess: vi.fn(async (_userId: string) => true),
@@ -44,14 +48,17 @@ function buildWorkspacesSupabaseMock() {
 						data: state.workspaces.shift() ?? null,
 						error: null,
 					}),
-					insert: (_payload: Record<string, unknown>) => ({
-						select: () => ({
-							maybeSingle: async () => ({
-								data: state.workspaces.shift() ?? null,
-								error: null,
+					insert: (payload: Record<string, unknown>) => {
+						state.workspacesInserted.push(payload);
+						return {
+							select: () => ({
+								maybeSingle: async () => ({
+									data: state.workspaces.shift() ?? null,
+									error: null,
+								}),
 							}),
-						}),
-					}),
+						};
+					},
 					update: (_payload: Record<string, unknown>) => {
 						let eqCount = 0;
 						const updater: any = {
@@ -97,7 +104,12 @@ function buildWorkspacesSupabaseMock() {
 
 			if (table === "workspace_members" || table === "wallets") {
 				return {
-					upsert: async () => ({ error: null }),
+					upsert: async (payload?: Record<string, unknown>) => {
+						if (table === "workspace_members" && payload) {
+							state.workspaceMembersUpserts.push(payload);
+						}
+						return { error: table === "workspace_members" ? state.workspaceMembersUpsertError : null };
+					},
 					delete: () => ({
 						eq: async (column: string, value: unknown) => {
 							state.deletes.push({ table, column, value });
@@ -111,7 +123,7 @@ function buildWorkspacesSupabaseMock() {
 				return {
 					upsert: async (payload: Record<string, unknown>) => {
 						state.workspaceSettingsUpserts.push(payload);
-						return { error: null };
+						return { error: state.workspaceSettingsUpsertError };
 					},
 					delete: () => ({
 						eq: async (column: string, value: unknown) => {
@@ -175,6 +187,10 @@ describe("management workspace routes", () => {
 		state.workspaces.length = 0;
 		state.users.length = 0;
 		state.workspaceSettingsUpserts.length = 0;
+		state.workspaceMembersUpserts.length = 0;
+		state.workspaceMembersUpsertError = null;
+		state.workspaceSettingsUpsertError = null;
+		state.workspacesInserted.length = 0;
 		state.keyCount = 0;
 		state.deletes.length = 0;
 		state.userHasPaidWorkspaceAccess.mockReset();
@@ -263,6 +279,53 @@ describe("management workspace routes", () => {
 
 		expect(response.status).toBe(503);
 		expect(body.error).toBe("stripe_not_configured");
+		expect(state.deletes).toEqual([
+			{ table: "workspace_settings", column: "workspace_id", value: "ws_new" },
+			{ table: "workspace_members", column: "workspace_id", value: "ws_new" },
+			{ table: "wallets", column: "workspace_id", value: "ws_new" },
+			{ table: "management_keys", column: "workspace_id", value: "ws_new" },
+			{ table: "workspaces", column: "id", value: "ws_new" },
+			{ table: "workspaces", column: "owner_user_id", value: "user_1" },
+		]);
+	});
+
+	it("rolls back the new workspace when post-create provisioning fails", async () => {
+		state.workspaces.push(
+			{ owner_user_id: "user_1" },
+			{
+				id: "ws_new",
+				name: "Production",
+				slug: "production",
+				owner_user_id: "user_1",
+				created_at: "2026-04-28T12:00:00Z",
+				updated_at: "2026-04-28T12:00:00Z",
+			},
+		);
+		state.workspaceSettingsUpsertError = { message: "settings write failed" };
+
+		const { workspacesRoutes } = await import("./workspaces");
+		const response = await workspacesRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Production", slug: "production" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(500);
+		expect(body.error).toBe("failed");
+		expect(state.workspaceMembersUpserts[0]).toMatchObject({
+			workspace_id: "ws_new",
+			user_id: "user_1",
+			role: "owner",
+		});
+		expect(state.deletes).toEqual([
+			{ table: "workspace_settings", column: "workspace_id", value: "ws_new" },
+			{ table: "workspace_members", column: "workspace_id", value: "ws_new" },
+			{ table: "wallets", column: "workspace_id", value: "ws_new" },
+			{ table: "management_keys", column: "workspace_id", value: "ws_new" },
+			{ table: "workspaces", column: "id", value: "ws_new" },
+			{ table: "workspaces", column: "owner_user_id", value: "user_1" },
+		]);
 	});
 
 	it("blocks renaming the personal workspace", async () => {

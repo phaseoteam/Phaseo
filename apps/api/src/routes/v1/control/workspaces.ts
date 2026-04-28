@@ -21,6 +21,12 @@ type WorkspaceRow = {
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 250;
 
+function assertSupabaseWrite(result: { error?: { message?: string | null } | null }, fallbackMessage: string): void {
+	if (result?.error) {
+		throw new Error(result.error.message || fallbackMessage);
+	}
+}
+
 function parsePositiveInt(raw: string | null, fallback: number, max: number): number {
 	if (!raw) return fallback;
 	const parsed = Number(raw);
@@ -112,6 +118,21 @@ async function findWorkspaceForOwner(ownerUserId: string, identifier: string): P
 		throw new Error(error.message || "Failed to fetch workspace");
 	}
 	return (data as WorkspaceRow | null) ?? null;
+}
+
+async function cleanupProvisioningFailedWorkspace(workspaceId: string, ownerUserId: string): Promise<void> {
+	const supabase = getSupabaseAdmin();
+	const cleanupResults = [
+		await supabase.from("workspace_settings").delete().eq("workspace_id", workspaceId),
+		await supabase.from("workspace_members").delete().eq("workspace_id", workspaceId),
+		await supabase.from("wallets").delete().eq("workspace_id", workspaceId),
+		await supabase.from("management_keys").delete().eq("workspace_id", workspaceId),
+		await supabase.from("workspaces").delete().eq("id", workspaceId).eq("owner_user_id", ownerUserId),
+	];
+	const failed = cleanupResults.find((result) => result?.error);
+	if (failed?.error) {
+		throw new Error(failed.error.message || "Failed to roll back workspace after provisioning error");
+	}
 }
 
 async function handleListWorkspaces(req: Request) {
@@ -245,20 +266,32 @@ async function handleCreateWorkspace(req: Request) {
 		if (!workspaceId) {
 			throw new Error("Workspace creation returned no id");
 		}
-
-		await supabase
-			.from("workspace_members")
-			.upsert(
-				{ workspace_id: workspaceId, user_id: ownerUserId, role: "owner" },
-				{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
-			);
-		await ensureWorkspaceWalletProvisioned({
-			workspaceId,
-			userId: ownerUserId,
-		});
-		await supabase
-			.from("workspace_settings")
-			.upsert({ workspace_id: workspaceId, routing_mode: "balanced" }, { onConflict: "workspace_id", ignoreDuplicates: false });
+		try {
+			const memberResult = await supabase
+				.from("workspace_members")
+				.upsert(
+					{ workspace_id: workspaceId, user_id: ownerUserId, role: "owner" },
+					{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
+				);
+			assertSupabaseWrite(memberResult, "Failed to create workspace owner membership");
+			await ensureWorkspaceWalletProvisioned({
+				workspaceId,
+				userId: ownerUserId,
+			});
+			const settingsResult = await supabase
+				.from("workspace_settings")
+				.upsert({ workspace_id: workspaceId, routing_mode: "balanced" }, { onConflict: "workspace_id", ignoreDuplicates: false });
+			assertSupabaseWrite(settingsResult, "Failed to initialize workspace settings");
+		} catch (error) {
+			try {
+				await cleanupProvisioningFailedWorkspace(workspaceId, ownerUserId);
+			} catch (cleanupError) {
+				const cleanupMessage = String((cleanupError as any)?.message ?? cleanupError);
+				const originalMessage = String((error as any)?.message ?? error);
+				throw new Error(`${originalMessage}; rollback_failed: ${cleanupMessage}`);
+			}
+			throw error;
+		}
 
 		return json({ data: formatWorkspace(data as WorkspaceRow) }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {

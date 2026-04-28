@@ -98,4 +98,37 @@ describe("email outbox", () => {
 			}),
 		});
 	});
+
+	it("escapes untrusted leaked-key fields before injecting them into HTML", async () => {
+		state.rows.push({
+			id: "email_2",
+			created_at: "2026-04-28T11:00:00Z",
+			kind: "security_leaked_key",
+			template: "security_leaked_key",
+			to_email: "owner@example.com",
+			subject: "Security alert: exposed API key reported",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			payload: {
+				workspace_name: "<img src=x onerror=alert(1)>",
+				key_preview: "\"quoted\" & key",
+				reported_source: "<script>alert(1)</script>",
+				evidence_url: "https://example.com/?q=<tag>&x=\"1\"",
+				auto_revoked: false,
+			},
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await drainEmailOutbox(10);
+
+		const sent = state.sendEmail.mock.calls[0]?.[0] as { html: string; text: string };
+		expect(sent.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+		expect(sent.html).toContain("&quot;quoted&quot; &amp; key");
+		expect(sent.html).toContain("https://example.com/?q=&lt;tag&gt;&amp;x=&quot;1&quot;");
+		expect(sent.html).not.toContain("<script>alert(1)</script>");
+		expect(sent.text).toContain("Reported source: <script>alert(1)</script>");
+	});
 });

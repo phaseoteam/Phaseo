@@ -15,6 +15,8 @@ const state = vi.hoisted(() => ({
 	emailOutboxInserts: [] as Array<Record<string, unknown>>,
 	keyUpdates: [] as Array<{ payload: Record<string, unknown>; filters: Array<{ column: string; value: unknown }> }>,
 	managementKeyUpdates: [] as Array<{ payload: Record<string, unknown>; filters: Array<{ column: string; value: unknown }> }>,
+	keyUpdateError: null as { message: string } | null,
+	managementKeyUpdateError: null as { message: string } | null,
 	cacheGetValues: new Map<string, string | null>(),
 	cachePuts: [] as Array<{ key: string; value: string; ttl: number | undefined }>,
 	cacheDeletes: [] as string[],
@@ -66,11 +68,12 @@ function buildSupabaseMock() {
 					update: (payload: Record<string, unknown>) => {
 						const filters: Array<{ column: string; value: unknown }> = [];
 						const target = table === "keys" ? state.keyUpdates : state.managementKeyUpdates;
+						const updateError = table === "keys" ? state.keyUpdateError : state.managementKeyUpdateError;
 						target.push({ payload, filters });
 						const updater: any = {
 							eq: (column: string, value: unknown) => {
 								filters.push({ column, value });
-								return filters.length >= 2 ? Promise.resolve({ error: null }) : updater;
+								return filters.length >= 2 ? Promise.resolve({ error: updateError }) : updater;
 							},
 						};
 						return updater;
@@ -167,6 +170,8 @@ describe("public leaked key reports", () => {
 		state.emailOutboxInserts.length = 0;
 		state.keyUpdates.length = 0;
 		state.managementKeyUpdates.length = 0;
+		state.keyUpdateError = null;
+		state.managementKeyUpdateError = null;
 		state.cacheGetValues.clear();
 		state.cachePuts.length = 0;
 		state.cacheDeletes.length = 0;
@@ -344,5 +349,46 @@ describe("public leaked key reports", () => {
 			matched: false,
 			action_taken: "invalid_format",
 		});
+	});
+
+	it("records a processing error and skips notifications when revocation fails", async () => {
+		const token = "aistats_v1_sk_kid123_supersecret";
+		const hash = createHmac("sha256", "pepper").update("supersecret").digest("hex");
+		state.keyUpdateError = { message: "db write failed" };
+		state.keysRows.push({
+			id: "key_1",
+			workspace_id: "ws_1",
+			name: "Production Key",
+			prefix: "aistats_v1_sk_kid123",
+			status: "active",
+			hash,
+			kid: "kid123",
+			soft_blocked: false,
+		});
+
+		const { securityRoutes } = await import("./security");
+		const response = await securityRoutes.request("https://example.com/report-leaked-key", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"cf-connecting-ip": "203.0.113.13",
+			},
+			body: JSON.stringify({
+				token,
+				source: "github",
+			}),
+		});
+
+		expect(response.status).toBe(202);
+		expect(state.reportInserts[0]).toMatchObject({
+			status: "received",
+			matched: true,
+			key_table: "keys",
+			api_key_id: "key_1",
+			action_taken: "processing_error",
+		});
+		expect(state.emailOutboxInserts).toEqual([]);
+		expect(state.keyVersions).toEqual([]);
+		expect(state.cacheDeletes).toEqual([]);
 	});
 });

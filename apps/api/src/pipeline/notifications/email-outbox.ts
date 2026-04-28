@@ -17,6 +17,15 @@ type OutboxRow = {
 	sent_at: string | null;
 };
 
+function escapeHtml(value: string): string {
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll("\"", "&quot;")
+		.replaceAll("'", "&#39;");
+}
+
 function renderWelcomeEmail(): { subject: string; html: string; text: string } {
 	return {
 		subject: "Welcome to AI Stats",
@@ -92,19 +101,25 @@ function renderSecurityLeakedKeyEmail(payload: Record<string, unknown> | null): 
 	const actionLine = autoRevoked
 		? "Create a replacement key and update any environments that were using the exposed key."
 		: "Review the key immediately and rotate or revoke it if the exposure is legitimate.";
+	const escapedSubject = escapeHtml(subject);
+	const escapedLead = escapeHtml(lead);
+	const escapedKeyPreview = escapeHtml(keyPreview);
+	const escapedSource = escapeHtml(source);
+	const escapedActionLine = escapeHtml(actionLine);
+	const escapedEvidenceUrl = evidenceUrl ? escapeHtml(evidenceUrl) : null;
 
 	return {
 		subject,
 		html: [
 			"<div style=\"font-family: ui-sans-serif, system-ui; line-height: 1.5;\">",
-			`<h2 style="margin: 0 0 12px;">${subject}</h2>`,
-			`<p style="margin: 0 0 12px;">${lead}</p>`,
-			`<p style="margin: 0 0 12px;"><strong>Key:</strong> ${keyPreview}</p>`,
-			`<p style="margin: 0 0 12px;"><strong>Reported source:</strong> ${source}</p>`,
-			evidenceUrl
-				? `<p style="margin: 0 0 12px;"><strong>Evidence:</strong> <a href="${evidenceUrl}">${evidenceUrl}</a></p>`
+			`<h2 style="margin: 0 0 12px;">${escapedSubject}</h2>`,
+			`<p style="margin: 0 0 12px;">${escapedLead}</p>`,
+			`<p style="margin: 0 0 12px;"><strong>Key:</strong> ${escapedKeyPreview}</p>`,
+			`<p style="margin: 0 0 12px;"><strong>Reported source:</strong> ${escapedSource}</p>`,
+			escapedEvidenceUrl
+				? `<p style="margin: 0 0 12px;"><strong>Evidence:</strong> <a href="${escapedEvidenceUrl}">${escapedEvidenceUrl}</a></p>`
 				: "",
-			`<p style="margin: 0;">${actionLine}</p>`,
+			`<p style="margin: 0;">${escapedActionLine}</p>`,
 			"</div>",
 		].join(""),
 		text: [
