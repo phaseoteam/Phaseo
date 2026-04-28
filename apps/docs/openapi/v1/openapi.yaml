@@ -5856,7 +5856,10 @@ components:
         - aion-labs/aion-2.0
         - aion-labs/aion-2.5
         - aion-labs/aion-rp-llama-3.1-8b
+        - allenai/molmo-2-8b
         - allenai/olmo-3.1-32b
+        - allenai/olmocr-2-7b-1025
+        - anthropic/claude-3.7-sonnet
         - anthropic/claude-haiku-4.5
         - anthropic/claude-opus-4
         - anthropic/claude-opus-4.1
@@ -5891,10 +5894,13 @@ components:
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
         - cogito/cogito-671b-v2.1
+        - deepseek-r1-14b
         - deepseek/deepseek-ocr
         - deepseek/deepseek-ocr-2
         - deepseek/deepseek-prover-v2-671b
         - deepseek/deepseek-r1-0528
+        - deepseek/deepseek-r1-2025-05-28
+        - deepseek/deepseek-r1-distill-llama-70b
         - deepseek/deepseek-r1-turbo
         - deepseek/deepseek-v3
         - deepseek/deepseek-v3-0324
@@ -5907,12 +5913,13 @@ components:
         - deepseek/deepseek-v3.2-thinking
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
-        - google/embeddinggemma-300m
         - google/gemini-2.0-flash
         - google/gemini-2.0-flash-lite
+        - google/gemini-2.5-flash
         - google/gemini-2.5-flash-image
         - google/gemini-2.5-flash-lite-preview-2025-06-17
         - google/gemini-2.5-flash-lite-preview-2025-09-25
+        - google/gemini-2.5-pro
         - google/gemini-3-flash-preview
         - google/gemini-3-pro-image-preview
         - google/gemini-3.1-flash-image-preview
@@ -5938,6 +5945,8 @@ components:
         - google/gemma-4-31b:free
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
+        - gryphe/mythomax-l2-13b
+        - internvl3.5-8b
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
         - kwaipilot/kat-coder-pro-v1
@@ -5947,6 +5956,7 @@ components:
         - meta/llama-3-8b
         - meta/llama-3.1-70b
         - meta/llama-3.1-8b
+        - meta/llama-3.2-11b-vision
         - meta/llama-3.2-3b
         - meta/llama-3.3-70b
         - meta/llama-4-maverick
@@ -6005,6 +6015,7 @@ components:
         - nousresearch/hermes-3-llama-3.1-70b
         - nousresearch/hermes-4-405b
         - nousresearch/hermes-4-70b
+        - nvidia/llama-3.1-nemotron-70b-instruct
         - nvidia/llama-3.1-nemotron-ultra-253b
         - nvidia/llama-3.3-nemotron-super-49b-v1.5
         - nvidia/nemotron-3-nano-30b-a3b
@@ -6074,6 +6085,7 @@ components:
         - openai/text-embedding-3-large
         - openai/text-embedding-3-small
         - openai/text-embedding-ada-002
+        - paddlepaddle/paddleocr-vl-0.9b
         - primeintellect/intellect-3
         - qwen/qvq-max
         - qwen/qwen-3.6-plus
@@ -6107,6 +6119,7 @@ components:
         - qwen/qwen2.5-7b-1m
         - qwen/qwen2.5-vl-32b
         - qwen/qwen2.5-vl-72b
+        - qwen/qwen2.5-vl-7b
         - qwen/qwen3-0.6b
         - qwen/qwen3-1.7b
         - qwen/qwen3-14b
@@ -6168,6 +6181,9 @@ components:
         - qwen/text-embedding-v3
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
+        - sao10k/l3-8b-lunaris-v1-turbo
+        - sao10k/l3.1-70b-euryale-v2.2
+        - sao10k/l3.3-70b-euryale-v2.3
         - stepfun/step-3.5-flash
         - venice/venice-uncensored
         - venice/venice-uncensored-1.1
