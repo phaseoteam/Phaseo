@@ -1,0 +1,36 @@
+{
+  "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "organisation_id": "nvidia",
+  "name": "Nemotron 3 Nano Omni 30B A3B Reasoning",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-28T00:00:00",
+  "release_date": "2026-04-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Nvidia Open Model License",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://build.nvidia.com/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    },
+    {
+      "name": "output_context_length",
+      "value": 256000
+    }
+  ],
+  "benchmarks": []
+}
