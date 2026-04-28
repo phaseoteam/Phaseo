@@ -429,7 +429,7 @@ namespace AiStatsSdk
 
         public Task<Dictionary<string, object>?> Health()
         {
-            return WithLifecycleAndTelemetry("health", null, false, () => Operations.HealthzAsync(_client));
+            return WithLifecycleAndTelemetry("health", null, false, () => _client.SendAsync<Dictionary<string, object>?>("GET", "/health"));
         }
 
         public Task<Dictionary<string, object>?> Healthz()

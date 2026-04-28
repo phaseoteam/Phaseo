@@ -348,7 +348,7 @@ public final class AIStats {
 	}
 
 	public JsonNode healthz() throws IOException, InterruptedException {
-		return withLifecycleAndTelemetry("health", null, false, () -> parse(Operations.healthz(rawClient, null, null, null, null)));
+		return withLifecycleAndTelemetry("health", null, false, () -> parse(rawClient.request("GET", "/health", null, null, null)));
 	}
 
 	private void maybeWarnForPayload(Object payload) throws IOException, InterruptedException {
