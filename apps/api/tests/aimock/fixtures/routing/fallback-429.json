@@ -1,0 +1,27 @@
+{
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "[aimock-fallback-429] route",
+        "model": "aimock-primary-fallback-429"
+      },
+      "response": {
+        "status": 429,
+        "error": {
+          "message": "primary provider rate limited",
+          "type": "rate_limit_error",
+          "code": "aimock_primary_rate_limited"
+        }
+      }
+    },
+    {
+      "match": {
+        "userMessage": "[aimock-fallback-429] route",
+        "model": "aimock-secondary-fallback-429"
+      },
+      "response": {
+        "content": "Fallback provider recovered after rate limit."
+      }
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { VideoGenerationSchema, type VideoGenerationRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 function pickDefined<T extends Record<string, any>>(value: T): Partial<T> {
     return Object.fromEntries(
@@ -59,7 +60,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 			: undefined,
     );
     const sendAsMultipart = isOpenAIProvider && inputReferenceValue.length > 0;
-    const headers = openAICompatHeaders(args.providerId, keyInfo.key);
+    const headers = openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta));
     let requestBody: BodyInit;
 
     if (sendAsMultipart) {

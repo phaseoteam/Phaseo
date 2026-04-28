@@ -13,6 +13,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { normalizeGoogleUsage } from "@providers/google-ai-studio/usage";
 import { resolveProviderKey } from "@providers/keys";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
 import { irPartToGeminiPart } from "../../google/shared/media";
 import { resolveGoogleModelCandidates } from "../../google/shared/model";
@@ -84,9 +85,20 @@ function assertEmbeddingMediaPart(part: IREmbeddingsContentPart, geminiPart: Rec
 	}
 }
 
-function baseHeaders() {
+function resolvedBaseUrl(): string {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const baseRoot = String(
+		bindings.GOOGLE_AI_STUDIO_BASE_URL ||
+		bindings.GOOGLE_BASE_URL ||
+		BASE_URL,
+	).replace(/\/+$/, "");
+	return /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
+}
+
+function baseHeaders(meta?: ExecutorExecuteArgs["meta"]) {
 	return {
 		"Content-Type": "application/json",
+		...upstreamTestHeaders(meta),
 	};
 }
 
@@ -196,10 +208,15 @@ function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
 		: usage;
 }
 
-async function fetchTokenCount(key: string, modelForUrl: string, contents: GeminiEmbeddingContent[]) {
-	const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
+async function fetchTokenCount(
+	key: string,
+	modelForUrl: string,
+	contents: GeminiEmbeddingContent[],
+	meta?: ExecutorExecuteArgs["meta"],
+) {
+	const res = await fetch(`${resolvedBaseUrl()}/models/${modelForUrl}:countTokens?key=${key}`, {
 		method: "POST",
-		headers: baseHeaders(),
+		headers: baseHeaders(meta),
 		body: JSON.stringify({ contents }),
 	});
 	const json = await res.clone().json().catch(() => null);
@@ -308,16 +325,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(payload) : undefined;
 
-	const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}${endpoint}?key=${key}`, {
+	const res = await fetch(`${resolvedBaseUrl()}/models/${modelForUrl}${endpoint}?key=${key}`, {
 		method: "POST",
-		headers: baseHeaders(),
+		headers: baseHeaders(args.meta),
 		body: JSON.stringify(payload),
 	});
 	const json = await res.clone().json().catch(() => null);
 
 	let usage = json ? extractEmbeddingUsage(json) : undefined;
 	if (!usage) {
-		const totalTokens = await fetchTokenCount(key, modelForUrl, contents);
+		const totalTokens = await fetchTokenCount(key, modelForUrl, contents, args.meta);
 		if (typeof totalTokens === "number" && totalTokens > 0) {
 			usage = {
 				embedding_tokens: totalTokens,

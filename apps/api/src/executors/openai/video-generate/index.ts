@@ -7,6 +7,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { saveVideoJobMeta } from "@core/video-jobs";
 import { reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
@@ -350,6 +351,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let headers = openAICompatHeaders("openai", keyInfo.key, {
 		"Idempotency-Key": args.requestId,
+		...upstreamTestHeaders(args.meta),
 	});
 	let requestBody: BodyInit;
 	const jsonBody = buildOpenAiVideoJsonRequest({

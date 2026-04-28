@@ -5,12 +5,12 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import {
 	asRecord,
-	buildAtlasCloudSnapshotDiff,
+	buildProviderApiModelSnapshotDiff,
 	computeConfiguredModelCoverageFingerprint,
 	diffModelIds,
-	extractAtlasCloudModelSnapshot,
+	extractProviderApiModelSnapshot,
 	fetchProviderModels,
-	hasAtlasCloudSnapshotValue,
+	hasProviderApiSnapshotValue,
 	loadConfiguredProviderModelIds,
 	loadLatestConfiguredCoverageState,
 	readBindingEnv,
@@ -39,8 +39,8 @@ type ProviderConfig = {
 	providerId: string;
 	providerName: string;
 	modelsEndpoint: string;
-	apiKeyEnv: string[];
-	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization";
+	apiKeyEnv?: string[];
+	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
 };
 
 type ProviderChange = {
@@ -58,7 +58,7 @@ type DiscoveredModel = {
 	pricingDetails: unknown | null;
 };
 
-type AtlasCloudModelSnapshot = {
+type ProviderApiModelSnapshot = {
 	contextLength: number | null;
 	maxCompletionTokens: number | null;
 	pricingDetails: unknown | null;
@@ -207,6 +207,7 @@ const PROVIDER_ID_ALIASES: Record<string, string> = {
 	"xai": "x-ai",
 	"atlas-cloud": "atlascloud",
 };
+const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>(["atlascloud", "crofai"]);
 
 const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "ai21", providerName: "AI21", modelsEndpoint: "https://api.ai21.com/studio/v1/models", apiKeyEnv: ["AI21_API_KEY"] },
@@ -227,6 +228,7 @@ const PROVIDERS: ProviderConfig[] = [
 	},
 	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] },
 	{ providerId: "atlascloud", providerName: "AtlasCloud", modelsEndpoint: "https://api.atlascloud.ai/api/v1/models", apiKeyEnv: ["ATLAS_CLOUD_API_KEY"] },
+	{ providerId: "crofai", providerName: "CrofAI", modelsEndpoint: "https://crof.ai/v1/models", authStyle: "none" },
 	{
 		providerId: "baseten",
 		providerName: "Baseten",
@@ -456,12 +458,12 @@ type SeenModelDeleteRow = {
 type PreviousProviderModels = {
 	modelIds: string[];
 	pricingByModelId: Map<string, string | null>;
-	atlasCloudSnapshotByModelId: Map<string, AtlasCloudModelSnapshot>;
+	providerApiSnapshotByModelId: Map<string, ProviderApiModelSnapshot>;
 };
 
 type PreviousModelsState = {
 	byProvider: Map<string, PreviousProviderModels>;
-	atlasCloudSnapshotReady: boolean;
+	providerApiSnapshotReadyByProvider: Set<string>;
 };
 
 async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<PreviousModelsState> {
@@ -470,11 +472,11 @@ async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<Pr
 		map.set(providerId, {
 			modelIds: [],
 			pricingByModelId: new Map<string, string | null>(),
-			atlasCloudSnapshotByModelId: new Map<string, AtlasCloudModelSnapshot>(),
+			providerApiSnapshotByModelId: new Map<string, ProviderApiModelSnapshot>(),
 		});
 	}
 	if (providerIds.length === 0) {
-		return { byProvider: map, atlasCloudSnapshotReady: false };
+		return { byProvider: map, providerApiSnapshotReadyByProvider: new Set<string>() };
 	}
 
 	const supabase = getSupabaseAdmin();
@@ -487,7 +489,7 @@ async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<Pr
 		throw new Error(error.message || "Failed to load previous discovered models");
 	}
 
-	let atlasCloudSnapshotReady = false;
+	const providerApiSnapshotReadyByProvider = new Set<string>();
 
 	for (const row of (data ?? []) as SupabaseSeenModelRow[]) {
 		if (typeof row.provider_id !== "string" || typeof row.model_id !== "string") continue;
@@ -497,11 +499,11 @@ async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<Pr
 		const pricingDetails = row.pricing_details ?? null;
 		const fingerprint = toPricingFingerprint(pricingDetails);
 		state.pricingByModelId.set(row.model_id, fingerprint);
-		if (row.provider_id === "atlascloud") {
-			const snapshot = extractAtlasCloudModelSnapshot(asRecord(row.model_details), pricingDetails);
-			state.atlasCloudSnapshotByModelId.set(row.model_id, snapshot);
-			if (hasAtlasCloudSnapshotValue(snapshot)) {
-				atlasCloudSnapshotReady = true;
+		if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(row.provider_id)) {
+			const snapshot = extractProviderApiModelSnapshot(asRecord(row.model_details), pricingDetails);
+			state.providerApiSnapshotByModelId.set(row.model_id, snapshot);
+			if (hasProviderApiSnapshotValue(snapshot)) {
+				providerApiSnapshotReadyByProvider.add(row.provider_id);
 			}
 		}
 	}
@@ -510,7 +512,7 @@ async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<Pr
 		state.modelIds.sort((a, b) => a.localeCompare(b));
 	}
 
-	return { byProvider: map, atlasCloudSnapshotReady };
+	return { byProvider: map, providerApiSnapshotReadyByProvider };
 }
 
 async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
@@ -613,18 +615,23 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
 		let providerApiModelsWithPricing = 0;
-		const providerApiPricingBaselineInitialized = !previousState.atlasCloudSnapshotReady;
+		let providerApiPricingBaselineInitialized = false;
 
 		for (const provider of providers) {
-			const apiKey = readBindingEnv(provider.apiKeyEnv);
-			if (!apiKey) {
+			const requiresApiKey = (provider.authStyle ?? "bearer") !== "none";
+			const apiKey = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
+			if (requiresApiKey && !apiKey) {
 				results.push({
 					providerId: provider.providerId,
 					providerName: provider.providerName,
 					status: "skipped",
-					reason: `Missing env: ${provider.apiKeyEnv.join(" | ")}`,
+					reason: `Missing env: ${(provider.apiKeyEnv ?? []).join(" | ")}`,
 				});
 				continue;
+			}
+			const hasProviderApiSnapshotBaseline = previousState.providerApiSnapshotReadyByProvider.has(provider.providerId);
+			if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && !hasProviderApiSnapshotBaseline) {
+				providerApiPricingBaselineInitialized = true;
 			}
 
 			const providerStarted = Date.now();
@@ -671,18 +678,18 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 						};
 				if (change) changes.push(change);
 
-				if (!providerApiPricingBaselineInitialized && provider.providerId === "atlascloud") {
+				if (hasProviderApiSnapshotBaseline && PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId)) {
 					const addedModelIds = new Set(added);
 					for (const model of discoveredModels) {
 						if (addedModelIds.has(model.id)) continue;
-						const previousSnapshot = previousProviderState?.atlasCloudSnapshotByModelId.get(model.id) ?? {
+						const previousSnapshot = previousProviderState?.providerApiSnapshotByModelId.get(model.id) ?? {
 							contextLength: null,
 							maxCompletionTokens: null,
 							pricingDetails: null,
 							pricingFingerprint: null,
 						};
-						const currentSnapshot = extractAtlasCloudModelSnapshot(model.modelDetails, model.pricingDetails);
-						const snapshotDiff = buildAtlasCloudSnapshotDiff(previousSnapshot, currentSnapshot);
+						const currentSnapshot = extractProviderApiModelSnapshot(model.modelDetails, model.pricingDetails);
+						const snapshotDiff = buildProviderApiModelSnapshotDiff(previousSnapshot, currentSnapshot);
 						if (snapshotDiff.length === 0) continue;
 
 						const existing = providerApiPricingChangesByProvider.get(provider.providerId) ?? {
@@ -766,16 +773,14 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				console.error("[model-discovery] Pricing monitor failed:", reason);
 			}
 		}
-		if (!providerApiPricingBaselineInitialized) {
-			const providerChanges = Array.from(providerApiPricingChangesByProvider.values())
-				.sort((a, b) => b.updates - a.updates || a.providerId.localeCompare(b.providerId));
-			providerApiPricingMonitor.providerChanges = providerChanges;
-			providerApiPricingMonitor.providersChanged = providerChanges.length;
-			providerApiPricingMonitor.updatesDetected = providerChanges.reduce(
-				(total, providerChange) => total + providerChange.updates,
-				0
-			);
-		}
+		const providerChanges = Array.from(providerApiPricingChangesByProvider.values())
+			.sort((a, b) => b.updates - a.updates || a.providerId.localeCompare(b.providerId));
+		providerApiPricingMonitor.providerChanges = providerChanges;
+		providerApiPricingMonitor.providersChanged = providerChanges.length;
+		providerApiPricingMonitor.updatesDetected = providerChanges.reduce(
+			(total, providerChange) => total + providerChange.updates,
+			0
+		);
 		if (discoveredModelIdsByProvider.size > 0) {
 			configuredModelCoverageMonitor.executed = true;
 			configuredModelCoverageMonitor.providersChecked = discoveredModelIdsByProvider.size;

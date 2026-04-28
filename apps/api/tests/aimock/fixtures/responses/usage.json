@@ -1,0 +1,17 @@
+{
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "[aimock-usage] tokens"
+      },
+      "response": {
+        "content": "Usage fixture response.",
+        "usage": {
+          "input_tokens": 11,
+          "output_tokens": 7,
+          "total_tokens": 18
+        }
+      }
+    }
+  ]
+}

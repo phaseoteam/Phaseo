@@ -15,6 +15,7 @@ import {
 } from "@executors/_shared/text-generate/openai-compat/retry-policy";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { getBindings } from "@/runtime/env";
 
 import { cherryPickIRParams, resolveXAiModelForRequest, withNormalizedReasoning } from "./reasoning";
@@ -90,6 +91,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 				headers: openAICompatHeaders(args.providerId, keyInfo.key, {
 					"x-grok-conv-id": irRequest.xaiConversationId,
 					"Idempotency-Key": args.requestId,
+					...upstreamTestHeaders(args.meta),
 				}),
 				body: requestBody,
 			});

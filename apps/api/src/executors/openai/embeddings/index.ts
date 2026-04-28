@@ -7,6 +7,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { encodeOpenAIEmbeddingsRequest } from "@protocols/openai-embeddings/encode";
 import { decodeOpenAIEmbeddingsResponse } from "@protocols/openai-embeddings/decode";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
 
 function isVoyageProvider(providerId: string): boolean {
@@ -254,6 +255,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, key, {
 			"Idempotency-Key": args.requestId,
+			...upstreamTestHeaders(args.meta),
 		}),
 		body: JSON.stringify(requestBody),
 	});

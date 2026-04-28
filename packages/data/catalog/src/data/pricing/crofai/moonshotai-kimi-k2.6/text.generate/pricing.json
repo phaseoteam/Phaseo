@@ -1,0 +1,45 @@
+{
+  "key": "crofai:moonshotai/kimi-k2.6:text.generate",
+  "api_provider_id": "crofai",
+  "provider_slug": "crofai",
+  "api_model_id": "moonshotai/kimi-k2.6",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-27T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Derived from CrofAI pricing page cache pricing display.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-27T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.99,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-27T00:00:00"
+    }
+  ]
+}

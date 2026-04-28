@@ -1,0 +1,27 @@
+{
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "[aimock-fallback] route",
+        "model": "aimock-primary-fallback"
+      },
+      "response": {
+        "status": 500,
+        "error": {
+          "message": "primary provider failed",
+          "type": "server_error",
+          "code": "aimock_primary_failed"
+        }
+      }
+    },
+    {
+      "match": {
+        "userMessage": "[aimock-fallback] route",
+        "model": "aimock-secondary-fallback"
+      },
+      "response": {
+        "content": "Fallback provider succeeded via AIMock."
+      }
+    }
+  ]
+}

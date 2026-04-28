@@ -9,6 +9,7 @@ import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import type { ResolvedKey } from "../../keys";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 
 type GatewayToolCall = {
@@ -941,7 +942,7 @@ async function execNonStreaming(
 ): Promise<AdapterResult> {
     const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key),
+        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(requestPayload),
     });
 
@@ -1017,7 +1018,7 @@ async function execStreaming(
 ): Promise<AdapterResult> {
     const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key),
+        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(requestPayload),
     });
 
@@ -1059,7 +1060,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key),
+        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(requestPayload),
     });
     const bill = createBill(res);

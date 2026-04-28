@@ -9,18 +9,24 @@ import { buildAdapterPayload } from "../../utils";
 import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 const BASE_URL = "https://api.anthropic.com";
+
+function resolveBaseUrl(): string {
+    return getBindings().ANTHROPIC_BASE_URL ?? BASE_URL;
+}
 
 async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
     return resolveProviderKey(args, () => getBindings().ANTHROPIC_API_KEY);
 }
 
-function baseHeaders(key: string) {
+function baseHeaders(key: string, extraHeaders?: Record<string, string>) {
     return {
         "x-api-key": key,
         "Content-Type": "application/json",
         "anthropic-version": "2023-06-01",
+        ...extraHeaders,
     };
 }
 
@@ -143,9 +149,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         stream: true,
     };
     const req = mapGatewayToAnthropicChat(modifiedBody);
-    const res = await fetch(`${BASE_URL}/v1/messages`, {
+    const res = await fetch(`${resolveBaseUrl()}/v1/messages`, {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: baseHeaders(key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(req),
     });
     const bill = {

@@ -11,6 +11,7 @@ import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { shouldFallbackToChatFromError, readErrorPayload } from "@executors/_shared/text-generate/openai-compat/retry-policy";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import type { ProviderExecutor } from "../../types";
 import {
@@ -94,6 +95,7 @@ async function executeBedrockConverse(
 		headers: {
 			"Content-Type": "application/json",
 			Accept: "application/vnd.amazon.eventstream",
+			...upstreamTestHeaders(args.meta),
 		},
 	});
 
@@ -256,6 +258,7 @@ async function executeBedrockConverse(
 		headers: {
 			"Content-Type": "application/json",
 			Accept: "application/json",
+			...upstreamTestHeaders(args.meta),
 		},
 	});
 
@@ -377,6 +380,7 @@ async function executeBedrockOpenAI(
 		headers: {
 			"Content-Type": "application/json",
 			Accept: requestPayload.stream ? "text/event-stream" : "application/json",
+			...upstreamTestHeaders(args.meta),
 		},
 	});
 
@@ -393,6 +397,7 @@ async function executeBedrockOpenAI(
 				headers: {
 					"Content-Type": "application/json",
 					Accept: requestPayload.stream ? "text/event-stream" : "application/json",
+					...upstreamTestHeaders(args.meta),
 				},
 			});
 		}

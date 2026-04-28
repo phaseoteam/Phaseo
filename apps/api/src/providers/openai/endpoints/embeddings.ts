@@ -8,6 +8,7 @@ import { EmbeddingsSchema, type EmbeddingsRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 
 
@@ -51,7 +52,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const req = mapGatewayToOpenAIEmbeddings(modifiedBody, args.providerId);
     const res = await fetch(openAICompatUrl(args.providerId, "/embeddings"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key),
+        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(req),
     });
     const bill = {

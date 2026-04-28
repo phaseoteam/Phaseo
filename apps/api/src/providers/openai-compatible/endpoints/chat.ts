@@ -8,6 +8,7 @@ import { ChatCompletionsSchema, type ChatCompletionsRequest } from "@core/schema
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../config";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 function collectText(value: unknown, out: string[]) {
     if (typeof value === "string") {
@@ -443,7 +444,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const req = mapGatewayToOpenAIChat(modifiedBody, args.providerId, args.model);
     const res = await fetch(openAICompatUrl(args.providerId, "/chat/completions"), {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, keyInfo.key),
+        headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(req),
     });
 

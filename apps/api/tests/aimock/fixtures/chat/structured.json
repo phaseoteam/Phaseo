@@ -1,0 +1,38 @@
+{
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "[aimock-structured] person"
+      },
+      "response": {
+        "content": "{\"name\":\"Ava\",\"city\":\"London\"}"
+      }
+    },
+    {
+      "match": {
+        "userMessage": "[aimock-sequence] weather",
+        "sequenceIndex": 0
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "London",
+              "unit": "celsius"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "userMessage": "[aimock-sequence] weather",
+        "sequenceIndex": 1
+      },
+      "response": {
+        "content": "The weather workflow completed after the tool step."
+      }
+    }
+  ]
+}

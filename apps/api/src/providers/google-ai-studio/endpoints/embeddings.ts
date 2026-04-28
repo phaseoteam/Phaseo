@@ -10,16 +10,22 @@ import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeGoogleUsage } from "../usage";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import { upstreamTestHeaders } from "../../shared/testing";
 
 const BASE_URL = "https://generativelanguage.googleapis.com";
+
+function resolveBaseUrl(): string {
+    return getBindings().GOOGLE_AI_STUDIO_BASE_URL ?? getBindings().GOOGLE_BASE_URL ?? BASE_URL;
+}
 
 async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
     return resolveProviderKey(args, () => getBindings().GOOGLE_AI_STUDIO_API_KEY);
 }
 
-function baseHeaders(key: string) {
+function baseHeaders(key: string, extraHeaders?: Record<string, string>) {
     return {
         "Content-Type": "application/json",
+        ...extraHeaders,
     };
 }
 
@@ -121,11 +127,16 @@ function mapGoogleToGatewayEmbeddings(json: any, model: string, usageOverride?: 
     };
 }
 
-async function fetchTokenCount(key: string, modelForUrl: string, inputs: unknown[]) {
+async function fetchTokenCount(
+    key: string,
+    modelForUrl: string,
+    inputs: unknown[],
+    extraHeaders?: Record<string, string>,
+) {
     const contents = inputs.map((input) => normalizeEmbeddingInput(coerceInput(input)));
-    const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
+    const res = await fetch(`${resolveBaseUrl()}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: baseHeaders(key, extraHeaders),
         body: JSON.stringify({ contents }),
     });
     const json = await res.clone().json().catch(() => null);
@@ -173,9 +184,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             ...(typeof outputDimensionality === "number" ? { outputDimensionality } : {}),
         };
     const endpoint = isBatch ? ":batchEmbedContents" : ":embedContent";
-    const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}${endpoint}?key=${key}`, {
+    const res = await fetch(`${resolveBaseUrl()}/v1beta/models/${modelForUrl}${endpoint}?key=${key}`, {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: baseHeaders(key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(payload),
     });
     const bill = {
@@ -188,7 +199,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const json = await res.clone().json().catch(() => null);
     let usage = json ? extractEmbeddingUsage(json) : undefined;
     if (!usage) {
-        const totalTokens = await fetchTokenCount(key, modelForUrl, inputs);
+        const totalTokens = await fetchTokenCount(key, modelForUrl, inputs, upstreamTestHeaders(args.meta));
         if (typeof totalTokens === "number" && totalTokens > 0) {
             usage = {
                 embedding_tokens: totalTokens,

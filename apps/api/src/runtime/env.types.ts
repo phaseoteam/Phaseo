@@ -23,6 +23,7 @@ export type GatewayBindings = {
     GOOGLE_AI_STUDIO_BASE_URL?: string;
     GOOGLE_BASE_URL?: string;
     ANTHROPIC_API_KEY?: string;
+    ANTHROPIC_BASE_URL?: string;
     X_AI_API_KEY?: string;
     XAI_BASE_URL?: string;
     XAI_DEBUG_USAGE?: string;

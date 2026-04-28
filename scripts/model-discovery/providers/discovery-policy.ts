@@ -143,6 +143,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         active: true,
     },
     {
+        platformId: "crofai",
+        platformName: "CrofAI",
+        providerIds: ["crofai"],
+        modelsEndpoint: "https://crof.ai/v1/models",
+        active: true,
+    },
+    {
         platformId: "crusoe",
         platformName: "Crusoe",
         providerIds: ["crusoe"],

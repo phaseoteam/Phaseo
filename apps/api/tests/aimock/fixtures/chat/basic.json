@@ -1,0 +1,16 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "[aimock-chat] hello" },
+      "response": { "content": "Hello from AIMock via AI Stats." }
+    },
+    {
+      "match": { "userMessage": "[aimock-chat] stream" },
+      "response": { "content": "Streaming hello from AIMock via AI Stats." },
+      "streamingProfile": {
+        "ttftMs": 5,
+        "tokensPerSecond": 200
+      }
+    }
+  ]
+}

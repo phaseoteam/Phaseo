@@ -1,0 +1,18 @@
+{
+  "fixtures": [
+    {
+      "match": { "userMessage": "[aimock-tool] weather" },
+      "response": {
+        "toolCalls": [
+          {
+            "name": "get_weather",
+            "arguments": {
+              "city": "London",
+              "unit": "celsius"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

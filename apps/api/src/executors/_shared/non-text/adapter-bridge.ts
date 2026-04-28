@@ -116,6 +116,12 @@ function base64FromBuffer(buffer: ArrayBuffer): string {
 	return btoa(binary);
 }
 
+function withDefinedValues<T extends Record<string, any>>(value: T): Partial<T> {
+	return Object.fromEntries(
+		Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
+	) as Partial<T>;
+}
+
 function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"], providerModel: string): any {
 	switch (endpoint) {
 		case "images.generations": {
@@ -204,35 +210,36 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 		case "video.generation": {
 			const request = ir as IRVideoGenerationRequest;
 			const raw = (request.rawRequest ?? {}) as Record<string, any>;
-			return {
-				...raw,
+			const inputReferences = Array.isArray(raw.input_references)
+				? raw.input_references
+				: Array.isArray(raw.inputReferences)
+					? raw.inputReferences
+					: undefined;
+			const providerParams =
+				raw.provider_params && typeof raw.provider_params === "object"
+					? raw.provider_params
+					: raw.providerParams && typeof raw.providerParams === "object"
+						? raw.providerParams
+						: undefined;
+			return withDefinedValues({
 				model: providerModel,
 				prompt: request.prompt,
-				seconds: request.seconds ?? request.durationSeconds ?? request.duration,
+				duration: request.duration ?? request.durationSeconds ?? request.seconds,
 				size: request.size ?? raw.size,
-				quality: request.quality,
-				input_reference: request.inputReference,
-				input_reference_mime_type: request.inputReferenceMimeType,
-				input: request.input,
-				input_image: request.inputImage,
-				input_video: request.inputVideo,
-				last_frame: request.lastFrame,
-				reference_images: request.referenceImages,
-				duration: request.duration,
-				duration_seconds: request.durationSeconds,
-				ratio: request.ratio,
+				resolution: request.resolution ?? raw.resolution,
 				aspect_ratio: request.aspectRatio,
-				resolution: request.resolution ?? request.size ?? raw.resolution,
 				compression_quality: request.compressionQuality,
 				negative_prompt: request.negativePrompt,
 				sample_count: request.sampleCount,
-				number_of_videos: request.numberOfVideos,
 				seed: request.seed,
 				person_generation: request.personGeneration,
 				generate_audio: request.generateAudio,
 				enhance_prompt: request.enhancePrompt,
-				output_storage_uri: request.outputStorageUri,
-			};
+				input_references: inputReferences,
+				provider_params: providerParams,
+				output: request.outputAccess ? { access: request.outputAccess } : undefined,
+				webhook: request.webhook,
+			});
 		}
 
 		case "ocr": {
@@ -514,6 +521,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			returnUpstreamRequest: args.meta.returnUpstreamRequest,
 			returnUpstreamResponse: args.meta.returnUpstreamResponse,
 			upstreamStartMs: args.meta.upstreamStartMs,
+			testId: args.meta.testId,
 		},
 		workspaceId: args.workspaceId,
 		providerId: args.providerId,

@@ -12,6 +12,7 @@ import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
@@ -489,6 +490,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				headers: {
 					"Content-Type": "application/json",
 					"x-goog-api-key": keyInfo.key,
+					...upstreamTestHeaders(meta),
 				},
 				body: JSON.stringify(requestBody),
 			});
