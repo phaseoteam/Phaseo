@@ -433,6 +433,10 @@ begin
           with rules as (
             select r.*
             from public.data_api_pricing_rules r
+            -- TODO: Redesign pricing selection to key on provider_api_model_id or
+            -- explicit variant metadata so provider-only SKUs (for example CrofAI
+            -- precision tiers) can share a parent internal model without forcing
+            -- distinct api_model_id values just to preserve pricing separation.
             where r.model_key =
               pr.provider_id || ':' || resolved_model || ':' || gateway_fetch_request_context.endpoint
               and r.capability_id = gateway_fetch_request_context.endpoint
