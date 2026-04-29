@@ -6562,6 +6562,7 @@ components:
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
         - gryphe/mythomax-l2-13b
+        - ibm/granite-4.1-8b
         - internvl3.5-8b
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
@@ -6608,6 +6609,7 @@ components:
         - mistral/mistral-large-3
         - mistral/mistral-medium-3.0
         - mistral/mistral-medium-3.1
+        - mistral/mistral-medium-3.5
         - mistral/mistral-moderation
         - mistral/mistral-moderation-2
         - mistral/mistral-nemo-12b
