@@ -20239,6 +20239,23 @@
         "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "model_key": "nebius-token-factory:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:text.generate"
       }
+    },
+    "../../packages/data/catalog/src/data/models/poolside/laguna-xs.2/model.json": {
+      "hash": "cf53904c2c0b87ea7cf08ed617a521e9",
+      "meta": {
+        "model_id": "poolside/laguna-xs.2",
+        "organisation_id": "poolside",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/poolside/poolside-laguna-xs.2/text.generate/pricing.json": {
+      "hash": "5d093745b68273909b4e742175ebe93a",
+      "meta": {
+        "api_provider_id": "poolside",
+        "capability_id": "text.generate",
+        "model_id": "poolside/laguna-xs.2",
+        "model_key": "poolside:poolside/laguna-xs.2:text.generate"
+      }
     }
   }
 }

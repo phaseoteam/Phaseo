@@ -494,7 +494,7 @@ function aggregateGatewaySignals(
 		}
 		const fromPrice = Number(row.provider.fromPrice);
 		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
-		if (Number.isFinite(fromPrice) && fromPrice > 0 && fromPriceUnit) {
+		if (Number.isFinite(fromPrice) && fromPrice >= 0 && fromPriceUnit) {
 			const current = existing.fromPriceByUnit.get(fromPriceUnit);
 			if (current === undefined || fromPrice < current) {
 				existing.fromPriceByUnit.set(fromPriceUnit, fromPrice);
@@ -534,6 +534,18 @@ function normalizeStringList(values: string[] | undefined): string[] {
 				.filter(Boolean),
 		),
 	);
+}
+
+function sortApiModelIdsForDisplay(values: Iterable<string> | undefined): string[] {
+	return Array.from(values ?? [])
+		.map((value) => String(value ?? "").trim())
+		.filter(Boolean)
+		.sort((a, b) => {
+			const aIsFree = a.toLowerCase().endsWith(":free");
+			const bIsFree = b.toLowerCase().endsWith(":free");
+			if (aIsFree !== bIsFree) return aIsFree ? -1 : 1;
+			return a.localeCompare(b);
+		});
 }
 
 function normalizeModelTailForDedup(modelId: string): string {
@@ -748,7 +760,7 @@ function withGatewayMetadata(
 					if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
 					return a.name.localeCompare(b.name);
 				}),
-			gateway_api_model_ids: Array.from(signals?.apiModelIds ?? []).sort(),
+			gateway_api_model_ids: sortApiModelIdsForDisplay(signals?.apiModelIds),
 			context_lengths: Array.from(signals?.contextLengths ?? []).sort(
 				(a, b) => a - b,
 			),

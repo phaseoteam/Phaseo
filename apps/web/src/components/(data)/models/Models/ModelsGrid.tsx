@@ -32,12 +32,7 @@ function chunkModels(models: ModelCardType[], columns: number): ModelRow[] {
 }
 
 function useColumnCount(): number {
-	const [columnCount, setColumnCount] = useState(() => {
-		if (typeof window === "undefined") return 2;
-		if (window.matchMedia("(min-width: 1536px)").matches) return 3;
-		if (window.matchMedia("(min-width: 768px)").matches) return 2;
-		return 1;
-	});
+	const [columnCount, setColumnCount] = useState(1);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
