@@ -66,7 +66,7 @@ export async function createCreditGrantAction(formData: FormData) {
 	const noteRaw = String(formData.get("note") ?? "").trim();
 	const note = noteRaw.length > 0 ? noteRaw : null;
 
-	const { error } = await supabase.from("credit_grants").insert({
+	const payload = {
 		code,
 		code_normalized: code,
 		amount_nanos: amountNanos,
@@ -75,8 +75,48 @@ export async function createCreditGrantAction(formData: FormData) {
 		is_active: true,
 		created_by: userId,
 		note,
-	});
-	if (error) throw error;
+	};
+
+	const { error } = await supabase.from("credit_grants").insert(payload);
+	if (error) {
+		const isUniqueViolation = String((error as { code?: unknown } | null)?.code ?? "") === "23505";
+		if (!isUniqueViolation) throw error;
+
+		const { data: existingGrant, error: existingGrantError } = await supabase
+			.from("credit_grants")
+			.select("id, is_active")
+			.eq("code_normalized", code)
+			.maybeSingle();
+		if (existingGrantError) throw existingGrantError;
+		if (!existingGrant) {
+			throw new Error("This promo code already exists.");
+		}
+		if (existingGrant.is_active) {
+			throw new Error("This promo code already exists and is currently active.");
+		}
+
+		const { count: redemptionCount, error: redemptionCountError } = await supabase
+			.from("credit_grant_redemptions")
+			.select("id", { count: "exact", head: true })
+			.eq("grant_id", existingGrant.id);
+		if (redemptionCountError) throw redemptionCountError;
+
+		if ((redemptionCount ?? 0) > 0) {
+			throw new Error(
+				"This promo code has redemption history, so it cannot be reused. Reactivate/edit the existing code or choose a new slug."
+			);
+		}
+
+		const { error: reactivateError } = await supabase
+			.from("credit_grants")
+			.update({
+				...payload,
+				redemptions_count: 0,
+				disabled_at: null,
+			})
+			.eq("id", existingGrant.id);
+		if (reactivateError) throw reactivateError;
+	}
 
 	revalidatePath("/internal/credits");
 }
@@ -92,6 +132,29 @@ export async function disableCreditGrantAction(formData: FormData) {
 			is_active: false,
 			disabled_at: new Date().toISOString(),
 		})
+		.eq("id", grantId);
+	if (error) throw error;
+
+	revalidatePath("/internal/credits");
+}
+
+export async function deleteCreditGrantAction(formData: FormData) {
+	const { supabase } = await requireAdmin();
+	const grantId = String(formData.get("grant_id") ?? "").trim();
+	if (!grantId) throw new Error("Missing grant id");
+
+	const { count: redemptionCount, error: redemptionCountError } = await supabase
+		.from("credit_grant_redemptions")
+		.select("id", { count: "exact", head: true })
+		.eq("grant_id", grantId);
+	if (redemptionCountError) throw redemptionCountError;
+	if ((redemptionCount ?? 0) > 0) {
+		throw new Error("Promo codes with redemption history cannot be deleted.");
+	}
+
+	const { error } = await supabase
+		.from("credit_grants")
+		.delete()
 		.eq("id", grantId);
 	if (error) throw error;
 

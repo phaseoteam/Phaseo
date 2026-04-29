@@ -359,20 +359,38 @@ export default function NewModelForm({
 			selected.has(provider.api_provider_id)
 		);
 	}, [providerRows, sortedProviders]);
+	const providerNameById = useMemo(
+		() =>
+			Object.fromEntries(
+				sortedProviders.map((provider) => [
+					provider.api_provider_id,
+					provider.api_provider_name ?? provider.api_provider_id,
+				])
+			),
+		[sortedProviders]
+	);
 
 	const defaultPricingProviderId =
 		pricingProviderOptions[0]?.api_provider_id ?? "";
-	const defaultPricingApiModelId = modelId;
-	const defaultPricingCapability = providerRows[0]?.capabilities[0]?.capability_id ?? "text.generate";
+	const getDefaultPricingApiModelId = (providerId?: string) =>
+		providerRows.find((row) => row.provider_id === providerId)?.api_model_id.trim() ||
+		modelId.trim();
+	const getDefaultPricingCapability = (providerId?: string) =>
+		providerRows.find((row) => row.provider_id === providerId)?.capabilities[0]
+			?.capability_id ?? "text.generate";
 
-	const createPricingRow = (meter?: string): PricingRuleDraft => {
+	const createPricingRow = (
+		providerId?: string,
+		meter?: string
+	): PricingRuleDraft => {
 		const chosenMeter = meter ?? PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens";
 		const defaults = METER_DEFAULTS[chosenMeter];
+		const resolvedProviderId = providerId ?? defaultPricingProviderId;
 		return {
 			id: `price-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-			provider_id: defaultPricingProviderId,
-			api_model_id: defaultPricingApiModelId.trim(),
-			capability_id: defaultPricingCapability,
+			provider_id: resolvedProviderId,
+			api_model_id: getDefaultPricingApiModelId(resolvedProviderId),
+			capability_id: getDefaultPricingCapability(resolvedProviderId),
 			pricing_plan: "standard",
 			meter: chosenMeter,
 			unit: defaults?.unit ?? "token",
@@ -387,7 +405,16 @@ export default function NewModelForm({
 			toast.error("Select at least one provider before adding pricing rules.")
 			return;
 		}
-		setPricingRows((prev) => [...prev, ...meters.map((meter) => createPricingRow(meter))]);
+		setPricingRows((prev) => [
+			...prev,
+			...meters.map((meter) => createPricingRow(defaultPricingProviderId, meter)),
+		]);
+	};
+	const addPricingRowsForProvider = (providerId: string, meters: string[]) => {
+		setPricingRows((prev) => [
+			...prev,
+			...meters.map((meter) => createPricingRow(providerId, meter)),
+		]);
 	};
 
 	const setPricingField = (rowId: string, field: keyof PricingRuleDraft, value: string) => {
@@ -405,6 +432,48 @@ export default function NewModelForm({
 			})
 		);
 	};
+	const groupedPricingRows = useMemo(() => {
+		const groups = new Map<string, PricingRuleDraft[]>();
+		for (const row of pricingRows) {
+			const key = row.provider_id || "__unassigned__";
+			const existing = groups.get(key) ?? [];
+			existing.push(row);
+			groups.set(key, existing);
+		}
+
+		const sortRows = (rows: PricingRuleDraft[]) =>
+			[...rows].sort((a, b) => {
+				const providerCmp = (providerNameById[a.provider_id] ?? a.provider_id).localeCompare(
+					providerNameById[b.provider_id] ?? b.provider_id,
+					undefined,
+					{ sensitivity: "base" }
+				);
+				if (providerCmp !== 0) return providerCmp;
+				const modelCmp = (a.api_model_id || modelId).localeCompare(
+					b.api_model_id || modelId,
+					undefined,
+					{ sensitivity: "base" }
+				);
+				if (modelCmp !== 0) return modelCmp;
+				const capabilityCmp = a.capability_id.localeCompare(b.capability_id, undefined, {
+					sensitivity: "base",
+				});
+				if (capabilityCmp !== 0) return capabilityCmp;
+				return a.meter.localeCompare(b.meter, undefined, { sensitivity: "base" });
+			});
+
+		const providerGroups = pricingProviderOptions.map((provider) => ({
+			providerId: provider.api_provider_id,
+			providerName: provider.api_provider_name ?? provider.api_provider_id,
+			rows: sortRows(groups.get(provider.api_provider_id) ?? []),
+		}));
+		const unassignedRows = sortRows(groups.get("__unassigned__") ?? []);
+
+		return {
+			providerGroups,
+			unassignedRows,
+		};
+	}, [modelId, pricingProviderOptions, pricingRows, providerNameById]);
 
 	const providerModelPayload = useMemo(
 		() =>
@@ -1691,106 +1760,215 @@ export default function NewModelForm({
 			<section className="space-y-3 rounded-lg border p-3">
 				<div className="flex items-center justify-between">
 					<h2 className="text-sm font-medium">Pricing rules</h2>
-					<div className="flex flex-wrap items-center gap-2">
-						<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows([PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens"])}>
-							<Plus className="mr-1 h-4 w-4" />
-							Add pricing row
-						</Button>
-						<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows(["input_text_tokens", "output_text_tokens", "cached_read_text_tokens"])}>
-							Add text token bundle
-						</Button>
-						<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows(["input_image_tokens", "output_image_tokens", "cached_read_image_tokens"])}>
-							Add image token bundle
-						</Button>
-					</div>
+					<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows([PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens"])}>
+						<Plus className="mr-1 h-4 w-4" />
+						Add pricing row
+					</Button>
 				</div>
 				<p className="text-xs text-muted-foreground">
-					Bundle buttons create the common meter sets. Picking a meter auto-fills unit and unit size defaults.
+					Pricing rules are grouped by provider so it is easier to see each provider's current meter set. Picking a meter auto-fills unit and unit size defaults.
 				</p>
-				{pricingRows.map((row) => (
-					<div key={row.id} className="grid gap-2 rounded-md border p-2 lg:grid-cols-8">
-						<select
-							value={row.provider_id}
-							onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
-							className="rounded-md border px-2 py-1.5 text-xs"
-						>
-							<option value="">Provider</option>
-							{pricingProviderOptions.map((provider) => (
-								<option key={provider.api_provider_id} value={provider.api_provider_id}>
-									{provider.api_provider_name ?? provider.api_provider_id}
-								</option>
-							))}
-						</select>
-						<Input
-							list={`pricing-model-ids-${row.id}`}
-							value={row.api_model_id}
-							onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
-							placeholder="api_model_id"
-							className="h-8 text-xs"
-						/>
-						<datalist id={`pricing-model-ids-${row.id}`}>
-							{modelIdOptions.map((option) => (
-								<option key={`pricing-${row.id}-${option}`} value={option} />
-							))}
-						</datalist>
-						<select
-							value={row.capability_id}
-							onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
-							className="rounded-md border px-2 py-1.5 text-xs"
-						>
-							{COMMON_CAPABILITIES.map((capability) => (
-								<option key={capability} value={capability}>
-									{capability}
-								</option>
-							))}
-						</select>
-						<select
-							value={row.meter}
-							onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
-							className="rounded-md border px-2 py-1.5 text-xs"
-						>
-							{PRICING_METER_OPTIONS.map((meter) => (
-								<option key={meter.value} value={meter.value}>
-									{meter.label}
-								</option>
-							))}
-						</select>
-						<Input
-							value={row.price_per_unit}
-							onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
-							placeholder="Price"
-							className="h-8 text-xs"
-						/>
-						<Input
-							value={row.unit}
-							onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
-							placeholder="Unit"
-							className="h-8 text-xs"
-						/>
-						<Input
-							value={row.unit_size}
-							onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
-							placeholder="Unit size"
-							className="h-8 text-xs"
-						/>
-						<div className="flex items-center justify-between gap-2">
-							<Input
-								value={row.currency}
-								onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
-								placeholder="USD"
-								className="h-8 text-xs"
-							/>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
-							>
-								<Trash2 className="h-4 w-4" />
-							</Button>
+				<div className="space-y-4">
+					{groupedPricingRows.providerGroups.map((group) => (
+						<div key={group.providerId} className="space-y-3 rounded-xl border border-border/70 bg-muted/[0.18] p-3">
+							<div className="flex flex-wrap items-center justify-between gap-2">
+								<div>
+									<div className="text-sm font-medium">{group.providerName}</div>
+									<p className="text-xs text-muted-foreground">
+										{group.rows.length} pricing {group.rows.length === 1 ? "row" : "rows"}
+									</p>
+								</div>
+								<div className="flex flex-wrap items-center gap-2">
+									<Button type="button" variant="outline" size="sm" onClick={() => addPricingRowsForProvider(group.providerId, [PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens"])}>
+										<Plus className="mr-1 h-4 w-4" />
+										Add row
+									</Button>
+									<Button type="button" variant="outline" size="sm" onClick={() => addPricingRowsForProvider(group.providerId, ["input_text_tokens", "output_text_tokens", "cached_read_text_tokens"])}>
+										Add text bundle
+									</Button>
+									<Button type="button" variant="outline" size="sm" onClick={() => addPricingRowsForProvider(group.providerId, ["input_image_tokens", "output_image_tokens", "cached_read_image_tokens"])}>
+										Add image bundle
+									</Button>
+								</div>
+							</div>
+							<div className="space-y-2">
+								{group.rows.map((row) => (
+									<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
+										<select
+											value={row.provider_id}
+											onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
+											className="rounded-md border px-2 py-1.5 text-xs"
+										>
+											<option value="">Provider</option>
+											{pricingProviderOptions.map((provider) => (
+												<option key={provider.api_provider_id} value={provider.api_provider_id}>
+													{provider.api_provider_name ?? provider.api_provider_id}
+												</option>
+											))}
+										</select>
+										<Input
+											list={`pricing-model-ids-${row.id}`}
+											value={row.api_model_id}
+											onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
+											placeholder="api_model_id"
+											className="h-8 text-xs"
+										/>
+										<datalist id={`pricing-model-ids-${row.id}`}>
+											{modelIdOptions.map((option) => (
+												<option key={`pricing-${row.id}-${option}`} value={option} />
+											))}
+										</datalist>
+										<select
+											value={row.capability_id}
+											onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
+											className="rounded-md border px-2 py-1.5 text-xs"
+										>
+											{COMMON_CAPABILITIES.map((capability) => (
+												<option key={capability} value={capability}>
+													{capability}
+												</option>
+											))}
+										</select>
+										<select
+											value={row.meter}
+											onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
+											className="rounded-md border px-2 py-1.5 text-xs"
+										>
+											{PRICING_METER_OPTIONS.map((meter) => (
+												<option key={meter.value} value={meter.value}>
+													{meter.label}
+												</option>
+											))}
+										</select>
+										<Input
+											value={row.price_per_unit}
+											onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
+											placeholder="Price"
+											className="h-8 text-xs"
+										/>
+										<Input
+											value={row.unit}
+											onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
+											placeholder="Unit"
+											className="h-8 text-xs"
+										/>
+										<Input
+											value={row.unit_size}
+											onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
+											placeholder="Unit size"
+											className="h-8 text-xs"
+										/>
+										<div className="flex items-center justify-between gap-2">
+											<Input
+												value={row.currency}
+												onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
+												placeholder="USD"
+												className="h-8 text-xs"
+											/>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										</div>
+									</div>
+								))}
+							</div>
 						</div>
-					</div>
-				))}
+					))}
+					{groupedPricingRows.unassignedRows.length > 0 ? (
+						<div className="space-y-2 rounded-xl border border-dashed p-3">
+							<div className="text-sm font-medium">Unassigned provider</div>
+							{groupedPricingRows.unassignedRows.map((row) => (
+								<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
+									<select
+										value={row.provider_id}
+										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
+										className="rounded-md border px-2 py-1.5 text-xs"
+									>
+										<option value="">Provider</option>
+										{pricingProviderOptions.map((provider) => (
+											<option key={provider.api_provider_id} value={provider.api_provider_id}>
+												{provider.api_provider_name ?? provider.api_provider_id}
+											</option>
+										))}
+									</select>
+									<Input
+										list={`pricing-model-ids-${row.id}`}
+										value={row.api_model_id}
+										onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
+										placeholder="api_model_id"
+										className="h-8 text-xs"
+									/>
+									<datalist id={`pricing-model-ids-${row.id}`}>
+										{modelIdOptions.map((option) => (
+											<option key={`pricing-${row.id}-${option}`} value={option} />
+										))}
+									</datalist>
+									<select
+										value={row.capability_id}
+										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
+										className="rounded-md border px-2 py-1.5 text-xs"
+									>
+										{COMMON_CAPABILITIES.map((capability) => (
+											<option key={capability} value={capability}>
+												{capability}
+											</option>
+										))}
+									</select>
+									<select
+										value={row.meter}
+										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
+										className="rounded-md border px-2 py-1.5 text-xs"
+									>
+										{PRICING_METER_OPTIONS.map((meter) => (
+											<option key={meter.value} value={meter.value}>
+												{meter.label}
+											</option>
+										))}
+									</select>
+									<Input
+										value={row.price_per_unit}
+										onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
+										placeholder="Price"
+										className="h-8 text-xs"
+									/>
+									<Input
+										value={row.unit}
+										onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
+										placeholder="Unit"
+										className="h-8 text-xs"
+									/>
+									<Input
+										value={row.unit_size}
+										onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
+										placeholder="Unit size"
+										className="h-8 text-xs"
+									/>
+									<div className="flex items-center justify-between gap-2">
+										<Input
+											value={row.currency}
+											onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
+											placeholder="USD"
+											className="h-8 text-xs"
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											onClick={() => setPricingRows((prev) => prev.filter((inner) => inner.id !== row.id))}
+										>
+											<Trash2 className="h-4 w-4" />
+										</Button>
+									</div>
+								</div>
+							))}
+						</div>
+					) : null}
+				</div>
 			</section>
 
 			<div className="flex flex-wrap gap-2">
