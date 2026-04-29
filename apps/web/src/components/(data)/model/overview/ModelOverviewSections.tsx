@@ -706,33 +706,25 @@ export async function ModelCreatorModelsSection({
 					className="min-w-0"
 					opts={{ align: "start", loop: otherModels.length > 4 }}
 				>
-					<div className="mb-3 flex items-start justify-between gap-3">
-						<div className="min-w-0 space-y-1">
-							<h2 className="text-xl font-semibold tracking-tight">
-								Other models from{" "}
-								<Link
-									href={`/organisations/${model.organisation_id}`}
-									className="group inline-flex items-center no-underline"
-								>
-									<span className="underline decoration-transparent group-hover:decoration-current">
-										{creatorName}
-									</span>
-								</Link>
-							</h2>
-						</div>
-						{otherModels.length > 1 ? (
-							<div className="hidden shrink-0 items-center gap-2 sm:flex">
-								<CarouselPrevious className="static size-8 translate-x-0 translate-y-0 bg-background shadow-sm" />
-								<CarouselNext className="static size-8 translate-x-0 translate-y-0 bg-background shadow-sm" />
-							</div>
-						) : null}
+					<div className="mb-3 min-w-0 space-y-1">
+						<h2 className="text-xl font-semibold tracking-tight">
+							Other models from{" "}
+							<Link
+								href={`/organisations/${model.organisation_id}`}
+								className="group/link inline-flex items-center no-underline"
+							>
+								<span className="underline decoration-transparent group-hover/link:decoration-current">
+									{creatorName}
+								</span>
+							</Link>
+						</h2>
 					</div>
-					<div className="min-w-0 overflow-hidden">
-						<CarouselContent>
+					<div className="relative min-w-0 overflow-hidden sm:px-8">
+						<CarouselContent className="-ml-3">
 							{otherModels.map((creatorModel) => (
 								<CarouselItem
 									key={creatorModel.model_id}
-									className="sm:basis-1/2 xl:basis-1/3 2xl:basis-1/4"
+									className="pl-3 sm:basis-1/2 xl:basis-1/3 2xl:basis-1/4"
 								>
 									<Link
 										href={`/models/${creatorModel.model_id}`}
@@ -746,20 +738,21 @@ export async function ModelCreatorModelsSection({
 												{creatorModel.model_id}
 											</p>
 										</div>
-										<div className="mt-3 flex items-center justify-between gap-2">
+										<div className="mt-3">
 											<p className="text-xs text-muted-foreground">
 												{formatDate(creatorModel.primary_date)}
 											</p>
-											{creatorModel.status ? (
-												<Badge variant="outline" className="text-[11px]">
-													{creatorModel.status}
-												</Badge>
-											) : null}
 										</div>
 									</Link>
 								</CarouselItem>
 							))}
 						</CarouselContent>
+						{otherModels.length > 1 ? (
+							<div className="pointer-events-none absolute inset-y-0 left-1 right-1 hidden items-center justify-between sm:flex">
+								<CarouselPrevious className="pointer-events-auto static h-full w-6 translate-x-0 translate-y-0 rounded-l-md rounded-r-none border border-border/80 bg-background shadow-none" />
+								<CarouselNext className="pointer-events-auto static h-full w-6 translate-x-0 translate-y-0 rounded-r-md rounded-l-none border border-border/80 bg-background shadow-none" />
+							</div>
+						) : null}
 					</div>
 					{otherModels.length > 1 ? (
 						<div className="mt-3 flex items-center justify-end gap-2 sm:hidden">
