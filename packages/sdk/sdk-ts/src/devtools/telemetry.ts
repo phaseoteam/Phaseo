@@ -15,7 +15,7 @@ export class TelemetryCapture {
   private readonly sdkVersion: string;
 
 
-  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "2.0.1") {
+  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "2.0.2") {
 
     // Check if devtools is enabled via env var or config
     if (config?.enabled !== undefined) {
