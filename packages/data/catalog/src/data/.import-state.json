@@ -11446,13 +11446,13 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/akashml/api_provider.json": {
-      "hash": "3923acacfa550354295f18eae8f2a61c",
+      "hash": "7a9f6c8c5b9edf7b8095dcf1a8fdd59e",
       "meta": {
         "api_provider_id": "akashml"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/akashml/models.json": {
-      "hash": "051ce4863142532c056e913b45e2e047",
+      "hash": "c473ce7791c95880c337300790858e14",
       "meta": {
         "api_provider_id": "akashml",
         "kind": "provider_models"
@@ -11465,7 +11465,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "92b644219575ce086fd368dbdd70f1a3",
+      "hash": "2822a342ed6b9a53314cc00625c4c362",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -11582,7 +11582,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cerebras/models.json": {
-      "hash": "4a3b979a76455edf2445120dc744d710",
+      "hash": "0bc619fc1a741ffdc6ced75dc34bfcfe",
       "meta": {
         "api_provider_id": "cerebras",
         "kind": "provider_models"
@@ -11601,7 +11601,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cloudflare/api_provider.json": {
-      "hash": "f7878c3b3ec033f790ec259d7ab5146a",
+      "hash": "f1fa9c74ba1bfe555df12a5a14b067bd",
       "meta": {
         "api_provider_id": "cloudflare"
       }
@@ -11626,13 +11626,13 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepinfra/api_provider.json": {
-      "hash": "1f663dc6dee4e98e8b6e11fb88fc20f5",
+      "hash": "4c1814e14e356436d04bc04471051069",
       "meta": {
         "api_provider_id": "deepinfra"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepinfra/models.json": {
-      "hash": "b24a5bce2dc8cccc4aebf4be21db8a13",
+      "hash": "7a1bca9fb4a1c36cbadf3806a0f1ca9b",
       "meta": {
         "api_provider_id": "deepinfra",
         "kind": "provider_models"
@@ -11645,7 +11645,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepseek/models.json": {
-      "hash": "9427f4710bfd41f30a8530b7413fb73f",
+      "hash": "f4c76672e96109fdd038f0ee76cadb4c",
       "meta": {
         "api_provider_id": "deepseek",
         "kind": "provider_models"
@@ -11678,7 +11678,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/friendli/api_provider.json": {
-      "hash": "249a634b39a81b3ca70fc209fb2ea2a1",
+      "hash": "da6974fbd140f47831234e5011847146",
       "meta": {
         "api_provider_id": "friendli"
       }
@@ -11690,7 +11690,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/gmicloud/models.json": {
-      "hash": "d79f541d9fcce3bcda77d534b2ebf454",
+      "hash": "f95cfa6088e233ff3ab87abe410a8c2e",
       "meta": {
         "api_provider_id": "gmicloud",
         "kind": "provider_models"
@@ -11703,7 +11703,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "50745ecb6a769e3863f802348118e139",
+      "hash": "ed6e1fdaa47e61628dfb9b2026d7aa87",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -11716,7 +11716,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-vertex/models.json": {
-      "hash": "55e674195fd8772fe32127fa4cfad3fd",
+      "hash": "92453d56898ec275ab63cc2c6f4b2360",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -11736,7 +11736,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/hyperbolic/api_provider.json": {
-      "hash": "3008d19ebbae728b6466421367d37505",
+      "hash": "6cb3a5e3f354dc728b8ad7c476fff1cd",
       "meta": {
         "api_provider_id": "hyperbolic"
       }
@@ -11761,25 +11761,25 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/infermatic/api_provider.json": {
-      "hash": "3eb68d7606b38a5652ae00229bb971a8",
+      "hash": "ba6495cd5943afd64a126ef560ed3f71",
       "meta": {
         "api_provider_id": "infermatic"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/inflection/api_provider.json": {
-      "hash": "09aa14f324758b7642d330b8900dbfa9",
+      "hash": "8a628fb90c1d5a9127aa4c77232ef012",
       "meta": {
         "api_provider_id": "inflection"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/ionrouter/api_provider.json": {
-      "hash": "f24ebe0153e4426474d721279b3ad3d1",
+      "hash": "5e2c640de1921efc1a4e50b4acfb7bcd",
       "meta": {
         "api_provider_id": "ionrouter"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/ionrouter/models.json": {
-      "hash": "910359fcef8d2905fdf729c8af6e83aa",
+      "hash": "7dc23e74af3c840170b99ce5f5ce23e4",
       "meta": {
         "api_provider_id": "ionrouter",
         "kind": "provider_models"
@@ -11857,7 +11857,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/morph/api_provider.json": {
-      "hash": "f4b402ac6fa26622390581be7f321998",
+      "hash": "569ae912c9eb617d9f0858495979e603",
       "meta": {
         "api_provider_id": "morph"
       }
@@ -11869,7 +11869,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/nebius-token-factory/models.json": {
-      "hash": "3662ee1dfbf3c9aad193df16816759fe",
+      "hash": "0ae01f5ee2f5a0ff072578d86c40c48e",
       "meta": {
         "api_provider_id": "nebius-token-factory",
         "kind": "provider_models"
@@ -11901,7 +11901,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/models.json": {
-      "hash": "b47efaab3ca790d7ea68967ccb08c364",
+      "hash": "07f9b3bb14a3ff0bd6d2cd12112e95eb",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -11951,7 +11951,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/siliconflow/api_provider.json": {
-      "hash": "0dbadcabb8f909303f165b941482bc34",
+      "hash": "85e019308b3323bc128aca09f32744b7",
       "meta": {
         "api_provider_id": "siliconflow"
       }
@@ -11989,13 +11989,13 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/together/api_provider.json": {
-      "hash": "ec33943f47970f83475d83be9cd700ba",
+      "hash": "5f42da5bc3dcfd1cb582fad4e239ca38",
       "meta": {
         "api_provider_id": "together"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/together/models.json": {
-      "hash": "8537520a871ee27512c534adb0c86adc",
+      "hash": "34bfc22842a1e7542a288908024d8c8c",
       "meta": {
         "api_provider_id": "together",
         "kind": "provider_models"
@@ -12073,7 +12073,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/xiaomi/models.json": {
-      "hash": "6a5fda95e8ea5fca34f6bda69cc6fea9",
+      "hash": "705249bce32382930c0b5d074c1d5ea0",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -19898,7 +19898,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/crofai/models.json": {
-      "hash": "28979ec2da15d9fba5c98daf7eadd3ee",
+      "hash": "3f1984fb2089d0f5f24750a7bbfd628d",
       "meta": {
         "api_provider_id": "crofai",
         "kind": "provider_models"
@@ -19967,7 +19967,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/crofai/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
-      "hash": "ad689378f53f75aa746b31d775641944",
+      "hash": "1f51c72d563cdede46754912fae6b169",
       "meta": {
         "api_provider_id": "crofai",
         "capability_id": "text.generate",
@@ -19985,7 +19985,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
-      "hash": "6c49af63035998b9bc98b31f2d91d7c9",
+      "hash": "511fdb2415ada1bfe1ee1365ea639965",
       "meta": {
         "api_provider_id": "deepseek",
         "capability_id": "text.generate",
@@ -20059,78 +20059,185 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/canopy-wave/api_provider.json": {
-      "hash": "23f64e0b50f051b90c6d998b3d9ec84e",
+      "hash": "9b6f95bcf76a77d1cac5ee8572d1e936",
       "meta": {
         "api_provider_id": "canopy-wave"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/canopy-wave/models.json": {
-      "hash": "a0bbd6a5eb25ff3f0a708c47c1f4877e",
+      "hash": "8aa480066fe58802a04a51e6ec12af20",
       "meta": {
         "api_provider_id": "canopy-wave",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cloudflare/models.json": {
-      "hash": "bc3a72dc3612c8951cefb600cf96eed3",
+      "hash": "1346b94abc29c2e338334f5357ea87e3",
       "meta": {
         "api_provider_id": "cloudflare",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/friendli/models.json": {
-      "hash": "192d8f804df92c65ecd9761204164219",
+      "hash": "1d9ca2809944995723655cc3c8a7a8f6",
       "meta": {
         "api_provider_id": "friendli",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/hyperbolic/models.json": {
-      "hash": "7c98224a00c27c44a84e45e06d820aa9",
+      "hash": "cc925cc334a9617cb78876f9ceb5f039",
       "meta": {
         "api_provider_id": "hyperbolic",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/infermatic/models.json": {
-      "hash": "aebe3301e3fe8758e90996c908b11c1f",
+      "hash": "d0944ee9d8fb2b4a5399b569beb0f751",
       "meta": {
         "api_provider_id": "infermatic",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/inflection/models.json": {
-      "hash": "dd62f18f321fc8bef3a426146d24dc01",
+      "hash": "9d4e657b759dc27c057bd75eb4b129b0",
       "meta": {
         "api_provider_id": "inflection",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/morph/models.json": {
-      "hash": "17fab845149ef342f6a75b0818b7c098",
+      "hash": "8343acbfb7a846bf2d925171049eaf21",
       "meta": {
         "api_provider_id": "morph",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/poolside/api_provider.json": {
-      "hash": "ab90fc1d2091177350bba39dfecfc093",
+      "hash": "2bd52f3abedffcd081d2edc9d33f0fc0",
       "meta": {
         "api_provider_id": "poolside"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/poolside/models.json": {
-      "hash": "2b601d6e81f3c3e349ce6b03e657f339",
+      "hash": "99c0224d00c712a1fb34ba64cc2d6542",
       "meta": {
         "api_provider_id": "poolside",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/siliconflow/models.json": {
-      "hash": "9da406fcd2e50de6ae726849c709c05c",
+      "hash": "577150ce4bd75bdc4b352a3c73c6715f",
       "meta": {
         "api_provider_id": "siliconflow",
         "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/baseten/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "e9c84bbee766886325dff83d8850d66b",
+      "meta": {
+        "api_provider_id": "baseten",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "baseten:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/fireworks/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "c104e212261b4b799ee60c0407d626a1",
+      "meta": {
+        "api_provider_id": "fireworks",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "fireworks:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "c5f15f05ccd2c1737eb063a5f64790b1",
+      "meta": {
+        "api_provider_id": "siliconflow",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "siliconflow:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/together/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
+      "hash": "9d66f7e22c735c1e6519ccbf17ab2680",
+      "meta": {
+        "api_provider_id": "together",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-pro",
+        "model_key": "together:deepseek/deepseek-v4-pro:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/akashml/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "4de375ae7979ea08930e22cc4f79a0e5",
+      "meta": {
+        "api_provider_id": "akashml",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "akashml:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/canopy-wave/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "ed3684a2487348b011156f64f24b9e66",
+      "meta": {
+        "api_provider_id": "canopy-wave",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "canopy-wave:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/crofai/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "4f404dab0adc5e94a53ee75b04725ae3",
+      "meta": {
+        "api_provider_id": "crofai",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "crofai:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v4-flash/text.generate/pricing.json": {
+      "hash": "e51f46fb609e4282e6e40d14cf054f5c",
+      "meta": {
+        "api_provider_id": "siliconflow",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v4-flash",
+        "model_key": "siliconflow:deepseek/deepseek-v4-flash:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning/model.json": {
+      "hash": "aff649ccac53827d8726fdf39b474f1b",
+      "meta": {
+        "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "organisation_id": "nvidia",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/deepinfra/nvidia-nemotron-3-nano-omni-30b-a3b-reasoning/text.generate/pricing.json": {
+      "hash": "68767db8ccc75878c00d810888dc561a",
+      "meta": {
+        "api_provider_id": "deepinfra",
+        "capability_id": "text.generate",
+        "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "model_key": "deepinfra:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/gmicloud/nvidia-nemotron-3-nano-omni-30b-a3b-reasoning/text.generate/pricing.json": {
+      "hash": "8b18924a1b90b1a3ca99515e00dfc4eb",
+      "meta": {
+        "api_provider_id": "gmicloud",
+        "capability_id": "text.generate",
+        "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "model_key": "gmicloud:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-nemotron-3-nano-omni-30b-a3b-reasoning/text.generate/pricing.json": {
+      "hash": "65b7a5e6e3d7b75fcf4dcbc47904d4ff",
+      "meta": {
+        "api_provider_id": "nebius-token-factory",
+        "capability_id": "text.generate",
+        "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "model_key": "nebius-token-factory:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:text.generate"
       }
     }
   }
