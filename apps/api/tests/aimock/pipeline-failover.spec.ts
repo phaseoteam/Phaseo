@@ -16,11 +16,25 @@ import {
 const PROTOCOL = "openai.chat.completions" as const;
 
 type FailoverCase = {
+    gatewayModel: string;
+    expectedPrimaryStatus: number;
     prompt: string;
     primaryModel: string;
     secondaryModel: string;
     expectedText: string;
 };
+
+async function waitForAimockRequests(expectedCount: number, timeoutMs = 250) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const requests = getAimock().getRequests();
+        if (requests.length >= expectedCount) {
+            return requests;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    return getAimock().getRequests();
+}
 
 function candidate(providerId: string, providerModelSlug: string, baseWeight: number): ProviderCandidate {
     const adapter = adapterFor(providerId, "chat.completions");
@@ -51,8 +65,11 @@ function candidate(providerId: string, providerModelSlug: string, baseWeight: nu
 
 function buildContext(testCase: FailoverCase): PipelineContext {
     const body = {
-        model: "aimock-openai-model",
+        model: testCase.gatewayModel,
         messages: [{ role: "user", content: testCase.prompt }],
+        provider: {
+            order: ["openai", "x-ai"],
+        },
     };
 
     return {
@@ -110,12 +127,16 @@ describe("AIMock pipeline failover", () => {
     if (isScenarioEnabled("failover")) {
         it.each<FailoverCase>([
             {
+                gatewayModel: "aimock-fallback-gateway-model",
+                expectedPrimaryStatus: 500,
                 prompt: "[aimock-fallback] route",
                 primaryModel: "aimock-primary-fallback",
                 secondaryModel: "aimock-secondary-fallback",
                 expectedText: "Fallback provider succeeded",
             },
             {
+                gatewayModel: "aimock-fallback-429-gateway-model",
+                expectedPrimaryStatus: 429,
                 prompt: "[aimock-fallback-429] route",
                 primaryModel: "aimock-primary-fallback-429",
                 secondaryModel: "aimock-secondary-fallback-429",
@@ -144,12 +165,27 @@ describe("AIMock pipeline failover", () => {
             const payload = encodeProtocol(PROTOCOL, outcome.result.ir as any, ctx.requestId);
             expect(payload?.choices?.[0]?.message?.content).toContain(testCase.expectedText);
 
-            const requests = getAimock().getRequests();
-            expect(requests.length).toBe(2);
-            expect(requests[0]?.body?.model).toBe(testCase.primaryModel);
-            expect(requests[1]?.body?.model).toBe(testCase.secondaryModel);
-            expect(requests[0]?.headers["x-test-id"]).toBe(ctx.meta.testId);
-            expect(requests[1]?.headers["x-test-id"]).toBe(ctx.meta.testId);
+            expect(ctx.attemptErrors).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    provider: "openai",
+                    type: "upstream_non_2xx",
+                    status: testCase.expectedPrimaryStatus,
+                }),
+            ]));
+
+            const requests = await waitForAimockRequests(1);
+            const providerModels = requests.map((request) => request?.body?.model);
+            expect(providerModels).toContain(testCase.secondaryModel);
+
+            const primaryIndex = providerModels.indexOf(testCase.primaryModel);
+            const secondaryIndex = providerModels.indexOf(testCase.secondaryModel);
+            if (primaryIndex >= 0 && secondaryIndex >= 0) {
+                expect(primaryIndex).toBeLessThan(secondaryIndex);
+            }
+
+            for (const request of requests) {
+                expect(request?.headers["x-test-id"]).toBe(ctx.meta.testId);
+            }
         });
     }
 });
