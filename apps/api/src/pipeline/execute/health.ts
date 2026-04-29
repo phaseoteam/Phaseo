@@ -88,6 +88,7 @@ const l1State = new Map<string, L1StateEntry>();
 const pendingBackgroundSaves = new Map<string, { map: Record<string, string>; ttlSeconds: number }>();
 const activeBackgroundSave = new Set<string>();
 const keyUpdateQueues = new Map<string, Array<() => void>>();
+let healthStateEpoch = 0;
 
 async function withKeyUpdateLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const queue = keyUpdateQueues.get(key);
@@ -269,10 +270,13 @@ async function persistMapWithMerge(
     key: string,
     candidateMap: Record<string, string>,
     ttlSeconds: number,
+    epoch = healthStateEpoch,
 ) {
+    if (epoch !== healthStateEpoch) return;
     try {
         let mapToWrite = { ...candidateMap };
         const raw = await getCache().get(key, "text");
+        if (epoch !== healthStateEpoch) return;
         if (raw) {
             try {
                 const existing = normalizeMap(JSON.parse(raw));
@@ -287,7 +291,9 @@ async function persistMapWithMerge(
                 // Ignore malformed existing payload; candidate map is authoritative.
             }
         }
+        if (epoch !== healthStateEpoch) return;
         await getCache().put(key, JSON.stringify(mapToWrite), { expirationTtl: ttlSeconds });
+        if (epoch !== healthStateEpoch) return;
         l1State.set(key, { map: { ...mapToWrite }, expiresAtMs: Date.now() + HEALTH_L1_TTL_MS });
     } catch {
         // Ignore KV write failures.
@@ -330,18 +336,20 @@ async function loadMapByKey(key: string): Promise<Record<string, string>> {
 function queueBackgroundSave(key: string) {
     if (activeBackgroundSave.has(key)) return;
     activeBackgroundSave.add(key);
+    const epoch = healthStateEpoch;
 
     dispatchBackground((async () => {
         try {
             while (true) {
+                if (epoch !== healthStateEpoch) return;
                 const pending = pendingBackgroundSaves.get(key);
                 if (!pending) return;
                 pendingBackgroundSaves.delete(key);
-                await persistMapWithMerge(key, pending.map, pending.ttlSeconds);
+                await persistMapWithMerge(key, pending.map, pending.ttlSeconds, epoch);
             }
         } finally {
             activeBackgroundSave.delete(key);
-            if (pendingBackgroundSaves.has(key)) {
+            if (epoch === healthStateEpoch && pendingBackgroundSaves.has(key)) {
                 queueBackgroundSave(key);
             }
         }
@@ -698,6 +706,14 @@ export async function maybeOpenOnRecentErrors(
 
     const errRate = 1 - (ok / Math.max(tot, 1));
     if (errRate >= threshold) await openBreaker(endpoint, provider, model);
+}
+
+export function resetHealthStateForTests(): void {
+    healthStateEpoch += 1;
+    l1State.clear();
+    pendingBackgroundSaves.clear();
+    activeBackgroundSave.clear();
+    keyUpdateQueues.clear();
 }
 
 export async function onCallStart(endpoint: Endpoint, provider: string, model: string) {

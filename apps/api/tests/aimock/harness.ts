@@ -6,6 +6,7 @@ import { Journal, LLMock, flattenHeaders, type Mountable, type RecordConfig } fr
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { resolveProviderExecutor } from "@executors/index";
 import { OPENAI_COMPAT_CONFIG } from "@providers/openai-compatible/config";
+import { resetHealthStateForTests } from "@pipeline/execute/health";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../helpers/runtime";
 import type { ExecutorCompletedResult, ExecutorResult } from "@executors/types";
 import type { Endpoint } from "@core/types";
@@ -317,6 +318,7 @@ export function resetAimockState(): void {
     if (!aimock) return;
     aimock.clearRequests();
     aimock.resetMatchCounts();
+    resetHealthStateForTests();
     teardownTestRuntime();
     setupRuntimeFromEnv(buildAimockBindings());
 }
