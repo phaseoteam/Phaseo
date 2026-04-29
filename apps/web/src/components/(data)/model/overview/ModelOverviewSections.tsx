@@ -719,7 +719,7 @@ export async function ModelCreatorModelsSection({
 							</Link>
 						</h2>
 					</div>
-					<div className="relative min-w-0 overflow-hidden md:px-8">
+					<div className="relative min-w-0 overflow-hidden sm:px-8">
 						<CarouselContent className="-ml-3">
 							{otherModels.map((creatorModel) => (
 								<CarouselItem
@@ -748,7 +748,7 @@ export async function ModelCreatorModelsSection({
 							))}
 						</CarouselContent>
 						{otherModels.length > 1 ? (
-							<div className="pointer-events-none absolute inset-y-0 left-1 right-1 hidden items-center justify-between md:flex">
+							<div className="pointer-events-none absolute inset-y-0 left-1 right-1 hidden items-center justify-between sm:flex">
 								<CarouselPrevious className="pointer-events-auto static h-full w-6 translate-x-0 translate-y-0 rounded-l-md rounded-r-none border border-border/80 bg-background shadow-none" />
 								<CarouselNext className="pointer-events-auto static h-full w-6 translate-x-0 translate-y-0 rounded-r-md rounded-l-none border border-border/80 bg-background shadow-none" />
 							</div>
