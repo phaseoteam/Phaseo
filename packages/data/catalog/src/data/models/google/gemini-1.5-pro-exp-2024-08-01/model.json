@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "big-bench-hard",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "drop",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 8
+      "rank": 19
     },
     {
       "benchmark_id": "fleurs",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "functionalmath",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "gpqa",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 74
+      "rank": 162
     },
     {
       "benchmark_id": "gsm8k",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 11
+      "rank": 19
     },
     {
       "benchmark_id": "hellaswag",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "hiddenmath",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "humaneval",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 18
+      "rank": 45
     },
     {
       "benchmark_id": "math",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "mathvista",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 12
+      "rank": 14
     },
     {
       "benchmark_id": "mgsm",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "mmlu",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 22
+      "rank": 34
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 48
+      "rank": 80
     },
     {
       "benchmark_id": "mmmu",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 31
+      "rank": 80
     },
     {
       "benchmark_id": "mrcr",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "natural2code",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "physicsfinals",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "vibe-eval",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 5
+      "rank": 20
     },
     {
       "benchmark_id": "video-mme",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 7
+      "rank": 11
     },
     {
       "benchmark_id": "wmt23",
@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "xstest",
@@ -198,7 +198,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 1
+      "rank": 2
     }
   ]
 }

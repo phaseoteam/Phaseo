@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 20
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 51
+      "rank": 112
     },
     {
       "benchmark_id": "androidworld-sr",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "arena-hard-v2",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "blink",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 14
+      "rank": 20
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 25
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 27
+      "rank": 49
     },
     {
       "benchmark_id": "if-eval",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 16
+      "rank": 22
     },
     {
       "benchmark_id": "include",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "infovqatest",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 4
+      "rank": 15
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -181,7 +181,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 28
+      "rank": 42
     },
     {
       "benchmark_id": "lvbench",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "mathvision",
@@ -197,7 +197,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -205,7 +205,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "mlvu",
@@ -213,7 +213,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "mmbench-v1.1",
@@ -221,7 +221,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "mmlu",
@@ -229,7 +229,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -237,7 +237,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 30
+      "rank": 41
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 7
+      "rank": 11
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -253,7 +253,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "mm-mt-bench",
@@ -269,7 +269,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 24
+      "rank": 38
     },
     {
       "benchmark_id": "mmmuval",
@@ -285,7 +285,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "muirbench",
@@ -293,7 +293,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 9
+      "rank": 23
     },
     {
       "benchmark_id": "multi-if",
@@ -349,7 +349,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "realworldqa",
@@ -357,7 +357,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "screenspot",
@@ -373,7 +373,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 8
+      "rank": 13
     },
     {
       "benchmark_id": "simpleqa",
@@ -381,7 +381,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 17
     },
     {
       "benchmark_id": "supergpqa",
@@ -389,7 +389,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 14
+      "rank": 17
     },
     {
       "benchmark_id": "videomme-w-o-sub.",
@@ -397,7 +397,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "video-mmmu",
@@ -405,7 +405,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 18
+      "rank": 23
     },
     {
       "benchmark_id": "writingbench",
@@ -413,7 +413,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 5
+      "rank": 10
     },
     {
       "benchmark_id": "ocrbench",
@@ -421,7 +421,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 1
+      "rank": 2
     }
   ]
 }

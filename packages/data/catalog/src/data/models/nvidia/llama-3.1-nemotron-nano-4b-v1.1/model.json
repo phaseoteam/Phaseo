@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 72
+      "rank": 173
     },
     {
       "benchmark_id": "bfcl-v2",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 78
+      "rank": 171
     },
     {
       "benchmark_id": "if-eval",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 34
+      "rank": 68
     },
     {
       "benchmark_id": "math-500",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 11
+      "rank": 13
     },
     {
       "benchmark_id": "mbpp",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "mt-bench",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.1-nemotron-nano-8b-v1 (score=0.5523; benches=7)",
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 7
+      "rank": 16
     }
   ]
 }

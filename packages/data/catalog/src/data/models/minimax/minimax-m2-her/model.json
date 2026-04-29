@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 49
+      "rank": 109
     },
     {
       "benchmark_id": "browsecomp",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 25
+      "rank": 39
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 10
+      "rank": 13
     },
     {
       "benchmark_id": "gpqa",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 37
+      "rank": 67
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 51
+      "rank": 103
     },
     {
       "benchmark_id": "if",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "livecodebench",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 29
+      "rank": 39
     },
     {
       "benchmark_id": "multi-swe-bench",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "scicode",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 13
+      "rank": 15
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 15
+      "rank": 22
     },
     {
       "benchmark_id": "swe-bench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 34
+      "rank": 52
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 15
+      "rank": 21
     },
     {
       "benchmark_id": "tau-bench",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "terminal-bench",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 3
+      "rank": 4
     }
   ]
 }

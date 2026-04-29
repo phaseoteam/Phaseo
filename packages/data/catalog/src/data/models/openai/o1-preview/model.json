@@ -31,7 +31,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aidanbench.com/",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "aime-2024",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 39
+      "rank": 97
     },
     {
       "benchmark_id": "confabulations",
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 49
+      "rank": 78
     },
     {
       "benchmark_id": "lmarena-text",
@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 19
+      "rank": 23
     },
     {
       "benchmark_id": "simplebench",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "gpqa",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 47
+      "rank": 87
     },
     {
       "benchmark_id": "livebench",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 19
+      "rank": 32
     },
     {
       "benchmark_id": "math",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms",
-      "rank": 7
+      "rank": 14
     },
     {
       "benchmark_id": "mgsm",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "simpleqa",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 17
+      "rank": 37
     },
     {
       "benchmark_id": "swe-bench",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 60
+      "rank": 111
     }
   ]
 }

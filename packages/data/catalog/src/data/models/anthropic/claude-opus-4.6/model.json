@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 6
+      "rank": 11
     },
     {
       "benchmark_id": "tau-2-retail",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": "Max effort",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 6
+      "rank": 14
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": "High effort",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "os-world",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": "OSWorld-Verified",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": "Verified; max effort",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 4
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": "ARC Prize Foundation private dataset; 120k thinking tokens; high effort",
       "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
-      "rank": 4
+      "rank": 8
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 8
+      "rank": 12
     },
     {
       "benchmark_id": "aime-2025",
@@ -130,7 +130,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
-      "rank": 2
+      "rank": 13
     },
     {
       "benchmark_id": "mmmlu",
@@ -138,7 +138,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 3
+      "rank": 6
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -146,7 +146,7 @@
       "is_self_reported": true,
       "other_info": "Elo",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 2
+      "rank": 8
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -154,7 +154,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 12
+      "rank": 33
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -162,7 +162,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 12
+      "rank": 19
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -170,7 +170,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 3
+      "rank": 40
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -178,7 +178,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 3
+      "rank": 8
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -186,7 +186,7 @@
       "is_self_reported": true,
       "other_info": "Vals AI",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 3
+      "rank": 6
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -202,7 +202,7 @@
       "is_self_reported": true,
       "other_info": "pass@1",
       "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
-      "rank": 4
+      "rank": 7
     },
     {
       "benchmark_id": "browsecomp",
@@ -210,7 +210,7 @@
       "is_self_reported": true,
       "other_info": "Multi-agent configuration",
       "source_link": "https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "browsecomp",
@@ -218,7 +218,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 3
+      "rank": null
     },
     {
       "benchmark_id": "browsecomp",
@@ -226,7 +226,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "charxiv-r",
@@ -234,7 +234,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/0dd865075ad3132672ee0ab40b05a53f14cf5288.pdf",
-      "rank": 7
+      "rank": 10
     },
     {
       "benchmark_id": "cybergym",
@@ -242,7 +242,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "deepsearchqa",
@@ -266,7 +266,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -274,7 +274,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa",
@@ -282,7 +282,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 5
+      "rank": 9
     },
     {
       "benchmark_id": "graphwalks-bfs->128k",
@@ -306,7 +306,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -330,7 +330,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -338,7 +338,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
-      "rank": 2
+      "rank": 7
     }
   ]
 }

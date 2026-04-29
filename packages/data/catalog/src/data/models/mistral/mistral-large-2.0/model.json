@@ -51,7 +51,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 33
+      "rank": 39
     },
     {
       "benchmark_id": "elimination-game",
@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "nyt-connections",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 29
+      "rank": 40
     },
     {
       "benchmark_id": "simplebench",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 28
+      "rank": 30
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 20
+      "rank": 35
     }
   ]
 }

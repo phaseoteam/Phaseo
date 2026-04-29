@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 22
+      "rank": 56
     },
     {
       "benchmark_id": "blink",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 14
+      "rank": 28
     },
     {
       "benchmark_id": "chartqa",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 15
+      "rank": 39
     },
     {
       "benchmark_id": "docvqa",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 9
+      "rank": 25
     },
     {
       "benchmark_id": "infovqa",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 5
+      "rank": 10
     },
     {
       "benchmark_id": "intergps",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 18
+      "rank": 31
     },
     {
       "benchmark_id": "mmbench",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "mmmu",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 40
+      "rank": 108
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 41
+      "rank": 90
     },
     {
       "benchmark_id": "ocrbench",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 18
+      "rank": 50
     },
     {
       "benchmark_id": "pope",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "scienceqa-visual",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 8
+      "rank": 18
     },
     {
       "benchmark_id": "video-mme",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 14
+      "rank": 31
     }
   ]
 }

@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 31
+      "rank": 63
     },
     {
       "benchmark_id": "aime-2024",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 28
+      "rank": 76
     },
     {
       "benchmark_id": "aime-2025",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 63
+      "rank": 155
     },
     {
       "benchmark_id": "gpqa",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 54
+      "rank": 99
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 56
+      "rank": 123
     },
     {
       "benchmark_id": "livecodebench",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 30
+      "rank": 49
     }
   ]
 }

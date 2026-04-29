@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
-      "rank": 7
+      "rank": 12
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 14
+      "rank": 22
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -72,7 +72,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 14
+      "rank": 26
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -80,7 +80,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 14
+      "rank": 32
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -88,7 +88,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 45
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -96,7 +96,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 61
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -104,7 +104,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 65
     },
     {
       "benchmark_id": "codeforces",
@@ -120,7 +120,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
-      "rank": 26
+      "rank": 33
     },
     {
       "benchmark_id": "nyt-connections",
@@ -144,7 +144,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 6
+      "rank": 13
     }
   ]
 }

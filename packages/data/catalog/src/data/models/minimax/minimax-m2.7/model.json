@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
-      "rank": 7
+      "rank": 11
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://filecdn.minimax.chat/public/platform_web/offical-news/%E9%A3%9E%E4%B9%A6%E4%BA%91%E6%96%87%E6%A1%A3/img-1.png",
-      "rank": 12
+      "rank": 26
     },
     {
       "benchmark_id": "artificial-analysis",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m27-en",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m27-en",
-      "rank": 14
+      "rank": 23
     },
     {
       "benchmark_id": "toolathlon",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/models/text/m27",
-      "rank": 3
+      "rank": 6
     },
     {
       "benchmark_id": "vibe-pro",

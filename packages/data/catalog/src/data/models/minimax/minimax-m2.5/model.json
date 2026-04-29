@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m25",
-      "rank": 9
+      "rank": 16
     },
     {
       "benchmark_id": "gdpval-mm",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m25",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "swe-bench",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m25",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "vibe-pro",

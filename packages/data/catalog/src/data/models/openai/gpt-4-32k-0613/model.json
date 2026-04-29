@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/research/gpt-4",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "gpqa",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 101
+      "rank": 211
     },
     {
       "benchmark_id": "hellaswag",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/research/gpt-4",
-      "rank": 31
+      "rank": 79
     },
     {
       "benchmark_id": "lsat",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 39
+      "rank": 75
     },
     {
       "benchmark_id": "mgsm",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 14
+      "rank": 28
     },
     {
       "benchmark_id": "mmlu",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/research/gpt-4",
-      "rank": 19
+      "rank": 28
     },
     {
       "benchmark_id": "sat-math",

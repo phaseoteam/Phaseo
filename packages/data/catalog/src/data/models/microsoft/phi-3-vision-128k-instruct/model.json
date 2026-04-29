@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-3.5-vision-instruct (score=0.3495; benches=9)",
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 25
+      "rank": 59
     },
     {
       "benchmark_id": "chartqa",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-3.5-vision-instruct (score=0.3495; benches=9)",
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 14
+      "rank": 36
     },
     {
       "benchmark_id": "intergps",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-3.5-vision-instruct (score=0.3495; benches=9)",
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 29
+      "rank": 62
     },
     {
       "benchmark_id": "mmbench",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-3.5-vision-instruct (score=0.3495; benches=9)",
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 4
+      "rank": 10
     },
     {
       "benchmark_id": "mmmu",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-3.5-vision-instruct (score=0.3495; benches=9)",
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 48
+      "rank": 122
     },
     {
       "benchmark_id": "pope",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-3.5-vision-instruct (score=0.3495; benches=9)",
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 10
+      "rank": 20
     }
   ]
 }

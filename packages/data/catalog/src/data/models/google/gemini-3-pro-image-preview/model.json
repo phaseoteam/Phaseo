@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 11
+      "rank": 21
     },
     {
       "benchmark_id": "charxiv-r",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 5
+      "rank": 17
     },
     {
       "benchmark_id": "global-piqa",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 4
+      "rank": 7
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 16
+      "rank": 26
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "matharena-apex",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 3
+      "rank": 8
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "simpleqa",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 4
+      "rank": 9
     },
     {
       "benchmark_id": "swe-bench",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 15
+      "rank": 23
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 17
+      "rank": 26
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "video-mmmu",

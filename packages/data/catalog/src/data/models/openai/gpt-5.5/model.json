@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": "Public",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "expert-swe",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "Wins or ties",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 21
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "investment-banking-modeling",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Pro",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "os-world",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": "April 2026 update",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "toolathlon",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": "Original prompts",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 9
     },
     {
       "benchmark_id": "genebench",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "frontier-math",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": "Tier 4",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 3
+      "rank": 8
     },
     {
       "benchmark_id": "bixbench",
@@ -188,7 +188,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 4
+      "rank": 7
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -196,7 +196,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 5
+      "rank": 38
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -204,7 +204,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 4
+      "rank": 10
     },
     {
       "benchmark_id": "ctf-challenge-tasks",
@@ -220,7 +220,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "graphwalks-bfs-256k-f1",
@@ -228,7 +228,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "graphwalks-bfs-1m-f1",
@@ -244,7 +244,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "graphwalks-parents-1m-f1",
@@ -252,7 +252,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "openai-mrcr-v2-8-needle",
@@ -268,7 +268,7 @@
       "is_self_reported": true,
       "other_info": "8K-16K",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "openai-mrcr-v2-8-needle",
@@ -284,7 +284,7 @@
       "is_self_reported": true,
       "other_info": "32K-64K",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "openai-mrcr-v2-8-needle",
@@ -292,7 +292,7 @@
       "is_self_reported": true,
       "other_info": "64K-128K",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "openai-mrcr-v2-8-needle",
@@ -300,7 +300,7 @@
       "is_self_reported": true,
       "other_info": "128K-256K",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 5
     },
     {
       "benchmark_id": "openai-mrcr-v2-8-needle",
@@ -308,7 +308,7 @@
       "is_self_reported": true,
       "other_info": "256K-512K",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "openai-mrcr-v2-8-needle",
@@ -316,7 +316,7 @@
       "is_self_reported": true,
       "other_info": "512K-1M",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 8
     },
     {
       "benchmark_id": "arc-agi",
@@ -324,7 +324,7 @@
       "is_self_reported": true,
       "other_info": "ARC-AGI-1 (Verified)",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -332,7 +332,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 2
     }
   ]
 }

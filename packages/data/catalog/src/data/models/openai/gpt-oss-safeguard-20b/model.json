@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 13
+      "rank": 27
     },
     {
       "benchmark_id": "gpqa",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 52
+      "rank": 93
     },
     {
       "benchmark_id": "healthbench",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 7
+      "rank": 12
     },
     {
       "benchmark_id": "healthbench-hard",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 8
+      "rank": 14
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 54
+      "rank": 118
     },
     {
       "benchmark_id": "mmlu",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 25
+      "rank": 50
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 15
+      "rank": 30
     }
   ]
 }

@@ -60,7 +60,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 38
+      "rank": 44
     },
     {
       "benchmark_id": "elimination-game",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 23
+      "rank": 26
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 68
+      "rank": 117
     },
     {
       "benchmark_id": "lmarena-text",
@@ -84,7 +84,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 57
+      "rank": 72
     },
     {
       "benchmark_id": "nyt-connections",
@@ -92,7 +92,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 34
+      "rank": 45
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -100,7 +100,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 19
+      "rank": 33
     },
     {
       "benchmark_id": "arena-hard",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 8
+      "rank": 18
     },
     {
       "benchmark_id": "drop",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 7
+      "rank": 17
     },
     {
       "benchmark_id": "gpqa",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 76
+      "rank": 169
     },
     {
       "benchmark_id": "humaneval",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 20
+      "rank": 52
     },
     {
       "benchmark_id": "humaneval+",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 4
+      "rank": 17
     },
     {
       "benchmark_id": "if-eval",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 42
+      "rank": 94
     },
     {
       "benchmark_id": "livebench",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 22
+      "rank": 38
     },
     {
       "benchmark_id": "math",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 11
+      "rank": 22
     },
     {
       "benchmark_id": "mgsm",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 13
+      "rank": 27
     },
     {
       "benchmark_id": "mmlu",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 28
+      "rank": 63
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -188,7 +188,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 57
+      "rank": 111
     },
     {
       "benchmark_id": "phibench",
@@ -196,7 +196,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "simpleqa",
@@ -204,7 +204,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 35
+      "rank": 84
     }
   ]
 }

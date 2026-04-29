@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 34
+      "rank": 68
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -64,7 +64,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 34
+      "rank": 84
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 34
+      "rank": 87
     },
     {
       "benchmark_id": "aime-2024",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 3
+      "rank": 14
     },
     {
       "benchmark_id": "aime-2024",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 3
+      "rank": 39
     },
     {
       "benchmark_id": "aime-2024",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 3
+      "rank": 66
     },
     {
       "benchmark_id": "aime-2024",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 3
+      "rank": 87
     },
     {
       "benchmark_id": "aime-2024",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 3
+      "rank": 96
     },
     {
       "benchmark_id": "aime-2025",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 18
     },
     {
       "benchmark_id": "aime-2025",
@@ -136,7 +136,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 47
     },
     {
       "benchmark_id": "aime-2025",
@@ -144,7 +144,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 56
     },
     {
       "benchmark_id": "aime-2025",
@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 129
     },
     {
       "benchmark_id": "aime-2025",
@@ -160,7 +160,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 165
     },
     {
       "benchmark_id": "aime-2025",
@@ -168,7 +168,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 179
     },
     {
       "benchmark_id": "codeforces",
@@ -184,7 +184,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "codeforces",
@@ -192,7 +192,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 5
+      "rank": 11
     },
     {
       "benchmark_id": "codeforces",
@@ -200,7 +200,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 5
+      "rank": 12
     },
     {
       "benchmark_id": "codeforces",
@@ -208,7 +208,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 5
+      "rank": 17
     },
     {
       "benchmark_id": "codeforces",
@@ -216,7 +216,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 5
+      "rank": 18
     },
     {
       "benchmark_id": "eqbench",
@@ -224,7 +224,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -232,7 +232,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 48
+      "rank": 76
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -240,7 +240,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 48
+      "rank": 82
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -248,7 +248,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 48
+      "rank": 95
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -256,7 +256,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 48
+      "rank": 102
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -264,7 +264,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 48
+      "rank": 114
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -272,7 +272,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 48
+      "rank": 116
     },
     {
       "benchmark_id": "healthbench",
@@ -280,7 +280,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 11
     },
     {
       "benchmark_id": "healthbench",
@@ -288,7 +288,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 13
     },
     {
       "benchmark_id": "healthbench",
@@ -296,7 +296,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 14
     },
     {
       "benchmark_id": "healthbench-concensus",
@@ -304,7 +304,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "healthbench-concensus",
@@ -312,7 +312,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "healthbench-concensus",
@@ -320,7 +320,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "healthbench-hard",
@@ -328,7 +328,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 12
     },
     {
       "benchmark_id": "healthbench-hard",
@@ -336,7 +336,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 13
     },
     {
       "benchmark_id": "healthbench-hard",
@@ -344,7 +344,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 7
+      "rank": 15
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -352,7 +352,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 41
+      "rank": 85
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -360,7 +360,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 41
+      "rank": 117
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -368,7 +368,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 41
+      "rank": 124
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -376,7 +376,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 41
+      "rank": 130
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -384,7 +384,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 41
+      "rank": 134
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -392,7 +392,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 41
+      "rank": 149
     },
     {
       "benchmark_id": "mmlu",
@@ -400,7 +400,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 25
+      "rank": 49
     },
     {
       "benchmark_id": "mmlu",
@@ -408,7 +408,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 25
+      "rank": 68
     },
     {
       "benchmark_id": "mmlu",
@@ -416,7 +416,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 25
+      "rank": 93
     },
     {
       "benchmark_id": "mmmlu",
@@ -424,7 +424,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, Average",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 26
+      "rank": 45
     },
     {
       "benchmark_id": "mmmlu",
@@ -432,7 +432,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, Average",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 26
+      "rank": 48
     },
     {
       "benchmark_id": "mmmlu",
@@ -440,7 +440,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, Average",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 26
+      "rank": 50
     },
     {
       "benchmark_id": "swe-bench",
@@ -448,7 +448,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 47
+      "rank": 76
     },
     {
       "benchmark_id": "swe-bench",
@@ -456,7 +456,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 47
+      "rank": 100
     },
     {
       "benchmark_id": "swe-bench",
@@ -464,7 +464,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 47
+      "rank": 114
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -472,7 +472,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 13
+      "rank": 27
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -480,7 +480,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 13
+      "rank": 28
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -488,7 +488,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 13
+      "rank": 30
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -496,7 +496,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 15
+      "rank": 29
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -504,7 +504,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 15
+      "rank": 32
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -512,7 +512,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 15
+      "rank": 33
     },
     {
       "benchmark_id": "codeforces",
@@ -520,7 +520,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 5
+      "rank": 26
     },
     {
       "benchmark_id": "gpqa",
@@ -528,7 +528,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 52
+      "rank": 92
     }
   ]
 }

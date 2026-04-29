@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 98
+      "rank": 155
     },
     {
       "benchmark_id": "arc-c",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 15
+      "rank": 40
     },
     {
       "benchmark_id": "big-bench-hard",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 3
+      "rank": 8
     },
     {
       "benchmark_id": "boolq",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 98
+      "rank": 208
     },
     {
       "benchmark_id": "gsm8k",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 13
+      "rank": 24
     },
     {
       "benchmark_id": "hellaswag",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 6
+      "rank": 12
     },
     {
       "benchmark_id": "humaneval",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 29
+      "rank": 75
     },
     {
       "benchmark_id": "math",
@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 29
+      "rank": 58
     },
     {
       "benchmark_id": "mbpp",
@@ -147,7 +147,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 7
+      "rank": 14
     },
     {
       "benchmark_id": "mega-mlqa",
@@ -195,7 +195,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 17
+      "rank": 34
     },
     {
       "benchmark_id": "mmlu",
@@ -203,7 +203,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 41
+      "rank": 100
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -211,7 +211,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 75
+      "rank": 146
     },
     {
       "benchmark_id": "mmmlu",
@@ -219,7 +219,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 27
+      "rank": 49
     },
     {
       "benchmark_id": "openbookqa",
@@ -243,7 +243,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "qmsum",
@@ -251,7 +251,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "repoqa",
@@ -283,7 +283,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "summscreenfd",
@@ -307,7 +307,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
-      "rank": 4
+      "rank": 5
     }
   ]
 }

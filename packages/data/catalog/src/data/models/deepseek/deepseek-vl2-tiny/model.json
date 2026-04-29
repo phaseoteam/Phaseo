@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 26
+      "rank": 61
     },
     {
       "benchmark_id": "chartqa",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 16
+      "rank": 40
     },
     {
       "benchmark_id": "docvqa",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 14
+      "rank": 39
     },
     {
       "benchmark_id": "infovqa",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 6
+      "rank": 11
     },
     {
       "benchmark_id": "mathvista",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 25
+      "rank": 54
     },
     {
       "benchmark_id": "mmbench",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 7
+      "rank": 14
     },
     {
       "benchmark_id": "mmbench-v1.1",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 16
+      "rank": 37
     },
     {
       "benchmark_id": "mme",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 49
+      "rank": 124
     },
     {
       "benchmark_id": "mmstar",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 24
+      "rank": 53
     },
     {
       "benchmark_id": "mmt-bench",
@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "ocrbench",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 21
+      "rank": 53
     },
     {
       "benchmark_id": "realworldqa",
@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 23
+      "rank": 45
     },
     {
       "benchmark_id": "textvqa",
@@ -159,7 +159,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 6
+      "rank": 16
     }
   ]
 }

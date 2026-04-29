@@ -26,7 +26,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning, 2 Shot",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 2
+      "rank": 51
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 26
+      "rank": 47
     },
     {
       "benchmark_id": "triviaqa",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 12
+      "rank": 37
     },
     {
       "benchmark_id": "math",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 38
+      "rank": 74
     },
     {
       "benchmark_id": "livecodebench",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 18
+      "rank": 23
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 53
+      "rank": 84
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -114,7 +114,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 25
+      "rank": 40
     }
   ]
 }

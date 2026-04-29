@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 3
+      "rank": 6
     },
     {
       "benchmark_id": "docvqa",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 6
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "rank": 75
+      "rank": 166
     },
     {
       "benchmark_id": "livecodebench",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 38
+      "rank": 62
     },
     {
       "benchmark_id": "math",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "rank": 34
+      "rank": 66
     },
     {
       "benchmark_id": "mathvista",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "mbpp",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "rank": 15
+      "rank": 32
     },
     {
       "benchmark_id": "mgsm",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "rank": 40
+      "rank": 97
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 51
+      "rank": 94
     },
     {
       "benchmark_id": "mmmu",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 27
+      "rank": 74
     },
     {
       "benchmark_id": "tydiqa",

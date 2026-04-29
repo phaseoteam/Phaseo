@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 21
+      "rank": 58
     },
     {
       "benchmark_id": "aime-2025",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 58
+      "rank": 141
     },
     {
       "benchmark_id": "confabulations",
@@ -50,7 +50,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "elimination-game",
@@ -58,7 +58,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 26
+      "rank": 29
     },
     {
       "benchmark_id": "eqbench",
@@ -66,7 +66,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 30
+      "rank": 31
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 62
+      "rank": 104
     },
     {
       "benchmark_id": "lmarena-text",
@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 43
+      "rank": 56
     },
     {
       "benchmark_id": "nyt-connections",
@@ -90,7 +90,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 15
+      "rank": 19
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -98,7 +98,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 18
+      "rank": 32
     },
     {
       "benchmark_id": "arena-hard",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 66
+      "rank": 130
     },
     {
       "benchmark_id": "livebench",
@@ -138,7 +138,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 21
+      "rank": 29
     },
     {
       "benchmark_id": "multi-if",
@@ -146,7 +146,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 11
+      "rank": 26
     }
   ]
 }

@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "Whole",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 7
+      "rank": 12
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "Diff",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 7
+      "rank": 18
     },
     {
       "benchmark_id": "aime-2025",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 42
+      "rank": 83
     },
     {
       "benchmark_id": "confabulations",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 29
+      "rank": 39
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 39
+      "rank": 80
     },
     {
       "benchmark_id": "lmarena-text",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "Lite",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "mmmu",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 13
+      "rank": 30
     },
     {
       "benchmark_id": "nyt-connections",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "simpleqa",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 11
+      "rank": 20
     },
     {
       "benchmark_id": "swe-bench",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 44
+      "rank": 71
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 3
+      "rank": 7
     }
   ]
 }

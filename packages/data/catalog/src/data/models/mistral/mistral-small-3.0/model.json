@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-24B-Base-2501",
-      "rank": 86
+      "rank": 160
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501",
-      "rank": 86
+      "rank": 138
     }
   ]
 }

@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 28
+      "rank": 34
     },
     {
       "benchmark_id": "eqbench",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
-      "rank": 79
+      "rank": 129
     },
     {
       "benchmark_id": "lmarena-text",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 41
+      "rank": 54
     },
     {
       "benchmark_id": "nyt-connections",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 32
+      "rank": 43
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 22
+      "rank": 38
     }
   ]
 }

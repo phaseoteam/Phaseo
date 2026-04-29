@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://stepfun.com/",
-      "rank": 11
+      "rank": 23
     },
     {
       "benchmark_id": "browsecomp",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://stepfun.com/",
-      "rank": 14
+      "rank": 22
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://stepfun.com/",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "swe-bench",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://stepfun.com/",
-      "rank": 19
+      "rank": 29
     },
     {
       "benchmark_id": "tau-bench",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://stepfun.com/",
-      "rank": 20
+      "rank": 32
     }
   ]
 }

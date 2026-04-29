@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 16
+      "rank": 41
     },
     {
       "benchmark_id": "aime-2025",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 44
+      "rank": 91
     },
     {
       "benchmark_id": "confabulations",
@@ -58,7 +58,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 19
+      "rank": 22
     },
     {
       "benchmark_id": "elimination-game",
@@ -66,7 +66,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 19
+      "rank": 22
     },
     {
       "benchmark_id": "eqbench",
@@ -74,7 +74,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 81
+      "rank": 131
     },
     {
       "benchmark_id": "lmarena-text",
@@ -90,7 +90,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 14
+      "rank": 18
     },
     {
       "benchmark_id": "lmarena-text",
@@ -98,7 +98,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 14
+      "rank": 26
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -114,7 +114,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "simplebench",
@@ -122,7 +122,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 16
+      "rank": 18
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -130,7 +130,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 11
+      "rank": 22
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -138,7 +138,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 34
+      "rank": 77
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -146,7 +146,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 26
+      "rank": 74
     },
     {
       "benchmark_id": "aider",
@@ -154,7 +154,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "arena-hard",
@@ -194,7 +194,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "gpqa",
@@ -202,7 +202,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 88
+      "rank": 185
     },
     {
       "benchmark_id": "gsm8k",
@@ -210,7 +210,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "include",
@@ -218,7 +218,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 13
+      "rank": 16
     },
     {
       "benchmark_id": "livebench",
@@ -234,7 +234,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 12
+      "rank": 16
     },
     {
       "benchmark_id": "math",
@@ -242,7 +242,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 21
+      "rank": 34
     },
     {
       "benchmark_id": "mbpp",
@@ -250,7 +250,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 6
+      "rank": 13
     },
     {
       "benchmark_id": "mgsm",
@@ -258,7 +258,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 11
+      "rank": 21
     },
     {
       "benchmark_id": "mmlu",
@@ -266,7 +266,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 12
+      "rank": 21
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -274,7 +274,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 62
+      "rank": 118
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -282,7 +282,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 22
+      "rank": 36
     },
     {
       "benchmark_id": "mmmlu",
@@ -290,7 +290,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 13
+      "rank": 20
     },
     {
       "benchmark_id": "multilf",
@@ -306,7 +306,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "supergpqa",
@@ -314,7 +314,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 27
+      "rank": 44
     }
   ]
 }

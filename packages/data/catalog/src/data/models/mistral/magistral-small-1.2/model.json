@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-small-2506",
       "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
-      "rank": 31
+      "rank": 82
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-small-2506",
       "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
-      "rank": 67
+      "rank": 160
     },
     {
       "benchmark_id": "gpqa",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-small-2506",
       "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
-      "rank": 63
+      "rank": 125
     },
     {
       "benchmark_id": "livecodebench",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-small-2506",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 29
+      "rank": 47
     }
   ]
 }

@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 17
+      "rank": 39
     },
     {
       "benchmark_id": "swe-bench",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold, 500 Turns",
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 33
+      "rank": 48
     },
     {
       "benchmark_id": "swe-bench",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold, 100 Turns",
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 33
+      "rank": 62
     },
     {
       "benchmark_id": "swe-bench-live",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 16
+      "rank": 23
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 10
+      "rank": 12
     }
   ]
 }

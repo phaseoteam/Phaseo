@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 85
+      "rank": 182
     },
     {
       "benchmark_id": "humaneval",
@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 10
+      "rank": 27
     },
     {
       "benchmark_id": "if-eval",
@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "math",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 14
+      "rank": 26
     },
     {
       "benchmark_id": "mbpp-evalplus",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 21
+      "rank": 31
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 60
+      "rank": 114
     }
   ]
 }

@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 26
+      "rank": 72
     },
     {
       "benchmark_id": "aime-2025",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 65
+      "rank": 157
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 62
+      "rank": 103
     },
     {
       "benchmark_id": "arena-hard",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
-      "rank": 9
+      "rank": 19
     },
     {
       "benchmark_id": "flenqa",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 66
+      "rank": 129
     },
     {
       "benchmark_id": "humaneval+",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
-      "rank": 28
+      "rank": 39
     },
     {
       "benchmark_id": "livecodebench",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 27
+      "rank": 44
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
-      "rank": 51
+      "rank": 95
     },
     {
       "benchmark_id": "omnimath",

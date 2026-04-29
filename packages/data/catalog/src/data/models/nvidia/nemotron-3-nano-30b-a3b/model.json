@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 5
+      "rank": 16
     },
     {
       "benchmark_id": "arena-hard-v2",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 42
+      "rank": 73
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 46
+      "rank": 94
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 20
+      "rank": 26
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 41
+      "rank": 56
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 18
+      "rank": 36
     },
     {
       "benchmark_id": "scale-multichallenge",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "swe-bench",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 61
+      "rank": 112
     },
     {
       "benchmark_id": "tau2-airline",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "tau-2-retail",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 20
+      "rank": 29
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 25
+      "rank": 32
     },
     {
       "benchmark_id": "terminal-bench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 17
+      "rank": 23
     },
     {
       "benchmark_id": "wmt24++",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 22
+      "rank": 34
     }
   ]
 }

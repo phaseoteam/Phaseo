@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 8
+      "rank": 17
     },
     {
       "benchmark_id": "chartqa",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 10
+      "rank": 25
     },
     {
       "benchmark_id": "docvqa",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 13
+      "rank": 38
     },
     {
       "benchmark_id": "gpqa",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 89
+      "rank": 186
     },
     {
       "benchmark_id": "infographicsqa",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 25
+      "rank": 50
     },
     {
       "benchmark_id": "mathvista",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 22
+      "rank": 43
     },
     {
       "benchmark_id": "mgsm",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 10
+      "rank": 20
     },
     {
       "benchmark_id": "mmlu",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 21
+      "rank": 32
     },
     {
       "benchmark_id": "mmmu",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 36
+      "rank": 89
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 40
+      "rank": 89
     },
     {
       "benchmark_id": "textvqa",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 9
+      "rank": 19
     },
     {
       "benchmark_id": "vqav2",

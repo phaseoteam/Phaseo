@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 32
+      "rank": 62
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 21
+      "rank": 38
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": "32k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 21
+      "rank": 43
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 21
+      "rank": 50
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 21
+      "rank": 69
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "32k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 42
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 50
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 55
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 93
     },
     {
       "benchmark_id": "confabulations",
@@ -110,7 +110,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "elimination-game",
@@ -118,7 +118,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 24
+      "rank": 27
     },
     {
       "benchmark_id": "eqbench",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 18
+      "rank": 24
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 34
+      "rank": 70
     },
     {
       "benchmark_id": "lmarena-text",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "mmmu",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "nyt-connections",
@@ -182,7 +182,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "simplebench",
@@ -198,7 +198,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 9
+      "rank": 15
     },
     {
       "benchmark_id": "swe-bench",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": "Multiple Attempts",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 39
+      "rank": 59
     },
     {
       "benchmark_id": "swe-bench",
@@ -214,7 +214,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 39
+      "rank": 88
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -222,7 +222,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 4
+      "rank": 8
     },
     {
       "benchmark_id": "matharena-apex",
@@ -230,7 +230,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://matharena.ai/?comp=apex--apex_2025",
-      "rank": 6
+      "rank": 14
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -238,7 +238,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://andonlabs.com/evals/vending-bench-2",
-      "rank": 10
+      "rank": 13
     }
   ]
 }

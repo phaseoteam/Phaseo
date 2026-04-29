@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 6
+      "rank": 88
     },
     {
       "benchmark_id": "aime-2025",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 20
+      "rank": 166
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 37
+      "rank": 84
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 39
+      "rank": 57
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 21
+      "rank": 30
     },
     {
       "benchmark_id": "simplebench",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "aime-2024",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "aime-2025",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 20
+      "rank": 35
     },
     {
       "benchmark_id": "gpqa",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 21
+      "rank": 33
     },
     {
       "benchmark_id": "livecodebench",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "mmmu",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 14
+      "rank": 33
     }
   ]
 }

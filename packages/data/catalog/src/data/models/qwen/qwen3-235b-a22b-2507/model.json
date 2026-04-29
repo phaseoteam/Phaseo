@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 21
+      "rank": 45
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 59
+      "rank": 148
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "NOT confirmed by Arc-AGI",
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 20
+      "rank": 36
     },
     {
       "benchmark_id": "csimpleqa",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 43
+      "rank": 66
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 29
+      "rank": 51
     },
     {
       "benchmark_id": "if-eval",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 14
+      "rank": 18
     },
     {
       "benchmark_id": "livebench",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 30
+      "rank": 44
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 22
+      "rank": 31
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "multipl-e",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 8
+      "rank": 14
     },
     {
       "benchmark_id": "supergpqa",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 11
+      "rank": 15
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "zebralogic",

@@ -26,7 +26,7 @@
       "is_self_reported": true,
       "other_info": "Figure understanding",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "Multimodal understanding",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "erqa",
@@ -58,11 +58,11 @@
       "is_self_reported": true,
       "other_info": "UI localization",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "zerobench",
-      "score": 33.0,
+      "score": 33,
       "is_self_reported": true,
       "other_info": "Multi-step",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 29
+      "rank": 34
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": "Public set",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 15
+      "rank": 17
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -98,11 +98,11 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "livecodebench-pro",
-      "score": 80.0,
+      "score": 80,
       "is_self_reported": true,
       "other_info": "Competitive coding",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
@@ -146,7 +146,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 15
+      "rank": 17
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -154,15 +154,15 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "terminal-bench-2.0",
-      "score": 59.0,
+      "score": 59,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 16
+      "rank": 18
     },
     {
       "benchmark_id": "2-bench-telecom",

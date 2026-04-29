@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 7
+      "rank": 28
     },
     {
       "benchmark_id": "fleurs",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 4
+      "rank": 11
     },
     {
       "benchmark_id": "gpqa",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 105
+      "rank": 227
     },
     {
       "benchmark_id": "math",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 41
+      "rank": 77
     },
     {
       "benchmark_id": "mathvista",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 28
+      "rank": 59
     },
     {
       "benchmark_id": "mmlu",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 45
+      "rank": 109
     },
     {
       "benchmark_id": "mmmu",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 47
+      "rank": 119
     },
     {
       "benchmark_id": "wmt23",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 4
+      "rank": 11
     }
   ]
 }

@@ -26,7 +26,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 1
+      "rank": 10
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 11
+      "rank": 17
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 8
+      "rank": 30
     },
     {
       "benchmark_id": "usamo-2025",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 1
+      "rank": 11
     },
     {
       "benchmark_id": "gpqa",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 9
+      "rank": 15
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 8
+      "rank": 14
     },
     {
       "benchmark_id": "livecodebench",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "usamo25",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 1
+      "rank": 12
     }
   ]
 }

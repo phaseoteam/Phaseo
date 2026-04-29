@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "Public; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 4
+      "rank": 8
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "os-world",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "OSWorld-Verified; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 8
+      "rank": 12
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "Wins or ties; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 11
+      "rank": 25
     },
     {
       "benchmark_id": "cybergym",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "Cybersecurity Capture The Flag Challenges; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "swe-lancer",

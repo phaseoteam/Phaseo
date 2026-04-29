@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 35
+      "rank": 90
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 72
+      "rank": 122
     },
     {
       "benchmark_id": "aime",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "gpqa",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 81
+      "rank": 176
     },
     {
       "benchmark_id": "math-500",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 12
+      "rank": 16
     }
   ]
 }

@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-nemo-instruct-2407 (score=0.3250; benches=8)",
       "source_link": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407",
-      "rank": 7
+      "rank": 13
     },
     {
       "benchmark_id": "mmlu",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-nemo-instruct-2407 (score=0.3250; benches=8)",
       "source_link": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407",
-      "rank": 51
+      "rank": 121
     },
     {
       "benchmark_id": "natural-questions",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-nemo-instruct-2407 (score=0.3250; benches=8)",
       "source_link": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "triviaqa",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-nemo-instruct-2407 (score=0.3250; benches=8)",
       "source_link": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407",
-      "rank": 9
+      "rank": 24
     },
     {
       "benchmark_id": "winogrande",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-nemo-instruct-2407 (score=0.3250; benches=8)",
       "source_link": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407",
-      "rank": 5
+      "rank": 6
     }
   ]
 }

@@ -26,7 +26,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 16
     },
     {
       "benchmark_id": "tau3-bench",
@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "Telecom",
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "collie",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 5
     },
     {
       "benchmark_id": "livebench",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": "AllenAI",
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 21
     },
     {
       "benchmark_id": "beyondaime",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": "avg@16",
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 4
     },
     {
       "benchmark_id": "browsecomp",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 36
     },
     {
       "benchmark_id": "aime-2025",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": "avg@16",
       "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
-      "rank": null
+      "rank": 70
     }
   ]
 }

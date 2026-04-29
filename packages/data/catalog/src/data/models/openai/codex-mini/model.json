@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 27
+      "rank": 54
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -55,7 +55,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 26
+      "rank": 72
     }
   ]
 }

@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
-      "rank": 92
+      "rank": 146
     },
     {
       "benchmark_id": "lmarena-text",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 28
+      "rank": 37
     }
   ]
 }

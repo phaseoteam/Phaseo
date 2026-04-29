@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 46
+      "rank": 93
     },
     {
       "benchmark_id": "cybersecurity-ctfs",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 50
+      "rank": 90
     },
     {
       "benchmark_id": "mmmlu",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 20
+      "rank": 30
     },
     {
       "benchmark_id": "mmmu-(validation)",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 14
+      "rank": 19
     },
     {
       "benchmark_id": "swe-bench",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 24
+      "rank": 37
     },
     {
       "benchmark_id": "tau2-airline",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 17
+      "rank": 24
     },
     {
       "benchmark_id": "terminal-bench",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 6
+      "rank": 7
     }
   ]
 }

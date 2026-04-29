@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 18
+      "rank": 31
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 19
+      "rank": 46
     },
     {
       "benchmark_id": "browsecomp",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 10
+      "rank": 17
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "swe-bench",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 10
+      "rank": 15
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 15
+      "rank": 24
     }
   ]
 }

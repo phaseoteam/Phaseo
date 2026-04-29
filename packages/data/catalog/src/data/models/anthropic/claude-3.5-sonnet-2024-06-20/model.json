@@ -52,7 +52,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aidanbench.com/",
-      "rank": 10
+      "rank": 12
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/fed9cc193a14b84131812372d8d5857f8f304c52/Model_Card_Claude_3_Addendum.pdf",
-      "rank": 58
+      "rank": 93
     },
     {
       "benchmark_id": "lmarena-text",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 29
+      "rank": 38
     },
     {
       "benchmark_id": "simplebench",
@@ -76,7 +76,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 19
+      "rank": 21
     }
   ]
 }

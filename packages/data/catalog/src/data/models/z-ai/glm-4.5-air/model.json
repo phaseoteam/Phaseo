@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 12
+      "rank": 24
     },
     {
       "benchmark_id": "bfcl-v3",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 31
+      "rank": 47
     },
     {
       "benchmark_id": "gpqa",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 42
+      "rank": 74
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 55
+      "rank": 119
     },
     {
       "benchmark_id": "livecodebench",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 12
+      "rank": 17
     },
     {
       "benchmark_id": "math-500",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 32
+      "rank": 43
     },
     {
       "benchmark_id": "scicode",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "swe-bench",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 50
+      "rank": 91
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 15
+      "rank": 20
     }
   ]
 }

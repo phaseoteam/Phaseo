@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 15
+      "rank": 37
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 50
+      "rank": 111
     },
     {
       "benchmark_id": "gpqa",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 57
+      "rank": 110
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 58
+      "rank": 128
     },
     {
       "benchmark_id": "livecodebench",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 17
+      "rank": 22
     },
     {
       "benchmark_id": "longbench-v2",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 33
+      "rank": 44
     },
     {
       "benchmark_id": "multi-challenge",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "openai-mrcr:-2-needle-128k",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 29
+      "rank": 72
     },
     {
       "benchmark_id": "swe-bench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 51
+      "rank": 92
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 14
     },
     {
       "benchmark_id": "zebralogic",

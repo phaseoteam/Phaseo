@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ai21labs/AI21-Jamba-1.5-Large",
-      "rank": 97
+      "rank": 154
     },
     {
       "benchmark_id": "lmarena-text",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 47
+      "rank": 60
     }
   ]
 }

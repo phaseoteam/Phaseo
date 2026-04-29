@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 72
+      "rank": 174
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 70
+      "rank": 119
     },
     {
       "benchmark_id": "bfcl-v2",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "gpqa",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 78
+      "rank": 172
     },
     {
       "benchmark_id": "if-eval",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 34
+      "rank": 69
     },
     {
       "benchmark_id": "math-500",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "mbpp",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 3
+      "rank": 8
     },
     {
       "benchmark_id": "mt-bench",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 7
+      "rank": 17
     }
   ]
 }

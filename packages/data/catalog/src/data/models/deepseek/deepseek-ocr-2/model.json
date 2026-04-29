@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 9
+      "rank": 16
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 31
+      "rank": 60
     },
     {
       "benchmark_id": "browsecomp",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 27
+      "rank": 41
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "codeforces",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 14
+      "rank": 28
     },
     {
       "benchmark_id": "gpqa",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 34
+      "rank": 62
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 17
+      "rank": 29
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 36
+      "rank": 73
     },
     {
       "benchmark_id": "livecodebench",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 11
+      "rank": 16
     },
     {
       "benchmark_id": "simpleqa",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 14
+      "rank": 19
     },
     {
       "benchmark_id": "swe-bench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 38
+      "rank": 57
     },
     {
       "benchmark_id": "terminal-bench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 9
+      "rank": 10
     }
   ]
 }
