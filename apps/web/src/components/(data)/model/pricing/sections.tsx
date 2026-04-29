@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { ArrowDownRight, ArrowUpRight, CalendarClock, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -23,30 +22,13 @@ import type {
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
 
-function formatCountdown(iso?: string | null) {
-	if (!iso) return null;
-	const end = new Date(iso).getTime();
-	if (Number.isNaN(end)) return null;
-	const diff = end - Date.now();
-	if (diff <= 0) return "Ends now";
-	const hours = Math.floor(diff / (1000 * 60 * 60));
-	const days = Math.floor(hours / 24);
-	const remHours = hours % 24;
-	if (days > 0) return `Ends in ${days}d ${remHours}h`;
-	return `Ends in ${remHours}h`;
-}
-
-function renderDiscountFooter(basePrice?: number | null, discountEndsAt?: string | null) {
+function renderDiscountFooter(basePrice?: number | null, _discountEndsAt?: string | null) {
 	if (basePrice == null) return null;
-	const countdown = formatCountdown(discountEndsAt);
 	return (
-		<div className="flex items-center justify-between">
-			<span className="line-through tabular-nums">{fmtUSD(basePrice)}</span>
-			{countdown ? (
-				<Badge variant="secondary" className="text-[0.6rem] tracking-wide">
-					{countdown}
-				</Badge>
-			) : null}
+		<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-tight text-muted-foreground">
+			<span>
+				Was <span className="line-through tabular-nums">{fmtUSD(basePrice)}</span>
+			</span>
 		</div>
 	);
 }

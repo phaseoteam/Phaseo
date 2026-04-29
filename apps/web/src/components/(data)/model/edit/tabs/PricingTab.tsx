@@ -412,6 +412,46 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
   }, [modelId])
 
   const pricingPayload = useMemo(() => pricingRules.map((rule) => toPayload(rule)), [pricingRules])
+  const pricingGroups = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        providerId: string
+        providerName: string
+        rules: PricingRuleEditor[]
+      }
+    >()
+
+    for (const rule of pricingRules) {
+      const providerId = rule.provider_id || "__unassigned__"
+      const providerName =
+        providerId === "__unassigned__"
+          ? "Unassigned provider"
+          : providerNames[rule.provider_id] ?? rule.provider_id
+      const existing = grouped.get(providerId) ?? {
+        providerId,
+        providerName,
+        rules: [],
+      }
+      existing.rules.push(rule)
+      grouped.set(providerId, existing)
+    }
+
+    return Array.from(grouped.values())
+      .map((group) => ({
+        ...group,
+        rules: [...group.rules].sort((a, b) => {
+          const apiModelCmp = sortLabel(a.api_model_id || modelId, b.api_model_id || modelId)
+          if (apiModelCmp !== 0) return apiModelCmp
+          const capabilityCmp = sortLabel(a.capability_id || "text.generate", b.capability_id || "text.generate")
+          if (capabilityCmp !== 0) return capabilityCmp
+          const planCmp = sortLabel(a.pricing_plan || "standard", b.pricing_plan || "standard")
+          if (planCmp !== 0) return planCmp
+          return sortLabel(a.meter || "", b.meter || "")
+        }),
+      }))
+      .sort((a, b) => sortLabel(a.providerName, b.providerName))
+  }, [modelId, pricingRules, providerNames])
 
   useEffect(() => {
     onPricingRulesChangeRef.current = onPricingRulesChange
@@ -446,8 +486,11 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
     )
   }
 
-  const addRule = () => {
-    const firstPair = providerPairOptions[0]
+  const addRule = (providerId?: string) => {
+    const firstPair =
+      (providerId
+        ? providerPairOptions.find((row) => row.provider_id === providerId)
+        : undefined) ?? providerPairOptions[0]
     const provider_id = firstPair?.provider_id ?? ""
     const api_model_id = firstPair?.api_model_id ?? modelId
     const capability_id =
@@ -537,7 +580,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
             Changes are staged locally and saved when you click Save Pricing.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={addRule}>
+        <Button type="button" variant="outline" size="sm" onClick={() => addRule()}>
           <Plus className="mr-1 h-4 w-4" />
           Add pricing rule
         </Button>
@@ -550,7 +593,30 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
       ) : null}
 
       <div className="space-y-4">
-        {pricingRules.map((rule, index) => {
+        {pricingGroups.map((group) => (
+          <section key={group.providerId} className="space-y-4 rounded-xl border border-border/70 bg-muted/[0.18] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">{group.providerName}</div>
+                <p className="text-xs text-muted-foreground">
+                  {group.rules.length} pricing {group.rules.length === 1 ? "rule" : "rules"}
+                </p>
+              </div>
+              {group.providerId !== "__unassigned__" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addRule(group.providerId)}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  Add rule for provider
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="space-y-4">
+              {group.rules.map((rule, index) => {
           const currentPair = pairKey(rule.provider_id, rule.api_model_id)
           const capabilities = Array.from(
             new Set([
@@ -563,7 +629,14 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
           return (
             <section key={rule.id} className="space-y-4 rounded-lg border p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">Rule {index + 1}</div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">
+                    {rule.api_model_id || modelId}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rule {index + 1} in {group.providerName}
+                  </p>
+                </div>
                 <div className="flex gap-1">
                   <Button
                     type="button"
@@ -886,9 +959,12 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                   </div>
                 ))}
               </section>
-            </section>
+              </section>
           )
-        })}
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   )

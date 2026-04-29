@@ -20,7 +20,11 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { disableCreditGrantAction, updateCreditGrantAction } from "./actions";
+import {
+	deleteCreditGrantAction,
+	disableCreditGrantAction,
+	updateCreditGrantAction,
+} from "./actions";
 
 type Props = {
 	grantId: string;
@@ -63,10 +67,12 @@ export default function CreditGrantEditDialog(props: Props) {
 	const [open, setOpen] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDisabling, setIsDisabling] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 	const [expiryLocalValue, setExpiryLocalValue] = useState(() =>
 		toDateTimeLocalInput(expiresAt)
 	);
-	const isBusy = isSaving || isDisabling;
+	const isBusy = isSaving || isDisabling || isDeleting;
+	const canDelete = redemptionsCount === 0;
 	const hiddenExpiresAt = useMemo(() => {
 		if (!expiryLocalValue) return "";
 		const [datePart, timePart] = expiryLocalValue.split("T");
@@ -111,6 +117,27 @@ export default function CreditGrantEditDialog(props: Props) {
 			setOpen(false);
 		} finally {
 			setIsDisabling(false);
+		}
+	}
+
+	async function handleDelete() {
+		if (!canDelete || isBusy) return;
+		if (!window.confirm(`Delete promo code ${code}? This cannot be undone.`)) {
+			return;
+		}
+		const formData = new FormData();
+		formData.set("grant_id", grantId);
+		setIsDeleting(true);
+		try {
+			await toast.promise(deleteCreditGrantAction(formData), {
+				loading: "Deleting promo code...",
+				success: "Promo code deleted.",
+				error: (error) => getErrorMessage(error, "Failed to delete promo code."),
+			});
+			router.refresh();
+			setOpen(false);
+		} finally {
+			setIsDeleting(false);
 		}
 	}
 
@@ -215,7 +242,27 @@ export default function CreditGrantEditDialog(props: Props) {
 						/>
 						Active
 					</label>
+					{!canDelete ? (
+						<p className="text-xs text-muted-foreground">
+							Codes with redemption history can be disabled, but not deleted or
+							reused.
+						</p>
+					) : (
+						<p className="text-xs text-muted-foreground">
+							Unused codes can be deleted to free the slug for reuse later.
+						</p>
+					)}
 					<DialogFooter>
+						<Button
+							type="button"
+							variant="destructive"
+							disabled={!canDelete || isBusy}
+							onClick={() => {
+								void handleDelete();
+							}}
+						>
+							Delete
+						</Button>
 						<Button
 							type="button"
 							variant="outline"

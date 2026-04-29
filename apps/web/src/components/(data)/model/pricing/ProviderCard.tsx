@@ -7,6 +7,7 @@ import {
 	AlertTriangle,
 	Ban,
 	CheckCircle2,
+	CircleHelp,
 	Clock3,
 	XCircle,
 } from "lucide-react";
@@ -16,6 +17,16 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
 	TierTiles,
 	ImageGenSection,
@@ -29,8 +40,11 @@ import ProviderModelParameters from "@/components/(data)/model/pricing/ProviderM
 import {
 	buildProviderSections,
 	fmtUSD,
+	type QualityRow,
+	type ResolutionRow,
 	type TokenTier,
 	type TokenTriple,
+	type UsageRow,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ProviderRuntimeStats } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
@@ -117,6 +131,118 @@ function parseRuleConditionValues(value: unknown): string[] {
 		return [String(value)];
 	}
 	return [];
+}
+
+const MISSING_PERFORMANCE_EXPLAINER =
+	"This can be blank when AI Stats has not seen enough recent gateway requests for this provider/model combination to show a reliable metric yet.";
+
+function formatDiscountCountdown(value: string | null | undefined): string | null {
+	if (!value) return null;
+	const end = new Date(value).getTime();
+	if (Number.isNaN(end)) return null;
+	const diff = end - Date.now();
+	if (diff <= 0) return "Discount ending now";
+	const hours = Math.floor(diff / (1000 * 60 * 60));
+	const days = Math.floor(hours / 24);
+	const remHours = hours % 24;
+	if (days > 0) return `Discount ends in ${days}d ${remHours}h`;
+	return `Discount ends in ${Math.max(remHours, 1)}h`;
+}
+
+function collectDiscountEntriesFromTiers(tiers?: TokenTier[] | null): Array<{
+	endsAt: string | null;
+}> {
+	if (!tiers?.length) return [];
+	return tiers
+		.filter((tier) => tier.basePrice != null || tier.basePer1M != null)
+		.map((tier) => ({ endsAt: tier.discountEndsAt ?? null }));
+}
+
+function collectDiscountEntriesFromTriple(triple?: TokenTriple | null): Array<{
+	endsAt: string | null;
+}> {
+	if (!triple) return [];
+	return [
+		...collectDiscountEntriesFromTiers(triple.in),
+		...collectDiscountEntriesFromTiers(triple.cached),
+		...collectDiscountEntriesFromTiers(triple.write),
+		...collectDiscountEntriesFromTiers(triple.out),
+	];
+}
+
+function collectDiscountEntriesFromUsage(rows?: UsageRow[] | null): Array<{
+	endsAt: string | null;
+}> {
+	if (!rows?.length) return [];
+	return rows
+		.filter((row) => row.basePrice != null)
+		.map((row) => ({ endsAt: row.discountEndsAt ?? null }));
+}
+
+function collectDiscountEntriesFromImage(rows?: QualityRow[] | null): Array<{
+	endsAt: string | null;
+}> {
+	if (!rows?.length) return [];
+	return rows.flatMap((row) =>
+		row.items
+			.filter((item) => item.basePrice != null)
+			.map((item) => ({ endsAt: item.discountEndsAt ?? null })),
+	);
+}
+
+function collectDiscountEntriesFromVideo(rows?: ResolutionRow[] | null): Array<{
+	endsAt: string | null;
+}> {
+	if (!rows?.length) return [];
+	return rows
+		.filter((row) => row.basePrice != null)
+		.map((row) => ({ endsAt: row.discountEndsAt ?? null }));
+}
+
+function MissingPerformanceMetricValue({
+	metricLabel,
+}: {
+	metricLabel: string;
+}) {
+	const ariaLabel = `Why ${metricLabel.toLowerCase()} is blank`;
+
+	return (
+		<span className="inline-flex items-center gap-1 text-muted-foreground">
+			<span>--</span>
+			<span className="hidden md:inline-flex">
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							aria-label={ariaLabel}
+							className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<CircleHelp className="h-3.5 w-3.5" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="top" className="max-w-[220px]">
+						{MISSING_PERFORMANCE_EXPLAINER}
+					</TooltipContent>
+				</Tooltip>
+			</span>
+			<span className="md:hidden">
+				<Popover>
+					<PopoverTrigger asChild>
+						<button
+							type="button"
+							aria-label={ariaLabel}
+							className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<CircleHelp className="h-3.5 w-3.5" />
+						</button>
+					</PopoverTrigger>
+					<PopoverContent align="center" className="w-64 p-3 text-xs leading-relaxed">
+						{MISSING_PERFORMANCE_EXPLAINER}
+					</PopoverContent>
+				</Popover>
+			</span>
+		</span>
+	);
 }
 
 function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | null {
@@ -568,6 +694,26 @@ export default function ProviderCard({
 
 	const uptimePct = runtimeStats?.uptimePct3d;
 	const throughputValue = formatThroughputValue(runtimeStats?.throughput30m);
+	const activeDiscountEntries = [
+		...collectDiscountEntriesFromTriple(sec.textTokens),
+		...collectDiscountEntriesFromTriple(sec.audioTokens),
+		...collectDiscountEntriesFromTriple(sec.imageTokens),
+		...collectDiscountEntriesFromTriple(sec.videoTokens),
+		...collectDiscountEntriesFromUsage(imageInputs),
+		...collectDiscountEntriesFromUsage(videoInputs),
+		...collectDiscountEntriesFromImage(sec.imageGen),
+		...collectDiscountEntriesFromVideo(sec.videoGen),
+		...collectDiscountEntriesFromTiers(sec.requests),
+	];
+	const discountCount = activeDiscountEntries.length;
+	const soonestDiscountEnd = activeDiscountEntries
+		.map((entry) => entry.endsAt)
+		.filter((value): value is string => Boolean(value))
+		.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
+	const discountSummary = discountCount
+		? formatDiscountCountdown(soonestDiscountEnd) ??
+			(discountCount === 1 ? "Discount live" : `${discountCount} discounts live`)
+		: null;
 	const uptimeByDay = runtimeStats?.uptimeDaily3d ?? [];
 	const uptimeBars = [2, 1, 0].map((dayOffset) => {
 		const match = uptimeByDay.find((d) => d.dayOffset === dayOffset);
@@ -585,7 +731,12 @@ export default function ProviderCard({
 	const performanceMetrics = [
 		{
 			label: "Latency",
-			value: formatLatencySeconds(runtimeStats?.latencyMs30m) as React.ReactNode,
+			value:
+				runtimeStats?.latencyMs30m != null ? (
+					(formatLatencySeconds(runtimeStats?.latencyMs30m) as React.ReactNode)
+				) : (
+					<MissingPerformanceMetricValue metricLabel="Latency" />
+				),
 		},
 		{
 			label: "Throughput",
@@ -595,7 +746,7 @@ export default function ProviderCard({
 					<span className="ml-0.5 text-[0.68em] font-medium">tps</span>
 				</>
 			) : (
-				"--"
+				<MissingPerformanceMetricValue metricLabel="Throughput" />
 			),
 		},
 		{
@@ -636,7 +787,7 @@ export default function ProviderCard({
 			<CardHeader className="px-4 py-3">
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 					<div className="min-w-0 flex-1 space-y-1.5">
-							<div className="flex min-w-0 items-center gap-2">
+							<div className="flex min-w-0 flex-wrap items-center gap-2">
 								<Link href={`/api-providers/${sec.providerId}`} className="group">
 									<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-background dark:border-zinc-800">
 										<div className="relative h-5 w-5">
@@ -654,6 +805,11 @@ export default function ProviderCard({
 										{sec.providerName}
 									</CardTitle>
 								</Link>
+								{discountSummary ? (
+									<span className="inline-flex max-w-full items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+										{discountSummary}
+									</span>
+								) : null}
 							</div>
 							<div className="flex flex-wrap items-center gap-1.5">
 								<HoverCard openDelay={120} closeDelay={80}>
