@@ -7,7 +7,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": "text",
+    "output_modalities": "text,audio_stt",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2020-06-11T00:00:00",

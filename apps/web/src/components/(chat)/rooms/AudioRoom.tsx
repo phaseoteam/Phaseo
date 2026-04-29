@@ -1589,7 +1589,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const existingTitle = activeConversation?.title?.trim() ?? "";
 		const candidateTitle = promptText
 			? truncateTitle(promptText)
-			: `${targetMode === "music" ? "Music" : "Speech"} ${new Date().toLocaleDateString()}`;
+			: `${modeLabel(targetMode)} ${new Date().toLocaleDateString()}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
