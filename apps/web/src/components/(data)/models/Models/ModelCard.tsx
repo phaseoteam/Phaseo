@@ -268,6 +268,14 @@ function normalizeFromPriceUnit(value: string | null | undefined): string | null
 		.trim()
 		.toLowerCase();
 	if (!normalized) return null;
+	if (
+		normalized === "1m token" ||
+		normalized === "1m tokens" ||
+		normalized === "per 1m token" ||
+		normalized === "per 1m tokens"
+	) {
+		return "1M tokens";
+	}
 	if (normalized === "token" || normalized === "tokens") return "1M tokens";
 	if (normalized === "sec" || normalized === "secs" || normalized === "seconds") {
 		return "second";
