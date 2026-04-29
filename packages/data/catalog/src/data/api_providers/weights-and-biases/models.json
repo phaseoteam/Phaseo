@@ -63,6 +63,27 @@
     ]
   },
   {
+    "api_model_id": "ibm/granite-4.1-8b",
+    "provider_api_model_id": "weights-and-biases:ibm/granite-4.1-8b",
+    "provider_model_slug": "ibm-granite/granite-4.1-8b",
+    "internal_model_id": "ibm/granite-4.1-8b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "meta/llama-3.1-70b",
     "provider_api_model_id": "weights-and-biases:meta/llama-3.1-70b",
     "provider_model_slug": "meta-llama/Llama-3.1-70B-Instruct",

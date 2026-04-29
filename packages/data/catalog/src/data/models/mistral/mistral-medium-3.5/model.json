@@ -1,0 +1,23 @@
+{
+  "model_id": "mistral/mistral-medium-3.5",
+  "organisation_id": "mistral",
+  "name": "Mistral Medium 3.5",
+  "status": "Available",
+  "previous_model_id": "mistral/mistral-medium-3.1",
+  "announced_date": "2026-04-29T00:00:00",
+  "release_date": "2026-04-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "mistral/mistral-medium-3.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

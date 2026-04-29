@@ -1,0 +1,24 @@
+{
+  "model_id": "ibm/granite-4.1-30b",
+  "organisation_id": "ibm",
+  "name": "Granite 4.1 30B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-01T00:00:00",
+  "release_date": "2026-04-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "ibm/granite-4.1-30b",
+  "family_id": "ibm/granite-4-1",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/ibm-granite/granite-4.1-30b"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}
