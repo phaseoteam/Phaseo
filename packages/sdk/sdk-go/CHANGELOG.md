@@ -1,5 +1,17 @@
 # @ai-stats/go-sdk
 
+## 2.0.2
+
+### Patch Changes
+
+- [#396](https://github.com/AI-Stats/AI-Stats/pull/396) [`0023fc3`](https://github.com/AI-Stats/AI-Stats/commit/0023fc3c6d87a007189bfe1d0c8c13af8db3f21d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate catalog model discovery from callable SDK helper IDs.
+
+  Request-side model identifiers are now treated as runtime strings so newly released
+  models can be used without waiting for an SDK release. Generated helper constants
+  are now sourced from the current callable-on-gateway snapshot instead of the full
+  catalog, and SDK release automation treats model helper churn as patch-level data
+  updates instead of forcing minor or major version jumps.
+
 ## 2.0.1
 
 ### Patch Changes

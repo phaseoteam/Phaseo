@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const goSDKVersion = "2.0.1"
+const goSDKVersion = "2.0.2"
 
 type DevtoolsConfig struct {
 	Enabled        bool
