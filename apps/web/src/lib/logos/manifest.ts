@@ -13,6 +13,9 @@ export const logoManifest = {
 	alibaba: {
 		color: "/logos/alibaba.svg",
 	},
+	"alibaba-cloud": {
+		color: "/logos/alibaba-cloud.svg",
+	},
 	allenai: {
 		color: "/logos/allenai.svg",
 	},
@@ -74,8 +77,17 @@ export const logoManifest = {
 	clarifai: {
 		color: "/logos/clarifai.svg",
 	},
+	claudecode: {
+		color: "/logos/claudecode.svg",
+	},
+	cline: {
+		color: "/logos/cline.svg",
+	},
 	cloudflare: {
 		color: "/logos/cloudflare.svg",
+	},
+	codex: {
+		color: "/logos/codex.svg",
 	},
 	crusoe: {
 		light: "/logos/crusoe_light.svg",
@@ -88,6 +100,10 @@ export const logoManifest = {
 		color: "/logos/cogito.svg",
 	},
 	cursor: {
+		light: "/logos/cursor-light.svg",
+		dark: "/logos/cursor-dark.svg",
+	},
+	"cursor-legacy": {
 		light: "/logos/cursor_light.svg",
 		dark: "/logos/cursor_dark.svg",
 	},
@@ -127,6 +143,9 @@ export const logoManifest = {
 	"google-ai-studio": {
 		light: "/logos/google-ai-studio_light.svg",
 		dark: "/logos/google-ai-studio_dark.svg",
+	},
+	"google-gemma": {
+		color: "/logos/google-gemma.svg",
 	},
 	"google-vertex": {
 		color: "/logos/google-vertex.svg",
@@ -217,6 +236,12 @@ export const logoManifest = {
 	morph: {
 		color: "/logos/morph.svg",
 	},
+	n8n: {
+		color: "/logos/n8n.svg",
+	},
+	"naver-hyperclova": {
+		color: "/logos/naver-hyperclova.svg",
+	},
 	"nebius-token-factory": {
 		light: "/logos/nebius-token-factory_light.svg",
 		dark: "/logos/nebius-token-factory_dark.svg",
@@ -242,9 +267,20 @@ export const logoManifest = {
 		light: "/logos/openai_light.svg",
 		dark: "/logos/openai_dark.svg",
 	},
+	openclaw: {
+		color: "/logos/openclaw.svg",
+	},
+	opencode: {
+		light: "/logos/opencode_light.svg",
+		dark: "/logos/opencode_dark.svg",
+	},
 	openrouter: {
 		light: "/logos/openrouter_light.svg",
 		dark: "/logos/openrouter_dark.svg",
+	},
+	openwebui: {
+		light: "/logos/openwebui_light.svg",
+		dark: "/logos/openwebui_dark.svg",
 	},
 	llmgateway: {
 		light: "/logos/llmgateway-light.svg",
@@ -259,6 +295,10 @@ export const logoManifest = {
 	},
 	perplexity: {
 		color: "/logos/perplexity.svg",
+	},
+	poolside: {
+		light: "/logos/poolside_light.svg",
+		dark: "/logos/poolside_dark.svg",
 	},
 	"prime-intellect": {
 		light: "/logos/prime-intellect_light.svg",
@@ -287,6 +327,9 @@ export const logoManifest = {
 	stepfun: {
 		color: "/logos/stepfun.svg",
 	},
+	streamlake: {
+		color: "/logos/streamlake.svg",
+	},
 	suno: {
 		light: "/logos/suno_light.svg",
 		dark: "/logos/suno_dark.svg",
@@ -297,6 +340,9 @@ export const logoManifest = {
 	together: {
 		color: "/logos/together.svg",
 	},
+	upstage: {
+		color: "/logos/upstage.svg",
+	},
 	venice: {
 		color: "/logos/venice.svg",
 	},
@@ -306,6 +352,9 @@ export const logoManifest = {
 	vercel: {
 		light: "/logos/vercel_light.svg",
 		dark: "/logos/vercel_dark.svg",
+	},
+	voyage: {
+		color: "/logos/voyage.svg",
 	},
 	"weights-and-biases": {
 		color: "/logos/weights-and-biases.svg",

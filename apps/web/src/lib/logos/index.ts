@@ -39,9 +39,16 @@ const pathToKeyMap = new Map<string, KnownLogoId>();
 
 const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	ai21: "AI21",
+	"alibaba-cloud": "Alibaba Cloud",
+	claudecode: "Claude Code",
+	"google-gemma": "Gemma",
 	ibm: "IBM",
 	lg: "LG",
 	llmgateway: "LLM Gateway",
+	"naver-hyperclova": "NAVER HyperCLOVA",
+	n8n: "n8n",
+	opencode: "OpenCode",
+	openwebui: "Open WebUI",
 	stepfun: "StepFun",
 	xai: "xAI",
 	"zai": "Z.ai",
