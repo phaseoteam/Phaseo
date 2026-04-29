@@ -4,7 +4,8 @@ import { assertOk, client, isDryRun, logWrite } from "./supa";
 import { chunk } from "./util";
 
 type BenchmarkResultRow = {
-	result_key: string;
+	id: string;
+	result_key: string | null;
 	model_id: string;
 	benchmark_id: string;
 	score: string | number | null;
@@ -34,7 +35,9 @@ function parseScore(value: string | number | null): number | null {
 		return Number.isFinite(value) ? value : null;
 	}
 	if (typeof value === "string") {
-		const numeric = Number(value.trim());
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		const numeric = Number(trimmed);
 		return Number.isFinite(numeric) ? numeric : null;
 	}
 	return null;
@@ -58,8 +61,10 @@ async function fetchAllBenchmarkRows(
 			let query = supa
 				.from("data_benchmark_results")
 				.select(
-					"result_key,model_id,benchmark_id,score,is_self_reported,other_info,source_link,occur_idx,variant,rank",
+					"id,result_key,model_id,benchmark_id,score,is_self_reported,other_info,source_link,occur_idx,variant,rank",
 				)
+				.order("benchmark_id", { ascending: true })
+				.order("id", { ascending: true })
 				.range(offset, offset + PAGE_SIZE - 1);
 
 			if (ids) {
@@ -106,13 +111,24 @@ async function fetchBenchmarkMeta(
 
 async function benchmarkIdsForModel(modelId: string): Promise<string[]> {
 	const supa = client();
-	const rows = assertOk(
-		await supa
-			.from("data_benchmark_results")
-			.select("benchmark_id")
-			.eq("model_id", modelId),
-		`select benchmark ids for model ${modelId}`,
-	) as Array<{ benchmark_id: string | null }>;
+	const rows: Array<{ benchmark_id: string | null }> = [];
+
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const page = assertOk(
+			await supa
+				.from("data_benchmark_results")
+				.select("id,benchmark_id")
+				.eq("model_id", modelId)
+				.order("benchmark_id", { ascending: true })
+				.order("id", { ascending: true })
+				.range(offset, offset + PAGE_SIZE - 1),
+			`select benchmark ids for model ${modelId}`,
+		) as Array<{ benchmark_id: string | null }>;
+
+		if (!page.length) break;
+		rows.push(...page);
+		if (page.length < PAGE_SIZE) break;
+	}
 
 	return Array.from(
 		new Set(
@@ -151,18 +167,22 @@ function buildRankedRows(
 						? a.numericScore - b.numericScore
 						: b.numericScore - a.numericScore;
 				}
-				return a.row.result_key.localeCompare(b.row.result_key);
+				const resultKeyCompare = (a.row.result_key ?? "").localeCompare(
+					b.row.result_key ?? "",
+				);
+				if (resultKeyCompare !== 0) return resultKeyCompare;
+				return a.row.id.localeCompare(b.row.id);
 			});
 
-		const rankByKey = new Map<string, number>();
+		const rankById = new Map<string, number>();
 		numeric.forEach((item, index) => {
-			rankByKey.set(item.row.result_key, index + 1);
+			rankById.set(item.row.id, index + 1);
 		});
 
 		for (const row of group) {
 			ranked.push({
 				...row,
-				rank: rankByKey.get(row.result_key) ?? null,
+				rank: rankById.get(row.id) ?? null,
 			});
 		}
 	}
@@ -176,7 +196,7 @@ async function writeRankedRows(rows: BenchmarkResultRow[]): Promise<void> {
 	if (isDryRun()) {
 		for (const row of rows) {
 			logWrite("public.data_benchmark_results", "UPSERT", row, {
-				onConflict: "result_key",
+				onConflict: "id",
 			});
 		}
 		return;
@@ -186,7 +206,7 @@ async function writeRankedRows(rows: BenchmarkResultRow[]): Promise<void> {
 	for (const batch of chunk(rows, 500)) {
 		assertOk(
 			await supa.from("data_benchmark_results").upsert(batch, {
-				onConflict: "result_key",
+				onConflict: "id",
 			}),
 			"upsert ranked data_benchmark_results",
 		);
