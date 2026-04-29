@@ -817,7 +817,7 @@ export default function ModelPricingClient({
                     ) : null}
                     {filteredProviders.length > 0 ? (
                         <div className="space-y-3">
-							<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                                 {alwaysVisibleProviders.map((prov) => (
                                     <ProviderCard
                                         key={prov.provider.api_provider_id}
@@ -844,7 +844,7 @@ export default function ModelPricingClient({
                                     >
                                         <div className="overflow-hidden">
                                             <div className="pt-3">
-												<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+												<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                                                     {extraProviders.map((prov) => (
                                                         <ProviderCard
                                                             key={prov.provider.api_provider_id}
@@ -923,7 +923,7 @@ export default function ModelPricingClient({
             ) : (
                 <section className="space-y-4">
                     {sortedSubscriptionPlans.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                             {sortedSubscriptionPlans.map((planItem) => {
                                 const sortedPrices = sortSubscriptionPlanPrices(
                                     (planItem.prices ?? []).filter(

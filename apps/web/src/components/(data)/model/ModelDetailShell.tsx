@@ -157,16 +157,7 @@ export function ModelDetailShellSkeleton({
 						<Skeleton className="h-9 w-full md:w-24" />
 					</div>
 				</div>
-
-				<div className="mb-4 hidden gap-4 border-b md:flex">
-					{Array.from({ length: 7 }).map((_, index) => (
-						<Skeleton key={index} className="mb-2 h-7 w-24" />
-					))}
-				</div>
-
-				<div className="mb-4 md:hidden">
-					<Skeleton className="h-10 w-full rounded-md" />
-				</div>
+				<Skeleton className="mb-4 h-12 w-full rounded-md" />
 
 				<div className="mt-6 min-h-full">{children}</div>
 			</div>

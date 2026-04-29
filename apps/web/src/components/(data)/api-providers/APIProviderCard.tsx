@@ -1,9 +1,9 @@
 import {
 	ArrowUpRight,
 	AudioLines,
+	BadgeAlert,
 	Binary,
 	ImageIcon,
-	Shield,
 	Type,
 	Video,
 	type LucideIcon,
@@ -35,7 +35,7 @@ const MODALITIES: ModalityMeta[] = [
 	{ key: "image", label: "Image", Icon: ImageIcon },
 	{ key: "video", label: "Video", Icon: Video },
 	{ key: "audio", label: "Audio", Icon: AudioLines },
-	{ key: "moderation", label: "Moderation", Icon: Shield },
+	{ key: "moderation", label: "Moderation", Icon: BadgeAlert },
 	{ key: "embedding", label: "Embedding", Icon: Binary },
 ];
 

@@ -7878,7 +7878,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/mistral/voxtral-mini-transcribe-2/model.json": {
-      "hash": "db488fe4955505c55ed33c0efcf33336",
+      "hash": "e3c8732a6bbd114b795742a810c221f2",
       "meta": {
         "model_id": "mistral/voxtral-mini-transcribe-2",
         "organisation_id": "mistral",
@@ -8710,7 +8710,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4o-transcribe/model.json": {
-      "hash": "44b0ad72ed85eac169b2ef43e082e341",
+      "hash": "3b37fc8fdb468ad43f778c6ee0f49e87",
       "meta": {
         "model_id": "openai/gpt-4o-transcribe",
         "organisation_id": "openai",
@@ -11703,7 +11703,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "ed6e1fdaa47e61628dfb9b2026d7aa87",
+      "hash": "f5bfccc9eac0ed8fb60a3097c0bf416e",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -11920,7 +11920,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/openai/models.json": {
-      "hash": "341d366f7f5b2da7dbef6adb77a3c29d",
+      "hash": "20913d2502d85a888f4a9aafdf8b5408",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -12073,7 +12073,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/xiaomi/models.json": {
-      "hash": "705249bce32382930c0b5d074c1d5ea0",
+      "hash": "dff8858fdc6f013c49f71c57786bf445",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -18581,7 +18581,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3-clip-preview/model.json": {
-      "hash": "cd2a8e61303943258b62a50d4df95ff1",
+      "hash": "0317887554369bc15e3dd4b1975489e4",
       "meta": {
         "model_id": "google/lyria-3-clip-preview",
         "organisation_id": "google",
@@ -20086,14 +20086,14 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/hyperbolic/models.json": {
-      "hash": "cc925cc334a9617cb78876f9ceb5f039",
+      "hash": "66f9d0370d487157a664fe89f4639a24",
       "meta": {
         "api_provider_id": "hyperbolic",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/infermatic/models.json": {
-      "hash": "d0944ee9d8fb2b4a5399b569beb0f751",
+      "hash": "e0534bbe58ce25e210f75905ba02f13e",
       "meta": {
         "api_provider_id": "infermatic",
         "kind": "provider_models"
@@ -20238,6 +20238,23 @@
         "capability_id": "text.generate",
         "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "model_key": "nebius-token-factory:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/poolside/laguna-xs.2/model.json": {
+      "hash": "cf53904c2c0b87ea7cf08ed617a521e9",
+      "meta": {
+        "model_id": "poolside/laguna-xs.2",
+        "organisation_id": "poolside",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/poolside/poolside-laguna-xs.2/text.generate/pricing.json": {
+      "hash": "5d093745b68273909b4e742175ebe93a",
+      "meta": {
+        "api_provider_id": "poolside",
+        "capability_id": "text.generate",
+        "model_id": "poolside/laguna-xs.2",
+        "model_key": "poolside:poolside/laguna-xs.2:text.generate"
       }
     }
   }

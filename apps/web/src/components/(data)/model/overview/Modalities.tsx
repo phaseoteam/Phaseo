@@ -1,13 +1,15 @@
 import {
 	Text,
 	Image,
-	AudioLines,
 	Video,
-	Mic,
-	Volume2,
-	Music2,
+	Captions,
+	Headphones,
+	Music4,
+	Speech,
 	type LucideIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 
 interface Modality {
 	key: string;
@@ -23,17 +25,20 @@ interface ModalitiesProps {
 const MODALITIES: Modality[] = [
 	{ key: "text", label: "Text", icon: Text },
 	{ key: "image", label: "Image", icon: Image },
-	{ key: "audio_stt", label: "STT", icon: Mic },
-	{ key: "audio_tts", label: "TTS", icon: Volume2 },
-	{ key: "audio_music", label: "Music", icon: Music2 },
-	{ key: "audio", label: "Audio", icon: AudioLines },
 	{ key: "video", label: "Video", icon: Video },
+	{ key: "audio", label: "Audio", icon: Headphones },
+	{ key: "audio_tts", label: "Speech", icon: Speech },
+	{ key: "audio_stt", label: "Transcription", icon: Captions },
+	{ key: "audio_music", label: "Music", icon: Music4 },
 ];
 
 export default function Modalities({
 	inputTypes,
 	outputTypes,
 }: ModalitiesProps) {
+	const inputModalities = MODALITIES.filter((mod) => inputTypes.includes(mod.key));
+	const outputModalities = MODALITIES.filter((mod) => outputTypes.includes(mod.key));
+
 	return (
 		<div className="flex flex-col h-full">
 			<h2 className="text-xl font-semibold mb-4">Modalities</h2>
@@ -41,23 +46,27 @@ export default function Modalities({
 				{/* Input Modalities Card */}
 				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
 					<div className="flex flex-wrap gap-2 justify-center mb-1">
-						{MODALITIES.map((mod) => {
+						{inputModalities.length > 0 ? inputModalities.map((mod) => {
 							const Icon = mod.icon;
-							const enabled = inputTypes.includes(mod.key);
+							const tone = getModalityTone(mod.key);
 							return (
 								<span
 									key={mod.key + "-input"}
-									className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 transition-colors duration-150 ${
-										enabled
-											? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700"
-											: "bg-red-50 dark:bg-red-950 text-red-400 border-red-200 dark:border-red-800 opacity-60"
-									}`}
+									className={cn(
+										"flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold transition-colors duration-150",
+										tone.badgeClassName,
+									)}
 								>
-									<Icon size={16} className="inline-block" />
+									<Icon
+										size={16}
+										className={cn("inline-block", tone.iconClassName)}
+									/>
 									{mod.label}
 								</span>
 							);
-						})}
+						}) : (
+							<span className="text-xs text-muted-foreground">No modalities listed.</span>
+						)}
 					</div>
 					<span className="text-xs font-medium text-gray-500 mt-1">
 						Input
@@ -66,23 +75,27 @@ export default function Modalities({
 				{/* Output Modalities Card */}
 				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
 					<div className="flex flex-wrap gap-2 justify-center mb-1">
-						{MODALITIES.map((mod) => {
+						{outputModalities.length > 0 ? outputModalities.map((mod) => {
 							const Icon = mod.icon;
-							const enabled = outputTypes.includes(mod.key);
+							const tone = getModalityTone(mod.key);
 							return (
 								<span
 									key={mod.key + "-output"}
-									className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 transition-colors duration-150 ${
-										enabled
-											? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700"
-											: "bg-red-50 dark:bg-red-950 text-red-400 border-red-200 dark:border-red-800 opacity-60"
-									}`}
+									className={cn(
+										"flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold transition-colors duration-150",
+										tone.badgeClassName,
+									)}
 								>
-									<Icon size={16} className="inline-block" />
+									<Icon
+										size={16}
+										className={cn("inline-block", tone.iconClassName)}
+									/>
 									{mod.label}
 								</span>
 							);
-						})}
+						}) : (
+							<span className="text-xs text-muted-foreground">No modalities listed.</span>
+						)}
 					</div>
 					<span className="text-xs font-medium text-gray-500 mt-1">
 						Output

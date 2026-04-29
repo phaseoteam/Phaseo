@@ -18,10 +18,10 @@ import {
 	Circle,
 	Image as ImageIcon,
 	MessageSquareText,
-	AudioLines,
-	Mic,
-	Music2,
-	Volume2,
+	Captions,
+	Headphones,
+	Music4,
+	Speech,
 	Video,
 	Workflow,
 	ArrowUpDown,
@@ -39,10 +39,10 @@ import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 const MOD_ICON: Record<string, React.ElementType> = {
 	text: MessageSquareText,
 	image: ImageIcon,
-	audio: AudioLines,
-	audio_stt: Mic,
-	audio_tts: Volume2,
-	audio_music: Music2,
+	audio: Headphones,
+	audio_stt: Captions,
+	audio_tts: Speech,
+	audio_music: Music4,
 	video: Video,
 	tool: Workflow, // "tool use" / function calling
 	rerank: ArrowUpDown,
@@ -68,10 +68,10 @@ const KNOWN_MODALITIES = [
 	"text",
 	"image",
 	"video",
-	"audio_stt",
-	"audio_tts",
-	"audio_music",
 	"audio",
+	"audio_tts",
+	"audio_stt",
+	"audio_music",
 	"rerank",
 	"embeddings",
 ];
@@ -108,8 +108,8 @@ function normalizeModality(value: string): string {
 }
 
 function formatModalityLabel(value: string): string {
-	if (value === "audio_stt") return "STT";
-	if (value === "audio_tts") return "TTS";
+	if (value === "audio_stt") return "Transcription";
+	if (value === "audio_tts") return "Speech";
 	if (value === "audio_music") return "Music";
 	return value
 		.replace(/[_-]+/g, " ")
@@ -173,22 +173,22 @@ const ENDPOINT_META: Record<
 	},
 	"/audio/transcriptions": {
 		label: "Audio Transcriptions",
-		icon: Mic,
+		icon: Captions,
 		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/translations": {
 		label: "Audio Translations",
-		icon: Mic,
+		icon: Captions,
 		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/speech": {
 		label: "Audio Speech",
-		icon: Volume2,
+		icon: Speech,
 		className: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
 	},
 	"/audio/realtime": {
 		label: "Audio Realtime",
-		icon: AudioLines,
+		icon: Headphones,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 	"/video/generations": {
@@ -208,7 +208,7 @@ const ENDPOINT_META: Record<
 	},
 	"/music/generations": {
 		label: "Music Generations",
-		icon: Music2,
+		icon: Music4,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
 };

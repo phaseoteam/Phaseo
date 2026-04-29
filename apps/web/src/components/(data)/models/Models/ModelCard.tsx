@@ -9,13 +9,13 @@ import {
 	Copy,
 	Type,
 	ImageIcon,
-	AudioLines,
-	Mic,
-	Music2,
-	Volume2,
+	Captions,
+	Headphones,
+	Music4,
+	Speech,
 	Video,
 	Binary,
-	Shield,
+	BadgeAlert,
 	FileText,
 	CircleDot,
 	type LucideIcon,
@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { Logo } from "@/components/Logo";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 import { useRouter } from "next/navigation";
 import {
 	Tooltip,
@@ -50,10 +51,10 @@ const PRIMARY_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
 const MODALITY_DISPLAY_ORDER = [
 	"text",
 	"image",
-	"audio_stt",
-	"audio_tts",
-	"audio_music",
 	"audio",
+	"audio_tts",
+	"audio_stt",
+	"audio_music",
 	"video",
 	"rerank",
 	"embedding",
@@ -115,8 +116,8 @@ const providerStatusOrderIndex = new Map<string, number>(
 
 function toTitleLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
-	if (normalized === "audio_stt") return "STT";
-	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_stt") return "Transcription";
+	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -241,14 +242,20 @@ function formatTokenCount(value: number): string {
 	return value.toLocaleString();
 }
 
-function formatPrice(value: number | null | undefined): string | null {
+function formatPrice(
+	value: number | null | undefined,
+	options: { allowZero?: boolean } = {},
+): string | null {
 	if (
 		!Number.isFinite(value) ||
 		value === null ||
 		value === undefined ||
-		value <= 0
+		value < 0
 	) {
 		return null;
+	}
+	if (value === 0) {
+		return options.allowZero ? "$0" : null;
 	}
 	if (value < 0.001) return `$${value.toFixed(4)}`;
 	if (value < 0.01) return `$${value.toFixed(3)}`;
@@ -280,8 +287,9 @@ function normalizeFromPriceUnit(value: string | null | undefined): string | null
 function formatFromPrice(
 	value: number | null | undefined,
 	unit: string | null | undefined,
+	options: { allowZero?: boolean } = {},
 ): string | null {
-	const amount = formatPrice(value);
+	const amount = formatPrice(value, { allowZero: options.allowZero });
 	if (!amount) return null;
 	const normalizedUnit = normalizeFromPriceUnit(unit);
 	return normalizedUnit ? `${amount} per ${normalizedUnit}` : amount;
@@ -291,7 +299,7 @@ function formatPriceWithUnit(
 	value: number | null | undefined,
 	unit: string | null | undefined,
 ): string | null {
-	const amount = formatPrice(value);
+	const amount = formatPrice(value, { allowZero: true });
 	if (!amount) return null;
 	const normalizedUnit = normalizeFromPriceUnit(unit);
 	if (!normalizedUnit) return amount;
@@ -305,16 +313,16 @@ function getModalityIcon(value: string): LucideIcon {
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
 	}
-	if (normalized.includes("moderat")) return Shield;
+	if (normalized.includes("moderat")) return BadgeAlert;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("image")) return ImageIcon;
-	if (normalized.includes("music")) return Music2;
+	if (normalized.includes("music")) return Music4;
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech to text") ||
 		normalized.includes("stt")
 	) {
-		return Mic;
+		return Captions;
 	}
 	if (
 		normalized.includes("text to speech") ||
@@ -322,10 +330,10 @@ function getModalityIcon(value: string): LucideIcon {
 		normalized.includes("speech synth") ||
 		normalized.includes("tts")
 	) {
-		return Volume2;
+		return Speech;
 	}
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("text")) return Type;
 	return CircleDot;
 }
@@ -347,7 +355,16 @@ function ModelCardImpl({
 	const modelSlug = model.model_id;
 	const modelHref = `/models/${modelSlug}`;
 	const router = useRouter();
-	const apiModelId = model.gateway_api_model_ids?.[0] ?? null;
+	const apiModelId =
+		model.gateway_api_model_ids
+			?.map((value) => String(value ?? "").trim())
+			.filter(Boolean)
+			.sort((a, b) => {
+				const aIsFree = a.toLowerCase().endsWith(":free");
+				const bIsFree = b.toLowerCase().endsWith(":free");
+				if (aIsFree !== bIsFree) return aIsFree ? -1 : 1;
+				return a.localeCompare(b);
+			})[0] ?? null;
 	const displayModelId = apiModelId ?? "No API Model ID";
 	const organisationLabel = String(
 		model.organisation_name ?? model.organisation_id ?? "",
@@ -424,10 +441,14 @@ function ModelCardImpl({
 		),
 	);
 	const isTextModel = modalitySet.has("text");
-	const inputPrice = formatPrice(model.lowest_input_price);
-	const outputPrice = formatPrice(model.lowest_output_price);
-	const standardInputPrice = formatPrice(model.lowest_standard_input_price);
-	const standardOutputPrice = formatPrice(model.lowest_standard_output_price);
+	const inputPrice = formatPrice(model.lowest_input_price, { allowZero: true });
+	const outputPrice = formatPrice(model.lowest_output_price, { allowZero: true });
+	const standardInputPrice = formatPrice(model.lowest_standard_input_price, {
+		allowZero: true,
+	});
+	const standardOutputPrice = formatPrice(model.lowest_standard_output_price, {
+		allowZero: true,
+	});
 	const ioPriceSummary =
 		inputPrice && outputPrice
 			? `${inputPrice} / ${outputPrice}`
@@ -448,18 +469,39 @@ function ModelCardImpl({
 	const explicitFromPrice = formatFromPrice(
 		model.lowest_from_price,
 		model.lowest_from_price_unit,
+		{ allowZero: true },
 	);
 	const tokenPriceCandidates = [model.lowest_input_price, model.lowest_output_price]
 		.map((value) => Number(value))
-		.filter((value) => Number.isFinite(value) && value > 0);
+		.filter((value) => Number.isFinite(value) && value >= 0);
+	const standardTokenPriceCandidates = [
+		model.lowest_standard_input_price,
+		model.lowest_standard_output_price,
+	]
+		.map((value) => Number(value))
+		.filter((value) => Number.isFinite(value) && value >= 0);
 	const fallbackFromPrice =
 		tokenPriceCandidates.length > 0
 			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
 			: null;
+	const hasFreeFromPrice = Number(model.lowest_from_price) === 0;
+	const isFreeTextModel =
+		isTextModel &&
+		(
+			((standardTokenPriceCandidates.length > 0 || tokenPriceCandidates.length > 0) &&
+				[...standardTokenPriceCandidates, ...tokenPriceCandidates].every(
+					(value) => value === 0,
+				)) ||
+			hasFreeFromPrice
+		);
 	const fromPriceSummary = explicitFromPrice ?? fallbackFromPrice;
 	const priceSummary =
-		isTextModel && textPriceSummary ? textPriceSummary : fromPriceSummary;
-	const priceLabel = isTextModel && textPriceSummary ? "Pricing" : "From:";
+		isFreeTextModel
+			? "Free"
+			: isTextModel && textPriceSummary
+				? textPriceSummary
+				: fromPriceSummary;
+	const priceLabel = isTextModel ? "Pricing" : "From:";
 	const pricingDetailRows = isTextModel
 		? [
 				{
@@ -753,12 +795,16 @@ function ModelCardImpl({
 									<>
 										{inputModalityDisplay.visible.map((modality) => {
 											const Icon = getModalityIcon(modality);
+											const tone = getModalityTone(modality);
 											return (
 												<span
 													key={`input-${modality}`}
-													className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-foreground"
+													className={cn(
+														"inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+														tone.badgeClassName,
+													)}
 												>
-													<Icon className="h-3 w-3 text-muted-foreground" />
+													<Icon className={cn("h-3 w-3", tone.iconClassName)} />
 													{toTitleLabel(modality)}
 												</span>
 											);
@@ -783,12 +829,16 @@ function ModelCardImpl({
 									<>
 										{outputModalityDisplay.visible.map((modality) => {
 											const Icon = getModalityIcon(modality);
+											const tone = getModalityTone(modality);
 											return (
 												<span
 													key={`output-${modality}`}
-													className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-foreground"
+													className={cn(
+														"inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+														tone.badgeClassName,
+													)}
 												>
-													<Icon className="h-3 w-3 text-muted-foreground" />
+													<Icon className={cn("h-3 w-3", tone.iconClassName)} />
 													{toTitleLabel(modality)}
 												</span>
 											);

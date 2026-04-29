@@ -15,15 +15,15 @@ import {
 	ArrowDownCircle,
 	ArrowUpCircle,
 	ArrowUpDown,
-	AudioLines,
+	Captions,
 	CircleDot,
 	FileText,
-	Mic,
-	Music2,
+	Headphones,
+	Music4,
 	Route,
 	Sparkles,
+	Speech,
 	Text as TextIcon,
-	Volume2,
 	ImageIcon,
 	Video,
 	CalendarDays,
@@ -51,6 +51,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 import { featureLabels } from "@/lib/config/featureLabels";
 import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
@@ -64,10 +65,10 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"text",
 	"image",
 	"video",
-	"audio_stt",
-	"audio_tts",
-	"audio_music",
 	"audio",
+	"audio_tts",
+	"audio_stt",
+	"audio_music",
 	"file",
 	"moderations",
 	"rerank",
@@ -196,8 +197,8 @@ function toggleInList(current: string[], value: string): string[] {
 
 function toTitleCase(value: string): string {
 	const normalized = String(value ?? "").trim().toLowerCase();
-	if (normalized === "audio_stt") return "STT";
-	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_stt") return "Transcription";
+	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -230,13 +231,13 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return Music2;
+	if (normalized.includes("music")) return Music4;
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech to text") ||
 		normalized.includes("stt")
 	) {
-		return Mic;
+		return Captions;
 	}
 	if (
 		normalized.includes("text to speech") ||
@@ -244,9 +245,9 @@ function getModalityIcon(modality: string): LucideIcon {
 		normalized.includes("speech synth") ||
 		normalized.includes("tts")
 	) {
-		return Volume2;
+		return Speech;
 	}
-	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;
 	return CircleDot;
@@ -258,6 +259,7 @@ function FilterCheckboxList({
 	onToggle,
 	labelForValue,
 	iconForValue,
+	toneForValue,
 	collapsedLimit,
 }: {
 	options: OptionCount[];
@@ -265,6 +267,7 @@ function FilterCheckboxList({
 	onToggle: (value: string) => void;
 	labelForValue?: (value: string) => string;
 	iconForValue?: (value: string) => LucideIcon;
+	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
 	const [expanded, setExpanded] = useState(false);
@@ -289,6 +292,7 @@ function FilterCheckboxList({
 						? labelForValue(option.value)
 						: toTitleCase(option.value);
 					const Icon = iconForValue?.(option.value);
+					const tone = toneForValue?.(option.value);
 
 					return (
 						<button
@@ -296,28 +300,40 @@ function FilterCheckboxList({
 							type="button"
 							onClick={() => onToggle(option.value)}
 							className={cn(
-								"flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
+								"group flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
 								checked
-									? "bg-primary/5 text-primary/90 hover:bg-primary/10"
+									? "bg-muted/45 text-foreground hover:bg-muted/55"
 									: "hover:bg-muted/50",
 							)}
 							aria-pressed={checked}
 						>
 							<span className="flex items-center gap-2 min-w-0">
 								{Icon ? (
-									<Icon
-										className={cn(
-											"h-3.5 w-3.5 shrink-0",
-											checked ? "text-primary" : "text-muted-foreground",
-										)}
-									/>
+									tone ? (
+										<span
+											className={cn(
+												"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground transition-colors",
+												tone.sidebarIconHoverClassName,
+												checked && tone.sidebarIconSelectedClassName,
+											)}
+										>
+											<Icon className="h-3 w-3" />
+										</span>
+									) : (
+										<Icon
+											className={cn(
+												"h-3.5 w-3.5 shrink-0",
+												checked ? "text-primary" : "text-muted-foreground",
+											)}
+										/>
+									)
 								) : null}
 								<span className="text-sm truncate">{label}</span>
 							</span>
 							<span
 								className={cn(
 									"inline-flex min-w-5 shrink-0 justify-center text-[11px] tabular-nums",
-									checked ? "text-primary" : "text-muted-foreground",
+									checked ? "text-foreground" : "text-muted-foreground",
 								)}
 							>
 								{option.count}
@@ -834,6 +850,7 @@ export default function ModelsTableDisplay({
 						}
 						iconForValue={getModalityIcon}
 						labelForValue={toTitleCase}
+						toneForValue={getModalityTone}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -854,6 +871,7 @@ export default function ModelsTableDisplay({
 						}
 						iconForValue={getModalityIcon}
 						labelForValue={toTitleCase}
+						toneForValue={getModalityTone}
 					/>
 				</AccordionContent>
 			</AccordionItem>

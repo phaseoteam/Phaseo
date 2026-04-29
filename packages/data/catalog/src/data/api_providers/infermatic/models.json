@@ -740,7 +740,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": "audio",
+    "output_modalities": "audio_tts",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",

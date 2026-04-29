@@ -23,19 +23,20 @@ import {
 	ArrowDownCircle,
 	ArrowUpCircle,
 	ArrowUpDown,
+	BadgeAlert,
 	ChevronUp,
-	AudioLines,
 	Binary,
+	Captions,
 	CircleDot,
 	Database,
 	FileText,
-	Mic,
-	Music2,
+	Headphones,
+	Music4,
 	Route,
 	Sparkles,
+	Speech,
 	Text as TextIcon,
 	Type as TypeIcon,
-	Volume2,
 	ImageIcon,
 	Video,
 	CalendarDays,
@@ -75,8 +76,16 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+} from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
@@ -135,6 +144,7 @@ const CONTEXT_LENGTH_STOPS = [
 
 const SCROLL_TOP_VISIBILITY_THRESHOLD = 320;
 const SCROLL_TOP_ANIMATION_DURATION_MS = 700;
+const MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD = 240;
 
 function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
@@ -333,8 +343,8 @@ function normalizedModalitySet(
 
 function toTitleCase(value: string): string {
 	const normalized = String(value ?? "").trim().toLowerCase();
-	if (normalized === "audio_stt") return "STT";
-	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_stt") return "Transcription";
+	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -356,15 +366,16 @@ function getModalityIcon(modality: string): LucideIcon {
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
 	}
+	if (normalized.includes("moderat")) return BadgeAlert;
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return Music2;
+	if (normalized.includes("music")) return Music4;
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech to text") ||
 		normalized.includes("stt")
 	) {
-		return Mic;
+		return Captions;
 	}
 	if (
 		normalized.includes("text to speech") ||
@@ -372,9 +383,9 @@ function getModalityIcon(modality: string): LucideIcon {
 		normalized.includes("speech synth") ||
 		normalized.includes("tts")
 	) {
-		return Volume2;
+		return Speech;
 	}
-	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;
 	return CircleDot;
@@ -386,6 +397,7 @@ function FilterCheckboxList({
 	onToggle,
 	labelForValue,
 	iconForValue,
+	toneForValue,
 	collapsedLimit,
 }: {
 	options: OptionCount[];
@@ -393,6 +405,7 @@ function FilterCheckboxList({
 	onToggle: (value: string) => void;
 	labelForValue?: (value: string) => string;
 	iconForValue?: (value: string) => LucideIcon;
+	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
 	const [expanded, setExpanded] = useState(false);
@@ -416,6 +429,7 @@ function FilterCheckboxList({
 						? labelForValue(option.value)
 						: toTitleCase(option.value);
 					const Icon = iconForValue?.(option.value);
+					const tone = toneForValue?.(option.value);
 
 					return (
 						<button
@@ -423,28 +437,40 @@ function FilterCheckboxList({
 							type="button"
 							onClick={() => onToggle(option.value)}
 							className={cn(
-								"flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
+								"group flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
 								checked
-									? "bg-primary/5 text-primary/90 hover:bg-primary/10"
+									? "bg-muted/45 text-foreground hover:bg-muted/55"
 									: "hover:bg-muted/50",
 							)}
 							aria-pressed={checked}
 						>
 							<span className="flex items-center gap-2 min-w-0">
 								{Icon ? (
-									<Icon
-										className={cn(
-											"h-3.5 w-3.5 shrink-0",
-											checked ? "text-primary" : "text-muted-foreground",
-										)}
-									/>
+									tone ? (
+										<span
+											className={cn(
+												"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground transition-colors",
+												tone.sidebarIconHoverClassName,
+												checked && tone.sidebarIconSelectedClassName,
+											)}
+										>
+											<Icon className="h-3 w-3" />
+										</span>
+									) : (
+										<Icon
+											className={cn(
+												"h-3.5 w-3.5 shrink-0",
+												checked ? "text-primary" : "text-muted-foreground",
+											)}
+										/>
+									)
 								) : null}
 								<span className="text-sm truncate">{label}</span>
 							</span>
 							<span
 								className={cn(
 									"inline-flex min-w-5 shrink-0 justify-center text-[11px] tabular-nums",
-									checked ? "text-primary" : "text-muted-foreground",
+									checked ? "text-foreground" : "text-muted-foreground",
 								)}
 							>
 								{option.count}
@@ -565,13 +591,31 @@ export default function ModelsDisplay({
 	const [sort, setSort] = useQueryState("sort", sortParser);
 	const selectedSort = normalizeSortOption(sort);
 	const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+	const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
+	const [isMobileViewport, setIsMobileViewport] = useState(false);
 	const scrollTopAnimationFrameRef = useRef<number | null>(null);
 
 	useEffect(() => {
+		const mediaQuery = window.matchMedia("(max-width: 639px)");
+		const updateViewport = () => {
+			setIsMobileViewport(mediaQuery.matches);
+		};
+
+		updateViewport();
+		mediaQuery.addEventListener("change", updateViewport);
+		return () => mediaQuery.removeEventListener("change", updateViewport);
+	}, []);
+
+	useEffect(() => {
 		const updateVisibility = () => {
-			const shouldShow = window.scrollY > SCROLL_TOP_VISIBILITY_THRESHOLD;
+			const scrollY = window.scrollY;
+			const shouldShow = scrollY > SCROLL_TOP_VISIBILITY_THRESHOLD;
+			const shouldShowMobileFab = scrollY > MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD;
 			setShowScrollTopButton((current) =>
 				current === shouldShow ? current : shouldShow,
+			);
+			setShowMobileFilterFab((current) =>
+				current === shouldShowMobileFab ? current : shouldShowMobileFab,
 			);
 		};
 
@@ -1031,6 +1075,7 @@ export default function ModelsDisplay({
 						}
 						iconForValue={getModalityIcon}
 						labelForValue={toTitleCase}
+						toneForValue={getModalityTone}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1053,6 +1098,7 @@ export default function ModelsDisplay({
 						}
 						iconForValue={getModalityIcon}
 						labelForValue={toTitleCase}
+						toneForValue={getModalityTone}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1367,7 +1413,40 @@ export default function ModelsDisplay({
 				</div>
 			</section>
 
-			<Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+			{isMobileViewport ? (
+				<Drawer open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+					<DrawerContent className="sm:hidden h-[85dvh] max-h-[85dvh] overflow-hidden gap-0 p-0">
+						<DrawerHeader className="border-b border-border/70 px-4 py-3 text-left">
+							<div className="flex items-start justify-between gap-3 pr-4">
+								<div>
+									<DrawerTitle>Filters</DrawerTitle>
+									<DrawerDescription>
+										Refine the models list.
+									</DrawerDescription>
+								</div>
+								{activeFilterCount > 0 ? (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="h-8 px-2"
+										onClick={resetFilters}
+									>
+										Reset
+									</Button>
+								) : null}
+							</div>
+						</DrawerHeader>
+						<ScrollArea
+							className="min-h-0 h-full flex-1"
+							viewportClassName="overscroll-y-contain"
+						>
+							<div className="space-y-4 px-4 py-2 pb-24">{filtersContent}</div>
+						</ScrollArea>
+					</DrawerContent>
+				</Drawer>
+			) : (
+				<Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
 				<SheetContent
 					side="right"
 					className="w-[86vw] max-w-sm gap-0 p-0 lg:hidden"
@@ -1397,7 +1476,28 @@ export default function ModelsDisplay({
 						<div className="space-y-4 pb-6">{filtersContent}</div>
 					</ScrollArea>
 				</SheetContent>
-			</Sheet>
+				</Sheet>
+			)}
+
+			<Button
+				type="button"
+				size="sm"
+				onClick={() => setMobileFiltersOpen(true)}
+				className={cn(
+					"fixed bottom-6 left-4 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-border/70 bg-background/95 px-4 text-foreground shadow-sm backdrop-blur transition-all duration-200 active:scale-95 sm:hidden",
+					showMobileFilterFab && !mobileFiltersOpen
+						? "translate-y-0 opacity-100"
+						: "pointer-events-none translate-y-3 opacity-0",
+				)}
+			>
+				<SlidersHorizontal className="h-4 w-4" />
+				<span>Filters</span>
+				{activeFilterCount > 0 ? (
+					<span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
+						{activeFilterCount}
+					</span>
+				) : null}
+			</Button>
 
 			<button
 				type="button"

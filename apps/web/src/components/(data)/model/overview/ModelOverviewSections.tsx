@@ -4,14 +4,14 @@ import {
 	Activity,
 	AlertTriangle,
 	AppWindow,
-	AudioLines,
+	BadgeAlert,
 	Braces,
+	Captions,
 	FileText,
+	Headphones,
 	ImageIcon,
-	Mic,
-	Music2,
-	Shield,
-	Volume2,
+	Music4,
+	Speech,
 	Video,
 } from "lucide-react";
 import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
@@ -54,6 +54,8 @@ import {
 } from "@/components/ui/empty";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
+import { cn } from "@/lib/utils";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 
 type ModelOverviewSectionsProps = {
 	modelId: string;
@@ -169,18 +171,18 @@ function isProviderModelActiveNow(
 const KNOWN_MODALITY_META = [
 	{ key: "text", label: "Text", icon: FileText },
 	{ key: "image", label: "Image", icon: ImageIcon },
-	{ key: "audio_stt", label: "STT", icon: Mic },
-	{ key: "audio_tts", label: "TTS", icon: Volume2 },
-	{ key: "audio_music", label: "Music", icon: Music2 },
-	{ key: "audio", label: "Audio", icon: AudioLines },
 	{ key: "video", label: "Video", icon: Video },
+	{ key: "audio", label: "Audio", icon: Headphones },
+	{ key: "audio_tts", label: "Speech", icon: Speech },
+	{ key: "audio_stt", label: "Transcription", icon: Captions },
+	{ key: "audio_music", label: "Music", icon: Music4 },
 	{ key: "embeddings", label: "Embeddings", icon: Braces },
-	{ key: "moderations", label: "Moderation", icon: Shield },
+	{ key: "moderations", label: "Moderation", icon: BadgeAlert },
 ];
 
 function formatTypeLabel(value: string): string {
-	if (value === "audio_stt") return "STT";
-	if (value === "audio_tts") return "TTS";
+	if (value === "audio_stt") return "Transcription";
+	if (value === "audio_tts") return "Speech";
 	if (value === "audio_music") return "Music";
 	return value
 		.split(/[_\s-]+/)
@@ -605,31 +607,36 @@ export async function ModelAboutSection({
 			<div className="rounded-md border border-border/70 bg-muted/10 px-3 py-3">
 				<p className="text-xs text-muted-foreground">{kind}</p>
 				<div className="mt-2 flex flex-wrap gap-2">
-					{KNOWN_MODALITY_META.map((modality) => {
-						const isActive = activeSet.has(modality.key);
+					{KNOWN_MODALITY_META.filter((modality) => activeSet.has(modality.key)).map((modality) => {
 						const Icon = modality.icon;
+						const tone = getModalityTone(modality.key);
 						return (
 							<span
 								key={`${kind}-${modality.key}`}
-								className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${
-									isActive
-										? "border-primary/30 bg-primary/10 text-foreground"
-										: "border-border/70 bg-background text-muted-foreground"
-								}`}
+								className={cn(
+									"inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium",
+									tone.badgeClassName,
+								)}
 							>
-								<Icon className="h-3.5 w-3.5" />
+								<Icon className={cn("h-3.5 w-3.5", tone.iconClassName)} />
 								{modality.label}
 							</span>
 						);
 					})}
-					{extraTypes.map((type) => (
-						<span
-							key={`${kind}-extra-${type}`}
-							className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-medium"
-						>
-							{formatTypeLabel(type)}
-						</span>
-					))}
+					{extraTypes.map((type) => {
+						const tone = getModalityTone(type);
+						return (
+							<span
+								key={`${kind}-extra-${type}`}
+								className={cn(
+									"inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium",
+									tone.badgeClassName,
+								)}
+							>
+								{formatTypeLabel(type)}
+							</span>
+						);
+					})}
 				</div>
 				{hasAny ? null : (
 					<p className="mt-2 text-xs text-muted-foreground">
@@ -694,27 +701,38 @@ export async function ModelCreatorModelsSection({
 
 	return (
 		<Section id="other-models">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">
-					Other models from{" "}
-					<Link
-						href={`/organisations/${model.organisation_id}`}
-						className="group inline-flex items-center no-underline"
-					>
-						<span className="underline decoration-transparent group-hover:decoration-current">
-							{creatorName}
-						</span>
-					</Link>
-				</h2>
-			</div>
 			{otherModels.length > 0 ? (
-				<div className="relative">
-					<Carousel opts={{ align: "start", loop: otherModels.length > 4 }}>
+				<Carousel
+					className="min-w-0"
+					opts={{ align: "start", loop: otherModels.length > 4 }}
+				>
+					<div className="mb-3 flex items-start justify-between gap-3">
+						<div className="min-w-0 space-y-1">
+							<h2 className="text-xl font-semibold tracking-tight">
+								Other models from{" "}
+								<Link
+									href={`/organisations/${model.organisation_id}`}
+									className="group inline-flex items-center no-underline"
+								>
+									<span className="underline decoration-transparent group-hover:decoration-current">
+										{creatorName}
+									</span>
+								</Link>
+							</h2>
+						</div>
+						{otherModels.length > 1 ? (
+							<div className="hidden shrink-0 items-center gap-2 sm:flex">
+								<CarouselPrevious className="static size-8 translate-x-0 translate-y-0 bg-background shadow-sm" />
+								<CarouselNext className="static size-8 translate-x-0 translate-y-0 bg-background shadow-sm" />
+							</div>
+						) : null}
+					</div>
+					<div className="min-w-0 overflow-hidden">
 						<CarouselContent>
 							{otherModels.map((creatorModel) => (
 								<CarouselItem
 									key={creatorModel.model_id}
-									className="sm:basis-1/2 lg:basis-1/4"
+									className="sm:basis-1/2 xl:basis-1/3 2xl:basis-1/4"
 								>
 									<Link
 										href={`/models/${creatorModel.model_id}`}
@@ -742,14 +760,31 @@ export async function ModelCreatorModelsSection({
 								</CarouselItem>
 							))}
 						</CarouselContent>
-						<CarouselPrevious className="left-0 z-10 hidden -translate-x-[calc(100%+0.5rem)] bg-background shadow-sm sm:flex" />
-						<CarouselNext className="right-0 z-10 hidden translate-x-[calc(100%+0.5rem)] bg-background shadow-sm sm:flex" />
-					</Carousel>
-				</div>
+					</div>
+					{otherModels.length > 1 ? (
+						<div className="mt-3 flex items-center justify-end gap-2 sm:hidden">
+							<CarouselPrevious className="static size-8 translate-x-0 translate-y-0 bg-background shadow-sm" />
+							<CarouselNext className="static size-8 translate-x-0 translate-y-0 bg-background shadow-sm" />
+						</div>
+					) : null}
+				</Carousel>
 			) : (
-				<p className="text-sm text-muted-foreground">
-					No additional models from this creator are available yet.
-				</p>
+				<div className="space-y-1">
+					<h2 className="text-xl font-semibold tracking-tight">
+						Other models from{" "}
+						<Link
+							href={`/organisations/${model.organisation_id}`}
+							className="group inline-flex items-center no-underline"
+						>
+							<span className="underline decoration-transparent group-hover:decoration-current">
+								{creatorName}
+							</span>
+						</Link>
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						No additional models from this creator are available yet.
+					</p>
+				</div>
 			)}
 		</Section>
 	);
@@ -811,7 +846,7 @@ function BenchmarksSectionSkeleton() {
 					Headline benchmark standings and comparison context.
 				</p>
 			</div>
-			<div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 				{Array.from({ length: 3 }).map((_, index) => (
 					<div key={index} className="space-y-3 py-1">
 						<Skeleton className="h-5 w-2/3" />

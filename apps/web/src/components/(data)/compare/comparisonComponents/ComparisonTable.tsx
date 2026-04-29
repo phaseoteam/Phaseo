@@ -60,8 +60,8 @@ function normalizeTypeLabel(value: string): string {
 	const v = value.trim().toLowerCase();
 	if (v === "text") return "Text";
 	if (v === "image") return "Vision";
-	if (v === "audio_stt") return "STT";
-	if (v === "audio_tts") return "TTS";
+	if (v === "audio_stt") return "Transcription";
+	if (v === "audio_tts") return "Speech";
 	if (v === "audio_music") return "Music";
 	if (v === "audio") return "Audio";
 	if (v === "video") return "Video";
