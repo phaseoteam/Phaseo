@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": null,
   "input_types": "text,image",
-  "output_types": "text,audio",
+  "output_types": "text,audio_music",
   "api_model_id": "google/lyria-3-pro-preview",
   "links": [],
   "details": [],

@@ -9,13 +9,13 @@ import {
 	Copy,
 	Type,
 	ImageIcon,
-	AudioLines,
-	Mic,
-	Music2,
-	Volume2,
+	Captions,
+	Headphones,
+	Music4,
+	Speech,
 	Video,
 	Binary,
-	Shield,
+	BadgeAlert,
 	FileText,
 	CircleDot,
 	type LucideIcon,
@@ -50,10 +50,10 @@ const PRIMARY_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
 const MODALITY_DISPLAY_ORDER = [
 	"text",
 	"image",
-	"audio_stt",
-	"audio_tts",
-	"audio_music",
 	"audio",
+	"audio_tts",
+	"audio_stt",
+	"audio_music",
 	"video",
 	"rerank",
 	"embedding",
@@ -115,8 +115,8 @@ const providerStatusOrderIndex = new Map<string, number>(
 
 function toTitleLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
-	if (normalized === "audio_stt") return "STT";
-	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_stt") return "Transcription";
+	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -305,16 +305,16 @@ function getModalityIcon(value: string): LucideIcon {
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
 	}
-	if (normalized.includes("moderat")) return Shield;
+	if (normalized.includes("moderat")) return BadgeAlert;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("image")) return ImageIcon;
-	if (normalized.includes("music")) return Music2;
+	if (normalized.includes("music")) return Music4;
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech to text") ||
 		normalized.includes("stt")
 	) {
-		return Mic;
+		return Captions;
 	}
 	if (
 		normalized.includes("text to speech") ||
@@ -322,10 +322,10 @@ function getModalityIcon(value: string): LucideIcon {
 		normalized.includes("speech synth") ||
 		normalized.includes("tts")
 	) {
-		return Volume2;
+		return Speech;
 	}
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("text")) return Type;
 	return CircleDot;
 }

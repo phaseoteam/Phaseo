@@ -4,14 +4,14 @@ import {
 	Activity,
 	AlertTriangle,
 	AppWindow,
-	AudioLines,
+	BadgeAlert,
 	Braces,
+	Captions,
 	FileText,
+	Headphones,
 	ImageIcon,
-	Mic,
-	Music2,
-	Shield,
-	Volume2,
+	Music4,
+	Speech,
 	Video,
 } from "lucide-react";
 import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
@@ -169,18 +169,18 @@ function isProviderModelActiveNow(
 const KNOWN_MODALITY_META = [
 	{ key: "text", label: "Text", icon: FileText },
 	{ key: "image", label: "Image", icon: ImageIcon },
-	{ key: "audio_stt", label: "STT", icon: Mic },
-	{ key: "audio_tts", label: "TTS", icon: Volume2 },
-	{ key: "audio_music", label: "Music", icon: Music2 },
-	{ key: "audio", label: "Audio", icon: AudioLines },
 	{ key: "video", label: "Video", icon: Video },
+	{ key: "audio", label: "Audio", icon: Headphones },
+	{ key: "audio_tts", label: "Speech", icon: Speech },
+	{ key: "audio_stt", label: "Transcription", icon: Captions },
+	{ key: "audio_music", label: "Music", icon: Music4 },
 	{ key: "embeddings", label: "Embeddings", icon: Braces },
-	{ key: "moderations", label: "Moderation", icon: Shield },
+	{ key: "moderations", label: "Moderation", icon: BadgeAlert },
 ];
 
 function formatTypeLabel(value: string): string {
-	if (value === "audio_stt") return "STT";
-	if (value === "audio_tts") return "TTS";
+	if (value === "audio_stt") return "Transcription";
+	if (value === "audio_tts") return "Speech";
 	if (value === "audio_music") return "Music";
 	return value
 		.split(/[_\s-]+/)

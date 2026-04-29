@@ -211,7 +211,7 @@ function truncateTitle(value: string, max = 72): string {
 }
 
 function modeLabel(mode: AudioMode): string {
-	if (mode === "speech") return "TTS";
+	if (mode === "speech") return "Speech";
 	if (mode === "music") return "Music";
 	if (mode === "transcription") return "Transcription";
 	return "Translation";
@@ -1589,7 +1589,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const existingTitle = activeConversation?.title?.trim() ?? "";
 		const candidateTitle = promptText
 			? truncateTitle(promptText)
-			: `${targetMode === "music" ? "Music" : "TTS"} ${new Date().toLocaleDateString()}`;
+			: `${targetMode === "music" ? "Music" : "Speech"} ${new Date().toLocaleDateString()}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -2448,7 +2448,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 									}
 								}}
 								rows={3}
-								placeholder="Type text for TTS conversion..."
+								placeholder="Type text to generate speech..."
 								className="min-h-[72px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 							/>
 						) : mode === "music" ? (

@@ -23,19 +23,20 @@ import {
 	ArrowDownCircle,
 	ArrowUpCircle,
 	ArrowUpDown,
+	BadgeAlert,
 	ChevronUp,
-	AudioLines,
 	Binary,
+	Captions,
 	CircleDot,
 	Database,
 	FileText,
-	Mic,
-	Music2,
+	Headphones,
+	Music4,
 	Route,
 	Sparkles,
+	Speech,
 	Text as TextIcon,
 	Type as TypeIcon,
-	Volume2,
 	ImageIcon,
 	Video,
 	CalendarDays,
@@ -333,8 +334,8 @@ function normalizedModalitySet(
 
 function toTitleCase(value: string): string {
 	const normalized = String(value ?? "").trim().toLowerCase();
-	if (normalized === "audio_stt") return "STT";
-	if (normalized === "audio_tts") return "TTS";
+	if (normalized === "audio_stt") return "Transcription";
+	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -356,15 +357,16 @@ function getModalityIcon(modality: string): LucideIcon {
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
 	}
+	if (normalized.includes("moderat")) return BadgeAlert;
 	if (normalized.includes("image")) return ImageIcon;
 	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return Music2;
+	if (normalized.includes("music")) return Music4;
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech to text") ||
 		normalized.includes("stt")
 	) {
-		return Mic;
+		return Captions;
 	}
 	if (
 		normalized.includes("text to speech") ||
@@ -372,9 +374,9 @@ function getModalityIcon(modality: string): LucideIcon {
 		normalized.includes("speech synth") ||
 		normalized.includes("tts")
 	) {
-		return Volume2;
+		return Speech;
 	}
-	if (normalized.includes("audio")) return AudioLines;
+	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
 	if (normalized.includes("text")) return TextIcon;
 	return CircleDot;
