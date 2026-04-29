@@ -6,7 +6,7 @@
   "capability_id": "text.generate",
   "rules": [
     {
-      "meter": "input_text_tokens",
+      "meter": "input_tokens",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 0.06,
@@ -17,7 +17,7 @@
       "priority": 100
     },
     {
-      "meter": "output_text_tokens",
+      "meter": "output_tokens",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 0.24,

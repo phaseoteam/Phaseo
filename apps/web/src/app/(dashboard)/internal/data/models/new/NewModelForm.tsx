@@ -137,7 +137,9 @@ const PARAMETER_FLAGS = [
 ];
 
 const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
+	input_tokens: { unit: "token", unit_size: 1_000_000 },
 	input_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	output_tokens: { unit: "token", unit_size: 1_000_000 },
 	output_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	image_pixels: { unit: "pixel", unit_size: 1_000_000 },
 	video_pixels: { unit: "pixel", unit_size: 1_000_000 },

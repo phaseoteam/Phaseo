@@ -192,8 +192,8 @@ function inferModality(inputTypes: string[], outputTypes: string[]): string {
 function toCompatibilityPricing(pricing: PricingSummary): CompatibilityPricing {
     const meters = pricing.meters;
     return {
-        prompt: meterToUnitPrice(meters.input_text_tokens),
-        completion: meterToUnitPrice(meters.output_text_tokens),
+        prompt: meterToUnitPrice(meters.input_tokens ?? meters.input_text_tokens),
+        completion: meterToUnitPrice(meters.output_tokens ?? meters.output_text_tokens),
         request: null,
         image: meterToUnitPrice(
             meters.output_image ?? meters.input_image ?? meters.input_image_tokens ?? meters.output_image_tokens

@@ -7,7 +7,9 @@ import { matchesConditions, shallowMerge, evaluateConditions } from "./condition
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult } from "./types";
 
 const KNOWN_METERS = new Set<string>([
+    "input_tokens",
     "input_text_tokens", "input_image_tokens", "input_audio_tokens", "input_video_tokens",
+    "output_tokens",
     "output_text_tokens", "output_image_tokens", "output_audio_tokens", "output_video_tokens",
     "output_image", "output_video_seconds",
     "cached_write_text_tokens", "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",

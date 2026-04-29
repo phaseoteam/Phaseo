@@ -6,6 +6,20 @@ import { PRICING_METER_VALUES } from '../../../../../apps/web/src/lib/pricing/me
 const DATA_ROOT = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 
 const KNOWN_METERS = new Set<string>(PRICING_METER_VALUES);
+const INPUT_AGGREGATE_METERS = new Set<string>(['input_tokens']);
+const INPUT_DETAILED_METERS = new Set<string>([
+    'input_text_tokens',
+    'input_image_tokens',
+    'input_audio_tokens',
+    'input_video_tokens',
+]);
+const OUTPUT_AGGREGATE_METERS = new Set<string>(['output_tokens']);
+const OUTPUT_DETAILED_METERS = new Set<string>([
+    'output_text_tokens',
+    'output_image_tokens',
+    'output_audio_tokens',
+    'output_video_tokens',
+]);
 
 const ALLOWED_BILL_MODES = new Set<string>(['all', 'over', 'between']);
 
@@ -30,6 +44,7 @@ export function isMajorError(msg: string): boolean {
         /pricing.*active.*no rules/i,
         /pricing.*invalid key/i,
         /pricing.*unknown meter/i,
+        /pricing.*mixed aggregate and detailed.*meters/i,
         /pricing.*non-positive price/i,
         /pricing.*unit_size.*invalid/i,
         /pricing.*bill mode.*invalid/i,
@@ -72,12 +87,14 @@ export function checkPricingEntrySafety(p: any): string[] {
     }
 
     if (Array.isArray(p.rules)) {
+        const metersInEntry = new Set<string>();
         for (const r of p.rules) {
             const meter = r?.meter;
             if (typeof meter !== 'string' || !KNOWN_METERS.has(meter)) {
                 errs.push(`pricing: unknown meter '${meter}' for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`);
                 continue;
             }
+            metersInEntry.add(meter);
             const unit_size = parseNumericValue(r?.unit_size);
             if (unit_size === undefined || unit_size <= 0) {
                 errs.push(
@@ -92,9 +109,25 @@ export function checkPricingEntrySafety(p: any): string[] {
             }
             if (r?.bill && typeof r.bill.mode === 'string' && !ALLOWED_BILL_MODES.has(r.bill.mode)) {
                 errs.push(
-                    `pricing: bill mode invalid ('${r.bill.mode}') for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+                    `pricing: bill mode invalid ('${r.bill.mode}') for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}` 
                 );
             }
+        }
+
+        const hasAggregateInput = [...INPUT_AGGREGATE_METERS].some((meter) => metersInEntry.has(meter));
+        const hasDetailedInput = [...INPUT_DETAILED_METERS].some((meter) => metersInEntry.has(meter));
+        if (hasAggregateInput && hasDetailedInput) {
+            errs.push(
+                `pricing: mixed aggregate and detailed input meters for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+            );
+        }
+
+        const hasAggregateOutput = [...OUTPUT_AGGREGATE_METERS].some((meter) => metersInEntry.has(meter));
+        const hasDetailedOutput = [...OUTPUT_DETAILED_METERS].some((meter) => metersInEntry.has(meter));
+        if (hasAggregateOutput && hasDetailedOutput) {
+            errs.push(
+                `pricing: mixed aggregate and detailed output meters for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+            );
         }
 
         const findPrice = (m: string) => {

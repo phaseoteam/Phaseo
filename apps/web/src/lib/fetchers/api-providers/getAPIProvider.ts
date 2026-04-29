@@ -128,7 +128,9 @@ function toBasicUnitLabel(rule: PricingRuleRow): string | null {
 function toMeterLabel(meter: string): string {
 	const normalized = meter.trim().toLowerCase();
 	const specificLabels: Record<string, string> = {
+		input_tokens: "Input Tokens",
 		input_text_tokens: "Input Text Tokens",
+		output_tokens: "Output Tokens",
 		output_text_tokens: "Output Text Tokens",
 		cached_read_text_tokens: "Cached Read Text Tokens",
 		cached_write_text_tokens: "Cached Write Text Tokens",

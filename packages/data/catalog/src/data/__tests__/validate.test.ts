@@ -45,6 +45,22 @@ describe('pricing safety checks', () => {
         expect(errs.some((e) => /unknown meter/.test(e))).toBe(true);
     });
 
+    test('mixed aggregate and detailed input meters -> error', () => {
+        const bad = {
+            key: 'p:m:e',
+            api_provider_id: 'p',
+            model_id: 'm',
+            endpoint: 'e',
+            is_active_gateway: false,
+            rules: [
+                { meter: 'input_tokens', unit_size: 1, price_usd_per_unit: 0.0025, bill: { mode: 'all' } },
+                { meter: 'input_text_tokens', unit_size: 1, price_usd_per_unit: 0.0025, bill: { mode: 'all' } },
+            ],
+        };
+        const errs = checkPricingEntrySafety(bad);
+        expect(errs.some((e) => /mixed aggregate and detailed input meters/.test(e))).toBe(true);
+    });
+
     test('heuristic: output price should not be lower than input price', () => {
         const bad = {
             key: 'p:m:e',
