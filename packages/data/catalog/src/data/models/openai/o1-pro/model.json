@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
-      "rank": 15
+      "rank": 40
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -39,7 +39,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 28
+      "rank": 59
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 28
+      "rank": 80
     },
     {
       "benchmark_id": "codeforces",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
-      "rank": 8
+      "rank": 14
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
-      "rank": 40
+      "rank": 59
     },
     {
       "benchmark_id": "nyt-connections",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
-      "rank": 36
+      "rank": 65
     }
   ]
 }

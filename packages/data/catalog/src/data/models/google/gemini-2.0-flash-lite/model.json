@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "egoschema",
@@ -64,7 +64,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 6
+      "rank": 27
     },
     {
       "benchmark_id": "facts-grounding",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 4
+      "rank": 14
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 5
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 83
+      "rank": 178
     },
     {
       "benchmark_id": "hiddenmath",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 7
+      "rank": 19
     },
     {
       "benchmark_id": "math",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://developers.googleblog.com/en/gemini-2-family-expands/",
-      "rank": 55
+      "rank": 106
     },
     {
       "benchmark_id": "mmmu",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 28
+      "rank": 76
     },
     {
       "benchmark_id": "mrcr-1m",
@@ -144,7 +144,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 28
+      "rank": 70
     }
   ]
 }

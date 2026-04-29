@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-4.0-tiny-preview",
-      "rank": 3
+      "rank": 20
     },
     {
       "benchmark_id": "arena-hard",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-4.0-tiny-preview",
-      "rank": 19
+      "rank": 49
     },
     {
       "benchmark_id": "attaq",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 2
+      "rank": 15
     },
     {
       "benchmark_id": "big-bench-hard",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 7
+      "rank": 26
     },
     {
       "benchmark_id": "drop",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 13
+      "rank": 42
     },
     {
       "benchmark_id": "gsm8k",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 18
+      "rank": 54
     },
     {
       "benchmark_id": "humaneval",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 21
+      "rank": 56
     },
     {
       "benchmark_id": "humaneval+",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 5
+      "rank": 22
     },
     {
       "benchmark_id": "if-eval",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 42
+      "rank": 91
     },
     {
       "benchmark_id": "mmlu",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 55
+      "rank": 139
     },
     {
       "benchmark_id": "popqa",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 2
+      "rank": 15
     },
     {
       "benchmark_id": "truthfulqa",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 7
+      "rank": 21
     }
   ]
 }

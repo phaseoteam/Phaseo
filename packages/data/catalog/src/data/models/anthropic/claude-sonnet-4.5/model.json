@@ -39,7 +39,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://matharena.ai/?comp=apex--apex_2025",
-      "rank": 4
+      "rank": 7
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://andonlabs.com/evals/vending-bench-2",
-      "rank": 6
+      "rank": 8
     }
   ]
 }

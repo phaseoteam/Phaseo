@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 40
+      "rank": 82
     },
     {
       "benchmark_id": "aime-2025",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 70
+      "rank": 171
     },
     {
       "benchmark_id": "arc",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 3
+      "rank": 11
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 4
+      "rank": 15
     },
     {
       "benchmark_id": "gpqa",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 68
+      "rank": 139
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 63
+      "rank": 147
     },
     {
       "benchmark_id": "livecodebench",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 37
+      "rank": 61
     },
     {
       "benchmark_id": "mmmu",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 21
+      "rank": 49
     },
     {
       "benchmark_id": "mrcr-v2",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 34
+      "rank": 78
     },
     {
       "benchmark_id": "swe-bench",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 64
+      "rank": 126
     },
     {
       "benchmark_id": "vibe-eval",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 6
+      "rank": 24
     }
   ]
 }

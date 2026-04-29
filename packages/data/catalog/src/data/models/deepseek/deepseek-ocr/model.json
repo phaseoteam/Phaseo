@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 29
+      "rank": 56
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 40
+      "rank": 99
     },
     {
       "benchmark_id": "c-eval",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "cluewsc",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 74
+      "rank": 158
     },
     {
       "benchmark_id": "humaneval-mul",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 19
+      "rank": 27
     },
     {
       "benchmark_id": "livecodebench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 34
+      "rank": 53
     },
     {
       "benchmark_id": "longbench-v2",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 10
+      "rank": 13
     },
     {
       "benchmark_id": "math-500",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 14
+      "rank": 19
     },
     {
       "benchmark_id": "mmlu",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 10
+      "rank": 13
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 47
+      "rank": 76
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 19
+      "rank": 23
     },
     {
       "benchmark_id": "simpleqa",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 25
+      "rank": 64
     },
     {
       "benchmark_id": "swe-bench",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3 (score=0.3000; benches=20)",
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 59
+      "rank": 108
     }
   ]
 }

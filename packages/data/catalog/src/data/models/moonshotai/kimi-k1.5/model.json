@@ -55,7 +55,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 25
+      "rank": 70
     },
     {
       "benchmark_id": "c-eval",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "cluewsc",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 18
+      "rank": 25
     },
     {
       "benchmark_id": "livecodebench-v5-24.12-25.2",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "mathvista",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "mmlu",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 16
+      "rank": 25
     },
     {
       "benchmark_id": "mmmu",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/MoonshotAI/Kimi-k1.5",
-      "rank": 26
+      "rank": 70
     }
   ]
 }

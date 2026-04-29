@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 100
+      "rank": 157
     },
     {
       "benchmark_id": "docvqa",
@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 16
+      "rank": 42
     },
     {
       "benchmark_id": "gpqa",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 100
+      "rank": 210
     },
     {
       "benchmark_id": "gsm8k",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-1.5",
-      "rank": 12
+      "rank": 23
     },
     {
       "benchmark_id": "humaneval",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-1.5",
-      "rank": 27
+      "rank": 73
     },
     {
       "benchmark_id": "math",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-1.5",
-      "rank": 33
+      "rank": 65
     },
     {
       "benchmark_id": "mathvista",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 26
+      "rank": 55
     },
     {
       "benchmark_id": "mmlu",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-1.5",
-      "rank": 34
+      "rank": 88
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 72
+      "rank": 135
     },
     {
       "benchmark_id": "mmmu",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 42
+      "rank": 112
     }
   ]
 }

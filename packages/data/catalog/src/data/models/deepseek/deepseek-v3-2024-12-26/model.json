@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 40
+      "rank": 101
     },
     {
       "benchmark_id": "elimination-game",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 66
+      "rank": 113
     },
     {
       "benchmark_id": "lmarena-text",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 24
+      "rank": 31
     },
     {
       "benchmark_id": "nyt-connections",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 27
+      "rank": 36
     },
     {
       "benchmark_id": "simplebench",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 30
+      "rank": 32
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 16
+      "rank": 30
     }
   ]
 }

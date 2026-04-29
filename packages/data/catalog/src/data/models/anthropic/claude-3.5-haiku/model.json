@@ -52,7 +52,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aidanbench.com/",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -60,7 +60,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 38
+      "rank": 80
     },
     {
       "benchmark_id": "confabulations",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 41
+      "rank": 47
     },
     {
       "benchmark_id": "elimination-game",
@@ -76,7 +76,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 22
+      "rank": 25
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-5-haiku",
-      "rank": 91
+      "rank": 145
     },
     {
       "benchmark_id": "livebench",
@@ -92,7 +92,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 24
+      "rank": 40
     },
     {
       "benchmark_id": "lmarena-text",
@@ -100,7 +100,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 37
+      "rank": 46
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -116,7 +116,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 33
+      "rank": 44
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -124,7 +124,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 23
+      "rank": 40
     }
   ]
 }

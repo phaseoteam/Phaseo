@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/magistral",
-      "rank": 31
+      "rank": 61
     },
     {
       "benchmark_id": "aime-2024",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/magistral",
-      "rank": 28
+      "rank": 74
     },
     {
       "benchmark_id": "aime-2025",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/magistral",
-      "rank": 63
+      "rank": 153
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": "Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 36
+      "rank": 79
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -79,7 +79,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 36
+      "rank": 81
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -87,7 +87,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 31
+      "rank": 94
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -95,7 +95,7 @@
       "is_self_reported": false,
       "other_info": "Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 31
+      "rank": 95
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/magistral",
-      "rank": 54
+      "rank": 86
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "Text Only Subset",
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
-      "rank": 56
+      "rank": 121
     },
     {
       "benchmark_id": "mmmu",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
-      "rank": 26
+      "rank": 69
     }
   ]
 }

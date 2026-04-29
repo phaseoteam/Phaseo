@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 55
+      "rank": 124
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 45
+      "rank": 70
     },
     {
       "benchmark_id": "lmarena-text",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 32
+      "rank": 41
     },
     {
       "benchmark_id": "bfcl-v2",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 40
+      "rank": 71
     },
     {
       "benchmark_id": "if-eval",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 12
+      "rank": 16
     },
     {
       "benchmark_id": "livecodebench",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 15
+      "rank": 20
     },
     {
       "benchmark_id": "math-500",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 5
+      "rank": 6
     }
   ]
 }

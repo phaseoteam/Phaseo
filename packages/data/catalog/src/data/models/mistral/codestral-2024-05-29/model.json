@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 1
+      "rank": 5
     },
     {
       "benchmark_id": "humaneval",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 22
+      "rank": 59
     },
     {
       "benchmark_id": "humaneval-average",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "humanevalfim-average",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "mbpp",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 10
+      "rank": 19
     },
     {
       "benchmark_id": "repobench",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "spider",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from codestral-22b",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 1
+      "rank": 2
     }
   ]
 }

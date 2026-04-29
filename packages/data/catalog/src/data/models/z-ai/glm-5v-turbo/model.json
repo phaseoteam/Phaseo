@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
-      "rank": 7
+      "rank": 20
     },
     {
       "benchmark_id": "flame-vlm-code",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
-      "rank": 10
+      "rank": 14
     },
     {
       "benchmark_id": "pinchbench",
@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "simplevqa",
@@ -147,7 +147,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "v-star",
@@ -155,7 +155,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/vlm/glm-5v-turbo",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "vision2web",

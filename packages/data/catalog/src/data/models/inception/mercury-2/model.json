@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
-      "rank": 26
+      "rank": 51
     },
     {
       "benchmark_id": "gpqa",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
-      "rank": 46
+      "rank": 86
     },
     {
       "benchmark_id": "ifbench",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "livecodebench",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
-      "rank": 14
+      "rank": 19
     },
     {
       "benchmark_id": "scicode",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "tau2-airline",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.inceptionlabs.ai/blog/introducing-mercury-2",
-      "rank": 7
+      "rank": 8
     }
   ]
 }

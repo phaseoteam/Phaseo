@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 8
+      "rank": 17
     },
     {
       "benchmark_id": "drop",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 7
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 76
+      "rank": 168
     },
     {
       "benchmark_id": "humaneval",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 20
+      "rank": 51
     },
     {
       "benchmark_id": "humaneval+",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 4
+      "rank": 16
     },
     {
       "benchmark_id": "if-eval",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 42
+      "rank": 93
     },
     {
       "benchmark_id": "livebench",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 22
+      "rank": 37
     },
     {
       "benchmark_id": "math",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 11
+      "rank": 21
     },
     {
       "benchmark_id": "mgsm",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 13
+      "rank": 26
     },
     {
       "benchmark_id": "mmlu",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 28
+      "rank": 62
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 57
+      "rank": 110
     },
     {
       "benchmark_id": "phibench",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "simpleqa",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 35
+      "rank": 83
     }
   ]
 }

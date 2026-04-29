@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 28
+      "rank": 55
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 60
+      "rank": 149
     },
     {
       "benchmark_id": "arena-hard-v2",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 51
+      "rank": 91
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 30
+      "rank": 52
     },
     {
       "benchmark_id": "if-eval",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 17
+      "rank": 24
     },
     {
       "benchmark_id": "include",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "livebench-20241125",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 26
+      "rank": 40
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 35
+      "rank": 48
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "MMLU-ProX",
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 17
+      "rank": 19
     },
     {
       "benchmark_id": "multi-if",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 13
+      "rank": 21
     },
     {
       "benchmark_id": "supergpqa",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 16
+      "rank": 19
     },
     {
       "benchmark_id": "tau2-airline",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 9
+      "rank": 19
     },
     {
       "benchmark_id": "tau-2-retail",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 19
+      "rank": 28
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -181,7 +181,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 28
+      "rank": 44
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": "TAU1-Airline",
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 11
+      "rank": 16
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -197,7 +197,7 @@
       "is_self_reported": true,
       "other_info": "TAU1-Retail",
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 12
+      "rank": 17
     },
     {
       "benchmark_id": "writingbench",

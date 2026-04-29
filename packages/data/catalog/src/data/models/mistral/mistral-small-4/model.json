@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 39
+      "rank": 77
     },
     {
       "benchmark_id": "arena-hard",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 10
+      "rank": 24
     },
     {
       "benchmark_id": "collie",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "gpqa",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 53
+      "rank": 96
     },
     {
       "benchmark_id": "ifbench",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 15
+      "rank": 19
     },
     {
       "benchmark_id": "livecodebench",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 19
+      "rank": 26
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 42
+      "rank": 59
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-small-4",
-      "rank": 31
+      "rank": 58
     }
   ]
 }

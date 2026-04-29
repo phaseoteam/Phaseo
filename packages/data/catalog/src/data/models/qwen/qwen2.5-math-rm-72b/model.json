@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 14
+      "rank": 26
     },
     {
       "benchmark_id": "aitz-em",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "android-control-high-em",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "android-control-low-em",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "androidworld-sr",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 5
+      "rank": 9
     },
     {
       "benchmark_id": "cc-ocr",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "chartqa",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "docvqa",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "egoschema",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 14
+      "rank": 31
     },
     {
       "benchmark_id": "lvbench",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 19
+      "rank": 38
     },
     {
       "benchmark_id": "mathvision",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 20
+      "rank": 39
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 14
+      "rank": 31
     },
     {
       "benchmark_id": "mlvu-m",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 8
+      "rank": 24
     },
     {
       "benchmark_id": "mmbench",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "mmbench-video",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-VL",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "mmmu",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 25
+      "rank": 67
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 37
+      "rank": 82
     },
     {
       "benchmark_id": "mmstar",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 17
+      "rank": 34
     },
     {
       "benchmark_id": "mmvet",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "mobileminiwob++-sr",
@@ -181,7 +181,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 2
+      "rank": 7
     },
     {
       "benchmark_id": "mvbench",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "ocrbench",
@@ -197,7 +197,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 15
+      "rank": 42
     },
     {
       "benchmark_id": "ocrbench-v2-(en)",
@@ -205,7 +205,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 11
+      "rank": 27
     },
     {
       "benchmark_id": "os-world",
@@ -213,7 +213,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 24
+      "rank": 46
     },
     {
       "benchmark_id": "perceptiontest",
@@ -221,7 +221,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "screenspot",
@@ -229,7 +229,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 11
+      "rank": 31
     },
     {
       "benchmark_id": "screenspot-pro",
@@ -237,7 +237,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 18
+      "rank": 39
     },
     {
       "benchmark_id": "tempcompass",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "videomme-w-o-sub.",
@@ -253,7 +253,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-vl-72b (score=0.4092; benches=30)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 7
+      "rank": 10
     }
   ]
 }

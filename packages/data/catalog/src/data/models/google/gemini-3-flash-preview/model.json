@@ -40,7 +40,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 3
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -48,7 +48,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 10
+      "rank": 20
     },
     {
       "benchmark_id": "charxiv-r",
@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "facts-grounding",
@@ -64,7 +64,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 6
+      "rank": 19
     },
     {
       "benchmark_id": "global-piqa",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": "Commonsense reasoning across 100 Languages and Cultures",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "gpqa",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": "GPQA Diamond subset",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 18
+      "rank": 31
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 3
+      "rank": 10
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 11
+      "rank": 16
     },
     {
       "benchmark_id": "mmmlu",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 6
+      "rank": 11
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -136,7 +136,7 @@
       "is_self_reported": true,
       "other_info": "Lower is better",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "screenspot-pro",
@@ -144,7 +144,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 5
+      "rank": 10
     },
     {
       "benchmark_id": "simpleqa",
@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 5
+      "rank": 11
     },
     {
       "benchmark_id": "swe-bench",
@@ -160,7 +160,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -168,7 +168,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -176,7 +176,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 23
+      "rank": 35
     },
     {
       "benchmark_id": "toolathlon",
@@ -184,7 +184,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -192,7 +192,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better, value in dollars",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "video-mmmu",
@@ -200,7 +200,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -208,7 +208,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 3
+      "rank": 11
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -216,7 +216,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better, value in dollars",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 7
+      "rank": 10
     }
   ]
 }

@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1, Diff Method",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 1
+      "rank": 83
     },
     {
       "benchmark_id": "aime-2025",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, With Python, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 15
     },
     {
       "benchmark_id": "aime-2025",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, No Tools, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 31
     },
     {
       "benchmark_id": "aime-2025",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, With Python, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 140
     },
     {
       "benchmark_id": "aime-2025",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, No Tools, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 161
     },
     {
       "benchmark_id": "browsecomp",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 21
+      "rank": 32
     },
     {
       "benchmark_id": "browsecomp-long-context-128k",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "charxiv-reasoning",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 2
+      "rank": 9
     },
     {
       "benchmark_id": "collie",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 1
+      "rank": 10
     },
     {
       "benchmark_id": "confabulations",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 3
+      "rank": 36
     },
     {
       "benchmark_id": "factscore-halluciation-rate",
@@ -196,7 +196,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, With Python, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 10
     },
     {
       "benchmark_id": "frontier-math",
@@ -204,7 +204,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 13
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -212,7 +212,7 @@
       "is_self_reported": true,
       "other_info": "Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 15
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -220,7 +220,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 15
+      "rank": 27
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -228,7 +228,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 15
+      "rank": 65
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -236,7 +236,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "graphwalks-parents-lt-128k",
@@ -244,7 +244,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "healthbench",
@@ -260,7 +260,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "healthbench-hard",
@@ -276,7 +276,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 1
+      "rank": 8
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -284,7 +284,7 @@
       "is_self_reported": true,
       "other_info": "Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -292,7 +292,7 @@
       "is_self_reported": true,
       "other_info": "Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 5
+      "rank": 15
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -300,7 +300,7 @@
       "is_self_reported": true,
       "other_info": "Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 26
+      "rank": 53
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -308,7 +308,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 26
+      "rank": 65
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -316,7 +316,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 26
+      "rank": 133
     },
     {
       "benchmark_id": "longfact-concepts-hallucination-rate",
@@ -324,7 +324,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "longfact-objects-hallucination-rate",
@@ -340,7 +340,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "mmmu",
@@ -348,7 +348,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 44
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -356,7 +356,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 9
+      "rank": 16
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -364,7 +364,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 9
+      "rank": 44
     },
     {
       "benchmark_id": "multi-challenge",
@@ -380,7 +380,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 3
+      "rank": 14
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",
@@ -412,7 +412,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 16
+      "rank": 25
     },
     {
       "benchmark_id": "swe-bench",
@@ -420,7 +420,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 16
+      "rank": 101
     },
     {
       "benchmark_id": "tau-2-airline",
@@ -428,7 +428,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "tau-2-airline",
@@ -436,7 +436,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 4
+      "rank": 9
     },
     {
       "benchmark_id": "tau-2-retail",
@@ -452,7 +452,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 8
+      "rank": 12
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -460,7 +460,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 8
+      "rank": 13
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -468,7 +468,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 8
+      "rank": 33
     },
     {
       "benchmark_id": "videomme",
@@ -484,7 +484,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "video-mmmu",
@@ -492,7 +492,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 6
+      "rank": 43
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -500,7 +500,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 12
+      "rank": 20
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -508,7 +508,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 12
+      "rank": 27
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -516,7 +516,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 12
+      "rank": 33
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -524,7 +524,7 @@
       "is_self_reported": false,
       "other_info": "Minimal",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 12
+      "rank": 80
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -532,7 +532,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 32
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -540,7 +540,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 37
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -548,7 +548,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 63
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -556,7 +556,7 @@
       "is_self_reported": false,
       "other_info": "Minimal Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 99
     },
     {
       "benchmark_id": "matharena-apex",
@@ -564,7 +564,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort + Agent",
       "source_link": "https://matharena.ai/?comp=apex--apex_2025",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "matharena-apex",
@@ -572,7 +572,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://matharena.ai/?comp=apex--apex_2025",
-      "rank": 3
+      "rank": 8
     }
   ]
 }

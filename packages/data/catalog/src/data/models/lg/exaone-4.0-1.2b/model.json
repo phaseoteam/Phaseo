@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 75
+      "rank": 177
     },
     {
       "benchmark_id": "aime-2025",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 75
+      "rank": 182
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 72
+      "rank": 121
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 72
+      "rank": 150
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 35
+      "rank": 64
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 35
+      "rank": 70
     },
     {
       "benchmark_id": "if-eval",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 39
+      "rank": 84
     },
     {
       "benchmark_id": "if-eval",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 39
+      "rank": 87
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 5
+      "rank": 16
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 5
+      "rank": 20
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 32
+      "rank": 53
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 32
+      "rank": 59
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 68
+      "rank": 127
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 68
+      "rank": 134
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 33
+      "rank": 54
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 33
+      "rank": 62
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -188,7 +188,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 15
+      "rank": 32
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -196,7 +196,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 15
+      "rank": 33
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -204,7 +204,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 16
+      "rank": 34
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -212,7 +212,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 16
+      "rank": 35
     }
   ]
 }

@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Base-2503",
-      "rank": 84
+      "rank": 153
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503",
-      "rank": 84
+      "rank": 134
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503",
-      "rank": 84
+      "rank": 139
     }
   ]
 }

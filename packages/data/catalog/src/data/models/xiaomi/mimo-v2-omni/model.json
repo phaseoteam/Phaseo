@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
-      "rank": 5
+      "rank": 13
     },
     {
       "benchmark_id": "mm-browsercomp",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
-      "rank": 17
+      "rank": 26
     }
   ]
 }

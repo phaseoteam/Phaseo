@@ -35,7 +35,7 @@
       "is_self_reported": false,
       "other_info": "Preview Model & Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -43,7 +43,7 @@
       "is_self_reported": false,
       "other_info": "Preview Model & Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 21
+      "rank": 52
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.youtube.com/live/SKBG1sqdyIU?si=lWccKHt8bnttuYta",
-      "rank": 13
+      "rank": 19
     }
   ]
 }

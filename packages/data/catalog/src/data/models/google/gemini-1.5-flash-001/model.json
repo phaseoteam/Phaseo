@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://www.maa.org/math-competitions/amc-1012",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "big-bench-hard",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/2206.04615",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "fleurs",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "functionalmath",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/2201.04723",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "gpqa",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 84
+      "rank": 179
     },
     {
       "benchmark_id": "gsm8k",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/2110.14168",
-      "rank": 15
+      "rank": 34
     },
     {
       "benchmark_id": "hellaswag",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/1905.07830",
-      "rank": 4
+      "rank": 9
     },
     {
       "benchmark_id": "hiddenmath",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 4
+      "rank": 11
     },
     {
       "benchmark_id": "humaneval",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 26
+      "rank": 71
     },
     {
       "benchmark_id": "math",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 13
+      "rank": 24
     },
     {
       "benchmark_id": "mathvista",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 15
+      "rank": 27
     },
     {
       "benchmark_id": "mgsm",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/2305.08916",
-      "rank": 12
+      "rank": 22
     },
     {
       "benchmark_id": "mmlu",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/2403.05530",
-      "rank": 41
+      "rank": 98
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 63
+      "rank": 119
     },
     {
       "benchmark_id": "mmmu",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 35
+      "rank": 87
     },
     {
       "benchmark_id": "mrcr",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 3
+      "rank": 10
     },
     {
       "benchmark_id": "natural2code",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 3
+      "rank": 10
     },
     {
       "benchmark_id": "physicsfinals",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://arxiv.org/abs/2303.16416",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "vibe-eval",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 7
+      "rank": 25
     },
     {
       "benchmark_id": "video-mme",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 8
+      "rank": 15
     },
     {
       "benchmark_id": "wmt23",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "xstest",
@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-1.5-flash",
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 2
+      "rank": 6
     }
   ]
 }

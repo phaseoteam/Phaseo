@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 9
+      "rank": 17
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 31
+      "rank": 61
     },
     {
       "benchmark_id": "browsecomp",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 27
+      "rank": 42
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 11
+      "rank": 15
     },
     {
       "benchmark_id": "codeforces",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "Raw rating â‰ˆ 2121; normalized by 3000 max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 14
+      "rank": 29
     },
     {
       "benchmark_id": "gpqa",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 34
+      "rank": 63
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 17
+      "rank": 30
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "Text-only subset where applicable",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 36
+      "rank": 74
     },
     {
       "benchmark_id": "livecodebench",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 8
+      "rank": 11
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 11
+      "rank": 17
     },
     {
       "benchmark_id": "simpleqa",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 14
+      "rank": 20
     },
     {
       "benchmark_id": "swe-bench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 38
+      "rank": 58
     },
     {
       "benchmark_id": "terminal-bench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 9
+      "rank": 11
     }
   ]
 }

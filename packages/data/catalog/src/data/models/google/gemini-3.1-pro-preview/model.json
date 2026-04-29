@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": null,
-      "rank": 6
+      "rank": 29
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": "Search + Code",
       "source_link": null,
-      "rank": 6
+      "rank": 12
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": null,
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": "Terminus-2 Harness",
       "source_link": null,
-      "rank": 5
+      "rank": 10
     },
     {
       "benchmark_id": "swe-bench",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": null,
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": null,
-      "rank": 11
+      "rank": 15
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 6
+      "rank": 14
     },
     {
       "benchmark_id": "tau-2-retail",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "browsecomp",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": "Search + Python + Browse",
       "source_link": null,
-      "rank": 4
+      "rank": 10
     },
     {
       "benchmark_id": "mmmlu",
@@ -188,7 +188,7 @@
       "is_self_reported": true,
       "other_info": "Pointwise",
       "source_link": null,
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -204,7 +204,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 6
+      "rank": 15
     },
     {
       "benchmark_id": "gpqa",
@@ -220,7 +220,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -228,7 +228,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 5
+      "rank": 9
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -244,7 +244,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 6
+      "rank": 16
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -252,7 +252,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -260,7 +260,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 6
+      "rank": 17
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -268,7 +268,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 1
+      "rank": 4
     }
   ]
 }

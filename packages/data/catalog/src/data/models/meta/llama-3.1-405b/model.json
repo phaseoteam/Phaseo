@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Meta-Llama-3.1-405B-Instruct",
-      "rank": 74
+      "rank": 124
     },
     {
       "benchmark_id": "simplebench",
@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 25
+      "rank": 27
     }
   ]
 }

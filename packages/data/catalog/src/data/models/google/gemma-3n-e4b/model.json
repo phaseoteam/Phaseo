@@ -35,7 +35,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 38
+      "rank": 51
     },
     {
       "benchmark_id": "arc-c",
@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E4B",
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "arc-e",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E4B",
-      "rank": 8
+      "rank": 27
     },
     {
       "benchmark_id": "boolq",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E4B",
-      "rank": 10
+      "rank": 26
     },
     {
       "benchmark_id": "hellaswag",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E4B",
-      "rank": 8
+      "rank": 14
     },
     {
       "benchmark_id": "natural-questions",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E4B",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "triviaqa",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E4B",
-      "rank": 6
+      "rank": 7
     }
   ]
 }

@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 19
+      "rank": 46
     },
     {
       "benchmark_id": "aime-2025",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 47
+      "rank": 100
     },
     {
       "benchmark_id": "arena-hard-v2",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 12
+      "rank": 18
     },
     {
       "benchmark_id": "bfcl-v3",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 13
+      "rank": 30
     },
     {
       "benchmark_id": "blink",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 6
+      "rank": 12
     },
     {
       "benchmark_id": "cc-ocr",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 12
+      "rank": 29
     },
     {
       "benchmark_id": "charadessta",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 6
+      "rank": 13
     },
     {
       "benchmark_id": "charxiv-d",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 5
+      "rank": 11
     },
     {
       "benchmark_id": "charxiv-r",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 18
+      "rank": 38
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 10
+      "rank": 16
     },
     {
       "benchmark_id": "docvqatest",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 5
+      "rank": 15
     },
     {
       "benchmark_id": "erqa",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 15
+      "rank": 31
     },
     {
       "benchmark_id": "gpqa",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 58
+      "rank": 117
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 7
+      "rank": 14
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 26
+      "rank": 47
     },
     {
       "benchmark_id": "if-eval",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 29
+      "rank": 46
     },
     {
       "benchmark_id": "include",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 16
+      "rank": 25
     },
     {
       "benchmark_id": "infovqatest",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 5
+      "rank": 13
     },
     {
       "benchmark_id": "livebench-20241125",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 9
+      "rank": 15
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 25
+      "rank": 38
     },
     {
       "benchmark_id": "lvbench",
@@ -181,7 +181,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 16
+      "rank": 23
     },
     {
       "benchmark_id": "mathvision",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 14
+      "rank": 21
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -197,7 +197,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 10
+      "rank": 17
     },
     {
       "benchmark_id": "mlvu-m",
@@ -205,7 +205,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 7
+      "rank": 20
     },
     {
       "benchmark_id": "mmbench-v1.1",
@@ -213,7 +213,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 8
+      "rank": 15
     },
     {
       "benchmark_id": "mmlu",
@@ -221,7 +221,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 26
+      "rank": 58
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -229,7 +229,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 44
+      "rank": 69
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -237,7 +237,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 15
+      "rank": 25
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 20
+      "rank": 32
     },
     {
       "benchmark_id": "mm-mt-bench",
@@ -253,7 +253,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 10
+      "rank": 18
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -261,7 +261,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 30
+      "rank": 54
     },
     {
       "benchmark_id": "mmmu-(val)",
@@ -269,7 +269,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 4
+      "rank": 11
     },
     {
       "benchmark_id": "mmstar",
@@ -277,7 +277,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 13
+      "rank": 20
     },
     {
       "benchmark_id": "muirbench",
@@ -285,7 +285,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 6
+      "rank": 12
     },
     {
       "benchmark_id": "multi-if",
@@ -293,7 +293,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 8
+      "rank": 15
     },
     {
       "benchmark_id": "mvbench",
@@ -301,7 +301,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 13
+      "rank": 40
     },
     {
       "benchmark_id": "ocrbench",
@@ -309,7 +309,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 9
+      "rank": 24
     },
     {
       "benchmark_id": "ocrbench-v2-(en)",
@@ -317,7 +317,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 6
+      "rank": 12
     },
     {
       "benchmark_id": "ocrbench-v2-(zh)",
@@ -325,7 +325,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 6
+      "rank": 13
     },
     {
       "benchmark_id": "odinw",
@@ -333,7 +333,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 13
+      "rank": 26
     },
     {
       "benchmark_id": "os-world",
@@ -341,7 +341,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 18
+      "rank": 30
     },
     {
       "benchmark_id": "polymath",
@@ -349,7 +349,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 12
+      "rank": 19
     },
     {
       "benchmark_id": "realworldqa",
@@ -357,7 +357,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 15
+      "rank": 23
     },
     {
       "benchmark_id": "screenspot",
@@ -365,7 +365,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 7
+      "rank": 15
     },
     {
       "benchmark_id": "screenspot-pro",
@@ -373,7 +373,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 17
+      "rank": 35
     },
     {
       "benchmark_id": "simpleqa",
@@ -381,7 +381,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 12
+      "rank": 29
     },
     {
       "benchmark_id": "supergpqa",
@@ -389,7 +389,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 23
+      "rank": 32
     },
     {
       "benchmark_id": "video-mme",
@@ -397,7 +397,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 11
+      "rank": 25
     },
     {
       "benchmark_id": "video-mmmu",
@@ -405,7 +405,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 19
+      "rank": 30
     },
     {
       "benchmark_id": "writingbench",
@@ -413,7 +413,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.5232; benches=50)",
       "source_link": null,
-      "rank": 5
+      "rank": 12
     }
   ]
 }

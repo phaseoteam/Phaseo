@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 105
+      "rank": 166
     },
     {
       "benchmark_id": "ai2d",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 21
+      "rank": 55
     },
     {
       "benchmark_id": "chartqa",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 11
+      "rank": 32
     },
     {
       "benchmark_id": "common-voice-15",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "covost2-en-zh",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "crperelation",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "docvqa",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 3
+      "rank": 15
     },
     {
       "benchmark_id": "egoschema",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 5
+      "rank": 26
     },
     {
       "benchmark_id": "fleurs",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 5
+      "rank": 20
     },
     {
       "benchmark_id": "giantsteps-tempo",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "gpqa",
@@ -114,7 +114,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 103
+      "rank": 224
     },
     {
       "benchmark_id": "gsm8k",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 13
+      "rank": 31
     },
     {
       "benchmark_id": "humaneval",
@@ -130,7 +130,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 24
+      "rank": 69
     },
     {
       "benchmark_id": "livebench",
@@ -138,7 +138,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 26
+      "rank": 48
     },
     {
       "benchmark_id": "math",
@@ -146,7 +146,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 22
+      "rank": 41
     },
     {
       "benchmark_id": "mathvision",
@@ -154,7 +154,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 23
+      "rank": 52
     },
     {
       "benchmark_id": "mathvista",
@@ -162,7 +162,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 13
+      "rank": 25
     },
     {
       "benchmark_id": "mbpp",
@@ -170,7 +170,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 13
+      "rank": 29
     },
     {
       "benchmark_id": "meld",
@@ -178,7 +178,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmau",
@@ -186,7 +186,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmau-music",
@@ -194,7 +194,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmau-sound",
@@ -202,7 +202,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmau-speech",
@@ -210,7 +210,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmbench-v1.1",
@@ -218,7 +218,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 13
+      "rank": 34
     },
     {
       "benchmark_id": "mme-realworld",
@@ -226,7 +226,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -234,7 +234,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 74
+      "rank": 145
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -242,7 +242,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 34
+      "rank": 61
     },
     {
       "benchmark_id": "mm-mt-bench",
@@ -250,7 +250,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 14
+      "rank": 37
     },
     {
       "benchmark_id": "mmmu",
@@ -258,7 +258,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 38
+      "rank": 103
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -266,7 +266,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 43
+      "rank": 101
     },
     {
       "benchmark_id": "mmstar",
@@ -274,7 +274,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 20
+      "rank": 46
     },
     {
       "benchmark_id": "muirbench",
@@ -282,7 +282,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 13
+      "rank": 34
     },
     {
       "benchmark_id": "multipl-e",
@@ -290,7 +290,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 10
+      "rank": 17
     },
     {
       "benchmark_id": "musiccaps",
@@ -298,7 +298,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "mvbench",
@@ -306,7 +306,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 10
+      "rank": 21
     },
     {
       "benchmark_id": "nmos",
@@ -314,7 +314,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen2.5-omni/",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "ocrbench-v2",
@@ -322,7 +322,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 2
+      "rank": 8
     },
     {
       "benchmark_id": "odinw",
@@ -330,7 +330,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 10
+      "rank": 16
     },
     {
       "benchmark_id": "omnibench",
@@ -338,7 +338,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "omnibench-music",
@@ -346,7 +346,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "pointgrounding",
@@ -354,7 +354,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "realworldqa",
@@ -362,7 +362,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 19
+      "rank": 41
     },
     {
       "benchmark_id": "textvqa",
@@ -370,7 +370,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 3
+      "rank": 13
     },
     {
       "benchmark_id": "videomme-w-sub.",
@@ -378,7 +378,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 5
+      "rank": 14
     },
     {
       "benchmark_id": "vocalsound",
@@ -386,7 +386,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "voicebench-avg",
@@ -394,7 +394,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 1
+      "rank": 7
     }
   ]
 }

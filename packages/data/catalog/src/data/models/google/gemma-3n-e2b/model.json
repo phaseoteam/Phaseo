@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "arc-e",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 9
+      "rank": 28
     },
     {
       "benchmark_id": "boolq",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "drop",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 12
+      "rank": 38
     },
     {
       "benchmark_id": "hellaswag",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 9
+      "rank": 15
     },
     {
       "benchmark_id": "natural-questions",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "social-iqa",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "triviaqa",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-3n-E2B",
-      "rank": 9
+      "rank": 11
     }
   ]
 }

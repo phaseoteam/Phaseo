@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "Avg@8",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 80
+      "rank": 130
     },
     {
       "benchmark_id": "gsm8k",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 7
+      "rank": 13
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 37
+      "rank": 60
     },
     {
       "benchmark_id": "math",
@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 40
+      "rank": 76
     },
     {
       "benchmark_id": "mmlu",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 13
+      "rank": 22
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 58
+      "rank": 112
     },
     {
       "benchmark_id": "mmlu-redux-2.0",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": "Correct",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 19
+      "rank": 47
     },
     {
       "benchmark_id": "supergpqa",
@@ -175,7 +175,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 25
+      "rank": 42
     },
     {
       "benchmark_id": "triviaqa",

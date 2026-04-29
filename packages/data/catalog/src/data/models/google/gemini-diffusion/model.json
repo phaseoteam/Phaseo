@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 78
+      "rank": 183
     },
     {
       "benchmark_id": "bigcodebench",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 93
+      "rank": 148
     },
     {
       "benchmark_id": "humaneval",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 7
+      "rank": 22
     },
     {
       "benchmark_id": "mmlu",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 49
+      "rank": 118
     },
     {
       "benchmark_id": "swe-bench",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 65
+      "rank": 128
     },
     {
       "benchmark_id": "big-bench-extra-hard",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 6
+      "rank": 17
     },
     {
       "benchmark_id": "gpqa",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 95
+      "rank": 197
     },
     {
       "benchmark_id": "lbpp-(v2)",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 39
+      "rank": 63
     },
     {
       "benchmark_id": "mbpp",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 12
+      "rank": 22
     }
   ]
 }

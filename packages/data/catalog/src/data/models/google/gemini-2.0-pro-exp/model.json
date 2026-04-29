@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "covost2",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "egoschema",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 4
+      "rank": 18
     },
     {
       "benchmark_id": "facts-grounding",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 4
+      "rank": 15
     },
     {
       "benchmark_id": "gpqa",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 71
+      "rank": 152
     },
     {
       "benchmark_id": "hiddenmath",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "livecodebench",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 35
+      "rank": 58
     },
     {
       "benchmark_id": "math",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 45
+      "rank": 73
     },
     {
       "benchmark_id": "mmmu",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 23
+      "rank": 62
     },
     {
       "benchmark_id": "mrcr",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 4
+      "rank": 14
     },
     {
       "benchmark_id": "natural2code",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "vibe-eval",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 4
+      "rank": 17
     }
   ]
 }

@@ -26,7 +26,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 7
+      "rank": 14
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 2
+      "rank": 7
     },
     {
       "benchmark_id": "aime-2024",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 8
+      "rank": 18
     },
     {
       "benchmark_id": "aime-2025",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 42
+      "rank": 85
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -58,7 +58,7 @@
       "is_self_reported": false,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 19
+      "rank": 44
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 26
+      "rank": 42
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 39
+      "rank": 82
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 1
+      "rank": 4
     },
     {
       "benchmark_id": "mmmu",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 13
+      "rank": 32
     },
     {
       "benchmark_id": "mrcr",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 1
+      "rank": 4
     },
     {
       "benchmark_id": "mrcr-1m-(pointwise)",
@@ -114,7 +114,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 1
+      "rank": 4
     },
     {
       "benchmark_id": "simpleqa",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 11
+      "rank": 22
     },
     {
       "benchmark_id": "swe-bench",
@@ -130,7 +130,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 44
+      "rank": 73
     },
     {
       "benchmark_id": "vibe-eval",
@@ -138,7 +138,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "video-mme",
@@ -146,7 +146,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 4
+      "rank": 7
     }
   ]
 }

@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.baidu.com/",
-      "rank": 34
+      "rank": 65
     },
     {
       "benchmark_id": "gpqa",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "GPQA Diamond",
       "source_link": "https://www.baidu.com/",
-      "rank": 20
+      "rank": 29
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.baidu.com/",
-      "rank": 24
+      "rank": 45
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.baidu.com/",
-      "rank": 3
+      "rank": 5
     }
   ]
 }

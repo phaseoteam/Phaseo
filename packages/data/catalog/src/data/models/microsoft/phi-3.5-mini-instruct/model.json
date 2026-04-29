@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 106
+      "rank": 168
     },
     {
       "benchmark_id": "arc-c",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "arena-hard",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 16
+      "rank": 43
     },
     {
       "benchmark_id": "big-bench-hard",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 6
+      "rank": 22
     },
     {
       "benchmark_id": "boolq",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "govreport",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "gpqa",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 104
+      "rank": 226
     },
     {
       "benchmark_id": "gsm8k",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 15
+      "rank": 37
     },
     {
       "benchmark_id": "hellaswag",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 10
+      "rank": 17
     },
     {
       "benchmark_id": "humaneval",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 33
+      "rank": 82
     },
     {
       "benchmark_id": "math",
@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 36
+      "rank": 70
     },
     {
       "benchmark_id": "mbpp",
@@ -147,7 +147,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 14
+      "rank": 31
     },
     {
       "benchmark_id": "mega-mlqa",
@@ -155,7 +155,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mega-tydi-qa",
@@ -163,7 +163,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mega-udpos",
@@ -171,7 +171,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mega-xcopa",
@@ -179,7 +179,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mega-xstorycloze",
@@ -187,7 +187,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mgsm",
@@ -195,7 +195,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 19
+      "rank": 39
     },
     {
       "benchmark_id": "mmlu",
@@ -203,7 +203,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 50
+      "rank": 120
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -211,7 +211,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 73
+      "rank": 138
     },
     {
       "benchmark_id": "mmmlu",
@@ -219,7 +219,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 29
+      "rank": 55
     },
     {
       "benchmark_id": "openbookqa",
@@ -227,7 +227,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "piqa",
@@ -235,7 +235,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "qasper",
@@ -243,7 +243,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "qmsum",
@@ -251,7 +251,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "repoqa",
@@ -259,7 +259,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "ruler",
@@ -267,7 +267,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "social-iqa",
@@ -275,7 +275,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "squality",
@@ -283,7 +283,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "summscreenfd",
@@ -291,7 +291,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "truthfulqa",
@@ -299,7 +299,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 4
+      "rank": 15
     },
     {
       "benchmark_id": "winogrande",
@@ -307,7 +307,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 7
+      "rank": 9
     }
   ]
 }

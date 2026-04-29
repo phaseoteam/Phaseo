@@ -31,7 +31,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 42
+      "rank": 48
     },
     {
       "benchmark_id": "elimination-game",
@@ -39,7 +39,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/blog/gpt-4o-mini-announcement",
-      "rank": 94
+      "rank": 149
     },
     {
       "benchmark_id": "lmarena-text",
@@ -55,7 +55,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 37
+      "rank": 49
     },
     {
       "benchmark_id": "nyt-connections",
@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 36
+      "rank": 47
     },
     {
       "benchmark_id": "simplebench",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 34
+      "rank": 36
     },
     {
       "benchmark_id": "swe-bench",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 67
+      "rank": 131
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -87,7 +87,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 24
+      "rank": 41
     }
   ]
 }

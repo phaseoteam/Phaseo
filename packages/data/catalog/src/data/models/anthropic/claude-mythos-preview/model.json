@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": "Terminus-2 harness; adaptive thinking max effort",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": "Multimodal (internal implementation)",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 1
+      "rank": 90
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 1
+      "rank": 5
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": "4.9x fewer tokens vs Opus 4.6",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "os-world",

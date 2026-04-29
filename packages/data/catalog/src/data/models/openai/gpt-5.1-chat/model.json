@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 18
+      "rank": 33
     },
     {
       "benchmark_id": "browsecomp-long-128k",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 10
+      "rank": 16
     },
     {
       "benchmark_id": "mmmu",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "swe-bench",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 14
+      "rank": 22
     },
     {
       "benchmark_id": "tau2-airline",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 9
+      "rank": 14
     }
   ]
 }

@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aidanbench.com/",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 22
+      "rank": 46
     },
     {
       "benchmark_id": "aime-2024",
@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 23
+      "rank": 67
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 32
+      "rank": 71
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 26
+      "rank": 71
     },
     {
       "benchmark_id": "confabulations",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "elimination-game",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "eqbench",
@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -131,7 +131,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 51
+      "rank": 81
     },
     {
       "benchmark_id": "livebench",
@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 15
+      "rank": 25
     },
     {
       "benchmark_id": "lmarena-text",
@@ -147,7 +147,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 16
+      "rank": 20
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -163,7 +163,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 14
+      "rank": 18
     },
     {
       "benchmark_id": "simplebench",
@@ -171,7 +171,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 17
+      "rank": 19
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -179,7 +179,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 5
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -187,7 +187,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 32
+      "rank": 70
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -195,7 +195,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 26
+      "rank": 70
     }
   ]
 }

@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 44
+      "rank": 69
     },
     {
       "benchmark_id": "tau2-airline",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 10
+      "rank": 15
     },
     {
       "benchmark_id": "pinchbench",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 12
+      "rank": 24
     },
     {
       "benchmark_id": "bcflv4",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 20
+      "rank": 29
     },
     {
       "benchmark_id": "swe-bench",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 44
+      "rank": 68
     }
   ]
 }

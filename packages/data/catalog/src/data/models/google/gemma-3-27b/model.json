@@ -56,7 +56,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 43
+      "rank": 49
     },
     {
       "benchmark_id": "eqbench",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
-      "rank": 88
+      "rank": 141
     },
     {
       "benchmark_id": "lmarena-text",
@@ -80,7 +80,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 23
+      "rank": 30
     },
     {
       "benchmark_id": "nyt-connections",
@@ -88,7 +88,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 31
+      "rank": 42
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -96,7 +96,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 22
+      "rank": 37
     }
   ]
 }

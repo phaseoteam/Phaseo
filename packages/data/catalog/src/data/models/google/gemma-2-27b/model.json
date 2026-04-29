@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 37
+      "rank": 43
     },
     {
       "benchmark_id": "lmarena-text",
@@ -72,7 +72,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 46
+      "rank": 59
     },
     {
       "benchmark_id": "nyt-connections",
@@ -80,7 +80,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 30
+      "rank": 41
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -88,7 +88,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 25
+      "rank": 42
     }
   ]
 }

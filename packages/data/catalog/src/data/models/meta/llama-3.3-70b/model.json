@@ -22,7 +22,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 35
+      "rank": 41
     },
     {
       "benchmark_id": "elimination-game",
@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 16
+      "rank": 18
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 75
+      "rank": 125
     },
     {
       "benchmark_id": "lmarena-text",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 37
+      "rank": 47
     },
     {
       "benchmark_id": "nyt-connections",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 27
+      "rank": 37
     },
     {
       "benchmark_id": "simplebench",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 29
+      "rank": 31
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 21
+      "rank": 36
     }
   ]
 }

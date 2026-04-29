@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from k-exaone-236b-a23b",
       "source_link": "https://friendli.ai/blog/k-exaone-on-serverless",
-      "rank": 22
+      "rank": 40
     },
     {
       "benchmark_id": "ifbench",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from k-exaone-236b-a23b",
       "source_link": "https://friendli.ai/blog/k-exaone-on-serverless",
-      "rank": 11
+      "rank": 13
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from k-exaone-236b-a23b",
       "source_link": "https://friendli.ai/blog/k-exaone-on-serverless",
-      "rank": 10
+      "rank": 12
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from k-exaone-236b-a23b",
       "source_link": "https://friendli.ai/blog/k-exaone-on-serverless",
-      "rank": 16
+      "rank": 23
     },
     {
       "benchmark_id": "mmmlu",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from k-exaone-236b-a23b",
       "source_link": "https://friendli.ai/blog/k-exaone-on-serverless",
-      "rank": 16
+      "rank": 25
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from k-exaone-236b-a23b",
       "source_link": "https://friendli.ai/blog/k-exaone-on-serverless",
-      "rank": 14
+      "rank": 19
     }
   ]
 }

@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 49
+      "rank": 105
     },
     {
       "benchmark_id": "confabulations",
@@ -60,7 +60,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 26
+      "rank": 32
     },
     {
       "benchmark_id": "confabulations",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 26
+      "rank": 28
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -84,7 +84,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 35
+      "rank": 49
     },
     {
       "benchmark_id": "mmmlu",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "mmmu",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 15
+      "rank": 35
     },
     {
       "benchmark_id": "simplebench",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 18
+      "rank": 27
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 4
+      "rank": 5
     }
   ]
 }

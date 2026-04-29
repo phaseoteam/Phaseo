@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "aime-2025",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 32
+      "rank": 63
     },
     {
       "benchmark_id": "facts-grounding",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 16
+      "rank": 24
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 34
+      "rank": 71
     },
     {
       "benchmark_id": "livecodebench",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 13
+      "rank": 18
     },
     {
       "benchmark_id": "mmmu",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 8
+      "rank": 11
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 7
+      "rank": 12
     },
     {
       "benchmark_id": "simpleqa",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 9
+      "rank": 16
     },
     {
       "benchmark_id": "swe-bench",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 39
+      "rank": 60
     },
     {
       "benchmark_id": "vibe-eval",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 9
+      "rank": 13
     }
   ]
 }

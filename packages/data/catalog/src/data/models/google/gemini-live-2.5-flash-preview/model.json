@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 16
+      "rank": 38
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-updates-io-2025",
-      "rank": 5
+      "rank": 19
     },
     {
       "benchmark_id": "aime-2024",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 13
+      "rank": 34
     },
     {
       "benchmark_id": "aime-2025",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 57
+      "rank": 139
     },
     {
       "benchmark_id": "facts-grounding",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 2
+      "rank": 10
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 3
+      "rank": 14
     },
     {
       "benchmark_id": "gpqa",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 27
+      "rank": 51
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 53
+      "rank": 116
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 3
+      "rank": 14
     },
     {
       "benchmark_id": "mmmu",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 12
+      "rank": 27
     },
     {
       "benchmark_id": "mrcr",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-updates-io-2025",
-      "rank": 7
+      "rank": 28
     },
     {
       "benchmark_id": "simpleqa",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 24
+      "rank": 63
     },
     {
       "benchmark_id": "swe-bench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 48
+      "rank": 86
     },
     {
       "benchmark_id": "vibe-eval",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 3
+      "rank": 14
     }
   ]
 }

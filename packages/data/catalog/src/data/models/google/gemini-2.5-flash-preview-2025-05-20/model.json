@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": "Whole",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 16
+      "rank": 33
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": "Diff",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 16
+      "rank": 47
     },
     {
       "benchmark_id": "aime-2025",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 57
+      "rank": 134
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 30
+      "rank": 40
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 53
+      "rank": 111
     },
     {
       "benchmark_id": "lmarena-text",
@@ -84,7 +84,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "Lite",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 11
+      "rank": 19
     },
     {
       "benchmark_id": "mmmu",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 12
+      "rank": 22
     },
     {
       "benchmark_id": "simpleqa",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 24
+      "rank": 58
     },
     {
       "benchmark_id": "swe-bench",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 48
+      "rank": 81
     }
   ]
 }

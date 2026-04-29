@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "8 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 19
+      "rank": 55
     },
     {
       "benchmark_id": "humaneval",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": "0 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 32
+      "rank": 80
     },
     {
       "benchmark_id": "math",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": "4 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 42
+      "rank": 80
     },
     {
       "benchmark_id": "mmlu",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 44
+      "rank": 108
     }
   ]
 }

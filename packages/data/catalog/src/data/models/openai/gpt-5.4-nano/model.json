@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "Public",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 12
+      "rank": 17
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 25
+      "rank": 37
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 12
+      "rank": 17
     },
     {
       "benchmark_id": "toolathlon",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 8
+      "rank": 12
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 14
+      "rank": 19
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 30
+      "rank": 41
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 25
+      "rank": 50
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 25
+      "rank": 66
     },
     {
       "benchmark_id": "os-world",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 16
+      "rank": 21
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "With Python",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 22
+      "rank": 36
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 22
+      "rank": 40
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "Average edit distance (lower is better)",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 7
+      "rank": 10
     },
     {
       "benchmark_id": "graphwalks-parents-lt-128k",
@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 15
+      "rank": 17
     },
     {
       "benchmark_id": "gpqa",
@@ -159,7 +159,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 27
+      "rank": 52
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -175,7 +175,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 5
+      "rank": 8
     }
   ]
 }

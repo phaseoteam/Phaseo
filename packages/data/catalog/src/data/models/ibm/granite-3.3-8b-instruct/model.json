@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 20
+      "rank": 51
     },
     {
       "benchmark_id": "alpacaeval-2.0",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 1
+      "rank": 6
     },
     {
       "benchmark_id": "arena-hard",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 11
+      "rank": 31
     },
     {
       "benchmark_id": "attaq",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 1
+      "rank": 6
     },
     {
       "benchmark_id": "big-bench-hard",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 5
+      "rank": 15
     },
     {
       "benchmark_id": "drop",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 11
+      "rank": 32
     },
     {
       "benchmark_id": "gsm8k",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 17
+      "rank": 45
     },
     {
       "benchmark_id": "humaneval",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 6
+      "rank": 16
     },
     {
       "benchmark_id": "humaneval+",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 3
+      "rank": 8
     },
     {
       "benchmark_id": "if-eval",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 38
+      "rank": 78
     },
     {
       "benchmark_id": "math-500",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 16
+      "rank": 28
     },
     {
       "benchmark_id": "mmlu",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 54
+      "rank": 130
     },
     {
       "benchmark_id": "popqa",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 1
+      "rank": 6
     },
     {
       "benchmark_id": "truthfulqa",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 2
+      "rank": 7
     }
   ]
 }

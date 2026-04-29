@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 16
+      "rank": 32
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-updates-io-2025",
-      "rank": 5
+      "rank": 14
     },
     {
       "benchmark_id": "aime-2024",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 13
+      "rank": 28
     },
     {
       "benchmark_id": "aime-2025",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 57
+      "rank": 133
     },
     {
       "benchmark_id": "facts-grounding",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 3
+      "rank": 9
     },
     {
       "benchmark_id": "gpqa",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 27
+      "rank": 46
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 53
+      "rank": 110
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 3
+      "rank": 9
     },
     {
       "benchmark_id": "mmmu",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 12
+      "rank": 21
     },
     {
       "benchmark_id": "mrcr",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-updates-io-2025",
-      "rank": 7
+      "rank": 23
     },
     {
       "benchmark_id": "simpleqa",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 24
+      "rank": 57
     },
     {
       "benchmark_id": "swe-bench",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 48
+      "rank": 80
     },
     {
       "benchmark_id": "vibe-eval",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 3
+      "rank": 9
     }
   ]
 }

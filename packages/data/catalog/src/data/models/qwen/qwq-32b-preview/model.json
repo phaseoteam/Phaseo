@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 36
+      "rank": 93
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 63
+      "rank": 106
     },
     {
       "benchmark_id": "gpqa",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 67
+      "rank": 138
     },
     {
       "benchmark_id": "livecodebench",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 31
+      "rank": 50
     },
     {
       "benchmark_id": "math-500",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 13
+      "rank": 18
     }
   ]
 }

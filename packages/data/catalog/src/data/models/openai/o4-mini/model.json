@@ -60,7 +60,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 10
+      "rank": 20
     },
     {
       "benchmark_id": "aime-2024",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "aime-2025",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 23
+      "rank": 42
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -84,7 +84,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 20
+      "rank": 35
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -92,7 +92,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 20
+      "rank": 62
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -100,7 +100,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 24
+      "rank": 57
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -108,7 +108,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 24
+      "rank": 67
     },
     {
       "benchmark_id": "browsecomp-long-context-128k",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "confabulations",
@@ -124,7 +124,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 21
+      "rank": 24
     },
     {
       "benchmark_id": "elimination-game",
@@ -132,7 +132,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 20
+      "rank": 23
     },
     {
       "benchmark_id": "eqbench",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 32
+      "rank": 45
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": null,
-      "rank": 32
+      "rank": 46
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "graphwalks-parents-lt-128k",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -188,7 +188,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 40
+      "rank": 84
     },
     {
       "benchmark_id": "lisanbench",
@@ -204,7 +204,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 12
+      "rank": 19
     },
     {
       "benchmark_id": "livebench",
@@ -212,7 +212,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 12
+      "rank": 23
     },
     {
       "benchmark_id": "lmarena-text",
@@ -220,7 +220,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 13
+      "rank": 17
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -236,7 +236,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "longfact-objects-hallucination-rate",
@@ -260,7 +260,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",
@@ -276,7 +276,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -284,7 +284,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 6
+      "rank": 14
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -292,7 +292,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 6
+      "rank": 11
     },
     {
       "benchmark_id": "videomme",
@@ -308,7 +308,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 10
+      "rank": 23
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -316,7 +316,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 4
+      "rank": 9
     },
     {
       "benchmark_id": "browsecomp",
@@ -324,7 +324,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 23
+      "rank": 34
     },
     {
       "benchmark_id": "charxiv-r",
@@ -332,7 +332,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 10
+      "rank": 15
     },
     {
       "benchmark_id": "gpqa",
@@ -340,7 +340,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 30
+      "rank": 55
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -348,7 +348,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 40
+      "rank": 97
     },
     {
       "benchmark_id": "mathvista",
@@ -364,7 +364,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "scale-multichallenge",
@@ -380,7 +380,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 36
+      "rank": 54
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -388,7 +388,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "tau-bench-retail",
@@ -404,7 +404,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 19
+      "rank": 22
     }
   ]
 }

@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "facts-grounding",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 8
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 14
+      "rank": 20
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 44
+      "rank": 89
     },
     {
       "benchmark_id": "mmmlu",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 8
+      "rank": 13
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 14
+      "rank": 22
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 16
+      "rank": 34
     },
     {
       "benchmark_id": "video-mmmu",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 5
+      "rank": 7
     }
   ]
 }

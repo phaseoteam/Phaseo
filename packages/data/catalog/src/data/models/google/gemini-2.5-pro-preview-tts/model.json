@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 7
+      "rank": 13
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "aime-2024",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 8
+      "rank": 17
     },
     {
       "benchmark_id": "aime-2025",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 42
+      "rank": 84
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -53,7 +53,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 19
+      "rank": 43
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "gpqa",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 26
+      "rank": 41
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 39
+      "rank": 81
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "mmmu",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 13
+      "rank": 31
     },
     {
       "benchmark_id": "mrcr",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "mrcr-1m-(pointwise)",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "simpleqa",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 11
+      "rank": 21
     },
     {
       "benchmark_id": "swe-bench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 44
+      "rank": 72
     },
     {
       "benchmark_id": "vibe-eval",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "video-mme",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 4
+      "rank": 6
     }
   ]
 }

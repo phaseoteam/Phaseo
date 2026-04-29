@@ -60,7 +60,7 @@
       "is_self_reported": false,
       "other_info": "32k Thinking",
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 19
+      "rank": 41
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 19
+      "rank": 48
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -76,7 +76,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 22
+      "rank": 40
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -84,7 +84,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 22
+      "rank": 51
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -92,7 +92,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 22
+      "rank": 53
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -100,7 +100,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 22
+      "rank": 58
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -108,7 +108,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 18
+      "rank": 39
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -116,7 +116,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 18
+      "rank": 59
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -124,7 +124,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 18
+      "rank": 69
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -132,7 +132,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 18
+      "rank": 78
     },
     {
       "benchmark_id": "confabulations",
@@ -140,7 +140,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "confabulations",
@@ -148,7 +148,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 17
+      "rank": 11
     },
     {
       "benchmark_id": "elimination-game",
@@ -156,7 +156,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "elimination-game",
@@ -164,7 +164,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 9
+      "rank": 19
     },
     {
       "benchmark_id": "eqbench",
@@ -172,7 +172,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 27
+      "rank": 36
     },
     {
       "benchmark_id": "lisanbench",
@@ -188,7 +188,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "livebench",
@@ -196,7 +196,7 @@
       "is_self_reported": false,
       "other_info": "64k Thinking",
       "source_link": "https://livebench.ai/#/",
-      "rank": 11
+      "rank": 17
     },
     {
       "benchmark_id": "livebench",
@@ -204,7 +204,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 11
+      "rank": 26
     },
     {
       "benchmark_id": "lmarena-text",
@@ -212,7 +212,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 15
+      "rank": 19
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -228,7 +228,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 13
+      "rank": 16
     },
     {
       "benchmark_id": "nyt-connections",
@@ -236,7 +236,7 @@
       "is_self_reported": false,
       "other_info": "64k Thinking",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 13
+      "rank": 17
     },
     {
       "benchmark_id": "nyt-connections",
@@ -244,7 +244,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 13
+      "rank": 26
     },
     {
       "benchmark_id": "simplebench",
@@ -260,7 +260,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 10
+      "rank": 20
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -268,7 +268,7 @@
       "is_self_reported": false,
       "other_info": "64k Thinking",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 10
+      "rank": 5
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -276,7 +276,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 10
+      "rank": 2
     }
   ]
 }

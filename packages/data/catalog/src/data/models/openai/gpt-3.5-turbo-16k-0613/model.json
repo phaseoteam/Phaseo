@@ -22,7 +22,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 9
+      "rank": 23
     },
     {
       "benchmark_id": "gpqa",
@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 103
+      "rank": 215
     },
     {
       "benchmark_id": "humaneval",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 30
+      "rank": 76
     },
     {
       "benchmark_id": "math",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 38
+      "rank": 72
     },
     {
       "benchmark_id": "mathvista",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 30
+      "rank": 64
     },
     {
       "benchmark_id": "mgsm",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 18
+      "rank": 35
     },
     {
       "benchmark_id": "mmlu",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 47
+      "rank": 114
     },
     {
       "benchmark_id": "mmmu",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "inferred family alias from gpt-3.5-turbo-0125 (score=0.4244; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 50
+      "rank": 125
     }
   ]
 }

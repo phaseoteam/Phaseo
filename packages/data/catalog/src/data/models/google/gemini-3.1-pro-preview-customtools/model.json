@@ -21,7 +21,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 6
+      "rank": 18
     },
     {
       "benchmark_id": "gpqa",
@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 1
+      "rank": 5
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 5
+      "rank": 10
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 1
+      "rank": 2
     }
   ]
 }
