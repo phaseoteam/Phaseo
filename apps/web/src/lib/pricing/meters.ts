@@ -1,11 +1,13 @@
 // Add/remove pricing meters in this list only.
 const CORE_PRICING_METER_VALUES = [
+  "input_tokens",
   "input_text_tokens",
   "input_image_tokens",
   "image_pixels",
   "video_pixels",
   "input_video_tokens",
   "input_audio_tokens",
+  "output_tokens",
   "output_text_tokens",
   "cached_read_text_tokens",
   "output_image",

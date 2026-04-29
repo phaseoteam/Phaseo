@@ -64,6 +64,8 @@ const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirect
 };
 
 const PRICING_METER_PREFERENCE = [
+    "input_tokens",
+    "output_tokens",
     "input_text_tokens",
     "output_text_tokens",
     "cached_read_text_tokens",

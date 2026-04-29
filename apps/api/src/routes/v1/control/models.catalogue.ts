@@ -117,12 +117,14 @@ export type CatalogueFilters = {
 };
 
 const PRICING_METERS = [
+    "input_tokens",
     "input_text_tokens",
     "input_image_tokens",
     "input_image",
     "input_video_tokens",
     "input_audio_tokens",
     "input_audio_seconds",
+    "output_tokens",
     "output_text_tokens",
     "output_image_tokens",
     "output_image",
@@ -133,7 +135,10 @@ const PRICING_METERS = [
     "cached_write_text_tokens",
 ];
 
-const TOP_PROVIDER_METERS = ["input_text_tokens", "output_text_tokens"];
+const TOP_PROVIDER_METERS = [
+    ["input_tokens", "input_text_tokens"],
+    ["output_tokens", "output_text_tokens"],
+] as const;
 
 function toStringArray(value: unknown): string[] {
     if (Array.isArray(value)) {
@@ -316,8 +321,10 @@ function getTopProvider(providerMeters: Map<string, Map<string, number>>): strin
     for (const [providerId, meters] of providerMeters) {
         let total = 0;
         let hasAny = false;
-        for (const meter of TOP_PROVIDER_METERS) {
-            const price = meters.get(meter);
+        for (const group of TOP_PROVIDER_METERS) {
+            const price = group
+                .map((meter) => meters.get(meter))
+                .find((candidate): candidate is number => candidate !== undefined);
             if (price === undefined) continue;
             total += price;
             hasAny = true;

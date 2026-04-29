@@ -232,6 +232,8 @@ export function buildAxiomEvent(a: AxiomArgs) {
     }
     const costInputText = lineNanosByDim.get("input_text_tokens") ?? 0;
     const costOutputText = lineNanosByDim.get("output_text_tokens") ?? 0;
+    const costInputAggregate = lineNanosByDim.get("input_tokens") ?? 0;
+    const costOutputAggregate = lineNanosByDim.get("output_tokens") ?? 0;
     const costInputImage = lineNanosByDim.get("input_image_tokens") ?? 0;
     const costOutputImage = (lineNanosByDim.get("output_image_tokens") ?? 0) + (lineNanosByDim.get("output_image") ?? 0);
     const costInputAudio = lineNanosByDim.get("input_audio_tokens") ?? 0;
@@ -240,8 +242,20 @@ export function buildAxiomEvent(a: AxiomArgs) {
     const costOutputVideo = (lineNanosByDim.get("output_video_tokens") ?? 0) + (lineNanosByDim.get("output_video_seconds") ?? 0);
     const costCachedRead = lineNanosByDim.get("cached_read_text_tokens") ?? 0;
     const costCachedWrite = lineNanosByDim.get("cached_write_text_tokens") ?? 0;
-    const costInputTotal = costInputText + costInputImage + costInputAudio + costInputVideo + costCachedRead;
-    const costOutputTotal = costOutputText + costOutputImage + costOutputAudio + costOutputVideo + costCachedWrite;
+    const costInputTotal =
+        costInputText +
+        costInputAggregate +
+        costInputImage +
+        costInputAudio +
+        costInputVideo +
+        costCachedRead;
+    const costOutputTotal =
+        costOutputText +
+        costOutputAggregate +
+        costOutputImage +
+        costOutputAudio +
+        costOutputVideo +
+        costCachedWrite;
 
     // Derived metrics
     const tokensIn = a.usage?.input_text_tokens ?? 0;
