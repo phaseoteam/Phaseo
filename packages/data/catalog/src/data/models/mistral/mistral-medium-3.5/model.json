@@ -19,5 +19,62 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 77.6,
+      "is_self_reported": true,
+      "other_info": "Verified",
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "tau3-bench",
+      "score": 91.4,
+      "is_self_reported": true,
+      "other_info": "Telecom",
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "collie",
+      "score": 95.8,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 69,
+      "is_self_reported": true,
+      "other_info": "AllenAI",
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "beyondaime",
+      "score": 66.9,
+      "is_self_reported": true,
+      "other_info": "avg@16",
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 48.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 86.3,
+      "is_self_reported": true,
+      "other_info": "avg@16",
+      "source_link": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "rank": null
+    }
+  ]
 }

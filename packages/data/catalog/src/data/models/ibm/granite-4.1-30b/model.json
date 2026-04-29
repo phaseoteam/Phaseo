@@ -4,8 +4,8 @@
   "name": "Granite 4.1 30B",
   "status": "Available",
   "previous_model_id": null,
-  "announced_date": "2026-04-01T00:00:00",
-  "release_date": "2026-04-01T00:00:00",
+  "announced_date": "2026-04-29T00:00:00",
+  "release_date": "2026-04-29T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Apache 2.0",
@@ -20,5 +20,190 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "mmlu",
+      "score": 80.16,
+      "is_self_reported": true,
+      "other_info": "5-shot",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 64.09,
+      "is_self_reported": true,
+      "other_info": "5-shot, CoT",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "bbh",
+      "score": 83.74,
+      "is_self_reported": true,
+      "other_info": "3-shot, CoT",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "agieval",
+      "score": 77.8,
+      "is_self_reported": true,
+      "other_info": "0-shot, CoT",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 45.76,
+      "is_self_reported": true,
+      "other_info": "0-shot, CoT",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 6.81,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "alpacaeval-2.0",
+      "score": 56.16,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "if-eval",
+      "score": 89.65,
+      "is_self_reported": true,
+      "other_info": "Avg",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "arena-hard",
+      "score": 71.02,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mt-bench",
+      "score": 8.61,
+      "is_self_reported": true,
+      "other_info": "Avg",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gsm8k",
+      "score": 94.16,
+      "is_self_reported": true,
+      "other_info": "8-shot",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "minerva",
+      "score": 81.32,
+      "is_self_reported": true,
+      "other_info": "0-shot, CoT",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 88.41,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humaneval+",
+      "score": 85.37,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mbpp",
+      "score": 85.45,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mbpp+",
+      "score": 73.54,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "cruxeval-o",
+      "score": 55.75,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "bigcodebench",
+      "score": 38.77,
+      "is_self_reported": true,
+      "other_info": "pass@1",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "bfcl-v3",
+      "score": 73.68,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 73.71,
+      "is_self_reported": true,
+      "other_info": "5-shot",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "include",
+      "score": 67.26,
+      "is_self_reported": true,
+      "other_info": "5-shot",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mgsm",
+      "score": 71.12,
+      "is_self_reported": true,
+      "other_info": "8-shot",
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    },
+    {
+      "benchmark_id": "attaq",
+      "score": 85.76,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/ibm-granite/granite-4.1-30b",
+      "rank": null
+    }
+  ]
 }
