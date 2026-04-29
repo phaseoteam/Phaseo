@@ -1374,7 +1374,7 @@
   {
     "api_model_id": "mistral/mistral-medium-3.5",
     "provider_api_model_id": "mistral:mistral/mistral-medium-3.5",
-    "provider_model_slug": "mistral-medium-latest",
+    "provider_model_slug": "mistral-medium-2604",
     "internal_model_id": "mistral/mistral-medium-3.5",
     "is_active_gateway": true,
     "quantization_scheme": null,
