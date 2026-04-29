@@ -183,7 +183,9 @@ export type {
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
 export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
-export type Healthz200Response = Awaited<ReturnType<typeof ops.healthz>>;
+export type Healthz200Response = {
+  status: string;
+};
 export { ops as operations };
 export { ModelIds, MODEL_IDS, MODEL_ID_SET } from "./modelIds.js";
 export type AIStatsOptions = Options;
@@ -640,7 +642,7 @@ export class AIStats {
   getHealth(): Promise<Healthz200Response> {
     return this.telemetry.wrap(
       "health",
-      () => ops.healthz(this.client, {}),
+      () => this.client.request<Healthz200Response>({ method: "GET", path: "/health" }),
       () => ({})
     );
   }

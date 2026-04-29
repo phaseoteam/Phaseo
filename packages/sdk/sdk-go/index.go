@@ -396,7 +396,18 @@ func (c *AIStats) GetActivity(_ context.Context, query map[string]string) (map[s
 // Health calls /health.
 func (c *AIStats) Health(_ context.Context) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "health", nil, false, func() (map[string]interface{}, error) {
-		return gen.Healthz(c.raw, nil, nil, nil, nil)
+		raw, err := c.raw.Request("GET", "/health", nil, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		if len(raw) == 0 {
+			return map[string]interface{}{}, nil
+		}
+		var decoded map[string]interface{}
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			return nil, fmt.Errorf("decode response: %w", err)
+		}
+		return decoded, nil
 	})
 }
 

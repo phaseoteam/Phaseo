@@ -92,6 +92,81 @@ pub struct AnthropicUsage {
 	pub output_tokens: Option<i64>,
 }
 
+pub struct ApiKey {
+	pub created_at: Option<String>,
+	pub created_by: Option<String>,
+	pub disabled: bool,
+	pub expires_at: Option<String>,
+	pub hash: String,
+	pub id: String,
+	pub label: Option<String>,
+	pub last_used_at: Option<String>,
+	pub name: Option<String>,
+	pub prefix: Option<String>,
+	pub scopes: String,
+	pub soft_blocked: bool,
+	pub status: Option<String>,
+	pub updated_at: Option<String>,
+	pub workspace_id: String,
+}
+
+pub struct ApiKeyCreateRequest {
+	pub disabled: Option<bool>,
+	pub expires_at: Option<Option<String>>,
+	pub include_byok_in_limit: Option<bool>,
+	pub limit: Option<Option<f64>>,
+	pub limit_reset: Option<String>,
+	pub name: String,
+	pub scopes: Option<String>,
+	pub soft_blocked: Option<bool>,
+	pub workspace_id: Option<String>,
+}
+
+pub struct ApiKeyListResponse {
+	pub data: Vec<HashMap<String, String>>,
+	pub total_count: i64,
+}
+
+pub struct ApiKeyResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub type ApiKeyScopeValue = JsonValue;
+
+pub struct ApiKeyUpdateRequest {
+	pub disabled: Option<bool>,
+	pub expires_at: Option<Option<String>>,
+	pub include_byok_in_limit: Option<bool>,
+	pub limit: Option<Option<f64>>,
+	pub limit_reset: Option<String>,
+	pub name: Option<String>,
+	pub scopes: Option<String>,
+	pub soft_blocked: Option<bool>,
+}
+
+pub struct ApiKeyWithValue {
+	pub created_at: Option<String>,
+	pub created_by: Option<String>,
+	pub disabled: bool,
+	pub expires_at: Option<String>,
+	pub hash: String,
+	pub id: String,
+	pub key: String,
+	pub label: Option<String>,
+	pub last_used_at: Option<String>,
+	pub name: Option<String>,
+	pub prefix: Option<String>,
+	pub scopes: String,
+	pub soft_blocked: bool,
+	pub status: Option<String>,
+	pub updated_at: Option<String>,
+	pub workspace_id: String,
+}
+
+pub struct ApiKeyWithValueResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct AudioContentPart {
 	pub input_audio: HashMap<String, String>,
 	pub r#type: String,
@@ -254,6 +329,11 @@ pub struct ChatMessage {
 	pub tool_calls: Option<Vec<HashMap<String, String>>>,
 }
 
+pub struct CreditsResponse {
+	pub credits: HashMap<String, String>,
+	pub ok: String,
+}
+
 pub struct DataModel {
 	pub deprecation_date: Option<Option<String>>,
 	pub hidden: Option<bool>,
@@ -276,6 +356,10 @@ pub struct DebugOptions {
 	pub return_upstream_response: Option<bool>,
 	pub trace: Option<bool>,
 	pub trace_level: Option<String>,
+}
+
+pub struct DeletedResponse {
+	pub deleted: String,
 }
 
 pub struct Embedding {
@@ -371,10 +455,6 @@ pub struct GenerationResponse {
 	pub team_id: Option<String>,
 	pub throughput: Option<Option<f64>>,
 	pub usage: Option<Option<HashMap<String, String>>>,
-}
-
-pub struct HealthCheckResponse {
-	pub status: String,
 }
 
 pub struct Image {
@@ -956,4 +1036,53 @@ pub struct VideoOutput {
 
 pub struct VideoOutputConfig {
 	pub access: Option<String>,
+}
+
+pub struct Workspace {
+	pub created_at: Option<String>,
+	pub created_by: Option<String>,
+	pub id: String,
+	pub name: Option<String>,
+	pub slug: Option<String>,
+	pub updated_at: Option<String>,
+}
+
+pub struct WorkspaceActivityEntry {
+	pub cost_cents: f64,
+	pub endpoint: Option<String>,
+	pub latency_ms: Option<i64>,
+	pub model: Option<String>,
+	pub provider: Option<String>,
+	pub request_id: Option<String>,
+	pub timestamp: Option<String>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct WorkspaceActivityResponse {
+	pub activity: Vec<HashMap<String, String>>,
+	pub limit: i64,
+	pub offset: i64,
+	pub ok: String,
+	pub period_days: i64,
+	pub total: i64,
+	pub total_cost_cents: f64,
+}
+
+pub struct WorkspaceCreateRequest {
+	pub name: String,
+	pub slug: Option<String>,
+}
+
+pub struct WorkspaceListResponse {
+	pub data: Vec<HashMap<String, String>>,
+	pub total_count: i64,
+}
+
+pub struct WorkspaceResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkspaceUpdateRequest {
+	pub name: Option<String>,
+	pub slug: Option<String>,
 }

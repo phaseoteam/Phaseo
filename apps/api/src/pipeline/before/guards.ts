@@ -13,7 +13,7 @@ import { fetchGatewayContext } from "./context";
 import { generatePublicId } from "./genId";
 import { isDebugAllowed } from "../debug";
 import type { DebugOptions } from "@core/types";
-import { authenticate, type AuthFailure } from "./auth";
+import { authenticate, authenticateManagement, type AuthFailure } from "./auth";
 import { readAttributionHeaders } from "../after/attribution";
 import type { ProviderCandidateBuildDiagnostics } from "./types";
 import type { PriceCard } from "../pricing";
@@ -203,6 +203,35 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     };
 }
 
+export async function guardManagementAuth(req: Request, options: GuardAuthOptions = {}): Promise<GuardResult<{
+    requestId: string;
+    workspaceId: string;
+    apiKeyId: string;
+    apiKeyRef: string | null;
+    apiKeyKid: string | null;
+    userId?: string | null;
+    internal?: boolean;
+}>> {
+    const requestId = generatePublicId();
+    const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
+    if (!auth.ok) {
+        const reason = (auth as AuthFailure).reason;
+        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+    }
+    return {
+        ok: true,
+        value: {
+            requestId,
+            workspaceId: auth.workspaceId,
+            apiKeyId: auth.apiKeyId,
+            apiKeyRef: auth.apiKeyRef,
+            apiKeyKid: auth.apiKeyKid,
+            userId: auth.userId ?? null,
+            internal: auth.internal,
+        },
+    };
+}
+
 export async function guardJson(req: Request, workspaceId: string, requestId: string): Promise<GuardResult<any>> {
     const contentType = (req.headers.get("content-type") || "").toLowerCase();
     try {
@@ -300,14 +329,10 @@ export async function guardContext(args: {
             };
         }
 
-        const teamTier = String(context.teamEnrichment?.tier ?? "")
-            .trim()
-            .toLowerCase();
         const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
             .trim()
             .toLowerCase();
-        const bypassWalletCreditCheck =
-            teamTier === "enterprise" && billingMode === "invoice";
+        const bypassWalletCreditCheck = billingMode === "invoice";
         const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
             model: args.model,
             context,
@@ -394,6 +419,10 @@ export function makeMeta(input: {
         128,
     );
     const trace = normalizeTraceObject(rawBody?.trace);
+    const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
+    const testId = nodeEnv === "test"
+        ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
+        : null;
     const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
     const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
@@ -420,10 +449,6 @@ export function makeMeta(input: {
     const debug: DebugOptions | undefined = input.debug || debugEnabled
         ? { ...input.debug, enabled: debugEnabled }
         : undefined;
-    const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
-    const testId = nodeEnv === "test"
-        ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
-        : null;
     return {
         apiKeyId: input.apiKeyId,
         apiKeyRef: input.apiKeyRef,
@@ -454,8 +479,8 @@ export function makeMeta(input: {
         appName,
         requestUserId,
         sessionId,
-        testId,
         trace,
+        testId,
         requestMethod: input.req.method ?? null,
         accept,
         requestUrl,

@@ -4,6 +4,10 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import AccountDangerZoneClient from "@/components/(gateway)/settings/account/AccountDangerZoneClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
+export const metadata = {
+	title: "Danger Zone - Settings",
+};
+
 export default function AccountDangerPage() {
 	return (
 		<div className="space-y-6">

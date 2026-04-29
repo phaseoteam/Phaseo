@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import CurrentCredits from "@/components/(gateway)/credits/CurrentCredits";
 import Banner from "@/components/(gateway)/credits/Banner";
@@ -6,40 +7,20 @@ import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/Top
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
 import LowBalanceEmailAlertsClient from "@/components/(gateway)/credits/LowBalanceEmailAlertsClient";
 import { getStripe } from "@/lib/stripe";
-import {
-	GATEWAY_TIERS,
-	computeTierInfo,
-} from "@/components/(gateway)/credits/tiers";
-import { TierBadge } from "@/components/(gateway)/credits/TierBadge";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
 
 export const metadata: Metadata = {
 	title: "Credits - Settings",
 };
 
-function money(amount: number, currency: string) {
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		maximumFractionDigits: 0,
-	}).format(amount);
-}
-
-function formatDate(dateLike: string | Date) {
-	const date = typeof dateLike === "string" ? new Date(dateLike) : dateLike;
-	if (!Number.isFinite(date.getTime())) return "";
-	return new Intl.DateTimeFormat("en-US", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	}).format(date);
+function nanosToCredits(value: unknown): number {
+	const nanos = Number(value ?? 0);
+	return Number.isFinite(nanos) ? nanos / 1_000_000_000 : 0;
 }
 
 export default function Page(props: {
@@ -57,6 +38,7 @@ export default function Page(props: {
 async function CreditsSettingsContent(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+	const logPrefix = "[credits-debug]";
 	const searchParams = await props.searchParams;
 	const params = new URLSearchParams();
 	if (searchParams) {
@@ -67,124 +49,125 @@ async function CreditsSettingsContent(props: {
 	}
 	const queryString = params.toString();
 
-	// defaults
 	let initialBalance = 0;
 	let wallet: any = null;
 	let stripeInfo: any = null;
 	let lowBalanceEmailEnabled = false;
 	let lowBalanceEmailThresholdUsd: number | null = null;
-	let billingMode: "wallet" | "invoice" = "wallet";
-	let teamTier: "basic" | "enterprise" = "basic";
-	let invoiceOnboardingStatus: "none" | "pre_invoice" | "completed" = "none";
-	let invoiceProfileEnabled = false;
-	let invoiceBillingDay = 1;
-	let nextInvoiceAmount = 0;
-	let nextInvoiceDateIso: string | null = null;
-	let tierStats: {
-		lastMonth: number;
-		mtd: number;
-	} = { lastMonth: 0, mtd: 0 };
 
-	const workspaceId = await getWorkspaceIdFromCookie();
 	const supabase = await createClient();
+	let adminClient: ReturnType<typeof createAdminClient> | null = null;
+	try {
+		adminClient = createAdminClient();
+	} catch {
+		adminClient = null;
+	}
+	const readClient: any = adminClient ?? supabase;
+
 	const { data: authData } = await supabase.auth.getUser();
 	const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
 
-	// Fetch wallet (best-effort)
+	const workspaceId = await getWorkspaceIdFromCookie();
+
+	console.info(`${logPrefix} workspace resolution`, {
+		userId: authData.user?.id ?? null,
+		resolvedWorkspaceId: workspaceId ?? null,
+		hasAdminClient: Boolean(adminClient),
+	});
+
 	let w: any = null;
-	try {
-		const { data, error: walletErr } = await supabase
-			.from("wallets")
-			.select(
-				"workspace_id,stripe_customer_id,balance_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id"
-			)
-			.eq("workspace_id", workspaceId)
-			.maybeSingle();
+	if (workspaceId) {
+		try {
+			const { data, error: walletErr } = await readClient
+				.from("wallets")
+				.select(
+					"workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id",
+				)
+				.eq("workspace_id", workspaceId)
+				.maybeSingle();
 
-		if (walletErr) {
-			console.log("[ERROR] fetching wallet:", String(walletErr));
-		} else {
-			w = data ?? null;
-			wallet = w;
-			try {
-				const nanos = Number(w?.balance_nanos ?? 0);
-				initialBalance = nanos / 1_000_000_000;
-			} catch {
-				initialBalance = 0;
+			if (walletErr) {
+				console.error(`${logPrefix} wallet query error`, {
+					workspaceId,
+					code: walletErr.code ?? null,
+					message: walletErr.message ?? String(walletErr),
+				});
+			} else {
+				w = data ?? null;
+				wallet = w;
+				initialBalance = nanosToCredits(w?.balance_nanos);
+				console.info(`${logPrefix} wallet query result`, {
+					workspaceId,
+					walletFound: Boolean(w),
+					balanceNanos: w?.balance_nanos ?? null,
+					reservedNanos: w?.reserved_nanos ?? null,
+					initialBalance,
+				});
 			}
+		} catch (outerErr) {
+			console.error(`${logPrefix} unexpected wallet fetch error`, {
+				workspaceId,
+				error: String(outerErr),
+			});
 		}
-	} catch (outerErr) {
-		console.log("[ERROR] unexpected wallet fetch error:", String(outerErr));
+	} else {
+		console.info(`${logPrefix} wallet query skipped (missing workspaceId)`);
 	}
 
-	// Team settings (best-effort)
-	try {
-		const { data: settingsRow, error: settingsErr } = await supabase
-			.from("workspace_settings")
-			.select("low_balance_email_enabled,low_balance_email_threshold_nanos")
-			.eq("workspace_id", workspaceId)
-			.maybeSingle();
-
-		if (settingsErr) {
-			console.log("[WARN] fetching team settings:", String(settingsErr));
-		} else {
-			lowBalanceEmailEnabled = Boolean(settingsRow?.low_balance_email_enabled);
-			const nanos = Number(settingsRow?.low_balance_email_threshold_nanos ?? 0);
-			lowBalanceEmailThresholdUsd =
-				nanos > 0 ? Number((nanos / 1_000_000_000).toFixed(2)) : null;
-		}
-	} catch (outerErr) {
-		console.log("[WARN] unexpected team settings fetch error:", String(outerErr));
-	}
-
-	// Team billing mode (best-effort)
-	try {
-		const { data: teamRow, error: teamErr } = await supabase
-			.from("workspaces")
-			.select("billing_mode,tier,invoice_onboarding_status")
-			.eq("id", workspaceId)
-			.maybeSingle();
-
-		if (teamErr) {
-			console.log("[WARN] fetching workspace billing mode:", String(teamErr));
-		} else {
-			billingMode = teamRow?.billing_mode === "invoice" ? "invoice" : "wallet";
-			teamTier = String(teamRow?.tier ?? "basic").toLowerCase() === "enterprise"
-				? "enterprise"
-				: "basic";
-			const status = String(teamRow?.invoice_onboarding_status ?? "none").toLowerCase();
-			invoiceOnboardingStatus =
-				status === "pre_invoice"
-					? "pre_invoice"
-					: status === "completed"
-						? "completed"
-						: "none";
-		}
-	} catch (outerErr) {
-		console.log("[WARN] unexpected billing mode fetch error:", String(outerErr));
-	}
-
-	// Invoice profile (best-effort)
-	try {
-		const { data: invoiceProfileRow, error: invoiceProfileErr } = await supabase
-			.from("workspace_invoice_profiles")
-			.select("enabled,billing_day")
-			.eq("workspace_id", workspaceId)
-			.maybeSingle();
-
-		if (invoiceProfileErr) {
-			console.log("[WARN] fetching invoice profile:", String(invoiceProfileErr));
-		} else {
-			invoiceProfileEnabled = Boolean(invoiceProfileRow?.enabled);
-			if (Number.isFinite(Number(invoiceProfileRow?.billing_day))) {
-				invoiceBillingDay = Number(invoiceProfileRow?.billing_day);
+	if (workspaceId && !w) {
+		try {
+			const { data: ledgerRow, error: ledgerErr } = await readClient
+				.from("credit_ledger")
+				.select("after_balance_nanos,event_time")
+				.eq("workspace_id", workspaceId)
+				.order("event_time", { ascending: false })
+				.limit(1)
+				.maybeSingle();
+			if (ledgerErr) {
+				console.warn(`${logPrefix} ledger fallback query error`, {
+					workspaceId,
+					code: ledgerErr.code ?? null,
+					message: ledgerErr.message ?? String(ledgerErr),
+				});
+			} else if (ledgerRow) {
+				initialBalance = nanosToCredits(ledgerRow.after_balance_nanos);
+				console.info(`${logPrefix} ledger fallback result`, {
+					workspaceId,
+					afterBalanceNanos: ledgerRow.after_balance_nanos ?? null,
+					initialBalance,
+				});
+			} else {
+				console.info(`${logPrefix} ledger fallback empty`, { workspaceId });
 			}
+		} catch (err) {
+			console.warn(`${logPrefix} balance fallback from ledger failed`, {
+				workspaceId,
+				error: String(err),
+			});
 		}
-	} catch (outerErr) {
-		console.log("[WARN] unexpected invoice profile fetch error:", String(outerErr));
 	}
 
-	// Stripe: customer + payment methods
+	if (workspaceId) {
+		try {
+			const { data: settingsRow, error: settingsErr } = await readClient
+				.from("workspace_settings")
+				.select("low_balance_email_enabled,low_balance_email_threshold_nanos")
+				.eq("workspace_id", workspaceId)
+				.maybeSingle();
+
+			if (settingsErr) {
+				console.log("[WARN] fetching team settings:", String(settingsErr));
+			} else {
+				lowBalanceEmailEnabled = Boolean(settingsRow?.low_balance_email_enabled);
+				const nanos = Number(settingsRow?.low_balance_email_threshold_nanos ?? 0);
+				lowBalanceEmailThresholdUsd =
+					nanos > 0 ? Number((nanos / 1_000_000_000).toFixed(2)) : null;
+			}
+		} catch (outerErr) {
+			console.log("[WARN] unexpected team settings fetch error:", String(outerErr));
+		}
+	}
+
 	let hasPaymentMethod = false;
 	let customerInfo: any = null;
 	let paymentMethods: any[] = [];
@@ -197,10 +180,7 @@ async function CreditsSettingsContent(props: {
 			try {
 				customerInfo = await stripe.customers.retrieve(customerId);
 			} catch (custErr) {
-				console.log(
-					"[WARN] stripe.customer.retrieve failed:",
-					String(custErr)
-				);
+				console.log("[WARN] stripe.customer.retrieve failed:", String(custErr));
 				customerInfo = null;
 			}
 
@@ -222,16 +202,11 @@ async function CreditsSettingsContent(props: {
 
 				hasPaymentMethod = paymentMethods.length > 0;
 				defaultPaymentMethodId =
-					(customerInfo as any)?.invoice_settings
-						?.default_payment_method ?? null;
+					(customerInfo as any)?.invoice_settings?.default_payment_method ?? null;
 			} catch (pmErr) {
-				console.log(
-					"[WARN] stripe.paymentMethods.list failed:",
-					String(pmErr)
-				);
+				console.log("[WARN] stripe.paymentMethods.list failed:", String(pmErr));
 				hasPaymentMethod = Boolean(
-					(customerInfo as any)?.invoice_settings
-						?.default_payment_method
+					(customerInfo as any)?.invoice_settings?.default_payment_method,
 				);
 			}
 		}
@@ -249,118 +224,33 @@ async function CreditsSettingsContent(props: {
 		defaultPaymentMethodId,
 	};
 
-	// Latest successful Stripe payment timestamp for payment banner confirmation.
 	let latestPaymentSuccessAt: string | null = null;
-	try {
-		const { data: latestRow, error: latestErr } = await supabase
-			.from("credit_ledger")
-			.select("event_time,status,amount_nanos")
-			.eq("workspace_id", workspaceId)
-			.eq("ref_type", "Stripe_Payment_Intent")
-			.or("status.ilike.paid,status.ilike.succeeded")
-			.gt("amount_nanos", 0)
-			.order("event_time", { ascending: false })
-			.limit(1)
-			.maybeSingle();
-
-		if (!latestErr && latestRow?.event_time) {
-			latestPaymentSuccessAt = String(latestRow.event_time);
-		}
-	} catch {
-		latestPaymentSuccessAt = null;
-	}
-
-	// Tier stats (best-effort)
 	if (workspaceId) {
 		try {
-			const [{ data: prev, error: e1 }, { data: mtd, error: e2 }] =
-				await Promise.all([
-					supabase
-						.rpc("monthly_spend_prev_cents", {
-							p_team: workspaceId,
-						})
-						.single(),
-					supabase
-						.rpc("mtd_spend_cents", {
-							p_team: workspaceId,
-						})
-						.single(),
-				]);
+			const { data: latestRow, error: latestErr } = await readClient
+				.from("credit_ledger")
+				.select("event_time,status,amount_nanos")
+				.eq("workspace_id", workspaceId)
+				.eq("ref_type", "Stripe_Payment_Intent")
+				.or("status.ilike.paid,status.ilike.succeeded")
+				.gt("amount_nanos", 0)
+				.order("event_time", { ascending: false })
+				.limit(1)
+				.maybeSingle();
 
-			if (e1)
-				console.log(
-					"[WARN] prev month spend (tier badge):",
-					String(e1)
-				);
-			if (e2) console.log("[WARN] MTD spend (tier badge):", String(e2));
-
-			tierStats = {
-                                lastMonth: Number(prev ?? 0) / 1_000_000_000,
-                                mtd: Number(mtd ?? 0) / 1_000_000_000,
-			};
-		} catch (err) {
-			console.log("[ERROR] tier stats fetch:", String(err));
-			tierStats = { lastMonth: 0, mtd: 0 };
-		}
-	}
-
-	const tiers = GATEWAY_TIERS;
-	const {
-		current,
-		next,
-		topTier,
-		savingVsBase,
-		projectedSavings,
-		remainingToNext,
-		nextDiscountDelta,
-	} = computeTierInfo({
-		lastMonth: tierStats.lastMonth,
-		mtd: tierStats.mtd,
-		currentTierKey: teamTier,
-		tiers,
-	});
-
-	const currency = "USD";
-	const badgeSavingsFormatted =
-		projectedSavings > 0 ? money(projectedSavings, currency) : null;
-	const badgeRemainingFormatted =
-		!topTier && remainingToNext > 0
-			? money(remainingToNext, currency)
-			: null;
-	const isEnterpriseInvoiceMode =
-		billingMode === "invoice" && teamTier === "enterprise";
-	const needsInvoiceOnboarding = isEnterpriseInvoiceMode && !invoiceProfileEnabled;
-
-	if (isEnterpriseInvoiceMode) {
-		// Fallback to MTD usage if invoice preview RPC is unavailable.
-		nextInvoiceAmount = Math.max(0, tierStats.mtd);
-		try {
-			const { data: previewRows, error: previewErr } = await supabase.rpc(
-				"get_team_invoice_preview",
-				{ p_workspace_id: workspaceId }
-			);
-
-			if (previewErr) {
-				console.log("[WARN] fetching invoice preview:", String(previewErr));
-			} else {
-				const row = Array.isArray(previewRows)
-					? previewRows[0]
-					: previewRows;
-				const amountNanos = Number(row?.next_invoice_amount_nanos ?? 0);
-				nextInvoiceAmount =
-					Number.isFinite(amountNanos) && amountNanos > 0
-						? amountNanos / 1_000_000_000
-						: 0;
-				invoiceBillingDay = Number(row?.billing_day ?? 1) || 1;
-				nextInvoiceDateIso =
-					typeof row?.cycle_end === "string"
-						? row.cycle_end
-						: nextInvoiceDateIso;
+			if (!latestErr && latestRow?.event_time) {
+				latestPaymentSuccessAt = String(latestRow.event_time);
 			}
-		} catch (err) {
-			console.log("[WARN] unexpected invoice preview fetch error:", String(err));
+		} catch {
+			latestPaymentSuccessAt = null;
 		}
 	}
+
+	console.info(`${logPrefix} final balance resolved`, {
+		workspaceId: workspaceId ?? null,
+		walletWorkspaceId: w?.workspace_id ?? null,
+		initialBalance,
+	});
 
 	return (
 		<div
@@ -368,23 +258,7 @@ async function CreditsSettingsContent(props: {
 			data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>
-			<SettingsPageHeader
-				title="Credits"
-				actions={
-					<TierBadge
-						href="/settings/tiers"
-						tierName={current.name}
-						feePct={current.feePct}
-						savingsPoints={savingVsBase}
-						savingsAmountFormatted={badgeSavingsFormatted}
-						nextTierName={next?.name ?? null}
-						nextFeePct={next?.feePct ?? null}
-						nextDiscountDelta={nextDiscountDelta}
-						remainingFormatted={badgeRemainingFormatted}
-						topTier={topTier}
-					/>
-				}
-			/>
+			<SettingsPageHeader title="Credits" />
 
 			<Banner
 				queryString={queryString ?? null}
@@ -392,102 +266,38 @@ async function CreditsSettingsContent(props: {
 			/>
 
 			<CurrentCredits
-				balance={isEnterpriseInvoiceMode ? nextInvoiceAmount : initialBalance}
-				title={isEnterpriseInvoiceMode ? "Next Invoice Amount" : "Current Balance"}
-				subtitle={
-					isEnterpriseInvoiceMode
-						? nextInvoiceDateIso
-							? `Current cycle closes on ${formatDate(nextInvoiceDateIso)}`
-							: `Current cycle closes on billing day ${invoiceBillingDay}`
-						: null
-				}
-				refreshAriaLabel={
-					isEnterpriseInvoiceMode
-						? "refresh invoice amount"
-						: "refresh balance"
-				}
+				balance={initialBalance}
+				title="Current Balance"
+				refreshAriaLabel="refresh balance"
 			/>
 
-			{needsInvoiceOnboarding ? (
-				<Card className="border-amber-300/70 bg-amber-50/50 dark:border-amber-800/80 dark:bg-amber-950/20">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-base">Complete invoice setup</CardTitle>
-					</CardHeader>
-					<CardContent className="flex flex-wrap items-center justify-between gap-3">
-						<p className="text-sm text-muted-foreground">
-							This workspace is in invoice mode, but billing day and terms are not fully configured yet.
-						</p>
-						<Button asChild size="sm">
-							<Link href="/settings/credits/onboarding">Finish setup</Link>
-						</Button>
+			<div className="space-y-6">
+				<Card>
+					<CardContent className="p-0">
+						<div className="grid grid-cols-1 md:grid-cols-2">
+							<div className="p-6">
+								<BuyCreditsClient
+									wallet={wallet}
+									stripeInfo={stripeInfo}
+									embedded
+								/>
+							</div>
+							<div className="border-t md:border-t-0 md:border-l p-6">
+								<AutoTopUpClient
+									wallet={wallet}
+									stripeInfo={stripeInfo}
+									embedded
+								/>
+							</div>
+						</div>
 					</CardContent>
 				</Card>
-			) : null}
-
-			<div className="space-y-6">
-				{isEnterpriseInvoiceMode ? (
-					<Card>
-						<CardHeader className="pb-2">
-							<CardTitle>Enterprise Invoicing</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2 text-sm text-muted-foreground">
-							<p>
-								Post-usage invoicing is enabled for this workspace. Wallet
-								top-ups and auto top-up are not used in invoice mode.
-							</p>
-							<p>
-								Billing day: <span className="font-medium text-foreground">{invoiceBillingDay}</span>
-							</p>
-							{nextInvoiceDateIso ? (
-								<p>
-									Next invoice date:{" "}
-									<span className="font-medium text-foreground">
-										{formatDate(nextInvoiceDateIso)}
-									</span>
-								</p>
-							) : null}
-						</CardContent>
-					</Card>
-				) : (
-					<>
-						<Card>
-							<CardContent className="p-0">
-								<div className="grid grid-cols-1 md:grid-cols-2">
-									<div className="p-6">
-										<BuyCreditsClient
-											wallet={wallet}
-											stripeInfo={stripeInfo}
-											embedded
-											invoiceInviteStatus={invoiceOnboardingStatus}
-											tierInfo={{
-												current,
-												next,
-												topTier,
-												savingVsBase,
-												projectedSavings,
-												remainingToNext,
-												nextDiscountDelta,
-											}}
-										/>
-									</div>
-									<div className="border-t md:border-t-0 md:border-l p-6">
-										<AutoTopUpClient
-											wallet={wallet}
-											stripeInfo={stripeInfo}
-											embedded
-										/>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-						<div>
-							<LowBalanceEmailAlertsClient
-								enabled={lowBalanceEmailEnabled}
-								thresholdUsd={lowBalanceEmailThresholdUsd}
-							/>
-						</div>
-					</>
-				)}
+				<div>
+					<LowBalanceEmailAlertsClient
+						enabled={lowBalanceEmailEnabled}
+						thresholdUsd={lowBalanceEmailThresholdUsd}
+					/>
+				</div>
 			</div>
 		</div>
 	);

@@ -51,9 +51,9 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 			},
 			{
 				href: "/settings/beta",
-				label: "Beta",
+				label: "Feature Preview",
 				icon: Beaker,
-				badge: "Beta",
+				badge: "Preview",
 				match: ["/settings/beta"],
 			},
 			{

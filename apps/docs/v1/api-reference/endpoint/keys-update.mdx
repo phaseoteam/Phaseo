@@ -1,0 +1,11 @@
+---
+title: "Update API Key"
+badge: "Beta"
+openapi: "PATCH /keys/{id}"
+description: "Update API key metadata and status."
+---
+<Note>
+This endpoint requires a management API key. Standard Gateway API keys are not accepted.
+</Note>
+
+Use this endpoint to rename a key, adjust scopes, set expiry, disable it, or set a spend limit with `limit` and `limit_reset`.

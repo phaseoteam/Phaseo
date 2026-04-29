@@ -92,19 +92,30 @@ function getTabSet(
 	) {
 		return [
 			{
-				href: "/settings/workspaces/members",
-				label: "Members",
+				href: "/settings/workspaces/general",
+				label: "General",
 				match: [
 					"/settings/workspaces",
 					"/settings/workspaces/members",
+					"/settings/workspaces/settings",
 					"/settings/teams",
 					"/settings/teams/members",
+					"/settings/teams/settings",
 				],
 			},
 			{
-				href: "/settings/workspaces/settings",
-				label: "Workspace Settings",
-				match: ["/settings/teams/settings"],
+				href: "/settings/workspaces/access",
+				label: "Access",
+			},
+		];
+	}
+
+	if (pathname.startsWith("/settings/beta")) {
+		return [
+			{
+				href: "/settings/beta",
+				label: "Feature Preview",
+				badge: "Preview",
 			},
 		];
 	}
@@ -180,7 +191,7 @@ export default function SettingsTopTabs({
 }) {
 	const pathname = usePathname() ?? "";
 	const tabs = getTabSet(pathname, usageAlertsCount, usageAlertsTone);
-	if (!tabs || tabs.length <= 1) return null;
+	if (!tabs) return null;
 
 	const activeTab =
 		tabs
@@ -293,59 +304,61 @@ export default function SettingsTopTabs({
 
 			{/* Mobile: dropdown */}
 			<div className="md:hidden mb-2">
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button
-							variant="outline"
-							className="group w-full justify-between"
-						>
-							<span className="flex items-center gap-2 min-w-0">
-								<span className="truncate text-sm">
-									{activeTab?.label ?? "Settings"}
-								</span>
-								{activeTab?.badge ? (
-									<Badge
-										variant="outline"
-										className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
-									>
-										{activeTab.badge}
-									</Badge>
-								) : null}
-							</span>
-							<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						align="start"
-						className="w-(--radix-popper-anchor-width)"
-					>
-						{tabs.map((t) => (
-							<DropdownMenuItem key={t.href} asChild>
-								<Link href={t.href}>
-									<span className="flex w-full items-center justify-between gap-3">
-										<span className="min-w-0 truncate">
-											{t.label}
-										</span>
-										{t.count && t.count > 0 ? (
-											<span
-												className={cn(
-													"inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none text-white",
-													t.tone === "critical"
-														? "bg-red-600"
-														: t.tone === "notice"
-															? "bg-blue-600"
-															: "bg-amber-500",
-												)}
-											>
-												{t.count}
-											</span>
-										) : null}
+				{tabs.length <= 1 ? null : (
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="outline"
+								className="group w-full justify-between"
+							>
+								<span className="flex items-center gap-2 min-w-0">
+									<span className="truncate text-sm">
+										{activeTab?.label ?? "Settings"}
 									</span>
-								</Link>
-							</DropdownMenuItem>
-						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
+									{activeTab?.badge ? (
+										<Badge
+											variant="outline"
+											className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
+										>
+											{activeTab.badge}
+										</Badge>
+									) : null}
+								</span>
+								<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="start"
+							className="w-(--radix-popper-anchor-width)"
+						>
+							{tabs.map((t) => (
+								<DropdownMenuItem key={t.href} asChild>
+									<Link href={t.href}>
+										<span className="flex w-full items-center justify-between gap-3">
+											<span className="min-w-0 truncate">
+												{t.label}
+											</span>
+											{t.count && t.count > 0 ? (
+												<span
+													className={cn(
+														"inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none text-white",
+														t.tone === "critical"
+															? "bg-red-600"
+															: t.tone === "notice"
+																? "bg-blue-600"
+																: "bg-amber-500",
+													)}
+												>
+													{t.count}
+												</span>
+											) : null}
+										</span>
+									</Link>
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				)}
 			</div>
 		</>
 	);

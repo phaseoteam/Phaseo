@@ -19,16 +19,40 @@ import { updateManagementKeyAction } from "@/app/(dashboard)/settings/management
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
+function toDateTimeLocalInput(value: string | null): string {
+	if (!value) return "";
+	const date = new Date(value);
+	if (!Number.isFinite(date.getTime())) return "";
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function toIsoFromDateTimeLocalInput(value: string): string | null {
+	if (!value) return null;
+	const date = new Date(value);
+	if (!Number.isFinite(date.getTime())) return null;
+	return date.toISOString();
+}
+
 export default function EditManagementKeyItem({ k }: any) {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState(k.name || "");
 	const [paused, setPaused] = useState(k.status !== "active");
+	const [expiresAtLocal, setExpiresAtLocal] = useState(() =>
+		toDateTimeLocalInput(
+			typeof k?.expires_at === "string" ? k.expires_at : null
+		)
+	);
 	const [loading, setLoading] = useState(false);
 
 	async function onSave(e?: React.FormEvent) {
 		e?.preventDefault();
 		setLoading(true);
-		const promise = updateManagementKeyAction(k.id, { name, paused });
+		const promise = updateManagementKeyAction(k.id, {
+			name,
+			paused,
+			expiresAt: toIsoFromDateTimeLocalInput(expiresAtLocal),
+		});
 		try {
 			await toast.promise(promise, {
 				loading: "Saving management API key...",
@@ -75,6 +99,17 @@ export default function EditManagementKeyItem({ k }: any) {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 					/>
+					<div className="space-y-2">
+						<Label>Expiry</Label>
+						<Input
+							type="datetime-local"
+							value={expiresAtLocal}
+							onChange={(e) => setExpiresAtLocal(e.target.value)}
+						/>
+						<p className="text-xs text-muted-foreground">
+							Optional. Clear this field to remove the expiry date.
+						</p>
+					</div>
 					<div className="flex items-center justify-between">
 						<div className="text-sm">Paused</div>
 						<Switch

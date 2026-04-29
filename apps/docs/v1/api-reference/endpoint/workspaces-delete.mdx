@@ -1,0 +1,11 @@
+---
+title: "Delete Workspace"
+badge: "Beta"
+openapi: "DELETE /workspaces/{id}"
+description: "Delete a workspace by id or slug."
+---
+<Note>
+This endpoint requires a management API key. Standard Gateway API keys are not accepted.
+</Note>
+
+The default workspace cannot be deleted, and workspaces with active API keys must be cleaned up first.

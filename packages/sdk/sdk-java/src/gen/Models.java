@@ -93,6 +93,82 @@ public final class Models {
 		public Integer output_tokens;
 	}
 
+	public static class ApiKey {
+		public String created_at;
+		public String created_by;
+		public Boolean disabled;
+		public String expires_at;
+		public String hash;
+		public String id;
+		public String label;
+		public String last_used_at;
+		public String name;
+		public String prefix;
+		public Object scopes;
+		public Boolean soft_blocked;
+		public String status;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class ApiKeyCreateRequest {
+		public Boolean disabled;
+		public String expires_at;
+		public Boolean include_byok_in_limit;
+		public Double limit;
+		public Object limit_reset;
+		public String name;
+		public Object scopes;
+		public Boolean soft_blocked;
+		public String workspace_id;
+	}
+
+	public static class ApiKeyListResponse {
+		public java.util.List<Object> data;
+		public Integer total_count;
+	}
+
+	public static class ApiKeyResponse {
+		public Object data;
+	}
+
+	public static class ApiKeyScopeValue {
+	}
+
+	public static class ApiKeyUpdateRequest {
+		public Boolean disabled;
+		public String expires_at;
+		public Boolean include_byok_in_limit;
+		public Double limit;
+		public Object limit_reset;
+		public String name;
+		public Object scopes;
+		public Boolean soft_blocked;
+	}
+
+	public static class ApiKeyWithValue {
+		public String created_at;
+		public String created_by;
+		public Boolean disabled;
+		public String expires_at;
+		public String hash;
+		public String id;
+		public String key;
+		public String label;
+		public String last_used_at;
+		public String name;
+		public String prefix;
+		public Object scopes;
+		public Boolean soft_blocked;
+		public String status;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class ApiKeyWithValueResponse {
+		public Object data;
+	}
+
 	public static class AudioContentPart {
 		public Object input_audio;
 		public Object type;
@@ -256,6 +332,11 @@ public final class Models {
 		public java.util.List<Object> tool_calls;
 	}
 
+	public static class CreditsResponse {
+		public Object credits;
+		public Object ok;
+	}
+
 	public static class DataModel {
 		public String deprecation_date;
 		public Boolean hidden;
@@ -279,6 +360,10 @@ public final class Models {
 		public Boolean return_upstream_response;
 		public Boolean trace;
 		public Object trace_level;
+	}
+
+	public static class DeletedResponse {
+		public Object deleted;
 	}
 
 	public static class Embedding {
@@ -374,10 +459,6 @@ public final class Models {
 		public String team_id;
 		public Double throughput;
 		public Object usage;
-	}
-
-	public static class HealthCheckResponse {
-		public String status;
 	}
 
 	public static class Image {
@@ -968,6 +1049,55 @@ public final class Models {
 
 	public static class VideoOutputConfig {
 		public Object access;
+	}
+
+	public static class Workspace {
+		public String created_at;
+		public String created_by;
+		public String id;
+		public String name;
+		public String slug;
+		public String updated_at;
+	}
+
+	public static class WorkspaceActivityEntry {
+		public Double cost_cents;
+		public String endpoint;
+		public Integer latency_ms;
+		public String model;
+		public String provider;
+		public String request_id;
+		public String timestamp;
+		public Object usage;
+	}
+
+	public static class WorkspaceActivityResponse {
+		public java.util.List<Object> activity;
+		public Integer limit;
+		public Integer offset;
+		public Object ok;
+		public Integer period_days;
+		public Integer total;
+		public Double total_cost_cents;
+	}
+
+	public static class WorkspaceCreateRequest {
+		public String name;
+		public String slug;
+	}
+
+	public static class WorkspaceListResponse {
+		public java.util.List<Object> data;
+		public Integer total_count;
+	}
+
+	public static class WorkspaceResponse {
+		public Object data;
+	}
+
+	public static class WorkspaceUpdateRequest {
+		public String name;
+		public String slug;
 	}
 
 }

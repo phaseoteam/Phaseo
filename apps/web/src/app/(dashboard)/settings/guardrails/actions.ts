@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { invalidateWorkspacePolicyCache } from "@/lib/gateway/invalidateWorkspacePolicyCache";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
@@ -69,7 +68,6 @@ export async function updateGlobalGuardrailsSettings(
 		.upsert(update, { onConflict: "workspace_id" });
 	if (error) throw error;
 
-	await invalidateWorkspacePolicyCache(workspaceId);
 	revalidatePath("/settings/guardrails");
 }
 
@@ -165,7 +163,6 @@ export async function createGuardrail(payload: GuardrailUpsertPayload) {
 		.maybeSingle();
 	if (error) throw error;
 
-	await invalidateWorkspacePolicyCache(workspaceId);
 	revalidatePath("/settings/guardrails");
 	return { id: data?.id as string | undefined };
 }
@@ -234,7 +231,6 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 		.eq("workspace_id", workspaceId);
 	if (error) throw error;
 
-	await invalidateWorkspacePolicyCache(workspaceId);
 	revalidatePath("/settings/guardrails");
 	return { success: true };
 }
@@ -253,7 +249,6 @@ export async function deleteGuardrail(id: string) {
 		.eq("workspace_id", workspaceId);
 	if (error) throw error;
 
-	await invalidateWorkspacePolicyCache(workspaceId);
 	revalidatePath("/settings/guardrails");
 	return { success: true };
 }
@@ -306,7 +301,6 @@ export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 		if (insErr) throw insErr;
 	}
 
-	await invalidateWorkspacePolicyCache(workspaceId);
 	revalidatePath("/settings/guardrails");
 	return { success: true };
 }

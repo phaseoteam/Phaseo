@@ -16,6 +16,10 @@ import { PaymentMethodsManager } from "./PaymentMethodsManager";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
 
+export const metadata = {
+	title: "Payment Methods - Settings",
+};
+
 export default function Page() {
   return (
     <div className="space-y-6">

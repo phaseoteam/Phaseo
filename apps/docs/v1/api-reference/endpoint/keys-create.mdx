@@ -1,0 +1,11 @@
+---
+title: "Create API Key"
+badge: "Beta"
+openapi: "POST /keys"
+description: "Create a new API key in the authenticated workspace."
+---
+<Note>
+This endpoint requires a management API key. Standard Gateway API keys are not accepted.
+</Note>
+
+The plaintext API key is returned once at creation time. OpenRouter-style `limit`, `limit_reset`, and `include_byok_in_limit` fields are accepted; AI Stats currently treats `include_byok_in_limit` as compatibility-only and always excludes BYOK from this key limit field.

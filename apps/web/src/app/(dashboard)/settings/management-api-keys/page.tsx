@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import CreateManagementKeyDialog from "@/components/(gateway)/settings/management-api-keys/CreateManagementKeyDialog";
 import ManagementKeysPanel from "@/components/(gateway)/settings/management-api-keys/ManagementKeysPanel";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
@@ -13,7 +14,9 @@ export const metadata = {
 	title: "Management API Keys - Settings",
 };
 
-export default function ManagementApiKeysPage() {
+export default function ManagementApiKeysPage(props: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
 	return (
 		<div className="space-y-6">
 			<Alert
@@ -26,57 +29,79 @@ export default function ManagementApiKeysPage() {
 				</AlertTitle>
 				<AlertDescription className="text-amber-700 dark:text-amber-400">
 					Management API keys grant higher privileges to your account. They can
-					create resources, manage teams, and access sensitive data. Never share
+					create resources, manage workspaces, and access sensitive data. Never share
 					these keys and rotate them immediately if compromised.
 				</AlertDescription>
 			</Alert>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<ManagementApiKeysContent />
+				<ManagementApiKeysContent searchParams={props.searchParams} />
 			</Suspense>
 		</div>
 	);
 }
 
-async function ManagementApiKeysContent() {
+async function ManagementApiKeysContent({
+	searchParams,
+}: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
 	const supabase = await createClient();
+	let adminClient: ReturnType<typeof createAdminClient> | null = null;
+	try {
+		adminClient = createAdminClient();
+	} catch {
+		adminClient = null;
+	}
+	const readClient: any = adminClient ?? supabase;
 
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
+	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
+	await searchParams;
 
-	const { data: managementKeys } = await supabase
-		.from("management_keys")
-		.select("*");
+	const activeWorkspaceId = String(resolvedWorkspaceId ?? "").trim();
 
-	const { data: teamUsers } = await supabase
-		.from("workspace_members")
-		.select("workspace_id, teams:workspaces(id, name)")
-		.eq("user_id", user?.id);
-
-	const initialTeamId = await getWorkspaceIdFromCookie();
-
-	const teams: any[] = [];
-
-	if (teamUsers) {
-		for (const tu of teamUsers) {
-			if (tu?.teams) {
-				const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
-				if (team?.id && team?.name) {
-					teams.push({ id: team.id, name: team.name });
-				}
-			}
-		}
+	if (!activeWorkspaceId) {
+		return (
+			<div className="space-y-6">
+				<SettingsPageHeader
+					title="Management API Keys"
+					meta={<Badge variant="outline">Beta</Badge>}
+					description="Manage elevated keys for automated workspace and key management."
+				/>
+				<Alert>
+					<AlertTitle>No workspace selected</AlertTitle>
+					<AlertDescription>
+						Select a workspace in the header to view and manage its management API keys.
+					</AlertDescription>
+				</Alert>
+			</div>
+		);
 	}
 
-	const keysArray = (managementKeys ?? []).map((k: any) => ({ ...k }));
+	const [{ data: activeWorkspace }, { data: managementKeys }] = await Promise.all([
+		readClient
+			.from("workspaces")
+			.select("id, name")
+			.eq("id", activeWorkspaceId)
+			.maybeSingle(),
+		readClient
+			.from("management_keys")
+			.select("*")
+			.eq("workspace_id", activeWorkspaceId)
+			.order("created_at", { ascending: false }),
+	]);
 
-	const teamsWithKeys = teams.map((t) => ({
-		...t,
-		keys: keysArray.filter(
-			(k: any) => (k.workspace_id ?? null) === (t.id ?? null)
-		),
-	}));
+	const workspaceName = String((activeWorkspace as any)?.name ?? "").trim() || "Current Workspace";
+	const teamsWithKeys = [
+		{
+			id: activeWorkspaceId,
+			name: workspaceName,
+			keys: (managementKeys ?? []).map((key: any) => ({ ...key })),
+		},
+	];
 
 	return (
 		<div className="space-y-6">
@@ -87,14 +112,13 @@ async function ManagementApiKeysContent() {
 				actions={
 					<CreateManagementKeyDialog
 						currentUserId={user?.id}
-						currentTeamId={initialTeamId}
-						teams={teams}
+						currentWorkspaceId={activeWorkspaceId}
+						workspaces={[{ id: activeWorkspaceId, name: workspaceName }]}
 					/>
 				}
 			/>
 			<ManagementKeysPanel
 				teamsWithKeys={teamsWithKeys}
-				initialTeamId={initialTeamId}
 				currentUserId={user?.id}
 			/>
 		</div>

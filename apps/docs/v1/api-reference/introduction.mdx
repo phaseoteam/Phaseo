@@ -26,8 +26,9 @@ All endpoint paths in this page are relative to that `/v1` base URL.
 
 ## Authentication
 
-All endpoints require a gateway API key to help mitigate abuse. Supply it as
-an `Authorization: Bearer` header. Keys use the format
+Most endpoints require a standard gateway API key. Elevated administration APIs
+require a management API key created in the dashboard. Supply credentials as an
+`Authorization: Bearer` header. Keys use the format
 `aistats_v1_sk_<kid>_<secret>` and map back to the teams you manage inside the
 dashboard.
 
@@ -52,7 +53,7 @@ The table below outlines the main endpoints available in the AI Stats Gateway ri
 | `GET /videos/{video_id}/content`, `DELETE /videos/{video_id}` | Fetch completed video bytes or delete a job. |
 | `POST /music/generate`, `GET /music/generate/{music_id}` | Create and poll music generation jobs. |
 | `POST /ocr`, `POST /batches`, `GET /batches/{batch_id}`, `POST /files`, `GET /files`, `GET /files/{file_id}` | OCR is active; batch and file endpoints are currently placeholders returning `501 not_implemented`. |
-| `GET /gateway/models`, `GET /data/models`, `GET /providers`, `GET /health`, `GET /generations?id=...`, `GET/POST /management/keys`, `GET/PATCH/DELETE /management/keys/{id}` | Platform API discovery and management endpoints. |
+| `GET /gateway/models`, `GET /data/models`, `GET /providers`, `GET /generations?id=...`, `GET /key`, `GET /keys`, `GET /workspaces`, `GET /credits`, `GET /activity` | Platform API discovery endpoints plus elevated administration endpoints. |
 
 Use the `endpoints` query parameter on `GET /gateway/models` to reproduce the per-surface catalogues (chat, moderations, embeddings, images, video, or audio) without bouncing between separate endpoints.
 

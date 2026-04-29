@@ -96,6 +96,81 @@ struct AnthropicUsage {
 	std::optional<int> output_tokens;
 };
 
+struct ApiKey {
+	std::optional<std::string> created_at;
+	std::optional<std::string> created_by;
+	bool disabled;
+	std::optional<std::string> expires_at;
+	std::string hash;
+	std::string id;
+	std::optional<std::string> label;
+	std::optional<std::string> last_used_at;
+	std::optional<std::string> name;
+	std::optional<std::string> prefix;
+	std::any scopes;
+	bool soft_blocked;
+	std::optional<std::string> status;
+	std::optional<std::string> updated_at;
+	std::string workspace_id;
+};
+
+struct ApiKeyCreateRequest {
+	std::optional<bool> disabled;
+	std::optional<std::string> expires_at;
+	std::optional<bool> include_byok_in_limit;
+	std::optional<double> limit;
+	std::any limit_reset;
+	std::string name;
+	std::any scopes;
+	std::optional<bool> soft_blocked;
+	std::string workspace_id;
+};
+
+struct ApiKeyListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	int total_count;
+};
+
+struct ApiKeyResponse {
+	std::map<std::string, std::any> data;
+};
+
+using ApiKeyScopeValue = std::any;
+
+struct ApiKeyUpdateRequest {
+	std::optional<bool> disabled;
+	std::optional<std::string> expires_at;
+	std::optional<bool> include_byok_in_limit;
+	std::optional<double> limit;
+	std::any limit_reset;
+	std::string name;
+	std::any scopes;
+	std::optional<bool> soft_blocked;
+};
+
+struct ApiKeyWithValue {
+	std::optional<std::string> created_at;
+	std::optional<std::string> created_by;
+	bool disabled;
+	std::optional<std::string> expires_at;
+	std::string hash;
+	std::string id;
+	std::string key;
+	std::optional<std::string> label;
+	std::optional<std::string> last_used_at;
+	std::optional<std::string> name;
+	std::optional<std::string> prefix;
+	std::any scopes;
+	bool soft_blocked;
+	std::optional<std::string> status;
+	std::optional<std::string> updated_at;
+	std::string workspace_id;
+};
+
+struct ApiKeyWithValueResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct AudioContentPart {
 	std::map<std::string, std::any> input_audio;
 	std::any type;
@@ -258,6 +333,11 @@ struct ChatMessage {
 	std::vector<std::map<std::string, std::any>> tool_calls;
 };
 
+struct CreditsResponse {
+	std::map<std::string, std::any> credits;
+	std::any ok;
+};
+
 struct DataModel {
 	std::optional<std::string> deprecation_date;
 	std::optional<bool> hidden;
@@ -280,6 +360,10 @@ struct DebugOptions {
 	std::optional<bool> return_upstream_response;
 	std::optional<bool> trace;
 	std::any trace_level;
+};
+
+struct DeletedResponse {
+	std::any deleted;
 };
 
 struct Embedding {
@@ -375,10 +459,6 @@ struct GenerationResponse {
 	std::string team_id;
 	std::optional<double> throughput;
 	std::optional<std::map<std::string, std::any>> usage;
-};
-
-struct HealthCheckResponse {
-	std::string status;
 };
 
 struct Image {
@@ -960,6 +1040,55 @@ struct VideoOutput {
 
 struct VideoOutputConfig {
 	std::any access;
+};
+
+struct Workspace {
+	std::optional<std::string> created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::optional<std::string> name;
+	std::optional<std::string> slug;
+	std::optional<std::string> updated_at;
+};
+
+struct WorkspaceActivityEntry {
+	double cost_cents;
+	std::optional<std::string> endpoint;
+	std::optional<int> latency_ms;
+	std::optional<std::string> model;
+	std::optional<std::string> provider;
+	std::optional<std::string> request_id;
+	std::optional<std::string> timestamp;
+	std::optional<std::map<std::string, std::any>> usage;
+};
+
+struct WorkspaceActivityResponse {
+	std::vector<std::map<std::string, std::any>> activity;
+	int limit;
+	int offset;
+	std::any ok;
+	int period_days;
+	int total;
+	double total_cost_cents;
+};
+
+struct WorkspaceCreateRequest {
+	std::string name;
+	std::string slug;
+};
+
+struct WorkspaceListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	int total_count;
+};
+
+struct WorkspaceResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkspaceUpdateRequest {
+	std::string name;
+	std::string slug;
 };
 
 } // namespace ai_stats::gen

@@ -10,7 +10,7 @@ The Gateway uses bearer tokens for authentication. Every request must include a 
 ## API keys
 
 -   **API Keys** are scoped to all models and providers available to your organization.
--   **Management API keys** allow you to manage your API keys programmatically. See the [Management API Keys](./management-api-keys.mdx) guide for details.
+-   **Management API keys** are elevated credentials created in the dashboard and used for administration APIs. See the [Management API Keys](./management-api-keys.mdx) guide for details.
 -   **Rotation** is manual today, but you can create a new key at any time without downtime.
 
 Keys follow the format `aistats_v1_sk_<kid>_<secret>`. Treat them like passwords and avoid storing them in client-side code or public repositories.

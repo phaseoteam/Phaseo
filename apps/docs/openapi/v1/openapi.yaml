@@ -14,21 +14,6 @@ servers:
 security:
   - BearerAuth: []
 paths:
-  /health:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: healthz
-      summary: Health check
-      description: Returns the health status of the API.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthCheckResponse'
   /gateway/models:
     get:
       x-beta: true
@@ -1185,42 +1170,313 @@ paths:
         - Gateway
       operationId: getCredits
       summary: Get remaining credits
-      description: Returns the remaining credits and usage statistics for a team.
+      description: >-
+        Returns remaining credits and usage statistics for the authenticated
+        workspace. Management API key required.
       parameters:
-        - name: team_id
+        - name: workspace_id
           in: query
-          description: The team ID to query
-          required: true
+          description: >-
+            Optional workspace override. Must match the authenticated workspace
+            unless using an internal control caller.
           schema:
             type: string
+            format: uuid
       responses:
         '200':
           description: Credit information
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  credits:
-                    type: object
-                    properties:
-                      remaining:
-                        type: integer
-                        description: Current credit balance in nanos
-                        example: 15000000000
-                      thirty_day_usage:
-                        type: integer
-                        description: Credits consumed in the last 30 days (nanos)
-                        example: 250000000
-                      thirty_day_requests:
-                        type: integer
-                        description: Number of API requests in the last 30 days
-                        example: 1250
+                $ref: '#/components/schemas/CreditsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /key:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCurrentApiKey
+      summary: Get current API key
+      description: >-
+        Returns metadata for the currently authenticated standard Gateway API
+        key.
+      responses:
+        '200':
+          description: Current API key metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /keys:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listApiKeys
+      summary: List API keys
+      description: >-
+        Lists API keys for the authenticated workspace. Management API key
+        required.
+      parameters:
+        - name: include_disabled
+          in: query
+          description: Whether to include paused or soft-blocked keys in the response.
+          schema:
+            type: boolean
+            default: false
+        - name: offset
+          in: query
+          description: Number of API keys to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: Maximum number of API keys to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 250
+        - name: workspace_id
+          in: query
+          description: >-
+            Optional workspace override. Must match the authenticated workspace
+            unless using an internal control caller.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: API key list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createApiKey
+      summary: Create a new API key
+      description: >-
+        Creates a new API key in the authenticated workspace. Management API key
+        required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreateRequest'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyWithValueResponse'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /keys/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getApiKey
+      summary: Get a single API key
+      description: >-
+        Returns metadata for one API key in the authenticated workspace.
+        Management API key required.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: API key identifier or hash.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateApiKey
+      summary: Update an API key
+      description: Updates API key metadata or status. Management API key required.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: API key identifier or hash.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyUpdateRequest'
+      responses:
+        '200':
+          description: Updated API key metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteApiKey
+      summary: Delete an API key
+      description: >-
+        Deletes an API key in the authenticated workspace. Management API key
+        required.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: API key identifier or hash.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
           content:
             application/json:
               schema:
@@ -1237,26 +1493,48 @@ paths:
       tags:
         - Gateway
       operationId: getActivity
-      summary: Get user activity grouped by endpoint
+      summary: Get recent activity
       description: >-
-        Returns user activity data grouped by endpoint for the last 30 completed
-        UTC days.
+        Returns recent request activity for the authenticated workspace.
+        Management API key required.
       parameters:
-        - name: date
+        - name: workspace_id
           in: query
           description: >-
-            Filter by a single UTC date in the last 30 completed days
-            (YYYY-MM-DD).
+            Optional workspace override. Must match the authenticated workspace
+            unless using an internal control caller.
           schema:
             type: string
-            format: date
+            format: uuid
+        - name: days
+          in: query
+          description: Number of days of activity to include.
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+        - name: limit
+          in: query
+          description: Maximum number of activity rows to return.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: Number of activity rows to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
           description: Retrieved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityResponse'
+                $ref: '#/components/schemas/WorkspaceActivityResponse'
         '400':
           description: Bad Request Error
           content:
@@ -1281,50 +1559,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /management/keys:
+  /workspaces:
     get:
       x-beta: true
       tags:
         - Gateway
-      operationId: listManagementKeys
-      summary: List management API keys
-      description: Returns all management API keys for a team.
+      operationId: listWorkspaces
+      summary: List workspaces
+      description: >-
+        Lists workspaces owned by the authenticated management key owner.
+        Management API key required.
       parameters:
-        - name: team_id
-          in: query
-          description: The team ID to query
-          schema:
-            type: string
-        - name: limit
-          in: query
-          description: Maximum number of keys to return
-          schema:
-            type: integer
-            default: 50
-            minimum: 1
-            maximum: 250
         - name: offset
           in: query
-          description: Pagination offset
+          description: Number of workspaces to skip for pagination.
           schema:
             type: integer
             default: 0
             minimum: 0
+        - name: limit
+          in: query
+          description: Maximum number of workspaces to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 250
       responses:
         '200':
-          description: List of management API keys
+          description: Workspace list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagementKeyListResponse'
+                $ref: '#/components/schemas/WorkspaceListResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -1339,22 +1608,24 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: createManagementKey
-      summary: Create management API key
-      description: Creates a new management API key.
+      operationId: createWorkspace
+      summary: Create a workspace
+      description: >-
+        Creates a new workspace for the authenticated owner. Management API key
+        required.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ManagementKeyCreateRequest'
+              $ref: '#/components/schemas/WorkspaceCreateRequest'
       responses:
         '201':
-          description: Management API key created
+          description: Workspace created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagementKeyCreateResponse'
+                $ref: '#/components/schemas/WorkspaceResponse'
         '400':
           description: Bad request
           content:
@@ -1363,12 +1634,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -1379,40 +1644,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Server misconfiguration
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /management/keys/{id}:
+  /workspaces/{id}:
     get:
       x-beta: true
       tags:
         - Gateway
-      operationId: getManagementKey
-      summary: Get management API key
-      description: Returns details of a specific management API key.
+      operationId: getWorkspace
+      summary: Get a workspace
+      description: Returns a workspace by UUID or slug. Management API key required.
       parameters:
         - name: id
           in: path
-          description: The management API key ID
           required: true
+          description: Workspace UUID or slug.
           schema:
             type: string
       responses:
         '200':
-          description: Management API key details
+          description: Workspace metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagementKeyDetailResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/WorkspaceResponse'
         '401':
           description: Unauthorized
           content:
@@ -1420,7 +1673,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Key not found
+          description: Workspace not found
           content:
             application/json:
               schema:
@@ -1435,14 +1688,14 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: updateManagementKey
-      summary: Update management API key
-      description: Updates the name, status, or blocked state of a management API key.
+      operationId: updateWorkspace
+      summary: Update a workspace
+      description: Updates workspace metadata. Management API key required.
       parameters:
         - name: id
           in: path
-          description: The management API key ID
           required: true
+          description: Workspace UUID or slug.
           schema:
             type: string
       requestBody:
@@ -1450,14 +1703,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ManagementKeyUpdateRequest'
+              $ref: '#/components/schemas/WorkspaceUpdateRequest'
       responses:
         '200':
-          description: Key updated successfully
+          description: Updated workspace metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagementKeyUpdateResponse'
+                $ref: '#/components/schemas/WorkspaceResponse'
         '400':
           description: Bad request
           content:
@@ -1471,7 +1724,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Key not found
+          description: Workspace not found
           content:
             application/json:
               schema:
@@ -1486,23 +1739,23 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: deleteManagementKey
-      summary: Delete management API key
-      description: Permanently deletes a management API key.
+      operationId: deleteWorkspace
+      summary: Delete a workspace
+      description: Deletes a workspace by UUID or slug. Management API key required.
       parameters:
         - name: id
           in: path
-          description: The management API key ID
           required: true
+          description: Workspace UUID or slug.
           schema:
             type: string
       responses:
         '200':
-          description: Key deleted successfully
+          description: Workspace deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManagementKeyDeleteResponse'
+                $ref: '#/components/schemas/DeletedResponse'
         '400':
           description: Bad request
           content:
@@ -1516,7 +1769,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Key not found
+          description: Workspace not found
           content:
             application/json:
               schema:
@@ -1737,64 +1990,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Invalid control secret
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Control secret not configured
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /keys/{id}/invalidate:
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: invalidateGatewayKeyCache
-      summary: Invalidate key cache
-      description: Bumps cache version for key id/kid and invalidates key cache entries.
-      parameters:
-        - name: id
-          in: path
-          description: Gateway key ID.
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Key cache invalidated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KeyInvalidateResponse'
-        '400':
-          description: Invalid key ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Invalid control secret
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Key not found
           content:
             application/json:
               schema:
@@ -5330,14 +5525,435 @@ components:
           type: string
           example: Additional error details.
       additionalProperties: true
-    HealthCheckResponse:
+    ApiKeyScopeValue:
+      oneOf:
+        - type: string
+          example: '["chat.completions","responses"]'
+        - type: array
+          items:
+            type: string
+          example:
+            - chat.completions
+            - responses
+    ApiKey:
       type: object
       required:
+        - id
+        - hash
+        - workspace_id
+        - name
+        - label
+        - prefix
         - status
+        - disabled
+        - soft_blocked
+        - scopes
+        - created_by
+        - created_at
+        - updated_at
+        - last_used_at
+        - expires_at
       properties:
+        id:
+          type: string
+          format: uuid
+          example: 11111111-1111-4111-8111-111111111111
+        hash:
+          type: string
+          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
+        workspace_id:
+          type: string
+          format: uuid
+          example: 22222222-2222-4222-8222-222222222222
+        name:
+          type: string
+          nullable: true
+          example: Analytics Service Key
+        label:
+          type: string
+          nullable: true
+          example: Analytics Service Key
+        prefix:
+          type: string
+          nullable: true
+          example: aistats_v1_sk_abcd1234
         status:
           type: string
-          example: ok
+          nullable: true
+          example: active
+        disabled:
+          type: boolean
+          example: false
+        soft_blocked:
+          type: boolean
+          example: false
+        scopes:
+          $ref: '#/components/schemas/ApiKeyScopeValue'
+        created_by:
+          type: string
+          nullable: true
+          example: user_abc123
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-28T12:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-28T12:15:00Z'
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-28T12:30:00Z'
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2027-12-31T23:59:59Z'
+      additionalProperties: false
+    ApiKeyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ApiKey'
+      additionalProperties: false
+    ApiKeyListResponse:
+      type: object
+      required:
+        - data
+        - total_count
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 3
+      additionalProperties: false
+    ApiKeyWithValue:
+      allOf:
+        - $ref: '#/components/schemas/ApiKey'
+        - type: object
+          required:
+            - key
+          properties:
+            key:
+              type: string
+              description: Plaintext API key. Returned only once at creation time.
+              example: aistats_v1_sk_abcd1234_supersecretvalue
+          additionalProperties: false
+    ApiKeyWithValueResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ApiKeyWithValue'
+      additionalProperties: false
+    ApiKeyCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Analytics Service Key
+        workspace_id:
+          type: string
+          format: uuid
+          description: Optional workspace override for internal callers.
+        scopes:
+          $ref: '#/components/schemas/ApiKeyScopeValue'
+        limit:
+          type: number
+          minimum: 0
+          nullable: true
+          description: Optional spend limit in USD for this key.
+        limit_reset:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          description: Period used for the spend limit window.
+        include_byok_in_limit:
+          type: boolean
+          description: >-
+            Accepted for compatibility. Current AI Stats behavior always
+            excludes BYOK from this limit field.
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        disabled:
+          type: boolean
+          default: false
+        soft_blocked:
+          type: boolean
+          default: false
+      additionalProperties: false
+    ApiKeyUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        scopes:
+          $ref: '#/components/schemas/ApiKeyScopeValue'
+        limit:
+          type: number
+          minimum: 0
+          nullable: true
+          description: Optional spend limit in USD for this key. Set null to clear.
+        limit_reset:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          description: Period used for the spend limit window.
+        include_byok_in_limit:
+          type: boolean
+          description: >-
+            Accepted for compatibility. Current AI Stats behavior always
+            excludes BYOK from this limit field.
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        disabled:
+          type: boolean
+        soft_blocked:
+          type: boolean
+      additionalProperties: false
+    Workspace:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 33333333-3333-4333-8333-333333333333
+        name:
+          type: string
+          nullable: true
+          example: Production
+        slug:
+          type: string
+          nullable: true
+          example: production
+        created_by:
+          type: string
+          nullable: true
+          example: user_abc123
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-28T12:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-28T12:15:00Z'
+      additionalProperties: false
+    WorkspaceResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Workspace'
+      additionalProperties: false
+    WorkspaceListResponse:
+      type: object
+      required:
+        - data
+        - total_count
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workspace'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 2
+      additionalProperties: false
+    WorkspaceCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Production
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          minLength: 1
+          maxLength: 50
+          example: production
+      additionalProperties: false
+    WorkspaceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          minLength: 1
+          maxLength: 50
+      additionalProperties: false
+    DeletedResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
+          enum:
+            - true
+      additionalProperties: false
+    CreditsResponse:
+      type: object
+      required:
+        - ok
+        - credits
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        credits:
+          type: object
+          required:
+            - remaining
+            - balance_nanos
+            - reserved_nanos
+            - available_nanos
+            - thirty_day_usage
+            - thirty_day_requests
+          properties:
+            remaining:
+              type: integer
+              example: 15000000000
+            balance_nanos:
+              type: integer
+              example: 15000000000
+            reserved_nanos:
+              type: integer
+              example: 1000000000
+            available_nanos:
+              type: integer
+              example: 14000000000
+            thirty_day_usage:
+              type: integer
+              nullable: true
+              example: -250000000
+            thirty_day_requests:
+              type: integer
+              example: 1250
+          additionalProperties: false
+      additionalProperties: false
+    WorkspaceActivityEntry:
+      type: object
+      required:
+        - request_id
+        - provider
+        - model
+        - endpoint
+        - usage
+        - cost_cents
+        - latency_ms
+        - timestamp
+      properties:
+        request_id:
+          type: string
+          nullable: true
+          example: req_abc123
+        provider:
+          type: string
+          nullable: true
+          example: openai
+        model:
+          type: string
+          nullable: true
+          example: openai/gpt-4.1
+        endpoint:
+          type: string
+          nullable: true
+          example: chat.completions
+        usage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cost_cents:
+          type: number
+          example: 1.25
+        latency_ms:
+          type: integer
+          nullable: true
+          example: 842
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-28T12:30:00Z'
+      additionalProperties: false
+    WorkspaceActivityResponse:
+      type: object
+      required:
+        - ok
+        - period_days
+        - limit
+        - offset
+        - total
+        - total_cost_cents
+        - activity
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        period_days:
+          type: integer
+          example: 30
+        limit:
+          type: integer
+          example: 50
+        offset:
+          type: integer
+          example: 0
+        total:
+          type: integer
+          example: 1250
+        total_cost_cents:
+          type: number
+          example: 42.75
+        activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceActivityEntry'
       additionalProperties: false
     GatewayModelsResponse:
       type: object

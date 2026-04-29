@@ -14,11 +14,11 @@ import { analyticsRoutes } from "./analytics";
 import { pricingRoutes } from "./pricing";
 import { organisationsRoutes } from "./organisations";
 import { providersRoutes } from "./providers";
-import { creditsRoutes } from "./credits";
-import { managementRoutes } from "./management";
-import { keysRoutes } from "./keys";
+import { activityRoutes, creditsRoutes } from "./credits";
+import { currentKeyRoutes, keysRoutes } from "./keys";
+import { securityRoutes } from "./security";
+import { workspacesRoutes } from "./workspaces";
 import oauthClientsRoutes from "./oauth-clients";
-import { workspacePolicyRoutes } from "./workspace-policy";
 
 export const platformRouter = new Hono<Env>();
 
@@ -31,10 +31,11 @@ platformRouter.route("/health", healthRoutes);
 platformRouter.route("/analytics", analyticsRoutes);
 platformRouter.route("/pricing", pricingRoutes);
 platformRouter.route("/credits", creditsRoutes);
-platformRouter.route("/activity", analyticsRoutes);
-platformRouter.route("/management", managementRoutes);
+platformRouter.route("/activity", activityRoutes);
+platformRouter.route("/security", securityRoutes);
+platformRouter.route("/key", currentKeyRoutes);
 platformRouter.route("/keys", keysRoutes);
-platformRouter.route("/workspaces", workspacePolicyRoutes);
+platformRouter.route("/workspaces", workspacesRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
 platformRouter.route("/", placeholdersRoutes);
 

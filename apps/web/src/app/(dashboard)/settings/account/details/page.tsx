@@ -7,6 +7,10 @@ import AccountSettingsClient, {
 } from "@/components/(gateway)/settings/account/AccountSettingsClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
+export const metadata = {
+	title: "Account Details - Settings",
+};
+
 export default function AccountDetailsPage() {
 	return (
 		<div className="space-y-6">

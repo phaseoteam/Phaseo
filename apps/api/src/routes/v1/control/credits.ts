@@ -5,7 +5,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
+import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { json, withRuntime } from "@/routes/utils";
 
 const DEFAULT_LIMIT = 50;
@@ -55,7 +55,7 @@ function resolveScopedTeamId(args: {
 }
 
 async function handleCredits(req: Request) {
-	const auth = await guardAuth(req, { useKvCache: false });
+	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -92,7 +92,7 @@ async function handleCredits(req: Request) {
 			.order("created_at", { ascending: false });
 
 		const { count: requestCount, error: countError } = await supabase
-			.from("gateway_generations")
+			.from("gateway_requests")
 			.select("*", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId)
 			.gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
@@ -131,7 +131,7 @@ async function handleCredits(req: Request) {
 }
 
 async function handleActivity(req: Request) {
-	const auth = await guardAuth(req, { useKvCache: false });
+	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -155,8 +155,8 @@ async function handleActivity(req: Request) {
 		const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
 		const { data: generations, error } = await supabase
-			.from("gateway_generations")
-			.select("request_id, provider, model_id, endpoint, usage, usage_cents_text, created_at, latency_ms")
+			.from("gateway_requests")
+			.select("request_id, provider, model_id, endpoint, usage, cost_nanos, created_at, latency_ms")
 			.eq("workspace_id", workspaceId)
 			.gte("created_at", since)
 			.order("created_at", { ascending: false })
@@ -167,13 +167,13 @@ async function handleActivity(req: Request) {
 		}
 
 		const { count, error: countError } = await supabase
-			.from("gateway_generations")
+			.from("gateway_requests")
 			.select("*", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId)
 			.gte("created_at", since);
 
 		const totalCost = (generations ?? []).reduce(
-			(sum, g) => sum + (parseFloat(g.usage_cents_text || "0") || 0),
+			(sum, g) => sum + ((Number((g as any).cost_nanos ?? 0) || 0) / 10_000_000),
 			0
 		);
 
@@ -191,7 +191,7 @@ async function handleActivity(req: Request) {
 					model: g.model_id,
 					endpoint: g.endpoint,
 					usage: g.usage,
-					cost_cents: parseFloat(g.usage_cents_text || "0"),
+					cost_cents: (Number((g as any).cost_nanos ?? 0) || 0) / 10_000_000,
 					latency_ms: g.latency_ms,
 					timestamp: g.created_at,
 				})),

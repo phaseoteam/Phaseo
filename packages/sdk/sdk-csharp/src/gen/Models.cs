@@ -224,6 +224,192 @@ public sealed class AnthropicUsage
 
 }
 
+public sealed class ApiKey
+{
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("disabled")]
+	public bool Disabled { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public string? ExpiresAt { get; set; }
+
+	[JsonPropertyName("hash")]
+	public string Hash { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("label")]
+	public string? Label { get; set; }
+
+	[JsonPropertyName("last_used_at")]
+	public string? LastUsedAt { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("prefix")]
+	public string? Prefix { get; set; }
+
+	[JsonPropertyName("scopes")]
+	public object Scopes { get; set; }
+
+	[JsonPropertyName("soft_blocked")]
+	public bool SoftBlocked { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class ApiKeyCreateRequest
+{
+	[JsonPropertyName("disabled")]
+	public bool? Disabled { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public string? ExpiresAt { get; set; }
+
+	[JsonPropertyName("include_byok_in_limit")]
+	public bool? IncludeByokInLimit { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double? Limit { get; set; }
+
+	[JsonPropertyName("limit_reset")]
+	public string? LimitReset { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("scopes")]
+	public object? Scopes { get; set; }
+
+	[JsonPropertyName("soft_blocked")]
+	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string? WorkspaceId { get; set; }
+
+}
+
+public sealed class ApiKeyListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("total_count")]
+	public int TotalCount { get; set; }
+
+}
+
+public sealed class ApiKeyResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class ApiKeyScopeValue { }
+
+public sealed class ApiKeyUpdateRequest
+{
+	[JsonPropertyName("disabled")]
+	public bool? Disabled { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public string? ExpiresAt { get; set; }
+
+	[JsonPropertyName("include_byok_in_limit")]
+	public bool? IncludeByokInLimit { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double? Limit { get; set; }
+
+	[JsonPropertyName("limit_reset")]
+	public string? LimitReset { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("scopes")]
+	public object? Scopes { get; set; }
+
+	[JsonPropertyName("soft_blocked")]
+	public bool? SoftBlocked { get; set; }
+
+}
+
+public sealed class ApiKeyWithValue
+{
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("disabled")]
+	public bool Disabled { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public string? ExpiresAt { get; set; }
+
+	[JsonPropertyName("hash")]
+	public string Hash { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("key")]
+	public string Key { get; set; }
+
+	[JsonPropertyName("label")]
+	public string? Label { get; set; }
+
+	[JsonPropertyName("last_used_at")]
+	public string? LastUsedAt { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("prefix")]
+	public string? Prefix { get; set; }
+
+	[JsonPropertyName("scopes")]
+	public object Scopes { get; set; }
+
+	[JsonPropertyName("soft_blocked")]
+	public bool SoftBlocked { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class ApiKeyWithValueResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
 public sealed class AudioContentPart
 {
 	[JsonPropertyName("input_audio")]
@@ -626,6 +812,16 @@ public sealed class ChatMessage
 
 }
 
+public sealed class CreditsResponse
+{
+	[JsonPropertyName("credits")]
+	public Dictionary<string, object> Credits { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
 public sealed class DataModel
 {
 	[JsonPropertyName("deprecation_date")]
@@ -681,6 +877,13 @@ public sealed class DebugOptions
 
 	[JsonPropertyName("trace_level")]
 	public string? TraceLevel { get; set; }
+
+}
+
+public sealed class DeletedResponse
+{
+	[JsonPropertyName("deleted")]
+	public string Deleted { get; set; }
 
 }
 
@@ -911,13 +1114,6 @@ public sealed class GenerationResponse
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
-
-}
-
-public sealed class HealthCheckResponse
-{
-	[JsonPropertyName("status")]
-	public string Status { get; set; }
 
 }
 
@@ -2300,5 +2496,117 @@ public sealed class VideoOutputConfig
 {
 	[JsonPropertyName("access")]
 	public string? Access { get; set; }
+
+}
+
+public sealed class Workspace
+{
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("slug")]
+	public string? Slug { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+}
+
+public sealed class WorkspaceActivityEntry
+{
+	[JsonPropertyName("cost_cents")]
+	public double CostCents { get; set; }
+
+	[JsonPropertyName("endpoint")]
+	public string? Endpoint { get; set; }
+
+	[JsonPropertyName("latency_ms")]
+	public int? LatencyMs { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
+
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("timestamp")]
+	public string? Timestamp { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class WorkspaceActivityResponse
+{
+	[JsonPropertyName("activity")]
+	public List<Dictionary<string, object>> Activity { get; set; }
+
+	[JsonPropertyName("limit")]
+	public int Limit { get; set; }
+
+	[JsonPropertyName("offset")]
+	public int Offset { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+	[JsonPropertyName("period_days")]
+	public int PeriodDays { get; set; }
+
+	[JsonPropertyName("total")]
+	public int Total { get; set; }
+
+	[JsonPropertyName("total_cost_cents")]
+	public double TotalCostCents { get; set; }
+
+}
+
+public sealed class WorkspaceCreateRequest
+{
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("slug")]
+	public string? Slug { get; set; }
+
+}
+
+public sealed class WorkspaceListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("total_count")]
+	public int TotalCount { get; set; }
+
+}
+
+public sealed class WorkspaceResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class WorkspaceUpdateRequest
+{
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("slug")]
+	public string? Slug { get; set; }
 
 }

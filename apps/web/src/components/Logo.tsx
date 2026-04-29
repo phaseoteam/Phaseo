@@ -38,15 +38,15 @@ function DefaultLogoFallback({
 			role="img"
 			aria-label={label}
 			className={[
-				fill ? "absolute inset-0" : "inline-flex",
-				"items-center justify-center rounded-sm bg-muted/50 text-muted-foreground/80",
+				fill ? "absolute inset-0 flex" : "inline-flex",
+				"items-center justify-center text-muted-foreground/80",
 				className,
 			]
 				.filter(Boolean)
 				.join(" ")}
 			style={style}
 		>
-			<Building2 className="h-2/3 w-2/3" aria-hidden />
+			<Building2 className="h-full w-full" aria-hidden />
 		</span>
 	);
 }

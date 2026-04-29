@@ -1,62 +1,175 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
-export async function getTeamsSettingsData() {
+export async function getTeamsSettingsData(preferredWorkspaceId?: string | null) {
 	const supabase = await createClient();
+	let adminClient: ReturnType<typeof createAdminClient> | null = null;
+	try {
+		adminClient = createAdminClient();
+	} catch {
+		adminClient = null;
+	}
+	const readClient: any = adminClient ?? supabase;
 
-	// current user
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
 
 	const userId = user?.id;
 	let personalTeamId: string | null = null;
+	let userRole: string | null = null;
+	let defaultWorkspaceId: string | null = null;
+	let membershipWorkspaceIds: string[] = [];
+	let ownedWorkspaceIds: string[] = [];
 
 	if (userId) {
-		const { data: userRow } = await supabase
+		const { data: userRow } = await readClient
 			.from("users")
-			.select("default_workspace_id")
+			.select("default_workspace_id, role")
 			.eq("user_id", userId)
 			.maybeSingle();
 
-		personalTeamId = userRow?.default_workspace_id ?? null;
-	}
+		defaultWorkspaceId =
+			String(userRow?.default_workspace_id ?? "").trim() || null;
+		personalTeamId = defaultWorkspaceId;
+		userRole = String(userRow?.role ?? "").trim().toLowerCase() || null;
 
-	// ── Fetch (unchanged queries; normalize later)
-	const { data: teams } = await supabase.from("workspaces").select("id, name");
-
-	let teamMembers: any[] = [];
-	const usersById: Record<string, any> = {};
-	if (userId) {
-		const { data: membershipRows } = await supabase
+		const { data: membershipRows } = await readClient
 			.from("workspace_members")
 			.select("workspace_id")
 			.eq("user_id", userId);
-		const workspaceIds = Array.from(
+		membershipWorkspaceIds = Array.from(
 			new Set(
 				(membershipRows ?? [])
-					.map((row: any) => row?.workspace_id)
+					.map((row: any) => String(row?.workspace_id ?? "").trim())
+				.filter(Boolean),
+			),
+		);
+
+		const { data: ownedWorkspaceRows } = await readClient
+			.from("workspaces")
+			.select("id")
+			.eq("owner_user_id", userId);
+		ownedWorkspaceIds = Array.from(
+			new Set(
+				(ownedWorkspaceRows ?? [])
+					.map((row: any) => String(row?.id ?? "").trim())
 					.filter(Boolean),
 			),
-		) as string[];
+		);
+	}
+
+	// Fetch workspaces and enrich with fallback lookups when direct joins miss names.
+	let teams: Array<{ id: string; name: string }> = [];
+	if (userId) {
+		const accessibleWorkspaceIds = Array.from(
+			new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
+		);
+
+		const { data: membershipTeams } = await supabase
+			.from("workspace_members")
+			.select("workspace_id, workspaces(id, name)")
+			.eq("user_id", userId);
+		teams = (membershipTeams ?? [])
+			.map((row: any) => {
+				const workspace =
+					Array.isArray(row?.workspaces) ? row.workspaces[0] : row?.workspaces;
+				const id = String(workspace?.id ?? row?.workspace_id ?? "").trim();
+				const name = String(workspace?.name ?? "").trim();
+				if (!id || !name) return null;
+				return { id, name };
+			})
+				.filter((row): row is { id: string; name: string } => Boolean(row));
+
+		if (accessibleWorkspaceIds.length) {
+			const { data: scopedTeams } = await readClient
+				.from("workspaces")
+				.select("id, name")
+				.in("id", accessibleWorkspaceIds);
+			const normalizedScopedTeams = (scopedTeams ?? [])
+				.map((row: any) => {
+					const id = String(row?.id ?? "").trim();
+					const name = String(row?.name ?? "").trim();
+					if (!id || !name) return null;
+					return { id, name };
+				})
+				.filter(
+					(row: { id: string; name: string } | null): row is { id: string; name: string } =>
+						Boolean(row),
+				);
+
+			if (teams.length === 0) {
+				teams = normalizedScopedTeams;
+			} else {
+				const merged = new Map(teams.map((team) => [team.id, team]));
+				for (const team of normalizedScopedTeams) merged.set(team.id, team);
+				teams = Array.from(merged.values());
+			}
+		}
+
+		if (
+			teams.length === 0 &&
+			defaultWorkspaceId &&
+			accessibleWorkspaceIds.includes(defaultWorkspaceId)
+		) {
+			const { data: defaultWorkspaceRows } = await readClient
+				.from("workspaces")
+				.select("id, name")
+				.eq("id", defaultWorkspaceId)
+				.limit(1);
+			teams = (defaultWorkspaceRows ?? [])
+				.map((row: any) => {
+					const id = String(row?.id ?? "").trim();
+					const name = String(row?.name ?? "").trim();
+					if (!id || !name) return null;
+					return { id, name };
+				})
+				.filter(
+					(row: { id: string; name: string } | null): row is { id: string; name: string } =>
+						Boolean(row),
+				);
+		}
+
+		if (
+			teams.length === 0 &&
+			(userRole === "admin" || userRole === "editor")
+		) {
+			const { data: allWorkspaces } = await readClient
+				.from("workspaces")
+				.select("id, name");
+			teams = (allWorkspaces ?? [])
+				.map((row: any) => {
+					const id = String(row?.id ?? "").trim();
+					const name = String(row?.name ?? "").trim();
+					if (!id || !name) return null;
+					return { id, name };
+				})
+				.filter(
+					(row: { id: string; name: string } | null): row is { id: string; name: string } =>
+						Boolean(row),
+				);
+		}
+	}
+
+	let teamMembers: any[] = [];
+	const usersById: Record<string, any> = {};
+	if (userId && teams.length) {
+		const workspaceIds = Array.from(new Set(teams.map((team) => team.id)));
+		const memberReadClient: any = adminClient ?? readClient;
 
 		if (workspaceIds.length) {
-			const admin = createAdminClient();
-			const { data: memberRows } = await admin
+			const { data: memberRows } = await memberReadClient
 				.from("workspace_members")
 				.select("workspace_id, user_id, role")
 				.in("workspace_id", workspaceIds);
 			teamMembers = memberRows ?? [];
 
 			const memberUserIds = Array.from(
-				new Set(
-					(teamMembers ?? []).map((m: any) => m?.user_id).filter(Boolean),
-				),
+				new Set((teamMembers ?? []).map((m: any) => m?.user_id).filter(Boolean)),
 			);
 			if (memberUserIds.length) {
-				const { data: users } = await admin
+				const { data: users } = await memberReadClient
 					.from("users")
 					.select("user_id, display_name")
 					.in("user_id", memberUserIds as string[]);
@@ -98,7 +211,7 @@ export async function getTeamsSettingsData() {
 		)
 		.or(`decided_at.is.null,decided_at.gte.${sevenDaysAgoIso}`);
 
-	// ── Normalize
+	// Normalize
 	const teamsArray = teams ?? [];
 	const membersArray = (teamMembers ?? []).map((m: any) => ({
 		...m,
@@ -125,16 +238,33 @@ export async function getTeamsSettingsData() {
 		(requestsByTeam[r.workspace_id] ||= []).push(r);
 	}
 
-	const initialTeamId = await getWorkspaceIdFromCookie();
+	const normalizedPreferredWorkspaceId = String(
+		preferredWorkspaceId ?? "",
+	).trim();
+	const resolvedCookieWorkspaceId = String(
+		(await getWorkspaceIdFromCookie()) ?? "",
+	).trim();
+	const teamIds = new Set(teamsArray.map((team) => team.id));
+
+	const initialTeamId =
+		(normalizedPreferredWorkspaceId &&
+		teamIds.has(normalizedPreferredWorkspaceId)
+			? normalizedPreferredWorkspaceId
+			: undefined) ||
+		(resolvedCookieWorkspaceId && teamIds.has(resolvedCookieWorkspaceId)
+			? resolvedCookieWorkspaceId
+			: undefined) ||
+		(defaultWorkspaceId && teamIds.has(defaultWorkspaceId)
+			? defaultWorkspaceId
+			: undefined) ||
+		teamsArray[0]?.id;
 	const manageableTeamIds = Object.entries(membersByTeam).reduce<string[]>(
 		(acc, [workspaceId, members]) => {
 			if (
 				members?.some(
 					(member: any) =>
 						member?.user_id === userId &&
-						["owner", "admin"].includes(
-							(member?.role ?? "").toLowerCase(),
-						),
+						["owner", "admin"].includes((member?.role ?? "").toLowerCase()),
 				)
 			) {
 				acc.push(workspaceId);
@@ -143,6 +273,11 @@ export async function getTeamsSettingsData() {
 		},
 		[],
 	);
+	for (const ownedWorkspaceId of ownedWorkspaceIds) {
+		if (!manageableTeamIds.includes(ownedWorkspaceId)) {
+			manageableTeamIds.push(ownedWorkspaceId);
+		}
+	}
 
 	const walletBalances: Record<string, number> = {};
 	if (teamsArray.length) {
@@ -162,33 +297,6 @@ export async function getTeamsSettingsData() {
 		}
 	}
 
-	const teamSsoSettingsByTeam: Record<string, TeamSsoSettingsRow> = {};
-	if (teamsArray.length) {
-		const { data: settingsRows } = await supabase
-			.from("workspace_settings")
-			.select(
-				"workspace_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
-			)
-			.in(
-				"workspace_id",
-				teamsArray.map((team) => team.id),
-			);
-
-		for (const row of settingsRows ?? []) {
-			const workspaceId = row?.workspace_id;
-			if (!workspaceId) continue;
-			teamSsoSettingsByTeam[workspaceId] = {
-				sso_enabled: Boolean(row.sso_enabled),
-				sso_enforced: Boolean(row.sso_enforced),
-				sso_mode: String(row.sso_mode ?? "none"),
-				sso_provider_identifier: row.sso_provider_identifier ?? null,
-				sso_domains: Array.isArray(row.sso_domains)
-					? (row.sso_domains as string[])
-					: [],
-			};
-		}
-	}
-
 	return {
 		teams: teamsArray,
 		membersByTeam,
@@ -199,7 +307,5 @@ export async function getTeamsSettingsData() {
 		personalTeamId,
 		manageableTeamIds,
 		walletBalances,
-		teamSsoSettingsByTeam,
 	};
 }
-
