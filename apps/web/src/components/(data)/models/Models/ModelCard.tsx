@@ -268,6 +268,14 @@ function normalizeFromPriceUnit(value: string | null | undefined): string | null
 		.trim()
 		.toLowerCase();
 	if (!normalized) return null;
+	if (
+		normalized === "1m token" ||
+		normalized === "1m tokens" ||
+		normalized === "per 1m token" ||
+		normalized === "per 1m tokens"
+	) {
+		return "1M tokens";
+	}
 	if (normalized === "token" || normalized === "tokens") return "1M tokens";
 	if (normalized === "sec" || normalized === "secs" || normalized === "seconds") {
 		return "second";
@@ -472,19 +480,24 @@ function ModelCardImpl({
 		{ allowZero: true },
 	);
 	const tokenPriceCandidates = [model.lowest_input_price, model.lowest_output_price]
+		.filter((value) => value !== null && value !== undefined)
 		.map((value) => Number(value))
 		.filter((value) => Number.isFinite(value) && value >= 0);
 	const standardTokenPriceCandidates = [
 		model.lowest_standard_input_price,
 		model.lowest_standard_output_price,
 	]
+		.filter((value) => value !== null && value !== undefined)
 		.map((value) => Number(value))
 		.filter((value) => Number.isFinite(value) && value >= 0);
 	const fallbackFromPrice =
 		tokenPriceCandidates.length > 0
 			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
 			: null;
-	const hasFreeFromPrice = Number(model.lowest_from_price) === 0;
+	const normalizedFromPriceUnit = normalizeFromPriceUnit(model.lowest_from_price_unit);
+	const hasFreeFromPrice =
+		Number(model.lowest_from_price) === 0 &&
+		normalizedFromPriceUnit === "1M tokens";
 	const isFreeTextModel =
 		isTextModel &&
 		(

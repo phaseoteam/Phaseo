@@ -1323,9 +1323,8 @@ export default function ModelsDisplay({
 						<div className="flex items-center gap-2">
 							<Button
 								type="button"
-								variant="outline"
 								size="sm"
-								className="h-8 flex-1 justify-center gap-1.5"
+								className="h-8 flex-1 justify-center gap-1.5 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25"
 								onClick={() => setMobileFiltersOpen(true)}
 							>
 								<SlidersHorizontal className="h-3.5 w-3.5" />
@@ -1380,9 +1379,8 @@ export default function ModelsDisplay({
 								</div>
 								<Button
 									type="button"
-									variant="outline"
 									size="sm"
-									className="h-8 gap-1.5 lg:hidden"
+									className="h-8 gap-1.5 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25 lg:hidden"
 									onClick={() => setMobileFiltersOpen(true)}
 								>
 									<SlidersHorizontal className="h-3.5 w-3.5" />
@@ -1481,10 +1479,11 @@ export default function ModelsDisplay({
 
 			<Button
 				type="button"
+				variant="outline"
 				size="sm"
 				onClick={() => setMobileFiltersOpen(true)}
 				className={cn(
-					"fixed bottom-6 left-4 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-border/70 bg-background/95 px-4 text-foreground shadow-sm backdrop-blur transition-all duration-200 active:scale-95 sm:hidden",
+					"fixed bottom-6 left-4 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-border/70 !bg-background px-4 !text-foreground shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md dark:!border-zinc-800 dark:!bg-zinc-950 dark:!text-zinc-50 active:scale-95 sm:hidden",
 					showMobileFilterFab && !mobileFiltersOpen
 						? "translate-y-0 opacity-100"
 						: "pointer-events-none translate-y-3 opacity-0",
@@ -1504,7 +1503,7 @@ export default function ModelsDisplay({
 				aria-label="Scroll to top"
 				onClick={handleScrollToTop}
 				className={cn(
-					"group fixed bottom-9 right-9 z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-sm backdrop-blur transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95",
+					"group fixed bottom-6 right-9 z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-sm backdrop-blur transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95",
 					showScrollTopButton
 						? "translate-y-0 opacity-100"
 						: "pointer-events-none translate-y-3 opacity-0",
