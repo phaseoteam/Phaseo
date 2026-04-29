@@ -32,6 +32,6 @@ jobs:
           publish_results: true
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@b25d0ebf40e5b63ee81e1bd6e5d2a12b7c2aeb61
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc
         with:
           sarif_file: scorecard-results.sarif
