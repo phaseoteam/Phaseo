@@ -663,6 +663,30 @@ export async function loadProviders(
         );
     }
 
+    const dedupedProviderModels = Array.from(
+        new Map(
+            providerModelsToUpsert.map((row) => [row.provider_api_model_id, row] as const)
+        ).values()
+    );
+    if (dedupedProviderModels.length !== providerModelsToUpsert.length) {
+        console.warn(
+            `[importer] Deduped ${providerModelsToUpsert.length - dedupedProviderModels.length} duplicate provider model row(s) before upsert.`
+        );
+    }
+
+    const dedupedCapabilityRows = Array.from(
+        new Map(
+            capabilityRowsToUpsert.map(
+                (row) => [`${row.provider_api_model_id}::${row.capability_id}`, row] as const
+            )
+        ).values()
+    );
+    if (dedupedCapabilityRows.length !== capabilityRowsToUpsert.length) {
+        console.warn(
+            `[importer] Deduped ${capabilityRowsToUpsert.length - dedupedCapabilityRows.length} duplicate provider capability row(s) before upsert.`
+        );
+    }
+
     const deletions = tracker.getDeleted(DIR_PROVIDERS);
     touched = touched || deletions.length > 0;
 
@@ -670,8 +694,8 @@ export async function loadProviders(
         await pruneRowsByColumn(supa, "data_api_providers", "api_provider_id", providerIds, "data_api_providers");
     }
 
-    if (providerModelsToUpsert.length) {
-        for (const group of chunk(providerModelsToUpsert, 500)) {
+    if (dedupedProviderModels.length) {
+        for (const group of chunk(dedupedProviderModels, 500)) {
             if (isDryRun()) {
                 for (const row of group) {
                     logWrite("public.data_api_provider_models", "UPSERT", row, {
@@ -689,8 +713,8 @@ export async function loadProviders(
         }
     }
 
-    if (capabilityRowsToUpsert.length) {
-        for (const group of chunk(capabilityRowsToUpsert, 500)) {
+    if (dedupedCapabilityRows.length) {
+        for (const group of chunk(dedupedCapabilityRows, 500)) {
             if (isDryRun()) {
                 for (const row of group) {
                     logWrite("public.data_api_provider_model_capabilities", "UPSERT", row, {

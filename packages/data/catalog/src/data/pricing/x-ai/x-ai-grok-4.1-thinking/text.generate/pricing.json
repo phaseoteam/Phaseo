@@ -16,7 +16,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "gt",
+          "op": "lte",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
@@ -48,7 +48,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "gt",
+          "op": "lte",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
@@ -68,7 +68,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "lte",
+          "op": "gt",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
@@ -100,7 +100,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "lte",
+          "op": "gt",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
