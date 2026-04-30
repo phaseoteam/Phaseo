@@ -34,7 +34,7 @@ const BENEFITS_DEFAULT: Benefit[] = [
 	},
 	{
 		title: "Maximum Availability",
-		body: "Route requests across providers and keep traffic moving when a model endpoint degrades.",
+		body: "Route across the broadest provider set we support so requests keep moving when endpoints degrade.",
 		href: "/sign-up",
 		cta: "Get started",
 		visual: "uptime",
@@ -133,24 +133,29 @@ const FEATURED_PROVIDER_IDS = [
 ] as const;
 
 const MAX_AVAILABILITY_PROVIDER_IDS = [
-	"openai",
-	"anthropic",
-	"google",
-	"google-vertex",
-	"deepseek",
-	"x-ai",
-	"mistral",
-	"groq",
-	"amazon-bedrock",
 	"azure",
-	"nvidia",
-	"perplexity",
-	"together",
-	"moonshotai",
+	"amazon-bedrock",
 	"cerebras",
+	"cloudflare",
+	"deepinfra",
+	"fireworks",
+	"groq",
+	"together",
 	"novita",
-	"gmicloud",
 	"venice",
+] as const;
+
+const MAX_AVAILABILITY_RING = [
+	{ id: "azure", top: "21%", left: "16%" },
+	{ id: "amazon-bedrock", top: "14%", left: "33%" },
+	{ id: "cerebras", top: "11%", left: "50%" },
+	{ id: "cloudflare", top: "14%", left: "67%" },
+	{ id: "deepinfra", top: "21%", left: "84%" },
+	{ id: "fireworks", top: "79%", left: "84%" },
+	{ id: "groq", top: "86%", left: "67%" },
+	{ id: "together", top: "89%", left: "50%" },
+	{ id: "novita", top: "86%", left: "33%" },
+	{ id: "venice", top: "79%", left: "16%" },
 ] as const;
 
 function getCenterFirstIndexes(columns: number, rows: number) {
@@ -256,15 +261,15 @@ function VisualStage({ children }: { children: ReactNode }) {
 }
 
 function ModelsVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
-	const compactBetaIconSize = 12;
+	const compactBetaIconSize = 13;
 
 	return (
 		<VisualStage>
-			<div className="flex h-full w-full items-center justify-center overflow-hidden">
+			<div className="relative flex h-full w-full items-center justify-center overflow-hidden">
 				<div
 					className={
 						variant === "beta"
-							? "grid w-max grid-cols-10 auto-rows-max place-items-center gap-x-2 gap-y-1.5"
+							? "grid w-full grid-cols-8 place-items-center gap-x-2.5 gap-y-2 px-4"
 							: "grid w-max grid-cols-8 auto-rows-max place-items-center gap-x-3.25 gap-y-2.25"
 					}
 				>
@@ -279,12 +284,26 @@ function ModelsVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 						/>
 					))}
 				</div>
+				{variant === "beta" ? (
+					<>
+						<div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white via-white/90 to-transparent dark:from-zinc-950 dark:via-zinc-950/90 dark:to-transparent" />
+						<div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white via-white/90 to-transparent dark:from-zinc-950 dark:via-zinc-950/90 dark:to-transparent" />
+					</>
+				) : null}
 			</div>
 		</VisualStage>
 	);
 }
 
-function RequestPulse({ d, delay }: { d: string; delay: string }) {
+function RequestPulse({
+	d,
+	pathId,
+	delay,
+}: {
+	d?: string;
+	pathId?: string;
+	delay: string;
+}) {
 	return (
 		<>
 			<circle
@@ -296,7 +315,13 @@ function RequestPulse({ d, delay }: { d: string; delay: string }) {
 				strokeWidth="1.05"
 			>
 				<animate attributeName="opacity" values="0;1;0" dur="3.8s" begin={delay} repeatCount="indefinite" />
-				<animateMotion dur="3.8s" begin={delay} repeatCount="indefinite" path={d} />
+				{pathId ? (
+					<animateMotion dur="3.8s" begin={delay} repeatCount="indefinite">
+						<mpath href={`#${pathId}`} />
+					</animateMotion>
+				) : d ? (
+					<animateMotion dur="3.8s" begin={delay} repeatCount="indefinite" path={d} />
+				) : null}
 			</circle>
 		</>
 	);
@@ -306,31 +331,44 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 	if (variant === "beta") {
 		return (
 			<VisualStage>
-				<div className="flex h-full w-full flex-col items-center justify-center gap-3 px-2">
-					<div className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white px-2.5 py-1 text-[10px] font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-						<span className="relative h-3 w-3">
-							<Logo
-								id="openai"
-								alt="OpenAI"
-								variant="color"
-								fill
-								sizes="12px"
-								className="object-contain object-center"
-							/>
-						</span>
-						<span>openai/gpt-oss-120b</span>
-					</div>
-					<div className="grid grid-cols-6 gap-x-2 gap-y-2">
-						{MAX_AVAILABILITY_PROVIDER_IDS.map((providerId) => (
-							<LogoToken
-								key={providerId}
-								id={providerId}
-								label={providerId}
-								shape="card"
-								size={12}
-								compact
-							/>
+				<div className="w-full px-3">
+					<div
+						className="relative mx-auto h-[138px] w-full max-w-[276px]"
+						aria-hidden="true"
+					>
+						{MAX_AVAILABILITY_RING.map((provider) => (
+							<div
+								key={provider.id}
+								className="absolute z-0 -translate-x-1/2 -translate-y-1/2"
+								style={{ top: provider.top, left: provider.left }}
+								aria-hidden="true"
+							>
+								<LogoToken
+									id={provider.id}
+									label={provider.id}
+									shape="card"
+									size={15}
+									compact={false}
+								/>
+							</div>
 						))}
+						<div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+							<div className="inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.05)] dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-none">
+								<span className="relative h-[18px] w-[18px] shrink-0">
+									<Logo
+										id="openai"
+										alt="OpenAI"
+										variant="color"
+										fill
+										sizes="18px"
+										className="object-contain object-center"
+									/>
+								</span>
+								<span className="whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+									GPT-OSS 120B
+								</span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</VisualStage>
@@ -519,37 +557,84 @@ function ObservabilityVisual() {
 const BETA_OPEN_MODEL_INTEL = [
 	{
 		providerId: "openai",
+		name: "GPT-5.5",
 		model: "openai/gpt-5.5",
 		latencyMs: 472,
-		throughputTps: 184,
+		throughputTps: 92,
 		inputPrice: 1.25,
 		outputPrice: 10.0,
 	},
 	{
 		providerId: "anthropic",
+		name: "Claude Opus 4.7",
 		model: "anthropic/claude-opus-4.7",
 		latencyMs: 534,
-		throughputTps: 168,
+		throughputTps: 84,
 		inputPrice: 3.0,
 		outputPrice: 15.0,
 	},
 	{
 		providerId: "google",
+		name: "Gemini 3.1 Pro",
 		model: "google/gemini-3.1-pro",
 		latencyMs: 441,
-		throughputTps: 201,
+		throughputTps: 101,
 		inputPrice: 1.0,
 		outputPrice: 8.0,
 	},
 	{
 		providerId: "deepseek",
+		name: "DeepSeek V4 Flash",
 		model: "deepseek/deepseek-v4-flash",
 		latencyMs: 356,
-		throughputTps: 233,
+		throughputTps: 117,
 		inputPrice: 0.14,
 		outputPrice: 0.28,
 	},
 ] as const;
+
+function BetaModelHeader({
+	providerId,
+	providerLabel,
+	name,
+	nameSlot,
+	showLabel = true,
+}: {
+	providerId: string;
+	providerLabel: string;
+	name?: string;
+	nameSlot?: ReactNode;
+	showLabel?: boolean;
+}) {
+	return (
+		<div className="border-b border-zinc-200/80 pb-2 dark:border-zinc-800/80">
+			<div className="min-w-0">
+				{showLabel ? (
+					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+						Model
+					</span>
+				) : null}
+				{nameSlot ?? (
+					<div className={`${showLabel ? "mt-1" : ""} flex items-center gap-2`}>
+						<span className="relative h-4 w-4 shrink-0">
+							<Logo
+								id={providerId}
+								alt={providerLabel}
+								variant="color"
+								fill
+								sizes="16px"
+								className="object-contain object-center"
+							/>
+						</span>
+						<p className="truncate text-[11px] font-semibold leading-4 text-zinc-950 dark:text-zinc-50">
+							{name}
+						</p>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
 
 function BetaDatabaseVisual() {
 	const [activeIndex, setActiveIndex] = useState(0);
@@ -557,79 +642,104 @@ function BetaDatabaseVisual() {
 	const [isSliding, setIsSliding] = useState(false);
 
 	useEffect(() => {
-		const timer = setInterval(() => {
+		if (isSliding) return;
+
+		const timer = window.setTimeout(() => {
 			setNextIndex((activeIndex + 1) % BETA_OPEN_MODEL_INTEL.length);
 			setIsSliding(true);
 		}, 2600);
-		return () => clearInterval(timer);
-	}, [activeIndex]);
+		return () => window.clearTimeout(timer);
+	}, [activeIndex, isSliding]);
 
 	useEffect(() => {
 		if (!isSliding || nextIndex === null) return;
 
-		const timeout = setTimeout(() => {
+		const timer = window.setTimeout(() => {
 			setActiveIndex(nextIndex);
 			setNextIndex(null);
 			setIsSliding(false);
 		}, 320);
 
-		return () => clearTimeout(timeout);
+		return () => window.clearTimeout(timer);
 	}, [isSliding, nextIndex]);
 
 	const currentModel = BETA_OPEN_MODEL_INTEL[activeIndex];
 	const incomingModel =
-		BETA_OPEN_MODEL_INTEL[nextIndex ?? activeIndex] ?? BETA_OPEN_MODEL_INTEL[0];
+		nextIndex === null ? currentModel : BETA_OPEN_MODEL_INTEL[nextIndex];
 
 	return (
-		<div className="w-full max-w-[238px] space-y-1">
-			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
-				<div className="flex items-center gap-2">
-					<LogoToken
-						id={currentModel.providerId}
-						label={currentModel.providerId}
-						shape="card"
-						size={11}
-						compact
-					/>
-					<div className="relative h-4 min-w-0 flex-1 overflow-hidden">
-						<div
-							className={`absolute inset-0 space-y-0 ${isSliding ? "transition-transform duration-300 ease-out" : "transition-none"}`}
-							style={{ transform: isSliding ? "translateY(-100%)" : "translateY(0%)" }}
-						>
-							<p className="h-4 truncate text-[11px] font-semibold leading-4 text-zinc-950 dark:text-zinc-50">
-								{currentModel.model}
-							</p>
-							<p className="h-4 truncate text-[11px] font-semibold leading-4 text-zinc-950 dark:text-zinc-50">
-								{incomingModel.model}
-							</p>
+		<div className="w-full px-4">
+			<div className="space-y-3">
+				<BetaModelHeader
+					providerId={currentModel.providerId}
+					providerLabel={currentModel.providerId}
+					showLabel={false}
+					nameSlot={
+						<div className="h-6 overflow-hidden">
+							<div
+								className={`space-y-1 ${
+									isSliding
+										? "-translate-y-6 transition-transform duration-300 ease-out"
+										: "translate-y-0"
+								}`}
+							>
+								{[currentModel, incomingModel].map((model, index) => (
+									<div
+										key={`${model.model}-${index}`}
+										className="flex h-6 items-center gap-2"
+									>
+										<span className="relative h-4 w-4 shrink-0">
+											<Logo
+												id={model.providerId}
+												alt={model.providerId}
+												variant="color"
+												fill
+												sizes="16px"
+												className="object-contain object-center"
+											/>
+										</span>
+										<p className="truncate text-[12px] font-semibold leading-6 text-zinc-950 dark:text-zinc-50">
+											{model.name}
+										</p>
+									</div>
+								))}
+							</div>
 						</div>
+					}
+				/>
+				<div className="grid grid-cols-[0.9fr_1fr_1.2fr] gap-4">
+					<div>
+						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
+							Latency
+						</span>
+						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+							<NumberFlow value={currentModel.latencyMs} />
+							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
+								ms
+							</span>
+						</p>
 					</div>
-				</div>
-			</div>
-
-			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
-				<div className="flex items-center justify-between gap-3">
-					<span className="text-[10px] text-zinc-500 dark:text-zinc-400">Latency</span>
-					<span className="text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-						<NumberFlow value={currentModel.latencyMs} />ms
-					</span>
-				</div>
-			</div>
-			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
-				<div className="flex items-center justify-between gap-3">
-					<span className="text-[10px] text-zinc-500 dark:text-zinc-400">Throughput</span>
-					<span className="text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-						<NumberFlow value={currentModel.throughputTps} /> tok/s
-					</span>
-				</div>
-			</div>
-			<div className="rounded-xl border border-zinc-200/80 bg-white/96 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-950/96">
-				<div className="flex items-center justify-between gap-3">
-					<span className="text-[10px] text-zinc-500 dark:text-zinc-400">Pricing</span>
-					<span className="text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-						$<NumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} /> · $
-						<NumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
-					</span>
+					<div>
+						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
+							Throughput
+						</span>
+						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+							<NumberFlow value={currentModel.throughputTps} />
+							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
+								tok/s
+							</span>
+						</p>
+					</div>
+					<div className="text-right">
+						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
+							Pricing
+						</span>
+						<p className="mt-1 whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+							$<NumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							<span className="px-1 text-zinc-400 dark:text-zinc-500">/</span>$
+							<NumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+						</p>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -640,7 +750,9 @@ function DatabaseVisual({ variant = "default" }: { variant?: QuickstartVariant }
 	if (variant === "beta") {
 		return (
 			<VisualStage>
-				<BetaDatabaseVisual />
+				<div className="flex h-full w-full items-center justify-center">
+					<BetaDatabaseVisual />
+				</div>
 			</VisualStage>
 		);
 	}
@@ -705,14 +817,18 @@ export default function HomeQuickstartSection({
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className={`grid gap-5 md:grid-cols-2 ${variant === "beta" ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
+			<div className={`grid grid-cols-1 gap-5 ${variant === "beta" ? "md:grid-cols-3" : "md:grid-cols-2 xl:grid-cols-4"}`}>
 				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}
 						href={benefit.href}
 						className="group min-w-0 overflow-hidden rounded-[1.75rem] border border-zinc-200/80 bg-white transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10 dark:focus-visible:ring-zinc-100/10"
 					>
-						<div className="h-48 border-b border-zinc-200/80 bg-white px-2 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+						<div
+							className={`border-b border-zinc-200/80 bg-white px-2 py-3 dark:border-zinc-800 dark:bg-zinc-950 ${
+								variant === "beta" ? "h-40" : "h-48"
+							}`}
+						>
 							<BenefitVisual visual={benefit.visual} variant={variant} />
 						</div>
 						<div className="space-y-4 px-6 py-5 text-left">
@@ -720,7 +836,11 @@ export default function HomeQuickstartSection({
 								<h3 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-zinc-950 dark:text-zinc-50">
 									{benefit.title}
 								</h3>
-								<p className="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+								<p
+									className={`text-sm leading-6 text-zinc-600 dark:text-zinc-300 ${
+										variant === "beta" ? "min-h-[4.5rem]" : ""
+									}`}
+								>
 									{benefit.body}
 								</p>
 							</div>

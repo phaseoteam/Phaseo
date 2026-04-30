@@ -106,7 +106,7 @@ export default function Header() {
 			{showHeaderAnnouncement ? (
 				<HeaderAnnouncements
 					message={releaseMessage}
-					href="/gateway"
+					href="/"
 					tertiaryLabel="Read the docs"
 					tertiaryHref={docsLink}
 					label="New release"

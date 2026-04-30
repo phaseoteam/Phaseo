@@ -1,19 +1,6 @@
 import Link from "next/link";
-import {
-	Activity,
-	Route,
-	Timer,
-	Lock,
-	Globe,
-	Layers,
-	ArrowRight,
-	CheckCircle2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Activity, Route, Timer, Lock, Globe, Layers, ArrowRight } from "lucide-react";
 
-const SALES_HREF = "/sign-up";
 const DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
 
 const FEATURE_CARDS = [
@@ -93,174 +80,94 @@ const FEATURE_CARDS = [
 
 export function Features() {
 	return (
-		<section id="features" className="py-4">
+		<section id="features" className="py-8">
 			<div className="mx-auto px-6 lg:px-8">
-				{/* Section header */}
-				<div className="mx-auto max-w-3xl text-center">
-					<Badge
-						variant="outline"
-						className="mb-4 border-zinc-200 bg-transparent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:bg-transparent dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-transparent"
-					>
-						Why teams choose us
-					</Badge>
-					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
-						Reliability, routing, and control in one gateway
-					</h2>
-					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Standardise providers behind a single API, then enforce
-						global policies across latency, cost, capability, and
-						compliance requirements.
-					</p>
-				</div>
+				<div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+					<div className="space-y-6">
+						<h2 className="max-w-xl text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
+							One control plane for a provider market that changes every week.
+						</h2>
+						<p className="max-w-xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+							The gateway is built for teams that care about model portability,
+							routing quality, and operational discipline more than raw provider
+							counts on a slide.
+						</p>
 
-				{/* Feature cards grid */}
-				<div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-					{FEATURE_CARDS.map((f) => {
-						const Icon = f.icon;
-						const isSecurity = f.tag === "Security";
-						const hoverAccent = isSecurity ? "#52525b" : f.accent;
-						return (
-							<Card
-								key={f.title}
-								className="group relative overflow-hidden border border-zinc-200/60 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:border-zinc-300/80 hover:-translate-y-1 dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:hover:border-zinc-700"
+						<div className="space-y-4 border-l border-zinc-200 pl-4 dark:border-zinc-800">
+							<div className="flex items-start gap-3">
+								<Activity className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+								<p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+									Health-aware routing means degraded providers stop being a
+									midnight incident.
+								</p>
+							</div>
+							<div className="flex items-start gap-3">
+								<Route className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+								<p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+									Swap models and clouds without rewriting product integrations.
+								</p>
+							</div>
+							<div className="flex items-start gap-3">
+								<Lock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+								<p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+									Keep policy, spend controls, and auditability in the same place
+									as execution.
+								</p>
+							</div>
+						</div>
+
+						<div className="pt-2">
+							<Link
+								href={DOCS_HREF}
+								className="inline-flex items-center gap-2 text-sm font-medium text-zinc-900 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 							>
-								{/* Hover gradient */}
-								<div
-									className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-									style={{
-										background: `linear-gradient(135deg, ${hoverAccent}20 0%, transparent 70%)`,
-									}}
-								/>
-								{/* Hover border */}
-								<div
-									className="absolute inset-0 rounded-xl border border-transparent transition-colors duration-300 group-hover:border-current"
-									style={{ color: hoverAccent }}
-								/>
+								View documentation
+								<ArrowRight className="h-4 w-4" />
+							</Link>
+						</div>
+					</div>
 
-								<CardHeader className="relative pb-3">
-									<div className="flex items-start justify-between gap-4">
-										<div className="space-y-3">
-											<Badge
-												variant="outline"
-												className={`border bg-transparent text-xs font-semibold uppercase tracking-wide ${
-													isSecurity
-														? "border-zinc-900 text-zinc-900 dark:border-zinc-400 dark:text-zinc-100"
-														: ""
-												} hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent`}
-												style={
-													isSecurity
-														? undefined
-														: {
-															borderColor: f.accent,
-															color: f.accent,
-														}
-												}
-											>
-												{f.tag}
-											</Badge>
-											<h3
-												className={`text-xl font-semibold ${
-													isSecurity
-														? "text-zinc-900 dark:text-zinc-100"
-														: "text-zinc-900 dark:text-zinc-100"
-												}`}
-											>
-												{f.title}
-											</h3>
-										</div>
+					<div className="border-t border-zinc-200/80 dark:border-zinc-800">
+						<div className="divide-y divide-zinc-200/70 dark:divide-zinc-800/80">
+							{FEATURE_CARDS.map((feature) => {
+								const Icon = feature.icon;
+								return (
+									<div
+										key={feature.title}
+										className="grid gap-5 py-5 sm:grid-cols-[auto_1fr]"
+									>
 										<div
-											className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-110 ${
-												isSecurity
-													? "border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900"
-													: ""
-											}`}
-											style={
-												isSecurity
-													? undefined
-													: {
-														borderColor: `${f.accent}30`,
-														backgroundColor: `${f.accent}08`,
-													}
-											}
+											className="flex h-11 w-11 items-center justify-center rounded-2xl border"
+											style={{
+												borderColor: `${feature.accent}28`,
+												backgroundColor: `${feature.accent}10`,
+											}}
 										>
-											<Icon
-												className={`h-6 w-6 ${
-													isSecurity
-														? "text-zinc-900 dark:text-zinc-100"
-														: ""
-												}`}
-												style={
-													isSecurity
-														? undefined
-														: { color: f.accent }
-												}
-											/>
+											<Icon className="h-5 w-5" style={{ color: feature.accent }} />
+										</div>
+										<div className="space-y-3">
+											<p className="text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+												{feature.title}
+											</p>
+											<p className="max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+												{feature.body}
+											</p>
+											<div className="flex flex-wrap gap-x-4 gap-y-2">
+												{feature.highlights.map((highlight) => (
+													<p
+														key={highlight}
+														className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+													>
+														{highlight}
+													</p>
+												))}
+											</div>
 										</div>
 									</div>
-								</CardHeader>
-
-								<CardContent className="relative space-y-4">
-									<p
-										className={`text-sm leading-relaxed ${
-											isSecurity
-												? "text-zinc-600 dark:text-zinc-200"
-												: "text-zinc-600 dark:text-zinc-300"
-										}`}
-									>
-										{f.body}
-									</p>
-									<ul className="space-y-2">
-										{f.highlights.map((highlight) => (
-											<li
-												key={highlight}
-												className={`flex items-center gap-2 text-sm ${
-													isSecurity
-														? "text-zinc-600 dark:text-zinc-200"
-														: "text-zinc-600 dark:text-zinc-300"
-												}`}
-											>
-												<CheckCircle2
-													className={`h-4 w-4 shrink-0 ${
-														isSecurity
-															? "text-zinc-900 dark:text-zinc-100"
-															: ""
-													}`}
-													style={
-														isSecurity
-															? undefined
-															: { color: f.accent }
-													}
-												/>
-												<span>{highlight}</span>
-											</li>
-										))}
-									</ul>
-								</CardContent>
-							</Card>
-						);
-					})}
-				</div>
-
-				{/* CTA */}
-				<div className="mt-16 flex flex-wrap items-center justify-center gap-4">
-					<Button
-						asChild
-						size="lg"
-						className="h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800"
-					>
-						<Link href={SALES_HREF}>
-							Start free
-							<ArrowRight className="h-4 w-4" />
-						</Link>
-					</Button>
-					<Button
-						asChild
-						size="lg"
-						variant="outline"
-						className="h-12 border-zinc-200 px-6 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-					>
-						<Link href={DOCS_HREF}>View documentation</Link>
-					</Button>
+								);
+							})}
+						</div>
+					</div>
 				</div>
 			</div>
 		</section>

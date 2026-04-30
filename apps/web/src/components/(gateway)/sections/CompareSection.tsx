@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Check, Minus } from "lucide-react";
 
@@ -104,15 +103,9 @@ const COMPARISON_DATA = [
 
 export function CompareSection() {
 	return (
-		<section className="relative overflow-hidden py-20 sm:py-28">
+		<section className="relative overflow-hidden py-12 sm:py-16">
 			<div className="relative mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-3xl text-center">
-					<Badge
-						variant="secondary"
-						className="mb-4 border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-					>
-						Comparison
-					</Badge>
 					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
 						How we compare
 					</h2>
@@ -122,7 +115,7 @@ export function CompareSection() {
 					</p>
 				</div>
 
-				<Card className="mt-16 overflow-hidden border-zinc-200/60 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
+				<Card className="mt-10 overflow-hidden border-zinc-200/60 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
 					<div className="overflow-x-auto">
 						<table className="w-full text-left">
 							<thead>

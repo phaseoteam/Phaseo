@@ -23,6 +23,7 @@ import HomeOpenSourceSection from "@/components/landingPage/Home/HomeOpenSourceS
 import HomeQuickstartSection from "@/components/landingPage/Home/HomeQuickstartSection";
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = buildMetadata({
@@ -45,6 +46,7 @@ const standardFeePct = standardTier?.feePct ?? 5;
 const standardFeeText = Number.isInteger(standardFeePct)
 	? standardFeePct.toFixed(0)
 	: String(standardFeePct);
+const GITHUB_HREF = "https://github.com/AI-Stats/AI-Stats";
 
 const HERO_METRICS = [
 	{ label: "Models live", value: "300+" },
@@ -95,9 +97,7 @@ function HeroSection() {
 					<div className="space-y-5">
 						<h1 className="mx-auto max-w-4xl text-[2.65rem] font-semibold leading-[0.99] tracking-[-0.05em] text-zinc-950 sm:text-[4.1rem] sm:leading-[0.98] lg:text-[5rem]">
 							Compare models.
-							<span className="block text-[#d04e2a]">
-								Route requests.
-							</span>
+							<span className="block text-[#d04e2a]">Route requests.</span>
 							<span className="block">Keep the stack legible.</span>
 						</h1>
 						<p className="mx-auto max-w-2xl text-[15px] leading-[1.75] text-zinc-700 sm:text-lg sm:leading-[1.85]">
@@ -156,7 +156,7 @@ function HeroSection() {
 	);
 }
 
-function LandingSecondarySections() {
+function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
 	return (
 		<>
 			<section className="space-y-6 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
@@ -228,20 +228,25 @@ function LandingSecondarySections() {
 
 			<HomeReliabilitySection />
 
-			<Suspense fallback={<HomeModelUpdatesSectionFallback />}>
-				<HomeModelUpdatesSection />
-			</Suspense>
+			<section className="grid gap-10 border-b border-zinc-200/80 pb-12 dark:border-zinc-800/80 lg:grid-cols-2 lg:items-start">
+				<div className="min-w-0">
+					<Suspense fallback={<HomeModelUpdatesSectionFallback />}>
+						<HomeModelUpdatesSection />
+					</Suspense>
+				</div>
+				<div className="min-w-0">
+					<Suspense fallback={<HomeAnnouncementsSectionFallback />}>
+						<HomeAnnouncementsSection />
+					</Suspense>
+				</div>
+			</section>
 
-			<HomeOpenSourceSection />
-
-			<Suspense fallback={<HomeAnnouncementsSectionFallback />}>
-				<HomeAnnouncementsSection />
-			</Suspense>
+			<HomeOpenSourceSection variant={isBeta ? "beta" : "default"} />
 		</>
 	);
 }
 
-function DefaultLandingPage() {
+function LandingPage({ isBeta }: { isBeta: boolean }) {
 	return (
 		<div className="container mx-auto mt-16 mb-20 px-4 sm:mt-20 sm:px-6 lg:px-8">
 			<div className="space-y-14">
@@ -258,7 +263,11 @@ function DefaultLandingPage() {
 								pricing, and reliability data.
 							</p>
 						</div>
-						<div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+						<div
+							className={`mx-auto grid w-full grid-cols-1 gap-3 ${
+								isBeta ? "max-w-3xl sm:grid-cols-3" : "max-w-2xl sm:grid-cols-2"
+							}`}
+						>
 							<Button
 								asChild
 								size="lg"
@@ -284,26 +293,31 @@ function DefaultLandingPage() {
 									<ArrowRight className="h-4 w-4" />
 								</Link>
 							</Button>
+							{isBeta ? (
+								<Button
+									asChild
+									size="lg"
+									variant="outline"
+									className="h-11 w-full rounded-xl text-sm font-semibold"
+								>
+									<Link href={GITHUB_HREF} target="_blank" rel="noreferrer">
+										<Logo
+											id="github"
+											alt="GitHub"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										View GitHub
+									</Link>
+								</Button>
+							) : null}
 						</div>
 					</div>
 
-					<HomeQuickstartSection />
+					<HomeQuickstartSection variant={isBeta ? "beta" : "default"} />
 				</section>
-				<LandingSecondarySections />
-			</div>
-		</div>
-	);
-}
-
-function ExperimentalLandingPage() {
-	return (
-		<div className="container mx-auto mt-16 mb-20 px-4 sm:mt-20 sm:px-6 lg:px-8">
-			<div className="space-y-14">
-				<section className="space-y-12 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
-					<HeroSection />
-					<HomeQuickstartSection />
-				</section>
-				<LandingSecondarySections />
+				<LandingSecondarySections isBeta={isBeta} />
 			</div>
 		</div>
 	);
@@ -311,10 +325,5 @@ function ExperimentalLandingPage() {
 
 export default async function Page() {
 	const heroVariant = await getGatewayHeroVariant();
-
-	if (heroVariant === "experimental") {
-		return <ExperimentalLandingPage />;
-	}
-
-	return <DefaultLandingPage />;
+	return <LandingPage isBeta={heroVariant === "experimental"} />;
 }

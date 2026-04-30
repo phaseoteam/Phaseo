@@ -55,6 +55,7 @@ export async function updateBetaPreferences(payload: {
 	}
 
 	revalidatePath("/settings/beta");
+	revalidatePath("/");
 	revalidatePath("/gateway");
 
 	return { ok: true, profile };

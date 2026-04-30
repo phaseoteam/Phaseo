@@ -94,8 +94,8 @@ export default async function ExperimentalGatewayShowcase() {
 					</div>
 					<div className="mt-6 flex flex-wrap gap-3">
 						<Button asChild className="h-11 rounded-full px-5 text-sm font-semibold">
-							<Link href="/gateway">
-								Explore gateway
+							<Link href="/">
+								Explore platform
 								<ArrowRight className="h-4 w-4" />
 							</Link>
 						</Button>

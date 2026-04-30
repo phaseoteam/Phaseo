@@ -36,10 +36,10 @@ const suggestions = [
 		icon: BookOpen,
 	},
 	{
-		href: "/gateway",
-		label: "Explore the Gateway",
+		href: "/providers",
+		label: "Explore providers",
 		description:
-			"Use the AI Stats Gateway to reach every model with one API.",
+			"Browse supported providers and see where coverage is available today.",
 		icon: Network,
 	},
 ];

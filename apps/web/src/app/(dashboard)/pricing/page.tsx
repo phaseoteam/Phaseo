@@ -634,8 +634,8 @@ export default function PricingPage() {
 						</CardHeader>
 						<CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 							<Button asChild className="h-10">
-								<Link href="/gateway">
-									Open Gateway
+								<Link href="/">
+									Open Platform
 									<ArrowRight className="ml-2 h-4 w-4" />
 								</Link>
 							</Button>

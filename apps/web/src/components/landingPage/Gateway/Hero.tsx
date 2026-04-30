@@ -13,41 +13,12 @@ import {
 	Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
-import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import type { GatewayHeroVariant } from "@/lib/statsig/shared";
 import { WordRotate } from "@/components/ui/word-rotate";
-import { Logo } from "@/components/Logo";
-import {
-	Marquee,
-	MarqueeContent,
-	MarqueeFade,
-	MarqueeItem,
-} from "@/components/ui/marquee";
 
 const SALES_HREF = "/sign-up";
 const DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
-
-const TRUSTED_PROVIDERS = [
-	{ id: "openai", label: "OpenAI" },
-	{ id: "anthropic", label: "Anthropic" },
-	{ id: "google", label: "Google" },
-	{ id: "mistral", label: "Mistral" },
-	{ id: "meta", label: "Meta" },
-	{ id: "amazon-bedrock", label: "Amazon Bedrock" },
-	{ id: "azure", label: "Azure" },
-	{ id: "deepseek", label: "DeepSeek" },
-	{ id: "x-ai", label: "xAI" },
-	{ id: "cohere", label: "Cohere" },
-];
 
 type GatewayHeroStats = {
 	tokens24h: number;
@@ -62,40 +33,6 @@ type HeroStatItem = {
 	accent: string;
 };
 
-function StatCard({
-	label,
-	value,
-	icon: Icon,
-	accent,
-}: {
-	label: string;
-	value: string;
-	icon: React.ElementType;
-	accent: string;
-}) {
-	return (
-		<div className="group relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-white/80 p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-zinc-300/80 hover:shadow-md dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:hover:border-zinc-700">
-			<div className="absolute inset-0 bg-gradient-to-br from-zinc-50/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:from-zinc-900/40" />
-			<div className="relative flex items-center justify-between">
-				<div className="space-y-1">
-					<p className="text-3xl font-bold tracking-tight tabular-nums text-zinc-900 dark:text-zinc-100">
-						{value}
-					</p>
-					<p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-						{label}
-					</p>
-				</div>
-				<div
-					className="flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-110"
-					style={{ backgroundColor: `${accent}10` }}
-				>
-					<Icon className="h-6 w-6" style={{ color: accent }} />
-				</div>
-			</div>
-		</div>
-	);
-}
-
 function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" }) {
 	return (
 		<div className="mt-10 flex flex-wrap items-center gap-4">
@@ -104,8 +41,8 @@ function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" })
 				size="lg"
 				className={
 					ctaVariant === "experimental"
-						? "h-12 gap-2 bg-emerald-600 px-6 text-base font-medium text-white shadow-lg shadow-emerald-700/20 hover:bg-emerald-500"
-						: "h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800"
+						? "h-12 gap-2 bg-emerald-600 px-6 text-base font-medium text-white hover:bg-emerald-500"
+						: "h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white hover:bg-zinc-800"
 				}
 			>
 				<Link href={SALES_HREF}>
@@ -128,13 +65,19 @@ function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" })
 	);
 }
 
-function ClassicHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
+function ClassicHeroIntro({
+	heroStats,
+}: {
+	heroStats: HeroStatItem[];
+}) {
+	const [tokensStat, modelsStat, providersStat] = heroStats;
+
 	return (
-		<>
+		<div className="space-y-10">
 			<div className="mx-auto max-w-4xl text-center">
 				<h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
-					The Single API For{" "}
-					<span className="relative">
+					The Unified AI Gateway for{" "}
+					<span className="relative text-sky-700 dark:text-sky-300">
 						<WordRotate
 							words={[
 								"AI Models",
@@ -149,43 +92,51 @@ function ClassicHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 					</span>
 				</h1>
 
-				<p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-					Unify 30+ AI providers behind one API. Route intelligently by
-					latency, cost, and availability. Ship production workloads with
-					confidence.
+				<p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+					Keep your existing SDK shape, route across providers, and control
+					latency, pricing, and failover from one OpenAI-compatible surface.
 				</p>
 
 				<div className="flex justify-center">
 					<HeroActions ctaVariant="classic" />
 				</div>
 			</div>
-
-			<div className="mx-auto mt-16 max-w-5xl">
-				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{heroStats.map((s) => (
-						<StatCard
-							key={s.label}
-							label={s.label}
-							value={s.value}
-							icon={s.icon}
-							accent={s.accent}
-						/>
-					))}
+			<div className="mx-auto grid max-w-3xl gap-8 border-t border-zinc-200/80 pt-6 text-center text-sm dark:border-zinc-800 md:grid-cols-3">
+				<div className="space-y-1">
+					<p className="text-zinc-500 dark:text-zinc-400">
+						{tokensStat?.label ?? "Monthly tokens"}
+					</p>
+					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+						{tokensStat?.value ?? "--"}
+					</p>
+				</div>
+				<div className="space-y-1">
+					<p className="text-zinc-500 dark:text-zinc-400">
+						{modelsStat?.label ?? "Models"}
+					</p>
+					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+						{modelsStat?.value ?? "--"}
+					</p>
+				</div>
+				<div className="space-y-1">
+					<p className="text-zinc-500 dark:text-zinc-400">
+						{providersStat?.label ?? "Providers"}
+					</p>
+					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+						{providersStat?.value ?? "--"}
+					</p>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
 
 function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 	return (
-		<div className="relative overflow-hidden rounded-[2.25rem] border border-emerald-200/60 bg-[linear-gradient(130deg,#f6fffb_0%,#f7f8ff_42%,#fff9ef_100%)] p-6 shadow-xl shadow-zinc-900/5 dark:border-emerald-900/50 dark:bg-zinc-950 sm:p-10">
-			<div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald-300/30 blur-3xl dark:bg-emerald-700/20" />
-			<div className="pointer-events-none absolute -bottom-20 left-20 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-700/20" />
-
+		<div className="rounded-[2.25rem] border border-zinc-200/70 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950 sm:p-10">
 			<div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
 				<div>
-					<Badge className="rounded-full border border-emerald-300/70 bg-white/90 px-3 py-1 text-xs uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-300">
+					<Badge className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs uppercase tracking-[0.22em] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
 						Experimental Gateway Hero
 					</Badge>
 
@@ -216,7 +167,7 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 						{heroStats.map((s) => (
 							<div
 								key={`chip-${s.label}`}
-								className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
+								className="rounded-2xl border border-zinc-200/80 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/50"
 							>
 								<p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
 									{s.label}
@@ -229,7 +180,7 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 					</div>
 				</div>
 
-				<div className="rounded-3xl border border-zinc-900/10 bg-zinc-950 p-6 text-zinc-100 shadow-2xl shadow-zinc-950/20 dark:border-zinc-800 dark:shadow-black/40">
+				<div className="rounded-3xl border border-zinc-200/80 bg-zinc-950 p-6 text-zinc-100 dark:border-zinc-800">
 					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
 						Routing cockpit
 					</p>
@@ -292,12 +243,10 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 export function Hero({
 	stats,
 	tokensWindowHours = 24,
-	popularModels,
 	heroVariant = "classic",
 }: {
 	stats?: GatewayHeroStats;
 	tokensWindowHours?: number;
-	popularModels?: ModelCardType[];
 	heroVariant?: GatewayHeroVariant;
 }) {
 	const roundTo = (value: number | null, step: number) => {
@@ -354,9 +303,6 @@ export function Hero({
 		},
 	] as HeroStatItem[];
 
-	const featuredModels =
-		popularModels && popularModels.length > 0 ? popularModels : [];
-
 	return (
 		<section className="w-full">
 			<div className="mx-auto px-6 pb-16 lg:px-8">
@@ -364,74 +310,6 @@ export function Hero({
 					<ExperimentalHeroIntro heroStats={heroStats} />
 				) : (
 					<ClassicHeroIntro heroStats={heroStats} />
-				)}
-
-				<div className="my-8 border-y border-zinc-200/60 bg-zinc-50/50 py-8 dark:border-zinc-800/70 dark:bg-zinc-950/40">
-					<div className="mx-auto max-w-7xl px-6 lg:px-8">
-						<p className="mb-6 text-center text-sm font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-							Trusted by teams using
-						</p>
-						<Marquee className="[--duration:40s]">
-							<MarqueeFade side="left" />
-							<MarqueeFade side="right" />
-							<MarqueeContent>
-								{TRUSTED_PROVIDERS.map((provider) => (
-									<MarqueeItem key={provider.id}>
-										<div className="flex items-center gap-3 rounded-full border border-zinc-200/80 bg-white px-5 py-2.5 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900">
-											<Logo
-												id={provider.id}
-												alt={provider.label}
-												width={20}
-												height={20}
-												className="h-5 w-5 object-contain"
-											/>
-											<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-												{provider.label}
-											</span>
-										</div>
-									</MarqueeItem>
-								))}
-							</MarqueeContent>
-						</Marquee>
-					</div>
-				</div>
-
-				{featuredModels.length > 0 && (
-					<div className="mx-auto px-6 py-16 lg:px-8">
-						<Card className="border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
-							<CardHeader className="border-b border-zinc-100 pb-4 dark:border-zinc-800">
-								<div className="flex items-center justify-between">
-									<div>
-										<CardTitle className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-											Popular models
-										</CardTitle>
-										<CardDescription className="mt-1 text-zinc-500 dark:text-zinc-400">
-											Access the models your team already trusts - same
-											integration, any provider.
-										</CardDescription>
-									</div>
-									<Button
-										asChild
-										variant="ghost"
-										size="sm"
-										className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-									>
-										<Link href="/models">
-											View all
-											<ArrowRight className="ml-1 h-3 w-3" />
-										</Link>
-									</Button>
-								</div>
-							</CardHeader>
-							<CardContent className="pt-6">
-								<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-									{featuredModels.map((model) => (
-										<ModelCard key={model.model_id} model={model} />
-									))}
-								</div>
-							</CardContent>
-						</Card>
-					</div>
 				)}
 			</div>
 		</section>

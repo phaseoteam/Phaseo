@@ -47,12 +47,12 @@ export default async function DatabaseStats() {
 		{
 			label: "Gateway monthly tokens",
 			value: `${formatCompact(gatewayMetrics.summary.tokens24h ?? 0)}+`,
-			route: "/gateway",
+			route: "/",
 		},
 	] as const;
 
 	return (
-		<div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-3">
+		<div className="grid w-full grid-cols-1 gap-3 md:grid-cols-3">
 			{stats.map((stat) => (
 				<Link
 					key={stat.label}

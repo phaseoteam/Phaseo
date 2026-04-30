@@ -32,6 +32,7 @@ export type UpdateAvatar = {
 type Props = {
 	id?: string | number;
 	badges?: UpdateBadge[];
+	hideBadges?: boolean;
 	avatar?: UpdateAvatar | null;
 	source?: string | null;
 	tags?: string[] | null;
@@ -45,12 +46,14 @@ type Props = {
 	compact?: boolean;
 	hideFooterLink?: boolean;
 	metaPlacement?: "footer" | "header";
+	providerDateInline?: boolean;
 	showAccentDot?: boolean;
 };
 
 export default function UpdateCard({
 	id,
 	badges = [],
+	hideBadges = false,
 	avatar,
 	title,
 	subtitle,
@@ -64,15 +67,23 @@ export default function UpdateCard({
 	compact = false,
 	hideFooterLink = false,
 	metaPlacement = "footer",
+	providerDateInline = false,
 	showAccentDot = true,
 }: Props) {
 	const isModelRelease = badges.some((b) => b.label === "Release");
-	const showHeaderTime = metaPlacement === "header" && Boolean(dateIso);
+	const visibleBadges = hideBadges ? [] : badges;
+	const canShowProviderInlineTime =
+		providerDateInline && Boolean(dateIso) && Boolean(avatar?.name);
+	const showHeaderTime =
+		metaPlacement === "header" &&
+		Boolean(dateIso) &&
+		!canShowProviderInlineTime;
 	const showFooterMeta =
 		metaPlacement === "footer" &&
 		(Boolean(dateIso) || (Boolean(accentClass) && showAccentDot));
 	const showFooterLink = !hideFooterLink;
 	const showFooter = showFooterMeta || showFooterLink;
+	const showHeaderMetaRow = visibleBadges.length > 0 || showHeaderTime;
 
 	return (
 		<Card
@@ -85,35 +96,44 @@ export default function UpdateCard({
 			)}
 		>
 			<CardHeader className={cn("space-y-3 p-4", compact && "space-y-2.5 p-3")}>
-				<div className={cn("flex gap-2", showHeaderTime ? "items-start justify-between" : "flex-wrap items-center")}>
-					<div className="flex flex-wrap items-center gap-2">
-						{badges.map((badge) => {
-							const Icon = badge.icon;
-							return (
-								<span
-									key={`${id}-${badge.label}`}
-									className={cn(
-										"inline-flex items-center gap-1 rounded-full",
-										badge.className
-									)}
-								>
-									{Icon ? <Icon className="h-3.5 w-3.5" /> : null}
-									{badge.label}
-								</span>
-							);
-						})}
-					</div>
-					{showHeaderTime ? (
-						<div className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
-							<TimeDisplay
-								dateIso={dateIso as string}
-								isModelRelease={isModelRelease}
-							/>
+				{showHeaderMetaRow ? (
+					<div
+						className={cn(
+							"flex gap-2",
+							showHeaderTime
+								? "items-start justify-between"
+								: "flex-wrap items-center"
+						)}
+					>
+						<div className="flex flex-wrap items-center gap-2">
+							{visibleBadges.map((badge) => {
+								const Icon = badge.icon;
+								return (
+									<span
+										key={`${id}-${badge.label}`}
+										className={cn(
+											"inline-flex items-center gap-1 rounded-full",
+											badge.className
+										)}
+									>
+										{Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+										{badge.label}
+									</span>
+								);
+							})}
 						</div>
-					) : null}
-				</div>
+						{showHeaderTime ? (
+							<div className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+								<TimeDisplay
+									dateIso={dateIso as string}
+									isModelRelease={isModelRelease}
+								/>
+							</div>
+						) : null}
+					</div>
+				) : null}
 
-				<div className="flex items-center gap-3 min-w-0">
+				<div className="flex min-w-0 items-center gap-3">
 					{avatar ? (
 						<Link
 							href={`/organisations/${encodeURIComponent(
@@ -132,7 +152,7 @@ export default function UpdateCard({
 						</Link>
 					) : null}
 
-					<div className="min-w-0 space-y-1">
+					<div className="min-w-0 flex-1 space-y-1">
 						<CardTitle className="text-base sm:text-lg leading-tight">
 							<Link
 								href={link.href}
@@ -151,18 +171,36 @@ export default function UpdateCard({
 						</CardTitle>
 
 						{avatar?.name ? (
-							<CardDescription className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+							<div
+								className={cn(
+									"min-w-0 w-full text-xs text-zinc-500 dark:text-zinc-400",
+									providerDateInline
+										? "flex items-center justify-between gap-3"
+										: "truncate"
+								)}
+							>
 								<Link
 									href={`/organisations/${encodeURIComponent(
 										avatar.organisationId
 									)}`}
-									className="inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-400"
+									className={cn(
+										"inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-400",
+										providerDateInline ? "min-w-0 flex-1 truncate" : ""
+									)}
 								>
-									<span className="underline decoration-transparent hover:decoration-current transition-colors duration-200">
+									<span className="truncate underline decoration-transparent transition-colors duration-200 hover:decoration-current">
 										{avatar.name}
 									</span>
 								</Link>
-							</CardDescription>
+								{canShowProviderInlineTime ? (
+									<div className="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-zinc-500 dark:text-zinc-400">
+										<TimeDisplay
+											dateIso={dateIso}
+											isModelRelease={isModelRelease}
+										/>
+									</div>
+								) : null}
+							</div>
 						) : subtitle ? (
 							<CardDescription className="truncate text-xs tracking-wide text-zinc-500 dark:text-zinc-400">
 								{subtitle}

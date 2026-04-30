@@ -4,7 +4,6 @@ import { promises as fs } from "node:fs";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import { load as yamlLoad } from "js-yaml";
-import { cache } from "react";
 
 const ANNOUNCEMENTS_CONTENT_ROOT = path.join(
 	process.cwd(),
@@ -92,6 +91,10 @@ function toOptionalString(value: unknown): string | null {
 }
 
 function toIsoDate(value: unknown, fallback: string): string {
+	if (value instanceof Date) {
+		return Number.isNaN(value.getTime()) ? fallback : value.toISOString();
+	}
+
 	if (typeof value !== "string" || value.trim().length === 0) {
 		return fallback;
 	}
@@ -152,7 +155,7 @@ function dateToSortValue(value: string): number {
 	return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
 
-const loadAnnouncements = cache(async (): Promise<AnnouncementPost[]> => {
+async function loadAnnouncements(): Promise<AnnouncementPost[]> {
 	let entries: Dirent[];
 
 	try {
@@ -221,7 +224,7 @@ const loadAnnouncements = cache(async (): Promise<AnnouncementPost[]> => {
 			if (dateDiff !== 0) return dateDiff;
 			return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
 		});
-});
+}
 
 export async function getAnnouncementPosts(): Promise<AnnouncementSummary[]> {
 	const posts = await loadAnnouncements();
@@ -247,6 +250,7 @@ export function formatAnnouncementDate(value: string): string {
 	}
 
 	return parsed.toLocaleDateString(undefined, {
+		timeZone: "UTC",
 		year: "numeric",
 		month: "short",
 		day: "numeric",
