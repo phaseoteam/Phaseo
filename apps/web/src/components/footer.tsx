@@ -9,6 +9,7 @@ import {
 	Hammer,
 	Info,
 	Megaphone,
+	History,
 	FileText,
 	ShieldCheck,
 	Database,
@@ -17,6 +18,7 @@ import {
 	Calculator,
 	Handshake,
 	LifeBuoy,
+	CircleHelp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./Logo";
@@ -287,6 +289,16 @@ export default function Footer() {
 									variant="ghost"
 									className="h-8 w-full justify-start px-2"
 								>
+									<Link href="/faq" aria-label="FAQ">
+										<CircleHelp className="h-4 w-4" />
+										<span className="text-xs">FAQ</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
 									<Link href="/contact" aria-label="Contact">
 										<LifeBuoy className="h-4 w-4" />
 										<span className="text-xs">Contact</span>
@@ -332,7 +344,7 @@ export default function Footer() {
 										rel="noopener noreferrer"
 										aria-label="Changelog"
 									>
-										<Megaphone className="h-4 w-4" />
+										<History className="h-4 w-4" />
 										<span className="text-xs">Changelog</span>
 									</Link>
 								</Button>
@@ -622,6 +634,16 @@ export default function Footer() {
 								variant="ghost"
 								className="w-fit py-1 px-2 h-7"
 							>
+								<Link href="/faq" aria-label="FAQ">
+									<CircleHelp className="h-4 w-4" />
+									<span className="text-xs">FAQ</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
 								<Link href="/contact" aria-label="Contact">
 									<LifeBuoy className="h-4 w-4" />
 									<span className="text-xs">Contact</span>
@@ -669,7 +691,7 @@ export default function Footer() {
 									rel="noopener noreferrer"
 									aria-label="Changelog"
 								>
-									<Megaphone className="h-4 w-4" />
+									<History className="h-4 w-4" />
 									<span className="text-xs">Changelog</span>
 								</Link>
 							</Button>

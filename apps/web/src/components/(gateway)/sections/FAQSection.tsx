@@ -1,8 +1,7 @@
 "use client";
 
-import { ChevronDown, HelpCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface FAQItemProps {
@@ -62,38 +61,46 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
 	);
 }
 
-const FAQ_ITEMS = [
+export const FAQ_ITEMS = [
 	{
-		question: "Can I use my own provider API keys?",
-		answer: "Yes - bring your own keys (BYOK) for any provider and enforce limits per key. Your keys are encrypted at rest and never logged. Managed keys are also available if you prefer not to handle credentials yourself.",
+		question: "Why should I use AI Stats Gateway?",
+		answer: "AI Stats gives you one OpenAI-compatible surface for model routing, provider failover, pricing context, and observability. The point is not just access to more models. It is being able to swap providers, compare real costs, and keep production traffic stable without rebuilding your integration every time the market moves.",
 	},
 	{
-		question: "What model modalities does the Gateway support?",
-		answer: "We support chat completions, embeddings, moderations, image generation, audio generation, and video generation - each with consistent schemas across all providers. All modalities are first-class citizens with full routing and observability support.",
+		question: "How do I get started?",
+		answer: "Create an account, add credits if you want managed billing, generate an API key, and point your existing OpenAI-compatible client at AI Stats Gateway. If you already have provider keys, you can also bring your own keys and keep your provider billing directly under your control.",
+	},
+	{
+		question: "How do billing and fees work?",
+		answer: "Managed usage is billed from your AI Stats credits using the model and provider pricing shown in the catalog. If you bring your own provider keys, the upstream inference cost stays with that provider and AI Stats only applies the documented gateway fee where relevant. The goal is that pricing stays inspectable rather than hidden behind blended markups.",
+	},
+	{
+		question: "Can I use my own provider API keys?",
+		answer: "Yes. BYOK is a first-class path. You can attach your own provider credentials, keep provider-side billing under your control, and still use the same routing, health, and policy layer on top.",
+	},
+	{
+		question: "What models and modalities do you support?",
+		answer: "The database and gateway cover chat, embeddings, image, audio, video, moderation, and related model capabilities across a large provider set. Support is surfaced per provider and per model, so you can see exactly what is available before routing production traffic.",
 	},
 	{
 		question: "How quickly are new models added?",
-		answer: "New provider models and community submissions are reviewed and added on a rolling basis - typically within 24-48 hours of release. Once approved, they are available instantly in the Gateway and the SDKs with no code changes required.",
+		answer: "New models are added on a rolling basis as providers release them and as we verify pricing, capabilities, and metadata. High-interest frontier releases are usually prioritised quickly, but accuracy beats rushing incomplete catalog rows into production.",
 	},
 	{
-		question: "Where do latency and reliability metrics come from?",
-		answer: "All telemetry comes from live Gateway traffic. The dashboards display real-world token usage, latency percentiles, and provider health scores. This data feeds directly into our intelligent routing algorithms.",
+		question: "How does provider fallback work?",
+		answer: "Routing decisions are made request by request using provider health, latency, cost, capability, and your policies. If a provider degrades or errors, AI Stats can fall through to the next eligible provider without requiring a new client integration or a manual operational response.",
 	},
 	{
-		question: "Can I mix different providers in one application?",
-		answer: "Absolutely - choose the provider or model per request while keeping a single unified API. Switching providers requires only changing the model name. You can even set up automatic fallbacks between providers.",
+		question: "What SDK and API formats are supported?",
+		answer: "AI Stats is designed around an OpenAI-compatible request shape, so existing OpenAI-style SDKs and tools can usually be moved across with minimal changes. On top of that, we publish our own SDKs and provider adapters where teams want stronger typing or more direct gateway features.",
 	},
 	{
-		question: "How does intelligent routing work?",
-		answer: "Routing is evaluated on a request-by-request basis using real-time provider health, latency metrics, and your configured policies. You can route by lowest latency, lowest cost, specific regions, or custom rules. Circuit breakers automatically redirect traffic away from degraded providers.",
+		question: "What data is logged during API use?",
+		answer: "We log the operational metadata needed to route, audit, and bill requests correctly. Prompt or completion logging should never be treated as implicit. Where logging behaviour is configurable, it should be explicit and visible in the product rather than assumed.",
 	},
 	{
-		question: "Does AI Stats apply any rate limits?",
-		answer: "No - we do not impose rate limits. Upstream providers may have their own limits, but we work with providers to optimize your allocation. You can optionally set spend limits per API key to control costs.",
-	},
-	{
-		question: "What security certifications do you have?",
-		answer: "We follow industry best practices for data protection. All data is encrypted in transit and at rest. We support SSO, audit logging, and fine-grained access controls for enterprise deployments.",
+		question: "How do I get support?",
+		answer: "For product help, implementation questions, or data issues, use the docs, GitHub issues, or contact links in the footer. If something in the model database looks wrong, reporting it directly is the fastest way to get it reviewed.",
 	},
 ];
 
@@ -112,18 +119,11 @@ export function FAQSection() {
 		<section className="relative overflow-hidden py-20 sm:py-28">
 			<div className="relative mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-3xl text-center">
-					<Badge
-						variant="secondary"
-						className="mb-4 border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-					>
-						<HelpCircle className="mr-1.5 h-3.5 w-3.5" />
-						FAQ
-					</Badge>
 					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
 						Frequently asked questions
 					</h2>
 					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Everything you need to know about the AI Stats Gateway.
+						Common questions about AI Stats Gateway.
 						Cannot find an answer?{" "}
 						<a
 							href="mailto:support@ai-stats.phaseo.app"

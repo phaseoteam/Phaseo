@@ -9,7 +9,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import {
-	formatAnnouncementDate,
 	getAnnouncementPosts,
 } from "@/lib/content/announcements";
 import { buildMetadata } from "@/lib/seo";
@@ -59,9 +58,6 @@ export default async function AnnouncementsPage() {
 							>
 								<CardHeader className="space-y-3">
 									<div className="flex flex-wrap items-center gap-2">
-										<Badge variant="secondary">
-											{formatAnnouncementDate(post.publishedAt)}
-										</Badge>
 										{post.tags.slice(0, 3).map((tag) => (
 											<Badge
 												key={tag}

@@ -36,10 +36,10 @@ const suggestions = [
 		icon: BookOpen,
 	},
 	{
-		href: "/gateway",
-		label: "Explore the Gateway",
+		href: "/",
+		label: "Explore the platform",
 		description:
-			"Use the AI Stats Gateway to reach every model with one API.",
+			"See the unified AI Stats landing page for gateway, models, and product overview.",
 		icon: Network,
 	},
 ];

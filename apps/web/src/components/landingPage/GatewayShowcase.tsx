@@ -331,8 +331,8 @@ export default function GatewayShowcase() {
 					</div>
 					<div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end lg:pt-1">
 						<Button asChild className="h-10">
-							<Link href="/gateway">
-								Explore gateway
+							<Link href="/">
+								Explore platform
 								<ArrowRight className="ml-1 h-4 w-4" />
 							</Link>
 						</Button>

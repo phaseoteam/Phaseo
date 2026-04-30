@@ -86,7 +86,7 @@ const platformFlow = [
 			"Keep integration code stable while provider offerings evolve.",
 			"Apply practical routing and control policies without lock-in.",
 		],
-		href: "/gateway",
+		href: "/",
 		icon: Route,
 	},
 	{
@@ -122,7 +122,7 @@ const offerings = [
 	{
 		title: "Gateway",
 		description: "OpenAI-compatible API surface to execute across many providers.",
-		href: "/gateway",
+		href: "/",
 		badges: ["Compatibility", "Routing", "Controls"],
 		icon: Route,
 	},

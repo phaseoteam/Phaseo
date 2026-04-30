@@ -14,8 +14,8 @@ const FEATURE_CARDS = [
 	{
 		title: "Gateway control that stays readable",
 		body: "Ship through one OpenAI-compatible surface, then keep routing, fallback, and BYOK decisions flexible as providers shift.",
-		href: "/gateway",
-		cta: "See gateway details",
+		href: "/",
+		cta: "See platform overview",
 		icon: Workflow,
 		type: "routing" as const,
 	},

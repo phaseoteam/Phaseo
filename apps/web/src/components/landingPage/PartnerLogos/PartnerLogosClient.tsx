@@ -14,13 +14,13 @@ type PartnerLogosClientProps = {
 
 export default function PartnerLogosClient({ logos }: PartnerLogosClientProps) {
 	return (
-		<section className="text-left">
-			<div className="relative">
-				<div className="rounded border border-dashed py-2 px-1">
-					<Marquee>
+		<section className="w-full min-w-0 text-left">
+			<div className="relative w-full min-w-0">
+				<div className="w-full min-w-0 overflow-hidden rounded border border-dashed px-1 py-2">
+					<Marquee className="w-full min-w-0">
 						<MarqueeFade side="left" />
 						<MarqueeFade side="right" />
-						<MarqueeContent pauseOnHover={false} speed={18}>
+						<MarqueeContent pauseOnHover={false} speed={18} style={{ width: "100%" }}>
 							{logos.map((logoId) => (
 								<MarqueeItem
 									key={logoId}
