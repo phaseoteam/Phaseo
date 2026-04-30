@@ -2,7 +2,7 @@
   "model_id": "mistral/mistral-small-creative",
   "organisation_id": "mistral",
   "name": "Mistral Small Creative",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "announced_date": "2025-12-16T00:00:00",
   "release_date": "2025-12-16T00:00:00",
