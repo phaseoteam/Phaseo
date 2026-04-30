@@ -72,12 +72,15 @@ export default function UpdateCard({
 }: Props) {
 	const isModelRelease = badges.some((b) => b.label === "Release");
 	const visibleBadges = hideBadges ? [] : badges;
-	const canShowProviderInlineTime =
-		providerDateInline && Boolean(dateIso) && Boolean(avatar?.name);
+	const providerInlineDateIso =
+		providerDateInline && avatar?.name && dateIso ? dateIso : null;
+	const canShowProviderInlineTime = Boolean(providerInlineDateIso);
+	const headerDateIso =
+		metaPlacement === "header" && dateIso && !canShowProviderInlineTime
+			? dateIso
+			: null;
 	const showHeaderTime =
-		metaPlacement === "header" &&
-		Boolean(dateIso) &&
-		!canShowProviderInlineTime;
+		Boolean(headerDateIso);
 	const showFooterMeta =
 		metaPlacement === "footer" &&
 		(Boolean(dateIso) || (Boolean(accentClass) && showAccentDot));
@@ -122,10 +125,10 @@ export default function UpdateCard({
 								);
 							})}
 						</div>
-						{showHeaderTime ? (
+						{headerDateIso ? (
 							<div className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
 								<TimeDisplay
-									dateIso={dateIso as string}
+									dateIso={headerDateIso}
 									isModelRelease={isModelRelease}
 								/>
 							</div>
@@ -192,10 +195,10 @@ export default function UpdateCard({
 										{avatar.name}
 									</span>
 								</Link>
-								{canShowProviderInlineTime ? (
+								{providerInlineDateIso ? (
 									<div className="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-zinc-500 dark:text-zinc-400">
 										<TimeDisplay
-											dateIso={dateIso}
+											dateIso={providerInlineDateIso}
 											isModelRelease={isModelRelease}
 										/>
 									</div>
