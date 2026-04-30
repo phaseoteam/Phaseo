@@ -405,6 +405,7 @@ const (
 	BenchmarkIdEqbench BenchmarkId = "eqbench"
 	BenchmarkIdErqa BenchmarkId = "erqa"
 	BenchmarkIdEvalplus BenchmarkId = "evalplus"
+	BenchmarkIdExpertSwe BenchmarkId = "expert-swe"
 	BenchmarkIdEyepacsAccuracy BenchmarkId = "eyepacs-accuracy"
 	BenchmarkIdFacts BenchmarkId = "facts"
 	BenchmarkIdFactsBenchmarkSuite BenchmarkId = "facts-benchmark-suite"
