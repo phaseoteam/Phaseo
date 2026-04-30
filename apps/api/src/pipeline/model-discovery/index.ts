@@ -500,7 +500,7 @@ async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<Pr
 		const fingerprint = toPricingFingerprint(pricingDetails);
 		state.pricingByModelId.set(row.model_id, fingerprint);
 		if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(row.provider_id)) {
-			const snapshot = extractProviderApiModelSnapshot(asRecord(row.model_details), pricingDetails);
+			const snapshot = extractProviderApiModelSnapshot(row.provider_id, asRecord(row.model_details), pricingDetails);
 			state.providerApiSnapshotByModelId.set(row.model_id, snapshot);
 			if (hasProviderApiSnapshotValue(snapshot)) {
 				providerApiSnapshotReadyByProvider.add(row.provider_id);
@@ -688,7 +688,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 							pricingDetails: null,
 							pricingFingerprint: null,
 						};
-						const currentSnapshot = extractProviderApiModelSnapshot(model.modelDetails, model.pricingDetails);
+						const currentSnapshot = extractProviderApiModelSnapshot(
+							provider.providerId,
+							model.modelDetails,
+							model.pricingDetails
+						);
 						const snapshotDiff = buildProviderApiModelSnapshotDiff(previousSnapshot, currentSnapshot);
 						if (snapshotDiff.length === 0) continue;
 
