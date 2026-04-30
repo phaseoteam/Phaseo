@@ -326,6 +326,20 @@ function jsonEqual(left: unknown, right: unknown): boolean {
     return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function hasMeaningfulModelChange(
+    providerId: string,
+    previousModelPayload: unknown,
+    currentModelPayload: unknown
+): boolean {
+    if (providerId !== "crofai") {
+        return !jsonEqual(previousModelPayload, currentModelPayload);
+    }
+
+    const previousPricing = extractPricingDetails(asRecord(previousModelPayload) ?? {});
+    const currentPricing = extractPricingDetails(asRecord(currentModelPayload) ?? {});
+    return !jsonEqual(previousPricing, currentPricing);
+}
+
 function diffSnapshots(previous: ProviderSnapshot | undefined, current: ProviderSnapshot): ProviderDiff | null {
     if (!previous) {
         return null;
@@ -346,7 +360,7 @@ function diffSnapshots(previous: ProviderSnapshot | undefined, current: Provider
             added.push(id);
             continue;
         }
-        if (!jsonEqual(previousModels[id], currentModels[id])) {
+        if (hasMeaningfulModelChange(current.providerId, previousModels[id], currentModels[id])) {
             changed.push(id);
         }
     }

@@ -211,6 +211,19 @@ export function samplePricingDetailsText(value: unknown): string {
 	return text.length <= MAX_SAMPLE_TEXT_LENGTH ? text : `${text.slice(0, MAX_SAMPLE_TEXT_LENGTH - 3)}...`;
 }
 
+function normalizeProviderApiPricingDetails(providerId: string, pricingDetails: unknown): unknown | null {
+	if (providerId !== "crofai") {
+		return pricingDetails ?? null;
+	}
+
+	const record = asRecord(pricingDetails);
+	if (!record) return pricingDetails ?? null;
+	if ("pricing" in record) {
+		return normalizeJson(record.pricing);
+	}
+	return pricingDetails ?? null;
+}
+
 export function toNullableInteger(value: unknown): number | null {
 	if (typeof value === "number") {
 		if (!Number.isFinite(value)) return null;
@@ -225,9 +238,20 @@ export function toNullableInteger(value: unknown): number | null {
 }
 
 export function extractProviderApiModelSnapshot(
+	providerId: string,
 	modelDetails: Record<string, unknown> | null,
 	pricingDetails: unknown | null
 ): ProviderApiModelSnapshot {
+	const normalizedPricingDetails = normalizeProviderApiPricingDetails(providerId, pricingDetails);
+	if (providerId === "crofai") {
+		return {
+			contextLength: null,
+			maxCompletionTokens: null,
+			pricingDetails: normalizedPricingDetails,
+			pricingFingerprint: toPricingFingerprint(normalizedPricingDetails),
+		};
+	}
+
 	const contextLength = modelDetails
 		? toNullableInteger(modelDetails.contextLength ?? modelDetails.context_length)
 		: null;
@@ -237,8 +261,8 @@ export function extractProviderApiModelSnapshot(
 	return {
 		contextLength,
 		maxCompletionTokens,
-		pricingDetails,
-		pricingFingerprint: toPricingFingerprint(pricingDetails),
+		pricingDetails: normalizedPricingDetails,
+		pricingFingerprint: toPricingFingerprint(normalizedPricingDetails),
 	};
 }
 
