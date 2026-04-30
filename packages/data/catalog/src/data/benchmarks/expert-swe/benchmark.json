@@ -1,5 +1,6 @@
 {
   "benchmark_id": "expert-swe",
+  "name": "Expert SWE",
   "benchmark_name": "Expert SWE",
   "category": "code",
   "ascending_order": null,
