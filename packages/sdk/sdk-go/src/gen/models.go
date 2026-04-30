@@ -490,6 +490,7 @@ const (
 	BenchmarkIdIntergps BenchmarkId = "intergps"
 	BenchmarkIdInternalApiInstructionFollowingHard BenchmarkId = "internal-api-instruction-following-(hard)"
 	BenchmarkIdInverseIfeval BenchmarkId = "inverse-ifeval"
+	BenchmarkIdInvestmentBankingModeling BenchmarkId = "investment-banking-modeling"
 	BenchmarkIdIqBench BenchmarkId = "iq-bench"
 	BenchmarkIdIvebenchConsistencyVsKlingO1 BenchmarkId = "ivebench-consistency-vs-kling-o1"
 	BenchmarkIdIvebenchConsistencyVsRunwayAleph BenchmarkId = "ivebench-consistency-vs-runway-aleph"
