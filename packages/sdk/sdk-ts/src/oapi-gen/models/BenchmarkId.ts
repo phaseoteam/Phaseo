@@ -162,6 +162,7 @@ export type BenchmarkId =
   | "eqbench"
   | "erqa"
   | "evalplus"
+  | "expert-swe"
   | "eyepacs-accuracy"
   | "facts"
   | "facts-benchmark-suite"
