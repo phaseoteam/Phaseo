@@ -247,6 +247,7 @@ export type BenchmarkId =
   | "intergps"
   | "internal-api-instruction-following-(hard)"
   | "inverse-ifeval"
+  | "investment-banking-modeling"
   | "iq-bench"
   | "ivebench-consistency-vs-kling-o1"
   | "ivebench-consistency-vs-runway-aleph"
