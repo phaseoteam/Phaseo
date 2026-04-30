@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "expert-swe",
+  "benchmark_name": "Expert SWE",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://openai.com/index/introducing-gpt-5-5/",
+  "total_models": 1
+}
