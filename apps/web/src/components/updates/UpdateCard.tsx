@@ -72,8 +72,12 @@ export default function UpdateCard({
 }: Props) {
 	const isModelRelease = badges.some((b) => b.label === "Release");
 	const visibleBadges = hideBadges ? [] : badges;
+	const canShowProviderInlineTime =
+		providerDateInline && Boolean(dateIso) && Boolean(avatar?.name);
 	const showHeaderTime =
-		metaPlacement === "header" && Boolean(dateIso) && !providerDateInline;
+		metaPlacement === "header" &&
+		Boolean(dateIso) &&
+		!canShowProviderInlineTime;
 	const showFooterMeta =
 		metaPlacement === "footer" &&
 		(Boolean(dateIso) || (Boolean(accentClass) && showAccentDot));
@@ -188,7 +192,7 @@ export default function UpdateCard({
 										{avatar.name}
 									</span>
 								</Link>
-								{providerDateInline && dateIso ? (
+								{canShowProviderInlineTime ? (
 									<div className="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-zinc-500 dark:text-zinc-400">
 										<TimeDisplay
 											dateIso={dateIso}

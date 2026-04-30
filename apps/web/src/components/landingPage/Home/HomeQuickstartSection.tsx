@@ -332,12 +332,16 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 		return (
 			<VisualStage>
 				<div className="w-full px-3">
-					<div className="relative mx-auto h-[138px] w-full max-w-[276px]">
+					<div
+						className="relative mx-auto h-[138px] w-full max-w-[276px]"
+						aria-hidden="true"
+					>
 						{MAX_AVAILABILITY_RING.map((provider) => (
 							<div
 								key={provider.id}
 								className="absolute z-0 -translate-x-1/2 -translate-y-1/2"
 								style={{ top: provider.top, left: provider.left }}
+								aria-hidden="true"
 							>
 								<LogoToken
 									id={provider.id}
