@@ -9,7 +9,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.25,
+      "price_per_unit": 2,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -23,7 +23,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
+      "effective_from": "2026-03-11T00:00:00",
+      "effective_to": "2026-04-30T23:59:59"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -43,7 +44,132 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
+      "effective_from": "2026-03-11T00:00:00",
+      "effective_to": "2026-04-30T23:59:59"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00",
+      "effective_to": "2026-04-30T23:59:59"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00",
+      "effective_to": "2026-04-30T23:59:59"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00",
+      "effective_to": "2026-04-30T23:59:59"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00",
+      "effective_to": "2026-04-30T23:59:59"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -63,7 +189,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
+      "effective_from": "2026-05-01T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -83,7 +209,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
+      "effective_from": "2026-05-01T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -103,7 +229,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
+      "effective_from": "2026-05-01T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -123,7 +249,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
+      "effective_from": "2026-05-01T00:00:00"
     }
   ]
 }
