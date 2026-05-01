@@ -1,0 +1,36 @@
+{
+  "model_id": "cohere/command-r",
+  "organisation_id": "cohere",
+  "name": "Command R",
+  "status": "Available",
+  "previous_model_id": "cohere/command-r-2024-03-11",
+  "announced_date": "2024-08-30T00:00:00",
+  "release_date": "2024-08-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "CC-BY-NC",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "cohere/command-r",
+  "links": [
+    {
+      "platform": "playground",
+      "url": "https://dashboard.cohere.com/playground/chat"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://docs.cohere.com/docs/command-r"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 4000
+    }
+  ],
+  "benchmarks": []
+}

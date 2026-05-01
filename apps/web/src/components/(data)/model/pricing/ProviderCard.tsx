@@ -710,10 +710,10 @@ export default function ProviderCard({
 		.map((entry) => entry.endsAt)
 		.filter((value): value is string => Boolean(value))
 		.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
-	const discountSummary = discountCount
-		? formatDiscountCountdown(soonestDiscountEnd) ??
-			(discountCount === 1 ? "Discount live" : `${discountCount} discounts live`)
-		: null;
+	const discountSummary =
+		discountCount && soonestDiscountEnd
+			? formatDiscountCountdown(soonestDiscountEnd)
+			: null;
 	const uptimeByDay = runtimeStats?.uptimeDaily3d ?? [];
 	const uptimeBars = [2, 1, 0].map((dayOffset) => {
 		const match = uptimeByDay.find((d) => d.dayOffset === dayOffset);

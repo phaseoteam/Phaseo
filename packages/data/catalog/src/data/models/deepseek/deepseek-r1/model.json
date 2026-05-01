@@ -1,7 +1,7 @@
 {
   "model_id": "deepseek/deepseek-r1",
   "organisation_id": "deepseek",
-  "name": "Deepseek R1",
+  "name": "DeepSeek R1",
   "status": "Available",
   "previous_model_id": null,
   "announced_date": null,

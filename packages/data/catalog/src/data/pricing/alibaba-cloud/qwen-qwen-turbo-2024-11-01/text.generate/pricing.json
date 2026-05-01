@@ -1,0 +1,31 @@
+{
+  "key": "alibaba-cloud:qwen/qwen-turbo-2024-11-01:text.generate",
+  "api_provider_id": "alibaba-cloud",
+  "provider_slug": "alibaba-cloud",
+  "api_model_id": "qwen/qwen-turbo-2024-11-01",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

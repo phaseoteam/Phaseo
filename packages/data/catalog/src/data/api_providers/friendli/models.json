@@ -216,7 +216,7 @@
     "api_model_id": "lgai-exaone/k-exaone-236b-a23b",
     "provider_api_model_id": "friendli:LGAI-EXAONE/K-EXAONE-236B-A23B",
     "provider_model_slug": "LGAI-EXAONE/K-EXAONE-236B-A23B",
-    "internal_model_id": "",
+    "internal_model_id": "lg/k-exaone",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

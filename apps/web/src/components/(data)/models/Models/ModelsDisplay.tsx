@@ -233,6 +233,9 @@ function getClosestStopIndex(value: number): number {
 function toGatewayStatusFilter(value: string): GatewayStatusFilter | null {
 	const normalized = value.trim().toLowerCase();
 	if (normalized === "active") return "active";
+	if (normalized === "coming_soon" || normalized === "comingsoon") {
+		return "coming_soon";
+	}
 	if (
 		normalized === "not_active" ||
 		normalized === "inactive" ||
@@ -255,7 +258,9 @@ function parseGatewayStatusParam(value: string | null): string[] {
 function getGatewayStatusBucket(
 	status: ModelsPageModel["gateway_status"] | null | undefined,
 ): GatewayStatusFilter {
-	return status === "active" ? "active" : "not_active";
+	if (status === "active") return "active";
+	if (status === "coming_soon") return "coming_soon";
+	return "not_active";
 }
 
 function serializeCsvParam(values: string[]): string {
@@ -914,7 +919,14 @@ export default function ModelsDisplay({
 			params.delete("q");
 			const statuses = parseGatewayStatusParam(params.get("statuses"));
 			if (statuses.length === 1) {
-				params.set("statuses", statuses[0] === "active" ? "active" : "inactive");
+				params.set(
+					"statuses",
+					statuses[0] === "active"
+						? "active"
+						: statuses[0] === "coming_soon"
+							? "coming_soon"
+							: "inactive",
+				);
 			} else {
 				params.delete("statuses");
 			}
@@ -925,6 +937,7 @@ export default function ModelsDisplay({
 
 	const gatewayStatusOptions: OptionCount[] = [
 		{ value: "active", count: statusCounts.active },
+		{ value: "coming_soon", count: statusCounts.coming_soon },
 		{ value: "not_active", count: statusCounts.not_active },
 	];
 
@@ -1047,10 +1060,12 @@ export default function ModelsDisplay({
 						}
 						labelForValue={(value) => {
 							if (value === "active") return "Active On Gateway";
+							if (value === "coming_soon") return "Coming Soon";
 							return "Not Active";
 						}}
 						iconForValue={(value) => {
 							if (value === "active") return Activity;
+							if (value === "coming_soon") return Sparkles;
 							return Database;
 						}}
 					/>
@@ -1483,7 +1498,7 @@ export default function ModelsDisplay({
 				size="sm"
 				onClick={() => setMobileFiltersOpen(true)}
 				className={cn(
-					"fixed bottom-6 left-4 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-border/70 !bg-background px-4 !text-foreground shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md dark:!border-zinc-800 dark:!bg-zinc-950 dark:!text-zinc-50 active:scale-95 sm:hidden",
+					"fixed bottom-6 left-4 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-border/70 !bg-background px-4 !text-foreground shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md dark:!border-zinc-800 dark:!bg-zinc-950 dark:!text-zinc-50 active:scale-95 md:hidden",
 					showMobileFilterFab && !mobileFiltersOpen
 						? "translate-y-0 opacity-100"
 						: "pointer-events-none translate-y-3 opacity-0",

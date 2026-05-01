@@ -46,6 +46,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 
 const PROVIDER_STATUS_PRIORITY_ORDER = [
 	"active",
+	"coming_soon",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
@@ -147,6 +148,7 @@ function normalizeProviderGatewayStatus(value: unknown): string {
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "inactive";
 	if (normalized === "not_active") return "inactive";
+	if (normalized === "comingsoon") return "coming_soon";
 	if (normalized === "deranked" || normalized === "de_ranked") {
 		return "deranked_lvl1";
 	}
@@ -281,12 +283,17 @@ function buildYearOptions(models: ModelsPageModel[]): OptionCount[] {
 function buildModelsFilterFacets(models: ModelsPageModel[]): ModelsFilterFacets {
 	const statusCounts: Record<GatewayStatusFilter, number> = {
 		active: 0,
+		coming_soon: 0,
 		not_active: 0,
 	};
 
 	for (const model of models) {
 		const status: GatewayStatusFilter =
-			model.gateway_status === "active" ? "active" : "not_active";
+			model.gateway_status === "active"
+				? "active"
+				: model.gateway_status === "coming_soon"
+					? "coming_soon"
+					: "not_active";
 		statusCounts[status] += 1;
 	}
 
@@ -681,15 +688,19 @@ function withGatewayMetadata(
 		);
 		const providerCount = signals?.providerIds.size ?? 0;
 		const activeProviderCount = signals?.activeProviderIds.size ?? 0;
+		const hasComingSoonProvider = Array.from(
+			signals?.providerDetails.values() ?? [],
+		).some((detail) => detail.status === "coming_soon");
 
-		const gatewayStatus: NonNullable<ModelCard["gateway_status"]> =
+		const gatewayStatus: ModelsPageModel["gateway_status"] =
 			activeProviderCount > 0
 				? "active"
+				: hasComingSoonProvider
+					? "coming_soon"
 				: providerCount > 0
 					? "inactive"
 					: "not_listed";
-		const apiTimestamp = signals?.latestApiTimestamp ?? null;
-		const resolvedPrimaryTimestamp = model?.primary_timestamp ?? apiTimestamp;
+		const resolvedPrimaryTimestamp = model?.primary_timestamp ?? null;
 		const resolvedDate =
 			resolvedPrimaryTimestamp !== null &&
 			Number.isFinite(resolvedPrimaryTimestamp)

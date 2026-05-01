@@ -150,7 +150,9 @@ export async function loadModels(
 
             modelIds.add(modelJson.model_id);
 
-            if (change.status !== "unchanged") {
+            if (modelId && modelJson.model_id === modelId) {
+                changedModels.add(modelJson.model_id);
+            } else if (change.status !== "unchanged") {
                 changedModels.add(modelJson.model_id);
             }
         }
@@ -163,7 +165,8 @@ export async function loadModels(
     }
 
     const hasChanges = changedModels.size > 0 || deletedModels.length > 0;
-    if (!hasChanges) return;
+    const shouldReconcileAllModels = !modelId;
+    if (!hasChanges && !shouldReconcileAllModels) return;
 
     // ---------- 2) UPSERT core models ----------
     const flushCoreRows = async (rows: Array<Record<string, any>>) => {

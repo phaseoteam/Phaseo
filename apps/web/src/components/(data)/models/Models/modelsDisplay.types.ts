@@ -1,6 +1,6 @@
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 
-export type GatewayStatusFilter = "active" | "not_active";
+export type GatewayStatusFilter = "active" | "coming_soon" | "not_active";
 
 export type OptionCount = {
 	value: string;
@@ -19,8 +19,9 @@ export type ModelsFilterFacets = {
 	yearOptions: OptionCount[];
 };
 
-export type ModelsPageModel = Pick<
-	ModelCard,
+export type ModelsPageModel = Omit<
+	Pick<
+		ModelCard,
 	| "model_id"
 	| "name"
 	| "organisation_id"
@@ -55,4 +56,8 @@ export type ModelsPageModel = Pick<
 	| "popularity_tokens_week"
 	| "throughput_week"
 	| "latency_week"
->;
+	>,
+	"gateway_status"
+> & {
+	gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed" | null;
+};

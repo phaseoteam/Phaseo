@@ -3,14 +3,18 @@ import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual"
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
+type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
+	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+};
+
 interface ModelsGridProps {
-	filteredModels: ModelCardType[];
+	filteredModels: ModelCardLike[];
 	showOrganisationPrefix?: boolean;
 }
 
 type ModelRow = {
 	key: string;
-	models: ModelCardType[];
+	models: ModelCardLike[];
 };
 
 const VIRTUALIZE_AFTER_ROWS = 60;
@@ -19,7 +23,7 @@ const DEFAULT_DESKTOP_ROW_HEIGHT = 208;
 const DEFAULT_MOBILE_ROW_HEIGHT = 320;
 const DEFAULT_WIDE_DESKTOP_ROW_HEIGHT = 196;
 
-function chunkModels(models: ModelCardType[], columns: number): ModelRow[] {
+function chunkModels(models: ModelCardLike[], columns: number): ModelRow[] {
 	const rows: ModelRow[] = [];
 	for (let index = 0; index < models.length; index += columns) {
 		const rowModels = models.slice(index, index + columns);
@@ -73,14 +77,8 @@ function getRowGridClass(targetColumns: number, itemCount: number): string {
 }
 
 function getCellPaddingClass(rowColumnIndex: number, renderedColumns: number): string {
-	if (renderedColumns === 2) {
-		return rowColumnIndex === 0 ? "md:pr-3" : "md:pl-3";
-	}
-	if (renderedColumns === 3) {
-		if (rowColumnIndex === 0) return "2xl:pr-3";
-		if (rowColumnIndex === 1) return "2xl:px-3";
-		return "2xl:pl-3";
-	}
+	void rowColumnIndex;
+	if (renderedColumns >= 2) return "md:px-3";
 	return "";
 }
 
@@ -186,10 +184,11 @@ function ModelsGridImpl({
 									renderedColumns,
 								);
 								return (
-									<div key={model.model_id} className={`bg-background ${sideClass}`}>
+									<div key={model.model_id} className="bg-background">
 										<ModelCard
 											model={model}
 											showOrganisationPrefix={showOrganisationPrefix}
+											contentPaddingClassName={sideClass}
 										/>
 									</div>
 								);
@@ -238,10 +237,11 @@ function ModelsGridImpl({
 										renderedColumns,
 									);
 									return (
-										<div key={model.model_id} className={`bg-background ${sideClass}`}>
+										<div key={model.model_id} className="bg-background">
 											<ModelCard
 												model={model}
 												showOrganisationPrefix={showOrganisationPrefix}
+												contentPaddingClassName={sideClass}
 											/>
 										</div>
 									);

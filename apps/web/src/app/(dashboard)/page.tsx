@@ -24,6 +24,7 @@ import HomeQuickstartSection from "@/components/landingPage/Home/HomeQuickstartS
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import { Logo } from "@/components/Logo";
+import { HomepageModelContext } from "@/components/agents/HomepageModelContext";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = buildMetadata({
@@ -325,5 +326,10 @@ function LandingPage({ isBeta }: { isBeta: boolean }) {
 
 export default async function Page() {
 	const heroVariant = await getGatewayHeroVariant();
-	return <LandingPage isBeta={heroVariant === "experimental"} />;
+	return (
+		<>
+			<HomepageModelContext />
+			<LandingPage isBeta={heroVariant === "experimental"} />
+		</>
+	);
 }

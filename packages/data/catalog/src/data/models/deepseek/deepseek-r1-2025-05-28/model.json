@@ -1,7 +1,7 @@
 {
   "model_id": "deepseek/deepseek-r1-2025-05-28",
   "organisation_id": "deepseek",
-  "name": "Deepseek R1 (2025-05-28)",
+  "name": "DeepSeek R1 (2025-05-28)",
   "status": "Available",
   "previous_model_id": "deepseek/deepseek-r1-2025-01-20",
   "announced_date": "2025-05-28T00:00:00",

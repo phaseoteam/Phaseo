@@ -1,0 +1,31 @@
+{
+  "key": "alibaba-cloud:qwen/qwen-plus-character:text.generate",
+  "api_provider_id": "alibaba-cloud",
+  "provider_slug": "alibaba-cloud",
+  "api_model_id": "qwen/qwen-plus-character",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

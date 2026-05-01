@@ -1,7 +1,7 @@
 {
   "model_id": "deepseek/deepseek-v3.2-exp",
   "organisation_id": "deepseek",
-  "name": "Deepseek V3.2 Exp",
+  "name": "DeepSeek V3.2 Exp",
   "status": "Available",
   "previous_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
   "announced_date": "2025-09-29T00:00:00",
