@@ -1,9 +1,1 @@
-{
-  "benchmark_id": "graphwalks-bfs-256k-f1",
-  "benchmark_name": "Graphwalks BFS 256K F1",
-  "category": "long_context",
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/introducing-gpt-5-5/",
-  "total_models": 1
-}
+{   "benchmark_id": "graphwalks-bfs-256k-f1",   "benchmark_name": "Graphwalks BFS 256K F1",   "category": null,   "ascending_order": null,   "type": "percentage",   "link": "https://openai.com/index/introducing-gpt-5-5/",   "total_models": 1 }

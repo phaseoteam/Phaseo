@@ -1,0 +1,21 @@
+{
+  "key": "xiaomi:xiaomi/mimo-v2.5-tts:free:audio.speech",
+  "api_provider_id": "xiaomi",
+  "provider_slug": "xiaomi",
+  "api_model_id": "xiaomi/mimo-v2.5-tts:free",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Limited-time free",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-22T00:00:00"
+    }
+  ]
+}
