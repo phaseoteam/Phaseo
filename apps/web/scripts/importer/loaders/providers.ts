@@ -663,24 +663,52 @@ export async function loadProviders(
         );
     }
 
-    const dedupedProviderModels = Array.from(
-        new Map(
-            providerModelsToUpsert.map((row) => [row.provider_api_model_id, row] as const)
-        ).values()
-    );
+    const dedupedProviderModelMap = new Map<
+        string,
+        (typeof providerModelsToUpsert)[number]
+    >();
+    for (const row of providerModelsToUpsert) {
+        const key = row.provider_api_model_id;
+        const previous = dedupedProviderModelMap.get(key);
+        if (!previous) {
+            dedupedProviderModelMap.set(key, row);
+            continue;
+        }
+        if (JSON.stringify(previous) !== JSON.stringify(row)) {
+            console.warn(
+                `[importer] Conflicting duplicate provider model row for key=${key}; keeping first row.\n` +
+                    `first=${JSON.stringify(previous)}\n` +
+                    `duplicate=${JSON.stringify(row)}`
+            );
+        }
+    }
+    const dedupedProviderModels = Array.from(dedupedProviderModelMap.values());
     if (dedupedProviderModels.length !== providerModelsToUpsert.length) {
         console.warn(
             `[importer] Deduped ${providerModelsToUpsert.length - dedupedProviderModels.length} duplicate provider model row(s) before upsert.`
         );
     }
 
-    const dedupedCapabilityRows = Array.from(
-        new Map(
-            capabilityRowsToUpsert.map(
-                (row) => [`${row.provider_api_model_id}::${row.capability_id}`, row] as const
-            )
-        ).values()
-    );
+    const dedupedCapabilityRowMap = new Map<
+        string,
+        (typeof capabilityRowsToUpsert)[number]
+    >();
+    for (const row of capabilityRowsToUpsert) {
+        const key = `${row.provider_api_model_id}::${row.capability_id}`;
+        const previous = dedupedCapabilityRowMap.get(key);
+        if (!previous) {
+            dedupedCapabilityRowMap.set(key, row);
+            continue;
+        }
+        if (JSON.stringify(previous) !== JSON.stringify(row)) {
+            console.warn(
+                `[importer] Conflicting duplicate provider capability row for key=${key}; keeping first row.\n` +
+                    `first=${JSON.stringify(previous)}\n` +
+                    `duplicate=${JSON.stringify(row)}`
+            );
+        }
+    }
+    const dedupedCapabilityRows = Array.from(dedupedCapabilityRowMap.values());
     if (dedupedCapabilityRows.length !== capabilityRowsToUpsert.length) {
         console.warn(
             `[importer] Deduped ${capabilityRowsToUpsert.length - dedupedCapabilityRows.length} duplicate provider capability row(s) before upsert.`
