@@ -1,5 +1,13 @@
 # @ai-stats/php-sdk
 
+## 2.0.3
+
+### Patch Changes
+
+- Auto-release functional SDK packages after OpenAPI or model-surface changes (sdk/openapi changes).
+
+  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+
 ## 2.0.2
 
 ### Patch Changes
