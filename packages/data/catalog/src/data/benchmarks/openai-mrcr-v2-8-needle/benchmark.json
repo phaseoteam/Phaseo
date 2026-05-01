@@ -1,9 +1,1 @@
-{
-  "benchmark_id": "openai-mrcr-v2-8-needle",
-  "benchmark_name": "OpenAI MRCR v2 8-Needle",
-  "category": "long_context",
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/introducing-gpt-5-5/",
-  "total_models": 1
-}
+{   "benchmark_id": "openai-mrcr-v2-8-needle",   "benchmark_name": "OpenAI MRCR v2 (8-needle)",   "category": null,   "ascending_order": null,   "type": "percentage",   "link": "https://openai.com/index/introducing-gpt-5-5/",   "total_models": 1 }

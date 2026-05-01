@@ -1,0 +1,1 @@
+{   "benchmark_id": "corpusqa-1m",   "benchmark_name": "CorpusQA 1M",   "category": null,   "ascending_order": null,   "type": "percentage",   "link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf",   "total_models": 2 }

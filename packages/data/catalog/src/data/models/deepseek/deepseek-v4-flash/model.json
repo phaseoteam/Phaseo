@@ -1,0 +1,18 @@
+{
+  "model_id": "deepseek/deepseek-v4-flash",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek V4 Flash",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-04-24T00:00:00",
+  "release_date": "2026-04-24T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-v4-flash",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
