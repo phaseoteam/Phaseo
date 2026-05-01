@@ -152,7 +152,7 @@ export async function runEnterpriseInvoicingJob(args?: {
 	}
 
 	const stripe = new Stripe(stripeKey, {
-		apiVersion: "2026-03-25.dahlia" as any,
+		apiVersion: "2026-04-22.dahlia" as any,
 	});
 	const supabase = getSupabaseAdmin();
 	const runAtIso = args?.scheduledAtIso ?? new Date().toISOString();

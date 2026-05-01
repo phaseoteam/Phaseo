@@ -116,6 +116,7 @@ async function createStripeCustomer(args: {
 			Authorization: `Bearer ${secretKey}`,
 			"Content-Type": "application/x-www-form-urlencoded",
 			"Idempotency-Key": `workspace:${args.workspaceId}`,
+			"Stripe-Version": "2026-04-22.dahlia",
 		},
 		body: form.toString(),
 	});
