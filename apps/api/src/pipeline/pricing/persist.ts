@@ -25,7 +25,7 @@ type WorkspaceLowBalanceSettingsRow = {
 function getStripe(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
-    return new Stripe(key, { apiVersion: "2026-03-25.dahlia" as any });
+    return new Stripe(key, { apiVersion: "2026-04-22.dahlia" as any });
 }
 
 async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): Promise<string | null> {
