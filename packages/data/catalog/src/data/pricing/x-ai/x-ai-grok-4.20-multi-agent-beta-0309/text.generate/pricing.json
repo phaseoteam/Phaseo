@@ -9,7 +9,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2,
+      "price_per_unit": 1.25,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -33,15 +33,7 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
-      "match": [
-        {
-          "path": "input_tokens",
-          "op": "lte",
-          "or_group": 1,
-          "and_index": 1,
-          "value": 200000
-        }
-      ],
+      "match": [],
       "priority": 100,
       "effective_from": "2026-03-11T00:00:00"
     },
@@ -49,7 +41,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 6,
+      "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -69,27 +61,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 4,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [
-        {
-          "path": "input_tokens",
-          "op": "gt",
-          "or_group": 1,
-          "and_index": 1,
-          "value": 200000
-        }
-      ],
-      "priority": 100,
-      "effective_from": "2026-03-11T00:00:00"
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.2,
+      "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -109,7 +81,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 12,
+      "price_per_unit": 5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
