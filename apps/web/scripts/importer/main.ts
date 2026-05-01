@@ -84,4 +84,12 @@ async function main() {
     console.log(">> Done.");
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+// Force the importer CLI to terminate cleanly in CI after awaited work completes.
+main()
+    .then(() => {
+        process.exit(0);
+    })
+    .catch(err => {
+        console.error(err);
+        process.exit(1);
+    });

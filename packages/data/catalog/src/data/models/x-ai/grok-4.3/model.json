@@ -12,7 +12,17 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "x-ai/grok-4.3",
-  "links": [],
-  "details": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.x.ai/developers/models/grok-4.3"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    }
+  ],
   "benchmarks": []
 }

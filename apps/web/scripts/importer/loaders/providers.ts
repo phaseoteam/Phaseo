@@ -663,6 +663,58 @@ export async function loadProviders(
         );
     }
 
+    const dedupedProviderModelMap = new Map<
+        string,
+        (typeof providerModelsToUpsert)[number]
+    >();
+    for (const row of providerModelsToUpsert) {
+        const key = row.provider_api_model_id;
+        const previous = dedupedProviderModelMap.get(key);
+        if (!previous) {
+            dedupedProviderModelMap.set(key, row);
+            continue;
+        }
+        if (JSON.stringify(previous) !== JSON.stringify(row)) {
+            console.warn(
+                `[importer] Conflicting duplicate provider model row for key=${key}; keeping first row.\n` +
+                    `first=${JSON.stringify(previous)}\n` +
+                    `duplicate=${JSON.stringify(row)}`
+            );
+        }
+    }
+    const dedupedProviderModels = Array.from(dedupedProviderModelMap.values());
+    if (dedupedProviderModels.length !== providerModelsToUpsert.length) {
+        console.warn(
+            `[importer] Deduped ${providerModelsToUpsert.length - dedupedProviderModels.length} duplicate provider model row(s) before upsert.`
+        );
+    }
+
+    const dedupedCapabilityRowMap = new Map<
+        string,
+        (typeof capabilityRowsToUpsert)[number]
+    >();
+    for (const row of capabilityRowsToUpsert) {
+        const key = `${row.provider_api_model_id}::${row.capability_id}`;
+        const previous = dedupedCapabilityRowMap.get(key);
+        if (!previous) {
+            dedupedCapabilityRowMap.set(key, row);
+            continue;
+        }
+        if (JSON.stringify(previous) !== JSON.stringify(row)) {
+            console.warn(
+                `[importer] Conflicting duplicate provider capability row for key=${key}; keeping first row.\n` +
+                    `first=${JSON.stringify(previous)}\n` +
+                    `duplicate=${JSON.stringify(row)}`
+            );
+        }
+    }
+    const dedupedCapabilityRows = Array.from(dedupedCapabilityRowMap.values());
+    if (dedupedCapabilityRows.length !== capabilityRowsToUpsert.length) {
+        console.warn(
+            `[importer] Deduped ${capabilityRowsToUpsert.length - dedupedCapabilityRows.length} duplicate provider capability row(s) before upsert.`
+        );
+    }
+
     const deletions = tracker.getDeleted(DIR_PROVIDERS);
     touched = touched || deletions.length > 0;
 
@@ -670,8 +722,8 @@ export async function loadProviders(
         await pruneRowsByColumn(supa, "data_api_providers", "api_provider_id", providerIds, "data_api_providers");
     }
 
-    if (providerModelsToUpsert.length) {
-        for (const group of chunk(providerModelsToUpsert, 500)) {
+    if (dedupedProviderModels.length) {
+        for (const group of chunk(dedupedProviderModels, 500)) {
             if (isDryRun()) {
                 for (const row of group) {
                     logWrite("public.data_api_provider_models", "UPSERT", row, {
@@ -689,8 +741,8 @@ export async function loadProviders(
         }
     }
 
-    if (capabilityRowsToUpsert.length) {
-        for (const group of chunk(capabilityRowsToUpsert, 500)) {
+    if (dedupedCapabilityRows.length) {
+        for (const group of chunk(dedupedCapabilityRows, 500)) {
             if (isDryRun()) {
                 for (const row of group) {
                     logWrite("public.data_api_provider_model_capabilities", "UPSERT", row, {

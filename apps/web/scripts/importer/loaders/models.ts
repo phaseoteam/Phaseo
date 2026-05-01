@@ -73,12 +73,43 @@ async function dataModelsHasApiModelIdColumn(
     );
 }
 
+async function loadExistingBenchmarkIds(
+    supa: ReturnType<typeof client>
+): Promise<Set<string>> {
+    const benchmarkIds = new Set<string>();
+    const pageSize = 1000;
+
+    for (let offset = 0; ; offset += pageSize) {
+        const res = await supa
+            .from("data_benchmarks")
+            .select("id")
+            .range(offset, offset + pageSize - 1);
+        const rows = assertOk(
+            res,
+            "select data_benchmarks.id"
+        ) as Array<{ id?: string | null }>;
+
+        if (!rows.length) break;
+
+        for (const row of rows) {
+            if (typeof row?.id === "string" && row.id.trim()) {
+                benchmarkIds.add(row.id.trim());
+            }
+        }
+
+        if (rows.length < pageSize) break;
+    }
+
+    return benchmarkIds;
+}
+
 export async function loadModels(
     tracker: ChangeTracker,
     { modelId }: { modelId: string | null }
 ) {
     const supa = client();
     const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
+    const existingBenchmarkIds = await loadExistingBenchmarkIds(supa);
     if (!modelId) tracker.touchPrefix(DIR_MODELS);
 
     // ---------- 1) Read ALL JSON up front (no DB reads) ----------
@@ -276,11 +307,24 @@ export async function loadModels(
             );
         }
 
+        const knownBenches = validBenches.filter((b) => existingBenchmarkIds.has(b.benchmark_id));
+        const unknownBenchmarkIds = [...new Set(
+            validBenches
+                .filter((b) => !existingBenchmarkIds.has(b.benchmark_id))
+                .map((b) => b.benchmark_id)
+        )];
+        const hasUnknownBenchmarkRows = unknownBenchmarkIds.length > 0;
+        if (hasUnknownBenchmarkRows) {
+            console.warn(
+                `[importer] Skipping ${validBenches.length - knownBenches.length} benchmark row(s) with unknown benchmark_id(s) for model=${model_id}: ${unknownBenchmarkIds.join(", ")}`
+            );
+        }
+
         // If you want visibility into duplicates that used to collide on your old key, keep this tiny logger:
-        if (isDryRun() && validBenches.length) {
+        if (isDryRun() && knownBenches.length) {
             const seen = new Map<string, number>();
             const dupes: Array<{ key: string; first: number; second: number }> = [];
-            validBenches.forEach((b, i) => {
+            knownBenches.forEach((b, i) => {
                 const k = `${model_id}|${b.benchmark_id}|${String(b.score)}|${b.other_info ?? ""}`;
                 if (seen.has(k)) dupes.push({ key: k, first: seen.get(k)!, second: i });
                 else seen.set(k, i);
@@ -290,7 +334,7 @@ export async function loadModels(
 
         // Build stable rows
         const perKeyCount = new Map<string, number>(); // key: benchmark_id|digest -> next occur_idx
-        const benchRows = validBenches.map(b => {
+        const benchRows = knownBenches.map(b => {
             const digest = benchDigest(b.score, b.other_info ?? null, b.source_link ?? null, b.is_self_reported);
             const bucket = `${b.benchmark_id}|${digest}`;
             const occur_idx = (perKeyCount.get(bucket) ?? 0) + 1;
@@ -326,9 +370,16 @@ export async function loadModels(
 
             // Safety: when any malformed benchmark rows are present, skip destructive prune.
             // This preserves existing benchmark history if source payload quality regresses.
-            if (hasInvalidBenchmarkRows) {
+            if (hasInvalidBenchmarkRows || hasUnknownBenchmarkRows) {
+                const reasonParts: string[] = [];
+                if (hasInvalidBenchmarkRows) {
+                    reasonParts.push(`${invalidBenchmarkRowCount} invalid row(s)`);
+                }
+                if (hasUnknownBenchmarkRows) {
+                    reasonParts.push(`unknown benchmark_id(s): ${unknownBenchmarkIds.join(", ")}`);
+                }
                 console.warn(
-                    `[importer] Skipping benchmark prune for model=${model_id} because ${invalidBenchmarkRowCount} row(s) were invalid`
+                    `[importer] Skipping benchmark prune for model=${model_id} because ${reasonParts.join("; ")}`
                 );
             } else {
                 // Precise prune: keep only this run's result_keys for this model

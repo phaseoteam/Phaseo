@@ -384,6 +384,7 @@ export type KnownModelId =
   | "x-ai/grok-4.1-thinking"
   | "x-ai/grok-4.20-beta-0309"
   | "x-ai/grok-4.20-multi-agent-beta-0309"
+  | "x-ai/grok-4.3"
   | "x-ai/grok-code-fast-1"
   | "xiaomi/mimo-v2-flash"
   | "xiaomi/mimo-v2-omni"
