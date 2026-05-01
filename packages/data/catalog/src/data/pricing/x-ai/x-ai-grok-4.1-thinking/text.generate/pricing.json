@@ -16,7 +16,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "gt",
+          "op": "lte",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
@@ -50,7 +50,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "gt",
+          "op": "lte",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
@@ -71,25 +71,12 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "lte",
+          "op": "gt",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
         }
       ],
-      "priority": 100,
-      "effective_from": "2025-11-17T00:00:00",
-      "effective_to": "2026-04-30T23:59:59"
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.05,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
       "priority": 100,
       "effective_from": "2025-11-17T00:00:00",
       "effective_to": "2026-04-30T23:59:59"
@@ -105,7 +92,7 @@
       "match": [
         {
           "path": "input_tokens",
-          "op": "lte",
+          "op": "gt",
           "or_group": 1,
           "and_index": 1,
           "value": 128000
@@ -184,18 +171,6 @@
           "value": 128000
         }
       ],
-      "priority": 100,
-      "effective_from": "2026-05-01T00:00:00"
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.05,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
       "priority": 100,
       "effective_from": "2026-05-01T00:00:00"
     },
