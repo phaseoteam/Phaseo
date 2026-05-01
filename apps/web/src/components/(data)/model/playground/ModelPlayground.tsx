@@ -1432,44 +1432,6 @@ export default function ModelPlayground({
 		"moderation",
 		"moderations.create",
 	);
-	const chatHref = useMemo(
-		() => {
-			const modelPart = `model=${encodeURIComponent(preferredTextModelId)}`;
-			if (!trimmedPrompt) return `/chat?${modelPart}`;
-			return `/chat?${modelPart}&prompt=${encodeURIComponent(trimmedPrompt)}`;
-		},
-		[preferredTextModelId, trimmedPrompt],
-	);
-	const codeSnippets = useMemo(
-		() =>
-			buildPlaygroundCodeSnippets({
-				modelId: preferredTextModelId,
-				modelName,
-				prompt: trimmedPrompt,
-			}),
-		[modelName, preferredTextModelId, trimmedPrompt],
-	);
-	const codeCategories = useMemo(
-		() => {
-			const categoriesInSnippets = new Set(
-				codeSnippets.map((snippet) => snippet.category),
-			);
-			return CODE_CATEGORY_ORDER.filter((category) =>
-				categoriesInSnippets.has(category),
-			);
-		},
-		[codeSnippets],
-	);
-	const snippetsForSelectedCategory = useMemo(
-		() =>
-			codeSnippets.filter((snippet) => snippet.category === selectedCodeCategory),
-		[codeSnippets, selectedCodeCategory],
-	);
-	const selectedCodeSnippet = useMemo(
-		() =>
-			codeSnippets.find((snippet) => snippet.id === selectedCodeSnippetId) ?? null,
-		[codeSnippets, selectedCodeSnippetId],
-	);
 	const trimmedAudioPrompt = audioPrompt.trim();
 	const hasAudioPrompt = trimmedAudioPrompt.length > 0;
 	const trimmedImagePrompt = imagePrompt.trim();
@@ -1509,6 +1471,7 @@ export default function ModelPlayground({
 		() => resolveSupportedModelId(modelsByMode.text, preferredTextModelId),
 		[modelsByMode.text, preferredTextModelId],
 	);
+	const chatTextModelId = resolvedTextModelId ?? preferredTextModelId;
 	const resolvedAudioModelId = useMemo(
 		() => resolveSupportedModelId(modelsByMode.audio, preferredSpeechModelId),
 		[modelsByMode.audio, preferredSpeechModelId],
@@ -1552,6 +1515,44 @@ export default function ModelPlayground({
 				preferredModerationModelId,
 			),
 		[modelsByMode.moderation, preferredModerationModelId],
+	);
+	const chatHref = useMemo(
+		() => {
+			const modelPart = `model=${encodeURIComponent(chatTextModelId)}`;
+			if (!trimmedPrompt) return `/chat?${modelPart}`;
+			return `/chat?${modelPart}&prompt=${encodeURIComponent(trimmedPrompt)}`;
+		},
+		[chatTextModelId, trimmedPrompt],
+	);
+	const codeSnippets = useMemo(
+		() =>
+			buildPlaygroundCodeSnippets({
+				modelId: chatTextModelId,
+				modelName,
+				prompt: trimmedPrompt,
+			}),
+		[chatTextModelId, modelName, trimmedPrompt],
+	);
+	const codeCategories = useMemo(
+		() => {
+			const categoriesInSnippets = new Set(
+				codeSnippets.map((snippet) => snippet.category),
+			);
+			return CODE_CATEGORY_ORDER.filter((category) =>
+				categoriesInSnippets.has(category),
+			);
+		},
+		[codeSnippets],
+	);
+	const snippetsForSelectedCategory = useMemo(
+		() =>
+			codeSnippets.filter((snippet) => snippet.category === selectedCodeCategory),
+		[codeSnippets, selectedCodeCategory],
+	);
+	const selectedCodeSnippet = useMemo(
+		() =>
+			codeSnippets.find((snippet) => snippet.id === selectedCodeSnippetId) ?? null,
+		[codeSnippets, selectedCodeSnippetId],
 	);
 	const hasModeSupport = useMemo(() => {
 		const supportsText = Boolean(resolvedTextModelId);
@@ -1974,9 +1975,10 @@ export default function ModelPlayground({
 			setAudioError(message);
 		} finally {
 			musicPollControllerRef.current = null;
-			if (!isMountedRef.current) return;
-			setAudioIsGenerating(false);
 			audioStartRef.current = null;
+			if (isMountedRef.current) {
+				setAudioIsGenerating(false);
+			}
 		}
 	};
 

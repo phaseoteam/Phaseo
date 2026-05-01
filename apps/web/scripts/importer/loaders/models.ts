@@ -195,7 +195,7 @@ export async function loadModels(
             }
             const m = await readJson<ModelJSON>(fp);
             if (modelId && m.model_id !== modelId) continue;
-            if (!changedModels.has(m.model_id)) continue;
+            if (!shouldReconcileAllModels && !changedModels.has(m.model_id)) continue;
 
             const coreRow: Record<string, any> = {
                 name: m.name,

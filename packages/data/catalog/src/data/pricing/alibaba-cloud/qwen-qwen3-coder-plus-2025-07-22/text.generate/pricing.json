@@ -44,6 +44,25 @@
       "priority": 100
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "context cache hit rate",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
+      "priority": 100
+    },
+    {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -51,6 +70,32 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 128000
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.36,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "context cache hit rate",
       "match": [
         {
           "path": "input_tokens",
@@ -148,6 +193,32 @@
       "priority": 100
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "context cache hit rate",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 256000
+        }
+      ],
+      "priority": 100
+    },
+    {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -155,6 +226,32 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 1000000
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "context cache hit rate",
       "match": [
         {
           "path": "input_tokens",

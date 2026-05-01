@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { API_DOCS_URL, API_QUICKSTART_URL } from "@/lib/agent-discovery";
 
 type ModelContextTool = {
 	annotations?: {
@@ -22,8 +23,8 @@ type NavigatorWithModelContext = Navigator & {
 };
 
 const TOOL_TARGETS = {
-	apiDocsUrl: "https://docs.ai-stats.phaseo.app/v1/api-reference/introduction",
-	apiQuickstartUrl: "https://docs.ai-stats.phaseo.app/v1/quickstart",
+	apiDocsUrl: API_DOCS_URL,
+	apiQuickstartUrl: API_QUICKSTART_URL,
 	modelsUrl: "/models",
 	pricingUrl: "/pricing",
 	apiCatalogUrl: "/.well-known/api-catalog",

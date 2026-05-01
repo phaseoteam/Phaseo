@@ -700,7 +700,9 @@ function withGatewayMetadata(
 				: providerCount > 0
 					? "inactive"
 					: "not_listed";
-		const resolvedPrimaryTimestamp = model?.primary_timestamp ?? null;
+		const resolvedPrimaryTimestamp = model
+			? (model.primary_timestamp ?? null)
+			: (signals?.latestApiTimestamp ?? null);
 		const resolvedDate =
 			resolvedPrimaryTimestamp !== null &&
 			Number.isFinite(resolvedPrimaryTimestamp)

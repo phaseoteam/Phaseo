@@ -509,7 +509,15 @@ function ModelCardImpl({
 			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
 			: null;
 	const normalizedFromPriceUnit = normalizeFromPriceUnit(model.lowest_from_price_unit);
-	const hasZeroFromPrice = Number(model.lowest_from_price) === 0;
+	const parsedFromPrice =
+		model.lowest_from_price === null ||
+		model.lowest_from_price === undefined
+			? null
+			: Number(model.lowest_from_price);
+	const hasZeroFromPrice =
+		parsedFromPrice !== null &&
+		Number.isFinite(parsedFromPrice) &&
+		parsedFromPrice === 0;
 	const hasFreeFromPrice =
 		hasZeroFromPrice &&
 		normalizedFromPriceUnit === "1M tokens";

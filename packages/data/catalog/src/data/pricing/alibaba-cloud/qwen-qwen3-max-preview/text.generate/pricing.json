@@ -116,7 +116,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 252000
+          "value": 256000
         }
       ],
       "priority": 100
@@ -142,7 +142,7 @@
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
-          "value": 252000
+          "value": 256000
         }
       ],
       "priority": 100

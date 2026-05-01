@@ -18,5 +18,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/", "/settings/:path*", "/chat/:path*", "/api/chat/:path*"],
+	matcher: [
+		{
+			source: "/",
+			has: [{ type: "header", key: "accept", value: ".*text/markdown.*" }],
+		},
+		"/settings/:path*",
+		"/chat/:path*",
+		"/api/chat/:path*",
+	],
 };

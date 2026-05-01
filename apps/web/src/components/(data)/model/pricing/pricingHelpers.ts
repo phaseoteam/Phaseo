@@ -193,6 +193,13 @@ function endpointToModality(endpoint?: string | null): Modality | null {
     const normalized = String(endpoint ?? "").trim().toLowerCase();
     if (!normalized) return null;
     if (normalized.startsWith("text.")) return "text";
+    if (
+        normalized.startsWith("chat.") ||
+        normalized === "responses" ||
+        normalized.startsWith("responses.")
+    ) {
+        return "text";
+    }
     if (normalized.startsWith("image.")) return "image";
     if (normalized.startsWith("audio.")) return "audio";
     if (normalized.startsWith("video.")) return "video";
@@ -547,9 +554,15 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     const nowMs = now.getTime();
     const normalizedPlan = normalizePricingPlan(plan);
     const allRules = p.pricing_rules;
-    const rules = allRules.filter(
+    const planRules = allRules.filter(
         (r) => normalizePricingPlan(r.pricing_plan) === normalizedPlan
     );
+    const rules =
+        planRules.length > 0 || normalizedPlan === "standard"
+            ? planRules
+            : allRules.filter(
+                (r) => normalizePricingPlan(r.pricing_plan) === "standard"
+            );
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (!pm.endpoint) continue;
@@ -599,7 +612,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
     };
     const currentRulesBySignature = new Map<string, any[]>();
-    for (const r of allRules as any[]) {
+    for (const r of rules as any[]) {
         if (!isCurrentRule(r)) continue;
         const sig = ruleSignature(r);
         const list = currentRulesBySignature.get(sig) ?? [];

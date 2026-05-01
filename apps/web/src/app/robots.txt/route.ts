@@ -12,7 +12,6 @@ const ROBOTS_BODY = [
 	"Disallow: /settings/",
 	"Disallow: /internal/",
 	"Disallow: /gateway/usage",
-	"Disallow: /_next/",
 	"",
 	`Sitemap: ${SITE_URL}/sitemap.xml`,
 	`Host: ${SITE_URL}`,
