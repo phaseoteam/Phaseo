@@ -78,18 +78,6 @@
       "effective_from": "2025-11-17T00:00:00"
     },
     {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.05,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "effective_from": "2025-11-17T00:00:00"
-    },
-    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,

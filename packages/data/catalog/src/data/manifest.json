@@ -2484,6 +2484,7 @@
     "x-ai:text.generate:x-ai-grok-4",
     "x-ai:text.generate:x-ai-grok-4.1",
     "x-ai:text.generate:x-ai-grok-4.1-thinking",
+    "x-ai:text.generate:x-ai-grok-4.3",
     "x-ai:text.generate:x-ai-grok-4.20-beta-0309",
     "x-ai:text.generate:x-ai-grok-4.20-multi-agent-beta-0309",
     "x-ai:text.generate:x-ai-grok-code-fast-1",
