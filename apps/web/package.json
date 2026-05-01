@@ -16,6 +16,7 @@
 		"validate": "tsx ../../packages/data/catalog/src/data/validate.ts --preset structure",
 		"validate:pricing": "tsx ../../packages/data/catalog/src/data/validate.ts --preset pricing",
 		"validate:gateway": "tsx ../../packages/data/catalog/src/data/validate-gateway.ts",
+		"audit:missing-pricing": "tsx scripts/audit-missing-pricing.ts",
 		"update-db": "tsx scripts/importer/main.ts",
 		"recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks.ts",
 		"db:recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks-db.ts",

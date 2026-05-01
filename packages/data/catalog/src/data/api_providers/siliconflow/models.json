@@ -63,27 +63,6 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
-    "provider_api_model_id": "siliconflow:deepseek/deepseek-r1-distill-qwen-32b",
-    "provider_model_slug": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
-    "internal_model_id": "",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131000,
-    "max_output_tokens": 131000,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v3",
     "provider_api_model_id": "siliconflow:deepseek/deepseek-v3",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3",

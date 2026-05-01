@@ -1,7 +1,7 @@
 {
   "model_id": "deepseek/deepseek-r1-turbo",
   "organisation_id": "deepseek",
-  "name": "Deepseek R1 Turbo",
+  "name": "DeepSeek R1 Turbo",
   "status": "Available",
   "previous_model_id": null,
   "announced_date": null,

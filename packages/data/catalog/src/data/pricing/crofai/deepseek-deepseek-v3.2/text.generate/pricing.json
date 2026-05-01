@@ -21,10 +21,10 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.056,
+      "price_per_unit": 0.06,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Derived from CrofAI pricing page cache pricing display.",
+      "note": null,
       "match": [],
       "priority": 100,
       "effective_from": "2026-04-27T00:00:00"

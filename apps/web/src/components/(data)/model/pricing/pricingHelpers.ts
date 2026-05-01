@@ -145,6 +145,11 @@ export function isCurrentWindow(effFrom?: string | null, effTo?: string | null) 
     return true;
 }
 
+function normalizePricingPlan(plan?: string | null) {
+    const normalized = String(plan ?? "").trim().toLowerCase();
+    return normalized || "standard";
+}
+
 /* ---------- parsing & labels ---------- */
 export function parseMeter(meter?: string, explicitUnit?: string | null): { dir: Direction; mod: Modality; unit: UnitClass; raw: string } {
     const m = (meter || "").toLowerCase();
@@ -182,6 +187,35 @@ export function parseMeter(meter?: string, explicitUnit?: string | null): { dir:
                                                             (m.includes("call") || m.includes("request")) ? "call" : "unknown";
 
     return { dir, mod, unit, raw: m };
+}
+
+function endpointToModality(endpoint?: string | null): Modality | null {
+    const normalized = String(endpoint ?? "").trim().toLowerCase();
+    if (!normalized) return null;
+    if (normalized.startsWith("text.")) return "text";
+    if (
+        normalized.startsWith("chat.") ||
+        normalized === "responses" ||
+        normalized.startsWith("responses.")
+    ) {
+        return "text";
+    }
+    if (normalized.startsWith("image.")) return "image";
+    if (normalized.startsWith("audio.")) return "audio";
+    if (normalized.startsWith("video.")) return "video";
+    if (normalized.includes("embed")) return "embeddings";
+    return null;
+}
+
+function classifyMeterWithEndpoint(
+    meter?: string,
+    explicitUnit?: string | null,
+    endpoint?: string | null,
+): { dir: Direction; mod: Modality; unit: UnitClass; raw: string } {
+    const parsed = parseMeter(meter, explicitUnit);
+    if (parsed.mod !== "other" || parsed.unit !== "token") return parsed;
+    const endpointModality = endpointToModality(endpoint);
+    return endpointModality ? { ...parsed, mod: endpointModality } : parsed;
 }
 
 export type ConditionLabelPref = { prefer?: string[] }; // e.g. ['cache_ttl','quality','resolution']
@@ -352,12 +386,19 @@ function modalityLabel(mod: Modality): string | null {
     return null;
 }
 
-function buildUpcomingChangeLabels(rule: any): {
+function buildUpcomingChangeLabels(
+    rule: any,
+    endpoint?: string | null,
+): {
     sectionKey: PricingSectionKey;
     title: string;
     subtitle?: string | null;
 } {
-    const { dir, mod, unit } = parseMeter(rule.meter || "", rule.unit || "");
+    const { dir, mod, unit } = classifyMeterWithEndpoint(
+        rule.meter || "",
+        rule.unit || "",
+        endpoint,
+    );
     const conds: Condition[] = Array.isArray(rule.match)
         ? rule.match.map((m: any) => ({
             op: String(m.op ?? ""),
@@ -511,12 +552,27 @@ function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
 export function buildProviderSections(p: ProviderPricing, plan: string): ProviderSections {
     const now = new Date();
     const nowMs = now.getTime();
-    const rules = p.pricing_rules.filter(
-        (r) => (r.pricing_plan || "standard") === plan
+    const normalizedPlan = normalizePricingPlan(plan);
+    const allRules = p.pricing_rules;
+    const planRules = allRules.filter(
+        (r) => normalizePricingPlan(r.pricing_plan) === normalizedPlan
     );
+    const rules =
+        planRules.length > 0 || normalizedPlan === "standard"
+            ? planRules
+            : allRules.filter(
+                (r) => normalizePricingPlan(r.pricing_plan) === "standard"
+            );
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
-        if (pm.id && pm.endpoint) endpointByKey.set(pm.id, pm.endpoint);
+        if (!pm.endpoint) continue;
+        if (pm.id) endpointByKey.set(pm.id, pm.endpoint);
+        if (pm.api_provider_id && pm.model_id) {
+            endpointByKey.set(
+                `${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`,
+                pm.endpoint,
+            );
+        }
     }
 
     const out: ProviderSections = {
@@ -591,7 +647,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const nextUpcoming = upcomingRules[0];
 
         if (nextUpcoming?.effective_from) {
-            const { sectionKey, title, subtitle } = buildUpcomingChangeLabels(nextUpcoming);
+            const { sectionKey, title, subtitle } = buildUpcomingChangeLabels(
+                nextUpcoming,
+                endpointByKey.get(nextUpcoming.model_key) ?? null,
+            );
             const nextPriceRaw = Number(nextUpcoming.price_per_unit ?? Number.NaN);
             const nextPrice = Number.isFinite(nextPriceRaw) ? nextPriceRaw : null;
             const exactCurrentCandidate = [...currentRules].sort(sortByPriorityAndFromDesc)[0];
@@ -616,7 +675,14 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                     subtitle,
                     price: nextPrice,
                     currentPrice,
-                    unitLabel: unitLabel(parseMeter(nextUpcoming.meter || "", nextUpcoming.unit || "").unit, nextUpcoming.unit_size ?? 1),
+                    unitLabel: unitLabel(
+                        classifyMeterWithEndpoint(
+                            nextUpcoming.meter || "",
+                            nextUpcoming.unit || "",
+                            endpointByKey.get(nextUpcoming.model_key) ?? null,
+                        ).unit,
+                        nextUpcoming.unit_size ?? 1,
+                    ),
                     effectiveFrom: nextUpcoming.effective_from,
                     endpoint: endpointByKey.get(nextUpcoming.model_key) ?? null,
                     trend,
@@ -693,7 +759,11 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     for (const entry of filteredEntries) {
         const r = entry.rule;
         const base = entry.base;
-        const { dir, mod, unit } = parseMeter(r.meter || "", r.unit || "");
+        const { dir, mod, unit } = classifyMeterWithEndpoint(
+            r.meter || "",
+            r.unit || "",
+            entry.endpoint,
+        );
         const unitSize = r.unit_size ?? 1;
         const price = Number(r.price_per_unit ?? 0);
         const per1M = perMillionIfTokens(unit, price, unitSize);

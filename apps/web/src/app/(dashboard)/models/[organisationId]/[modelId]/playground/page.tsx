@@ -64,12 +64,15 @@ export default async function Page({
 		.then((header) => header.name?.trim() || modelId)
 		.catch(() => modelId);
 	let requestModelId = modelId;
+	let primaryModelIdentifierByEndpoint: Record<string, string> = {};
 	const scopedModelIdentifiers = new Set<string>([modelId]);
 	try {
 		const gatewayMetadata = await getModelGatewayMetadataCached(
 			modelId,
 			includeHidden,
 		);
+		primaryModelIdentifierByEndpoint =
+			gatewayMetadata.primaryModelIdentifierByEndpoint;
 		for (const identifier of Object.values(
 			gatewayMetadata.primaryModelIdentifierByEndpoint,
 		)) {
@@ -115,6 +118,7 @@ export default async function Page({
 				requestModelId={requestModelId}
 				modelName={modelDisplayName}
 				gatewayModels={playgroundModels}
+				primaryModelIdentifierByEndpoint={primaryModelIdentifierByEndpoint}
 			/>
 		</ModelDetailShell>
 	);

@@ -23,6 +23,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+
+type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
+	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+};
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { useRouter } from "next/navigation";
@@ -62,6 +66,7 @@ const MODALITY_DISPLAY_ORDER = [
 ] as const;
 const PROVIDER_STATUS_ORDER = [
 	"active",
+	"coming_soon",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
@@ -78,6 +83,11 @@ const PROVIDER_STATUS_META: Record<
 		label: "Active",
 		badgeClassName: "bg-emerald-500/10 text-emerald-600",
 		dotClassName: "bg-emerald-500",
+	},
+	coming_soon: {
+		label: "Coming Soon",
+		badgeClassName: "bg-blue-500/10 text-blue-600",
+		dotClassName: "bg-blue-500",
 	},
 	deranked_lvl1: {
 		label: "Deranked L1",
@@ -187,6 +197,7 @@ function normalizeProviderStatus(value: unknown): string {
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "inactive";
 	if (normalized === "not_active") return "inactive";
+	if (normalized === "comingsoon") return "coming_soon";
 	if (normalized === "deranked" || normalized === "de_ranked") {
 		return "deranked_lvl1";
 	}
@@ -346,7 +357,7 @@ function getModalityIcon(value: string): LucideIcon {
 	return CircleDot;
 }
 
-function formatPrimaryDate(model: ModelCardType): string {
+function formatPrimaryDate(model: ModelCardLike): string {
 	if (!model.primary_date) return "Date unknown";
 	const parsed = new Date(model.primary_date);
 	if (Number.isNaN(parsed.getTime())) return model.primary_date;
@@ -356,9 +367,11 @@ function formatPrimaryDate(model: ModelCardType): string {
 function ModelCardImpl({
 	model,
 	showOrganisationPrefix = false,
+	contentPaddingClassName,
 }: {
-	model: ModelCardType;
+	model: ModelCardLike;
 	showOrganisationPrefix?: boolean;
+	contentPaddingClassName?: string;
 }) {
 	const modelSlug = model.model_id;
 	const modelHref = `/models/${modelSlug}`;
@@ -374,6 +387,7 @@ function ModelCardImpl({
 				return a.localeCompare(b);
 			})[0] ?? null;
 	const displayModelId = apiModelId ?? "No API Model ID";
+	const isDisplayedApiModelFree = apiModelId?.toLowerCase().endsWith(":free") ?? false;
 	const organisationLabel = String(
 		model.organisation_name ?? model.organisation_id ?? "",
 	).trim();
@@ -495,11 +509,21 @@ function ModelCardImpl({
 			? formatFromPrice(Math.min(...tokenPriceCandidates), "1M tokens")
 			: null;
 	const normalizedFromPriceUnit = normalizeFromPriceUnit(model.lowest_from_price_unit);
+	const parsedFromPrice =
+		model.lowest_from_price === null ||
+		model.lowest_from_price === undefined
+			? null
+			: Number(model.lowest_from_price);
+	const hasZeroFromPrice =
+		parsedFromPrice !== null &&
+		Number.isFinite(parsedFromPrice) &&
+		parsedFromPrice === 0;
 	const hasFreeFromPrice =
-		Number(model.lowest_from_price) === 0 &&
+		hasZeroFromPrice &&
 		normalizedFromPriceUnit === "1M tokens";
 	const isFreeTextModel =
 		isTextModel &&
+		isDisplayedApiModelFree &&
 		(
 			((standardTokenPriceCandidates.length > 0 || tokenPriceCandidates.length > 0) &&
 				[...standardTokenPriceCandidates, ...tokenPriceCandidates].every(
@@ -507,9 +531,11 @@ function ModelCardImpl({
 				)) ||
 			hasFreeFromPrice
 		);
+	const isFreeDisplayModel =
+		isDisplayedApiModelFree && (isFreeTextModel || hasZeroFromPrice);
 	const fromPriceSummary = explicitFromPrice ?? fallbackFromPrice;
 	const priceSummary =
-		isFreeTextModel
+		isFreeDisplayModel
 			? "Free"
 			: isTextModel && textPriceSummary
 				? textPriceSummary
@@ -587,7 +613,12 @@ function ModelCardImpl({
 			style={rowStyle}
 			onClick={handleRowClick}
 		>
-			<div className="flex h-full flex-col gap-4">
+			<div
+				className={cn(
+					"flex h-full flex-col gap-4 px-4 md:px-5",
+					contentPaddingClassName,
+				)}
+			>
 				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
 					<Link
 						href={`/organisations/${model.organisation_id}`}

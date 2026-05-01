@@ -77,6 +77,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 
 const STATUS_FILTER_DISPLAY_ORDER = [
 	"active",
+	"coming_soon",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
@@ -702,6 +703,7 @@ export default function ModelsTableDisplay({
 			if (statuses.length > 0) {
 				const mapped = statuses.flatMap((status) => {
 					if (status === "active") return ["active"];
+					if (status === "coming_soon") return ["coming_soon"];
 					if (status === "inactive") return ["not_active"];
 					return [];
 				});
