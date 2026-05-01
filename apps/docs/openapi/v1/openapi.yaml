@@ -4980,6 +4980,7 @@ components:
         - biobench
         - biolp-bench
         - bird-sql-(dev)
+        - bixbench
         - blink
         - boolq
         - browsecomp
@@ -5033,6 +5034,7 @@ components:
         - cruxeval-o
         - csimpleqa
         - ct-dataset-1-macro-accuracy
+        - ctf-challenge-tasks
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
@@ -5103,6 +5105,7 @@ components:
         - galileo-agent
         - gdpval-aa
         - gdpval-mm
+        - genebench
         - giantsteps-tempo
         - global-mmlu-lite
         - global-pica
@@ -5111,8 +5114,12 @@ components:
         - gpqa
         - gpqa-diamond
         - graphwalks-bfs->128k
+        - graphwalks-bfs-1m-f1
+        - graphwalks-bfs-256k-f1
         - graphwalks-bfs-lt-128k
         - graphwalks-parents->128k
+        - graphwalks-parents-1m-f1
+        - graphwalks-parents-256k-f1
         - graphwalks-parents-lt-128k
         - gsm8k
         - gsm8k-chat
@@ -5329,6 +5336,7 @@ components:
         - openai-mrcr-2-needle-256k
         - openai-mrcr-8-needle-128k
         - openai-mrcr-8-needle-1m
+        - openai-mrcr-v2-8-needle
         - openai-mrcr:-2-needle-128k
         - openai-mrcr:-2-needle-1m
         - openbookqa
@@ -6849,6 +6857,7 @@ components:
         - x-ai/grok-4.1-thinking
         - x-ai/grok-4.20-beta-0309
         - x-ai/grok-4.20-multi-agent-beta-0309
+        - x-ai/grok-4.3
         - x-ai/grok-code-fast-1
         - xiaomi/mimo-v2-flash
         - xiaomi/mimo-v2-omni
