@@ -4943,7 +4943,9 @@ components:
         - android-control-low-em
         - androidworld
         - androidworld-sr
+        - apex
         - apex-agents
+        - apex-shortlist
         - arc
         - arc-agi
         - arc-agi-1
@@ -5007,10 +5009,12 @@ components:
         - charxiv-rq
         - chest-imagenome-anatomy-iou
         - chexpert-cxr-top5-macro-f1
+        - chinese-simpleqa
         - cl-bench
         - claw-eval
         - cloningscenarios
         - cluewsc
+        - cmath
         - cmmlu
         - cnmo-2024
         - codeforces
@@ -5022,6 +5026,7 @@ components:
         - complexfuncbench
         - confabulations
         - contphy
+        - corpusqa-1m
         - countbench
         - covost2
         - covost2-en-zh
@@ -5077,6 +5082,7 @@ components:
         - facts
         - facts-benchmark-suite
         - facts-grounding
+        - facts-parametric
         - factscore
         - factscore-halluciation-rate
         - fiction-live-bench
@@ -5136,6 +5142,7 @@ components:
         - hle-verified
         - hle-vl
         - hmmt-2025
+        - hmmt-2026-feb
         - hmmt-feb-2025
         - hmmt-feb-2026
         - hmmt-feb-26
@@ -5300,6 +5307,7 @@ components:
         - multichallenge-(o3-mini-grader)
         - multilf
         - multilingual-mmlu
+        - multiloko
         - multipl-e
         - musiccaps
         - mvbench
@@ -6554,6 +6562,7 @@ components:
         - google/gemini-3.1-pro-preview
         - google/gemini-3.1-pro-preview-customtools
         - google/gemini-embedding-001
+        - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
         - google/gemini-robotics-er-1.6-preview
         - google/gemma-3-12b
@@ -6573,6 +6582,7 @@ components:
         - google/lyria-3-pro-preview
         - gryphe/mythomax-l2-13b
         - ibm/granite-4.1-8b
+        - inclusionai/ling-2.6-1t
         - internvl3.5-8b
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
@@ -6743,7 +6753,6 @@ components:
         - qwen/qwen-vl-plus-2025-01-25
         - qwen/qwen-vl-plus-2025-05-07
         - qwen/qwen-vl-plus-2025-08-15
-        - qwen/qwen2-7b
         - qwen/qwen2.5-14b
         - qwen/qwen2.5-14b-1m
         - qwen/qwen2.5-32b
@@ -6807,6 +6816,7 @@ components:
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
         - qwen/qwen3.5-plus-2026-04-20
+        - qwen/qwen3.6-27b
         - qwen/qwen3.6-35b-a3b
         - qwen/qwen3.6-max-preview
         - qwen/qwen3.6-plus
@@ -6863,6 +6873,9 @@ components:
         - xiaomi/mimo-v2-omni
         - xiaomi/mimo-v2-pro
         - xiaomi/mimo-v2-tts:free
+        - xiaomi/mimo-v2.5
+        - xiaomi/mimo-v2.5-pro
+        - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
         - z-ai/glm-4.5
