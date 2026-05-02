@@ -12,7 +12,7 @@
   "input_types": null,
   "output_types": null,
   "api_model_id": "google/gemini-2.5-flash-preview-2025-09-25",
-  "family_id": "google/gemini-2-5",
+  "family_id": "google/gemini-2.5",
   "links": [],
   "details": [],
   "benchmarks": [

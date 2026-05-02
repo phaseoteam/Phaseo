@@ -12,6 +12,7 @@
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "anthropic/claude-sonnet-4.5",
+  "family_id": "anthropic/claude-4.5",
   "links": [
     {
       "platform": "announcement",

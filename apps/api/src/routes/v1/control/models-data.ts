@@ -154,7 +154,7 @@ function buildLifecycleMessage(
     return null;
 }
 
-async function handleDataModels(req: Request) {
+export async function handleDataModels(req: Request) {
     const url = new URL(req.url);
     const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
@@ -182,6 +182,17 @@ async function handleDataModels(req: Request) {
     };
 
     const includeHidden = parseBooleanParam(url.searchParams.get("include_hidden"), false);
+    if (includeHidden && !auth.value.internal) {
+        return json(
+            {
+                ok: false,
+                error: "forbidden",
+                message: "include_hidden requires internal authentication",
+            },
+            403,
+            { "Cache-Control": "no-store" }
+        );
+    }
     const statuses = parseMultiValue(url.searchParams, "status");
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const modelIds = [...parseMultiValue(url.searchParams, "model_id"), ...parseMultiValue(url.searchParams, "id")];

@@ -12,7 +12,7 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "openai/gpt-5",
-  "family_id": "openai/gpt-5-2",
+  "family_id": "openai/gpt-5",
   "links": [
     {
       "platform": "api_reference",

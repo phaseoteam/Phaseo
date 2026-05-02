@@ -47,13 +47,21 @@ function isGoogleEmbeddingsModel(candidate: ProviderCandidate, modelId: string):
 	return haystack.includes("gemini-embedding");
 }
 
+function toBaseModality(value: string): Modality | null {
+	if (value === "text" || value.startsWith("text_")) return "text";
+	if (value === "image" || value.startsWith("image_")) return "image";
+	if (value === "audio" || value.startsWith("audio_")) return "audio";
+	if (value === "video" || value.startsWith("video_")) return "video";
+	return null;
+}
+
 function normalizeModalities(values?: string[] | null): Set<Modality> {
 	if (!values || values.length === 0) return new Set();
 	const normalized = new Set<Modality>();
 	for (const value of values) {
-		const lower = String(value).trim().toLowerCase();
-		if (lower === "text" || lower === "image" || lower === "audio" || lower === "video") {
-			normalized.add(lower);
+		const base = toBaseModality(String(value).trim().toLowerCase());
+		if (base) {
+			normalized.add(base);
 		}
 	}
 	return normalized;

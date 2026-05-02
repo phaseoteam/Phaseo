@@ -12,7 +12,7 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "openai/gpt-5.3-codex",
-  "family_id": "openai/gpt-5-3",
+  "family_id": "openai/gpt-5.3",
   "links": [],
   "details": [],
   "benchmarks": [

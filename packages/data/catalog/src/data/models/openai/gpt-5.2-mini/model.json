@@ -12,7 +12,7 @@
   "input_types": null,
   "output_types": null,
   "api_model_id": "openai/gpt-5.2-mini",
-  "family_id": "openai/gpt-5-2",
+  "family_id": "openai/gpt-5.2",
   "links": [],
   "details": [],
   "benchmarks": []
