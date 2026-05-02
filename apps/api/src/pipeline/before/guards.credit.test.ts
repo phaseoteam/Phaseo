@@ -155,7 +155,32 @@ describe("guardContext credit gating for free models", () => {
 		expect(result.ok).toBe(true);
 	});
 
-	it("allows zero-credit requests when all routable pricing cards are free/zero-cost", async () => {
+	it("keeps insufficient_funds for :free model names without free pricing", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "provider/model-no-suffix:free",
+				creditOk: false,
+				pricingRules: [{ pricing_plan: "standard", price_per_unit: "0.01" }],
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "provider/model-no-suffix:free",
+			requestId: "req_fake_free_suffix",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(402);
+		const payload = await result.response.json();
+		expect(payload.error).toBe("insufficient_funds");
+	});
+
+	it("keeps insufficient_funds when standard pricing is zero-cost", async () => {
 		fetchGatewayContextMock.mockResolvedValue(
 			makeContext({
 				model: "provider/model-no-suffix",
@@ -173,7 +198,11 @@ describe("guardContext credit gating for free models", () => {
 			requestId: "req_free_2",
 		});
 
-		expect(result.ok).toBe(true);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(402);
+		const payload = await result.response.json();
+		expect(payload.error).toBe("insufficient_funds");
 	});
 
 	it("fails closed when a routable provider has missing pricing", async () => {
