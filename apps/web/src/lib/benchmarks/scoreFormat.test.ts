@@ -1,6 +1,7 @@
 import {
 	benchmarkOrderFromAscending,
 	compareBenchmarkScores,
+	compareBenchmarkScoresForBenchmark,
 	getLowerIsBetter,
 } from "./scoreFormat";
 
@@ -22,5 +23,12 @@ describe("benchmark score ordering semantics", () => {
 	it("defaults missing ordering metadata to higher-is-better", () => {
 		expect(compareBenchmarkScores(10, 20, null)).toBeGreaterThan(0);
 		expect(compareBenchmarkScores(20, 10, undefined)).toBeLessThan(0);
+	});
+
+	it("preserves higher-is-better fallback when ordering metadata is missing from a benchmark map", () => {
+		const orderingByBenchmark = new Map<string, boolean | null>();
+
+		expect(compareBenchmarkScoresForBenchmark(10, 20, "bench-missing", orderingByBenchmark)).toBeGreaterThan(0);
+		expect(compareBenchmarkScoresForBenchmark(20, 10, "bench-missing", orderingByBenchmark)).toBeLessThan(0);
 	});
 });

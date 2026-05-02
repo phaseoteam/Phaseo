@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import { join } from "path";
 
-import { compareBenchmarkScores } from "../../src/lib/benchmarks/scoreFormat";
+import { compareBenchmarkScoresForBenchmark } from "../../src/lib/benchmarks/scoreFormat";
 import { DIR_BENCHMARKS, DIR_MODELS } from "./paths";
 import { listDirs, readJson } from "./util";
 
@@ -61,15 +61,18 @@ function parseScore(value: unknown): number | null {
 	return null;
 }
 
-async function loadBenchmarkMeta(): Promise<Map<string, boolean>> {
-	const out = new Map<string, boolean>();
+async function loadBenchmarkMeta(): Promise<Map<string, boolean | null>> {
+	const out = new Map<string, boolean | null>();
 	const benchmarkDirs = await listDirs(DIR_BENCHMARKS);
 
 	for (const benchmarkDir of benchmarkDirs) {
 		const benchmarkPath = join(benchmarkDir, "benchmark.json");
 		try {
 			const benchmark = await readJson<BenchmarkMetaJson>(benchmarkPath);
-			out.set(benchmark.benchmark_id, benchmark.ascending_order === true);
+			out.set(
+				benchmark.benchmark_id,
+				typeof benchmark.ascending_order === "boolean" ? benchmark.ascending_order : null,
+			);
 		} catch {
 			continue;
 		}
@@ -145,7 +148,7 @@ function collectRankRows(
 
 function recomputeRanks(
 	rows: RankedBenchmarkRow[],
-	ascendingByBenchmark: Map<string, boolean>,
+	ascendingByBenchmark: Map<string, boolean | null>,
 ): Map<ModelFile, Set<number>> {
 	const touchedEntries = new Map<ModelFile, Set<number>>();
 	const byBenchmark = new Map<string, RankedBenchmarkRow[]>();
@@ -164,12 +167,16 @@ function recomputeRanks(
 	}
 
 	for (const [benchmarkId, group] of byBenchmark) {
-		const ascending = ascendingByBenchmark.get(benchmarkId) ?? false;
 		const ranked = group
 			.filter((row): row is RankedBenchmarkRow & { score: number } => row.score != null)
 			.sort((a, b) => {
 				if (a.score !== b.score) {
-					return compareBenchmarkScores(a.score, b.score, ascending);
+					return compareBenchmarkScoresForBenchmark(
+						a.score,
+						b.score,
+						benchmarkId,
+						ascendingByBenchmark,
+					);
 				}
 				if (a.model_id !== b.model_id) return a.model_id.localeCompare(b.model_id);
 				const otherInfoCompare = (a.other_info ?? "").localeCompare(b.other_info ?? "");
@@ -240,7 +247,9 @@ async function main() {
 	);
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exit(1);
-});
+if (require.main === module) {
+	main().catch((error) => {
+		console.error(error);
+		process.exit(1);
+	});
+}

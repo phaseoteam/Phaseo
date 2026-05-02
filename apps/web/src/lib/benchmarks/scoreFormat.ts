@@ -142,3 +142,12 @@ export function compareBenchmarkScores(
 	// Fall back to higher-is-better when ordering metadata is missing.
 	return b - a;
 }
+
+export function compareBenchmarkScoresForBenchmark(
+	a: number,
+	b: number,
+	benchmarkId: string,
+	orderingByBenchmark: Map<string, boolean | null | undefined>
+): number {
+	return compareBenchmarkScores(a, b, orderingByBenchmark.get(benchmarkId));
+}
