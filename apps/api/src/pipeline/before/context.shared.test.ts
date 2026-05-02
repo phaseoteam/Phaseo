@@ -21,4 +21,14 @@ describe("supportsEndpointViaModalities", () => {
 			}),
 		).toBe(true);
 	});
+
+	it("does not treat transcription audio subtypes as generated audio output", () => {
+		expect(
+			supportsEndpointViaModalities({
+				endpoint: "audio.speech",
+				inputModalities: new Set(["text"]),
+				outputModalities: new Set(["audio_stt"]),
+			}),
+		).toBe(false);
+	});
 });

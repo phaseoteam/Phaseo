@@ -102,6 +102,26 @@ describe("filterCandidatesByModalities", () => {
 
 		expect(filtered).toHaveLength(1);
 	});
+
+	it("does not treat transcription audio subtypes as generated audio output", () => {
+		const filtered = filterCandidatesByModalities(
+			[
+				candidate({
+					providerId: "google-ai-studio",
+					inputModalities: ["text"],
+					outputModalities: ["audio_stt"],
+				}),
+			],
+			{
+				model: "google/gemini-3.1-flash-tts-preview",
+				stream: false,
+				messages: [{ role: "user", content: [{ type: "text", text: "Say hello" }] }],
+				modalities: ["audio"],
+			},
+		);
+
+		expect(filtered).toHaveLength(0);
+	});
 });
 
 describe("filterEmbeddingCandidatesByModalities", () => {

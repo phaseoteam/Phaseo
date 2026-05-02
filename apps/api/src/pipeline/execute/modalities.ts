@@ -47,7 +47,7 @@ function isGoogleEmbeddingsModel(candidate: ProviderCandidate, modelId: string):
 	return haystack.includes("gemini-embedding");
 }
 
-function toBaseModality(value: string): Modality | null {
+function toBaseInputModality(value: string): Modality | null {
 	if (value === "text" || value.startsWith("text_")) return "text";
 	if (value === "image" || value.startsWith("image_")) return "image";
 	if (value === "audio" || value.startsWith("audio_")) return "audio";
@@ -55,11 +55,22 @@ function toBaseModality(value: string): Modality | null {
 	return null;
 }
 
-function normalizeModalities(values?: string[] | null): Set<Modality> {
+function toBaseOutputModality(value: string): Modality | null {
+	if (value === "text" || value.startsWith("text_")) return "text";
+	if (value === "image" || value.startsWith("image_")) return "image";
+	if (value === "audio" || value === "audio_tts" || value === "audio_music") return "audio";
+	if (value === "video" || value.startsWith("video_")) return "video";
+	return null;
+}
+
+function normalizeModalities(
+	values: string[] | null | undefined,
+	mapper: (value: string) => Modality | null,
+): Set<Modality> {
 	if (!values || values.length === 0) return new Set();
 	const normalized = new Set<Modality>();
 	for (const value of values) {
-		const base = toBaseModality(String(value).trim().toLowerCase());
+		const base = mapper(String(value).trim().toLowerCase());
 		if (base) {
 			normalized.add(base);
 		}
@@ -208,8 +219,8 @@ export function filterCandidatesByModalities(
 	const needsNonTextOutput = Array.from(requirements.output).some((m) => m !== "text");
 
 	return candidates.filter((candidate) => {
-		let input = normalizeModalities(candidate.inputModalities ?? undefined);
-		let output = normalizeModalities(candidate.outputModalities ?? undefined);
+		let input = normalizeModalities(candidate.inputModalities ?? undefined, toBaseInputModality);
+		let output = normalizeModalities(candidate.outputModalities ?? undefined, toBaseOutputModality);
 
 		// Fallback for Google Nano Banana image-preview models where modality
 		// metadata can be temporarily missing/stale in provider rows.
@@ -242,7 +253,7 @@ export function filterEmbeddingCandidatesByModalities(
 	const needsNonTextInput = Array.from(requirements.input).some((m) => m !== "text");
 
 	return candidates.filter((candidate) => {
-		let input = normalizeModalities(candidate.inputModalities ?? undefined);
+		let input = normalizeModalities(candidate.inputModalities ?? undefined, toBaseInputModality);
 
 		// Fallback for Gemini embedding families while provider modality metadata catches up.
 		if (isGoogleEmbeddingsModel(candidate, ir.model) && input.size === 0) {
