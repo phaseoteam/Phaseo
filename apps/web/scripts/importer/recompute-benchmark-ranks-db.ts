@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { compareBenchmarkScores } from "../../src/lib/benchmarks/scoreFormat";
 import { assertOk, client, isDryRun, logWrite } from "./supa";
 import { chunk } from "./util";
 
@@ -163,9 +164,7 @@ function buildRankedRows(
 			)
 			.sort((a, b) => {
 				if (a.numericScore !== b.numericScore) {
-					return ascending
-						? a.numericScore - b.numericScore
-						: b.numericScore - a.numericScore;
+					return compareBenchmarkScores(a.numericScore, b.numericScore, ascending);
 				}
 				const resultKeyCompare = (a.row.result_key ?? "").localeCompare(
 					b.row.result_key ?? "",

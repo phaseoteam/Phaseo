@@ -1,3 +1,5 @@
+import { compareBenchmarkScores } from "../../../src/lib/benchmarks/scoreFormat";
+
 type Row = { model_id: string; benchmark_id: string; score: string; ascending_order: boolean };
 
 function toNum(s: string) {
@@ -28,7 +30,7 @@ export function computeBenchMap(all: Row[], window = 5) {
 
     // Sort each benchmark according to its ascending flag
     for (const b of Object.values(byBench)) {
-        b.rows.sort((a, b2) => (b.asc ? a.f - b2.f : b2.f - a.f));
+        b.rows.sort((a, b2) => compareBenchmarkScores(a.f, b2.f, b.asc));
     }
 
     const out: Record<string, any> = {};

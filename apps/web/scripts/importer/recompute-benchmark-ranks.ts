@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import { join } from "path";
 
+import { compareBenchmarkScores } from "../../src/lib/benchmarks/scoreFormat";
 import { DIR_BENCHMARKS, DIR_MODELS } from "./paths";
 import { listDirs, readJson } from "./util";
 
@@ -168,7 +169,7 @@ function recomputeRanks(
 			.filter((row): row is RankedBenchmarkRow & { score: number } => row.score != null)
 			.sort((a, b) => {
 				if (a.score !== b.score) {
-					return ascending ? a.score - b.score : b.score - a.score;
+					return compareBenchmarkScores(a.score, b.score, ascending);
 				}
 				if (a.model_id !== b.model_id) return a.model_id.localeCompare(b.model_id);
 				const otherInfoCompare = (a.other_info ?? "").localeCompare(b.other_info ?? "");
