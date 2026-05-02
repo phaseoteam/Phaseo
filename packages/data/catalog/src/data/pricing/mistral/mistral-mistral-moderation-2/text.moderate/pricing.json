@@ -11,7 +11,7 @@
       "unit_size": 1,
       "price_per_unit": 0,
       "currency": "USD",
-      "pricing_plan": "standard",
+      "pricing_plan": "free",
       "note": null,
       "match": [],
       "priority": 100,
