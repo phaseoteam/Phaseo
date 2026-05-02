@@ -13,6 +13,8 @@ const resolveTestingModeMock = vi.fn();
 const isProviderCapabilityEnabledMock = vi.fn();
 const normalizeCapabilityMock = vi.fn();
 const resolveCapabilityFromEndpointMock = vi.fn();
+const fetchWorkspacePolicyMock = vi.fn();
+const applyWorkspacePolicyMock = vi.fn();
 
 vi.mock("@core/schemas", () => ({
 	schemaFor: vi.fn(() => null),
@@ -44,6 +46,11 @@ vi.mock("@/executors", () => ({
 
 vi.mock("@/lib/config/capabilityToEndpoints", () => ({
 	resolveCapabilityFromEndpoint: (...args: any[]) => resolveCapabilityFromEndpointMock(...args),
+}));
+
+vi.mock("./workspacePolicy", () => ({
+	fetchWorkspacePolicy: (...args: any[]) => fetchWorkspacePolicyMock(...args),
+	applyWorkspacePolicy: (...args: any[]) => applyWorkspacePolicyMock(...args),
 }));
 
 import { beforeRequest } from "./index";
@@ -105,6 +112,8 @@ describe("beforeRequest pricing loss-prevention", () => {
 		isProviderCapabilityEnabledMock.mockReset();
 		normalizeCapabilityMock.mockReset();
 		resolveCapabilityFromEndpointMock.mockReset();
+		fetchWorkspacePolicyMock.mockReset();
+		applyWorkspacePolicyMock.mockReset();
 
 		guardAuthMock.mockResolvedValue({
 			ok: true,
@@ -152,6 +161,22 @@ describe("beforeRequest pricing loss-prevention", () => {
 		isProviderCapabilityEnabledMock.mockReturnValue(true);
 		normalizeCapabilityMock.mockImplementation((value: string) => value);
 		resolveCapabilityFromEndpointMock.mockReturnValue("text.generate");
+		fetchWorkspacePolicyMock.mockResolvedValue(null);
+		applyWorkspacePolicyMock.mockImplementation((args: any) => ({
+			ok: true,
+			providers: args.providers,
+			diagnostics: {
+				resolvedModel: args.resolvedModel,
+				allowedApiModels: [],
+				providerAllowlist: [],
+				providerBlocklist: [],
+				requestProviderOnly: [],
+				requestProviderIgnore: [],
+				activeGuardrailIds: [],
+				beforeCount: args.providers.length,
+				afterCount: args.providers.length,
+			},
+		}));
 	});
 
 	it("allows request when pricing rules are present", async () => {
@@ -224,6 +249,112 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(payload.error).toBe("unsupported_model_or_endpoint");
 		expect(payload.reason).toBe("pricing_not_configured");
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
+	});
+
+	it("rejects request when workspace policy blocks the resolved model", async () => {
+		const provider = providerWithPricingRules(1);
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "blocked-model",
+				candidateDiagnostics: {
+					totalProviders: 1,
+					supportsEndpointCount: 1,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: 1,
+				},
+			},
+		});
+		applyWorkspacePolicyMock.mockReturnValue({
+			ok: false,
+			reason: "model_not_allowed",
+			diagnostics: {
+				resolvedModel: "blocked-model",
+				allowedApiModels: ["allowed-model"],
+				providerAllowlist: [],
+				providerBlocklist: [],
+				requestProviderOnly: [],
+				requestProviderIgnore: [],
+				activeGuardrailIds: ["gr_123"],
+				beforeCount: 1,
+				afterCount: 0,
+			},
+		});
+
+		const req = new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "blocked-model" }),
+		});
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload.error).toBe("validation_error");
+		expect(payload.details?.[0]?.keyword).toBe("model_not_allowed_by_workspace_policy");
+	});
+
+	it("rejects request when workspace policy filters out all providers", async () => {
+		const provider = providerWithPricingRules(1);
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "openai/gpt-4.1-mini",
+				candidateDiagnostics: {
+					totalProviders: 1,
+					supportsEndpointCount: 1,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: 1,
+				},
+			},
+		});
+		applyWorkspacePolicyMock.mockReturnValue({
+			ok: false,
+			reason: "no_providers",
+			diagnostics: {
+				resolvedModel: "openai/gpt-4.1-mini",
+				allowedApiModels: [],
+				providerAllowlist: ["anthropic"],
+				providerBlocklist: [],
+				requestProviderOnly: [],
+				requestProviderIgnore: [],
+				activeGuardrailIds: ["gr_456"],
+				beforeCount: 1,
+				afterCount: 0,
+			},
+		});
+
+		const req = new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "openai/gpt-4.1-mini" }),
+		});
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload.error).toBe("validation_error");
+		expect(payload.details?.[0]?.keyword).toBe("no_providers_after_workspace_policy_filter");
 	});
 });
 
