@@ -23,28 +23,19 @@ const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
 const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities"]);
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities"]);
 
-function isLikelyFreeModelId(value: unknown): boolean {
-    if (typeof value !== "string") return false;
-    return value.trim().toLowerCase().includes(":free");
-}
-
 function isFreePriceCard(card: PriceCard | null | undefined): boolean {
     if (!card || !Array.isArray(card.rules) || card.rules.length === 0) return false;
     return card.rules.every((rule) => {
         const pricingPlan = String(rule.pricing_plan ?? "")
             .trim()
             .toLowerCase();
-        if (pricingPlan === "free") return true;
-        const numericPrice = Number(rule.price_per_unit);
-        return Number.isFinite(numericPrice) && numericPrice <= 0;
+        const pricePerUnit = Number(rule.price_per_unit);
+
+        return pricingPlan === "free" && Number.isFinite(pricePerUnit) && pricePerUnit <= 0;
     });
 }
 
 function allowsNoCreditForFreeRequest(args: { model: string; context: any; providers: any[] }): boolean {
-    if (isLikelyFreeModelId(args.model) || isLikelyFreeModelId(args.context?.resolvedModel)) {
-        return true;
-    }
-
     const routableProviders = Array.isArray(args.providers)
         ? args.providers
             .filter((provider: any) => typeof provider?.providerId === "string")
