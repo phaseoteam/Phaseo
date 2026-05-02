@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { compareBenchmarkScoresForBenchmark } from "../../src/lib/benchmarks/scoreFormat";
 import { assertOk, client, isDryRun, logWrite } from "./supa";
 import { chunk } from "./util";
 
@@ -87,9 +88,9 @@ async function fetchAllBenchmarkRows(
 
 async function fetchBenchmarkMeta(
 	benchmarkIds: string[],
-): Promise<Map<string, boolean>> {
+): Promise<Map<string, boolean | null>> {
 	const supa = client();
-	const out = new Map<string, boolean>();
+	const out = new Map<string, boolean | null>();
 	if (!benchmarkIds.length) return out;
 
 	for (const ids of chunk(Array.from(new Set(benchmarkIds)), 200)) {
@@ -102,7 +103,7 @@ async function fetchBenchmarkMeta(
 		) as BenchmarkMetaRow[];
 
 		for (const row of rows) {
-			out.set(row.id, row.ascending_order === true);
+			out.set(row.id, typeof row.ascending_order === "boolean" ? row.ascending_order : null);
 		}
 	}
 
@@ -141,7 +142,7 @@ async function benchmarkIdsForModel(modelId: string): Promise<string[]> {
 
 function buildRankedRows(
 	rows: BenchmarkResultRow[],
-	ascendingByBenchmark: Map<string, boolean>,
+	ascendingByBenchmark: Map<string, boolean | null>,
 ): BenchmarkResultRow[] {
 	const byBenchmark = new Map<string, BenchmarkResultRow[]>();
 
@@ -154,7 +155,6 @@ function buildRankedRows(
 	const ranked: BenchmarkResultRow[] = [];
 
 	for (const [benchmarkId, group] of byBenchmark) {
-		const ascending = ascendingByBenchmark.get(benchmarkId) ?? false;
 		const numeric = group
 			.map((row) => ({ row, numericScore: parseScore(row.score) }))
 			.filter(
@@ -163,9 +163,12 @@ function buildRankedRows(
 			)
 			.sort((a, b) => {
 				if (a.numericScore !== b.numericScore) {
-					return ascending
-						? a.numericScore - b.numericScore
-						: b.numericScore - a.numericScore;
+					return compareBenchmarkScoresForBenchmark(
+						a.numericScore,
+						b.numericScore,
+						benchmarkId,
+						ascendingByBenchmark,
+					);
 				}
 				const resultKeyCompare = (a.row.result_key ?? "").localeCompare(
 					b.row.result_key ?? "",
@@ -245,7 +248,9 @@ async function main() {
 	);
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exit(1);
-});
+if (require.main === module) {
+	main().catch((error) => {
+		console.error(error);
+		process.exit(1);
+	});
+}

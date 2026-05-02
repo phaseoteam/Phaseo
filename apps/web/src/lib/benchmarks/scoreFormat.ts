@@ -122,3 +122,32 @@ export function getLowerIsBetter(
 	if (order === "higher" || order === "descending") return false;
 	return order.includes("lower") || order.includes("ascending");
 }
+
+export function compareBenchmarkScores(
+	a: number,
+	b: number,
+	ascendingOrder: boolean | null | undefined
+): number {
+	if (a === b) return 0;
+
+	// In this codebase, ascending_order=true means "higher is better",
+	// and ascending_order=false means "lower is better".
+	if (ascendingOrder === true) {
+		return b - a;
+	}
+	if (ascendingOrder === false) {
+		return a - b;
+	}
+
+	// Fall back to higher-is-better when ordering metadata is missing.
+	return b - a;
+}
+
+export function compareBenchmarkScoresForBenchmark(
+	a: number,
+	b: number,
+	benchmarkId: string,
+	orderingByBenchmark: Map<string, boolean | null | undefined>
+): number {
+	return compareBenchmarkScores(a, b, orderingByBenchmark.get(benchmarkId));
+}
