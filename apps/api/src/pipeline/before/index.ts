@@ -155,7 +155,6 @@ export async function beforeRequest(
     } catch (error) {
         console.error("[beforeRequest] workspace_policy_fetch_failed", {
             workspaceId,
-            apiKeyId,
             requestId,
             error: error instanceof Error ? error.message : String(error),
         });
