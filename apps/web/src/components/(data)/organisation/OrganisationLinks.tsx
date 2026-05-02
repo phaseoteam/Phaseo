@@ -4,6 +4,7 @@ import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/getOrganisation";
 import { cn } from "@/lib/utils";
+import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
 
 // Map platform names to Tailwind hover classes
 const PLATFORM_HOVER_CLASSES: Record<string, string> = {
@@ -117,6 +118,8 @@ export default function OrganisationLinks({
 					})
 					.map((link, idx) => {
 						const normalizedPlatform = normalizePlatform(link.platform);
+						const safeUrl = normalizeHttpUrl(link.url);
+						if (!safeUrl) return null;
 						const hoverClass =
 							PLATFORM_HOVER_CLASSES[
 								normalizedPlatform
@@ -135,7 +138,7 @@ export default function OrganisationLinks({
 								)}
 							>
 								<Link
-									href={link.url || "#"}
+									href={safeUrl}
 									target="_blank"
 									rel="noopener noreferrer"
 								>

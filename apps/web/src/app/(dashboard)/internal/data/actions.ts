@@ -16,6 +16,7 @@ import {
 	normalizeModelStatus,
 	type CapabilityStatusOption,
 } from "@/lib/models/editorOptions";
+import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
 
 async function requireAdmin() {
 	const supabase = await createClient();
@@ -188,7 +189,7 @@ async function replaceOrganisationLinks(
 	const links = rawLinks
 		.map((link) => ({
 			platform: normalizeOrganisationPlatform(link.platform),
-			url: typeof link.url === "string" ? link.url.trim() : "",
+			url: normalizeHttpUrl(link.url),
 		}))
 		.filter((link): link is { platform: (typeof ORG_SOCIAL_PLATFORM_ORDER)[number]; url: string } => Boolean(link.platform && link.url))
 		.sort((a, b) => {
