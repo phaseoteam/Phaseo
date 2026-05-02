@@ -25,11 +25,14 @@ const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities"]);
 
 function isFreePriceCard(card: PriceCard | null | undefined): boolean {
     if (!card || !Array.isArray(card.rules) || card.rules.length === 0) return false;
-    return card.rules.every((rule) =>
-        String(rule.pricing_plan ?? "")
+    return card.rules.every((rule) => {
+        const pricingPlan = String(rule.pricing_plan ?? "")
             .trim()
-            .toLowerCase() === "free"
-    );
+            .toLowerCase();
+        const pricePerUnit = Number(rule.price_per_unit);
+
+        return pricingPlan === "free" && Number.isFinite(pricePerUnit) && pricePerUnit <= 0;
+    });
 }
 
 function allowsNoCreditForFreeRequest(args: { model: string; context: any; providers: any[] }): boolean {

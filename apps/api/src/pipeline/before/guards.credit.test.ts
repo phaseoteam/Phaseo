@@ -205,6 +205,31 @@ describe("guardContext credit gating for free models", () => {
 		expect(payload.error).toBe("insufficient_funds");
 	});
 
+	it("keeps insufficient_funds for free-plan pricing with a positive price", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "provider/model-no-suffix",
+				creditOk: false,
+				pricingRules: [{ pricing_plan: "free", price_per_unit: "0.01" }],
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "provider/model-no-suffix",
+			requestId: "req_free_positive_price",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(402);
+		const payload = await result.response.json();
+		expect(payload.error).toBe("insufficient_funds");
+	});
+
 	it("fails closed when a routable provider has missing pricing", async () => {
 		fetchGatewayContextMock.mockResolvedValue(
 			makeContext({
