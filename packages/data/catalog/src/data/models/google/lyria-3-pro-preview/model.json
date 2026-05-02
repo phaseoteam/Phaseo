@@ -12,6 +12,7 @@
   "input_types": "text,image",
   "output_types": "text,audio_music",
   "api_model_id": "google/lyria-3-pro-preview",
+  "family_id": "google/lyria-3",
   "links": [],
   "details": [],
   "benchmarks": []

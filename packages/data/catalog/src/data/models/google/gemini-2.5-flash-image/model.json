@@ -12,7 +12,7 @@
   "input_types": "text,image",
   "output_types": "text,image",
   "api_model_id": "google/gemini-2.5-flash-image",
-  "family_id": "google/gemini-2-5",
+  "family_id": "google/gemini-2.5",
   "links": [],
   "details": [],
   "benchmarks": [

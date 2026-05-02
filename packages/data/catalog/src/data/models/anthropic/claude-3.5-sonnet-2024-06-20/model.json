@@ -12,7 +12,7 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "anthropic/claude-3.5-sonnet-2024-06-20",
-  "family_id": "anthropic/claude-3-5",
+  "family_id": "anthropic/claude-3.5",
   "links": [
     {
       "platform": "api_reference",

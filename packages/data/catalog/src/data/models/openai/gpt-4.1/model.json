@@ -12,7 +12,7 @@
   "input_types": "image,text",
   "output_types": "text",
   "api_model_id": "openai/gpt-4.1",
-  "family_id": "openai/gpt-4-1",
+  "family_id": "openai/gpt-4.1",
   "links": [],
   "details": [
     {

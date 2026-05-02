@@ -12,7 +12,7 @@
   "input_types": null,
   "output_types": null,
   "api_model_id": "google/gemini-2.0-flash-thinking-exp-2024-12-19",
-  "family_id": "google/gemini-2-0",
+  "family_id": "google/gemini-2.0",
   "links": [],
   "details": [],
   "benchmarks": [

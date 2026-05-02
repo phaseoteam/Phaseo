@@ -359,14 +359,34 @@ export function parseModalities(value: unknown): Set<string> {
 	return new Set<string>();
 }
 
+function normalizeInputModalityBase(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "text" || normalized.startsWith("text_")) return "text";
+	if (normalized === "image" || normalized.startsWith("image_")) return "image";
+	if (normalized === "audio" || normalized.startsWith("audio_")) return "audio";
+	if (normalized === "video" || normalized.startsWith("video_")) return "video";
+	return normalized;
+}
+
+function normalizeOutputModalityBase(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "text" || normalized.startsWith("text_")) return "text";
+	if (normalized === "image" || normalized.startsWith("image_")) return "image";
+	if (normalized === "audio" || normalized === "audio_tts" || normalized === "audio_music") {
+		return "audio";
+	}
+	if (normalized === "video" || normalized.startsWith("video_")) return "video";
+	return normalized;
+}
+
 export function supportsEndpointViaModalities(args: {
 	endpoint: string;
 	inputModalities: Set<string>;
 	outputModalities: Set<string>;
 }): boolean {
 	const endpoint = String(args.endpoint ?? "").trim().toLowerCase();
-	const input = args.inputModalities;
-	const output = args.outputModalities;
+	const input = new Set(Array.from(args.inputModalities).map(normalizeInputModalityBase));
+	const output = new Set(Array.from(args.outputModalities).map(normalizeOutputModalityBase));
 
 	const hasInput = (...values: string[]) => values.some((value) => input.has(value));
 	const hasOutput = (...values: string[]) => values.some((value) => output.has(value));

@@ -12,6 +12,7 @@
   "input_types": "text",
   "output_types": "audio_tts",
   "api_model_id": "google/gemini-3.1-flash-tts-preview",
+  "family_id": "google/gemini-3.1",
   "links": [
     {
       "platform": "api_reference",
