@@ -278,8 +278,8 @@ export function ContactClient({
 
 	return (
 		<div className="container mx-auto space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-			<div className="flex flex-wrap items-start justify-between gap-4">
-				<div className="space-y-2">
+			<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+				<div className="max-w-2xl space-y-2">
 					<Badge variant="secondary" className="w-fit">
 						Talk to a human
 					</Badge>
@@ -290,13 +290,17 @@ export function ContactClient({
 						founder, for a human response.
 					</p>
 				</div>
-				<div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+				<div className="w-full rounded-xl border border-border/60 bg-card/70 px-4 py-3 text-sm text-muted-foreground lg:ml-auto lg:max-w-sm">
 					<Badge variant="outline" className="gap-2 border-border/60">
 						<span className={cn("h-2 w-2 rounded-full", statusDotClass)} />
 						Support {resolvedStatusLabel}
 					</Badge>
-					<span>{resolvedWaitText}</span>
-					<span>London time: {resolvedLondonLabel}</span>
+					<div className="mt-3 space-y-1.5">
+						<p className="leading-6 text-foreground/80">{resolvedWaitText}</p>
+						<p className="text-xs text-muted-foreground">
+							London time: {resolvedLondonLabel}
+						</p>
+					</div>
 				</div>
 			</div>
 

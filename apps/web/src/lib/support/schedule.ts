@@ -72,23 +72,13 @@ function getLondonParts(date = new Date()): LondonParts {
 		second: Number(getPart("second") || 0),
 	};
 }
-export function getLondonInfo(date?: Date) {
-	const london = getLondonParts(date);
-	return {
-		label: londonLabelFormatter.format(date ?? new Date()),
-		isoLike: `${String(london.year).padStart(4, "0")}-${String(london.month).padStart(2, "0")}-${String(london.dayOfMonth).padStart(2, "0")}T${String(london.hour).padStart(2, "0")}:${String(london.minute).padStart(2, "0")}:${String(london.second).padStart(2, "0")} Europe/London`,
-		weekdayLabel: london.weekdayLabel,
-		day: WEEKDAY_INDEX[london.weekdayLabel] ?? 0,
-		minutes: london.hour * 60 + london.minute,
-	};
-}
 
 function getMinutesUntilNextWindow(day: number, minutes: number): number | null {
-	for (let offset = 0; offset < 7; offset++) {
+	for (let offset = 0; offset < 7; offset += 1) {
 		const currentDay = (day + offset) % 7;
-		const windows = (SCHEDULE[currentDay] ?? []).slice().sort(
-			(a, b) => a.start - b.start
-		);
+		const windows = (SCHEDULE[currentDay] ?? [])
+			.slice()
+			.sort((a, b) => a.start - b.start);
 
 		for (const window of windows) {
 			if (offset === 0 && window.start <= minutes) {
@@ -107,19 +97,30 @@ export interface SupportAvailability {
 	minutesUntilNextWindow: number | null;
 }
 
+export function getLondonInfo(date?: Date) {
+	const sourceDate = date ?? new Date();
+	const london = getLondonParts(date);
+	return {
+		date: sourceDate,
+		label: londonLabelFormatter.format(sourceDate),
+		isoLike: `${String(london.year).padStart(4, "0")}-${String(london.month).padStart(2, "0")}-${String(london.dayOfMonth).padStart(2, "0")}T${String(london.hour).padStart(2, "0")}:${String(london.minute).padStart(2, "0")}:${String(london.second).padStart(2, "0")} Europe/London`,
+		weekdayLabel: london.weekdayLabel,
+		day: WEEKDAY_INDEX[london.weekdayLabel] ?? 0,
+		minutes: london.hour * 60 + london.minute,
+	};
+}
+
 export function getSupportAvailability(date?: Date): SupportAvailability {
 	const london = getLondonInfo(date);
-	const day = london.day;
-	const minutes = london.minutes;
-	const windows = SCHEDULE[day] ?? [];
+	const windows = SCHEDULE[london.day] ?? [];
 
 	const isOpen = windows.some(
-		(window) => minutes >= window.start && minutes < window.end
+		(window) => london.minutes >= window.start && london.minutes < window.end,
 	);
 
 	const minutesUntilNextWindow = isOpen
 		? null
-		: getMinutesUntilNextWindow(day, minutes);
+		: getMinutesUntilNextWindow(london.day, london.minutes);
 
 	return { isOpen, minutesUntilNextWindow };
 }
