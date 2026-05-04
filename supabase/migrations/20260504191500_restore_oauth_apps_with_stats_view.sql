@@ -7,13 +7,15 @@ with (security_invoker = true)
 as
 select
   oam.*,
-  count(oa.id) filter (where oa.revoked_at is null) as active_authorizations,
-  count(oa.id) as total_authorizations,
+  count(distinct oa.id) filter (where oa.revoked_at is null) as active_authorizations,
+  count(distinct oa.id) as total_authorizations,
   max(oa.last_used_at) as last_used_at,
-  count(distinct gr.id) filter (where gr.created_at > now() - interval '30 days') as requests_last_30d
+  count(distinct gr.id) as requests_last_30d
 from public.oauth_app_metadata oam
 left join public.oauth_authorizations oa on oa.client_id = oam.client_id
-left join public.gateway_requests gr on gr.oauth_client_id = oam.client_id
+left join public.gateway_requests gr
+  on gr.oauth_client_id = oam.client_id
+ and gr.created_at > now() - interval '30 days'
 where oam.status = 'active'
 group by oam.id;
 

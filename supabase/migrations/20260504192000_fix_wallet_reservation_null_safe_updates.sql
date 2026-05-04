@@ -50,13 +50,13 @@ begin
     for update;
 
     if not found then
-      select false, false, 'wallet_not_found'::text, p_amount_nanos,
+      return query select false, false, 'wallet_not_found'::text, p_amount_nanos,
         null::bigint, null::bigint, null::bigint, null::bigint;
       return;
     end if;
 
     if v_existing.status = 'reserved' then
-      select true, false, 'already_reserved'::text, v_existing.amount_nanos,
+      return query select true, false, 'already_reserved'::text, v_existing.amount_nanos,
         coalesce(v_wallet.balance_nanos, 0)::bigint,
         coalesce(v_wallet.balance_nanos, 0)::bigint,
         coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -64,7 +64,7 @@ begin
       return;
     end if;
 
-    select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
+    return query select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -78,7 +78,7 @@ begin
   for update;
 
   if not found then
-    select false, false, 'wallet_not_found'::text, p_amount_nanos,
+    return query select false, false, 'wallet_not_found'::text, p_amount_nanos,
       null::bigint, null::bigint, null::bigint, null::bigint;
     return;
   end if;
@@ -86,7 +86,7 @@ begin
   v_available := coalesce(v_wallet.balance_nanos, 0) - coalesce(v_wallet.reserved_nanos, 0);
 
   if v_available < p_amount_nanos then
-    select false, false, 'insufficient_balance'::text, p_amount_nanos,
+    return query select false, false, 'insufficient_balance'::text, p_amount_nanos,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -122,7 +122,7 @@ begin
   returning *
   into v_wallet;
 
-  select true, true, null::text, p_amount_nanos,
+  return query select true, true, null::text, p_amount_nanos,
     v_before_balance,
     coalesce(v_wallet.balance_nanos, 0),
     v_before_reserved,
@@ -168,7 +168,7 @@ begin
   for update;
 
   if not found then
-    select false, false, 'reservation_not_found'::text, null::bigint,
+    return query select false, false, 'reservation_not_found'::text, null::bigint,
       null::bigint, null::bigint, null::bigint, null::bigint;
     return;
   end if;
@@ -179,13 +179,13 @@ begin
   for update;
 
   if not found then
-    select false, false, 'wallet_not_found'::text, v_existing.amount_nanos,
+    return query select false, false, 'wallet_not_found'::text, v_existing.amount_nanos,
       null::bigint, null::bigint, null::bigint, null::bigint;
     return;
   end if;
 
   if v_existing.status = 'captured' then
-    select true, false, 'already_captured'::text, v_existing.amount_nanos,
+    return query select true, false, 'already_captured'::text, v_existing.amount_nanos,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -194,7 +194,7 @@ begin
   end if;
 
   if v_existing.status <> 'reserved' then
-    select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
+    return query select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -205,8 +205,11 @@ begin
   v_amount := v_existing.amount_nanos;
 
   if coalesce(v_wallet.reserved_nanos, 0) < v_amount then
-    select false, false, 'reserved_balance_mismatch'::text, v_amount,
-      v_wallet.balance_nanos, v_wallet.balance_nanos, v_wallet.reserved_nanos, v_wallet.reserved_nanos;
+    return query select false, false, 'reserved_balance_mismatch'::text, v_amount,
+      coalesce(v_wallet.balance_nanos, 0)::bigint,
+      coalesce(v_wallet.balance_nanos, 0)::bigint,
+      coalesce(v_wallet.reserved_nanos, 0)::bigint,
+      coalesce(v_wallet.reserved_nanos, 0)::bigint;
     return;
   end if;
 
@@ -226,7 +229,7 @@ begin
   where reservation_id = p_reservation_id
     and workspace_id = p_workspace_id;
 
-  select true, true, null::text, v_amount,
+  return query select true, true, null::text, v_amount,
     coalesce(v_wallet.balance_nanos, 0) + v_amount,
     coalesce(v_wallet.balance_nanos, 0),
     coalesce(v_wallet.reserved_nanos, 0) + v_amount,
@@ -272,7 +275,7 @@ begin
   for update;
 
   if not found then
-    select false, false, 'reservation_not_found'::text, null::bigint,
+    return query select false, false, 'reservation_not_found'::text, null::bigint,
       null::bigint, null::bigint, null::bigint, null::bigint;
     return;
   end if;
@@ -283,13 +286,13 @@ begin
   for update;
 
   if not found then
-    select false, false, 'wallet_not_found'::text, v_existing.amount_nanos,
+    return query select false, false, 'wallet_not_found'::text, v_existing.amount_nanos,
       null::bigint, null::bigint, null::bigint, null::bigint;
     return;
   end if;
 
   if v_existing.status = 'released' then
-    select true, false, 'already_released'::text, v_existing.amount_nanos,
+    return query select true, false, 'already_released'::text, v_existing.amount_nanos,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -298,7 +301,7 @@ begin
   end if;
 
   if v_existing.status <> 'reserved' then
-    select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
+    return query select false, false, 'reservation_not_active'::text, v_existing.amount_nanos,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.balance_nanos, 0)::bigint,
       coalesce(v_wallet.reserved_nanos, 0)::bigint,
@@ -309,8 +312,11 @@ begin
   v_amount := v_existing.amount_nanos;
 
   if coalesce(v_wallet.reserved_nanos, 0) < v_amount then
-    select false, false, 'reserved_balance_mismatch'::text, v_amount,
-      v_wallet.balance_nanos, v_wallet.balance_nanos, v_wallet.reserved_nanos, v_wallet.reserved_nanos;
+    return query select false, false, 'reserved_balance_mismatch'::text, v_amount,
+      coalesce(v_wallet.balance_nanos, 0)::bigint,
+      coalesce(v_wallet.balance_nanos, 0)::bigint,
+      coalesce(v_wallet.reserved_nanos, 0)::bigint,
+      coalesce(v_wallet.reserved_nanos, 0)::bigint;
     return;
   end if;
 
@@ -329,7 +335,7 @@ begin
   where reservation_id = p_reservation_id
     and workspace_id = p_workspace_id;
 
-  select true, true, null::text, v_amount,
+  return query select true, true, null::text, v_amount,
     coalesce(v_wallet.balance_nanos, 0),
     coalesce(v_wallet.balance_nanos, 0),
     coalesce(v_wallet.reserved_nanos, 0) + v_amount,

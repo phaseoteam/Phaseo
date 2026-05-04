@@ -121,7 +121,7 @@ export async function listAsyncOperations(args: {
 	kind: AsyncOperationKind;
 	limit?: number;
 	providers?: string[];
-	statuses?: string[];
+	statuses?: Array<string | null>;
 	unbilledOnly?: boolean;
 }): Promise<AsyncOperationRecord[]> {
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
@@ -146,10 +146,17 @@ export async function listAsyncOperations(args: {
 		}
 	}
 	if (args.statuses && args.statuses.length > 0) {
+		const includeNullStatus = args.statuses.some((value) => value == null);
 		const statuses = args.statuses
 			.map((value) => normalizeText(value))
 			.filter((value): value is string => Boolean(value));
-		if (statuses.length > 0) {
+		if (includeNullStatus && statuses.length > 0) {
+			query = query.or(
+				`status.is.null,status.in.(${statuses.map((value) => `"${value}"`).join(",")})`,
+			);
+		} else if (includeNullStatus) {
+			query = query.is("status", null);
+		} else if (statuses.length > 0) {
 			query = query.in("status", statuses);
 		}
 	}
@@ -163,7 +170,7 @@ export async function listTeamAsyncOperations(args: {
 	workspaceId: string;
 	kind: AsyncOperationKind;
 	limit?: number;
-	statuses?: string[];
+	statuses?: Array<string | null>;
 }): Promise<AsyncOperationRecord[]> {
 	const workspaceId = normalizeText(args.workspaceId);
 	if (!workspaceId) return [];
@@ -180,10 +187,17 @@ export async function listTeamAsyncOperations(args: {
 		.limit(limit);
 
 	if (args.statuses && args.statuses.length > 0) {
+		const includeNullStatus = args.statuses.some((value) => value == null);
 		const statuses = args.statuses
 			.map((value) => normalizeText(value))
 			.filter((value): value is string => Boolean(value));
-		if (statuses.length > 0) {
+		if (includeNullStatus && statuses.length > 0) {
+			query = query.or(
+				`status.is.null,status.in.(${statuses.map((value) => `"${value}"`).join(",")})`,
+			);
+		} else if (includeNullStatus) {
+			query = query.is("status", null);
+		} else if (statuses.length > 0) {
 			query = query.in("status", statuses);
 		}
 	}
