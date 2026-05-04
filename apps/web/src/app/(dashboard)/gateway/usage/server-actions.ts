@@ -237,7 +237,7 @@ export async function fetchPaginatedRequests(
 		} = await fallback;
 		if (fallbackError) {
 			console.error("Error fetching paginated requests (fallback):", fallbackError);
-			const legacyFallback = supabase
+			let legacyFallback = supabase
 				.from("gateway_requests")
 				.select(
 					`
@@ -267,13 +267,13 @@ export async function fetchPaginatedRequests(
 				.gte("created_at", params.timeRange.from)
 				.lte("created_at", params.timeRange.to)
 				.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
-			if (params.modelFilter) legacyFallback.eq("model_id", params.modelFilter);
-			if (params.providerFilter) legacyFallback.eq("provider", params.providerFilter);
-			if (params.keyFilter) legacyFallback.eq("key_id", params.keyFilter);
-			if (params.requestFilter) legacyFallback.eq("request_id", params.requestFilter);
-			if (params.sessionFilter) legacyFallback.eq("session_id", params.sessionFilter);
-			if (params.statusFilter === "success") legacyFallback.eq("success", true);
-			else if (params.statusFilter === "error") legacyFallback.eq("success", false);
+			if (params.modelFilter) legacyFallback = legacyFallback.eq("model_id", params.modelFilter);
+			if (params.providerFilter) legacyFallback = legacyFallback.eq("provider", params.providerFilter);
+			if (params.keyFilter) legacyFallback = legacyFallback.eq("key_id", params.keyFilter);
+			if (params.requestFilter) legacyFallback = legacyFallback.eq("request_id", params.requestFilter);
+			if (params.sessionFilter) legacyFallback = legacyFallback.eq("session_id", params.sessionFilter);
+			if (params.statusFilter === "success") legacyFallback = legacyFallback.eq("success", true);
+			else if (params.statusFilter === "error") legacyFallback = legacyFallback.eq("success", false);
 			const {
 				data: legacyData,
 				error: legacyError,

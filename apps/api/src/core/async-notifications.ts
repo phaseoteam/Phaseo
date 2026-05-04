@@ -297,14 +297,15 @@ function isWebhookEventSubscribed(args: {
 function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
 	const estimated = toFiniteNumber(meta.costUsd);
 	const status = toPublicVideoStatus(record.status);
-	const settled = status === "completed" ? estimated : status === "failed" || status === "cancelled" ? 0 : null;
+	const isVoided = status === "failed" || status === "cancelled" || status === "expired";
+	const settled = status === "completed" ? estimated : isVoided ? 0 : null;
 	return {
 		currency: "usd",
 		estimated_provider_cost: estimated != null ? estimated.toFixed(2) : null,
 		estimated_user_cost: estimated != null ? estimated.toFixed(2) : null,
 		settled_provider_cost: settled != null ? settled.toFixed(2) : null,
 		settled_user_cost: settled != null ? settled.toFixed(2) : null,
-		state: status === "completed" ? "settled" : status === "failed" || status === "cancelled" ? "void" : "estimated",
+		state: status === "completed" ? "settled" : isVoided ? "void" : "estimated",
 		billable: status === "completed",
 		...(record.billedAt ? { billed_at: record.billedAt } : {}),
 	};

@@ -468,11 +468,12 @@ function extractVideoResourceId(payload: unknown): string | null {
 }
 
 async function parseApiPayload(response: Response): Promise<unknown> {
+	const readable = response.clone();
 	const contentType = response.headers.get("content-type") ?? "";
 	if (contentType.includes("application/json")) {
-		return response.json();
+		return readable.json();
 	}
-	return { output_text: await response.text() };
+	return { output_text: await readable.text() };
 }
 
 async function fetchVideoContentObjectUrl(
@@ -2398,7 +2399,7 @@ export default function ModelPlayground({
 	const safeVideoResponseUrls = useMemo(
 		() =>
 			videoResponseUrls
-				.map((url) => normalizePlaygroundMediaUrl(url))
+				.map((url) => (url.startsWith("blob:") ? url : normalizePlaygroundMediaUrl(url)))
 				.filter((url): url is string => Boolean(url)),
 		[videoResponseUrls],
 	);

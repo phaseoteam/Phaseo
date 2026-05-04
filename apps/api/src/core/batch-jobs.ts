@@ -243,6 +243,7 @@ export async function listPendingBatchJobs(limit = 100): Promise<BatchJobRecord[
 	const records = await listAsyncOperations({
 		kind: "batch",
 		limit,
+		statuses: ["", "validating", "pending", "in_progress", "finalizing", "cancelling"],
 	});
 	return records
 		.map((record) => toBatchJobRecord(record))
