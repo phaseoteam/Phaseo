@@ -61,6 +61,25 @@ describe("chat room request builders", () => {
 		]);
 	});
 
+	it("drops unsafe generation url schemes while keeping safe image data urls", () => {
+		const urls = extractGenerationUrls({
+			url: "javascript:alert(1)",
+			video_url: "file:///etc/passwd",
+			data: [
+				{ url: "data:text/html,<svg/onload=alert(1)>" },
+				{ b64_json: "abc123" },
+				{ uri: "https://example.com/video.mp4" },
+			],
+			output: [{ url: "https://example.com/direct.png" }],
+		});
+
+		expect(urls).toEqual([
+			"data:image/png;base64,abc123",
+			"https://example.com/video.mp4",
+			"https://example.com/direct.png",
+		]);
+	});
+
 	it("normalizes moderation result shape", () => {
 		const normalized = normalizeModerationResult({
 			results: [

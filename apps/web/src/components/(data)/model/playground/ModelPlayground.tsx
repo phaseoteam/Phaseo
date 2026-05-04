@@ -52,6 +52,7 @@ import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playgro
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
+import { normalizePlaygroundMediaUrl } from "@/lib/utils/urlSafety";
 
 const PLAYGROUND_APP_HEADERS = {
 	"x-app-id": "ai-stats-playground",
@@ -2383,18 +2384,36 @@ export default function ModelPlayground({
 	const showEmptyAudioResponse =
 		!audioIsGenerating && !audioResponseUrl && !audioResponseText && !audioError;
 	const showAudioThinkingState = audioIsGenerating && !audioResponseUrl && !audioResponseText;
+	const safeImageResponseUrls = useMemo(
+		() =>
+			imageResponseUrls
+				.map((url) =>
+					normalizePlaygroundMediaUrl(url, {
+						allowImageData: true,
+					}),
+				)
+				.filter((url): url is string => Boolean(url)),
+		[imageResponseUrls],
+	);
+	const safeVideoResponseUrls = useMemo(
+		() =>
+			videoResponseUrls
+				.map((url) => normalizePlaygroundMediaUrl(url))
+				.filter((url): url is string => Boolean(url)),
+		[videoResponseUrls],
+	);
 	const showImageThinkingState =
-		imageIsGenerating && !imageResponseUrls.length && !imageResponseText;
+		imageIsGenerating && !safeImageResponseUrls.length && !imageResponseText;
 	const showEmptyImageResponse =
 		!imageIsGenerating &&
-		!imageResponseUrls.length &&
+		!safeImageResponseUrls.length &&
 		!imageResponseText &&
 		!imageError;
 	const showVideoThinkingState =
-		videoIsGenerating && !videoResponseUrls.length && !videoResponseText;
+		videoIsGenerating && !safeVideoResponseUrls.length && !videoResponseText;
 	const showEmptyVideoResponse =
 		!videoIsGenerating &&
-		!videoResponseUrls.length &&
+		!safeVideoResponseUrls.length &&
 		!videoResponseText &&
 		!videoError;
 	const showEmbeddingsThinkingState =
@@ -2622,9 +2641,9 @@ export default function ModelPlayground({
 					</div>
 
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
-						{imageResponseUrls.length ? (
+						{safeImageResponseUrls.length ? (
 							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-								{imageResponseUrls.map((url, index) => (
+								{safeImageResponseUrls.map((url, index) => (
 									<a
 										key={`${url}-${index}`}
 										href={url}
@@ -2682,9 +2701,9 @@ export default function ModelPlayground({
 					</div>
 
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
-						{videoResponseUrls.length ? (
+						{safeVideoResponseUrls.length ? (
 							<div className="space-y-4">
-								{videoResponseUrls.map((url, index) => (
+								{safeVideoResponseUrls.map((url, index) => (
 									<div key={`${url}-${index}`} className="space-y-2">
 										<video
 											controls

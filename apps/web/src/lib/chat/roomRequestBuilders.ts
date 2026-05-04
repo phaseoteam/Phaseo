@@ -1,3 +1,5 @@
+import { normalizePlaygroundMediaUrl } from "@/lib/utils/urlSafety";
+
 type ModerationInputItem =
 	| {
 			type: "text";
@@ -56,10 +58,11 @@ export function buildEmbeddingsMultimodalInput(parts: EmbeddingContentPart[]) {
 export function extractGenerationUrls(payload: any): string[] {
 	const urls: string[] = [];
 	const addUrl = (value: unknown) => {
-		if (typeof value !== "string") return;
-		const trimmed = value.trim();
-		if (!trimmed) return;
-		urls.push(trimmed);
+		const normalized = normalizePlaygroundMediaUrl(value, {
+			allowImageData: true,
+		});
+		if (!normalized) return;
+		urls.push(normalized);
 	};
 
 	addUrl(payload?.url);
