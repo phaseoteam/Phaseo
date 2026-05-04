@@ -33,7 +33,7 @@ jobs:
           node-version: "22"
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@728c6c6b8cf02c2e48117716a91ee48313958a19
+        uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f
         with:
           php-version: "8.2"
 
