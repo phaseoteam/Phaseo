@@ -371,6 +371,7 @@ export async function beforeRequest(
         : undefined;
     const contextTelemetry = context.contextTelemetry ?? null;
     const meta: RequestMeta = makeMeta({
+        endpoint,
         apiKeyId,
         apiKeyRef,
         apiKeyKid,

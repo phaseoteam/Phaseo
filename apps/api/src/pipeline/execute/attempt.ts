@@ -119,7 +119,9 @@ export async function attemptProvider(
             ctx.meta.generation_ms = meta.generation_ms;
         }
 
-        ctx.meta.latency_ms = typeof latencyMs === "number" ? latencyMs : generationMs;
+        if (typeof latencyMs === "number") {
+            ctx.meta.latency_ms = latencyMs;
+        }
 
         // Record adapter roundtrip if not already recorded (first adapter)
         if (timing.timer.snapshot().adapter_roundtrip_ms === undefined) {
@@ -145,7 +147,7 @@ export async function attemptProvider(
                     ...r.normalized.meta,
                     throughput_tps: throughputTps,
                     generation_ms: generationMs,
-                    latency_ms: ctx.meta.latency_ms ?? generationMs,
+                    latency_ms: ctx.meta.latency_ms ?? null,
                     finish_reason: r.bill?.finish_reason ?? null,
                 };
             }
@@ -158,7 +160,7 @@ export async function attemptProvider(
                     ...responseJson.meta,
                     throughput_tps: throughputTps,
                     generation_ms: generationMs,
-                    latency_ms: ctx.meta.latency_ms ?? generationMs,
+                    latency_ms: ctx.meta.latency_ms ?? null,
                     finish_reason: r.bill?.finish_reason ?? null,
                 };
                 r.upstream = new Response(JSON.stringify(responseJson), {
@@ -175,7 +177,7 @@ export async function attemptProvider(
                 provider: adapter.name,
                 model: baseModel,
                 ok: true,
-                latency_ms: ctx.meta.latency_ms ?? generationMs,
+                latency_ms: ctx.meta.latency_ms ?? duration,
                 generation_ms: generationMs,
                 tokens_in: tokensIn,
                 tokens_out: tokensOut,
@@ -241,13 +243,15 @@ export async function attemptProvider(
         if (!ctx.stream) {
             ctx.meta.generation_ms = generationMs;
         }
-        ctx.meta.latency_ms = typeof latencyMs === "number" ? latencyMs : generationMs;
+        if (typeof latencyMs === "number") {
+            ctx.meta.latency_ms = latencyMs;
+        }
 
         await onCallEnd(ctx.endpoint, {
             provider: adapter.name,
             model: baseModel,
             ok: false,
-            latency_ms: ctx.meta.latency_ms ?? generationMs,
+            latency_ms: ctx.meta.latency_ms ?? duration,
             generation_ms: generationMs,
         });
 

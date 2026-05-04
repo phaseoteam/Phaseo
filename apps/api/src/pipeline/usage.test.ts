@@ -19,8 +19,8 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.input_tokens_details.input_images).toBe(12);
 		expect(shaped.output_tokens_details.reasoning_tokens).toBe(425);
 		expect(shaped.output_tokens_details.output_images).toBe(1120);
-		expect(shaped.input_image_tokens).toBe(12);
-		expect(shaped.output_image_tokens).toBe(1120);
+		expect(shaped.input_image_tokens).toBeUndefined();
+		expect(shaped.output_image_tokens).toBeUndefined();
 	});
 
 	it("falls back to count-based image details when token details are unavailable", () => {
@@ -46,8 +46,8 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.input_tokens).toBe(12);
 		expect(shaped.output_tokens).toBe(0);
 		expect(shaped.total_tokens).toBe(12);
-		expect(shaped.input_text_tokens).toBe(12);
-		expect(shaped.output_text_tokens).toBe(0);
+		expect(shaped.input_text_tokens).toBeUndefined();
+		expect(shaped.output_text_tokens).toBeUndefined();
 		expect(shaped.requests).toBe(1);
 	});
 
@@ -81,14 +81,14 @@ describe("shapeUsageForClient", () => {
 			cache_creation_input_tokens: 12,
 		});
 
-		expect(shaped.cached_read_text_tokens).toBe(45);
-		expect(shaped.cached_write_text_tokens).toBe(12);
-		expect(shaped.input_text_tokens).toBe(100);
+		expect(shaped.cached_read_text_tokens).toBeUndefined();
+		expect(shaped.cached_write_text_tokens).toBeUndefined();
+		expect(shaped.input_text_tokens).toBeUndefined();
 		expect(shaped.input_tokens_details.cached_tokens).toBe(45);
 		expect(shaped.output_tokens_details.cached_tokens).toBe(12);
 	});
 
-	it("does not assume cached reads are subset without provider or explicit hint", () => {
+	it("keeps canonical token totals without exposing legacy uncached-input aliases", () => {
 		const shaped = shapeUsageForClient({
 			input_tokens: 123,
 			output_tokens: 9,
@@ -99,11 +99,11 @@ describe("shapeUsageForClient", () => {
 			},
 		});
 
-		expect(shaped.input_text_tokens).toBe(123);
-		expect(shaped.cached_read_text_tokens).toBe(64);
+		expect(shaped.input_tokens).toBe(123);
+		expect(shaped.input_tokens_details.cached_tokens).toBe(64);
 	});
 
-	it("derives uncached input_text_tokens for known subset providers", () => {
+	it("does not expose internal cached-read subset hints by default", () => {
 		const shaped = shapeUsageForClient({
 			_provider_id: "x-ai",
 			input_tokens: 123,
@@ -115,37 +115,26 @@ describe("shapeUsageForClient", () => {
 			},
 		});
 
-		expect(shaped.input_text_tokens).toBe(59);
-		expect(shaped.cached_read_text_tokens).toBe(64);
+		expect(shaped.input_tokens).toBe(123);
+		expect(shaped.input_tokens_details.cached_tokens).toBe(64);
+		expect((shaped as any).cached_read_tokens_are_subset_of_input).toBeUndefined();
 	});
 
-	it("derives uncached input_text_tokens for google providers", () => {
+	it("can include internal cached-read subset hints when requested", () => {
 		const shaped = shapeUsageForClient({
 			_provider_id: "google-ai-studio",
 			input_tokens: 200,
 			output_tokens: 10,
 			total_tokens: 210,
 			cached_read_text_tokens: 150,
-		});
+		}, { includeInternalHints: true });
 
-		expect(shaped.input_text_tokens).toBe(50);
-		expect(shaped.cached_read_text_tokens).toBe(150);
+		expect(shaped.input_tokens).toBe(200);
+		expect(shaped.input_tokens_details.cached_tokens).toBe(150);
+		expect((shaped as any).cached_read_tokens_are_subset_of_input).toBe(true);
 	});
 
-	it("does not assume cached reads are subset for google-vertex without explicit hint", () => {
-		const shaped = shapeUsageForClient({
-			_provider_id: "google-vertex",
-			input_tokens: 200,
-			output_tokens: 10,
-			total_tokens: 210,
-			cached_read_text_tokens: 150,
-		});
-
-		expect(shaped.input_text_tokens).toBe(200);
-		expect(shaped.cached_read_text_tokens).toBe(150);
-	});
-
-	it("allows providers to opt out of cached-read subtraction", () => {
+	it("does not include internal hints when providers opt out of cached-read subtraction", () => {
 		const shaped = shapeUsageForClient({
 			input_tokens: 123,
 			output_tokens: 9,
@@ -155,22 +144,9 @@ describe("shapeUsageForClient", () => {
 			cached_read_tokens_are_subset_of_input: false,
 		});
 
-		expect(shaped.input_text_tokens).toBe(123);
-		expect(shaped.cached_read_text_tokens).toBe(64);
-	});
-
-	it("honors explicit cached-read subset hint", () => {
-		const shaped = shapeUsageForClient({
-			input_tokens: 123,
-			output_tokens: 9,
-			total_tokens: 132,
-			input_text_tokens: 123,
-			cached_read_text_tokens: 64,
-			cached_read_tokens_are_subset_of_input: true,
-		});
-
-		expect(shaped.input_text_tokens).toBe(59);
-		expect(shaped.cached_read_text_tokens).toBe(64);
+		expect(shaped.input_tokens).toBe(123);
+		expect(shaped.input_tokens_details.cached_tokens).toBe(64);
+		expect((shaped as any).cached_read_tokens_are_subset_of_input).toBeUndefined();
 	});
 });
 

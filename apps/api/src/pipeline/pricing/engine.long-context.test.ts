@@ -181,6 +181,70 @@ describe("computeBillSummary long context thresholds", () => {
 		expect(result.cost_usd_str).toBe("0.000184800");
 	});
 
+	it("derives cache-aware pricing from canonical usage details without legacy aliases", () => {
+		const xaiCard: PriceCard = {
+			provider: "x-ai",
+			model: "x-ai/grok-4",
+			endpoint: "responses",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					pricing_plan: "standard",
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "2",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					pricing_plan: "standard",
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0.2",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					pricing_plan: "standard",
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "6",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = computeBillSummary(
+			{
+				input_tokens: 123,
+				output_tokens: 9,
+				total_tokens: 132,
+				input_tokens_details: {
+					cached_tokens: 64,
+				},
+			},
+			xaiCard,
+			{},
+			"standard"
+		);
+
+		const byDim = new Map(result.lines.map((line) => [line.dimension, line]));
+		expect(byDim.get("input_text_tokens")?.quantity).toBe(59);
+		expect(byDim.get("cached_read_text_tokens")?.quantity).toBe(64);
+		expect(byDim.get("output_text_tokens")?.quantity).toBe(9);
+		expect(result.cost_usd_str).toBe("0.000184800");
+	});
+
 	it("does not subtract cached reads again when input_text_tokens is already uncached", () => {
 		const xaiCard: PriceCard = {
 			provider: "x-ai",

@@ -5,7 +5,10 @@
 import {
 	getAsyncOperation,
 	isAsyncOperationBilled,
+	listAsyncOperations,
 	markAsyncOperationBilled,
+	patchAsyncOperationMeta,
+	setAsyncOperationStatus,
 	upsertAsyncOperation,
 } from "@core/async-operations";
 
@@ -22,9 +25,33 @@ export type BatchJobMeta = {
 	inputFileId?: string | null;
 	outputFileId?: string | null;
 	errorFileId?: string | null;
+	webhook?: Record<string, unknown> | null;
+	webhookDeliveries?: Record<string, string> | null;
+	webhookAttempts?: Record<string, unknown>[] | null;
+	webhookRetryQueue?: Record<string, unknown> | null;
+	nextWebhookRetryAt?: string | null;
+	lastWebhookProgress?: number | null;
+	lastWebhookProgressAt?: string | null;
+	lastWebhookDispatchedAt?: string | null;
 	keySource?: "gateway" | "byok" | null;
 	byokKeyId?: string | null;
 	createdAt?: number;
+};
+
+export type BatchJobRecord = {
+	workspaceId: string;
+	batchId: string;
+	requestId: string | null;
+	sessionId: string | null;
+	appId: string | null;
+	nativeId: string | null;
+	provider: string | null;
+	model: string | null;
+	status: string | null;
+	billedAt: string | null;
+	meta: BatchJobMeta | null;
+	updatedAt: string | null;
+	createdAt: string | null;
 };
 
 export type BatchFileMeta = {
@@ -60,6 +87,31 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.inputFileId === "string") out.inputFileId = source.inputFileId;
 	if (typeof source.outputFileId === "string") out.outputFileId = source.outputFileId;
 	if (typeof source.errorFileId === "string") out.errorFileId = source.errorFileId;
+	if (source.webhook && typeof source.webhook === "object" && !Array.isArray(source.webhook)) {
+		out.webhook = source.webhook as Record<string, unknown>;
+	}
+	if (source.webhookDeliveries && typeof source.webhookDeliveries === "object" && !Array.isArray(source.webhookDeliveries)) {
+		out.webhookDeliveries = source.webhookDeliveries as Record<string, string>;
+	}
+	if (source.webhook_deliveries && typeof source.webhook_deliveries === "object" && !Array.isArray(source.webhook_deliveries)) {
+		out.webhookDeliveries = source.webhook_deliveries as Record<string, string>;
+	}
+	if (Array.isArray(source.webhookAttempts)) out.webhookAttempts = source.webhookAttempts as Record<string, unknown>[];
+	if (Array.isArray(source.webhook_attempts)) out.webhookAttempts = source.webhook_attempts as Record<string, unknown>[];
+	if (source.webhookRetryQueue && typeof source.webhookRetryQueue === "object" && !Array.isArray(source.webhookRetryQueue)) {
+		out.webhookRetryQueue = source.webhookRetryQueue as Record<string, unknown>;
+	}
+	if (source.webhook_retry_queue && typeof source.webhook_retry_queue === "object" && !Array.isArray(source.webhook_retry_queue)) {
+		out.webhookRetryQueue = source.webhook_retry_queue as Record<string, unknown>;
+	}
+	if (typeof source.nextWebhookRetryAt === "string") out.nextWebhookRetryAt = source.nextWebhookRetryAt;
+	if (typeof source.next_webhook_retry_at === "string") out.nextWebhookRetryAt = source.next_webhook_retry_at;
+	if (typeof source.lastWebhookProgress === "number") out.lastWebhookProgress = source.lastWebhookProgress;
+	if (typeof source.last_webhook_progress === "number") out.lastWebhookProgress = source.last_webhook_progress;
+	if (typeof source.lastWebhookProgressAt === "string") out.lastWebhookProgressAt = source.lastWebhookProgressAt;
+	if (typeof source.last_webhook_progress_at === "string") out.lastWebhookProgressAt = source.last_webhook_progress_at;
+	if (typeof source.lastWebhookDispatchedAt === "string") out.lastWebhookDispatchedAt = source.lastWebhookDispatchedAt;
+	if (typeof source.last_webhook_dispatched_at === "string") out.lastWebhookDispatchedAt = source.last_webhook_dispatched_at;
 	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
@@ -81,6 +133,37 @@ function parseBatchFileMeta(value: unknown): BatchFileMeta | null {
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
 	return out;
+}
+
+function mergeDbBatchMeta(record: Awaited<ReturnType<typeof getAsyncOperation>>): BatchJobMeta | null {
+	if (!record) return null;
+	const meta = {
+		...(record.meta ?? {}),
+		...(record.provider ? { provider: record.provider } : {}),
+		...(record.model ? { model: record.model } : {}),
+		...(record.status ? { status: record.status } : {}),
+		...(record.nativeId ? { nativeBatchId: record.nativeId } : {}),
+	};
+	return parseBatchMeta(meta);
+}
+
+function toBatchJobRecord(record: Awaited<ReturnType<typeof getAsyncOperation>>): BatchJobRecord | null {
+	if (!record) return null;
+	return {
+		workspaceId: record.workspaceId,
+		batchId: record.internalId,
+		requestId: record.requestId,
+		sessionId: record.sessionId,
+		appId: record.appId,
+		nativeId: record.nativeId,
+		provider: record.provider,
+		model: record.model,
+		status: record.status,
+		billedAt: record.billedAt,
+		meta: mergeDbBatchMeta(record),
+		updatedAt: record.updatedAt,
+		createdAt: record.createdAt,
+	};
 }
 
 export async function saveBatchJobMeta(
@@ -108,14 +191,13 @@ export async function saveBatchJobMeta(
 export async function getBatchJobMeta(workspaceId: string, batchId: string): Promise<BatchJobMeta | null> {
 	if (!workspaceId || !batchId) return null;
 	const record = await getAsyncOperation(workspaceId, "batch", batchId);
-	if (!record) return null;
-	const merged = {
-		...(record.meta ?? {}),
-		...(record.provider ? { provider: record.provider } : {}),
-		...(record.model ? { model: record.model } : {}),
-		...(record.status ? { status: record.status } : {}),
-	};
-	return parseBatchMeta(merged);
+	return mergeDbBatchMeta(record);
+}
+
+export async function getBatchJobRecord(workspaceId: string, batchId: string): Promise<BatchJobRecord | null> {
+	if (!workspaceId || !batchId) return null;
+	const record = await getAsyncOperation(workspaceId, "batch", batchId);
+	return toBatchJobRecord(record);
 }
 
 export async function saveBatchFileMeta(
@@ -155,4 +237,56 @@ export async function isBatchJobBilled(workspaceId: string, batchId: string): Pr
 
 export async function markBatchJobBilled(workspaceId: string, batchId: string): Promise<boolean> {
 	return markAsyncOperationBilled(workspaceId, "batch", batchId);
+}
+
+export async function listPendingBatchJobs(limit = 100): Promise<BatchJobRecord[]> {
+	const records = await listAsyncOperations({
+		kind: "batch",
+		limit,
+	});
+	return records
+		.map((record) => toBatchJobRecord(record))
+		.filter((record): record is BatchJobRecord => Boolean(record))
+		.filter((record) => {
+			const status = String(record.status ?? "").toLowerCase();
+			return (
+				status === "" ||
+				status === "validating" ||
+				status === "pending" ||
+				status === "in_progress" ||
+				status === "finalizing" ||
+				status === "cancelling"
+			);
+		});
+}
+
+export async function setBatchJobStatus(
+	workspaceId: string,
+	batchId: string,
+	status: string,
+	metaPatch?: Record<string, unknown>,
+): Promise<void> {
+	if (!workspaceId || !batchId || !status) return;
+	await setAsyncOperationStatus({
+		workspaceId,
+		kind: "batch",
+		internalId: batchId,
+		status,
+		metaPatch,
+	});
+}
+
+export async function patchBatchJobMeta(
+	workspaceId: string,
+	batchId: string,
+	metaPatch: Record<string, unknown>,
+): Promise<void> {
+	if (!workspaceId || !batchId) return;
+	if (!metaPatch || typeof metaPatch !== "object" || Array.isArray(metaPatch)) return;
+	await patchAsyncOperationMeta({
+		workspaceId,
+		kind: "batch",
+		internalId: batchId,
+		metaPatch,
+	});
 }

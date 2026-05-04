@@ -27,27 +27,12 @@ function normalizeUsage(usage: any) {
     const inputTokens = typeof usage.input_tokens === "number" ? usage.input_tokens : undefined;
     const outputTokens = typeof usage.output_tokens === "number" ? usage.output_tokens : undefined;
     const totalTokens = typeof usage.total_tokens === "number" ? usage.total_tokens : undefined;
-    const cachedRead = typeof usage?.input_tokens_details?.cached_tokens === "number"
-        ? usage.input_tokens_details.cached_tokens
-        : undefined;
-    const cachedWrite = typeof usage?.output_tokens_details?.cached_tokens === "number"
-        ? usage.output_tokens_details.cached_tokens
-        : undefined;
-    const reasoningTokens = typeof usage?.output_tokens_details?.reasoning_tokens === "number"
-        ? usage.output_tokens_details.reasoning_tokens
-        : undefined;
 
     return {
         ...usage,
         input_tokens: inputTokens ?? 0,
         output_tokens: outputTokens ?? 0,
         total_tokens: totalTokens ?? (inputTokens ?? 0) + (outputTokens ?? 0),
-        input_text_tokens: inputTokens ?? 0,
-        output_text_tokens: outputTokens ?? 0,
-        ...(cachedRead !== undefined ? { cached_read_tokens_are_subset_of_input: true } : {}),
-        ...(cachedRead !== undefined ? { cached_read_text_tokens: cachedRead } : {}),
-        ...(cachedWrite !== undefined ? { cached_write_text_tokens: cachedWrite } : {}),
-        ...(reasoningTokens !== undefined ? { reasoning_tokens: reasoningTokens } : {}),
     };
 }
 

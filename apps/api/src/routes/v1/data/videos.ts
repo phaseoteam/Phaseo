@@ -139,6 +139,69 @@ const DEFAULT_VIDEO_POLL_SECONDS = 20;
 const DEFAULT_VIDEO_DOWNLOAD_TTL_SECONDS = 900;
 const MAX_VIDEO_DOWNLOAD_TTL_SECONDS = 3600;
 
+export function isVideoApiEnabled(raw: unknown): boolean {
+	const normalized = String(raw ?? "").trim().toLowerCase();
+	if (!normalized) return true;
+	return !(
+		normalized === "0" ||
+		normalized === "false" ||
+		normalized === "no" ||
+		normalized === "off"
+	);
+}
+
+type VideoDownloadUrlRequest = {
+	ttlSeconds: number | null;
+	disposition: "attachment" | "inline";
+	index: number;
+};
+
+function toOptionalInteger(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return Math.trunc(value);
+	}
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed)) return Math.trunc(parsed);
+	}
+	return null;
+}
+
+export function parseVideoDownloadUrlRequestBody(
+	value: unknown,
+): VideoDownloadUrlRequest | null {
+	if (value == null) {
+		return {
+			ttlSeconds: null,
+			disposition: "attachment",
+			index: 0,
+		};
+	}
+	if (typeof value !== "object" || Array.isArray(value)) return null;
+	const body = value as Record<string, unknown>;
+	const ttlSeconds = toOptionalInteger(body.ttl_seconds ?? body.ttlSeconds);
+	if (ttlSeconds != null && ttlSeconds <= 0) return null;
+	const rawDisposition = String(
+		body.disposition ?? body.content_disposition ?? body.contentDisposition ?? "",
+	)
+		.trim()
+		.toLowerCase();
+	if (
+		rawDisposition &&
+		rawDisposition !== "attachment" &&
+		rawDisposition !== "inline"
+	) {
+		return null;
+	}
+	const index = toOptionalInteger(body.index);
+	if (index != null && index < 0) return null;
+	return {
+		ttlSeconds,
+		disposition: rawDisposition === "inline" ? "inline" : "attachment",
+		index: index != null ? index : 0,
+	};
+}
+
 function notImplementedYetResponse(): Response {
 	return new Response(JSON.stringify({
 		error: {
@@ -155,9 +218,7 @@ function notImplementedYetResponse(): Response {
 }
 
 videosRoutes.use("*", async (c, next) => {
-	const raw = String(c.env.VIDEO_API_ENABLED ?? "").trim().toLowerCase();
-	const enabled = raw === "1" || raw === "true" || raw === "yes" || raw === "on";
-	if (!enabled) {
+	if (!isVideoApiEnabled(c.env.VIDEO_API_ENABLED)) {
 		return notImplementedYetResponse();
 	}
 	await next();
@@ -245,6 +306,82 @@ videosRoutes.get("/:videoId", withRuntime(getVideoByIdHandler));
 
 videosRoutes.get("/:videoId/content", withRuntime(getVideoContentHandler));
 
+videosRoutes.post("/:videoId/download_url", withRuntime(async (req) => {
+	const auth = await guardAuth(req);
+	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
+	const authValue = auth.value as VideoRouteAuth;
+	const id = decodeURIComponent(new URL(req.url).pathname.split("/").slice(-2, -1)[0] ?? "");
+	if (!id) {
+		return err("validation_error", {
+			reason: "missing_video_id",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+		});
+	}
+
+	const rawBody = await req.text();
+	let parsedBody: unknown = null;
+	if (rawBody.trim()) {
+		try {
+			parsedBody = JSON.parse(rawBody);
+		} catch {
+			return err("invalid_json", {
+				reason: "invalid_video_download_request_body",
+				request_id: authValue.requestId,
+				workspace_id: authValue.workspaceId,
+				video_id: id,
+			});
+		}
+	}
+	const params = parseVideoDownloadUrlRequestBody(parsedBody);
+	if (!params) {
+		return err("validation_error", {
+			reason: "invalid_video_download_request",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+			video_id: id,
+		});
+	}
+
+	const ownedVideo = await requireOwnedVideoJob(authValue, id);
+	if (ownedVideo instanceof Response) return ownedVideo;
+	const publicStatus = toPublicVideoStatus(ownedVideo.record.status);
+	if (publicStatus !== "completed") {
+		return err("validation_error", {
+			reason: "video_download_requires_completed_status",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+			video_id: id,
+			status: publicStatus,
+		});
+	}
+
+	const signed = await issueSignedVideoDownloadUrl({
+		requestUrl: req.url,
+		workspaceId: ownedVideo.record.workspaceId,
+		videoId: id,
+		index: params.index,
+		ttlSeconds: params.ttlSeconds,
+		disposition: params.disposition,
+	});
+	if (!signed) {
+		return err("gateway_error", {
+			reason: "video_download_signing_not_configured",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+			video_id: id,
+		});
+	}
+
+	return new Response(JSON.stringify(signed), {
+		status: 200,
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": "no-store",
+		},
+	});
+}));
+
 videosRoutes.post("/:videoId/cancel", withRuntime(async (req) => {
 	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
@@ -284,7 +421,12 @@ videosRoutes.delete("/:videoId", withRuntime(async (req) => {
 	const ownedVideo = await requireOwnedVideoJob(authValue, id);
 	if (ownedVideo instanceof Response) return ownedVideo;
 	const publicStatus = toPublicVideoStatus(ownedVideo.record.status);
-	if (publicStatus !== "completed" && publicStatus !== "failed" && publicStatus !== "cancelled") {
+	if (
+		publicStatus !== "completed" &&
+		publicStatus !== "failed" &&
+		publicStatus !== "cancelled" &&
+		publicStatus !== "expired"
+	) {
 		return err("validation_error", {
 			reason: "video_delete_requires_terminal_status",
 			request_id: authValue.requestId,

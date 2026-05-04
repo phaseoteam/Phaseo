@@ -216,7 +216,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cohere/models.json": {
-      "hash": "7d62d06d67c725ee0ea1f66b1b576162",
+      "hash": "86a7da2e63a3c1b16b35b21b4168a5d5",
       "meta": {
         "api_provider_id": "cohere",
         "kind": "provider_models"
@@ -248,7 +248,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepinfra/models.json": {
-      "hash": "9c0ce5419f8f9397e1dd6ade5be6d3f1",
+      "hash": "b5d63114e026ab92f8ccdb60215612d0",
       "meta": {
         "api_provider_id": "deepinfra",
         "kind": "provider_models"
@@ -300,7 +300,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/friendli/models.json": {
-      "hash": "438896117df76a4435bba937e0dcc467",
+      "hash": "ea55f0c7baff504bc21b0e7b622b1b2a",
       "meta": {
         "api_provider_id": "friendli",
         "kind": "provider_models"
@@ -339,7 +339,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-vertex/models.json": {
-      "hash": "6060812eba72e8248af4d5132f5779ab",
+      "hash": "d99d5374c832591d68ccc00bd8267916",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -365,7 +365,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/hyperbolic/models.json": {
-      "hash": "e7acb53d6ea4c2c7793763dc5d4ff503",
+      "hash": "c9ab2e0f8675f3b543b88f2a3a8739af",
       "meta": {
         "api_provider_id": "hyperbolic",
         "kind": "provider_models"
@@ -397,7 +397,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/infermatic/models.json": {
-      "hash": "0160ed7a4f450d45753fbf12f66d3146",
+      "hash": "89a5ac5976b71ecbb34604131e1b65fa",
       "meta": {
         "api_provider_id": "infermatic",
         "kind": "provider_models"
@@ -423,7 +423,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/ionrouter/models.json": {
-      "hash": "f15535d6a83b7404ff7cc09f3f944567",
+      "hash": "7efa205ae8dcff4fbab7bd8fb693fdbf",
       "meta": {
         "api_provider_id": "ionrouter",
         "kind": "provider_models"
@@ -455,7 +455,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/minimax/models.json": {
-      "hash": "76419f439c4ebc9c1185fecf2409c5f3",
+      "hash": "f5b6a3a449a1132909725ffa01efc343",
       "meta": {
         "api_provider_id": "minimax",
         "kind": "provider_models"
@@ -634,7 +634,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/siliconflow/models.json": {
-      "hash": "58fc9bfb1565961cf97b674f7199ee90",
+      "hash": "7f7d0047aece4cd414ccc49be23d1693",
       "meta": {
         "api_provider_id": "siliconflow",
         "kind": "provider_models"
@@ -744,7 +744,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/x-ai/models.json": {
-      "hash": "0e669a193cb7948a6957eb106e207e9f",
+      "hash": "52b10275bc437ee4dd9a1b3ab5a0ee0d",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -5361,7 +5361,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3-haiku/model.json": {
-      "hash": "fbf9d4e4eb36679f8205f95f2857a8db",
+      "hash": "39a50da92f003c54ac47495f6fe65f8f",
       "meta": {
         "model_id": "anthropic/claude-3-haiku",
         "organisation_id": "anthropic",
@@ -5369,7 +5369,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3-opus/model.json": {
-      "hash": "6f98826f7057808ce8839aee507ed67b",
+      "hash": "96026545e765f9fc7ad97cfc71e06d91",
       "meta": {
         "model_id": "anthropic/claude-3-opus",
         "organisation_id": "anthropic",
@@ -5377,7 +5377,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3-sonnet/model.json": {
-      "hash": "f17cbaf076b5cf893542c5b9dd94d630",
+      "hash": "5ea92456bc1899dcb5518dfc1eddda99",
       "meta": {
         "model_id": "anthropic/claude-3-sonnet",
         "organisation_id": "anthropic",
@@ -5385,7 +5385,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3.5-haiku/model.json": {
-      "hash": "649295c0aaa24b83364feba7c4f2ba7e",
+      "hash": "23028fec95f10cca52e0f14872117c36",
       "meta": {
         "model_id": "anthropic/claude-3.5-haiku",
         "organisation_id": "anthropic",
@@ -5393,7 +5393,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3.5-sonnet-2024-06-20/model.json": {
-      "hash": "c297f3930ba29ae9fa0307ad011799b1",
+      "hash": "a9b03f4dccc39a38b61c684cb24851e1",
       "meta": {
         "model_id": "anthropic/claude-3.5-sonnet-2024-06-20",
         "organisation_id": "anthropic",
@@ -5401,7 +5401,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3.5-sonnet-2024-10-22/model.json": {
-      "hash": "4ca2408d8710b518309769f02e7d93c2",
+      "hash": "e7c6976ed67b0ed57d7cb31dd90f718b",
       "meta": {
         "model_id": "anthropic/claude-3.5-sonnet-2024-10-22",
         "organisation_id": "anthropic",
@@ -5417,7 +5417,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-haiku-4.5/model.json": {
-      "hash": "7d90a258a4a18cfc82eddef5013f101c",
+      "hash": "3e3371fda30c45affc65fec842a02407",
       "meta": {
         "model_id": "anthropic/claude-haiku-4.5",
         "organisation_id": "anthropic",
@@ -5457,7 +5457,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-opus-4/model.json": {
-      "hash": "dbc957475a18637311de6934f77fa887",
+      "hash": "025531933b5ffd3f0d595a06ef501438",
       "meta": {
         "model_id": "anthropic/claude-opus-4",
         "organisation_id": "anthropic",
@@ -5473,7 +5473,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-opus-4.5/model.json": {
-      "hash": "deb4c22d5647f15ce5083ed813cb55d7",
+      "hash": "ed9ff67325536760301d421840995878",
       "meta": {
         "model_id": "anthropic/claude-opus-4.5",
         "organisation_id": "anthropic",
@@ -5481,7 +5481,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-opus-4.6/model.json": {
-      "hash": "955f072f7d23fbae95bd917f73bc87d4",
+      "hash": "50e9c177a6ed8248810598d4464c8092",
       "meta": {
         "model_id": "anthropic/claude-opus-4.6",
         "organisation_id": "anthropic",
@@ -5497,7 +5497,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-sonnet-4/model.json": {
-      "hash": "e2be75634f78f89e6da0bc45333f9793",
+      "hash": "ac34fb32eb5b18789bc43a3762e585fe",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4",
         "organisation_id": "anthropic",
@@ -5505,7 +5505,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-sonnet-4.5/model.json": {
-      "hash": "38e75ffa287885364197a0b7605f9c61",
+      "hash": "b0268abfbe962a58e79fa04004c1bdc3",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4.5",
         "organisation_id": "anthropic",
@@ -5513,7 +5513,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-sonnet-4.6/model.json": {
-      "hash": "aff055eaad62d32243b1c8bfbacf38f7",
+      "hash": "8c9bd760440cb7c70ed9e772a20d80e5",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4.6",
         "organisation_id": "anthropic",
@@ -6265,7 +6265,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-prover-v2-671b/model.json": {
-      "hash": "189050623fb59e7ff1582a0bd2ade8c0",
+      "hash": "92b5e331673b499fc0101eced8fd8eb1",
       "meta": {
         "model_id": "deepseek/deepseek-prover-v2-671b",
         "organisation_id": "deepseek",
@@ -6273,7 +6273,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-r1/model.json": {
-      "hash": "f0d23f94c028755e7a26fad3a73b3412",
+      "hash": "ba059a8f5ffe435b8d2beaba22d0155f",
       "meta": {
         "model_id": "deepseek/deepseek-r1",
         "organisation_id": "deepseek",
@@ -6281,7 +6281,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-r1-2025-01-20/model.json": {
-      "hash": "2abd73ca6e8f6a19711a5f64782f8667",
+      "hash": "7cfe84295c385a665ecebba4f9fca360",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-01-20",
         "organisation_id": "deepseek",
@@ -6289,7 +6289,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-r1-2025-05-28/model.json": {
-      "hash": "0f4fa624ad7306d0a3bd4d089bf7c981",
+      "hash": "389010a59dc52a6d71cedb099130c760",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-05-28",
         "organisation_id": "deepseek",
@@ -6305,7 +6305,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-r1-turbo/model.json": {
-      "hash": "ffb8c3baf4f99f5a1a60d80f7c340854",
+      "hash": "4e3730205fca244499b15a4242ffc487",
       "meta": {
         "model_id": "deepseek/deepseek-r1-turbo",
         "organisation_id": "deepseek",
@@ -6345,7 +6345,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3/model.json": {
-      "hash": "7be674de66a14f94b3c5d9a706282224",
+      "hash": "ff7a9315e599453e804ddd4bb4a0a496",
       "meta": {
         "model_id": "deepseek/deepseek-v3",
         "organisation_id": "deepseek",
@@ -6361,7 +6361,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3-2025-03-24/model.json": {
-      "hash": "88d2b87482e3d0c25e75fa4bbe62f218",
+      "hash": "8910b963bcaef9fb8a8238cc3482b253",
       "meta": {
         "model_id": "deepseek/deepseek-v3-2025-03-24",
         "organisation_id": "deepseek",
@@ -6369,7 +6369,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3-turbo/model.json": {
-      "hash": "72875d31514204deb54ea46c6a100237",
+      "hash": "a770fa4d8200100548e25008cb095c6c",
       "meta": {
         "model_id": "deepseek/deepseek-v3-turbo",
         "organisation_id": "deepseek",
@@ -6401,7 +6401,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3.2-exp/model.json": {
-      "hash": "f0f38bbea88d340daaa466039384adf0",
+      "hash": "e7407a271055d514285dc5c3af948142",
       "meta": {
         "model_id": "deepseek/deepseek-v3.2-exp",
         "organisation_id": "deepseek",
@@ -6417,7 +6417,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/deepseek/deepseek-v3.2-thinking/model.json": {
-      "hash": "7d05182aea1f25b2594caf14d3494b77",
+      "hash": "6e618e21ab9a8d8d80d8229f20d38de4",
       "meta": {
         "model_id": "deepseek/deepseek-v3.2-thinking",
         "organisation_id": "deepseek",
@@ -6641,7 +6641,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.0-nano/model.json": {
-      "hash": "b964075999a499d81fddfdf96e6be1e8",
+      "hash": "b0704b2bc1a4253aace305b6dd8b5646",
       "meta": {
         "model_id": "google/gemini-1.0-nano",
         "organisation_id": "google",
@@ -6649,7 +6649,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.0-pro/model.json": {
-      "hash": "5e38af94aaaf67e36f8a32f0a39b9800",
+      "hash": "2eeefa9c2d23ddeb7b9f1c32668223c8",
       "meta": {
         "model_id": "google/gemini-1.0-pro",
         "organisation_id": "google",
@@ -6657,7 +6657,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.0-pro-vision-001/model.json": {
-      "hash": "8aa66a2f53304a90bd5d2ddab3403fba",
+      "hash": "972aeaff4404353416f162cd701fb330",
       "meta": {
         "model_id": "google/gemini-1.0-pro-vision-001",
         "organisation_id": "google",
@@ -6665,7 +6665,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.0-ultra/model.json": {
-      "hash": "9d54e98cd3de05a4c7174ce459c207c4",
+      "hash": "9411a242b1eea0dcc989cfc2998cc348",
       "meta": {
         "model_id": "google/gemini-1.0-ultra",
         "organisation_id": "google",
@@ -6673,7 +6673,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-flash-001/model.json": {
-      "hash": "93fcb485ee9ae72431745822e2374299",
+      "hash": "864614d84d6d3528a99f33583fe0ece7",
       "meta": {
         "model_id": "google/gemini-1.5-flash-001",
         "organisation_id": "google",
@@ -6681,7 +6681,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-flash-002/model.json": {
-      "hash": "13bb3f722872b5b2e5ca81aadff82e8b",
+      "hash": "dde5508b97514f6d2d312970398cb9e2",
       "meta": {
         "model_id": "google/gemini-1.5-flash-002",
         "organisation_id": "google",
@@ -6689,7 +6689,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-flash-8b/model.json": {
-      "hash": "a7fec4397849c56ec8ce480a55298cb2",
+      "hash": "cf55c728eb9a3193dce11e5444ff14d1",
       "meta": {
         "model_id": "google/gemini-1.5-flash-8b",
         "organisation_id": "google",
@@ -6697,7 +6697,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-flash-8b-exp-2024-08-27/model.json": {
-      "hash": "8f10573e3499993454fc504ff6a82847",
+      "hash": "df4414963052ce940052c918778ad1fb",
       "meta": {
         "model_id": "google/gemini-1.5-flash-8b-exp-2024-08-27",
         "organisation_id": "google",
@@ -6705,7 +6705,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-flash-8b-exp-2024-09-24/model.json": {
-      "hash": "236f93bfa50f04ee8d3a99224bc2ff49",
+      "hash": "9668f61a1635b128bd8f710f1b6aef8d",
       "meta": {
         "model_id": "google/gemini-1.5-flash-8b-exp-2024-09-24",
         "organisation_id": "google",
@@ -6713,7 +6713,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-flash-preview-2024-05-14/model.json": {
-      "hash": "55fd7606cefb596037bf74acfba9c2c2",
+      "hash": "6e2f4c1c6b2613db9f2b986b32aaa492",
       "meta": {
         "model_id": "google/gemini-1.5-flash-preview-2024-05-14",
         "organisation_id": "google",
@@ -6721,7 +6721,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-pro-001/model.json": {
-      "hash": "a3e30e5aafc03676047c80613b6dcbde",
+      "hash": "6049ec45cfe399bbcb58cd4e3fff009f",
       "meta": {
         "model_id": "google/gemini-1.5-pro-001",
         "organisation_id": "google",
@@ -6729,7 +6729,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-pro-002/model.json": {
-      "hash": "478951af9775865ed359ccd7cce32388",
+      "hash": "0fe89e0fb9743a2bcf663a57c8183aa3",
       "meta": {
         "model_id": "google/gemini-1.5-pro-002",
         "organisation_id": "google",
@@ -6737,7 +6737,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-pro-exp-2024-08-01/model.json": {
-      "hash": "f40a01d80ef8dd4dbbe83e066e8ce427",
+      "hash": "bbd17b576737c606f4e043cc91e6fdd6",
       "meta": {
         "model_id": "google/gemini-1.5-pro-exp-2024-08-01",
         "organisation_id": "google",
@@ -6745,7 +6745,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-1.5-pro-exp-2024-08-27/model.json": {
-      "hash": "17463d76448875aa7a939d6c9f045ab1",
+      "hash": "fd3433bd461c2b82ccc487350d3094a6",
       "meta": {
         "model_id": "google/gemini-1.5-pro-exp-2024-08-27",
         "organisation_id": "google",
@@ -6753,7 +6753,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash/model.json": {
-      "hash": "e8f403bb0ad2f70b6fcd6b863aa33753",
+      "hash": "0554d7acd98c18745adef1fa37719922",
       "meta": {
         "model_id": "google/gemini-2.0-flash",
         "organisation_id": "google",
@@ -6761,7 +6761,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-exp/model.json": {
-      "hash": "2ad63cee281e599cc9ca89421ba79dfe",
+      "hash": "c41448b4ee09b1389fb165863e374438",
       "meta": {
         "model_id": "google/gemini-2.0-flash-exp",
         "organisation_id": "google",
@@ -6769,7 +6769,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-exp-image-generation/model.json": {
-      "hash": "bf176135a257bb470fb784b93bba3b46",
+      "hash": "764d00a65b02d1c60a520e01f7e1c96b",
       "meta": {
         "model_id": "google/gemini-2.0-flash-exp-image-generation",
         "organisation_id": "google",
@@ -6777,7 +6777,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-lite/model.json": {
-      "hash": "fb5e957a3bfbb09965a8f9d8be65e9f4",
+      "hash": "ea9028008374741a07a6dd81bb7ce31e",
       "meta": {
         "model_id": "google/gemini-2.0-flash-lite",
         "organisation_id": "google",
@@ -6785,7 +6785,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-live-001/model.json": {
-      "hash": "f73ebf390754d3fb187081e4b30658cc",
+      "hash": "2a38c79383950b238afe7193ac875e2a",
       "meta": {
         "model_id": "google/gemini-2.0-flash-live-001",
         "organisation_id": "google",
@@ -6793,7 +6793,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-preview-image-generation/model.json": {
-      "hash": "8adf0ad8a42122615d7f951b72246007",
+      "hash": "a4895f5c7f6f244ca844a76b71aa9227",
       "meta": {
         "model_id": "google/gemini-2.0-flash-preview-image-generation",
         "organisation_id": "google",
@@ -6801,7 +6801,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-thinking-exp-2024-12-19/model.json": {
-      "hash": "10798f3a797cf2bbe20b0a6cc4ca808d",
+      "hash": "ae2b9b469a90c5961f3631ed4271fb98",
       "meta": {
         "model_id": "google/gemini-2.0-flash-thinking-exp-2024-12-19",
         "organisation_id": "google",
@@ -6809,7 +6809,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-flash-thinking-exp-2025-01-21/model.json": {
-      "hash": "1f0270a832d16ca67ad96195fc7597e1",
+      "hash": "bc59b44352feec93b5d9425227ccceca",
       "meta": {
         "model_id": "google/gemini-2.0-flash-thinking-exp-2025-01-21",
         "organisation_id": "google",
@@ -6817,7 +6817,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.0-pro-exp/model.json": {
-      "hash": "6b50dcb5e600a045f0ae658acaf3c13e",
+      "hash": "b8f52e6087571993ece116106bbf862d",
       "meta": {
         "model_id": "google/gemini-2.0-pro-exp",
         "organisation_id": "google",
@@ -6825,7 +6825,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-computer-use-preview/model.json": {
-      "hash": "35b1cbf8fac19fcc74b04407eb2737f5",
+      "hash": "9ee48f541991abbe31c22d4a63630092",
       "meta": {
         "model_id": "google/gemini-2.5-computer-use-preview",
         "organisation_id": "google",
@@ -6833,7 +6833,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-exp-native-audio-thinking-dialog/model.json": {
-      "hash": "8a32772f3a8a1e494970b118fb538910",
+      "hash": "ce522c940e49d74fcadac27a10841d4c",
       "meta": {
         "model_id": "google/gemini-2.5-flash-exp-native-audio-thinking-dialog",
         "organisation_id": "google",
@@ -6841,7 +6841,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-image/model.json": {
-      "hash": "1b93e5f3498423114e93c5c6e3696d8a",
+      "hash": "dabd034e0255f803a314da347c987768",
       "meta": {
         "model_id": "google/gemini-2.5-flash-image",
         "organisation_id": "google",
@@ -6849,7 +6849,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-image-preview/model.json": {
-      "hash": "f235581338864edd137b0d2e3f0794f3",
+      "hash": "eb96044ebe36838989bafe075b9ef9fa",
       "meta": {
         "model_id": "google/gemini-2.5-flash-image-preview",
         "organisation_id": "google",
@@ -6857,7 +6857,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-lite-preview-2025-06-17/model.json": {
-      "hash": "5c40996d9c2ddec98c41ea03b0a55d92",
+      "hash": "ce1eadfcba09b7f9c89dddd251d25de9",
       "meta": {
         "model_id": "google/gemini-2.5-flash-lite-preview-2025-06-17",
         "organisation_id": "google",
@@ -6865,7 +6865,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-lite-preview-2025-09-25/model.json": {
-      "hash": "239751ffb82fc44ea5bbd238364ca4f6",
+      "hash": "fbcc8f374324405d550148b7887f64f2",
       "meta": {
         "model_id": "google/gemini-2.5-flash-lite-preview-2025-09-25",
         "organisation_id": "google",
@@ -6873,7 +6873,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-native-audio-preview-2025-09-03/model.json": {
-      "hash": "5d131620ee515140f63ccbf1d76d0fa7",
+      "hash": "137aa3a402451b83435183d285bb12b1",
       "meta": {
         "model_id": "google/gemini-2.5-flash-native-audio-preview-2025-09-03",
         "organisation_id": "google",
@@ -6881,7 +6881,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-2025-04-17/model.json": {
-      "hash": "9d85a7c7527cce796c2afb31d956007c",
+      "hash": "89b552b160d5e5553b097ea69de55921",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-2025-04-17",
         "organisation_id": "google",
@@ -6889,7 +6889,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-2025-05-20/model.json": {
-      "hash": "0a4818516081b1d35de02cd33fac7d1d",
+      "hash": "3b8a2bafce3a14d40c72e905ea8151cc",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-2025-05-20",
         "organisation_id": "google",
@@ -6897,7 +6897,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-2025-09-25/model.json": {
-      "hash": "546c0ee8d0daa577c0ba3a7fca9e874b",
+      "hash": "d5eb1ad3cd8356a69c061895a7333023",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-2025-09-25",
         "organisation_id": "google",
@@ -6905,7 +6905,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-native-audio-dialog/model.json": {
-      "hash": "f82c0f1e4eca81d6e8a5fec8d0827f46",
+      "hash": "48eb317f17de71ae83df2de060b34a23",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-native-audio-dialog",
         "organisation_id": "google",
@@ -6913,7 +6913,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-tts-2025-05-20/model.json": {
-      "hash": "227fe63af094f1cad4d307505d57093e",
+      "hash": "833a3efebab0580a6ffb0b30cc98174f",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-tts-2025-05-20",
         "organisation_id": "google",
@@ -6921,7 +6921,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-flash-preview-tts-2025-12-10/model.json": {
-      "hash": "57a36eeb2dc738cbe6ab154ff2aeff5b",
+      "hash": "b7f24960674131f2a538648c072b59f7",
       "meta": {
         "model_id": "google/gemini-2.5-flash-preview-tts-2025-12-10",
         "organisation_id": "google",
@@ -6929,7 +6929,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-experimental-2025-03-25/model.json": {
-      "hash": "d8354266fc940ae6d9a5abad3d176f94",
+      "hash": "3a3d2bb84e762782d4a23ad4d925ab33",
       "meta": {
         "model_id": "google/gemini-2.5-pro-experimental-2025-03-25",
         "organisation_id": "google",
@@ -6937,7 +6937,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-preview-2025-05-06/model.json": {
-      "hash": "374377c17d6b883570456a35d5e79960",
+      "hash": "9a4e152b72815df29fe6256baa5b23ff",
       "meta": {
         "model_id": "google/gemini-2.5-pro-preview-2025-05-06",
         "organisation_id": "google",
@@ -6945,7 +6945,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-preview-2025-06-05/model.json": {
-      "hash": "814d707300363aa6e9e62380d5d49667",
+      "hash": "6091edfa394630a34f8476db95324d28",
       "meta": {
         "model_id": "google/gemini-2.5-pro-preview-2025-06-05",
         "organisation_id": "google",
@@ -6953,7 +6953,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-preview-tts/model.json": {
-      "hash": "ac2d89f92f64fee5c4cbabefa23e69d2",
+      "hash": "fc37ecff1f5d727c0c53acdd527aba27",
       "meta": {
         "model_id": "google/gemini-2.5-pro-preview-tts",
         "organisation_id": "google",
@@ -6961,7 +6961,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-2.5-pro-preview-tts-2025-05-20/model.json": {
-      "hash": "283307a78c6b78ec781d046c8743e778",
+      "hash": "94ab0ea510f0287a203422e9e9176395",
       "meta": {
         "model_id": "google/gemini-2.5-pro-preview-tts-2025-05-20",
         "organisation_id": "google",
@@ -6969,7 +6969,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3-flash-preview/model.json": {
-      "hash": "46f7a1627bcc0da535d4a09a26fa9b94",
+      "hash": "24b7ab830c32889f8fc628c8501c8633",
       "meta": {
         "model_id": "google/gemini-3-flash-preview",
         "organisation_id": "google",
@@ -6977,7 +6977,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3-pro-image-preview/model.json": {
-      "hash": "7a578f97be86ff7cda29e9a2634b7bca",
+      "hash": "8155cfce530b4f118655b1ec67ee8b50",
       "meta": {
         "model_id": "google/gemini-3-pro-image-preview",
         "organisation_id": "google",
@@ -6985,7 +6985,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3-pro-preview/model.json": {
-      "hash": "b855a7d2d893189a581dccffc86d2cae",
+      "hash": "0abf5cd1ff75699b02fac08e5244db91",
       "meta": {
         "model_id": "google/gemini-3-pro-preview",
         "organisation_id": "google",
@@ -6993,7 +6993,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3.1-flash-image-preview/model.json": {
-      "hash": "c96b97c465ce0fd1b76031d73531911d",
+      "hash": "a5502d573461a9a8a9f9cecb4987b296",
       "meta": {
         "model_id": "google/gemini-3.1-flash-image-preview",
         "organisation_id": "google",
@@ -7001,7 +7001,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3.1-flash-lite-preview/model.json": {
-      "hash": "c1b442afea1dea376fbbcd79f2c3bee7",
+      "hash": "7c50e085b8c473d2aec1bb77f496489b",
       "meta": {
         "model_id": "google/gemini-3.1-flash-lite-preview",
         "organisation_id": "google",
@@ -7009,7 +7009,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3.1-flash-tts-preview/model.json": {
-      "hash": "00712fd6c7bd511e0645201586010ae5",
+      "hash": "86b1d4a20798ac97d9c97e1f05a21419",
       "meta": {
         "model_id": "google/gemini-3.1-flash-tts-preview",
         "organisation_id": "google",
@@ -7017,7 +7017,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3.1-pro-preview/model.json": {
-      "hash": "8c6ce18a28ea1d69cfd9920c45814215",
+      "hash": "ccf5fef553fdc9ca669476b282770da3",
       "meta": {
         "model_id": "google/gemini-3.1-pro-preview",
         "organisation_id": "google",
@@ -7025,7 +7025,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/gemini-3.1-pro-preview-customtools/model.json": {
-      "hash": "0f74aab37f43c474db10020d79dcb10e",
+      "hash": "8ba1b5c266b71dab40d16d230f5e4fcb",
       "meta": {
         "model_id": "google/gemini-3.1-pro-preview-customtools",
         "organisation_id": "google",
@@ -7369,7 +7369,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3/model.json": {
-      "hash": "ecc7edcfdbb76083776858617eb73c01",
+      "hash": "c1a71487f2679326b586a639970dc151",
       "meta": {
         "model_id": "google/lyria-3",
         "organisation_id": "google",
@@ -7377,7 +7377,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3-clip-preview/model.json": {
-      "hash": "9270502f5e19807d56170ab43764b8ef",
+      "hash": "6996cc4a9b49cd9116f5a07f5a111695",
       "meta": {
         "model_id": "google/lyria-3-clip-preview",
         "organisation_id": "google",
@@ -7385,7 +7385,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/lyria-3-pro-preview/model.json": {
-      "hash": "f6aed33923fe586b50b9e1d4ba3a3058",
+      "hash": "7c5ddde6e5170c387ec8985e253e872f",
       "meta": {
         "model_id": "google/lyria-3-pro-preview",
         "organisation_id": "google",
@@ -7537,7 +7537,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/veo-3.1-fast-preview/model.json": {
-      "hash": "924e4df3287d49d19aa748544d30c243",
+      "hash": "1dea2541b4c847ad3c34e6e6c4704064",
       "meta": {
         "model_id": "google/veo-3.1-fast-preview",
         "organisation_id": "google",
@@ -7545,7 +7545,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/veo-3.1-lite-preview/model.json": {
-      "hash": "d519a7e6543caf4017ea722f994e4cc6",
+      "hash": "8d228e21775464230769f04d1f5cbacd",
       "meta": {
         "model_id": "google/veo-3.1-lite-preview",
         "organisation_id": "google",
@@ -7553,7 +7553,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/google/veo-3.1-preview/model.json": {
-      "hash": "b5ba4876508d35f2607c9b70323e7bc6",
+      "hash": "6ea7db725c6e5e47394313d5e32b0e49",
       "meta": {
         "model_id": "google/veo-3.1-preview",
         "organisation_id": "google",
@@ -7713,7 +7713,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ibm/granite-4.0-h-micro/model.json": {
-      "hash": "fc0daaf88755ffbd6f76b7c0a6023275",
+      "hash": "60e7be80654fb59252be9bd1e664d41c",
       "meta": {
         "model_id": "ibm-granite/granite-4.0-h-micro",
         "organisation_id": "ibm",
@@ -8097,7 +8097,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/k-exaone/model.json": {
-      "hash": "2f41e1169ba15dc4163228455a26ed39",
+      "hash": "80c4e3fa0656fcfe1286dde0643281b9",
       "meta": {
         "model_id": "lg/k-exaone",
         "organisation_id": "lg",
@@ -10009,7 +10009,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4.1/model.json": {
-      "hash": "5815222030b9d3a1c9fb2354044b55f2",
+      "hash": "938c0078b73965eb1f3077eb1776dcb2",
       "meta": {
         "model_id": "openai/gpt-4.1",
         "organisation_id": "openai",
@@ -10017,7 +10017,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4.1-mini/model.json": {
-      "hash": "288b9931b683a5a937fc22a5584dbac6",
+      "hash": "3c0af888fe21c8d844293bd19d41f5c0",
       "meta": {
         "model_id": "openai/gpt-4.1-mini",
         "organisation_id": "openai",
@@ -10025,7 +10025,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4.1-nano/model.json": {
-      "hash": "8b601ba35fcf5dcaeac84ac6c94e5184",
+      "hash": "5ced566341df23b6cce8d49e6feaf4f8",
       "meta": {
         "model_id": "openai/gpt-4.1-nano",
         "organisation_id": "openai",
@@ -10201,7 +10201,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5/model.json": {
-      "hash": "2bae5885c14d45eef756676a8e653900",
+      "hash": "086eee7d7a4857cfd63142083c62815a",
       "meta": {
         "model_id": "openai/gpt-5",
         "organisation_id": "openai",
@@ -10265,7 +10265,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.1/model.json": {
-      "hash": "d14a9d4a6a767667f5b8c21a5b643e05",
+      "hash": "1bd5ec31cc2b836fe756a823e9a5ccc0",
       "meta": {
         "model_id": "openai/gpt-5.1",
         "organisation_id": "openai",
@@ -10273,7 +10273,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.1-chat/model.json": {
-      "hash": "31a9b375d61da1567d4b30c2b0fbdf74",
+      "hash": "886b44594edef33f514b754a1264cc4e",
       "meta": {
         "model_id": "openai/gpt-5.1-chat",
         "organisation_id": "openai",
@@ -10281,7 +10281,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.1-codex/model.json": {
-      "hash": "70f5338625685b6ed1c5a107e7daade6",
+      "hash": "b68ddf901a882853d7cb8357dec52ced",
       "meta": {
         "model_id": "openai/gpt-5.1-codex",
         "organisation_id": "openai",
@@ -10289,7 +10289,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.1-codex-max/model.json": {
-      "hash": "0070933bc25a4d5c0a7ddf998ef7e89f",
+      "hash": "682d7e599f0fbc56ceb7084ef35a0e59",
       "meta": {
         "model_id": "openai/gpt-5.1-codex-max",
         "organisation_id": "openai",
@@ -10297,7 +10297,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.1-codex-mini/model.json": {
-      "hash": "6d19b0853c1205ad532c5555b289e372",
+      "hash": "2b76f26cd5755ffa651c93f8273f04f6",
       "meta": {
         "model_id": "openai/gpt-5.1-codex-mini",
         "organisation_id": "openai",
@@ -10305,7 +10305,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.2/model.json": {
-      "hash": "1e410dbfa646d9bc2b8f60eaf1febaa2",
+      "hash": "590c36cb9d508806bcccacad3905b402",
       "meta": {
         "model_id": "openai/gpt-5.2",
         "organisation_id": "openai",
@@ -10313,7 +10313,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.2-chat/model.json": {
-      "hash": "41cbaa0b02343134f8f6081ea9a6333c",
+      "hash": "23c7ce92b688cf763c9c31f27b8112bd",
       "meta": {
         "model_id": "openai/gpt-5.2-chat",
         "organisation_id": "openai",
@@ -10321,7 +10321,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.2-codex/model.json": {
-      "hash": "437160e9a54ddb1a4d8c405c2ffe756a",
+      "hash": "e14abeac81eb4ea41c34abebd6263c44",
       "meta": {
         "model_id": "openai/gpt-5.2-codex",
         "organisation_id": "openai",
@@ -10329,7 +10329,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.2-mini/model.json": {
-      "hash": "34bc0be0f3e11bb8b8830e96911ffc41",
+      "hash": "16116c45fbf355c86626dfc1f7b068a6",
       "meta": {
         "model_id": "openai/gpt-5.2-mini",
         "organisation_id": "openai",
@@ -10337,7 +10337,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.2-pro/model.json": {
-      "hash": "a80d0823da40e9cd90a742afd69f89ee",
+      "hash": "99831cbd96ebf9c264479f7ae16c6eee",
       "meta": {
         "model_id": "openai/gpt-5.2-pro",
         "organisation_id": "openai",
@@ -10345,7 +10345,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.3-chat/model.json": {
-      "hash": "def352f92ff31a43faa4b33262c4a2c1",
+      "hash": "5394cecb5d565f962881694b4b28369b",
       "meta": {
         "model_id": "openai/gpt-5.3-chat",
         "organisation_id": "openai",
@@ -10353,7 +10353,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.3-codex/model.json": {
-      "hash": "45bda63fb926f0d3751a516f7f159ee7",
+      "hash": "b3fe6bc7f8177496bdc449bca45f7beb",
       "meta": {
         "model_id": "openai/gpt-5.3-codex",
         "organisation_id": "openai",
@@ -10361,7 +10361,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.3-codex-spark/model.json": {
-      "hash": "644f7dcd7bfb2cbc0b6bd70df87d34ba",
+      "hash": "23295050a96d3ec4d0040dd4dd3a90e7",
       "meta": {
         "model_id": "openai/gpt-5.3-codex-spark",
         "organisation_id": "openai",
@@ -10369,7 +10369,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.4/model.json": {
-      "hash": "d6f8ad990979fe2e95c3f3fad514bdd8",
+      "hash": "475c9b890aa87fae5f00300ebe40ac2c",
       "meta": {
         "model_id": "openai/gpt-5.4",
         "organisation_id": "openai",
@@ -10377,7 +10377,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.4-cyber/model.json": {
-      "hash": "c063bf0c07faa29461c5cc9e8946cbf7",
+      "hash": "d53fc2a0194c4e107452343d9728674e",
       "meta": {
         "model_id": "openai/gpt-5.4-cyber",
         "organisation_id": "openai",
@@ -10385,7 +10385,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.4-mini/model.json": {
-      "hash": "07178f5019a99a65a38c5c82548d8ff6",
+      "hash": "426fbb4624ae6aa5a0171cb8e8c2898b",
       "meta": {
         "model_id": "openai/gpt-5.4-mini",
         "organisation_id": "openai",
@@ -10393,7 +10393,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.4-nano/model.json": {
-      "hash": "b5e97ed056cfb911fc6319aac37a647b",
+      "hash": "667d6e03800b0f8ee2bb870ecb7c31ea",
       "meta": {
         "model_id": "openai/gpt-5.4-nano",
         "organisation_id": "openai",
@@ -10401,7 +10401,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.4-pro/model.json": {
-      "hash": "a1609013ef9922ebb495b82471e5dbea",
+      "hash": "0ab3606451bfddb0a53e4dc062819616",
       "meta": {
         "model_id": "openai/gpt-5.4-pro",
         "organisation_id": "openai",
@@ -10409,7 +10409,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.5/model.json": {
-      "hash": "58ff91de8427cc5327c29af0592700db",
+      "hash": "065d87146e96a663b9cfe68032963730",
       "meta": {
         "model_id": "openai/gpt-5.5",
         "organisation_id": "openai",
@@ -10417,7 +10417,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.5-cyber/model.json": {
-      "hash": "8c080d90d8328f4fe290a50e6907e891",
+      "hash": "488c47547440396f642eb4a34713bbb2",
       "meta": {
         "model_id": "openai/gpt-5.5-cyber",
         "organisation_id": "openai",
@@ -10425,7 +10425,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-5.5-pro/model.json": {
-      "hash": "2357e6705696110753ead079b6efd04c",
+      "hash": "663b627db225e01606204f4c412c1b6e",
       "meta": {
         "model_id": "openai/gpt-5.5-pro",
         "organisation_id": "openai",
@@ -12833,7 +12833,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/voyage/voyage-4/model.json": {
-      "hash": "f49d3d031a946e21de576d5fe4997cc7",
+      "hash": "f406d4f54e8bb635a395b9f394f66652",
       "meta": {
         "model_id": "voyage/voyage-4",
         "organisation_id": "voyage",
@@ -12841,7 +12841,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/voyage/voyage-4-large/model.json": {
-      "hash": "16dc9f1a4e028a88eeb02c28fb7c23ad",
+      "hash": "d124d29adcc6930db178cfae60eb66c1",
       "meta": {
         "model_id": "voyage/voyage-4-large",
         "organisation_id": "voyage",
@@ -12849,7 +12849,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/voyage/voyage-4-lite/model.json": {
-      "hash": "788b39ad48d551679dbcf6683ce33886",
+      "hash": "bc6a0db89d5b133a7c00271b2994f7d1",
       "meta": {
         "model_id": "voyage/voyage-4-lite",
         "organisation_id": "voyage",
@@ -12953,7 +12953,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/voyage/voyage-multimodal-3.5/model.json": {
-      "hash": "ab8c50bc044bab36c99487150f5b4250",
+      "hash": "24a7ff3f62e5dedbf0e9a3dde285abf9",
       "meta": {
         "model_id": "voyage/voyage-multimodal-3.5",
         "organisation_id": "voyage",
@@ -13129,7 +13129,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-4.3/model.json": {
-      "hash": "31fcabb049c825ad8e4774bec3a576b7",
+      "hash": "511bf9f6b99f17b70a73ab526564c8da",
       "meta": {
         "model_id": "x-ai/grok-4.3",
         "organisation_id": "x-ai",
@@ -21642,15 +21642,6 @@
         "model_key": "x-ai:x-ai/grok-imagine-image:image.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-imagine-image-pro/text.generate/pricing.json": {
-      "hash": "d372afb8687ca93afad9fad8756b8a26",
-      "meta": {
-        "api_provider_id": "x-ai",
-        "capability_id": "text.generate",
-        "model_id": "x-ai/grok-imagine-image-pro",
-        "model_key": "x-ai:x-ai/grok-imagine-image-pro:text.generate"
-      }
-    },
     "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-imagine-video/video.edit/pricing.json": {
       "hash": "c90bbe0d44d86c611d97af1bc6c7f3c1",
       "meta": {
@@ -22148,7 +22139,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/cohere/command-r/model.json": {
-      "hash": "e2a749eeaecc394b0bf70fc980276a1a",
+      "hash": "d86d6cd26c2c9b61c982b14575657812",
       "meta": {
         "model_id": "cohere/command-r",
         "organisation_id": "cohere",
@@ -22846,6 +22837,13 @@
         "capability_id": "text.generate",
         "model_id": "qwen/qwen3.6-27b",
         "model_key": "novita:qwen/qwen3.6-27b:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/cloudflare/models.json": {
+      "hash": "a299920d63efd77576e228c3b2605eaa",
+      "meta": {
+        "api_provider_id": "cloudflare",
+        "kind": "provider_models"
       }
     }
   }

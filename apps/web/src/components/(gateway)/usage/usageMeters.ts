@@ -1,6 +1,6 @@
 const TOKEN_METER_ORDER = [
-	"input_text_tokens",
-	"output_text_tokens",
+	"input_tokens",
+	"output_tokens",
 	"total_tokens",
 ] as const;
 
@@ -9,14 +9,23 @@ const TOKEN_METER_SET = new Set<string>(TOKEN_METER_ORDER);
 const IGNORED_USAGE_KEYS = new Set<string>([
 	"pricing",
 	"pricing_breakdown",
-	"input_tokens",
-	"output_tokens",
+	"input_tokens_details",
+	"output_tokens_details",
 ]);
 
 const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
-	input_text_tokens: { long: "Input tokens", short: "in tokens" },
-	output_text_tokens: { long: "Output tokens", short: "out tokens" },
+	input_tokens: { long: "Input tokens", short: "in tokens" },
+	output_tokens: { long: "Output tokens", short: "out tokens" },
 	total_tokens: { long: "Total tokens", short: "total tokens" },
+	cache_read_tokens: { long: "Cache read tokens", short: "cache read" },
+	cache_write_tokens: { long: "Cache write tokens", short: "cache write" },
+	reasoning_tokens: { long: "Reasoning tokens", short: "reasoning" },
+	input_images: { long: "Input images", short: "in images" },
+	input_audio: { long: "Input audio", short: "in audio" },
+	input_videos: { long: "Input videos", short: "in video" },
+	output_images: { long: "Output images", short: "out images" },
+	output_audio: { long: "Output audio", short: "out audio" },
+	output_videos: { long: "Output videos", short: "out video" },
 	requests: { long: "Requests", short: "req" },
 	output_image: { long: "Images", short: "images" },
 	image_pixels: { long: "Image pixels", short: "img px" },
@@ -50,8 +59,12 @@ function toNumber(value: unknown): number | null {
 
 function canonicalKey(raw: string): string {
 	const key = raw.trim().toLowerCase();
-	if (key === "input_tokens") return "input_text_tokens";
-	if (key === "output_tokens") return "output_text_tokens";
+	if (key === "input_text_tokens") return "input_tokens";
+	if (key === "prompt_tokens") return "input_tokens";
+	if (key === "output_text_tokens") return "output_tokens";
+	if (key === "completion_tokens") return "output_tokens";
+	if (key === "cached_read_text_tokens") return "cache_read_tokens";
+	if (key === "cached_write_text_tokens") return "cache_write_tokens";
 	return key;
 }
 
@@ -109,11 +122,30 @@ export function extractUsageMeters(usage: any): UsageMeter[] {
 		}
 	}
 
-	const input = toNumber(usage?.input_text_tokens ?? usage?.input_tokens) ?? 0;
-	const output = toNumber(usage?.output_text_tokens ?? usage?.output_tokens) ?? 0;
+	const inputDetails = usage?.input_tokens_details ?? usage?.input_details ?? {};
+	const outputDetails = usage?.output_tokens_details ?? usage?.completion_tokens_details ?? {};
+	const detailMeters: Array<[string, unknown]> = [
+		["cache_read_tokens", inputDetails?.cached_tokens],
+		["cache_write_tokens", outputDetails?.cached_tokens],
+		["reasoning_tokens", outputDetails?.reasoning_tokens ?? usage?.reasoning_tokens],
+		["input_images", inputDetails?.input_images],
+		["input_audio", inputDetails?.input_audio],
+		["input_videos", inputDetails?.input_videos],
+		["output_images", outputDetails?.output_images],
+		["output_audio", outputDetails?.output_audio],
+		["output_videos", outputDetails?.output_videos],
+	];
+	for (const [key, rawValue] of detailMeters) {
+		const value = toNumber(rawValue);
+		if (value == null || pricingKeys.has(key)) continue;
+		add(key, value, "set");
+	}
+
+	const input = toNumber(usage?.input_tokens ?? usage?.input_text_tokens) ?? 0;
+	const output = toNumber(usage?.output_tokens ?? usage?.output_text_tokens) ?? 0;
 	const total = toNumber(usage?.total_tokens) ?? input + output;
-	if (!totals.has("input_text_tokens") && input > 0) totals.set("input_text_tokens", input);
-	if (!totals.has("output_text_tokens") && output > 0) totals.set("output_text_tokens", output);
+	if (!totals.has("input_tokens") && input > 0) totals.set("input_tokens", input);
+	if (!totals.has("output_tokens") && output > 0) totals.set("output_tokens", output);
 	if (!totals.has("total_tokens") && total > 0) totals.set("total_tokens", total);
 
 	const tokenMeters: UsageMeter[] = TOKEN_METER_ORDER.map((key) => {
@@ -143,8 +175,8 @@ export function extractUsageMeters(usage: any): UsageMeter[] {
 
 export function buildUsageDisplay(usage: any): UsageDisplaySummary {
 	const meters = extractUsageMeters(usage);
-	const input = meters.find((m) => m.key === "input_text_tokens")?.value ?? 0;
-	const output = meters.find((m) => m.key === "output_text_tokens")?.value ?? 0;
+	const input = meters.find((m) => m.key === "input_tokens")?.value ?? 0;
+	const output = meters.find((m) => m.key === "output_tokens")?.value ?? 0;
 	const total = meters.find((m) => m.key === "total_tokens")?.value ?? input + output;
 	const nonToken = meters.filter((m) => !TOKEN_METER_SET.has(m.key));
 

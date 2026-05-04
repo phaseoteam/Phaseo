@@ -210,6 +210,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				size,
 				resolution: ir.resolution,
 				quality,
+				audio: ir.generateAudio,
 			}),
 			isByok: keyInfo.source === "byok",
 		});
@@ -398,6 +399,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				seconds: toGoogleVideoDurationSeconds(ir) ?? null,
 				resolution: size ?? null,
 				quality,
+				audio: typeof ir.generateAudio === "boolean" ? ir.generateAudio : null,
 				outputAccess: ir.outputAccess ?? "bytes",
 				webhook: ir.webhook as Record<string, unknown> | null,
 				googleOperationName: (json as any)?.name ?? null,

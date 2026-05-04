@@ -1,7 +1,12 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import {
+	LONG_RUNNING_REQUEST_ENDPOINTS,
+	buildNotInFilter,
+} from "@/lib/gateway/usage/logFilters";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
@@ -33,6 +38,8 @@ export interface PaginatedRequestsParams {
 	providerFilter?: string | null;
 	keyFilter?: string | null;
 	statusFilter?: "all" | "success" | "error";
+	requestFilter?: string | null;
+	sessionFilter?: string | null;
 	page: number;
 	sortField: string;
 	sortDirection: "asc" | "desc";
@@ -43,6 +50,9 @@ export interface RequestRow {
 	created_at: string;
 	model_id: string | null;
 	provider: string | null;
+	native_response_id: string | null;
+	stream: boolean;
+	session_id: string | null;
 	app_id: string | null;
 	app_key: string | null;
 	app_title: string | null;
@@ -59,6 +69,17 @@ export interface RequestRow {
 	error_code: string | null;
 	error_message: string | null;
 	key_id: string | null;
+	provider_attempts: Array<{
+		attempt_number: number | null;
+		provider: string | null;
+		outcome: string | null;
+		status: number | null;
+		status_text: string | null;
+		duration_ms: number | null;
+		upstream_error_code: string | null;
+		upstream_error_message: string | null;
+		upstream_error_description: string | null;
+	}>;
 }
 
 export interface PaginatedRequestsResult {
@@ -100,6 +121,9 @@ export async function fetchPaginatedRequests(
 			created_at,
 			model_id,
 			provider,
+			native_response_id,
+			stream,
+			session_id,
 			app_id,
 			app:api_apps!gateway_requests_app_id_fkey (
 				id,
@@ -117,13 +141,15 @@ export async function fetchPaginatedRequests(
 			error_code,
 			error_message,
 			key_id,
-			throughput
+			throughput,
+			provider_attempts
 		`,
 			{ count: "exact" }
 		)
 		.eq("workspace_id", workspaceId)
 		.gte("created_at", params.timeRange.from)
-		.lte("created_at", params.timeRange.to);
+		.lte("created_at", params.timeRange.to)
+		.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
 
 	// Apply filters
 	if (params.modelFilter) {
@@ -134,6 +160,12 @@ export async function fetchPaginatedRequests(
 	}
 	if (params.keyFilter) {
 		query = query.eq("key_id", params.keyFilter);
+	}
+	if (params.requestFilter) {
+		query = query.eq("request_id", params.requestFilter);
+	}
+	if (params.sessionFilter) {
+		query = query.eq("session_id", params.sessionFilter);
 	}
 	if (params.statusFilter === "success") {
 		query = query.eq("success", true);
@@ -162,6 +194,9 @@ export async function fetchPaginatedRequests(
 				created_at,
 				model_id,
 				provider,
+				native_response_id,
+				stream,
+				session_id,
 				app_id,
 				usage,
 				cost_nanos,
@@ -173,17 +208,21 @@ export async function fetchPaginatedRequests(
 				error_code,
 				error_message,
 				key_id,
-				throughput
+				throughput,
+				provider_attempts
 			`,
 				{ count: "exact" },
 			)
 			.eq("workspace_id", workspaceId)
 			.gte("created_at", params.timeRange.from)
-			.lte("created_at", params.timeRange.to);
+			.lte("created_at", params.timeRange.to)
+			.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
 
 		if (params.modelFilter) fallback = fallback.eq("model_id", params.modelFilter);
 		if (params.providerFilter) fallback = fallback.eq("provider", params.providerFilter);
 		if (params.keyFilter) fallback = fallback.eq("key_id", params.keyFilter);
+		if (params.requestFilter) fallback = fallback.eq("request_id", params.requestFilter);
+		if (params.sessionFilter) fallback = fallback.eq("session_id", params.sessionFilter);
 		if (params.statusFilter === "success") fallback = fallback.eq("success", true);
 		else if (params.statusFilter === "error") fallback = fallback.eq("success", false);
 
@@ -198,16 +237,66 @@ export async function fetchPaginatedRequests(
 		} = await fallback;
 		if (fallbackError) {
 			console.error("Error fetching paginated requests (fallback):", fallbackError);
-			return {
-				data: [],
-				total: 0,
-				page: params.page,
-				pageSize,
-				totalPages: 0,
-			};
+			const legacyFallback = supabase
+				.from("gateway_requests")
+				.select(
+					`
+					request_id,
+					created_at,
+					model_id,
+					provider,
+					native_response_id,
+					stream,
+					session_id,
+					app_id,
+					usage,
+					cost_nanos,
+					generation_ms,
+					latency_ms,
+					finish_reason,
+					success,
+					status_code,
+					error_code,
+					error_message,
+					key_id,
+					throughput
+				`,
+					{ count: "exact" },
+				)
+				.eq("workspace_id", workspaceId)
+				.gte("created_at", params.timeRange.from)
+				.lte("created_at", params.timeRange.to)
+				.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
+			if (params.modelFilter) legacyFallback.eq("model_id", params.modelFilter);
+			if (params.providerFilter) legacyFallback.eq("provider", params.providerFilter);
+			if (params.keyFilter) legacyFallback.eq("key_id", params.keyFilter);
+			if (params.requestFilter) legacyFallback.eq("request_id", params.requestFilter);
+			if (params.sessionFilter) legacyFallback.eq("session_id", params.sessionFilter);
+			if (params.statusFilter === "success") legacyFallback.eq("success", true);
+			else if (params.statusFilter === "error") legacyFallback.eq("success", false);
+			const {
+				data: legacyData,
+				error: legacyError,
+				count: legacyCount,
+			} = await legacyFallback
+				.order(sortColumn, { ascending: params.sortDirection === "asc" })
+				.range(offset, offset + pageSize - 1);
+			if (legacyError) {
+				console.error("Error fetching paginated requests (legacy fallback):", legacyError);
+				return {
+					data: [],
+					total: 0,
+					page: params.page,
+					pageSize,
+					totalPages: 0,
+				};
+			}
+			rows = (legacyData as any[]) ?? [];
+			totalCount = legacyCount ?? 0;
+		} else {
+			rows = (fallbackData as any[]) ?? [];
+			totalCount = fallbackCount ?? 0;
 		}
-		rows = (fallbackData as any[]) ?? [];
-		totalCount = fallbackCount ?? 0;
 	}
 
 	return {
@@ -228,9 +317,62 @@ export async function fetchPaginatedRequests(
 						: null;
 				return {
 					...row,
+					native_response_id:
+						typeof row?.native_response_id === "string" &&
+						row.native_response_id.trim().length > 0
+							? row.native_response_id.trim()
+							: null,
+					stream: row?.stream === true,
+					session_id:
+						typeof row?.session_id === "string" &&
+						row.session_id.trim().length > 0
+							? row.session_id.trim()
+							: null,
 					app_title: appTitle,
 					app_key: appKey,
 					app_image_url: appImageUrl,
+					provider_attempts: Array.isArray(row?.provider_attempts)
+						? row.provider_attempts.map((attempt: any) => ({
+								attempt_number:
+									typeof attempt?.attempt_number === "number"
+										? attempt.attempt_number
+										: typeof attempt?.attempt_number === "string"
+											? Number(attempt.attempt_number)
+											: null,
+								provider:
+									typeof attempt?.provider === "string" ? attempt.provider : null,
+								outcome:
+									typeof attempt?.outcome === "string" ? attempt.outcome : null,
+								status:
+									typeof attempt?.status === "number"
+										? attempt.status
+										: typeof attempt?.status === "string"
+											? Number(attempt.status)
+											: null,
+								status_text:
+									typeof attempt?.status_text === "string"
+										? attempt.status_text
+										: null,
+								duration_ms:
+									typeof attempt?.duration_ms === "number"
+										? attempt.duration_ms
+										: typeof attempt?.duration_ms === "string"
+											? Number(attempt.duration_ms)
+											: null,
+								upstream_error_code:
+									typeof attempt?.upstream_error_code === "string"
+										? attempt.upstream_error_code
+										: null,
+								upstream_error_message:
+									typeof attempt?.upstream_error_message === "string"
+										? attempt.upstream_error_message
+										: null,
+								upstream_error_description:
+									typeof attempt?.upstream_error_description === "string"
+										? attempt.upstream_error_description
+										: null,
+						  }))
+						: [],
 				} as RequestRow;
 			}) ?? [],
 		total: totalCount,
@@ -940,6 +1082,44 @@ export async function fetchProviderNames(
 	return providerNameMap;
 }
 
+export type ProviderMetadataEntry = {
+	name: string;
+	promptTrainingPolicy: string | null;
+};
+
+export async function fetchProviderMetadata(
+	providerIds: string[]
+): Promise<Map<string, ProviderMetadataEntry>> {
+	const { supabase } = await requireAuthenticatedUser();
+
+	if (providerIds.length === 0) {
+		return new Map();
+	}
+
+	const uniqueProviderIds = Array.from(new Set(providerIds.filter(Boolean)));
+	const { data: providers } = await supabase
+		.from("data_api_providers")
+		.select("api_provider_id, api_provider_name, prompt_training_policy")
+		.in("api_provider_id", uniqueProviderIds);
+
+	const providerMetadataMap = new Map<string, ProviderMetadataEntry>();
+
+	if (providers) {
+		providers.forEach((provider: any) => {
+			if (!provider?.api_provider_id) return;
+			providerMetadataMap.set(provider.api_provider_id, {
+				name: provider.api_provider_name || provider.api_provider_id,
+				promptTrainingPolicy:
+					typeof provider.prompt_training_policy === "string"
+						? provider.prompt_training_policy
+						: null,
+			});
+		});
+	}
+
+	return providerMetadataMap;
+}
+
 /**
  * Fetch fun stats and insights
  */
@@ -1604,6 +1784,7 @@ export interface SessionRollupParams {
 	appId?: string | null;
 	modelId?: string | null;
 	provider?: string | null;
+	sessionId?: string | null;
 }
 
 export interface SessionRollupRow {
@@ -1617,6 +1798,226 @@ export interface SessionRollupRow {
 	model_ids: string[] | null;
 	provider_ids: string[] | null;
 	end_user_ids: string[] | null;
+	app_counts?: Array<{ app_id: string; request_count: number }>;
+	model_counts?: Array<{ model_id: string; request_count: number }>;
+}
+
+type SessionRollupSourceRow = {
+	session_id: string | null;
+	created_at: string | null;
+	cost_nanos: number | string | null;
+	app_id: string | null;
+	model_id: string | null;
+	provider: string | null;
+	end_user_id: string | null;
+};
+
+async function fetchSessionRollupsFallback(args: {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	workspaceId: string;
+	params: SessionRollupParams;
+}): Promise<SessionRollupRow[]> {
+	const { supabase, workspaceId, params } = args;
+	const requestedLimit = Math.max(1, Math.min(params.limit ?? 100, 500));
+	const requestedOffset = Math.max(0, params.offset ?? 0);
+	const rowLimit = Math.max(2000, Math.min((requestedOffset + requestedLimit) * 50, 5000));
+
+	let query = supabase
+		.from("gateway_requests")
+		.select(
+			"session_id, created_at, cost_nanos, app_id, model_id, provider, end_user_id",
+		)
+		.eq("workspace_id", workspaceId)
+		.not("session_id", "is", null)
+		.gte("created_at", params.timeRange.from)
+		.lte("created_at", params.timeRange.to)
+		.order("created_at", { ascending: false })
+		.limit(rowLimit);
+
+	if (params.appId) {
+		query = query.eq("app_id", params.appId);
+	}
+	if (params.modelId) {
+		query = query.eq("model_id", params.modelId);
+	}
+	if (params.provider) {
+		query = query.eq("provider", params.provider);
+	}
+	if (params.sessionId) {
+		query = query.eq("session_id", params.sessionId);
+	}
+
+	const { data, error } = await query;
+	if (error) {
+		console.error("Error fetching session rollups fallback:", error);
+		return [];
+	}
+
+	const grouped = new Map<
+		string,
+		{
+			session_id: string;
+			request_count: number;
+			total_cost_nanos: number;
+			first_request_at: string;
+			last_request_at: string;
+			app_ids: Set<string>;
+			model_ids: Set<string>;
+			provider_ids: Set<string>;
+			end_user_ids: Set<string>;
+		}
+	>();
+
+	for (const row of (data ?? []) as SessionRollupSourceRow[]) {
+		const sessionId =
+			typeof row.session_id === "string" ? row.session_id.trim() : "";
+		const createdAt =
+			typeof row.created_at === "string" ? row.created_at.trim() : "";
+		if (!sessionId || !createdAt) continue;
+
+		const existing = grouped.get(sessionId) ?? {
+			session_id: sessionId,
+			request_count: 0,
+			total_cost_nanos: 0,
+			first_request_at: createdAt,
+			last_request_at: createdAt,
+			app_ids: new Set<string>(),
+			model_ids: new Set<string>(),
+			provider_ids: new Set<string>(),
+			end_user_ids: new Set<string>(),
+		};
+
+		existing.request_count += 1;
+		existing.total_cost_nanos += Number(row.cost_nanos ?? 0) || 0;
+		if (createdAt < existing.first_request_at) {
+			existing.first_request_at = createdAt;
+		}
+		if (createdAt > existing.last_request_at) {
+			existing.last_request_at = createdAt;
+		}
+
+		if (typeof row.app_id === "string" && row.app_id.trim()) {
+			existing.app_ids.add(row.app_id.trim());
+		}
+		if (typeof row.model_id === "string" && row.model_id.trim()) {
+			existing.model_ids.add(row.model_id.trim());
+		}
+		if (typeof row.provider === "string" && row.provider.trim()) {
+			existing.provider_ids.add(row.provider.trim());
+		}
+		if (typeof row.end_user_id === "string" && row.end_user_id.trim()) {
+			existing.end_user_ids.add(row.end_user_id.trim());
+		}
+
+		grouped.set(sessionId, existing);
+	}
+
+	return Array.from(grouped.values())
+		.sort((a, b) => {
+			const aTime = Date.parse(a.last_request_at);
+			const bTime = Date.parse(b.last_request_at);
+			return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+		})
+		.slice(requestedOffset, requestedOffset + requestedLimit)
+		.map((row) => ({
+			session_id: row.session_id,
+			request_count: row.request_count,
+			total_cost_nanos: row.total_cost_nanos,
+			total_cost_usd: row.total_cost_nanos / 1e9,
+			first_request_at: row.first_request_at,
+			last_request_at: row.last_request_at,
+			app_ids: row.app_ids.size ? Array.from(row.app_ids) : null,
+			model_ids: row.model_ids.size ? Array.from(row.model_ids) : null,
+			provider_ids: row.provider_ids.size ? Array.from(row.provider_ids) : null,
+			end_user_ids: row.end_user_ids.size ? Array.from(row.end_user_ids) : null,
+		}));
+}
+
+async function enrichSessionRollups(args: {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	workspaceId: string;
+	timeRange: { from: string; to: string };
+	sessions: SessionRollupRow[];
+}): Promise<SessionRollupRow[]> {
+	const { supabase, workspaceId, timeRange, sessions } = args;
+	if (sessions.length === 0) return sessions;
+
+	const sessionIds = sessions
+		.map((session) => session.session_id?.trim())
+		.filter((sessionId): sessionId is string => Boolean(sessionId));
+	if (sessionIds.length === 0) return sessions;
+
+	const { data, error } = await supabase
+		.from("gateway_requests")
+		.select("session_id, app_id, model_id")
+		.eq("workspace_id", workspaceId)
+		.in("session_id", sessionIds)
+		.gte("created_at", timeRange.from)
+		.lte("created_at", timeRange.to)
+		.limit(5000);
+
+	if (error) {
+		console.error("Error enriching session rollups:", error);
+		return sessions;
+	}
+
+	const appCountsBySession = new Map<string, Map<string, number>>();
+	const modelCountsBySession = new Map<string, Map<string, number>>();
+
+	for (const row of (data ?? []) as Array<{
+		session_id: string | null;
+		app_id: string | null;
+		model_id: string | null;
+	}>) {
+		const sessionId =
+			typeof row.session_id === "string" ? row.session_id.trim() : "";
+		if (!sessionId) continue;
+
+		if (typeof row.app_id === "string" && row.app_id.trim()) {
+			const appId = row.app_id.trim();
+			const appCounts = appCountsBySession.get(sessionId) ?? new Map<string, number>();
+			appCounts.set(appId, (appCounts.get(appId) ?? 0) + 1);
+			appCountsBySession.set(sessionId, appCounts);
+		}
+
+		if (typeof row.model_id === "string" && row.model_id.trim()) {
+			const modelId = row.model_id.trim();
+			const modelCounts =
+				modelCountsBySession.get(sessionId) ?? new Map<string, number>();
+			modelCounts.set(modelId, (modelCounts.get(modelId) ?? 0) + 1);
+			modelCountsBySession.set(sessionId, modelCounts);
+		}
+	}
+
+	const sortCounts = (counts: Map<string, number>) =>
+		Array.from(counts.entries())
+			.map(([id, request_count]) => ({ id, request_count }))
+			.sort((a, b) => {
+				if (b.request_count !== a.request_count) {
+					return b.request_count - a.request_count;
+				}
+				return a.id.localeCompare(b.id);
+			});
+
+	return sessions.map((session) => {
+		const appCounts = appCountsBySession.get(session.session_id);
+		const modelCounts = modelCountsBySession.get(session.session_id);
+		return {
+			...session,
+			app_counts: appCounts
+				? sortCounts(appCounts).map(({ id, request_count }) => ({
+						app_id: id,
+						request_count,
+					}))
+				: [],
+			model_counts: modelCounts
+				? sortCounts(modelCounts).map(({ id, request_count }) => ({
+						model_id: id,
+						request_count,
+					}))
+				: [],
+		};
+	});
 }
 
 export async function fetchSessionRollups(
@@ -1624,6 +2025,20 @@ export async function fetchSessionRollups(
 ): Promise<SessionRollupRow[]> {
 	const supabase = await createClient();
 	const { workspaceId } = await requireAuthedTeamContext(supabase);
+
+	if (params.sessionId) {
+		const fallbackSessions = await fetchSessionRollupsFallback({
+			supabase,
+			workspaceId,
+			params,
+		});
+		return enrichSessionRollups({
+			supabase,
+			workspaceId,
+			timeRange: params.timeRange,
+			sessions: fallbackSessions,
+		});
+	}
 
 	const { data, error } = await supabase.rpc("get_gateway_sessions_rollup", {
 		p_team: workspaceId,
@@ -1638,10 +2053,159 @@ export async function fetchSessionRollups(
 
 	if (error) {
 		console.error("Error fetching session rollups:", error);
+		const fallbackSessions = await fetchSessionRollupsFallback({
+			supabase,
+			workspaceId,
+			params,
+		});
+		return enrichSessionRollups({
+			supabase,
+			workspaceId,
+			timeRange: params.timeRange,
+			sessions: fallbackSessions,
+		});
+	}
+
+	return enrichSessionRollups({
+		supabase,
+		workspaceId,
+		timeRange: params.timeRange,
+		sessions: (data ?? []) as SessionRollupRow[],
+	});
+}
+
+export interface AppMetadata {
+	title: string;
+	imageUrl: string | null;
+}
+
+export async function fetchAppMetadata(
+	appIds: string[],
+): Promise<Map<string, AppMetadata>> {
+	const supabase = await createClient();
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
+
+	if (!workspaceId || appIds.length === 0) {
+		return new Map();
+	}
+
+	const { data: apps } = await supabase
+		.from("api_apps")
+		.select("id, title, image_url")
+		.eq("workspace_id", workspaceId)
+		.in("id", appIds);
+
+	const appMap = new Map<string, AppMetadata>();
+
+	if (apps) {
+		apps.forEach((app: any) => {
+			if (!app?.id) return;
+			appMap.set(app.id, {
+				title: app.title,
+				imageUrl:
+					typeof app.image_url === "string" && app.image_url.trim().length > 0
+						? app.image_url.trim()
+						: null,
+			});
+		});
+	}
+
+	return appMap;
+}
+
+export interface SessionRequestRow extends RequestRow {
+	session_id: string | null;
+	endpoint: string | null;
+	end_user_id: string | null;
+}
+
+export async function fetchSessionRequests(params: {
+	sessionId: string;
+	timeRange?: { from: string; to: string } | null;
+}): Promise<SessionRequestRow[]> {
+	const supabase = await createClient();
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
+
+	const sessionId = params.sessionId.trim();
+	if (!workspaceId || sessionId.length === 0) {
 		return [];
 	}
 
-	return (data ?? []) as SessionRollupRow[];
+	let query = supabase
+		.from("gateway_requests")
+		.select(
+			`
+			request_id,
+			created_at,
+			model_id,
+			provider,
+			native_response_id,
+			stream,
+			session_id,
+			app_id,
+			app:api_apps!gateway_requests_app_id_fkey (
+				id,
+				app_key,
+				title,
+				image_url
+			),
+			usage,
+			cost_nanos,
+			generation_ms,
+			latency_ms,
+			finish_reason,
+			success,
+			status_code,
+			error_code,
+			error_message,
+			key_id,
+			throughput,
+			session_id,
+			endpoint,
+			end_user_id
+		`
+		)
+		.eq("workspace_id", workspaceId)
+		.eq("session_id", sessionId)
+		.order("created_at", { ascending: true })
+		.limit(500);
+
+	if (params.timeRange?.from) {
+		query = query.gte("created_at", params.timeRange.from);
+	}
+	if (params.timeRange?.to) {
+		query = query.lte("created_at", params.timeRange.to);
+	}
+
+	const { data, error } = await query;
+	if (error) {
+		console.error("Error fetching session requests:", error);
+		return [];
+	}
+
+	return (
+		(data as any[] | null)?.map((row) => {
+			const appRow = Array.isArray(row?.app) ? row.app[0] : row?.app;
+			const appTitle =
+				typeof appRow?.title === "string" && appRow.title.trim().length > 0
+					? appRow.title.trim()
+					: null;
+			const appKey =
+				typeof appRow?.app_key === "string" && appRow.app_key.trim().length > 0
+					? appRow.app_key.trim()
+					: null;
+			const appImageUrl =
+				typeof appRow?.image_url === "string" && appRow.image_url.trim().length > 0
+					? appRow.image_url.trim()
+					: null;
+			return {
+				...row,
+				app_title: appTitle,
+				app_key: appKey,
+				app_image_url: appImageUrl,
+			} as SessionRequestRow;
+		}) ?? []
+	);
 }
 
 export interface JobsRollupParams {
@@ -1695,5 +2259,373 @@ export async function fetchJobsRollups(
 	}
 
 	return (data ?? []) as JobsRollupRow[];
+}
+
+function normalizeText(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeIsoDate(value: unknown): string | null {
+	const text = normalizeText(value);
+	if (!text) return null;
+	const parsed = Date.parse(text);
+	return Number.isFinite(parsed) ? new Date(parsed).toISOString() : null;
+}
+
+function normalizeFiniteNumber(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return null;
+}
+
+type AsyncWebhookAttemptStatus =
+	| "delivered"
+	| "scheduled_retry"
+	| "failed_permanently";
+
+export interface AsyncJobWebhookAttemptRow {
+	id: string;
+	delivery_key: string;
+	event_type: string;
+	status: AsyncWebhookAttemptStatus;
+	attempt_number: number;
+	max_attempts: number;
+	tried_at: string;
+	delivered_at: string | null;
+	next_retry_at: string | null;
+	response_status: number | null;
+	error_message: string | null;
+	response_body_preview: string | null;
+}
+
+export interface AsyncJobWebhookSummaryRow {
+	configured: boolean;
+	url: string | null;
+	delivered_events: number;
+	attempt_count: number;
+	pending_retries: number;
+	next_retry_at: string | null;
+	last_attempt_at: string | null;
+	last_attempt_status: AsyncWebhookAttemptStatus | null;
+	last_error_message: string | null;
+}
+
+export interface AsyncJobRow {
+	kind: "video" | "batch";
+	internal_id: string;
+	request_id: string | null;
+	provider: string | null;
+	model: string | null;
+	status: string | null;
+	billed_at: string | null;
+	created_at: string;
+	updated_at: string;
+	request_created_at: string | null;
+	request_cost_nanos: number | null;
+	webhook: AsyncJobWebhookSummaryRow;
+}
+
+export interface AsyncJobDetailRow extends AsyncJobRow {
+	endpoint: string | null;
+	completion_window: string | null;
+	resolution: string | null;
+	duration_seconds: number | null;
+	content_url: string | null;
+	cancel_url: string | null;
+	output_file_id: string | null;
+	error_file_id: string | null;
+	request_created_at: string | null;
+	request_cost_nanos: number | null;
+	webhook_attempts: AsyncJobWebhookAttemptRow[];
+}
+
+function parseWebhookAttempts(value: unknown): AsyncJobWebhookAttemptRow[] {
+	if (!Array.isArray(value)) return [];
+	return value
+		.map((entry, index) => {
+			if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+			const record = entry as Record<string, unknown>;
+			const eventType = normalizeText(record.event_type);
+			const status = normalizeText(record.status) as AsyncWebhookAttemptStatus | null;
+			const triedAt = normalizeIsoDate(record.tried_at);
+			const attemptNumber = normalizeFiniteNumber(record.attempt_number);
+			const maxAttempts = normalizeFiniteNumber(record.max_attempts);
+			if (!eventType || !status || !triedAt || attemptNumber == null || maxAttempts == null) {
+				return null;
+			}
+			return {
+				id: normalizeText(record.id) ?? `${eventType}:${triedAt}:${index}`,
+				delivery_key: normalizeText(record.delivery_key) ?? eventType,
+				event_type: eventType,
+				status,
+				attempt_number: Math.max(1, Math.trunc(attemptNumber)),
+				max_attempts: Math.max(1, Math.trunc(maxAttempts)),
+				tried_at: triedAt,
+				delivered_at: normalizeIsoDate(record.delivered_at),
+				next_retry_at: normalizeIsoDate(record.next_retry_at),
+				response_status: normalizeFiniteNumber(record.response_status),
+				error_message: normalizeText(record.error_message),
+				response_body_preview: normalizeText(record.response_body_preview),
+			};
+		})
+		.filter((entry): entry is AsyncJobWebhookAttemptRow => Boolean(entry))
+		.sort((a, b) => b.tried_at.localeCompare(a.tried_at));
+}
+
+function parseWebhookRetryQueue(value: unknown): Array<{ next_retry_at: string | null }> {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+	return Object.values(value as Record<string, unknown>)
+		.map((entry) => {
+			if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+			const record = entry as Record<string, unknown>;
+			return {
+				next_retry_at: normalizeIsoDate(record.nextRetryAt ?? record.next_retry_at),
+			};
+		})
+		.filter((entry): entry is { next_retry_at: string | null } => Boolean(entry));
+}
+
+function buildWebhookSummary(meta: Record<string, unknown> | null | undefined): AsyncJobWebhookSummaryRow {
+	const webhook =
+		meta?.webhook && typeof meta.webhook === "object" && !Array.isArray(meta.webhook)
+			? (meta.webhook as Record<string, unknown>)
+			: null;
+	const attempts = parseWebhookAttempts(meta?.webhookAttempts ?? meta?.webhook_attempts);
+	const retryQueue = parseWebhookRetryQueue(meta?.webhookRetryQueue ?? meta?.webhook_retry_queue);
+	const lastAttempt = attempts[0] ?? null;
+	const deliveredEvents =
+		meta?.webhookDeliveries && typeof meta.webhookDeliveries === "object" && !Array.isArray(meta.webhookDeliveries)
+			? Object.keys(meta.webhookDeliveries as Record<string, unknown>).length
+			: meta?.webhook_deliveries && typeof meta.webhook_deliveries === "object" && !Array.isArray(meta.webhook_deliveries)
+				? Object.keys(meta.webhook_deliveries as Record<string, unknown>).length
+				: 0;
+	const nextRetryAt = retryQueue
+		.map((entry) => entry.next_retry_at)
+		.filter((entry): entry is string => Boolean(entry))
+		.sort((a, b) => a.localeCompare(b))[0] ?? null;
+	return {
+		configured: Boolean(webhook),
+		url: normalizeText(webhook?.url),
+		delivered_events: deliveredEvents,
+		attempt_count: attempts.length,
+		pending_retries: retryQueue.length,
+		next_retry_at: nextRetryAt,
+		last_attempt_at: lastAttempt?.tried_at ?? null,
+		last_attempt_status: lastAttempt?.status ?? null,
+		last_error_message: lastAttempt?.error_message ?? null,
+	};
+}
+
+function toAsyncJobRow(
+	row: Record<string, unknown>,
+	options?: { includeWithoutWebhook?: boolean },
+): AsyncJobRow | null {
+	const kind = normalizeText(row.kind) as "video" | "batch" | null;
+	const internalId = normalizeText(row.internal_id);
+	const createdAt = normalizeIsoDate(row.created_at);
+	const updatedAt = normalizeIsoDate(row.updated_at);
+	if (!kind || !internalId || !createdAt || !updatedAt) return null;
+	const meta =
+		row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
+			? (row.meta as Record<string, unknown>)
+			: null;
+	const webhook = buildWebhookSummary(meta);
+	if (
+		!options?.includeWithoutWebhook &&
+		!webhook.configured &&
+		webhook.attempt_count === 0 &&
+		webhook.pending_retries === 0
+	) {
+		return null;
+	}
+	return {
+		kind,
+		internal_id: internalId,
+		request_id: normalizeText(row.request_id),
+		provider: normalizeText(row.provider),
+		model: normalizeText(row.model),
+		status: normalizeText(row.status),
+		billed_at: normalizeIsoDate(row.billed_at),
+		created_at: createdAt,
+		updated_at: updatedAt,
+		request_created_at: null,
+		request_cost_nanos: null,
+		webhook,
+	};
+}
+
+export async function fetchRecentAsyncJobs(params?: {
+	limit?: number;
+	includeWithoutWebhook?: boolean;
+	timeRange?: { from: string; to: string };
+	kind?: "video" | "batch" | null;
+	status?: string | null;
+	provider?: string | null;
+}): Promise<AsyncJobRow[]> {
+	const supabase = await createClient();
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const admin = createAdminClient();
+	const limit = Number.isFinite(params?.limit)
+		? Math.max(1, Math.min(50, Math.trunc(params!.limit!)))
+		: 20;
+
+	let query = admin
+		.from("gateway_async_operations")
+		.select("kind,internal_id,request_id,provider,model,status,billed_at,created_at,updated_at,meta")
+		.eq("workspace_id", workspaceId)
+		.in("kind", ["video", "batch"]);
+
+	if (params?.kind) {
+		query = query.eq("kind", params.kind);
+	}
+	if (params?.status) {
+		query = query.eq("status", params.status);
+	}
+	if (params?.provider) {
+		query = query.eq("provider", params.provider);
+	}
+
+	if (params?.timeRange?.from) {
+		query = query.gte("created_at", params.timeRange.from);
+	}
+	if (params?.timeRange?.to) {
+		query = query.lte("created_at", params.timeRange.to);
+	}
+
+	const { data, error } = await query
+		.order("updated_at", { ascending: false })
+		.limit(Math.max(limit * 3, 30));
+
+	if (error) {
+		console.error("Error fetching async jobs:", error);
+		return [];
+	}
+
+	const jobs = (data ?? [])
+		.map((row) =>
+			toAsyncJobRow(row as Record<string, unknown>, {
+				includeWithoutWebhook: params?.includeWithoutWebhook === true,
+			}),
+		)
+		.filter((row): row is AsyncJobRow => Boolean(row))
+		.slice(0, limit);
+
+	const requestIds = Array.from(
+		new Set(
+			jobs
+				.map((row) => row.request_id)
+				.filter((value): value is string => typeof value === "string" && value.trim().length > 0),
+		),
+	);
+
+	if (requestIds.length === 0) return jobs;
+
+	const { data: requestRows, error: requestError } = await admin
+		.from("gateway_requests")
+		.select("request_id,created_at,cost_nanos")
+		.eq("workspace_id", workspaceId)
+		.in("request_id", requestIds)
+		.order("created_at", { ascending: false });
+
+	if (requestError) {
+		console.error("Error fetching async job request rows:", requestError);
+		return jobs;
+	}
+
+	const requestMap = new Map<
+		string,
+		{
+			created_at: string | null;
+			cost_nanos: number | null;
+		}
+	>();
+	for (const row of requestRows ?? []) {
+		const requestId = normalizeText((row as Record<string, unknown>).request_id);
+		if (!requestId || requestMap.has(requestId)) continue;
+		requestMap.set(requestId, {
+			created_at: normalizeIsoDate((row as Record<string, unknown>).created_at),
+			cost_nanos: normalizeFiniteNumber((row as Record<string, unknown>).cost_nanos),
+		});
+	}
+
+	return jobs.map((job) => {
+		const requestMeta = job.request_id ? requestMap.get(job.request_id) : null;
+		if (!requestMeta) return job;
+		return {
+			...job,
+			request_created_at: requestMeta.created_at,
+			request_cost_nanos: requestMeta.cost_nanos,
+		};
+	});
+}
+
+export async function fetchAsyncJobDetail(input: {
+	kind: "video" | "batch";
+	internalId: string;
+}): Promise<AsyncJobDetailRow | null> {
+	const supabase = await createClient();
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const admin = createAdminClient();
+
+	const { data, error } = await admin
+		.from("gateway_async_operations")
+		.select("kind,internal_id,request_id,provider,model,status,billed_at,created_at,updated_at,meta")
+		.eq("workspace_id", workspaceId)
+		.eq("kind", input.kind)
+		.eq("internal_id", input.internalId)
+		.maybeSingle();
+
+	if (error) {
+		console.error("Error fetching async job detail:", error);
+		return null;
+	}
+	if (!data) return null;
+
+	const base = toAsyncJobRow(data as Record<string, unknown>, {
+		includeWithoutWebhook: true,
+	});
+	if (!base) return null;
+	const meta =
+		data.meta && typeof data.meta === "object" && !Array.isArray(data.meta)
+			? (data.meta as Record<string, unknown>)
+			: null;
+	const webhookAttempts = parseWebhookAttempts(meta?.webhookAttempts ?? meta?.webhook_attempts);
+
+	let requestCreatedAt: string | null = null;
+	let requestCostNanos: number | null = null;
+	if (base.request_id) {
+		const { data: requestData } = await admin
+			.from("gateway_requests")
+			.select("created_at,cost_nanos")
+			.eq("workspace_id", workspaceId)
+			.eq("request_id", base.request_id)
+			.order("created_at", { ascending: false })
+			.limit(1)
+			.maybeSingle();
+		requestCreatedAt = normalizeIsoDate(requestData?.created_at);
+		requestCostNanos = normalizeFiniteNumber(requestData?.cost_nanos);
+	}
+
+	return {
+		...base,
+		endpoint: normalizeText(meta?.endpoint),
+		completion_window: normalizeText(meta?.completionWindow ?? meta?.completion_window),
+		resolution: normalizeText(meta?.resolution),
+		duration_seconds: normalizeFiniteNumber(meta?.seconds),
+		content_url: normalizeText(meta?.googleVideoUri ?? meta?.google_video_uri ?? meta?.downloadUrl ?? meta?.download_url),
+		cancel_url: input.kind === "batch" && ["pending", "in_progress"].includes((base.status ?? "").toLowerCase())
+			? `/v1/batches/${encodeURIComponent(base.internal_id)}/cancel`
+			: null,
+		output_file_id: normalizeText(meta?.outputFileId ?? meta?.output_file_id),
+		error_file_id: normalizeText(meta?.errorFileId ?? meta?.error_file_id),
+		request_created_at: requestCreatedAt,
+		request_cost_nanos: requestCostNanos,
+		webhook_attempts: webhookAttempts,
+	};
 }
 

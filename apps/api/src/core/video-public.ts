@@ -80,14 +80,16 @@ export function toPublicVideoProviderId(value: string | null | undefined): strin
 	return provider;
 }
 
-export function toPublicVideoStatus(value: unknown): "pending" | "in_progress" | "completed" | "failed" | "cancelled" {
+export function toPublicVideoStatus(
+	value: unknown,
+): "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired" {
 	const status = normalizeText(value)?.toLowerCase() ?? "";
 	if (status === "completed" || status === "succeeded" || status === "success") return "completed";
 	if (status === "cancelled" || status === "canceled") return "cancelled";
-	if (status === "expired") return "failed";
+	if (status === "expired") return "expired";
 	if (status === "failed" || status === "error") return "failed";
-	if (status === "in_progress" || status === "processing" || status === "running") return "in_progress";
-	return "pending";
+	if (status === "in_progress" || status === "processing" || status === "running") return "processing";
+	return "queued";
 }
 
 export async function issueSignedVideoDownloadUrl(args: {

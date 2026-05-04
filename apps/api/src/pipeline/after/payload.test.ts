@@ -97,7 +97,7 @@ describe("enrichSuccessPayload model selection", () => {
 		expect(payload.usage.total_tokens).toBe(2702);
 	});
 
-	it("keeps input_text_tokens equal to input_tokens and exposes cached read tokens", async () => {
+	it("returns canonical usage meters and nested cache details", async () => {
 		const ctx: any = {
 			endpoint: "responses",
 			protocol: "openai.responses",
@@ -139,9 +139,10 @@ describe("enrichSuccessPayload model selection", () => {
 
 		const payload = await enrichSuccessPayload(ctx, result);
 		expect(payload.usage.input_tokens).toBe(123);
-		expect(payload.usage.input_text_tokens).toBe(123);
-		expect(payload.usage.cached_read_text_tokens).toBe(64);
-		expect(payload.usage.cached_read_tokens_are_subset_of_input).toBeUndefined();
+		expect(payload.usage.output_tokens).toBe(9);
+		expect(payload.usage.input_tokens_details).toEqual({ cached_tokens: 64 });
+		expect(payload.usage.input_text_tokens).toBeUndefined();
+		expect(payload.usage.cached_read_text_tokens).toBeUndefined();
 	});
 
 	it("returns canonical API model id for responses payloads", async () => {

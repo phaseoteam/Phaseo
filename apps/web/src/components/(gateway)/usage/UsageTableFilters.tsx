@@ -15,6 +15,7 @@ import {
 import { X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { shortenIdentifier } from "@/lib/gateway/usage/timeFormatting";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 
 interface UsageTableFiltersProps {
@@ -48,6 +49,12 @@ export default function UsageTableFilters({
 	const [statusFilter, setStatusFilter] = useQueryState("status", {
 		defaultValue: "all",
 	});
+	const [requestFilter, setRequestFilter] = useQueryState("req", {
+		defaultValue: "",
+	});
+	const [sessionFilter, setSessionFilter] = useQueryState("session", {
+		defaultValue: "",
+	});
 
 	React.useEffect(() => {
 		if (!modelFilter) return;
@@ -72,7 +79,12 @@ export default function UsageTableFilters({
 	}, [keyFilter, apiKeys, setKeyFilter]);
 
 	const hasFilters =
-		modelFilter || providerFilter || keyFilter || statusFilter !== "all";
+		modelFilter ||
+		providerFilter ||
+		keyFilter ||
+		statusFilter !== "all" ||
+		requestFilter ||
+		sessionFilter;
 
 	const getProviderLabel = React.useCallback(
 		(providerId: string) => providerNames.get(providerId) || providerId,
@@ -134,13 +146,16 @@ export default function UsageTableFilters({
 		setProviderFilter("");
 		setKeyFilter("");
 		setStatusFilter("all");
+		setRequestFilter("");
+		setSessionFilter("");
 	};
 
 	const triggerClassName = "h-9 text-sm bg-background [&>span]:text-sm";
 
 	return (
-		<div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-			<div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-nowrap sm:overflow-x-auto sm:pb-0.5">
+		<div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+			<div className="flex flex-1 flex-col gap-2">
+				<div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:overflow-x-auto sm:pb-0.5">
 				<Select
 					value={modelFilter || "all"}
 					onValueChange={(v) => setModelFilter(v === "all" ? "" : v)}
@@ -270,6 +285,41 @@ export default function UsageTableFilters({
 					>
 						<X className="h-4 w-4" />
 					</Button>
+				) : null}
+			</div>
+				{requestFilter || sessionFilter ? (
+					<div className="flex flex-wrap items-center gap-2">
+						{requestFilter ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setRequestFilter("")}
+								className="h-8 gap-2 rounded-md px-2 text-xs"
+							>
+								<span className="text-muted-foreground">Req</span>
+								<code className="font-mono text-[11px]">
+									{shortenIdentifier(requestFilter, 6)}
+								</code>
+								<X className="h-3 w-3" />
+							</Button>
+						) : null}
+						{sessionFilter ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setSessionFilter("")}
+								className="h-8 gap-2 rounded-md px-2 text-xs"
+							>
+								<span className="text-muted-foreground">Session</span>
+								<code className="font-mono text-[11px]">
+									{shortenIdentifier(sessionFilter, 6)}
+								</code>
+								<X className="h-3 w-3" />
+							</Button>
+						) : null}
+					</div>
 				) : null}
 			</div>
 

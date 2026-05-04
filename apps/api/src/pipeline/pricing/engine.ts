@@ -5,6 +5,7 @@
 import { parseUsdToNanos, formatUsdFromNanosExact, nanosToCentsCeil } from "./money";
 import { matchesConditions, shallowMerge, evaluateConditions } from "./conditions";
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult } from "./types";
+import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
 
 const KNOWN_METERS = new Set<string>([
     "input_tokens",
@@ -167,21 +168,66 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         delete context.context;
     }
 
+    const canonicalTokens = resolveCanonicalTokenUsage(usageRaw);
+    const canonicalInputTokens = canonicalTokens.inputTokens;
+    const canonicalOutputTokens = canonicalTokens.outputTokens;
+    const canonicalTotalTokens = canonicalTokens.totalTokens;
+    if (meters.input_tokens == null) meters.input_tokens = canonicalInputTokens;
+    if (meters.output_tokens == null) meters.output_tokens = canonicalOutputTokens;
+    if (meters.total_tokens == null) meters.total_tokens = canonicalTotalTokens;
+
+    const cachedReadTokens = pickFirstFiniteNumber(usageRaw, [
+        "cached_read_text_tokens",
+        "cache_read_input_tokens",
+        "cachedInputTokens",
+        "cachedContentTokenCount",
+        "input_tokens_details.cached_tokens",
+        "input_details.cached_tokens",
+        "prompt_tokens_details.cached_tokens",
+    ]);
+    const cachedWriteTokens = pickFirstFiniteNumber(usageRaw, [
+        "cached_write_text_tokens",
+        "cache_creation_input_tokens",
+        "_ext.cachedWriteTokens",
+        "output_tokens_details.cached_tokens",
+        "completion_tokens_details.cached_tokens",
+    ]);
+    const requests = resolveRequestCountUsage(usageRaw);
+    if (typeof cachedReadTokens === "number" && meters.cached_read_text_tokens == null) {
+        meters.cached_read_text_tokens = cachedReadTokens;
+    }
+    if (typeof cachedWriteTokens === "number" && meters.cached_write_text_tokens == null) {
+        meters.cached_write_text_tokens = cachedWriteTokens;
+    }
+    if (typeof requests === "number" && meters.requests == null) {
+        meters.requests = requests;
+    }
+
     const inputTextTokens = meters.input_text_tokens;
-    const cachedReadTokens = meters.cached_read_text_tokens;
-    const canonicalInputTokens =
-        typeof usageRaw?.input_tokens === "number"
-            ? usageRaw.input_tokens
-            : (typeof usageRaw?.prompt_tokens === "number" ? usageRaw.prompt_tokens : undefined);
     const cachedReadIsSubsetHint = usageRaw?.cached_read_tokens_are_subset_of_input;
     const shouldTreatCachedReadAsSubset =
-        cachedReadIsSubsetHint === true &&
+        cachedReadIsSubsetHint === true ||
+        (
+            cachedReadIsSubsetHint !== false &&
+            typeof usageRaw?.input_tokens_details?.cached_tokens === "number"
+        );
+    const inputTextMirrorsCanonical =
         typeof inputTextTokens === "number" &&
         typeof canonicalInputTokens === "number" &&
         inputTextTokens === canonicalInputTokens;
+
+    if (meters.input_text_tokens == null) {
+        meters.input_text_tokens =
+            shouldTreatCachedReadAsSubset && typeof cachedReadTokens === "number"
+                ? Math.max(0, canonicalInputTokens - cachedReadTokens)
+                : canonicalInputTokens;
+    }
+    if (meters.output_text_tokens == null) {
+        meters.output_text_tokens = canonicalOutputTokens;
+    }
     if (
         shouldTreatCachedReadAsSubset &&
-        typeof inputTextTokens === "number" &&
+        inputTextMirrorsCanonical &&
         typeof cachedReadTokens === "number" &&
         cachedReadTokens > 0
     ) {

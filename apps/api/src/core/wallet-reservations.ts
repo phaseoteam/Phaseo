@@ -36,6 +36,16 @@ type WalletReservationRpcRow = {
 	after_reserved_nanos?: number | null;
 };
 
+type ReservationRpcPayload = {
+	p_workspace_id?: string;
+	p_team_id?: string;
+	p_reservation_id: string;
+	p_amount_nanos?: number;
+	p_hold_ref_id?: string | null;
+	p_capture_ref_id?: string | null;
+	p_release_ref_id?: string | null;
+};
+
 function normalizeStatus(value: unknown): WalletReservationStatus {
 	const status = String(value ?? "").trim().toLowerCase();
 	if (
@@ -72,19 +82,50 @@ function normalizeResult(data: unknown): WalletReservationResult | null {
 	};
 }
 
+function shouldRetryWithLegacyTeamId(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const source = error as Record<string, unknown>;
+	if (String(source.code ?? "") !== "PGRST202") return false;
+	const haystack = `${String(source.message ?? "")} ${String(source.details ?? "")} ${String(source.hint ?? "")}`
+		.trim()
+		.toLowerCase();
+	return haystack.includes("p_team_id") || haystack.includes("p_workspace_id");
+}
+
+async function callReservationRpc(
+	fn: "gateway_wallet_reserve_once" | "gateway_wallet_capture_once" | "gateway_wallet_release_once",
+	params: ReservationRpcPayload,
+): Promise<unknown> {
+	const supabase = getSupabaseAdmin();
+	const primary = await supabase.rpc(fn, params);
+	if (!primary.error) return primary.data;
+	if (!shouldRetryWithLegacyTeamId(primary.error) || !params.p_workspace_id) {
+		throw primary.error;
+	}
+
+	const legacyParams: ReservationRpcPayload = {
+		...params,
+		p_team_id: params.p_workspace_id,
+	};
+	delete legacyParams.p_workspace_id;
+
+	const fallback = await supabase.rpc(fn, legacyParams);
+	if (fallback.error) throw fallback.error;
+	return fallback.data;
+}
+
 export async function reserveWalletCredits(args: {
 	workspaceId: string;
 	reservationId: string;
 	amountNanos: number;
 	holdRefId?: string | null;
 }): Promise<WalletReservationResult> {
-	const { data, error } = await getSupabaseAdmin().rpc("gateway_wallet_reserve_once", {
+	const data = await callReservationRpc("gateway_wallet_reserve_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_amount_nanos: Math.max(0, Math.trunc(args.amountNanos)),
 		p_hold_ref_id: args.holdRefId ?? null,
 	});
-	if (error) throw error;
 	return normalizeResult(data) ?? {
 		applied: false,
 		alreadyApplied: false,
@@ -102,12 +143,11 @@ export async function captureWalletReservation(args: {
 	reservationId: string;
 	captureRefId?: string | null;
 }): Promise<WalletReservationResult> {
-	const { data, error } = await getSupabaseAdmin().rpc("gateway_wallet_capture_once", {
+	const data = await callReservationRpc("gateway_wallet_capture_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_capture_ref_id: args.captureRefId ?? null,
 	});
-	if (error) throw error;
 	return normalizeResult(data) ?? {
 		applied: false,
 		alreadyApplied: false,
@@ -125,12 +165,11 @@ export async function releaseWalletReservation(args: {
 	reservationId: string;
 	releaseRefId?: string | null;
 }): Promise<WalletReservationResult> {
-	const { data, error } = await getSupabaseAdmin().rpc("gateway_wallet_release_once", {
+	const data = await callReservationRpc("gateway_wallet_release_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
 		p_release_ref_id: args.releaseRefId ?? null,
 	});
-	if (error) throw error;
 	return normalizeResult(data) ?? {
 		applied: false,
 		alreadyApplied: false,

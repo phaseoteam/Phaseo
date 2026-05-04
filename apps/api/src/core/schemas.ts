@@ -198,6 +198,7 @@ export type BatchRequest = z.infer<typeof BatchSchema>;
 export const ResponsesSchema = z.object({
     model: z.string().min(1),
     input: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]),
+    session_id: z.string().trim().min(1).max(256).optional(),
     background: z.boolean().optional(),
     include: z.array(z.string()).optional(),
     instructions: z.string().optional(),
@@ -461,6 +462,7 @@ const GatewayDatetimeToolSchema = z.object({
 
 export const ChatCompletionsSchema = z.object({
     model: z.string().min(1),
+    session_id: z.string().trim().min(1).max(256).optional(),
     messages: z.array(
         z.discriminatedUnion("role", [
             z.object({
@@ -605,6 +607,7 @@ const AnthropicToolChoiceSchema = z.union([
 
 export const AnthropicMessagesSchema = z.object({
     model: z.string().min(1),
+    session_id: z.string().trim().min(1).max(256).optional(),
     messages: z.array(
         z.object({
             role: z.enum(["user", "assistant"]),

@@ -32,10 +32,11 @@ describe("video-public helpers", () => {
 	});
 
 	it("normalizes video status values", () => {
-		expect(toPublicVideoStatus("processing")).toBe("in_progress");
+		expect(toPublicVideoStatus("processing")).toBe("processing");
+		expect(toPublicVideoStatus("queued")).toBe("queued");
 		expect(toPublicVideoStatus("completed")).toBe("completed");
 		expect(toPublicVideoStatus("cancelled")).toBe("cancelled");
-		expect(toPublicVideoStatus("expired")).toBe("failed");
+		expect(toPublicVideoStatus("expired")).toBe("expired");
 	});
 
 	it("issues and verifies signed download URLs", async () => {

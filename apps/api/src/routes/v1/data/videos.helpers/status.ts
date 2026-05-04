@@ -141,38 +141,49 @@ export function mapAtlasVideoStatus(value: unknown): "queued" | "in_progress" | 
 	return "queued";
 }
 
-export function normalizeVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+export function normalizeVideoStatus(
+	value: unknown,
+): "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired" {
 	const status = String(value ?? "").trim().toLowerCase();
 	if (!status) return "queued";
 	if (status === "completed" || status === "complete" || status === "succeeded" || status === "success") {
 		return "completed";
 	}
+	if (status === "expired") {
+		return "expired";
+	}
+	if (status === "cancelled" || status === "canceled") {
+		return "cancelled";
+	}
 	if (
 		status === "failed" ||
-		status === "error" ||
-		status === "cancelled" ||
-		status === "canceled" ||
-		status === "expired"
+		status === "error"
 	) {
 		return "failed";
 	}
 	if (status === "in_progress" || status === "processing" || status === "running" || status === "pending") {
-		return "in_progress";
+		return "processing";
 	}
 	return "queued";
 }
 
-export function normalizeVideoStatusFilter(value: string): "queued" | "in_progress" | "completed" | "failed" | null {
+export function normalizeVideoStatusFilter(
+	value: string,
+): "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired" | null {
 	const status = value.trim().toLowerCase();
 	if (!status) return null;
 	if (status === "queued" || status === "pending") return "queued";
-	if (status === "in_progress" || status === "processing" || status === "running") return "in_progress";
+	if (status === "in_progress" || status === "processing" || status === "running") return "processing";
 	if (status === "completed" || status === "complete" || status === "success" || status === "succeeded") return "completed";
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	if (status === "failed" || status === "error") return "failed";
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
 	return null;
 }
 
-export function parseVideoListStatuses(url: URL): Array<"queued" | "in_progress" | "completed" | "failed"> {
+export function parseVideoListStatuses(
+	url: URL,
+): string[] {
 	const values = url.searchParams.getAll("status");
 	const expanded = values.flatMap((value) =>
 		value
@@ -182,8 +193,26 @@ export function parseVideoListStatuses(url: URL): Array<"queued" | "in_progress"
 	);
 	const normalized = expanded
 		.map((value) => normalizeVideoStatusFilter(value))
-		.filter((value): value is "queued" | "in_progress" | "completed" | "failed" => value !== null);
-	return [...new Set(normalized)];
+		.filter((value): value is "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired" => value !== null);
+	const aliases = normalized.flatMap((status) => {
+		switch (status) {
+			case "queued":
+				return ["queued", "pending"];
+			case "processing":
+				return ["processing", "in_progress", "running"];
+			case "completed":
+				return ["completed", "complete", "success", "succeeded"];
+			case "failed":
+				return ["failed", "error"];
+			case "cancelled":
+				return ["cancelled", "canceled"];
+			case "expired":
+				return ["expired"];
+			default:
+				return [];
+		}
+	});
+	return [...new Set(aliases)];
 }
 
 export function parseVideoListLimit(url: URL): number {
@@ -423,10 +452,19 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		toFiniteNumber((args.rawPayload as any)?.data?.usage?.total_tokens),
 		toFiniteNumber((args.rawPayload as any)?.data?.usage?.totalTokens),
 	].find((value): value is number => value != null && value > 0);
+	const audioCandidate =
+		typeof (args.requestOptions as any)?.audio === "boolean"
+			? (args.requestOptions as any).audio
+			: typeof (args.requestOptions as any)?.video_params?.audio === "boolean"
+				? (args.requestOptions as any).video_params.audio
+				: typeof args.videoMeta?.audio === "boolean"
+					? args.videoMeta.audio
+					: undefined;
 	const baseRequestOptions = (args.requestOptions ?? {}) as Record<string, unknown>;
 	const pricingRequestOptions = buildVideoPricingRequestOptions({
 		resolution: args.resolution ?? args.videoMeta?.resolution ?? null,
 		quality: args.quality ?? args.videoMeta?.quality ?? null,
+		audio: audioCandidate,
 		input_image_count: normalizedInputImageCount,
 		input_video_seconds: inputVideoSecondsCandidate,
 		input_video_count: inputVideoCountCandidate,

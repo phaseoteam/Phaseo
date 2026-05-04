@@ -21,6 +21,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { getBaseModel } from "../execute/utils";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { resolveNonStreamLatencyMs } from "./timing";
 import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
@@ -284,7 +285,7 @@ async function handleNonStreamResponse(
                 ...(usageNormalized && typeof usageNormalized === "object" ? usageNormalized : {}),
                 _provider_id: result.provider,
             },
-            { endpoint: ctx.endpoint, body: ctx.body }
+            { endpoint: ctx.endpoint, body: ctx.body, includeInternalHints: true }
         ),
         toolUsage
     );
@@ -329,7 +330,7 @@ async function handleNonStreamResponse(
     // Update payload with normalized usage
     payload.usage = shapedUsageFinal;
     const generationMs = ctx.meta.generation_ms ?? result.generationTimeMs ?? null;
-    const latencyMs = ctx.meta.latency_ms ?? generationMs ?? null;
+    const latencyMs = resolveNonStreamLatencyMs(ctx, generationMs);
     const outputTokens = shapedUsageFinal?.output_tokens ?? shapedUsageFinal?.output_text_tokens ?? 0;
     const throughputTps = generationMs && generationMs > 0
         ? outputTokens / (generationMs / 1000)

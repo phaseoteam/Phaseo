@@ -4,6 +4,10 @@
 // How: Parses upstream errors, builds payloads, sets headers, and triggers audits.
 
 import type { Endpoint } from "./types";
+import {
+    isBodyOnlyTextSessionEndpoint,
+    normalizeTextBodySessionId,
+} from "./session-id";
 import type { PipelineContext } from "@pipeline/before/types";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
@@ -55,6 +59,13 @@ function headersToRecord(headers: Headers | null | undefined): Record<string, st
         if (count >= 128) break;
     }
     return Object.keys(out).length > 0 ? out : null;
+}
+
+function normalizeBoundedString(value: unknown, maxLength: number): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
 }
 
 function toExecuteFailureSample(
@@ -854,9 +865,12 @@ export async function handleError({
             null,
         sessionId:
             ctx?.meta?.sessionId ??
-            (typeof body?.session_id === "string" ? body.session_id : null) ??
-            (typeof body?.sessionId === "string" ? body.sessionId : null) ??
-            attributionHeaders.sessionId ??
+            (isBodyOnlyTextSessionEndpoint(endpoint)
+                ? normalizeTextBodySessionId(body?.session_id)
+                : normalizeBoundedString(
+                    body?.session_id ?? body?.sessionId ?? attributionHeaders.sessionId,
+                    128,
+                )) ??
             null,
         traceData:
             ctx?.meta?.trace ??
@@ -892,6 +906,9 @@ export async function handleError({
     if (stage === "execute") {
         auditArgs.stream = ctx?.stream;
         auditArgs.provider = providerForAudit;
+        auditArgs.providerAttempts = Array.isArray(ctx?.providerAttempts)
+            ? ctx.providerAttempts
+            : null;
     }
     try {
         await auditFailure(auditArgs);

@@ -46,11 +46,13 @@ import {
 	normalizeModerationResult,
 	type NormalizedModerationResult,
 } from "@/lib/chat/roomRequestBuilders";
+import { normalizeMediaGenerationStatus } from "@/lib/chat/mediaGenerationStatus";
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
+import { normalizePlaygroundMediaUrl } from "@/lib/utils/urlSafety";
 
 const PLAYGROUND_APP_HEADERS = {
 	"x-app-id": "ai-stats-playground",
@@ -132,6 +134,8 @@ const TTS_CAPABILITY_HINTS = ["audio.speech", "audio.generate"];
 const MUSIC_CAPABILITY_HINTS = ["music.generate", "music"];
 const MUSIC_POLL_INTERVAL_MS = 2_500;
 const MUSIC_POLL_MAX_ATTEMPTS = 24;
+const VIDEO_POLL_INTERVAL_MS = 2_500;
+const VIDEO_POLL_MAX_ATTEMPTS = 24;
 
 function resolveSupportedModelId(
 	models: GatewaySupportedModel[],
@@ -264,6 +268,7 @@ function wait(ms: number): Promise<void> {
 }
 
 type MusicStatus = "queued" | "in_progress" | "completed" | "failed" | null;
+type VideoStatus = "pending" | "completed" | "failed" | null;
 
 function normalizeMusicStatus(value: unknown): MusicStatus {
 	if (typeof value !== "string") return null;
@@ -412,6 +417,143 @@ async function pollMusicGeneration(
 		}
 	}
 	return { payload: latestPayload, urls: [], status: latestStatus };
+}
+
+function extractVideoStatus(payload: unknown): VideoStatus {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	const result =
+		record.result && typeof record.result === "object"
+			? (record.result as Record<string, unknown>)
+			: null;
+	const output =
+		record.output && typeof record.output === "object"
+			? (record.output as Record<string, unknown>)
+			: null;
+	return (
+		normalizeMediaGenerationStatus(record.status) ??
+		normalizeMediaGenerationStatus(record.task_status) ??
+		normalizeMediaGenerationStatus(record.taskStatus) ??
+		normalizeMediaGenerationStatus(result?.status) ??
+		normalizeMediaGenerationStatus(output?.status) ??
+		null
+	);
+}
+
+function extractVideoResourceId(payload: unknown): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	const record = payload as Record<string, unknown>;
+	const result =
+		record.result && typeof record.result === "object"
+			? (record.result as Record<string, unknown>)
+			: null;
+	const candidates = [
+		record.id,
+		record.video_id,
+		record.videoId,
+		record.resource_id,
+		record.resourceId,
+		record.native_id,
+		record.nativeId,
+		result?.id,
+		result?.video_id,
+		result?.resource_id,
+	];
+	for (const value of candidates) {
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (trimmed) return trimmed;
+	}
+	return null;
+}
+
+async function parseApiPayload(response: Response): Promise<unknown> {
+	const contentType = response.headers.get("content-type") ?? "";
+	if (contentType.includes("application/json")) {
+		return response.json();
+	}
+	return { output_text: await response.text() };
+}
+
+async function fetchVideoContentObjectUrl(
+	resourceId: string,
+	signal?: AbortSignal,
+): Promise<string | null> {
+	const response = await fetch(
+		`/api/chat/video?resourceId=${encodeURIComponent(resourceId)}&content=1`,
+		{
+			method: "GET",
+			signal,
+		},
+	);
+	if (!response.ok) {
+		throw new Error(await readErrorMessage(response));
+	}
+	const blob = await response.blob();
+	if (!blob.size) return null;
+	return URL.createObjectURL(blob);
+}
+
+async function pollVideoGeneration(
+	resourceId: string,
+	signal?: AbortSignal,
+): Promise<{
+	payload: unknown;
+	urls: string[];
+	status: VideoStatus;
+	objectUrl: string | null;
+}> {
+	let latestPayload: unknown = null;
+	let latestStatus: VideoStatus = null;
+	for (let attempt = 0; attempt < VIDEO_POLL_MAX_ATTEMPTS; attempt += 1) {
+		if (signal?.aborted) {
+			throw new DOMException("Polling aborted", "AbortError");
+		}
+		const response = await fetch(
+			`/api/chat/video?resourceId=${encodeURIComponent(resourceId)}`,
+			{
+				method: "GET",
+				signal,
+			},
+		);
+		const payload = await parseApiPayload(response);
+		latestPayload = payload;
+		if (!response.ok) {
+			throw new Error(await readErrorMessage(response));
+		}
+		const urls = extractGenerationUrls(payload);
+		if (urls.length > 0) {
+			return { payload, urls, status: "completed", objectUrl: null };
+		}
+		const status = extractVideoStatus(payload);
+		latestStatus = status;
+		if (status === "failed") {
+			throw new Error(
+				extractMusicErrorMessage(payload) ?? "Video generation failed.",
+			);
+		}
+		if (status === "completed") {
+			const objectUrl = await fetchVideoContentObjectUrl(resourceId, signal);
+			return {
+				payload,
+				urls: objectUrl ? [objectUrl] : [],
+				status,
+				objectUrl,
+			};
+		}
+		if (attempt < VIDEO_POLL_MAX_ATTEMPTS - 1) {
+			await wait(VIDEO_POLL_INTERVAL_MS);
+			if (signal?.aborted) {
+				throw new DOMException("Polling aborted", "AbortError");
+			}
+		}
+	}
+	return {
+		payload: latestPayload,
+		urls: [],
+		status: latestStatus,
+		objectUrl: null,
+	};
 }
 
 type ParsedPlaygroundError = {
@@ -1369,6 +1511,8 @@ export default function ModelPlayground({
 	const audioStartRef = useRef<number | null>(null);
 	const isMountedRef = useRef(true);
 	const musicPollControllerRef = useRef<AbortController | null>(null);
+	const videoPollControllerRef = useRef<AbortController | null>(null);
+	const videoObjectUrlsRef = useRef<string[]>([]);
 	const [imagePrompt, setImagePrompt] = useState("");
 	const [imageResponseUrls, setImageResponseUrls] = useState<string[]>([]);
 	const [imageResponseText, setImageResponseText] = useState("");
@@ -1589,6 +1733,16 @@ export default function ModelPlayground({
 	const isAudioGenerationMode =
 		mode === "audio" || mode === "tts" || mode === "music";
 	const audioAction = mode === "music" ? "music" : "speech";
+
+	const replaceVideoResponseUrls = (nextUrls: string[]) => {
+		for (const url of videoObjectUrlsRef.current) {
+			if (url.startsWith("blob:")) {
+				URL.revokeObjectURL(url);
+			}
+		}
+		videoObjectUrlsRef.current = nextUrls.filter((url) => url.startsWith("blob:"));
+		setVideoResponseUrls(nextUrls);
+	};
 	const resolvedAudioModeModelId =
 		mode === "music"
 			? resolvedMusicModelId
@@ -1625,6 +1779,14 @@ export default function ModelPlayground({
 			isMountedRef.current = false;
 			musicPollControllerRef.current?.abort();
 			musicPollControllerRef.current = null;
+			videoPollControllerRef.current?.abort();
+			videoPollControllerRef.current = null;
+			for (const url of videoObjectUrlsRef.current) {
+				if (url.startsWith("blob:")) {
+					URL.revokeObjectURL(url);
+				}
+			}
+			videoObjectUrlsRef.current = [];
 		};
 	}, []);
 	useEffect(() => {
@@ -2036,10 +2198,12 @@ export default function ModelPlayground({
 
 	const handleGenerateVideo = async () => {
 		if (!trimmedVideoPrompt || videoIsGenerating || !resolvedVideoModelId) return;
+		videoPollControllerRef.current?.abort();
+		videoPollControllerRef.current = null;
 
 		setVideoIsGenerating(true);
 		setVideoError(null);
-		setVideoResponseUrls([]);
+		replaceVideoResponseUrls([]);
 		setVideoResponseText("");
 
 		try {
@@ -2064,25 +2228,58 @@ export default function ModelPlayground({
 				throw new Error(await readErrorMessage(response));
 			}
 
-			const contentType = response.headers.get("content-type") ?? "";
-			const payload = contentType.includes("application/json")
-				? await response.json()
-				: { output_text: await response.text() };
-			const urls = extractGenerationUrls(payload);
+			let payload = await parseApiPayload(response);
+			let urls = extractGenerationUrls(payload);
+			let nextVideoText = "";
+			if (!urls.length) {
+				const resourceId = extractVideoResourceId(payload);
+				if (resourceId) {
+					const pollController = new AbortController();
+					videoPollControllerRef.current = pollController;
+					const polled = await pollVideoGeneration(
+						resourceId,
+						pollController.signal,
+					);
+					if (videoPollControllerRef.current === pollController) {
+						videoPollControllerRef.current = null;
+					}
+					payload = polled.payload;
+					urls = polled.urls;
+					if (!urls.length && polled.status === "completed") {
+						nextVideoText =
+							"Video generation completed with no playable output URL.";
+					} else if (!urls.length && polled.status !== "failed") {
+						nextVideoText =
+							"Video generation is still in progress. Please try again shortly.";
+					}
+				}
+			}
 			const text = extractResponseText(payload).trim();
-			setVideoResponseUrls(urls);
+			if (!isMountedRef.current) return;
+			replaceVideoResponseUrls(urls);
 			setVideoResponseText(
 				text ||
+					nextVideoText ||
 					(urls.length ? "" : JSON.stringify(payload, null, 2) || "Video request completed."),
 			);
 		} catch (requestError) {
+			if (
+				requestError instanceof DOMException &&
+				requestError.name === "AbortError"
+			) {
+				return;
+			}
 			const message =
 				requestError instanceof Error
 					? requestError.message
 					: "Video request failed. Please try again.";
+			if (!isMountedRef.current) return;
 			setVideoError(message);
 		} finally {
-			setVideoIsGenerating(false);
+			videoPollControllerRef.current = null;
+			if (isMountedRef.current) {
+				setVideoIsGenerating(false);
+			}
 		}
 	};
 
@@ -2187,18 +2384,36 @@ export default function ModelPlayground({
 	const showEmptyAudioResponse =
 		!audioIsGenerating && !audioResponseUrl && !audioResponseText && !audioError;
 	const showAudioThinkingState = audioIsGenerating && !audioResponseUrl && !audioResponseText;
+	const safeImageResponseUrls = useMemo(
+		() =>
+			imageResponseUrls
+				.map((url) =>
+					normalizePlaygroundMediaUrl(url, {
+						allowImageData: true,
+					}),
+				)
+				.filter((url): url is string => Boolean(url)),
+		[imageResponseUrls],
+	);
+	const safeVideoResponseUrls = useMemo(
+		() =>
+			videoResponseUrls
+				.map((url) => normalizePlaygroundMediaUrl(url))
+				.filter((url): url is string => Boolean(url)),
+		[videoResponseUrls],
+	);
 	const showImageThinkingState =
-		imageIsGenerating && !imageResponseUrls.length && !imageResponseText;
+		imageIsGenerating && !safeImageResponseUrls.length && !imageResponseText;
 	const showEmptyImageResponse =
 		!imageIsGenerating &&
-		!imageResponseUrls.length &&
+		!safeImageResponseUrls.length &&
 		!imageResponseText &&
 		!imageError;
 	const showVideoThinkingState =
-		videoIsGenerating && !videoResponseUrls.length && !videoResponseText;
+		videoIsGenerating && !safeVideoResponseUrls.length && !videoResponseText;
 	const showEmptyVideoResponse =
 		!videoIsGenerating &&
-		!videoResponseUrls.length &&
+		!safeVideoResponseUrls.length &&
 		!videoResponseText &&
 		!videoError;
 	const showEmbeddingsThinkingState =
@@ -2426,9 +2641,9 @@ export default function ModelPlayground({
 					</div>
 
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
-						{imageResponseUrls.length ? (
+						{safeImageResponseUrls.length ? (
 							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-								{imageResponseUrls.map((url, index) => (
+								{safeImageResponseUrls.map((url, index) => (
 									<a
 										key={`${url}-${index}`}
 										href={url}
@@ -2486,9 +2701,9 @@ export default function ModelPlayground({
 					</div>
 
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
-						{videoResponseUrls.length ? (
+						{safeVideoResponseUrls.length ? (
 							<div className="space-y-4">
-								{videoResponseUrls.map((url, index) => (
+								{safeVideoResponseUrls.map((url, index) => (
 									<div key={`${url}-${index}`} className="space-y-2">
 										<video
 											controls

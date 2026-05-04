@@ -684,7 +684,7 @@ async function attemptProviderWithIR(
 				provider: candidate.providerId,
 				model: baseModel,
 				ok: executorResult.upstream.ok,
-				latency_ms: attemptDurationMs,
+				latency_ms: ctx.meta.latency_ms ?? attemptDurationMs,
 				generation_ms: ctx.meta.generation_ms ?? generationTimeMs,
 				tokens_in: tokensIn,
 				tokens_out: tokensOut,

@@ -24,6 +24,7 @@ export type VideoJobMeta = {
 	seconds?: number | null;
 	resolution?: string | null;
 	quality?: string | null;
+	audio?: boolean | null;
 	inputImageCount?: number | null;
 	inputVideoCount?: number | null;
 	inputVideoSeconds?: number | null;
@@ -54,6 +55,9 @@ export type VideoJobMeta = {
 	keySource?: "gateway" | "byok" | null;
 	byokKeyId?: string | null;
 	webhookDeliveries?: Record<string, string> | null;
+	webhookAttempts?: Record<string, unknown>[] | null;
+	webhookRetryQueue?: Record<string, unknown> | null;
+	nextWebhookRetryAt?: string | null;
 	lastWebhookProgress?: number | null;
 	lastWebhookProgressAt?: string | null;
 	lastWebhookDispatchedAt?: string | null;
@@ -99,6 +103,9 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.seconds === "number") out.seconds = source.seconds;
 	if (typeof source.resolution === "string") out.resolution = source.resolution;
 	if (typeof source.quality === "string") out.quality = source.quality;
+	if (typeof source.audio === "boolean") out.audio = source.audio;
+	if (typeof source.generateAudio === "boolean") out.audio = source.generateAudio;
+	if (typeof source.generate_audio === "boolean") out.audio = source.generate_audio;
 	const camelInputImageCount = toNonNegativeInteger(source.inputImageCount);
 	if (camelInputImageCount != null) out.inputImageCount = camelInputImageCount;
 	const snakeInputImageCount = toNonNegativeInteger(source.input_image_count);
@@ -171,6 +178,16 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (source.webhook_deliveries && typeof source.webhook_deliveries === "object" && !Array.isArray(source.webhook_deliveries)) {
 		out.webhookDeliveries = source.webhook_deliveries as Record<string, string>;
 	}
+	if (Array.isArray(source.webhookAttempts)) out.webhookAttempts = source.webhookAttempts as Record<string, unknown>[];
+	if (Array.isArray(source.webhook_attempts)) out.webhookAttempts = source.webhook_attempts as Record<string, unknown>[];
+	if (source.webhookRetryQueue && typeof source.webhookRetryQueue === "object" && !Array.isArray(source.webhookRetryQueue)) {
+		out.webhookRetryQueue = source.webhookRetryQueue as Record<string, unknown>;
+	}
+	if (source.webhook_retry_queue && typeof source.webhook_retry_queue === "object" && !Array.isArray(source.webhook_retry_queue)) {
+		out.webhookRetryQueue = source.webhook_retry_queue as Record<string, unknown>;
+	}
+	if (typeof source.nextWebhookRetryAt === "string") out.nextWebhookRetryAt = source.nextWebhookRetryAt;
+	if (typeof source.next_webhook_retry_at === "string") out.nextWebhookRetryAt = source.next_webhook_retry_at;
 	if (typeof source.lastWebhookProgress === "number") out.lastWebhookProgress = source.lastWebhookProgress;
 	if (typeof source.last_webhook_progress === "number") out.lastWebhookProgress = source.last_webhook_progress;
 	if (typeof source.lastWebhookProgressAt === "string") out.lastWebhookProgressAt = source.lastWebhookProgressAt;

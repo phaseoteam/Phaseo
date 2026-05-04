@@ -5,7 +5,16 @@ import {
 	proxyGatewayPost,
 } from "@/app/api/chat/_shared/gatewayProxy";
 
-const VIDEO_CHAT_API_ENABLED = false;
+function isVideoChatApiEnabled(raw: unknown): boolean {
+	const normalized = String(raw ?? "").trim().toLowerCase();
+	if (!normalized) return true;
+	return !(
+		normalized === "0" ||
+		normalized === "false" ||
+		normalized === "no" ||
+		normalized === "off"
+	);
+}
 
 function notImplementedYetResponse() {
 	return new Response(
@@ -70,7 +79,14 @@ function isTruthyQueryValue(value: string | null): boolean {
 }
 
 export async function GET(request: NextRequest) {
-	if (!VIDEO_CHAT_API_ENABLED) return notImplementedYetResponse();
+	if (
+		!isVideoChatApiEnabled(
+			process.env.VIDEO_CHAT_API_ENABLED ??
+				process.env.NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED,
+		)
+	) {
+		return notImplementedYetResponse();
+	}
 
 	if (isTruthyQueryValue(request.nextUrl.searchParams.get("list"))) {
 		return proxyGatewayGet({
@@ -98,7 +114,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-	if (!VIDEO_CHAT_API_ENABLED) return notImplementedYetResponse();
+	if (
+		!isVideoChatApiEnabled(
+			process.env.VIDEO_CHAT_API_ENABLED ??
+				process.env.NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED,
+		)
+	) {
+		return notImplementedYetResponse();
+	}
 
 	const payload = (await parseProxyEnvelope(request)) as VideoRoutePayload;
 
