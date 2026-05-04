@@ -28,7 +28,7 @@ async function ContactPersonalization() {
 	await connection();
 
 	const { isOpen, minutesUntilNextWindow } = getSupportAvailability();
-	const { date } = getLondonInfo();
+	const { label: londonLabel } = getLondonInfo();
 	const backOnlineLabel = formatSupportWait(minutesUntilNextWindow);
 	const statusLabel = isOpen
 		? "Available now"
@@ -43,14 +43,6 @@ async function ContactPersonalization() {
 		: backOnlineLabel
 			? `Support will be back online in ${backOnlineLabel}. Replies may be delayed, but you will still get a direct human response from me as soon as possible.`
 			: "I'm away right now. Replies may be delayed, but you will still get a direct human response from me as soon as possible.";
-	const londonLabel = date.toLocaleString("en-GB", {
-		hour: "2-digit",
-		minute: "2-digit",
-		day: "2-digit",
-		month: "short",
-		weekday: "short",
-	});
-
 	const workspaceId = await getWorkspaceIdFromCookie();
 	const supabase = await createClient();
 	const {

@@ -99,10 +99,10 @@ export default function Support() {
 		  )}.`
 		: "Live chat replies resume soon.";
 	useEffect(() => {
-		const { date, day, minutes } = getLondonInfo();
+		const { isoLike, day, minutes } = getLondonInfo();
 		console.log(
 			"[support] London",
-			date.toISOString(),
+			isoLike,
 			`day=${day}`,
 			`minuteOfDay=${minutes}`,
 			`open=${isOpen}`,

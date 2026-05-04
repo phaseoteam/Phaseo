@@ -99,10 +99,10 @@ export default function TeamSwitcher({
 		: "bg-amber-500 ring-amber-400/60";
 
 	useEffect(() => {
-		const { date, day, minutes } = getLondonInfo();
+		const { isoLike, day, minutes } = getLondonInfo();
 		console.log(
 			"[workspace-switcher] London",
-			date.toISOString(),
+			isoLike,
 			`day=${day}`,
 			`minuteOfDay=${minutes}`,
 			`open=${supportIsOpen}`,

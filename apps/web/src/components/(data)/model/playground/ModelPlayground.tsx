@@ -13,9 +13,11 @@ import {
 	Mic,
 	MessageSquare,
 	Music2,
+	RotateCcw,
 	ShieldAlert,
 	Sparkles,
 	TerminalSquare,
+	Trash2,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
@@ -2196,6 +2198,12 @@ export default function ModelPlayground({
 		}
 	};
 
+	const clearImageGeneration = () => {
+		setImageError(null);
+		setImageResponseUrls([]);
+		setImageResponseText("");
+	};
+
 	const handleGenerateVideo = async () => {
 		if (!trimmedVideoPrompt || videoIsGenerating || !resolvedVideoModelId) return;
 		videoPollControllerRef.current?.abort();
@@ -2281,6 +2289,14 @@ export default function ModelPlayground({
 				setVideoIsGenerating(false);
 			}
 		}
+	};
+
+	const clearVideoGeneration = () => {
+		videoPollControllerRef.current?.abort();
+		videoPollControllerRef.current = null;
+		setVideoError(null);
+		replaceVideoResponseUrls([]);
+		setVideoResponseText("");
 	};
 
 	const handleGenerateEmbeddings = async () => {
@@ -2402,6 +2418,10 @@ export default function ModelPlayground({
 				.filter((url): url is string => Boolean(url)),
 		[videoResponseUrls],
 	);
+	const showImageFailureState =
+		Boolean(imageError) &&
+		!imageIsGenerating &&
+		!safeImageResponseUrls.length;
 	const showImageThinkingState =
 		imageIsGenerating && !safeImageResponseUrls.length && !imageResponseText;
 	const showEmptyImageResponse =
@@ -2411,6 +2431,10 @@ export default function ModelPlayground({
 		!imageError;
 	const showVideoThinkingState =
 		videoIsGenerating && !safeVideoResponseUrls.length && !videoResponseText;
+	const showVideoFailureState =
+		Boolean(videoError) &&
+		!videoIsGenerating &&
+		!safeVideoResponseUrls.length;
 	const showEmptyVideoResponse =
 		!videoIsGenerating &&
 		!safeVideoResponseUrls.length &&
@@ -2491,6 +2515,49 @@ export default function ModelPlayground({
 					className="h-2.5 w-2.5 animate-bounce rounded-full bg-current"
 					style={{ animationDelay: "280ms" }}
 				/>
+			</div>
+		</div>
+	);
+	const renderFailurePanel = ({
+		message,
+		onRetry,
+		onDelete,
+		isBusy,
+	}: {
+		message: string;
+		onRetry: () => void;
+		onDelete: () => void;
+		isBusy: boolean;
+	}) => (
+		<div className="flex min-h-[320px] flex-col justify-between rounded-md border border-black/20 bg-black/[0.03] p-4 dark:border-white/20 dark:bg-white/[0.05]">
+			<div className="space-y-2">
+				<p className="text-sm font-medium text-black dark:text-white">
+					Generation failed
+				</p>
+				<p className="text-sm leading-6 text-black/70 dark:text-white/70">
+					{message}
+				</p>
+			</div>
+			<div className="flex flex-wrap items-center gap-2 pt-4">
+				<Button
+					type="button"
+					onClick={onRetry}
+					disabled={isBusy}
+					className="h-9 bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+				>
+					<RotateCcw className="h-4 w-4" />
+					Retry
+				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					onClick={onDelete}
+					disabled={isBusy}
+					className="h-9 border-black/20 bg-transparent text-black hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+				>
+					<Trash2 className="h-4 w-4" />
+					Delete
+				</Button>
 			</div>
 		</div>
 	);
@@ -2633,11 +2700,6 @@ export default function ModelPlayground({
 							<Sparkles className="h-4 w-4" />
 							{imageIsGenerating ? "Generating..." : "Generate Image"}
 						</Button>
-						{imageError ? (
-							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
-								{imageError}
-							</p>
-						) : null}
 					</div>
 
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
@@ -2663,6 +2725,15 @@ export default function ModelPlayground({
 							<div className="text-sm leading-6 text-black dark:text-white">
 								<Streamdown>{imageResponseText}</Streamdown>
 							</div>
+						) : showImageFailureState ? (
+							renderFailurePanel({
+								message: imageError ?? "Image request failed. Please try again.",
+								onRetry: () => {
+									void handleGenerateImage();
+								},
+								onDelete: clearImageGeneration,
+								isBusy: imageIsGenerating,
+							})
 						) : showImageThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyImageResponse ? (
@@ -2693,11 +2764,6 @@ export default function ModelPlayground({
 							<Sparkles className="h-4 w-4" />
 							{videoIsGenerating ? "Generating..." : "Generate Video"}
 						</Button>
-						{videoError ? (
-							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
-								{videoError}
-							</p>
-						) : null}
 					</div>
 
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
@@ -2725,6 +2791,15 @@ export default function ModelPlayground({
 							<div className="text-sm leading-6 text-black dark:text-white">
 								<Streamdown>{videoResponseText}</Streamdown>
 							</div>
+						) : showVideoFailureState ? (
+							renderFailurePanel({
+								message: videoError ?? "Video request failed. Please try again.",
+								onRetry: () => {
+									void handleGenerateVideo();
+								},
+								onDelete: clearVideoGeneration,
+								isBusy: videoIsGenerating,
+							})
 						) : showVideoThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyVideoResponse ? (
