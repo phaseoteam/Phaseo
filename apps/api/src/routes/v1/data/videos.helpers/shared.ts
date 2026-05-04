@@ -31,7 +31,13 @@ export type VideoRouteAuth = {
 	internal?: boolean;
 };
 
-export type VideoStatus = "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+export type VideoStatus =
+	| "queued"
+	| "processing"
+	| "completed"
+	| "failed"
+	| "cancelled"
+	| "expired";
 
 export function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;

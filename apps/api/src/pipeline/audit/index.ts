@@ -86,6 +86,7 @@ function buildSupaRow(args: {
     requestUserId?: string | null;
     sessionId?: string | null;
     traceData?: Record<string, unknown> | null;
+    providerAttempts?: Array<Record<string, unknown>> | null;
     statusCode?: number | null; success: boolean;
     errorCode?: string | null; errorMessage?: string | null;
     appId?: string | null; keyId?: string | null;
@@ -114,6 +115,7 @@ function buildSupaRow(args: {
         end_user_id: args.requestUserId ?? null,
         session_id: args.sessionId ?? null,
         trace_data: args.traceData ?? null,
+        provider_attempts: Array.isArray(args.providerAttempts) ? args.providerAttempts : [],
         stream: !!args.stream,
         byok: !!args.byok,
         status_code: args.statusCode ?? null,
@@ -157,6 +159,7 @@ export async function auditSuccess(args: {
     requestUserId?: string | null;
     sessionId?: string | null;
     traceData?: Record<string, unknown> | null;
+    providerAttempts?: Array<Record<string, unknown>> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -214,6 +217,7 @@ export async function auditSuccess(args: {
             requestUserId: args.requestUserId ?? null,
             sessionId: args.sessionId ?? null,
             traceData: args.traceData ?? null,
+            providerAttempts: args.providerAttempts ?? null,
             statusCode: args.statusCode,
             success: true,
             errorCode: null,
@@ -278,6 +282,7 @@ type AuditFailureBefore = {
     requestUserId?: string | null;
     sessionId?: string | null;
     traceData?: Record<string, unknown> | null;
+    providerAttempts?: Array<Record<string, unknown>> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -317,6 +322,7 @@ type AuditFailureExecute = {
     requestUserId?: string | null;
     sessionId?: string | null;
     traceData?: Record<string, unknown> | null;
+    providerAttempts?: Array<Record<string, unknown>> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -357,6 +363,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 requestUserId: args.requestUserId ?? null,
                 sessionId: args.sessionId ?? null,
                 traceData: args.traceData ?? null,
+                providerAttempts: args.providerAttempts ?? null,
                 statusCode: args.statusCode,
                 success: false,
                 errorCode: args.errorCode,
@@ -416,6 +423,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             requestUserId: args.requestUserId ?? null,
             sessionId: args.sessionId ?? null,
             traceData: args.traceData ?? null,
+            providerAttempts: args.providerAttempts ?? null,
             statusCode: args.statusCode,
             success: false,
             errorCode: args.errorCode,

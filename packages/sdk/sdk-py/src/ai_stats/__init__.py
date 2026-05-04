@@ -582,7 +582,7 @@ class AIStats:
         return response.content
 
     def get_video_download_url(self, video_id: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self.request("POST", f"/videos/{video_id}/download_url", params or {})
+        return self.request("POST", f"/videos/{video_id}/download_url", body=params or {})
 
     def cancel_video(self, video_id: str) -> dict[str, Any]:
         return self.request("POST", f"/videos/{video_id}/cancel")

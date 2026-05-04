@@ -10,6 +10,7 @@ type VideoOptionInput = {
 	duration_seconds?: unknown;
 	duration?: unknown;
 	quality?: unknown;
+	audio?: unknown;
 	input_image_count?: unknown;
 	input_video_seconds?: unknown;
 	input_video_count?: unknown;
@@ -23,6 +24,7 @@ type VideoOptionInput = {
 		duration_seconds?: unknown;
 		duration?: unknown;
 		quality?: unknown;
+		audio?: unknown;
 		input_image_count?: unknown;
 		input_video_seconds?: unknown;
 		input_video_count?: unknown;
@@ -55,6 +57,21 @@ function toNonNegativeNumber(value: unknown): number | undefined {
 		if (!trimmed) return undefined;
 		const parsed = Number(trimmed);
 		if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+	}
+	return undefined;
+}
+
+function toBoolean(value: unknown): boolean | undefined {
+	if (typeof value === "boolean") return value;
+	if (typeof value === "number") {
+		if (value === 1) return true;
+		if (value === 0) return false;
+		return undefined;
+	}
+	if (typeof value === "string") {
+		const trimmed = value.trim().toLowerCase();
+		if (trimmed === "true" || trimmed === "1" || trimmed === "yes" || trimmed === "on") return true;
+		if (trimmed === "false" || trimmed === "0" || trimmed === "no" || trimmed === "off") return false;
 	}
 	return undefined;
 }
@@ -117,6 +134,7 @@ export function buildVideoPricingRequestOptions(input: VideoOptionInput): Record
 	const size = resolveVideoSize(input);
 	const seconds = resolveVideoSeconds(input);
 	const quality = toNonEmptyString(input.quality) ?? toNonEmptyString(input.video_params?.quality);
+	const audio = toBoolean(input.audio) ?? toBoolean(input.video_params?.audio);
 	const inputImageCount =
 		toNonNegativeNumber(input.input_image_count) ??
 		toNonNegativeNumber(input.video_params?.input_image_count);
@@ -141,6 +159,16 @@ export function buildVideoPricingRequestOptions(input: VideoOptionInput): Record
 				? (out.video_params as Record<string, unknown>)
 				: {};
 		videoParams.quality = quality;
+		out.video_params = videoParams;
+	}
+
+	if (typeof audio === "boolean") {
+		out.audio = audio;
+		const videoParams =
+			out.video_params && typeof out.video_params === "object"
+				? (out.video_params as Record<string, unknown>)
+				: {};
+		videoParams.audio = audio;
 		out.video_params = videoParams;
 	}
 

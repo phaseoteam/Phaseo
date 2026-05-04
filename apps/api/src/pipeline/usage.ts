@@ -45,13 +45,17 @@ export function stripUsagePricing(usage: any) {
 /**
  * Shape usage for client-facing responses:
  * - Prefer OpenAI-style keys (input_tokens, output_tokens, total_tokens)
- * - Add detailed breakdowns under input_details/output_tokens_details
- * - Preserve legacy keys used for billing/analytics.
+ * - Add detailed breakdowns under input_tokens_details/output_tokens_details
+ * - Omit legacy duplicate token aliases from the persisted/public shape.
  */
-export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; body?: any }) {
+export function shapeUsageForClient(
+    usage: any,
+    ctx?: { endpoint?: Endpoint; body?: any; includeInternalHints?: boolean },
+) {
     if (!usage || typeof usage !== "object") return usage;
 
     const base: any = { ...usage };
+    const shaped: any = {};
     const textEndpoint =
         ctx?.endpoint === "chat.completions" ||
         ctx?.endpoint === "responses" ||
@@ -196,50 +200,50 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     if (outputAudio !== undefined) outputDetails.output_audio = outputAudio;
     if (outputVideo !== undefined) outputDetails.output_videos = outputVideo;
 
-    base.input_tokens = tokensIn;
-    base.output_tokens = tokensOut;
-    base.total_tokens = totalTokens;
-    if (base.requests == null) {
+    const passthroughKeys = [
+        "requests",
+        "embedding_tokens",
+        "output_image",
+        "output_video_seconds",
+        "output_audio_seconds",
+        "image_pixels",
+        "video_pixels",
+        "bfl_credits",
+        "server_tool_use",
+        "service_tier",
+        "serviceTier",
+        "pricing",
+        "pricing_breakdown",
+    ];
+    for (const key of passthroughKeys) {
+        if (base[key] !== undefined) shaped[key] = base[key];
+    }
+
+    shaped.input_tokens = tokensIn;
+    shaped.output_tokens = tokensOut;
+    shaped.total_tokens = totalTokens;
+    if (shaped.requests == null) {
         const requestCount = resolveRequestCountUsage(base);
         if (typeof requestCount === "number") {
-            base.requests = requestCount;
+            shaped.requests = requestCount;
         } else if (textEndpoint) {
             // Ensure text surfaces always expose at least one request meter when usage exists
             // but token counts are missing or zero.
-            base.requests = 1;
+            shaped.requests = 1;
         }
     }
 
-    // Preserve legacy fields for billing/past consumers
-    const inputTextExplicit = pickNumber(base, "input_text_tokens");
-    const inputTextFromCanonical =
-        cachedReadIsSubsetHint && cachedRead !== undefined
-            ? Math.max(0, tokensIn - cachedRead)
-            : tokensIn;
-    base.input_text_tokens =
-        inputTextExplicit !== undefined && (!cachedReadIsSubsetHint || inputTextExplicit !== tokensIn)
-            ? inputTextExplicit
-            : inputTextFromCanonical;
-    base.output_text_tokens = pickNumber(base, "output_text_tokens") ?? tokensOut;
-    if (cachedRead !== undefined) base.cached_read_text_tokens = cachedRead;
-    if (cachedWrite !== undefined) base.cached_write_text_tokens = cachedWrite;
-    if (reasoningTokens !== undefined) base.reasoning_tokens = reasoningTokens;
-    if (inputImageTokens !== undefined) base.input_image_tokens = inputImageTokens;
-    if (inputAudioTokens !== undefined) base.input_audio_tokens = inputAudioTokens;
-    if (inputVideoTokens !== undefined) base.input_video_tokens = inputVideoTokens;
-    if (outputImageTokens !== undefined) base.output_image_tokens = outputImageTokens;
-    if (outputAudioTokens !== undefined) base.output_audio_tokens = outputAudioTokens;
-    if (outputVideoTokens !== undefined) base.output_video_tokens = outputVideoTokens;
-
     if (Object.keys(inputDetails).length) {
-        base.input_tokens_details = inputDetails;
-        base.input_details = base.input_details ?? inputDetails; // legacy alias
+        shaped.input_tokens_details = inputDetails;
     }
     if (Object.keys(outputDetails).length) {
-        base.output_tokens_details = outputDetails;
-        base.completion_tokens_details = base.completion_tokens_details ?? outputDetails; // legacy alias
+        shaped.output_tokens_details = outputDetails;
     }
 
-    return base;
+    if (ctx?.includeInternalHints && cachedReadIsSubsetHint && cachedRead !== undefined) {
+        shaped.cached_read_tokens_are_subset_of_input = true;
+    }
+
+    return shaped;
 }
 

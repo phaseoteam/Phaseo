@@ -72,8 +72,8 @@ export type RequestMeta = {
     byokKeyId?: string | null;
     // Performance metrics
     throughput_tps?: number;      // Tokens per second
-    generation_ms?: number;       // Provider processing time
-    latency_ms?: number;          // End-to-end request time
+    generation_ms?: number;       // Post-first-token generation duration when available
+    latency_ms?: number;          // Time to first token/byte when available; otherwise best-effort total latency
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before
     beforeContextCacheStatus?: "hit" | "miss" | "bypass";
@@ -202,6 +202,13 @@ export type GatewayUsage = {
     input_tokens?: number;
     output_tokens?: number;
     total_tokens?: number;
+    input_tokens_details?: {
+        cached_tokens?: number;
+        input_images?: number;
+        input_audio?: number;
+        input_videos?: number;
+    };
+    // Legacy alias retained for compatibility while callers migrate.
     input_details?: {
         cached_tokens?: number;
         input_images?: number;

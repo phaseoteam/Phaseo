@@ -9,6 +9,11 @@ import type { RequestResult } from "../execute";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
+import {
+	resolveBeforeLatencyMs,
+	resolveExecuteTotalLatencyMs,
+	resolveNonStreamLatencyMs,
+} from "./timing";
 
 function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
     return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
@@ -212,31 +217,15 @@ function buildTransformSnapshot(
 	};
 }
 
-function timingMetric(ctx: PipelineContext, key: string): number {
-    const timing = (ctx as any)?.timing;
-    if (!timing || typeof timing !== "object") return 0;
-    const value = timing[key];
-    return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function resolveBeforeMs(ctx: PipelineContext): number {
-    const fromMeta = ctx.meta.before_ms;
-    if (typeof fromMeta === "number" && Number.isFinite(fromMeta)) return fromMeta;
-    const nested = (ctx as any)?.timing?.before?.total_ms;
-    if (typeof nested === "number" && Number.isFinite(nested)) return nested;
-    return timingMetric(ctx, "before_start");
-}
-
-function resolveExecuteTotalMs(ctx: PipelineContext): number {
-    const nested = (ctx as any)?.timing?.execute?.total_ms;
-    if (typeof nested === "number" && Number.isFinite(nested)) return nested;
-    return timingMetric(ctx, "adapter_start");
-}
-
 function resolveExecuteAdapterMs(ctx: PipelineContext): number | null {
     const nested = (ctx as any)?.timing?.execute?.adapter_ms;
     if (typeof nested === "number" && Number.isFinite(nested)) return nested;
-    const flat = timingMetric(ctx, "adapter_roundtrip_ms");
+    const flat = (() => {
+        const timing = (ctx as any)?.timing;
+        if (!timing || typeof timing !== "object") return 0;
+        const value = timing["adapter_roundtrip_ms"];
+        return typeof value === "number" && Number.isFinite(value) ? value : 0;
+    })();
     return flat > 0 ? flat : null;
 }
 
@@ -249,14 +238,14 @@ export async function handleFailureAudit(
     errorMessage: string,
     errorDetails?: unknown
 ) {
-    const beforeMs = resolveBeforeMs(ctx);
-    const execMs = resolveExecuteTotalMs(ctx);
+    const beforeMs = resolveBeforeLatencyMs(ctx);
+    const execMs = resolveExecuteTotalLatencyMs(ctx) ?? 0;
     const genMs = resolveExecuteAdapterMs(ctx);
     const internalLatencyMs = (ctx as any)?.timing?.internal_latency_ms ?? null;
 
     // Use meta values if available, otherwise fall back to timing calculations
     const generationMs = ctx.meta.generation_ms ?? (genMs ? Math.round(genMs) : null);
-    const latencyMs = ctx.meta.latency_ms ?? Math.round(beforeMs + execMs);
+    const latencyMs = resolveNonStreamLatencyMs(ctx, generationMs) ?? Math.round(beforeMs + execMs);
     const gatewayFailurePayload = {
         generation_id: ctx.requestId,
         status_code: upstreamStatus,
@@ -330,6 +319,7 @@ export async function handleFailureAudit(
             requestUserId: ctx.meta.requestUserId ?? null,
             sessionId: ctx.meta.sessionId ?? null,
             traceData: ctx.meta.trace ?? null,
+            providerAttempts: Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : null,
             requestMethod: ctx.meta.requestMethod ?? null,
             requestPath: ctx.meta.requestPath ?? ctx.requestPath ?? null,
             requestUrl: ctx.meta.requestUrl ?? null,
@@ -381,16 +371,16 @@ export async function handleSuccessAudit(
 ) {
     const byok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const execTiming = (ctx as any)?.timing?.execute ?? {};
-    const beforeMs = resolveBeforeMs(ctx);
-    const execTotalMs = resolveExecuteTotalMs(ctx);
+    const beforeMs = resolveBeforeLatencyMs(ctx);
+    const execTotalMs = resolveExecuteTotalLatencyMs(ctx) ?? 0;
     const execAdapterMs = resolveExecuteAdapterMs(ctx);
     const internalLatencyMs = (ctx as any)?.timing?.internal_latency_ms ?? null;
 
     // Use meta values if available, otherwise fall back to timing calculations
     const generationMs = ctx.meta.generation_ms ?? Math.round(execAdapterMs ?? execTiming?.adapter_ms ?? result.generationTimeMs ?? 0);
-    const latencyMs = ctx.meta.latency_ms ?? (isStream
-        ? Math.round(execTotalMs) + Math.round(beforeMs)
-        : Math.round(execTotalMs || generationMs));
+    const latencyMs = isStream
+        ? (ctx.meta.latency_ms ?? Math.round(execTotalMs) + Math.round(beforeMs))
+        : (resolveNonStreamLatencyMs(ctx, generationMs) ?? Math.round(execTotalMs || generationMs));
 
     // Enrich usage with multimodal signals visible at the gateway layer (e.g., image/audio/video inputs).
     const usageWithMultimodal = enrichUsageWithMultimodal(ctx, result, usagePriced);
@@ -475,6 +465,7 @@ export async function handleSuccessAudit(
             requestUserId: ctx.meta.requestUserId ?? null,
             sessionId: ctx.meta.sessionId ?? null,
             traceData: ctx.meta.trace ?? null,
+            providerAttempts: Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : null,
             requestMethod: ctx.meta.requestMethod ?? null,
             requestPath: ctx.meta.requestPath ?? ctx.requestPath ?? null,
             requestUrl: ctx.meta.requestUrl ?? null,
@@ -532,6 +523,9 @@ export async function handleSuccessAudit(
 function enrichUsageWithMultimodal(ctx: PipelineContext, result: RequestResult, usagePriced: any): any {
     try {
         let base = usagePriced && typeof usagePriced === "object" ? { ...usagePriced } : {};
+        const inputDetails = base.input_tokens_details && typeof base.input_tokens_details === "object"
+            ? { ...base.input_tokens_details }
+            : {};
         base = attachToolUsageMetrics(
             base,
             summarizeToolUsage({
@@ -573,9 +567,9 @@ function enrichUsageWithMultimodal(ctx: PipelineContext, result: RequestResult, 
                 }
             }
 
-            if (inputImages > 0 && base.input_image_count == null) base.input_image_count = inputImages;
-            if (inputAudio > 0 && base.input_audio_count == null) base.input_audio_count = inputAudio;
-            if (inputVideo > 0 && base.input_video_count == null) base.input_video_count = inputVideo;
+            if (inputImages > 0 && inputDetails.input_images == null) inputDetails.input_images = inputImages;
+            if (inputAudio > 0 && inputDetails.input_audio == null) inputDetails.input_audio = inputAudio;
+            if (inputVideo > 0 && inputDetails.input_videos == null) inputDetails.input_videos = inputVideo;
         }
 
         if (ctx.endpoint === "responses") {
@@ -617,9 +611,13 @@ function enrichUsageWithMultimodal(ctx: PipelineContext, result: RequestResult, 
                 }
             }
 
-            if (inputImages > 0 && base.input_image_count == null) base.input_image_count = inputImages;
-            if (inputAudio > 0 && base.input_audio_count == null) base.input_audio_count = inputAudio;
-            if (inputVideo > 0 && base.input_video_count == null) base.input_video_count = inputVideo;
+            if (inputImages > 0 && inputDetails.input_images == null) inputDetails.input_images = inputImages;
+            if (inputAudio > 0 && inputDetails.input_audio == null) inputDetails.input_audio = inputAudio;
+            if (inputVideo > 0 && inputDetails.input_videos == null) inputDetails.input_videos = inputVideo;
+        }
+
+        if (Object.keys(inputDetails).length > 0) {
+            base.input_tokens_details = inputDetails;
         }
 
         return base;

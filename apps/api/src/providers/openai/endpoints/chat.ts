@@ -292,23 +292,14 @@ function normalizeUsage(usage: any | null | undefined): GatewayUsage | undefined
         input_tokens: input,
         output_tokens: output,
         total_tokens: total,
-        input_text_tokens: input,
-        output_text_tokens: output,
     };
     if (usage.input_tokens_details) {
-        normalized.input_details = {
+        normalized.input_tokens_details = {
             cached_tokens: usage.input_tokens_details.cached_tokens,
             input_images: usage.input_tokens_details.input_images,
             input_audio: usage.input_tokens_details.input_audio,
             input_videos: usage.input_tokens_details.input_videos,
         };
-    }
-    if (typeof usage.input_tokens_details?.cached_tokens === "number") {
-        normalized.cached_read_tokens_are_subset_of_input = true;
-        normalized.cached_read_text_tokens = usage.input_tokens_details.cached_tokens;
-    }
-    if (typeof usage.output_tokens_details?.reasoning_tokens === "number") {
-        normalized.reasoning_tokens = usage.output_tokens_details.reasoning_tokens;
     }
     if (usage.output_tokens_details) {
         normalized.output_tokens_details = {
@@ -318,9 +309,6 @@ function normalizeUsage(usage: any | null | undefined): GatewayUsage | undefined
             output_audio: usage.output_tokens_details.output_audio,
             output_videos: usage.output_tokens_details.output_videos,
         };
-    }
-    if (typeof usage.output_tokens_details?.cached_tokens === "number") {
-        normalized.cached_write_text_tokens = usage.output_tokens_details.cached_tokens;
     }
     if (usage.pricing_breakdown) {
         (normalized as GatewayUsage & { pricing_breakdown?: unknown }).pricing_breakdown =

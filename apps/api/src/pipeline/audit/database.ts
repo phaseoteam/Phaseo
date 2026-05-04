@@ -6,6 +6,7 @@
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
+import { shapeUsageForClient } from "../usage";
 
 export type PersistArgs = {
     requestId: string;
@@ -288,45 +289,10 @@ export async function persistGenerationToSupabase(args: PersistArgs) {
         console.error("persistGenerationToSupabase fatal:", err);
     }
 }
-// Lightweight normalization: recompute total_tokens from present token fields
-const CANONICAL_KEYS: Record<string, string> = {
-    input_text_tokens: "input_text_tokens",
-    input_tokens: "input_text_tokens",
-    prompt_tokens: "input_text_tokens",
-    output_text_tokens: "output_text_tokens",
-    output_tokens: "output_text_tokens",
-    completion_tokens: "output_text_tokens",
-    reasoning_tokens: "reasoning_tokens",
-    cached_read_text_tokens: "cached_read_text_tokens",
-};
-function tokenBreakdown(usage: any): Record<string, number> {
-    const acc = new Map<string, number>();
-    if (Array.isArray(usage)) {
-        for (const u of usage) {
-            const sub = tokenBreakdown(u);
-            for (const [k, v] of Object.entries(sub)) {
-                acc.set(k, (acc.get(k) ?? 0) + v);
-            }
-        }
-        return Object.fromEntries(acc);
-    }
-    if (!usage || typeof usage !== 'object') return {};
-    for (const [rawKey, rawVal] of Object.entries(usage)) {
-        const lk = rawKey.toLowerCase();
-        if (!lk.includes('token')) continue;
-        if (lk === 'total_tokens') continue;
-        const n = Number(rawVal);
-        if (!Number.isFinite(n) || n <= 0) continue;
-        const canonical = CANONICAL_KEYS[lk] ?? rawKey;
-        const prev = acc.get(canonical) ?? 0;
-        acc.set(canonical, Math.max(prev, n));
-    }
-    return Object.fromEntries(acc);
-}
 function normalizeUsageTokens(usage: any) {
+    if (!usage || typeof usage !== "object") return usage;
     try {
-        const total = Object.values(tokenBreakdown(usage)).reduce((s, v) => s + v, 0);
-        return { ...(usage ?? {}), total_tokens: total };
+        return shapeUsageForClient(usage);
     } catch {
         return usage;
     }

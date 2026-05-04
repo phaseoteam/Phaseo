@@ -10,7 +10,9 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 
 import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
 import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
+import AsyncJobsPanel from "@/components/(gateway)/usage/AsyncJobsPanel";
 import {
+	fetchRecentAsyncJobs,
 	fetchOrganizationColors,
 	fetchModelMetadata,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
@@ -163,9 +165,10 @@ async function UsageSettingsContent({
 			].filter(Boolean),
 		),
 	);
-	const [colorMap, modelMetadata] = await Promise.all([
+	const [colorMap, modelMetadata, recentAsyncJobs] = await Promise.all([
 		fetchOrganizationColors(uniqueModels),
 		fetchModelMetadata(uniqueModels),
+		fetchRecentAsyncJobs({ limit: 20 }),
 	]);
 
 	return (
@@ -196,6 +199,8 @@ async function UsageSettingsContent({
 				modelMetadata={modelMetadata}
 				validKeyIds={availableKeys.map((key) => key.id)}
 			/>
+
+			<AsyncJobsPanel initialJobs={recentAsyncJobs} />
 		</div>
 	);
 }

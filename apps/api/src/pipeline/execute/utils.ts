@@ -22,7 +22,7 @@ export function stripPrioritySuffix(model: string): string {
 }
 
 export function calculateMaxTries(candidatesLength: number): number {
-    return Math.min(3, candidatesLength);
+    return Math.min(5, candidatesLength);
 }
 
 

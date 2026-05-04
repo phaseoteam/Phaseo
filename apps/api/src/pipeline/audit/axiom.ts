@@ -56,27 +56,31 @@ export type AxiomArgs = {
 
     // Usage/cost
     usage?: {
-        input_text_tokens?: number | null;
-        output_text_tokens?: number | null;
+        input_tokens?: number | null;
+        output_tokens?: number | null;
         total_tokens?: number | null;
         request_tool_count?: number | null;
         request_tool_result_count?: number | null;
         output_tool_call_count?: number | null;
         tool_call_count?: number | null;
         tool_result_count?: number | null;
-        cached_read_text_tokens?: number | null;
-        reasoning_tokens?: number | null;
-        input_audio_tokens?: number | null;
-        output_audio_tokens?: number | null;
-        input_video_tokens?: number | null;
-        output_video_tokens?: number | null;
-        // Optional multimodal usage signals
-        input_image_count?: number | null;
-        output_image_count?: number | null;
-        input_audio_count?: number | null;
-        output_audio_count?: number | null;
-        input_video_count?: number | null;
-        output_video_count?: number | null;
+        input_tokens_details?: {
+            cached_tokens?: number | null;
+            input_images?: number | null;
+            input_audio?: number | null;
+            input_videos?: number | null;
+        } | null;
+        output_tokens_details?: {
+            reasoning_tokens?: number | null;
+            cached_tokens?: number | null;
+            output_images?: number | null;
+            output_audio?: number | null;
+            output_videos?: number | null;
+        } | null;
+        embedding_tokens?: number | null;
+        output_image?: number | null;
+        output_video_seconds?: number | null;
+        output_audio_seconds?: number | null;
     } | null;
 
     pricing?: {
@@ -209,6 +213,8 @@ function numberOrNull(value: unknown): number | null {
  *  Keep fields FLAT to avoid exceeding plan limits.
  */
 export function buildAxiomEvent(a: AxiomArgs) {
+    const inputDetails = a.usage?.input_tokens_details ?? {};
+    const outputDetails = a.usage?.output_tokens_details ?? {};
     const parseLines = () => {
         if (Array.isArray(a.pricing?.lines)) return a.pricing?.lines ?? [];
         if (typeof a.pricing?.lines_json === "string") {
@@ -258,8 +264,8 @@ export function buildAxiomEvent(a: AxiomArgs) {
         costCachedWrite;
 
     // Derived metrics
-    const tokensIn = a.usage?.input_text_tokens ?? 0;
-    const tokensOut = a.usage?.output_text_tokens ?? 0;
+    const tokensIn = a.usage?.input_tokens ?? 0;
+    const tokensOut = a.usage?.output_tokens ?? 0;
     const tokensTot = a.usage?.total_tokens ?? 0;
 
     const genMs = a.generationMs ?? 0;
@@ -411,18 +417,18 @@ export function buildAxiomEvent(a: AxiomArgs) {
         usage_request_tool_count: a.usage?.request_tool_count ?? null,
         usage_request_tool_result_count: a.usage?.request_tool_result_count ?? a.usage?.tool_result_count ?? null,
         usage_output_tool_call_count: a.usage?.output_tool_call_count ?? a.usage?.tool_call_count ?? null,
-        usage_cached_tokens: a.usage?.cached_read_text_tokens ?? null,
-        usage_reasoning_tokens: a.usage?.reasoning_tokens ?? null,
-        usage_audio_tokens_in: a.usage?.input_audio_tokens ?? null,
-        usage_audio_tokens_out: a.usage?.output_audio_tokens ?? null,
-        usage_video_tokens_in: a.usage?.input_video_tokens ?? null,
-        usage_video_tokens_out: a.usage?.output_video_tokens ?? null,
-        usage_image_input_count: a.usage?.input_image_count ?? null,
-        usage_image_output_count: a.usage?.output_image_count ?? (a.usage as any)?.output_image ?? null,
-        usage_audio_input_count: a.usage?.input_audio_count ?? null,
-        usage_audio_output_count: a.usage?.output_audio_count ?? null,
-        usage_video_input_count: a.usage?.input_video_count ?? null,
-        usage_video_output_count: a.usage?.output_video_count ?? (a.usage as any)?.output_video_seconds ?? null,
+        usage_cached_tokens: inputDetails.cached_tokens ?? null,
+        usage_reasoning_tokens: outputDetails.reasoning_tokens ?? null,
+        usage_audio_tokens_in: inputDetails.input_audio ?? null,
+        usage_audio_tokens_out: outputDetails.output_audio ?? a.usage?.output_audio_seconds ?? null,
+        usage_video_tokens_in: inputDetails.input_videos ?? null,
+        usage_video_tokens_out: outputDetails.output_videos ?? a.usage?.output_video_seconds ?? null,
+        usage_image_input_count: inputDetails.input_images ?? null,
+        usage_image_output_count: outputDetails.output_images ?? a.usage?.output_image ?? null,
+        usage_audio_input_count: inputDetails.input_audio ?? null,
+        usage_audio_output_count: outputDetails.output_audio ?? a.usage?.output_audio_seconds ?? null,
+        usage_video_input_count: inputDetails.input_videos ?? null,
+        usage_video_output_count: outputDetails.output_videos ?? a.usage?.output_video_seconds ?? null,
 
         // ====================================================================
         // COST

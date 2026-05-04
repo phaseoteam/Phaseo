@@ -143,3 +143,33 @@ def test_can_disable_deprecation_warnings(monkeypatch):
     assert called is True
     assert response["id"] == "resp_123"
     assert lifecycle_lookups == [("GET", "/data/models", {"model_id": "openai/new-model", "limit": 1})]
+
+
+def test_get_video_download_url_sends_request_body(monkeypatch):
+    captured: list[tuple[str, str, dict[str, Any] | None, dict[str, str] | None, Any]] = []
+
+    def fake_request(method, path, *, query=None, headers=None, body=None):
+        captured.append((method, path, query, headers, body))
+        return {
+            "download_url": "https://example.test/v1/videos/G-abc/content",
+            "expires_at": 1_800_000_000,
+        }
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "request", fake_request)
+
+    response = client.get_video_download_url(
+        "G-abc",
+        {"ttl_seconds": 600, "disposition": "inline", "index": 1},
+    )
+
+    assert response["download_url"] == "https://example.test/v1/videos/G-abc/content"
+    assert captured == [
+        (
+            "POST",
+            "/videos/G-abc/download_url",
+            None,
+            None,
+            {"ttl_seconds": 600, "disposition": "inline", "index": 1},
+        )
+    ]

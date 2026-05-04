@@ -4,24 +4,23 @@ import React, { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import UsageTableFilters from "./UsageTableFilters";
 import UnifiedRequestsTable from "./UnifiedRequestsTable";
 import ExportDropdown from "./ExportDropdown";
 import InvestigateGeneration from "./UsageHeader/InvestigateGeneration";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
-import { type ModelMetadataMap } from "./model-display";
+import {
+	type ModelMetadataMap,
+} from "./model-display";
+import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 interface RequestsSectionProps {
 	title?: string;
 	timeRange: { from: string; to: string };
 	appNames: Map<string, string>;
-	models: string[];
-	providers: string[];
-	modelProviders: Map<string, string[]>;
 	providerNames: Map<string, string>;
-	apiKeys: { id: string; name: string | null; prefix: string | null }[];
+	providerMetadata: Map<string, ProviderMetadataEntry>;
 	modelMetadata: ModelMetadataMap;
 }
 
@@ -29,11 +28,8 @@ export default function RequestsSection({
 	title,
 	timeRange,
 	appNames,
-	models,
-	providers,
-	modelProviders,
 	providerNames,
-	apiKeys,
+	providerMetadata,
 	modelMetadata,
 }: RequestsSectionProps) {
 	const router = useRouter();
@@ -93,19 +89,12 @@ export default function RequestsSection({
 					</div>
 				</div>
 			) : null}
-			<UsageTableFilters
-				models={models}
-				providers={providers}
-				modelProviders={modelProviders}
-				providerNames={providerNames}
-				apiKeys={apiKeys}
-				modelMetadata={modelMetadata}
-			/>
 			<UnifiedRequestsTable
 				timeRange={timeRange}
 				appNames={appNames}
 				modelMetadata={modelMetadata}
 				providerNames={providerNames}
+				providerMetadata={providerMetadata}
 				onExportRef={exportRef}
 			/>
 		</div>

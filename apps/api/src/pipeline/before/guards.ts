@@ -7,6 +7,10 @@ import { z } from "zod";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { getBindings } from "@/runtime/env";
+import {
+    isBodyOnlyTextSessionEndpoint,
+    normalizeTextBodySessionId,
+} from "@core/session-id";
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
 import { fetchGatewayContext } from "./context";
@@ -370,6 +374,7 @@ export async function guardContext(args: {
 }
 
 export function makeMeta(input: {
+    endpoint: Endpoint;
     apiKeyId: string;
     apiKeyRef: string | null;
     apiKeyKid: string | null;
@@ -403,12 +408,14 @@ export function makeMeta(input: {
         userIdHeader,
         128,
     );
-    const sessionId = normalizeBoundedString(
-        rawBody?.session_id ??
-        rawBody?.sessionId ??
-        sessionIdHeader,
-        128,
-    );
+    const sessionId = isBodyOnlyTextSessionEndpoint(input.endpoint)
+        ? normalizeTextBodySessionId(rawBody?.session_id)
+        : normalizeBoundedString(
+            rawBody?.session_id ??
+            rawBody?.sessionId ??
+            sessionIdHeader,
+            128,
+        );
     const trace = normalizeTraceObject(rawBody?.trace);
     const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
     const testId = nodeEnv === "test"

@@ -253,6 +253,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				size,
 				resolution: ir.resolution,
 				quality,
+				audio: ir.generateAudio,
 			}),
 			isByok: keyInfo.source === "byok",
 		});
@@ -446,6 +447,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				seconds: toDurationSeconds(ir) ?? null,
 				resolution: size ?? null,
 				quality,
+				audio: typeof ir.generateAudio === "boolean" ? ir.generateAudio : null,
 				outputAccess: ir.outputAccess ?? "both",
 				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,

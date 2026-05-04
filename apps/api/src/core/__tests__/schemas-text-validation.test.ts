@@ -179,6 +179,56 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("accepts session_id on text request bodies", () => {
+		const chatParsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			session_id: "conversation-123",
+			messages: [{ role: "user", content: "hello" }],
+		});
+		expect(chatParsed.success).toBe(true);
+
+		const responsesParsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			session_id: "conversation-123",
+			input: "hello",
+		});
+		expect(responsesParsed.success).toBe(true);
+
+		const messagesParsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			session_id: "conversation-123",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "hello" }],
+		});
+		expect(messagesParsed.success).toBe(true);
+	});
+
+	it("rejects session_id values longer than 256 chars on text request bodies", () => {
+		const tooLong = "s".repeat(257);
+
+		const chatParsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			session_id: tooLong,
+			messages: [{ role: "user", content: "hello" }],
+		});
+		expect(chatParsed.success).toBe(false);
+
+		const responsesParsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			session_id: tooLong,
+			input: "hello",
+		});
+		expect(responsesParsed.success).toBe(false);
+
+		const messagesParsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			session_id: tooLong,
+			max_tokens: 128,
+			messages: [{ role: "user", content: "hello" }],
+		});
+		expect(messagesParsed.success).toBe(false);
+	});
+
 	it("accepts provider-specific cache options in provider_options", () => {
 		const responsesParsed = ResponsesSchema.safeParse({
 			model: "anthropic/claude-3.7-sonnet",

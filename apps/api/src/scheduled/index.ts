@@ -11,6 +11,8 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
+import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 
@@ -73,6 +75,40 @@ async function handleVideoReconciliationScheduledEvent(_event: ScheduledControll
 	}
 }
 
+async function handleBatchReconciliationScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.BATCH_RECONCILIATION_ENABLED, true)) {
+		return;
+	}
+
+	const limit = toInt(env.BATCH_RECONCILIATION_LIMIT, 100);
+	const concurrency = toInt(env.BATCH_RECONCILIATION_CONCURRENCY, 4);
+	configureRuntime(env);
+	try {
+		const summary = await runBatchReconciliationJob({ limit, concurrency });
+		console.log("batch_reconciliation_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleAsyncWebhookRetriesScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.ASYNC_WEBHOOK_RETRIES_ENABLED, true)) {
+		return;
+	}
+
+	const limitPerKind = toInt(env.ASYNC_WEBHOOK_RETRIES_LIMIT_PER_KIND, 200);
+	const maxDeliveries = toInt(env.ASYNC_WEBHOOK_RETRIES_MAX_DELIVERIES, 100);
+	configureRuntime(env);
+	try {
+		const summary = await runAsyncWebhookRetriesJob({ limitPerKind, maxDeliveries });
+		if (summary.deliveriesRetried > 0 || summary.deliveriesFailedPermanently > 0) {
+			console.log("async_webhook_retries_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (!toBool(env.EMAIL_OUTBOX_DRAIN_ENABLED, true)) {
 		return;
@@ -100,9 +136,19 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		console.error("email_outbox_scheduled_failed", { error });
 	}
 	try {
+		await handleAsyncWebhookRetriesScheduledEvent(event, env);
+	} catch (error) {
+		console.error("async_webhook_retries_scheduled_failed", { error });
+	}
+	try {
 		await handleVideoReconciliationScheduledEvent(event, env);
 	} catch (error) {
 		console.error("video_reconciliation_scheduled_failed", { error });
+	}
+	try {
+		await handleBatchReconciliationScheduledEvent(event, env);
+	} catch (error) {
+		console.error("batch_reconciliation_scheduled_failed", { error });
 	}
 	try {
 		await handleModelDiscoveryScheduledEvent(event, env);

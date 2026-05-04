@@ -218,20 +218,11 @@ function encodeResponsesUsage(usage: IRUsage) {
         outputDetails.output_videos = usage._ext.outputVideoTokens;
     }
 
-    const inputTextTokens = usage.inputTokens;
 	const out: any = {
 		input_tokens: usage.inputTokens,
 		output_tokens: usage.outputTokens,
 		total_tokens: usage.totalTokens,
-		input_text_tokens: inputTextTokens,
-		output_text_tokens: usage.outputTokens,
 	};
-    if (typeof usage.cachedInputTokens === "number") {
-        out.cached_read_text_tokens = usage.cachedInputTokens;
-    }
-	if (typeof usage.reasoningTokens === "number") {
-		out.reasoning_tokens = usage.reasoningTokens;
-	}
 	if (typeof usage._ext?.serverToolUse?.datetime_requests === "number") {
 		out.server_tool_use = {
 			datetime_requests: usage._ext.serverToolUse.datetime_requests,

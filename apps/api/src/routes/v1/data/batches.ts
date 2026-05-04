@@ -11,6 +11,7 @@ import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { dispatchAsyncWebhookEventInBackground, parseAsyncWebhookConfig } from "@core/async-notifications";
 import {
 	getBatchJobMeta,
 	saveBatchFileMeta,
@@ -58,6 +59,22 @@ function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 		inputFileId: toText(payload?.input_file_id) ?? base.inputFileId ?? null,
 		outputFileId: toText(payload?.output_file_id) ?? base.outputFileId ?? null,
 		errorFileId: toText(payload?.error_file_id) ?? base.errorFileId ?? null,
+	};
+}
+
+export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>): {
+	upstreamPayload: Record<string, unknown>;
+	webhook: Record<string, unknown> | null;
+} {
+	const upstreamPayload = { ...payload };
+	const rawWebhook = upstreamPayload.webhook;
+	delete upstreamPayload.webhook;
+	return {
+		upstreamPayload,
+		webhook:
+			rawWebhook && typeof rawWebhook === "object" && !Array.isArray(rawWebhook)
+				? (rawWebhook as Record<string, unknown>)
+				: null,
 	};
 }
 
@@ -133,11 +150,21 @@ async function handleCreate(req: Request) {
 			workspace_id: auth.workspaceId,
 		});
 	}
+	const { upstreamPayload, webhook } = splitGatewayBatchCreatePayload(payload);
+	const normalizedWebhook = webhook ? parseAsyncWebhookConfig("batch", webhook) : null;
+	if (webhook && !normalizedWebhook) {
+		return err("validation_error", {
+			reason: "invalid_batch_webhook",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
+	}
+	const upstreamBody = JSON.stringify(upstreamPayload);
 
 	const upstream = await fetchOpenAiBatches({
 		endpointPath: "/batches",
 		method: "POST",
-		body: rawBody,
+		body: upstreamBody,
 		contentType: req.headers.get("content-type") ?? "application/json",
 	});
 	const upstreamJson = await parseUpstreamJson(upstream);
@@ -161,6 +188,7 @@ async function handleCreate(req: Request) {
 				endpoint: toText(payload.endpoint),
 				completionWindow: toText(payload.completion_window),
 				inputFileId: toText(payload.input_file_id),
+				webhook: normalizedWebhook,
 				keySource,
 				byokKeyId: null,
 			})).catch((lookupErr) => {
@@ -193,6 +221,14 @@ async function handleCreate(req: Request) {
 				workspaceId: auth.workspaceId,
 			});
 		});
+		if (batchId) {
+			dispatchAsyncWebhookEventInBackground({
+				workspaceId: auth.workspaceId,
+				kind: "batch",
+				internalId: batchId,
+				phase: "created",
+			});
+		}
 	}
 
 	return toJsonResponse(upstream);
@@ -235,6 +271,7 @@ async function handleRetrieve(req: Request, id: string) {
 	const upstreamJson = await parseUpstreamJson(upstream);
 
 	if (upstream.ok && upstreamJson) {
+		const previousStatus = String(meta.status ?? "").toLowerCase();
 		await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
 			...meta,
 			provider: OPENAI_PROVIDER_ID,
@@ -252,6 +289,31 @@ async function handleRetrieve(req: Request, id: string) {
 				batchId,
 			});
 		});
+		const nextStatus = String(upstreamJson?.status ?? meta.status ?? "").toLowerCase();
+		if (nextStatus !== previousStatus) {
+			if (nextStatus === "completed") {
+				dispatchAsyncWebhookEventInBackground({
+					workspaceId: auth.workspaceId,
+					kind: "batch",
+					internalId: batchId,
+					phase: "completed",
+				});
+			} else if (nextStatus === "failed" || nextStatus === "expired") {
+				dispatchAsyncWebhookEventInBackground({
+					workspaceId: auth.workspaceId,
+					kind: "batch",
+					internalId: batchId,
+					phase: "failed",
+				});
+			} else if (nextStatus === "cancelled" || nextStatus === "canceled") {
+				dispatchAsyncWebhookEventInBackground({
+					workspaceId: auth.workspaceId,
+					kind: "batch",
+					internalId: batchId,
+					phase: "cancelled",
+				});
+			}
+		}
 	}
 
 	return toJsonResponse(upstream);
@@ -299,6 +361,15 @@ async function handleCancel(req: Request, id: string) {
 				batchId,
 			});
 		});
+		const nextStatus = String(upstreamJson?.status ?? "").toLowerCase();
+		if (nextStatus === "cancelled" || nextStatus === "canceled") {
+			dispatchAsyncWebhookEventInBackground({
+				workspaceId: auth.workspaceId,
+				kind: "batch",
+				internalId: batchId,
+				phase: "cancelled",
+			});
+		}
 	}
 
 	return toJsonResponse(upstream);

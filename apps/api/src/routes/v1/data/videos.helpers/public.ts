@@ -18,15 +18,17 @@ export function toPublicVideoProviderId(value: string | null | undefined): strin
 	return provider;
 }
 
-export function toPublicVideoStatus(value: unknown): "pending" | "in_progress" | "completed" | "failed" | "cancelled" {
+export function toPublicVideoStatus(
+	value: unknown,
+): "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired" {
 	const status = normalizeText(value)?.toLowerCase() ?? "";
 	if (status === "completed" || status === "succeeded" || status === "success") return "completed";
 	if (status === "cancelled" || status === "canceled") return "cancelled";
-	if (status === "expired") return "failed";
+	if (status === "expired") return "expired";
 	if (status === "failed" || status === "error") return "failed";
-	if (status === "in_progress" || status === "processing" || status === "running") return "in_progress";
-	if (status === "pending" || status === "queued") return "pending";
-	return "pending";
+	if (status === "in_progress" || status === "processing" || status === "running") return "processing";
+	if (status === "pending" || status === "queued") return "queued";
+	return "queued";
 }
 
 export function buildVideoPollingUrl(requestUrl: string, id: string): string {
@@ -184,10 +186,24 @@ export function toPublicVideoOutputs(requestUrl: string, id: string, payload: Re
 	}));
 }
 
-export function buildVideoBilling(record: VideoJobRecord | null, meta: VideoJobMeta | null, status: "pending" | "in_progress" | "completed" | "failed" | "cancelled") {
+export function buildVideoBilling(
+	record: VideoJobRecord | null,
+	meta: VideoJobMeta | null,
+	status: "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired",
+) {
 	const estimated = resolveMetaCostUsd(meta);
-	const settled = status === "completed" ? estimated : status === "failed" || status === "cancelled" ? 0 : null;
-	const state = status === "completed" ? "settled" : status === "failed" || status === "cancelled" ? "void" : "estimated";
+	const settled =
+		status === "completed"
+			? estimated
+			: status === "failed" || status === "cancelled" || status === "expired"
+				? 0
+				: null;
+	const state =
+		status === "completed"
+			? "settled"
+			: status === "failed" || status === "cancelled" || status === "expired"
+				? "void"
+				: "estimated";
 	return {
 		currency: "usd",
 		estimated_provider_cost: estimated != null ? estimated.toFixed(2) : null,
@@ -347,7 +363,11 @@ export async function toPublicVideoResponse(args: {
 		generation_id: generationId ?? null,
 		created_at: createdAt,
 		started_at: normalizeText((args.payload as any)?.started_at) ?? null,
-		completed_at: normalizeText((args.payload as any)?.completed_at) ?? (status === "completed" || status === "failed" || status === "cancelled" ? normalizeText(args.meta?.finalizedAt) : null),
+		completed_at:
+			normalizeText((args.payload as any)?.completed_at) ??
+			(status === "completed" || status === "failed" || status === "cancelled" || status === "expired"
+				? normalizeText(args.meta?.finalizedAt)
+				: null),
 		provider,
 		model:
 			normalizeText(args.payload.model) ??
