@@ -55,8 +55,12 @@ function normalizeStatusFilter(value: string): "queued" | "in_progress" | "compl
 }
 
 function resolveVideoListPath(request: NextRequest): string {
-	const limitValue = Number(request.nextUrl.searchParams.get("limit") ?? "");
-	const limit = Number.isFinite(limitValue) ? Math.max(1, Math.min(200, Math.trunc(limitValue))) : 50;
+	const rawLimit = request.nextUrl.searchParams.get("limit");
+	const limitValue = rawLimit == null ? null : Number(rawLimit);
+	const limit =
+		limitValue != null && Number.isFinite(limitValue)
+			? Math.max(1, Math.min(200, Math.trunc(limitValue)))
+			: 50;
 	const statuses = request.nextUrl.searchParams
 		.getAll("status")
 		.flatMap((value) => value.split(",").map((part) => part.trim()).filter(Boolean))
