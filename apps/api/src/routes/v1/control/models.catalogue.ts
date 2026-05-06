@@ -816,7 +816,6 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         const canonicalModelId = row?.model_id ?? row?.api_model_id;
         if (!canonicalModelId || !row?.provider_id) continue;
         providerIdSet.add(row.provider_id);
-        if (isExpiredEffectiveWindow(row.effective_to, now)) continue;
         if (!includeNonRoutable && !withinEffectiveWindow(row.effective_from, row.effective_to, now)) continue;
         const existing = providersByModel.get(canonicalModelId) ?? [];
         existing.push(row as ProviderModelRow);
@@ -826,7 +825,6 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const capabilitiesByProviderModel = new Map<string, CapabilityRow[]>();
     for (const cap of capabilityRows) {
         if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
-        if (isExpiredEffectiveWindow(cap.effective_to, now)) continue;
         if (!includeNonRoutable && !withinEffectiveWindow(cap.effective_from, cap.effective_to, now)) continue;
         const existing = capabilitiesByProviderModel.get(cap.provider_api_model_id) ?? [];
         existing.push(cap as CapabilityRow);
@@ -1174,7 +1172,13 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                         : "not_listed";
 
         const pricing = pricingByModel.get(modelId) ?? initPricingSummary();
-        const topProvider = getTopProvider(providerMeterByModel.get(modelId) ?? new Map());
+        const filteredProviderIds = new Set(providerInfos.map((provider) => provider.api_provider_id));
+        const filteredProviderMeters = new Map(
+            Array.from(providerMeterByModel.get(modelId) ?? new Map()).filter(([providerId]) =>
+                filteredProviderIds.has(providerId)
+            )
+        );
+        const topProvider = getTopProvider(filteredProviderMeters);
 
         const model: CatalogueModel = {
             model_id: info.model_id,

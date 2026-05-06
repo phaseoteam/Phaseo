@@ -11,6 +11,11 @@ import type {
     RoutingStatus,
 } from "../before/types";
 import type { PriceCard } from "../pricing/types";
+import {
+    normalizeCapabilityStatus as normalizeSharedCapabilityStatus,
+    normalizeProviderStatus as normalizeSharedProviderStatus,
+    normalizeRoutingStatus as normalizeSharedRoutingStatus,
+} from "../before/context.shared";
 import { readHealthMany, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
@@ -58,43 +63,15 @@ function normalizeRoutingMode(value?: string | null): RoutingMode {
 }
 
 function normalizeProviderStatus(value?: string | null): ProviderStatus {
-    const normalized = String(value ?? "").trim().toLowerCase();
-    if (normalized === "active") return "active";
-    if (normalized === "beta") return "beta";
-    if (normalized === "alpha") return "alpha";
-    if (
-        normalized === "notready" ||
-        normalized === "not_ready" ||
-        normalized === "not ready"
-    ) {
-        return "not_ready";
-    }
-    return "active";
+    return normalizeSharedProviderStatus(value);
 }
 
 function normalizeRoutingStatus(value?: string | null): RoutingStatus {
-    const normalized = String(value ?? "").trim().toLowerCase();
-    if (normalized === "active") return "active";
-    if (normalized === "deranked" || normalized === "deranked_lvl1" || normalized === "deranked-lvl1") {
-        return "deranked_lvl1";
-    }
-    if (normalized === "deranked_lvl2" || normalized === "deranked-lvl2") return "deranked_lvl2";
-    if (normalized === "deranked_lvl3" || normalized === "deranked-lvl3") return "deranked_lvl3";
-    if (normalized === "disabled") return "disabled";
-    if (normalized === "notready" || normalized === "not_ready" || normalized === "not ready") return "disabled";
-    return "active";
+    return normalizeSharedRoutingStatus(value);
 }
 
 function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
-    const normalized = String(value ?? "").trim().toLowerCase();
-    if (
-        normalized === "internal_testing" ||
-        normalized === "internal-testing" ||
-        normalized === "internaltesting"
-    ) {
-        return "internal_testing";
-    }
-    return normalizeRoutingStatus(normalized);
+    return normalizeSharedCapabilityStatus(value);
 }
 
 function routingStatusMultiplier(status: RoutingStatus): number {
@@ -570,12 +547,14 @@ export async function routeProviders(
     poolCandidates = poolCandidates.filter((candidate) => {
         const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
         if (capabilityStatus === "disabled") return false;
+        if (capabilityStatus === "coming_soon") return false;
         if (capabilityStatus === "internal_testing" && !testingMode) return false;
         return true;
     });
     pushStage("capability_status_gate", beforeCapabilityStatusGate, poolCandidates, (candidate) => {
         const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
         if (capabilityStatus === "disabled") return "capability_status_disabled";
+        if (capabilityStatus === "coming_soon") return "capability_status_coming_soon";
         if (capabilityStatus === "internal_testing") return "capability_status_internal_testing_requires_testing_mode";
         return "capability_status_" + capabilityStatus;
     });
@@ -712,13 +691,14 @@ export async function routeProviders(
         );
         return { candidate: v.candidate, adapter: v.adapter, health: h, score };
     });
+    const routableScored = scored.filter((entry) => entry.score > 0);
 
     if (orderedHints.length) {
         const order = orderedHints;
-        const byName = new Map(scored.map((entry) => [entry.adapter.name, entry]));
+        const byName = new Map(routableScored.map((entry) => [entry.adapter.name, entry]));
         const ordered = order.map((name) => byName.get(name)).filter(Boolean) as RoutedCandidate[];
         const orderedSet = new Set(ordered.map((entry) => entry.adapter.name));
-        const remaining = scored.filter((entry) => !orderedSet.has(entry.adapter.name));
+        const remaining = routableScored.filter((entry) => !orderedSet.has(entry.adapter.name));
         if (strict) {
             const ranked = [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
             return {
@@ -734,14 +714,14 @@ export async function routeProviders(
     }
 
     if (strict) {
-        const ranked = [...scored].sort((a, b) => b.score - a.score);
+        const ranked = [...routableScored].sort((a, b) => b.score - a.score);
         return {
             ranked,
             diagnostics: buildDiagnostics(ranked.length),
         };
     }
 
-    const ranked = weightedOrder(scored, (s) => s.score, rng);
+    const ranked = weightedOrder(routableScored, (s) => s.score, rng);
     return {
         ranked,
         diagnostics: buildDiagnostics(ranked.length),

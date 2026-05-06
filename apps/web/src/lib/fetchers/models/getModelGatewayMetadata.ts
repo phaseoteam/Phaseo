@@ -147,6 +147,9 @@ function resolveAvailabilityStatus(args: {
 
 	if (isExpiredEffectiveWindow(args.effectiveTo, now)) return "inactive";
 	if (isFutureEffectiveWindow(args.effectiveFrom, now)) return "coming_soon";
+	if (args.providerStatus === "beta" || args.providerStatus === "alpha") {
+		return "coming_soon";
+	}
 	if (!args.isActiveGateway) return "inactive";
 	if (args.providerStatus && args.providerStatus !== "active") return "inactive";
 	if (!isPublicRoutingStatus(args.providerRoutingStatus)) return "inactive";

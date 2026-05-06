@@ -321,6 +321,16 @@ export function classifyProviderAuditRoutability(
 }
 
 function chooseAggregateState(states: ProviderAuditRoutability[]): ProviderAuditRoutability {
+	if (states.length === 0) {
+		return {
+			key: "inactive",
+			label: "Inactive",
+			detail: "No capability routability state is available.",
+			availability: "inactive",
+			isRoutableNow: false,
+		};
+	}
+
 	const activeStates = states.filter((state) => state.availability === "active");
 	const fullyActive = activeStates.find((state) => state.key === "active");
 	if (fullyActive) return fullyActive;

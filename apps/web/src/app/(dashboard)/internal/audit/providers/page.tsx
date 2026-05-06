@@ -110,7 +110,11 @@ export default async function InternalProviderAuditPage({
 			} else if (selectedState === "preview") {
 				rows = rows.filter((row) => row.routability.availability === "coming_soon");
 			} else if (selectedState === "not_routable") {
-				rows = rows.filter((row) => !row.isGatewayActiveNow);
+				rows = rows.filter(
+					(row) =>
+						!row.isGatewayActiveNow &&
+						row.routability.availability !== "coming_soon"
+				);
 			}
 
 			if (onlyGaps) {

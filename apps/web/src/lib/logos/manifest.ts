@@ -346,7 +346,7 @@ export const logoManifest = {
 	venice: {
 		color: "/logos/venice.svg",
 	},
-	"venice/e2ee": {
+	"venice-e2ee": {
 		color: "/logos/venice.svg",
 	},
 	vercel: {

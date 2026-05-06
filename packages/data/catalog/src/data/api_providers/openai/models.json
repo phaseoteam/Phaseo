@@ -675,7 +675,7 @@
     "api_model_id": "openai/gpt-3.5-turbo-2023-09-28",
     "provider_api_model_id": "openai:openai/gpt-3.5-turbo-2023-09-28",
     "provider_model_slug": "gpt-3.5-turbo-2023-09-28",
-    "internal_model_id": "openai/gpt-4",
+    "internal_model_id": "openai/gpt-3.5-turbo-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

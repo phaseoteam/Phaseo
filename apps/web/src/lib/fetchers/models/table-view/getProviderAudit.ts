@@ -34,10 +34,14 @@ type ProviderModelRow = {
 		| Array<{
 			capability_id: string | null;
 			status: string | null;
+			effective_from: string | null;
+			effective_to: string | null;
 		}>
 		| {
 			capability_id: string | null;
 			status: string | null;
+			effective_from: string | null;
+			effective_to: string | null;
 		}
 		| null;
 };
@@ -150,7 +154,9 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 					),
 					capabilities:data_api_provider_model_capabilities(
 						capability_id,
-						status
+						status,
+						effective_from,
+						effective_to
 					)
 					`
 				),
@@ -304,8 +310,8 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 					providerRoutingStatus,
 					modelRoutingStatus: raw.routing_status ?? null,
 					capabilityStatus: cap.status ?? null,
-					effectiveFrom: raw.effective_from,
-					effectiveTo: raw.effective_to,
+					effectiveFrom: cap.effective_from ?? raw.effective_from,
+					effectiveTo: cap.effective_to ?? raw.effective_to,
 					now: new Date(nowIso),
 				}),
 			});
