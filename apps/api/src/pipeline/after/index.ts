@@ -225,6 +225,13 @@ export async function finalizeRequest(args: {
     const status = 502;
     const errorCode = "normalization_failed";
     const errorMessage = "Gateway could not normalize upstream response.";
+    const gatewayErrorPayload = {
+        generation_id: ctx.requestId,
+        status_code: status,
+        error: errorCode,
+        description: errorMessage,
+        upstream_status: result.upstream.status ?? null,
+    };
 
     await handleFailureAudit(
         ctx,
@@ -232,7 +239,9 @@ export async function finalizeRequest(args: {
         status,
         "gateway",
         errorCode,
-        errorMessage
+        errorMessage,
+        undefined,
+        gatewayErrorPayload,
     );
 
     const headers = makeHeaders(args.timingHeader);

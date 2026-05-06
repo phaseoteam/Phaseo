@@ -387,6 +387,21 @@ type UpstreamErrorSummary = {
     raw: unknown;
 };
 
+type ProviderFailureSummary = {
+    category: string | null;
+    hint: string | null;
+    provider: string | null;
+};
+
+type FailureSampleSummary = {
+    provider: string | null;
+    type: string | null;
+    status: number | null;
+    retryable: boolean | null;
+    upstreamErrorCode: string | null;
+    upstreamErrorMessage: string | null;
+};
+
 function getRoutingDiagnosticsFromArgs(args: EventArgs): any {
     const fromCtx = (args.ctx as any)?.routingDiagnostics;
     if (fromCtx && typeof fromCtx === "object") return fromCtx;
@@ -548,7 +563,7 @@ export function extractUpstreamErrorSummary(args: EventArgs): UpstreamErrorSumma
         const root = asObject(source);
         if (!root) continue;
 
-        const errObj = asObject(root.error) ?? root;
+        const errObj = asObject((root as any).upstream_error) ?? asObject(root.error) ?? root;
         const code =
             asString(errObj.code) ??
             asString((root as any).error_code) ??
@@ -565,11 +580,12 @@ export function extractUpstreamErrorSummary(args: EventArgs): UpstreamErrorSumma
             null;
         const message =
             asString(errObj.message) ??
-            asString((root as any).error) ??
             asString((root as any).message) ??
             asString((root as any).error_description) ??
             asString((root as any)?.errors?.[0]?.message) ??
+            asString(errObj.description) ??
             asString((root as any).description) ??
+            asString((root as any).error) ??
             null;
         const status =
             asNumber(errObj.status) ??
@@ -589,6 +605,63 @@ export function extractUpstreamErrorSummary(args: EventArgs): UpstreamErrorSumma
                 raw: root,
             };
         }
+    }
+
+    return null;
+}
+
+function extractProviderFailureSummary(args: EventArgs): ProviderFailureSummary | null {
+    const sources = [args.errorDetails, args.providerResponse];
+
+    for (const source of sources) {
+        const root = asObject(source);
+        if (!root) continue;
+        const diagnostics = asObject((root as any).provider_failure_diagnostics);
+        if (!diagnostics) continue;
+
+        const category = asString(diagnostics.category);
+        const hint = asString(diagnostics.hint);
+        const provider = asString(diagnostics.provider);
+        if (category || hint || provider) {
+            return { category, hint, provider };
+        }
+    }
+
+    return null;
+}
+
+function extractFailureSampleSummary(args: EventArgs): FailureSampleSummary | null {
+    const root = asObject(args.errorDetails);
+    const sample = Array.isArray((root as any)?.failure_sample)
+        ? (root as any).failure_sample[0]
+        : null;
+    const entry = asObject(sample);
+    if (!entry) return null;
+
+    const provider = asString(entry.provider);
+    const type = asString(entry.type);
+    const status = asNumber(entry.status);
+    const retryable =
+        typeof entry.retryable === "boolean" ? entry.retryable : null;
+    const upstreamErrorCode = asString(entry.upstream_error_code);
+    const upstreamErrorMessage = asString(entry.upstream_error_message);
+
+    if (
+        provider ||
+        type ||
+        status !== null ||
+        retryable !== null ||
+        upstreamErrorCode ||
+        upstreamErrorMessage
+    ) {
+        return {
+            provider,
+            type,
+            status,
+            retryable,
+            upstreamErrorCode,
+            upstreamErrorMessage,
+        };
     }
 
     return null;
@@ -667,6 +740,8 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const sanitizedProviderAttempts = includeDetailedPayloads
             ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
             : null;
+        const providerFailure = extractProviderFailureSummary(args);
+        const failureSample = extractFailureSampleSummary(args);
         const mappingSnapshot = includeDetailedPayloads
             ? sanitizeForAxiom({
                 protocol: args.protocolOverride ?? ctx?.protocol ?? null,
@@ -927,6 +1002,17 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             upstream_error_json: includeDetailedPayloads
                 ? stringifyForAxiom(sanitizeForAxiom(upstreamError?.raw ?? null))
                 : null,
+            provider_failure_category: providerFailure?.category ?? null,
+            provider_failure_provider: providerFailure?.provider ?? null,
+            provider_failure_hint: providerFailure?.hint ?? null,
+            failure_sample_first_provider: failureSample?.provider ?? null,
+            failure_sample_first_type: failureSample?.type ?? null,
+            failure_sample_first_status: failureSample?.status ?? null,
+            failure_sample_first_retryable: failureSample?.retryable ?? null,
+            failure_sample_first_upstream_error_code:
+                failureSample?.upstreamErrorCode ?? null,
+            failure_sample_first_upstream_error_message:
+                failureSample?.upstreamErrorMessage ?? null,
             gateway_response_redacted_json: includeDetailedPayloads
                 ? stringifyForAxiom(sanitizedGatewayResponse)
                 : null,

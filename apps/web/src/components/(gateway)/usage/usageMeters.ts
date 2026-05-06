@@ -32,6 +32,8 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	video_pixels: { long: "Video pixels", short: "vid px" },
 	output_video_seconds: { long: "Video seconds", short: "video sec" },
 	output_audio_seconds: { long: "Audio seconds", short: "audio sec" },
+	output_reasoning_tokens: { long: "Output reasoning tokens", short: "reasoning out" },
+	output_video: { long: "Output videos", short: "out video" },
 	bfl_credits: { long: "BFL credits", short: "bfl credits" },
 };
 

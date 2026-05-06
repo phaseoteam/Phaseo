@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
+import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 
 export type ErrorRow = {
 	request_id?: string | null;
@@ -20,6 +21,7 @@ export type ErrorRow = {
 	status_code?: number | null;
 	error_code?: string | null;
 	error_message?: string | null;
+	error_payload?: Record<string, unknown> | null;
 	usage?: any;
 	cost_nanos?: number | null;
 };
@@ -51,13 +53,22 @@ export default function ErrorsTable({
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{rows.map((r, idx) => (
+					{rows.map((r, idx) => {
+						const summary = formatErrorListSummary(r);
+						return (
 						<TableRow key={idx} className="h-8">
 							<TableCell className="py-1 align-middle">
 								{niceDate(r.created_at)}
 							</TableCell>
 							<TableCell className="py-1 align-middle">
-								{r.model_id ?? "-"}
+								<div className="space-y-1">
+									<div>{r.model_id ?? "-"}</div>
+									{summary ? (
+										<div className="text-xs text-rose-700 line-clamp-2">
+											{summary}
+										</div>
+									) : null}
+								</div>
 							</TableCell>
 							<TableCell className="py-1 align-middle">
 								<span className="font-mono text-xs">
@@ -76,7 +87,8 @@ export default function ErrorsTable({
 								</Button>
 							</TableCell>
 						</TableRow>
-					))}
+						);
+					})}
 				</TableBody>
 			</Table>
 		</div>

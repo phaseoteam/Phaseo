@@ -193,6 +193,7 @@ export function extractErrorCode(body: any, fallback: string): string {
     if (typeof e === "number") return String(e);
     if (e && typeof e === "object") {
         if (typeof e.code === "string") return e.code;
+        if (typeof e.status === "string") return e.status;
         if (typeof e.type === "string") return e.type;
         if (typeof e.error === "string") return e.error;
         if (typeof e.message === "string") return e.message.slice(0, 120);
@@ -736,6 +737,12 @@ export async function handleError({
                 .slice(0, 16);
         }
     }
+    if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
+        errorPayload.routing_diagnostics = body.routing_diagnostics;
+    }
+    if (body?.provider_failure_diagnostics && typeof body.provider_failure_diagnostics === "object") {
+        errorPayload.provider_failure_diagnostics = body.provider_failure_diagnostics;
+    }
     if (debugEnabled) {
         const routingDebug = ctx
             ? {
@@ -761,6 +768,7 @@ export async function handleError({
     }
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
     const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
+    const replayRequestPayload = ctx?.rawBody ?? ctx?.body ?? null;
 
     // Audit failure
     const auditExtraJson = (() => {
@@ -902,6 +910,17 @@ export async function handleError({
         edgeAsn: requestMeta.edgeAsn,
         extraJson: auditExtraJson,
         errorDetailsJson,
+        errorPayload: gatewayErrorPayload,
+        requestPayload: replayRequestPayload,
+        gatewayResponse: errorPayload,
+        providerResponse: body ?? null,
+        detailMetadata: {
+            stage,
+            replay_supported: Boolean(
+                replayRequestPayload &&
+                    typeof replayRequestPayload === "object"
+            ),
+        },
     };
     if (stage === "execute") {
         auditArgs.stream = ctx?.stream;

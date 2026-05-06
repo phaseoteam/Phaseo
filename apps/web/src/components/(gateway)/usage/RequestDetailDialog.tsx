@@ -26,6 +26,14 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
@@ -45,6 +53,7 @@ import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
 	normalizeProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy";
+import { formatRoomError } from "@/lib/chat/formatRoomError";
 
 interface RequestDetailDialogProps {
 	open: boolean;
@@ -58,6 +67,65 @@ interface RequestDetailDialogProps {
 }
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
+
+function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): string {
+	if (line == null) return "null";
+	if (
+		typeof line === "string" ||
+		typeof line === "number" ||
+		typeof line === "boolean"
+	) {
+		return String(line);
+	}
+	const provider =
+		typeof line.provider === "string" && line.provider.trim().length > 0
+			? line.provider.trim()
+			: null;
+	const endpoint =
+		typeof line.endpoint === "string" && line.endpoint.trim().length > 0
+			? line.endpoint.trim()
+			: null;
+	const dimension =
+		typeof line.dimension === "string" && line.dimension.trim().length > 0
+			? line.dimension.trim()
+			: null;
+	const units =
+		typeof line.units === "number"
+			? line.units
+			: typeof line.units === "string" && line.units.trim().length > 0
+				? line.units.trim()
+				: null;
+	const costUsd =
+		typeof line.cost_usd === "number"
+			? line.cost_usd.toFixed(6)
+			: typeof line.cost_usd === "string" && line.cost_usd.trim().length > 0
+				? line.cost_usd.trim()
+				: null;
+	const costNanos =
+		typeof line.cost_nanos === "number"
+			? line.cost_nanos.toLocaleString()
+			: typeof line.cost_nanos === "string" && line.cost_nanos.trim().length > 0
+				? line.cost_nanos.trim()
+				: null;
+
+	const parts = [
+		provider,
+		endpoint,
+		dimension ? `${dimension}${units != null ? `=${units}` : ""}` : null,
+		costUsd ? `$${costUsd}` : null,
+		costNanos ? `${costNanos} nanos` : null,
+	].filter(Boolean);
+
+	return parts.length > 0 ? parts.join(" | ") : JSON.stringify(line);
+}
+
+function formatDiagnosticLabel(value: string): string {
+	return value
+		.split("_")
+		.filter(Boolean)
+		.map((part) => part[0].toUpperCase() + part.slice(1))
+		.join(" ");
+}
 
 function formatCost(nanos: number | null | undefined): string {
 	const dollars = Number(nanos ?? 0) / 1e9;
@@ -438,6 +506,18 @@ export default function RequestDetailDialog({
 				sessionId: request.session_id,
 		  })
 		: null;
+	const formattedGatewayError = request.error_payload
+		? formatRoomError(JSON.stringify(request.error_payload))
+		: request.error_message?.trim()
+			? formatRoomError(request.error_message)
+			: null;
+	const formattedFailureSample = formattedGatewayError?.failureSample ?? [];
+	const providerCandidateDiagnostics =
+		formattedGatewayError?.providerCandidateDiagnostics;
+	const providerEnablement = formattedGatewayError?.providerEnablement;
+	const routingDiagnostics = formattedGatewayError?.routingDiagnostics;
+	const failedProviders = formattedGatewayError?.failedProviders ?? [];
+	const failedStatuses = formattedGatewayError?.failedStatuses ?? [];
 	const requestDetailItems = [
 		{
 			label: "Model",
@@ -503,6 +583,44 @@ export default function RequestDetailDialog({
 			),
 		},
 		{
+			label: "Native response ID",
+			value: request.native_response_id ? (
+				<div className="flex items-center gap-2">
+					<code className="min-w-0 truncate font-mono text-xs">
+						{request.native_response_id}
+					</code>
+					<CopyButton
+						size="sm"
+						variant="ghost"
+						className="text-muted-foreground hover:text-foreground"
+						content={request.native_response_id}
+						aria-label="Copy native response id"
+					/>
+				</div>
+			) : (
+				"-"
+			),
+		},
+		{
+			label: "Upstream request ID",
+			value: request.upstream_request_id ? (
+				<div className="flex items-center gap-2">
+					<code className="min-w-0 truncate font-mono text-xs">
+						{request.upstream_request_id}
+					</code>
+					<CopyButton
+						size="sm"
+						variant="ghost"
+						className="text-muted-foreground hover:text-foreground"
+						content={request.upstream_request_id}
+						aria-label="Copy upstream request id"
+					/>
+				</div>
+			) : (
+				"-"
+			),
+		},
+		{
 			label: "Provider",
 			value: request.provider ? (
 				<Link
@@ -525,6 +643,14 @@ export default function RequestDetailDialog({
 			label: "Model ID",
 			value: request.model_id ? (
 				<code className="font-mono text-xs">{request.model_id}</code>
+			) : (
+				"-"
+			),
+		},
+		{
+			label: "Endpoint",
+			value: request.endpoint ? (
+				<code className="font-mono text-xs">{request.endpoint}</code>
 			) : (
 				"-"
 			),
@@ -599,7 +725,7 @@ export default function RequestDetailDialog({
 			? [
 					{
 						label: "Error message",
-						value: request.error_message,
+						value: formattedGatewayError?.message ?? request.error_message,
 						className: "sm:col-span-2",
 					},
 			  ]
@@ -640,10 +766,413 @@ export default function RequestDetailDialog({
 									{request.error_message ? (
 										<div>
 											<span className="font-medium">Message:</span>{" "}
-											{request.error_message}
+											{formattedGatewayError?.message ?? request.error_message}
 										</div>
 									) : null}
 								</div>
+								{formattedGatewayError?.hint ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-1 font-medium">Hint:</div>
+										<div>{formattedGatewayError.hint}</div>
+									</div>
+								) : null}
+								{formattedGatewayError?.generationId ? (
+									<div className="mt-3 flex items-center gap-2 text-rose-950/90">
+										<span className="font-medium">Generation ID:</span>
+										<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+											{formattedGatewayError.generationId}
+										</code>
+										<CopyButton
+											size="sm"
+											variant="ghost"
+											className="text-rose-900/80 hover:text-rose-950"
+											content={formattedGatewayError.generationId}
+											aria-label="Copy generation id"
+										/>
+									</div>
+								) : null}
+								{formattedGatewayError?.reason ||
+								formattedGatewayError?.attemptCount != null ||
+								failedProviders.length > 0 ||
+								failedStatuses.length > 0 ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Routing failure summary</div>
+										<div className="space-y-1 text-sm">
+											{formattedGatewayError?.reason ? (
+												<div>
+													<span className="font-medium">Reason:</span>{" "}
+													<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+														{formattedGatewayError.reason}
+													</code>
+													<span className="ml-2 text-rose-950/80">
+														{formatDiagnosticLabel(formattedGatewayError.reason)}
+													</span>
+												</div>
+											) : null}
+											{formattedGatewayError?.attemptCount != null ? (
+												<div>
+													<span className="font-medium">Attempts:</span>{" "}
+													{formattedGatewayError.attemptCount}
+												</div>
+											) : null}
+											{failedProviders.length > 0 ? (
+												<div>
+													<span className="font-medium">Failed providers:</span>{" "}
+													{failedProviders.join(", ")}
+												</div>
+											) : null}
+											{failedStatuses.length > 0 ? (
+												<div>
+													<span className="font-medium">Failed statuses:</span>{" "}
+													{failedStatuses.join(", ")}
+												</div>
+											) : null}
+										</div>
+									</div>
+								) : null}
+								{formattedGatewayError?.providerFailureCategory ||
+								formattedGatewayError?.providerFailureProvider ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Provider diagnostics</div>
+										<div className="space-y-1 text-sm">
+											{formattedGatewayError.providerFailureCategory ? (
+												<div>
+													<span className="font-medium">Category:</span>{" "}
+													<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+														{formattedGatewayError.providerFailureCategory}
+													</code>
+													<span className="ml-2 text-rose-950/80">
+														{formatDiagnosticLabel(
+															formattedGatewayError.providerFailureCategory
+														)}
+													</span>
+												</div>
+											) : null}
+											{formattedGatewayError.providerFailureProvider ? (
+												<div className="flex items-center gap-2">
+													<span className="font-medium">Provider:</span>
+													<Logo
+														id={formattedGatewayError.providerFailureProvider}
+														width={14}
+														height={14}
+														className="flex-shrink-0"
+													/>
+													<span>
+														{providerNames?.get(
+															formattedGatewayError.providerFailureProvider
+														) ??
+															formattedGatewayError.providerFailureProvider}
+													</span>
+												</div>
+											) : null}
+										</div>
+									</div>
+								) : null}
+								{formattedGatewayError?.upstreamError ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Upstream error</div>
+										<div className="space-y-1 text-sm">
+											{formattedGatewayError.upstreamError.code ? (
+												<div>
+													<span className="font-medium">Code:</span>{" "}
+													<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+														{formattedGatewayError.upstreamError.code}
+													</code>
+												</div>
+											) : null}
+											{formattedGatewayError.upstreamError.message ? (
+												<div>
+													<span className="font-medium">Message:</span>{" "}
+													{formattedGatewayError.upstreamError.message}
+												</div>
+											) : null}
+											{formattedGatewayError.upstreamError.description ? (
+												<div>
+													<span className="font-medium">Detail:</span>{" "}
+													{formattedGatewayError.upstreamError.description}
+												</div>
+											) : null}
+											{formattedGatewayError.upstreamError.param ? (
+												<div>
+													<span className="font-medium">Param:</span>{" "}
+													<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+														{formattedGatewayError.upstreamError.param}
+													</code>
+												</div>
+											) : null}
+										</div>
+									</div>
+								) : null}
+								{formattedFailureSample.length > 0 ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Failure sample</div>
+										<div className="space-y-2">
+											{formattedFailureSample.map((sample, index) => (
+												<div
+													key={`${sample.provider ?? "unknown"}-${sample.status ?? "na"}-${index}`}
+													className="rounded-lg border border-rose-200/70 bg-white/70 p-3 text-sm"
+												>
+													<div className="flex flex-wrap items-center gap-2">
+														<span className="font-medium">
+															{sample.provider
+																? providerNames?.get(sample.provider) ??
+																	sample.provider
+																: "Unknown provider"}
+														</span>
+														{sample.status != null ? (
+															<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																HTTP {sample.status}
+															</code>
+														) : null}
+														{sample.upstreamErrorCode ? (
+															<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																{sample.upstreamErrorCode}
+															</code>
+														) : null}
+													</div>
+													{sample.upstreamErrorMessage ? (
+														<div className="mt-2">
+															<span className="font-medium">Message:</span>{" "}
+															{sample.upstreamErrorMessage}
+														</div>
+													) : null}
+													{sample.upstreamErrorDescription &&
+													sample.upstreamErrorDescription !==
+														sample.upstreamErrorMessage ? (
+														<div className="mt-1 text-rose-950/80">
+															<span className="font-medium">Detail:</span>{" "}
+															{sample.upstreamErrorDescription}
+														</div>
+													) : null}
+												</div>
+											))}
+										</div>
+									</div>
+								) : null}
+								{providerCandidateDiagnostics ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Provider candidates</div>
+										<div className="grid gap-2 sm:grid-cols-3">
+											<div>
+												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Known
+												</div>
+												<div className="font-mono text-sm">
+													{providerCandidateDiagnostics.totalProviders ?? "-"}
+												</div>
+											</div>
+											<div>
+												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Supports endpoint
+												</div>
+												<div className="font-mono text-sm">
+													{providerCandidateDiagnostics.supportsEndpointCount ?? "-"}
+												</div>
+											</div>
+											<div>
+												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Candidates
+												</div>
+												<div className="font-mono text-sm">
+													{providerCandidateDiagnostics.candidateCount ?? "-"}
+												</div>
+											</div>
+										</div>
+										{providerCandidateDiagnostics.droppedUnsupportedEndpoint.length >
+										0 ? (
+											<div className="mt-3">
+												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Unsupported endpoints
+												</div>
+												<div className="flex flex-wrap gap-2">
+													{providerCandidateDiagnostics.droppedUnsupportedEndpoint.map(
+														(endpoint) => (
+															<code
+																key={endpoint}
+																className="rounded bg-rose-100 px-1.5 py-0.5 text-xs"
+															>
+																{endpoint}
+															</code>
+														)
+													)}
+												</div>
+											</div>
+										) : null}
+										{providerCandidateDiagnostics.droppedMissingAdapter.length > 0 ? (
+											<div className="mt-3 space-y-2">
+												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Missing adapters
+												</div>
+												{providerCandidateDiagnostics.droppedMissingAdapter.map(
+													(entry, index) => (
+														<div
+															key={`${entry.providerId ?? "unknown"}-${entry.endpoint ?? "unknown"}-${index}`}
+															className="rounded-lg border border-rose-200/70 bg-white/70 p-2 text-sm"
+														>
+															<span className="font-medium">
+																{entry.providerId
+																	? providerNames?.get(entry.providerId) ??
+																		entry.providerId
+																	: "Unknown provider"}
+															</span>
+															{entry.endpoint ? (
+																<>
+																	{" "}
+																	for{" "}
+																	<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																		{entry.endpoint}
+																	</code>
+																</>
+															) : null}
+														</div>
+													)
+												)}
+											</div>
+										) : null}
+									</div>
+								) : null}
+								{providerEnablement ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Provider enablement</div>
+										{providerEnablement.capability ? (
+											<div className="mb-2">
+												<span className="font-medium">Capability:</span>{" "}
+												<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+													{providerEnablement.capability}
+												</code>
+											</div>
+										) : null}
+										<div className="grid gap-3 sm:grid-cols-2">
+											<div>
+												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Before
+												</div>
+												<div className="flex flex-wrap gap-2">
+													{providerEnablement.providersBefore.length > 0 ? (
+														providerEnablement.providersBefore.map((providerId) => (
+															<code
+																key={providerId}
+																className="rounded bg-rose-100 px-1.5 py-0.5 text-xs"
+															>
+																{providerNames?.get(providerId) ?? providerId}
+															</code>
+														))
+													) : (
+														<span className="text-sm text-rose-950/70">-</span>
+													)}
+												</div>
+											</div>
+											<div>
+												<div className="mb-1 text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													After
+												</div>
+												<div className="flex flex-wrap gap-2">
+													{providerEnablement.providersAfter.length > 0 ? (
+														providerEnablement.providersAfter.map((providerId) => (
+															<code
+																key={providerId}
+																className="rounded bg-rose-100 px-1.5 py-0.5 text-xs"
+															>
+																{providerNames?.get(providerId) ?? providerId}
+															</code>
+														))
+													) : (
+														<span className="text-sm text-rose-950/70">-</span>
+													)}
+												</div>
+											</div>
+										</div>
+										{providerEnablement.dropped.length > 0 ? (
+											<div className="mt-3 space-y-2">
+												<div className="text-xs font-medium uppercase tracking-wide text-rose-950/70">
+													Dropped providers
+												</div>
+												{providerEnablement.dropped.map((entry, index) => (
+													<div
+														key={`${entry.providerId ?? "unknown"}-${entry.reason ?? "unknown"}-${index}`}
+														className="rounded-lg border border-rose-200/70 bg-white/70 p-2 text-sm"
+													>
+														<div className="font-medium">
+															{entry.providerId
+																? providerNames?.get(entry.providerId) ??
+																	entry.providerId
+																: "Unknown provider"}
+														</div>
+														{entry.reason ? (
+															<div className="mt-1 text-rose-950/80">
+																<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																	{entry.reason}
+																</code>
+																<span className="ml-2">
+																	{formatDiagnosticLabel(entry.reason)}
+																</span>
+															</div>
+														) : null}
+													</div>
+												))}
+											</div>
+										) : null}
+									</div>
+								) : null}
+								{routingDiagnostics &&
+								routingDiagnostics.filterStages.length > 0 ? (
+									<div className="mt-3 rounded-xl border border-rose-300/60 bg-white/50 p-3 text-rose-950">
+										<div className="mb-2 font-medium">Routing diagnostics</div>
+										<div className="space-y-3">
+											{routingDiagnostics.filterStages.map((stage, index) => (
+												<div
+													key={`${stage.stage ?? "stage"}-${index}`}
+													className="rounded-lg border border-rose-200/70 bg-white/70 p-3 text-sm"
+												>
+													<div className="flex flex-wrap items-center gap-2">
+														<span className="font-medium">
+															{stage.stage
+																? formatDiagnosticLabel(stage.stage)
+																: `Stage ${index + 1}`}
+														</span>
+														{stage.beforeCount != null ? (
+															<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																before {stage.beforeCount}
+															</code>
+														) : null}
+														{stage.afterCount != null ? (
+															<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																after {stage.afterCount}
+															</code>
+														) : null}
+													</div>
+													{stage.droppedProviders.length > 0 ? (
+														<div className="mt-2 space-y-2">
+															{stage.droppedProviders.map((entry, entryIndex) => (
+																<div
+																	key={`${entry.providerId ?? "unknown"}-${entry.reason ?? "unknown"}-${entryIndex}`}
+																	className="rounded border border-rose-200/70 bg-white/80 p-2"
+																>
+																	<div className="font-medium">
+																		{entry.providerId
+																			? providerNames?.get(entry.providerId) ??
+																				entry.providerId
+																			: "Unknown provider"}
+																	</div>
+																	{entry.reason ? (
+																		<div className="mt-1 text-rose-950/80">
+																			<code className="rounded bg-rose-100 px-1.5 py-0.5 text-xs">
+																				{entry.reason}
+																			</code>
+																			<span className="ml-2">
+																				{formatDiagnosticLabel(entry.reason)}
+																			</span>
+																		</div>
+																	) : null}
+																</div>
+															))}
+														</div>
+													) : null}
+												</div>
+											))}
+										</div>
+									</div>
+								) : null}
 							</div>
 						) : null}
 
@@ -658,7 +1187,7 @@ export default function RequestDetailDialog({
 										"-"
 									)
 								}
-								sub="Time to first frame"
+								sub="Time to first token or output byte"
 								tone="emerald"
 								compact
 							/>
@@ -672,7 +1201,7 @@ export default function RequestDetailDialog({
 										"-"
 									)
 								}
-								sub="First frame to completion"
+								sub="Post-latency generation time"
 								tone="sky"
 								compact
 							/>
@@ -744,9 +1273,76 @@ export default function RequestDetailDialog({
 							)}
 						</DetailSection>
 
+						{request.pricing_lines.length > 0 ? (
+							<DetailSection title="Pricing lines">
+								<div className="space-y-2">
+									{request.pricing_lines.map((line, index) => (
+										<div
+											key={`request-pricing-line-${index}`}
+											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
+										>
+											<code className="whitespace-pre-wrap break-words font-mono text-xs">
+												{formatRequestPricingLine(line)}
+											</code>
+										</div>
+									))}
+								</div>
+							</DetailSection>
+						) : null}
+
 						<DetailSection title="Provider response">
 							<div className="space-y-4">
 								<DetailTimingBar items={responseTimelineItems} />
+
+								{attempts.length > 0 ? (
+									<div className="overflow-x-auto rounded-xl border border-border/60">
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>Attempt</TableHead>
+													<TableHead>Provider</TableHead>
+													<TableHead>Status</TableHead>
+													<TableHead>Outcome</TableHead>
+													<TableHead>Duration</TableHead>
+													<TableHead>Upstream error</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{attempts.map((attempt, index) => (
+													<TableRow
+														key={`${attempt.provider ?? "provider"}:${attempt.attempt_number ?? index}`}
+													>
+														<TableCell>{attempt.attempt_number ?? index + 1}</TableCell>
+														<TableCell>{attempt.provider ?? "-"}</TableCell>
+														<TableCell>
+															{attempt.status != null
+																? `${attempt.status}${attempt.status_text ? ` ${attempt.status_text}` : ""}`
+																: "-"}
+														</TableCell>
+														<TableCell>{attempt.outcome ?? "-"}</TableCell>
+														<TableCell>{formatDuration(attempt.duration_ms)}</TableCell>
+														<TableCell>
+															<div className="space-y-1">
+																<div>{attempt.upstream_error_code ?? "-"}</div>
+																{attempt.upstream_error_message ? (
+																	<div className="text-xs text-muted-foreground">
+																		{attempt.upstream_error_message}
+																	</div>
+																) : null}
+																{attempt.upstream_error_description &&
+																attempt.upstream_error_description !== attempt.upstream_error_message ? (
+																	<div className="text-xs text-muted-foreground">
+																		{attempt.upstream_error_description}
+																	</div>
+																) : null}
+															</div>
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								) : null}
 							</div>
 						</DetailSection>
 					</div>

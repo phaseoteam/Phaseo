@@ -1,0 +1,133 @@
+---
+title: "Async Jobs WebSocket"
+description: "Subscribe to owned batch or video async job updates over WebSocket."
+---
+
+<Note type="warning">
+Experimental endpoint. This surface is WebSocket-only and is currently intended for async batch and video lifecycle updates.
+</Note>
+
+Successful connection is HTTP `101 Switching Protocols` (not `200`). If you call this path as a normal HTTP GET without WebSocket upgrade headers, the gateway returns `426 websocket_upgrade_required`.
+
+## Endpoint
+
+- URL: `wss://api.phaseo.app/v1/async/{kind}/{id}/ws`
+- Supported `kind` values: `batch`, `video`
+- Method semantics: WebSocket starts as an HTTP `GET` with `Upgrade: websocket`
+- Auth: `Authorization: Bearer YOUR_API_KEY`
+
+The gateway enforces workspace ownership before opening the socket. If the async job is missing or not owned by the caller, the HTTP handshake fails with `404 async_job_not_found_or_not_owned`.
+
+## Query parameters
+
+- `interval_ms` optional polling interval override
+  - default: `2500`
+  - minimum: `1000`
+  - maximum: `10000`
+- `close_on_terminal` optional boolean
+  - default: `true`
+  - when enabled, the gateway closes the socket after a terminal update
+
+## Server events
+
+The socket sends JSON envelopes with a `type` and `data` field.
+
+- `job.snapshot`
+  - initial current state emitted immediately after upgrade
+- `job.updated`
+  - emitted when the async job payload changes during polling
+- `job.deleted`
+  - emitted if the owned async job record disappears before completion
+- `pong`
+  - sent in reply to a client `ping` message
+
+The `data` payload follows the same owned async-job shape used by webhook/web UI notifications, including status, routing metadata, file/content links where available, and terminal billing fields for supported kinds.
+
+Batch payloads can also include:
+
+- `pricing_lines`
+  - the same batch pricing line metadata exposed by the normal batch API responses when settlement or priced-usage data is available
+- `webhook`
+  - sanitized webhook configuration with the public callback `url` and subscribed `events` when the batch was created with gateway-managed webhook settings
+
+Common identity fields include:
+
+- `id`
+  - gateway-owned async job id
+- `request_id`
+  - originating gateway request id when the async job was created from a tracked request
+- `session_id`
+  - gateway session id when the originating request was session-scoped
+- `app_id`
+  - owning app id when the originating request was associated with an app
+- `native_id`
+  - provider-native operation / batch id when the upstream returned one
+
+Failed batch and video payloads can also include the same normalized gateway failure diagnostics used by the request error contract when that metadata was captured during execution or reconciliation:
+
+- `upstream_error`
+  - normalized upstream provider error object with fields like `code`, `message`, `description`, `param`, and `status`
+- `provider_failure_diagnostics`
+  - compact gateway classification of the failure category, implicated provider, and optional operator hint
+- `failure_sample`
+  - per-attempt upstream failure summaries, including provider, status, retryability, and upstream error fields when available
+- `routing_diagnostics`
+  - provider-count and drop-stage details when routing filtered candidates before failure
+- `provider_enablement`
+  - capability/provider activation diagnostics when enablement gating was part of the failure path
+- `provider_candidate_diagnostics`
+  - candidate counts and dropped-provider summary data when the gateway computed a narrowed provider set
+
+For video jobs, timing fields use the same explicit semantics as the rest of the gateway where available:
+
+- `latency_ms`
+  - time to first byte / first meaningful provider response when tracked
+- `generation_ms`
+  - post-latency generation time when tracked
+- `total_duration_ms`
+  - end-to-end async job lifecycle duration
+- `duration_ms`
+  - legacy alias for `total_duration_ms`
+
+Video job payloads can also include lifecycle transition metadata that is useful for long-running investigations:
+
+- `last_polled_at`
+  - last provider poll timestamp recorded by the gateway
+- `polled_status`
+  - last raw/normalized provider status observed during polling
+- `last_reconciled_at`
+  - last scheduled reconciliation pass that touched the job
+
+Terminal batch and video payloads can also include:
+
+- `finalized_at`
+  - when terminal billing/finalization completed
+
+When the job was created with a gateway key versus BYOK credentials, batch and video payloads can also include:
+
+- `key_source`
+  - `gateway` or `byok`
+- `byok_key_id`
+  - gateway-side identifier for the BYOK credential when available
+
+Async job payloads can also include webhook dispatch state copied from the owned async operation record:
+
+- `next_webhook_retry_at`
+  - next scheduled retry timestamp, if a delivery is queued
+- `last_webhook_progress`
+  - most recent coarse progress bucket dispatched to webhook consumers
+- `last_webhook_progress_at`
+  - when that progress bucket was last emitted
+- `last_webhook_dispatched_at`
+  - last webhook dispatch attempt timestamp, regardless of outcome
+
+## Client messages
+
+- `ping`
+  - keepalive; server replies with `pong`
+- `refresh`
+  - force an immediate state refresh without waiting for the next poll interval
+
+## Terminal behavior
+
+When `close_on_terminal=true`, the gateway closes the socket after a terminal `completed`, `failed`, or `cancelled` update. Disable that flag if you want the client to keep the connection open and decide when to close it.

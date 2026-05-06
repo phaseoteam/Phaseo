@@ -9,10 +9,39 @@ Gateway errors use a consistent JSON shape:
 ```json
 {
   "generation_id": "G-abc123",
-  "status_code": 401,
-  "error": "validation_error",
-  "error_type": "user",
-  "description": "Input validation failed"
+  "status_code": 502,
+  "error": "upstream_error",
+  "error_type": "system",
+  "error_origin": "upstream",
+  "reason": "all_candidates_failed",
+  "description": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+  "attempt_count": 1,
+  "failed_providers": ["google-ai-studio"],
+  "failed_statuses": [403],
+  "provider_failure_diagnostics": {
+    "category": "provider_access_missing",
+    "hint": "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+    "provider": "google-ai-studio"
+  },
+  "upstream_error": {
+    "code": "PERMISSION_DENIED",
+    "message": "The caller does not have permission.",
+    "description": null,
+    "param": null
+  },
+  "failure_sample": [
+    {
+      "provider": "google-ai-studio",
+      "type": "upstream_non_2xx",
+      "status": 403,
+      "upstream_error_code": "PERMISSION_DENIED",
+      "upstream_error_message": "The caller does not have permission.",
+      "upstream_error_description": null,
+      "upstream_error_param": null,
+      "upstream_payload_preview": "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}",
+      "retryable": false
+    }
+  ]
 }
 ```
 
@@ -22,8 +51,18 @@ Every response includes:
 - `status_code`: mirrors the HTTP status to make retries decisions easier.
 - `error`: a machine-readable error code (for example `validation_error`).
 - `error_type`: high-level classification (`user` or `system`).
+- `error_origin`: whether the failure is primarily attributed to the caller, the gateway, or an upstream provider.
 - `description`: a human-friendly explanation.
 - `details` (optional): structured validation errors when `error` is `validation_error`.
+
+Some responses also include richer diagnostics:
+
+- `reason`: a more specific machine-readable subreason such as `all_candidates_failed` or `pricing_not_configured`.
+- `provider_candidate_diagnostics` and `provider_enablement`: explain why a known model/provider is not currently routable for `unsupported_model_or_endpoint` style failures.
+- `routing_diagnostics`: filter-stage detail for capability, rollout, and routing-status gates.
+- `provider_failure_diagnostics`: normalized operator-facing hints for missing credentials, missing access, region restrictions, rate limits, and similar execute-stage failures.
+- `upstream_error` and `failure_sample`: best-effort summaries of the first upstream/provider failure when the request reached a provider.
+- `failed_providers`, `failed_statuses`, and `attempt_count`: aggregate retry/failover context for routed request failures.
 
 ## Status class guidance
 
@@ -44,6 +83,105 @@ Every response includes:
 | `validation_error`     | `400`       | Invalid parameters or request body.                  |
 | `provider_error`       | `502`       | Upstream model provider failed to respond correctly. |
 | `server_error`         | `500`       | Unexpected issue within the Gateway.                 |
+
+## Structured upstream diagnostics
+
+When a routed request reaches one or more providers and still fails, the Gateway may include:
+
+- `provider_failure_diagnostics.category`
+- `provider_failure_diagnostics.hint`
+- `provider_failure_diagnostics.provider`
+
+Current categories include:
+
+- `credentials_not_configured`
+- `credentials_invalid_or_forbidden`
+- `provider_access_missing`
+- `region_or_project_restriction`
+- `model_unavailable_for_endpoint`
+- `rate_limited`
+- `server_error`
+
+These fields are intended to make triage easier without enabling full debug mode.
+
+## Unsupported model diagnostics
+
+For `unsupported_model_or_endpoint` responses, the Gateway may include:
+
+- `provider_candidate_diagnostics`
+- `provider_enablement`
+- `missing_pricing_providers`
+- `routing_diagnostics`
+
+These help distinguish:
+
+- known but disabled
+- unsupported for endpoint
+- pricing missing
+- rollout-restricted or internal-testing-only mappings
+
+Representative fields:
+
+- `provider_candidate_diagnostics.totalProviders`: how many providers were known for the model before endpoint filtering.
+- `provider_candidate_diagnostics.supportsEndpointCount`: how many of those providers support the requested endpoint at all.
+- `provider_candidate_diagnostics.candidateCount`: how many providers remained as executable candidates after adapter checks.
+- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: provider ids dropped because the provider does not support the requested endpoint.
+- `provider_candidate_diagnostics.droppedMissingAdapter`: provider/endpoint pairs dropped because a mapping exists but the gateway does not yet have an adapter for that endpoint.
+- `provider_enablement.capability`: the capability gate being enforced, such as `video_generation`.
+- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: provider ids before and after capability or enablement filtering.
+- `provider_enablement.dropped[].reason`: machine-readable reasons such as `pricing_missing`.
+- `routing_diagnostics.filterStages[].stage`: the routing/filter stage, for example capability, rollout, or routing-status filtering.
+- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: provider counts before and after each stage.
+- `routing_diagnostics.filterStages[].droppedProviders[].reason`: machine-readable reasons such as rollout or routing restrictions.
+
+Example:
+
+```json
+{
+  "generation_id": "G-unsupported123",
+  "status_code": 400,
+  "error": "unsupported_model_or_endpoint",
+  "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+  "provider_candidate_diagnostics": {
+    "totalProviders": 3,
+    "supportsEndpointCount": 2,
+    "candidateCount": 1,
+    "droppedUnsupportedEndpoint": ["provider-a"],
+    "droppedMissingAdapter": [
+      {
+        "providerId": "provider-b",
+        "endpoint": "responses"
+      }
+    ]
+  },
+  "provider_enablement": {
+    "capability": "responses",
+    "providersBefore": ["provider-b", "provider-c"],
+    "providersAfter": ["provider-c"],
+    "dropped": [
+      {
+        "providerId": "provider-b",
+        "reason": "pricing_missing"
+      }
+    ]
+  },
+  "routing_diagnostics": {
+    "filterStages": [
+      {
+        "stage": "provider_routing_status",
+        "beforeCount": 1,
+        "afterCount": 0,
+        "droppedProviders": [
+          {
+            "providerId": "provider-c",
+            "reason": "provider_status_not_ready"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## Debug options
 

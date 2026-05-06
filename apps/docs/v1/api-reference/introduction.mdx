@@ -48,20 +48,15 @@ The table below outlines the main endpoints available in the AI Stats Gateway ri
 | `POST /embeddings`, `POST /moderations` | Embeddings and moderation checks. |
 | `POST /audio/speech`, `POST /audio/transcriptions`, `POST /audio/translations` | TTS, STT, and audio translations. |
 | `POST /images/generations`, `POST /images/edits` | Image generation and editing. |
-| `POST /videos` | Create a video generation job (asynchronous). |
+| `POST /videos`, `GET /videos`, `GET /videos/models` | Create, list, and discover video generation capabilities. |
 | `GET /videos/{video_id}` | Poll the video job status until complete. |
-| `GET /videos/{video_id}/content`, `DELETE /videos/{video_id}` | Fetch completed video bytes or delete a job. |
+| `GET /videos/{video_id}/content`, `POST /videos/{video_id}/download_url`, `DELETE /videos/{video_id}` | Fetch completed video bytes, issue a signed download link, or delete a terminal job record. |
+| `POST /videos/{video_id}/cancel` | Reserved public cancel route. Currently returns a structured `501 not_implemented_yet` error while provider cancellation is standardized. |
 | `POST /music/generate`, `GET /music/generate/{music_id}` | Create and poll music generation jobs. |
-| `POST /ocr`, `POST /batches`, `GET /batches/{batch_id}`, `POST /files`, `GET /files`, `GET /files/{file_id}` | OCR is active; batch and file endpoints are currently placeholders returning `501 not_implemented`. |
-| `GET /gateway/models`, `GET /data/models`, `GET /providers`, `GET /generations?id=...`, `GET /key`, `GET /keys`, `GET /workspaces`, `GET /credits`, `GET /activity` | Platform API discovery endpoints plus elevated administration endpoints. |
+| `POST /ocr`, `POST /batches`, `GET /batches/{batch_id}`, `POST /batches/{batch_id}/cancel`, `POST /files`, `GET /files/{file_id}`, `GET /files/{file_id}/content` | OCR is active. Batch endpoints are available in beta. File upload, owned file retrieval, and file content download are active in beta; `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key` on the shared gateway key. |
+| `GET /gateway/models`, `GET /gateway/models/me`, `GET /data/models`, `GET /providers`, `GET /endpoints`, `GET /organisations`, `GET /pricing/models`, `POST /pricing/calculate`, `GET /generations?id=...`, `GET /key`, `GET /keys`, `GET /workspaces`, `GET /credits`, `GET /activity` | Platform API discovery endpoints plus elevated administration endpoints. |
 
 Use the `endpoints` query parameter on `GET /gateway/models` to reproduce the per-surface catalogues (chat, moderations, embeddings, images, video, or audio) without bouncing between separate endpoints.
-
-The following endpoints are documented, but still under active work:
-
-| Endpoint | Description |
-| --- | --- |
-| `GET /endpoints` | Coming Soon placeholder endpoint. |
 
 Responses include an optional `usage` and `meta` object with your usage, in both tokens and pricing, broken down into clear lines to
 see what costs what, as well as detailed timing and performance metadata, such as throughput, latency, and generation time,

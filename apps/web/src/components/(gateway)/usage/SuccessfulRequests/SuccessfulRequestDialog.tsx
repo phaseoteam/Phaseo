@@ -649,8 +649,7 @@ export default function SuccessfulRequestDialog({
 						/>
 						<MetricTile
 							icon={<Activity className="h-4 w-4" />}
-							// label="Latency (to first token)"
-							label="Latency"
+							label="Latency (first token/byte)"
 							value={
 								<span className="font-mono">
 									{Number(

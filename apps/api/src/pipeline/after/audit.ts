@@ -236,7 +236,8 @@ export async function handleFailureAudit(
     attribution: string,
     errorCode: string,
     errorMessage: string,
-    errorDetails?: unknown
+    errorDetails?: unknown,
+    gatewayErrorPayload?: Record<string, unknown> | null,
 ) {
     const beforeMs = resolveBeforeLatencyMs(ctx);
     const execMs = resolveExecuteTotalLatencyMs(ctx) ?? 0;
@@ -331,7 +332,19 @@ export async function handleFailureAudit(
             edgeCountry: ctx.meta.edgeCountry ?? null,
             edgeContinent: ctx.meta.edgeContinent ?? null,
             edgeAsn: ctx.meta.edgeAsn ?? null,
+            errorPayload:
+                sanitizeForAxiom(gatewayErrorPayload ?? gatewayFailurePayload) as
+                    | Record<string, unknown>
+                    | null,
             extraJson,
+            requestPayload: ctx.rawBody ?? ctx.body ?? null,
+            gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
+            providerRequest: result.mappedRequest ?? null,
+            providerResponse: errorDetails ?? result.rawResponse ?? null,
+            detailMetadata: {
+                stage: "execute",
+                replay_supported: true,
+            },
         });
     } catch (auditErr) {
         console.error("auditFailure failed", auditErr);
@@ -349,7 +362,7 @@ export async function handleFailureAudit(
             mappedRequest: result.mappedRequest ?? null,
             errorDetails,
             providerResponse: errorDetails ?? result.rawResponse ?? null,
-            gatewayResponse: gatewayFailurePayload,
+            gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
         });
     } catch (eventErr) {
         console.error("emitGatewayRequestEvent (failure) failed", eventErr);
@@ -489,6 +502,15 @@ export async function handleSuccessAudit(
             throughput: ctx.meta.throughput_tps ?? null,
             keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
             extraJson,
+            requestPayload: ctx.rawBody ?? ctx.body ?? null,
+            gatewayResponse: gatewayResponse ?? null,
+            providerRequest: result.mappedRequest ?? null,
+            providerResponse: result.rawResponse ?? null,
+            detailMetadata: {
+                stage: "execute",
+                finish_reason: finishReason ?? null,
+                replay_supported: true,
+            },
             // Wide event enrichment
             teamEnrichment: ctx.teamEnrichment ?? null,
             keyEnrichment: ctx.keyEnrichment ?? null,

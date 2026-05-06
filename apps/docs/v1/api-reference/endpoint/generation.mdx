@@ -8,3 +8,14 @@ Fetches the stored audit record for a given `request_id` that belongs to your te
 Use:
 - `GET /v1/generations?id=<request_id>`
 
+When the gateway captured full request details for that generation, the response also includes:
+
+- `replay_supported`: whether a replay-ready payload is available
+- `replay_request`: the stored request body you can send back to the original endpoint for a controlled rerun
+
+Typical replay flow:
+
+1. Read the generation record with `GET /v1/generations?id=<request_id>`.
+2. Check `replay_supported === true`.
+3. Re-submit `replay_request` to the original endpoint named by `endpoint` such as `/v1/chat/completions` or `/v1/responses`.
+

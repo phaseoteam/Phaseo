@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
 	fetchAppMetadata,
 	fetchModelMetadata,
+	fetchProviderMetadata,
 	fetchProviderNames,
 	fetchSessionRequests,
 	type AppMetadata,
+	type ProviderMetadataEntry,
 	fetchSessionRollups,
 	type SessionRequestRow,
 	type SessionRollupRow,
@@ -38,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
+import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { cn } from "@/lib/utils";
 import {
 	AppWindow,
@@ -57,10 +61,12 @@ import {
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import { extractUsageMeters, formatUsageNumber } from "./usageMeters";
 import {
-	DetailKeyValueGrid,
-	DetailMetricTile,
-	DetailSection,
+        DetailKeyValueGrid,
+        DetailMetricTile,
+        DetailSection,
 } from "./DetailDialogPrimitives";
+
+const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
 function formatMoneyFromNanos(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
@@ -107,6 +113,24 @@ function buildAppLabel(app: AppMetadata | null | undefined, fallbackId?: string 
 
 function stopRowClick(event: React.MouseEvent<HTMLElement>) {
 	event.stopPropagation();
+}
+
+function collectSessionAppIds(sessions: SessionRollupRow[]): string[] {
+	return Array.from(
+		new Set(sessions.flatMap((session) => session.app_ids ?? []).filter(Boolean)),
+	);
+}
+
+function collectSessionModelIds(sessions: SessionRollupRow[]): string[] {
+	return Array.from(
+		new Set(sessions.flatMap((session) => session.model_ids ?? []).filter(Boolean)),
+	);
+}
+
+function collectSessionProviderIds(sessions: SessionRollupRow[]): string[] {
+	return Array.from(
+		new Set(sessions.flatMap((session) => session.provider_ids ?? []).filter(Boolean)),
+	);
 }
 
 function AppBadge({
@@ -418,6 +442,7 @@ function SessionDetailDialog({
 	appMetadata,
 	modelMetadata,
 	providerNames,
+	providerMetadata,
 	open,
 	onOpenChange,
 }: {
@@ -426,6 +451,7 @@ function SessionDetailDialog({
 	appMetadata: Map<string, AppMetadata>;
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
+	providerMetadata: Map<string, ProviderMetadataEntry>;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
@@ -434,6 +460,9 @@ function SessionDetailDialog({
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
+	const [requestDetailOpen, setRequestDetailOpen] = React.useState(false);
+	const [selectedRequest, setSelectedRequest] =
+		React.useState<SessionRequestRow | null>(null);
 
 	React.useEffect(() => {
 		const updateNow = () => setRelativeNowMs(Date.now());
@@ -504,109 +533,118 @@ function SessionDetailDialog({
 		},
 	];
 
+	const selectedRequestAppName =
+		selectedRequest?.app_id
+			? buildAppLabel(
+					appMetadata.get(selectedRequest.app_id),
+					selectedRequest.app_title ?? selectedRequest.app_id,
+				)
+			: selectedRequest?.app_title ?? null;
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[90vh] max-w-7xl overflow-hidden p-0">
-				<DialogHeader className="sr-only">
-					<DialogTitle>Session details</DialogTitle>
-				</DialogHeader>
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent className="max-h-[90vh] max-w-7xl overflow-hidden p-0">
+					<DialogHeader className="sr-only">
+						<DialogTitle>Session details</DialogTitle>
+					</DialogHeader>
 
-				<div>
-					<div className="px-5 py-4 sm:px-6 sm:py-5">
-						<div className="pr-10">
-							<DialogTitle className="min-w-0 truncate text-lg font-semibold">
-								Session {shortenIdentifier(session.session_id, 6)}
-							</DialogTitle>
-							<div className="mt-2 text-sm text-muted-foreground">{subtitle}</div>
-						</div>
-					</div>
-					<div className="border-t" />
-
-					<div className="max-h-[calc(90vh-110px)] space-y-6 overflow-y-auto p-5 sm:p-6">
-						<div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-							<DetailMetricTile
-								icon={Coins}
-								label="Total cost"
-								value={<span className="font-mono">{formatMoneyFromNanos(session.total_cost_nanos)}</span>}
-								tone="amber"
-								compact
-							/>
-							<DetailMetricTile
-								icon={Layers3}
-								label="Total requests"
-								value={session.request_count.toLocaleString()}
-								tone="sky"
-								compact
-							/>
-							<DetailMetricTile
-								icon={AppWindow}
-								label="Apps"
-								value={appCounts.length}
-								tone="violet"
-								compact
-							/>
-							<DetailMetricTile
-								icon={Layers3}
-								label="Models"
-								value={modelCounts.length}
-								tone="slate"
-								compact
-							/>
-							<DetailMetricTile
-								icon={Clock3}
-								label="First request"
-								value={formatWordyDateTime(session.first_request_at, { includeTime: true })}
-								tone="slate"
-								compact
-							/>
-							<DetailMetricTile
-								icon={Clock3}
-								label="Last request"
-								value={formatWordyDateTime(session.last_request_at, { includeTime: true })}
-								tone="slate"
-								compact
-							/>
-						</div>
-
-						<DetailSection title="Session details" className="border-none bg-transparent p-0">
-							<DetailKeyValueGrid columns={2} items={sessionDetailItems} />
-						</DetailSection>
-
-						<DetailSection title="Apps in session">
-							<div className="flex flex-wrap gap-1.5">
-								{appCounts.length > 0 ? (
-									appCounts.map((appCount) => (
-										<AppBadge
-											key={appCount.app_id}
-											appId={appCount.app_id}
-											app={appMetadata.get(appCount.app_id)}
-											compact
-										/>
-									))
-								) : (
-									<div className="text-sm text-muted-foreground">
-										No app metadata recorded.
-									</div>
-								)}
+					<div>
+						<div className="px-5 py-4 sm:px-6 sm:py-5">
+							<div className="pr-10">
+								<DialogTitle className="min-w-0 truncate text-lg font-semibold">
+									Session {shortenIdentifier(session.session_id, 6)}
+								</DialogTitle>
+								<div className="mt-2 text-sm text-muted-foreground">{subtitle}</div>
 							</div>
-						</DetailSection>
+						</div>
+						<div className="border-t" />
 
-						<DetailSection title="Models in session">
-							<SessionModelsCell
-								modelCounts={modelCounts}
-								modelMetadata={modelMetadata}
-								maxVisible={6}
-							/>
-						</DetailSection>
+						<div className="max-h-[calc(90vh-110px)] space-y-6 overflow-y-auto p-5 sm:p-6">
+							<div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+								<DetailMetricTile
+									icon={Coins}
+									label="Total cost"
+									value={<span className="font-mono">{formatMoneyFromNanos(session.total_cost_nanos)}</span>}
+									tone="amber"
+									compact
+								/>
+								<DetailMetricTile
+									icon={Layers3}
+									label="Total requests"
+									value={session.request_count.toLocaleString()}
+									tone="sky"
+									compact
+								/>
+								<DetailMetricTile
+									icon={AppWindow}
+									label="Apps"
+									value={appCounts.length}
+									tone="violet"
+									compact
+								/>
+								<DetailMetricTile
+									icon={Layers3}
+									label="Models"
+									value={modelCounts.length}
+									tone="slate"
+									compact
+								/>
+								<DetailMetricTile
+									icon={Clock3}
+									label="First request"
+									value={formatWordyDateTime(session.first_request_at, { includeTime: true })}
+									tone="slate"
+									compact
+								/>
+								<DetailMetricTile
+									icon={Clock3}
+									label="Last request"
+									value={formatWordyDateTime(session.last_request_at, { includeTime: true })}
+									tone="slate"
+									compact
+								/>
+							</div>
 
-						<DetailSection title="Request timeline">
-							{requests.length === 0 ? (
-								<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
-									No requests found for this session in the selected period.
+							<DetailSection title="Session details" className="border-none bg-transparent p-0">
+								<DetailKeyValueGrid columns={2} items={sessionDetailItems} />
+							</DetailSection>
+
+							<DetailSection title="Apps in session">
+								<div className="flex flex-wrap gap-1.5">
+									{appCounts.length > 0 ? (
+										appCounts.map((appCount) => (
+											<AppBadge
+												key={appCount.app_id}
+												appId={appCount.app_id}
+												app={appMetadata.get(appCount.app_id)}
+												compact
+											/>
+										))
+									) : (
+										<div className="text-sm text-muted-foreground">
+											No app metadata recorded.
+										</div>
+									)}
 								</div>
-							) : (
-								<div className="overflow-x-auto rounded-lg border">
-									<Table className="text-xs">
+							</DetailSection>
+
+							<DetailSection title="Models in session">
+								<SessionModelsCell
+									modelCounts={modelCounts}
+									modelMetadata={modelMetadata}
+									maxVisible={6}
+								/>
+							</DetailSection>
+
+							<DetailSection title="Request timeline">
+								{requests.length === 0 ? (
+									<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
+										No requests found for this session in the selected period.
+									</div>
+								) : (
+									<div className="overflow-x-auto rounded-lg border">
+										<Table className="text-xs">
 									<TableHeader>
 										<TableRow className="h-9">
 											<TableHead>Time</TableHead>
@@ -617,6 +655,7 @@ function SessionDetailDialog({
 											<TableHead className="text-right">Out</TableHead>
 											<TableHead className="text-right">Cost</TableHead>
 											<TableHead>Status</TableHead>
+											<TableHead className="text-right">Inspect</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -640,6 +679,9 @@ function SessionDetailDialog({
 												? buildAppLabel(appInfo, request.app_title ?? request.app_id)
 												: request.app_title ?? "-";
 											const tokens = getUsageTokenCounts(request.usage);
+											const errorSummary = request.success
+												? null
+												: formatErrorListSummary(request);
 
 											return (
 												<TableRow
@@ -731,23 +773,65 @@ function SessionDetailDialog({
 														{formatMoneyFromNanos(request.cost_nanos)}
 													</TableCell>
 													<TableCell className="py-2">
-														<RequestStatusBadge
-															success={request.success}
-															statusCode={request.status_code}
-														/>
+														<div className="space-y-1">
+															<RequestStatusBadge
+																success={request.success}
+																statusCode={request.status_code}
+															/>
+															{errorSummary ? (
+																<div className="max-w-[220px] text-xs text-rose-700 line-clamp-2">
+																	{errorSummary}
+																</div>
+															) : null}
+														</div>
+													</TableCell>
+													<TableCell className="py-2 text-right">
+														<Button
+															type="button"
+															variant="ghost"
+															size="sm"
+															className="h-7 px-2 text-xs"
+															onClick={() => {
+																setSelectedRequest(request);
+																setRequestDetailOpen(true);
+															}}
+														>
+															Inspect
+														</Button>
 													</TableCell>
 												</TableRow>
 											);
 										})}
 									</TableBody>
-									</Table>
-								</div>
-							)}
-						</DetailSection>
+										</Table>
+									</div>
+								)}
+							</DetailSection>
+						</div>
 					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
+				</DialogContent>
+			</Dialog>
+
+			<RequestDetailDialog
+				open={requestDetailOpen}
+				onOpenChange={(nextOpen) => {
+					setRequestDetailOpen(nextOpen);
+					if (!nextOpen) {
+						setSelectedRequest(null);
+					}
+				}}
+				request={selectedRequest}
+				appName={selectedRequestAppName}
+				modelMetadata={modelMetadata}
+				providerName={
+					selectedRequest?.provider
+						? providerNames.get(selectedRequest.provider) ?? selectedRequest.provider
+						: null
+				}
+				providerNames={providerNames}
+				providerMetadata={providerMetadata}
+			/>
+		</>
 	);
 }
 
@@ -756,6 +840,7 @@ export default function SessionsPanel({
 	initialAppMetadata,
 	initialModelMetadata,
 	initialProviderNames,
+	initialProviderMetadata,
 	timeRange,
 	emptyMessage = "No sessions found in this workspace yet.",
 	refreshLimit = 100,
@@ -769,6 +854,7 @@ export default function SessionsPanel({
 	initialAppMetadata: Map<string, AppMetadata>;
 	initialModelMetadata: ModelMetadataMap;
 	initialProviderNames: Map<string, string>;
+	initialProviderMetadata: Map<string, ProviderMetadataEntry>;
 	timeRange: { from: string; to: string };
 	emptyMessage?: string;
 	refreshLimit?: number;
@@ -792,6 +878,9 @@ export default function SessionsPanel({
 	const [providerNames, setProviderNames] = React.useState(
 		() => new Map(initialProviderNames),
 	);
+	const [providerMetadata, setProviderMetadata] = React.useState(
+		() => new Map(initialProviderMetadata),
+	);
 	const [selectedSession, setSelectedSession] =
 		React.useState<SessionRollupRow | null>(null);
 	const [selectedRequests, setSelectedRequests] = React.useState<SessionRequestRow[]>([]);
@@ -800,6 +889,7 @@ export default function SessionsPanel({
 	const [isLoadingDetail, startLoadingDetail] = React.useTransition();
 	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const [copiedSessionId, setCopiedSessionId] = React.useState<string | null>(null);
+	const detailCacheRef = React.useRef(new Map<string, SessionRequestRow[]>());
 
 	React.useEffect(() => {
 		setSessions(initialSessions);
@@ -816,6 +906,10 @@ export default function SessionsPanel({
 	React.useEffect(() => {
 		setProviderNames(new Map(initialProviderNames));
 	}, [initialProviderNames]);
+
+	React.useEffect(() => {
+		setProviderMetadata(new Map(initialProviderMetadata));
+	}, [initialProviderMetadata]);
 
 	React.useEffect(() => {
 		const updateNow = () => setRelativeNowMs(Date.now());
@@ -836,43 +930,73 @@ export default function SessionsPanel({
 		return (async () => {
 			setIsRefreshing(true);
 			try {
-			const nextSessions = await fetchSessionRollups({
-				timeRange,
-				limit: refreshLimit,
-				appId: appFilter,
-				modelId: modelFilter,
-				provider: providerFilter,
-				sessionId: sessionFilter,
-			});
-			setSessions(nextSessions);
+				const nextSessions = await fetchSessionRollups({
+					timeRange,
+					limit: refreshLimit,
+					appId: appFilter,
+					modelId: modelFilter,
+					provider: providerFilter,
+					sessionId: sessionFilter,
+				});
+				setSessions(nextSessions);
 
-			const appIds = Array.from(
-				new Set(nextSessions.flatMap((session) => session.app_ids ?? []).filter(Boolean)),
-			);
-			const modelIds = Array.from(
-				new Set(nextSessions.flatMap((session) => session.model_ids ?? []).filter(Boolean)),
-			);
-			const providerIds = Array.from(
-				new Set(
-					nextSessions.flatMap((session) => session.provider_ids ?? []).filter(Boolean),
-				),
-			);
+				const missingAppIds = collectSessionAppIds(nextSessions).filter(
+					(appId) => !appMetadata.has(appId),
+				);
+				const missingModelIds = collectSessionModelIds(nextSessions).filter(
+					(modelId) => !modelMetadata.has(modelId),
+				);
+				const missingProviderIds = collectSessionProviderIds(nextSessions).filter(
+					(providerId) => !providerNames.has(providerId),
+				);
+				const missingProviderMetadataIds = collectSessionProviderIds(nextSessions).filter(
+					(providerId) => !providerMetadata.has(providerId),
+				);
 
-			const [nextAppMetadata, nextModelMetadata, nextProviderNames] =
-				await Promise.all([
-					fetchAppMetadata(appIds),
-					fetchModelMetadata(modelIds),
-					fetchProviderNames(providerIds),
-				]);
+				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
+					await Promise.all([
+						missingAppIds.length > 0
+							? fetchAppMetadata(missingAppIds)
+							: Promise.resolve(new Map()),
+						missingModelIds.length > 0
+							? fetchModelMetadata(missingModelIds)
+							: Promise.resolve(new Map()),
+						missingProviderIds.length > 0
+							? fetchProviderNames(missingProviderIds)
+							: Promise.resolve(new Map()),
+						missingProviderMetadataIds.length > 0
+							? fetchProviderMetadata(missingProviderMetadataIds)
+							: Promise.resolve(new Map()),
+					]);
 
-			setAppMetadata(nextAppMetadata);
-			setModelMetadata(nextModelMetadata);
-			setProviderNames(nextProviderNames);
+				if (nextAppMetadata.size > 0) {
+					setAppMetadata((prev) => new Map([...prev, ...nextAppMetadata]));
+				}
+				if (nextModelMetadata.size > 0) {
+					setModelMetadata((prev) => new Map([...prev, ...nextModelMetadata]));
+				}
+				if (nextProviderNames.size > 0) {
+					setProviderNames((prev) => new Map([...prev, ...nextProviderNames]));
+				}
+				if (nextProviderMetadata.size > 0) {
+					setProviderMetadata((prev) => new Map([...prev, ...nextProviderMetadata]));
+				}
 			} finally {
 				setIsRefreshing(false);
 			}
 		})();
-	}, [appFilter, modelFilter, providerFilter, refreshLimit, sessionFilter, timeRange]);
+	}, [
+		appFilter,
+		appMetadata,
+		modelFilter,
+		modelMetadata,
+		providerFilter,
+		providerMetadata,
+		providerNames,
+		refreshLimit,
+		sessionFilter,
+		timeRange,
+	]);
 
 	React.useEffect(() => registerUsageViewRefresher("sessions", refresh), [refresh]);
 
@@ -880,11 +1004,19 @@ export default function SessionsPanel({
 		(session: SessionRollupRow) => {
 			setSelectedSession(session);
 			setOpen(true);
+			const cacheKey = `${session.session_id}:${timeRange.from}:${timeRange.to}`;
+			const cached = detailCacheRef.current.get(cacheKey);
+			if (cached) {
+				setSelectedRequests(cached);
+				return;
+			}
+			setSelectedRequests([]);
 			startLoadingDetail(async () => {
 				const requests = await fetchSessionRequests({
 					sessionId: session.session_id,
 					timeRange,
 				});
+				detailCacheRef.current.set(cacheKey, requests);
 				setSelectedRequests(requests);
 
 				const requestAppIds = Array.from(
@@ -918,19 +1050,33 @@ export default function SessionsPanel({
 					),
 				);
 
-				const [nextAppMetadata, nextModelMetadata, nextProviderNames] =
+				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
 					await Promise.all([
-						fetchAppMetadata(requestAppIds),
-						fetchModelMetadata(requestModelIds),
-						fetchProviderNames(requestProviderIds),
+						fetchAppMetadata(
+							requestAppIds.filter((appId) => !appMetadata.has(appId)),
+						),
+						fetchModelMetadata(
+							requestModelIds.filter((modelId) => !modelMetadata.has(modelId)),
+						),
+						fetchProviderNames(
+							requestProviderIds.filter(
+								(providerId) => !providerNames.has(providerId),
+							),
+						),
+						fetchProviderMetadata(
+							requestProviderIds.filter(
+								(providerId) => !providerMetadata.has(providerId),
+							),
+						),
 					]);
 
 				setAppMetadata((prev) => new Map([...prev, ...nextAppMetadata]));
 				setModelMetadata((prev) => new Map([...prev, ...nextModelMetadata]));
 				setProviderNames((prev) => new Map([...prev, ...nextProviderNames]));
+				setProviderMetadata((prev) => new Map([...prev, ...nextProviderMetadata]));
 			});
 		},
-		[timeRange],
+		[appMetadata, modelMetadata, providerMetadata, providerNames, timeRange],
 	);
 
 	const table = sessions.length === 0 ? (
@@ -1122,6 +1268,7 @@ export default function SessionsPanel({
 				appMetadata={appMetadata}
 				modelMetadata={modelMetadata}
 				providerNames={providerNames}
+				providerMetadata={providerMetadata}
 				open={open}
 				onOpenChange={(nextOpen) => {
 					setOpen(nextOpen);
