@@ -14,6 +14,7 @@ import {
 	type ModelMetadataMap,
 } from "./model-display";
 import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 interface RequestsSectionProps {
 	title?: string;
@@ -22,6 +23,10 @@ interface RequestsSectionProps {
 	providerNames: Map<string, string>;
 	providerMetadata: Map<string, ProviderMetadataEntry>;
 	modelMetadata: ModelMetadataMap;
+	initialPage: number;
+	initialRows: RequestRow[];
+	initialTotal: number;
+	initialTotalPages: number;
 }
 
 export default function RequestsSection({
@@ -31,6 +36,10 @@ export default function RequestsSection({
 	providerNames,
 	providerMetadata,
 	modelMetadata,
+	initialPage,
+	initialRows,
+	initialTotal,
+	initialTotalPages,
 }: RequestsSectionProps) {
 	const router = useRouter();
 	const exportRef = useRef<((format: "csv" | "pdf") => void) | null>(null);
@@ -95,6 +104,10 @@ export default function RequestsSection({
 				modelMetadata={modelMetadata}
 				providerNames={providerNames}
 				providerMetadata={providerMetadata}
+				initialPage={initialPage}
+				initialRows={initialRows}
+				initialTotal={initialTotal}
+				initialTotalPages={initialTotalPages}
 				onExportRef={exportRef}
 			/>
 		</div>

@@ -34,6 +34,7 @@ import {
 	fetchModelMetadata,
 	fetchProviderMetadata,
 	fetchProviderNames,
+	fetchPaginatedRequests,
 	fetchSessionRollups,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
@@ -127,6 +128,15 @@ async function UsageLogsContent({
 	const customFrom = parseUsageDateInput(firstSearchParam(sp?.[rangeKeys.from]));
 	const customTo = parseUsageDateInput(firstSearchParam(sp?.[rangeKeys.to]));
 	const sessionFilter = firstSearchParam(sp?.session)?.trim() || null;
+	const logModelFilter = firstSearchParam(sp?.model)?.trim() || null;
+	const logProviderFilter = firstSearchParam(sp?.provider)?.trim() || null;
+	const logKeyFilter = firstSearchParam(sp?.key)?.trim() || null;
+	const rawLogStatusFilter = firstSearchParam(sp?.status)?.trim().toLowerCase() || null;
+	const logStatusFilter =
+		rawLogStatusFilter === "success" || rawLogStatusFilter === "error"
+			? rawLogStatusFilter
+			: "all";
+	const logRequestFilter = firstSearchParam(sp?.req)?.trim() || null;
 	const jobKindFilter = firstSearchParam(sp?.job_kind)?.trim() || null;
 	const jobStatusFilter = firstSearchParam(sp?.job_status)?.trim() || null;
 	const jobProviderFilter = firstSearchParam(sp?.job_provider)?.trim() || null;
@@ -242,10 +252,11 @@ async function UsageLogsContent({
 		const sessionProviderIds = Array.from(
 			new Set(sessions.flatMap((session) => session.provider_ids ?? []).filter(Boolean)),
 		);
-		const [appMetadata, modelMetadata, providerNames] = await Promise.all([
+		const [appMetadata, modelMetadata, providerNames, providerMetadata] = await Promise.all([
 			fetchAppMetadata(sessionAppIds),
 			fetchModelMetadata(sessionModelIds),
 			fetchProviderNames(sessionProviderIds),
+			fetchProviderMetadata(sessionProviderIds),
 		]);
 		filters = (
 			<UsageViewFilters
@@ -264,6 +275,7 @@ async function UsageLogsContent({
 				initialSessions={sessions}
 				initialAppMetadata={appMetadata}
 				initialModelMetadata={modelMetadata}
+				initialProviderMetadata={providerMetadata}
 				initialProviderNames={providerNames}
 				timeRange={timeRange}
 				showRefreshButton={false}
@@ -349,6 +361,22 @@ async function UsageLogsContent({
 			fetchProviderMetadata(dedupedProviders),
 			fetchModelMetadata(dedupedModels),
 		]);
+		const initialPage = Math.max(1, Number.parseInt(firstSearchParam(sp?.page) ?? "1", 10) || 1);
+		const initialSortField = firstSearchParam(sp?.sort)?.trim() || "created_at";
+		const initialSortDirection =
+			firstSearchParam(sp?.dir)?.trim().toLowerCase() === "asc" ? "asc" : "desc";
+		const initialRequests = await fetchPaginatedRequests({
+			timeRange,
+			modelFilter: logModelFilter,
+			providerFilter: logProviderFilter,
+			keyFilter: logKeyFilter,
+			statusFilter: logStatusFilter,
+			requestFilter: logRequestFilter,
+			sessionFilter,
+			page: initialPage,
+			sortField: initialSortField,
+			sortDirection: initialSortDirection,
+		});
 
 		// Keys list for key label rendering inside the logs table.
 		const { data: keyRows } = await supabase
@@ -383,6 +411,10 @@ async function UsageLogsContent({
 				providerNames={providerNames}
 				providerMetadata={providerMetadata}
 				modelMetadata={modelMetadata}
+				initialPage={initialRequests.page}
+				initialRows={initialRequests.data}
+				initialTotal={initialRequests.total}
+				initialTotalPages={initialRequests.totalPages}
 			/>
 		);
 	}

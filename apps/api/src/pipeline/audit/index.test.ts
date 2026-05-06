@@ -182,7 +182,7 @@ describe("audit request detail persistence", () => {
 		);
 	});
 
-	it("syncs the request rollup before detail persistence failures surface", async () => {
+	it("keeps rollup sync independent from detail persistence failures", async () => {
 		getSupabaseAdminMock.mockReturnValue({
 			from: vi.fn((table: string) => {
 				if (table === "gateway_requests") {
@@ -237,7 +237,7 @@ describe("audit request detail persistence", () => {
 				providerResponse: { id: "chatcmpl_2" },
 				detailMetadata: { replay_supported: true },
 			}),
-		).rejects.toThrow("details insert failed");
+		).resolves.toBeUndefined();
 
 		expect(syncWorkspaceUsageRollupForRequestMock).toHaveBeenCalledWith({
 			requestRowId: "row_3",

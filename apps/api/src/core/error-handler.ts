@@ -768,6 +768,7 @@ export async function handleError({
     }
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
     const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
+    const replayRequestPayload = ctx?.rawBody ?? ctx?.body ?? null;
 
     // Audit failure
     const auditExtraJson = (() => {
@@ -910,14 +911,14 @@ export async function handleError({
         extraJson: auditExtraJson,
         errorDetailsJson,
         errorPayload: gatewayErrorPayload,
-        requestPayload: ctx?.rawBody ?? ctx?.body ?? body ?? null,
+        requestPayload: replayRequestPayload,
         gatewayResponse: errorPayload,
         providerResponse: body ?? null,
         detailMetadata: {
             stage,
             replay_supported: Boolean(
-                (ctx?.rawBody ?? ctx?.body ?? body) &&
-                    typeof (ctx?.rawBody ?? ctx?.body ?? body) === "object"
+                replayRequestPayload &&
+                    typeof replayRequestPayload === "object"
             ),
         },
     };

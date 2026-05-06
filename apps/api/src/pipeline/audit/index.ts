@@ -114,6 +114,23 @@ async function syncInsertedRequestRollup(
     }
 }
 
+async function insertGatewayRequestDetailsNonBlocking(
+    row: Record<string, unknown>,
+    context: string,
+) {
+    try {
+        await retryWithBackoff(
+            () => insertGatewayRequestDetails(row),
+            context,
+        );
+    } catch (error) {
+        console.error("[audit] failed to persist request details", {
+            context,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
 function buildSupaRow(args: {
     requestId: string; workspaceId?: string | null;
     endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
@@ -297,28 +314,27 @@ export async function auditSuccess(args: {
                 "supabase_audit_success_insert",
             );
             await syncInsertedRequestRollup(insertedRow, "audit_success");
-            await retryWithBackoff(
-                () =>
-                    insertGatewayRequestDetails({
-                        gateway_request_id: insertedRow.id,
-                        gateway_request_created_at: insertedRow.created_at,
-                        request_id: args.requestId,
-                        workspace_id: args.workspaceId,
-                        app_id: appId ?? null,
-                        key_id: args.keyId ?? null,
-                        endpoint: args.endpoint,
-                        model_id: args.model,
-                        provider: args.provider ?? null,
-                        status_code: args.statusCode,
-                        success: true,
-                        request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                        request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                        gateway_response: normalizeJsonValue(args.gatewayResponse),
-                        response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                        provider_request: normalizeJsonValue(args.providerRequest),
-                        provider_response: normalizeJsonValue(args.providerResponse),
-                        metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                    }),
+            await insertGatewayRequestDetailsNonBlocking(
+                {
+                    gateway_request_id: insertedRow.id,
+                    gateway_request_created_at: insertedRow.created_at,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                    app_id: appId ?? null,
+                    key_id: args.keyId ?? null,
+                    endpoint: args.endpoint,
+                    model_id: args.model,
+                    provider: args.provider ?? null,
+                    status_code: args.statusCode,
+                    success: true,
+                    request_payload: normalizeJsonValue(args.requestPayload) ?? {},
+                    request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
+                    gateway_response: normalizeJsonValue(args.gatewayResponse),
+                    response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
+                    provider_request: normalizeJsonValue(args.providerRequest),
+                    provider_response: normalizeJsonValue(args.providerResponse),
+                    metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                },
                 "supabase_audit_success_details_insert",
             );
         } catch (err) {
@@ -477,28 +493,27 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         "supabase_audit_failure_before_insert",
                     );
                     await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
-                    await retryWithBackoff(
-                        () =>
-                            insertGatewayRequestDetails({
-                                gateway_request_id: insertedRow.id,
-                                gateway_request_created_at: insertedRow.created_at,
-                                request_id: args.requestId,
-                                workspace_id: args.workspaceId,
-                                app_id: resolvedAppId ?? null,
-                                key_id: args.keyId ?? null,
-                                endpoint: args.endpoint,
-                                model_id: args.model ?? "unknown",
-                                provider: null,
-                                status_code: args.statusCode,
-                                success: false,
-                                request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                                request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                                gateway_response: normalizeJsonValue(args.gatewayResponse),
-                                response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                                provider_request: null,
-                                provider_response: normalizeJsonValue(args.providerResponse),
-                                metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                            }),
+                    await insertGatewayRequestDetailsNonBlocking(
+                        {
+                            gateway_request_id: insertedRow.id,
+                            gateway_request_created_at: insertedRow.created_at,
+                            request_id: args.requestId,
+                            workspace_id: args.workspaceId,
+                            app_id: resolvedAppId ?? null,
+                            key_id: args.keyId ?? null,
+                            endpoint: args.endpoint,
+                            model_id: args.model ?? "unknown",
+                            provider: null,
+                            status_code: args.statusCode,
+                            success: false,
+                            request_payload: normalizeJsonValue(args.requestPayload) ?? {},
+                            request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
+                            gateway_response: normalizeJsonValue(args.gatewayResponse),
+                            response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
+                            provider_request: null,
+                            provider_response: normalizeJsonValue(args.providerResponse),
+                            metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                        },
                         "supabase_audit_failure_before_details_insert",
                     );
                 } catch (err) {
@@ -562,28 +577,27 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     "supabase_audit_failure_execute_insert",
                 );
                 await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
-                await retryWithBackoff(
-                    () =>
-                        insertGatewayRequestDetails({
-                            gateway_request_id: insertedRow.id,
-                            gateway_request_created_at: insertedRow.created_at,
-                            request_id: args.requestId,
-                            workspace_id: args.workspaceId,
-                            app_id: resolvedAppId ?? null,
-                            key_id: args.keyId ?? null,
-                            endpoint: args.endpoint,
-                            model_id: args.model,
-                            provider: args.provider ?? null,
-                            status_code: args.statusCode,
-                            success: false,
-                            request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                            request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                            gateway_response: normalizeJsonValue(args.gatewayResponse),
-                            response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                            provider_request: normalizeJsonValue(args.providerRequest),
-                            provider_response: normalizeJsonValue(args.providerResponse),
-                            metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                        }),
+                await insertGatewayRequestDetailsNonBlocking(
+                    {
+                        gateway_request_id: insertedRow.id,
+                        gateway_request_created_at: insertedRow.created_at,
+                        request_id: args.requestId,
+                        workspace_id: args.workspaceId,
+                        app_id: resolvedAppId ?? null,
+                        key_id: args.keyId ?? null,
+                        endpoint: args.endpoint,
+                        model_id: args.model,
+                        provider: args.provider ?? null,
+                        status_code: args.statusCode,
+                        success: false,
+                        request_payload: normalizeJsonValue(args.requestPayload) ?? {},
+                        request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
+                        gateway_response: normalizeJsonValue(args.gatewayResponse),
+                        response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
+                        provider_request: normalizeJsonValue(args.providerRequest),
+                        provider_response: normalizeJsonValue(args.providerResponse),
+                        metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                    },
                     "supabase_audit_failure_execute_details_insert",
                 );
             } catch (err) {

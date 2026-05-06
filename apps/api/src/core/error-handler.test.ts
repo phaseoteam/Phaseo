@@ -215,6 +215,49 @@ describe("handleError", () => {
 		});
 	});
 
+	it("stores the original request body for replay on execute-stage failures", async () => {
+		let capturedAuditArgs: any = null;
+		const upstream = new Response(
+			JSON.stringify({
+				error: "upstream_error",
+				description: "Provider failed.",
+				reason: "all_candidates_failed",
+			}),
+			{ status: 502, headers: { "content-type": "application/json" } },
+		);
+
+		await handleError({
+			stage: "execute",
+			res: upstream,
+			endpoint: "responses",
+			ctx: {
+				requestId: "G-TEST-REPLAY",
+				model: "openai/gpt-5.4-nano",
+				body: {
+					model: "openai/gpt-5.4-nano",
+					input: "retry me",
+				},
+			} as any,
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
+		});
+
+		expect(capturedAuditArgs?.requestPayload).toEqual({
+			model: "openai/gpt-5.4-nano",
+			input: "retry me",
+		});
+		expect(capturedAuditArgs?.providerResponse).toEqual({
+			error: "upstream_error",
+			description: "Provider failed.",
+			reason: "all_candidates_failed",
+		});
+		expect(capturedAuditArgs?.detailMetadata).toMatchObject({
+			replay_supported: true,
+			stage: "execute",
+		});
+	});
+
 	it("surfaces unsupported model diagnostics from before-stage guards", async () => {
 		let capturedAuditArgs: any = null;
 		const upstream = new Response(
