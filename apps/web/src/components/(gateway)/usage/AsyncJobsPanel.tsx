@@ -1038,7 +1038,6 @@ function AsyncJobDetailDialog({
 							) : null}
 
 							{job.request_native_response_id ||
-							job.request_upstream_request_id ||
 							job.request_endpoint ||
 							job.request_model_id ||
 							job.request_success != null ||
@@ -1055,20 +1054,11 @@ function AsyncJobDetailDialog({
 										columns={2}
 										items={[
 											{
-												label: "Native response ID",
+												label: "Native request ID",
 												value: (
 													<CopyableCodeValue
 														value={job.request_native_response_id}
-														copyLabel="Copy native response id"
-													/>
-												),
-											},
-											{
-												label: "Upstream request ID",
-												value: (
-													<CopyableCodeValue
-														value={job.request_upstream_request_id}
-														copyLabel="Copy upstream request id"
+														copyLabel="Copy native request id"
 													/>
 												),
 											},

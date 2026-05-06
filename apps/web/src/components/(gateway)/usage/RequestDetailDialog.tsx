@@ -555,7 +555,7 @@ export default function RequestDetailDialog({
 			),
 		},
 		{
-			label: "Req ID",
+			label: "Request ID",
 			value: request.request_id ? (
 				<div className="flex items-center gap-2">
 					{requestFilterHref ? (
@@ -575,7 +575,7 @@ export default function RequestDetailDialog({
 						variant="ghost"
 						className="text-muted-foreground hover:text-foreground"
 						content={request.request_id}
-						aria-label="Copy req id"
+						aria-label="Copy request id"
 					/>
 				</div>
 			) : (
@@ -583,7 +583,7 @@ export default function RequestDetailDialog({
 			),
 		},
 		{
-			label: "Native response ID",
+			label: "Native request ID",
 			value: request.native_response_id ? (
 				<div className="flex items-center gap-2">
 					<code className="min-w-0 truncate font-mono text-xs">
@@ -594,26 +594,7 @@ export default function RequestDetailDialog({
 						variant="ghost"
 						className="text-muted-foreground hover:text-foreground"
 						content={request.native_response_id}
-						aria-label="Copy native response id"
-					/>
-				</div>
-			) : (
-				"-"
-			),
-		},
-		{
-			label: "Upstream request ID",
-			value: request.upstream_request_id ? (
-				<div className="flex items-center gap-2">
-					<code className="min-w-0 truncate font-mono text-xs">
-						{request.upstream_request_id}
-					</code>
-					<CopyButton
-						size="sm"
-						variant="ghost"
-						className="text-muted-foreground hover:text-foreground"
-						content={request.upstream_request_id}
-						aria-label="Copy upstream request id"
+						aria-label="Copy native request id"
 					/>
 				</div>
 			) : (

@@ -73,7 +73,6 @@ export interface RequestRow {
 	model_id: string | null;
 	provider: string | null;
 	native_response_id: string | null;
-	upstream_request_id: string | null;
 	stream: boolean;
 	session_id: string | null;
 	app_id: string | null;
@@ -208,11 +207,6 @@ function toRequestRow(row: any): RequestRow {
 			typeof row?.native_response_id === "string" &&
 			row.native_response_id.trim().length > 0
 				? row.native_response_id.trim()
-				: null,
-		upstream_request_id:
-			typeof row?.upstream_request_id === "string" &&
-			row.upstream_request_id.trim().length > 0
-				? row.upstream_request_id.trim()
 				: null,
 		stream: row?.stream === true,
 		session_id:
@@ -2662,7 +2656,6 @@ export interface AsyncJobDetailRow extends AsyncJobRow {
 	latency_ms: number | null;
 	generation_ms: number | null;
 	request_native_response_id: string | null;
-	request_upstream_request_id: string | null;
 	request_endpoint: string | null;
 	request_model_id: string | null;
 	request_success: boolean | null;
@@ -3061,7 +3054,6 @@ export async function fetchAsyncJobDetail(input: {
 	let requestCreatedAt: string | null = null;
 	let requestCostNanos: number | null = null;
 	let requestNativeResponseId: string | null = null;
-	let requestUpstreamRequestId: string | null = null;
 	let requestEndpoint: string | null = null;
 	let requestModelId: string | null = null;
 	let requestSuccess: boolean | null = null;
@@ -3132,7 +3124,6 @@ export async function fetchAsyncJobDetail(input: {
 		request_cost_nanos: requestCostNanos,
 		batch_pricing_lines: parseAsyncJobBatchPricingLines(meta),
 		request_native_response_id: requestNativeResponseId,
-		request_upstream_request_id: requestUpstreamRequestId,
 		request_endpoint: requestEndpoint,
 		request_model_id: requestModelId,
 		request_success: requestSuccess,
