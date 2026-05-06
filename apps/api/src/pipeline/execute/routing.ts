@@ -664,7 +664,9 @@ export async function routeProviders(
         const capabilityRoutingMultiplier =
             capabilityStatus === "internal_testing"
                 ? (testingMode ? 1 : 0)
-                : routingStatusMultiplier(capabilityStatus);
+                : capabilityStatus === "coming_soon"
+                    ? 0
+                    : routingStatusMultiplier(capabilityStatus);
         const routingStatusMultiplierCombined =
             routingStatusMultiplier(providerRoutingStatus) *
             routingStatusMultiplier(modelRoutingStatus) *

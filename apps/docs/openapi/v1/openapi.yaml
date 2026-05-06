@@ -616,12 +616,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponsesWebSocketUpgradeRequiredResponse'
-        '501':
-          description: WebSocket mode is temporarily disabled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
   /messages:
     post:
       tags:
@@ -1060,9 +1054,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Upload file
-      description: >-
-        Uploads a file for batch processing and returns the upstream file
-        metadata.
+      description: Placeholder endpoint. File upload is not implemented yet.
       requestBody:
         required: true
         content:
@@ -1070,46 +1062,38 @@ paths:
             schema:
               $ref: '#/components/schemas/FileUploadRequest'
       responses:
-        '200':
-          description: Uploaded file metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FileResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '502':
-          description: Upstream provider error
+        '501':
+          description: Files endpoint is not implemented yet
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/NotImplementedResponse'
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: listFiles
       summary: List files
-      description: >-
-        Currently returns `not_supported` on the shared gateway key. Persist
-        uploaded file ids and retrieve them directly instead.
+      description: Placeholder endpoint. File listing is not implemented yet.
       responses:
-        '400':
-          description: File listing is not supported in the current gateway mode
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Files endpoint is not implemented yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotImplementedResponse'
   /files/{file_id}:
     get:
       x-beta: true
@@ -1117,9 +1101,7 @@ paths:
         - Gateway
       operationId: retrieveFile
       summary: Retrieve file
-      description: >-
-        Retrieves metadata for a file that belongs to the authenticated
-        workspace.
+      description: Placeholder endpoint. File retrieval is not implemented yet.
       parameters:
         - name: file_id
           in: path
@@ -1128,24 +1110,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: File metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FileResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: File not found or not owned by the workspace
+        '501':
+          description: Files endpoint is not implemented yet
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/NotImplementedResponse'
   /files/{file_id}/content:
     get:
       x-beta: true
@@ -1153,9 +1129,7 @@ paths:
         - Gateway
       operationId: retrieveFileContent
       summary: Retrieve file content
-      description: >-
-        Retrieves binary content for a previously uploaded file that belongs to
-        the authenticated workspace.
+      description: Retrieves binary content for a previously uploaded file.
       parameters:
         - name: file_id
           in: path
@@ -1190,10 +1164,7 @@ paths:
         - Gateway
       operationId: createBatch
       summary: Create batch
-      description: >-
-        Creates an async batch job and returns the upstream batch object. The
-        gateway also accepts `session_id` and `webhook` for observability and
-        async notifications.
+      description: Placeholder endpoint. Batch creation is not implemented yet.
       requestBody:
         required: true
         content:
@@ -1201,18 +1172,18 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchRequest'
       responses:
-        '200':
-          description: Batch status response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch endpoint is not implemented yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotImplementedResponse'
   /batches/{batch_id}:
     get:
       x-beta: true
@@ -1220,7 +1191,7 @@ paths:
         - Gateway
       operationId: retrieveBatch
       summary: Retrieve batch
-      description: Retrieves a previously created batch job.
+      description: Placeholder endpoint. Batch retrieval is not implemented yet.
       parameters:
         - name: batch_id
           in: path
@@ -1229,12 +1200,6 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Batch status response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -1247,6 +1212,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch endpoint is not implemented yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotImplementedResponse'
   /batches/{batch_id}/cancel:
     post:
       x-beta: true
@@ -2367,7 +2338,7 @@ paths:
         - Gateway
       operationId: createBatchAlias
       summary: Create batch (alias)
-      description: Alias of /batches.
+      description: Alias of /batches. Currently not implemented.
       requestBody:
         required: true
         content:
@@ -2375,18 +2346,18 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchRequest'
       responses:
-        '200':
-          description: Batch status response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch endpoint is not implemented yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotImplementedResponse'
   /batch/{id}:
     get:
       x-beta: true
@@ -2394,7 +2365,7 @@ paths:
         - Gateway
       operationId: retrieveBatchAlias
       summary: Retrieve batch (alias)
-      description: Alias of /batches/{batch_id}.
+      description: Alias of /batches/{batch_id}. Currently not implemented.
       parameters:
         - name: id
           in: path
@@ -2402,12 +2373,6 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Batch status response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -2420,6 +2385,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch endpoint is not implemented yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotImplementedResponse'
   /batch/{id}/cancel:
     post:
       x-beta: true
@@ -2967,6 +2938,12 @@ components:
             - beta
             - alpha
             - not_ready
+            - gated
+            - access_limited
+            - region_limited
+            - project_limited
+            - paused
+            - soft_blocked
         provider_routing_status:
           type: string
           enum:
@@ -3091,12 +3068,6 @@ components:
           type: object
           additionalProperties:
             type: string
-        session_id:
-          type: string
-          maxLength: 256
-          description: >-
-            Unique identifier for grouping related requests (for example, a
-            conversation or agent workflow) for observability.
         presence_penalty:
           type: number
           minimum: -2
@@ -3538,16 +3509,11 @@ components:
       properties:
         id:
           type: string
-        nativeResponseId:
-          type: string
-          nullable: true
         object:
           type: string
         created:
           type: integer
         model:
-          type: string
-        provider:
           type: string
         choices:
           type: array
@@ -3646,12 +3612,6 @@ components:
         metadata:
           type: object
           additionalProperties: true
-        session_id:
-          type: string
-          maxLength: 256
-          description: >-
-            Unique identifier for grouping related requests (for example, a
-            conversation or agent workflow) for observability.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
         stop_sequences:
@@ -3793,12 +3753,6 @@ components:
           type: object
           additionalProperties:
             type: string
-        session_id:
-          type: string
-          maxLength: 256
-          description: >-
-            Unique identifier for grouping related requests (for example, a
-            conversation or agent workflow) for observability.
         parallel_tool_calls:
           type: boolean
         previous_response_id:
@@ -4716,19 +4670,14 @@ components:
           type: string
         model:
           type: string
-        request_id:
-          type: string
-        session_id:
-          type: string
         status:
           type: string
           enum:
-            - queued
-            - processing
+            - pending
+            - in_progress
             - completed
             - failed
             - cancelled
-            - expired
         output_access:
           type: string
           enum:
@@ -5005,25 +4954,6 @@ components:
           type: string
         metadata:
           type: object
-          additionalProperties: true
-        session_id:
-          type: string
-          maxLength: 256
-          description: >-
-            Unique identifier for grouping related requests (for example, a
-            conversation or agent workflow) for observability.
-        webhook:
-          type: object
-          properties:
-            url:
-              type: string
-              format: uri
-            secret:
-              type: string
-            events:
-              type: array
-              items:
-                type: string
         debug:
           $ref: '#/components/schemas/DebugOptions'
         provider:
@@ -5071,31 +5001,6 @@ components:
           $ref: '#/components/schemas/BatchRequestCounts'
         metadata:
           type: object
-        request_id:
-          type: string
-        provider:
-          type: string
-        session_id:
-          type: string
-        webhook:
-          type: object
-          properties:
-            url:
-              type: string
-              format: uri
-            secret:
-              type: string
-            events:
-              type: array
-              items:
-                type: string
-        pricing_lines:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        billing:
-          $ref: '#/components/schemas/BatchBillingSummary'
     BatchRequestCounts:
       type: object
       properties:
@@ -5105,24 +5010,6 @@ components:
           type: integer
         failed:
           type: integer
-    BatchBillingSummary:
-      type: object
-      properties:
-        billed:
-          type: boolean
-        charged:
-          type: boolean
-        reason:
-          type: string
-        cost_nanos:
-          type: integer
-        cost_usd:
-          type: number
-        finalized_at:
-          type: string
-        pricing_breakdown:
-          type: object
-          additionalProperties: true
     FileUploadRequest:
       type: object
       required:
@@ -5223,9 +5110,6 @@ components:
     GenerationResponse:
       type: object
       properties:
-        created_at:
-          type: string
-          format: date-time
         request_id:
           type: string
         team_id:
@@ -5283,18 +5167,6 @@ components:
         throughput:
           type: number
           nullable: true
-        replay_supported:
-          type: boolean
-          description: >-
-            Whether a replay-ready request payload is available for this
-            generation.
-        replay_request:
-          type: object
-          nullable: true
-          additionalProperties: true
-          description: >-
-            Replay-ready request payload captured for this generation when
-            available.
     BenchmarkId:
       type: string
       description: Benchmark identifier.
@@ -5931,222 +5803,6 @@ components:
         description:
           type: string
           example: Additional error details.
-        generation_id:
-          type: string
-          example: G-abc123
-        status_code:
-          type: integer
-          example: 502
-        error_type:
-          type: string
-          enum:
-            - user
-            - system
-          example: system
-        error_origin:
-          type: string
-          enum:
-            - user
-            - gateway
-            - upstream
-          example: upstream
-        reason:
-          type: string
-          example: all_candidates_failed
-        attempt_count:
-          type: integer
-          example: 2
-        failed_providers:
-          type: array
-          items:
-            type: string
-          example:
-            - google-ai-studio
-            - openai
-        failed_statuses:
-          type: array
-          items:
-            type: integer
-          example:
-            - 403
-            - 429
-        upstream_error:
-          $ref: '#/components/schemas/ErrorUpstreamError'
-        failure_sample:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorFailureSampleItem'
-        provider_failure_diagnostics:
-          $ref: '#/components/schemas/ErrorProviderFailureDiagnostics'
-        routing_diagnostics:
-          $ref: '#/components/schemas/ErrorRoutingDiagnostics'
-        provider_candidate_diagnostics:
-          $ref: '#/components/schemas/ErrorProviderCandidateDiagnostics'
-        provider_enablement:
-          $ref: '#/components/schemas/ErrorProviderEnablementDiagnostics'
-        missing_pricing_providers:
-          type: array
-          items:
-            type: string
-        provider_payment_required_provider:
-          type: string
-          example: openai
-        provider_payment_required_support_notice:
-          type: string
-          example: >-
-            Our upstream provider billing appears to be unavailable. If this
-            persists, contact support.
-        details:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-      additionalProperties: true
-    ErrorUpstreamError:
-      type: object
-      properties:
-        code:
-          type: string
-          nullable: true
-          example: PERMISSION_DENIED
-        message:
-          type: string
-          nullable: true
-          example: The caller does not have permission.
-        description:
-          type: string
-          nullable: true
-        param:
-          type: string
-          nullable: true
-    ErrorFailureSampleItem:
-      type: object
-      properties:
-        provider:
-          type: string
-          nullable: true
-        type:
-          type: string
-          nullable: true
-        status:
-          type: integer
-          nullable: true
-        upstream_error_code:
-          type: string
-          nullable: true
-        upstream_error_message:
-          type: string
-          nullable: true
-        upstream_error_description:
-          type: string
-          nullable: true
-        upstream_error_param:
-          type: string
-          nullable: true
-        upstream_payload_preview:
-          type: string
-          nullable: true
-        retryable:
-          type: boolean
-          nullable: true
-      additionalProperties: true
-    ErrorProviderFailureDiagnostics:
-      type: object
-      properties:
-        category:
-          type: string
-          enum:
-            - credentials_not_configured
-            - credentials_invalid_or_forbidden
-            - provider_access_missing
-            - region_or_project_restriction
-            - model_unavailable_for_endpoint
-            - rate_limited
-            - server_error
-        hint:
-          type: string
-        provider:
-          type: string
-          nullable: true
-    ErrorRoutingDiagnostics:
-      type: object
-      properties:
-        filterStages:
-          type: array
-          items:
-            type: object
-            properties:
-              stage:
-                type: string
-              beforeCount:
-                type: integer
-              afterCount:
-                type: integer
-              droppedProviders:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    providerId:
-                      type: string
-                      nullable: true
-                    reason:
-                      type: string
-                      nullable: true
-                  additionalProperties: true
-            additionalProperties: true
-      additionalProperties: true
-    ErrorProviderCandidateDiagnostics:
-      type: object
-      properties:
-        totalProviders:
-          type: integer
-        supportsEndpointCount:
-          type: integer
-        candidateCount:
-          type: integer
-        droppedUnsupportedEndpoint:
-          type: array
-          items:
-            type: string
-        droppedMissingAdapter:
-          type: array
-          items:
-            type: object
-            properties:
-              providerId:
-                type: string
-                nullable: true
-              endpoint:
-                type: string
-                nullable: true
-            additionalProperties: true
-      additionalProperties: true
-    ErrorProviderEnablementDiagnostics:
-      type: object
-      properties:
-        capability:
-          type: string
-        providersBefore:
-          type: array
-          items:
-            type: string
-        providersAfter:
-          type: array
-          items:
-            type: string
-        dropped:
-          type: array
-          items:
-            type: object
-            properties:
-              providerId:
-                type: string
-                nullable: true
-              reason:
-                type: string
-                nullable: true
-            additionalProperties: true
       additionalProperties: true
     ApiKeyScopeValue:
       oneOf:
@@ -6722,18 +6378,14 @@ components:
           type: object
           required:
             - type
-            - code
             - message
           properties:
             type:
               type: string
-              example: invalid_request_error
-            code:
-              type: string
-              example: responses_websocket_disabled
+              example: not_implemented
             message:
               type: string
-              example: WebSocket mode is temporarily disabled on /v1/responses/ws.
+              example: realtime is not implemented yet
           additionalProperties: false
       additionalProperties: false
     NotImplementedResponse:

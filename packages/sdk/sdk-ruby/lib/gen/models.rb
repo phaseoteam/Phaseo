@@ -605,6 +605,8 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     GatewayDatetimeToolDefinition = Struct.new(:parameters, :timezone, :type, keyword_init: true)
+    # @!attribute [rw] availability_mode
+    #   @return [String]
     # @!attribute [rw] limit
     #   @return [Integer]
     # @!attribute [rw] models
@@ -617,7 +619,7 @@ module AiStats
     #   @return [String]
     # @!attribute [rw] total
     #   @return [Integer]
-    GatewayModelsResponse = Struct.new(:limit, :models, :offset, :ok, :privacy_scope, :total, keyword_init: true)
+    GatewayModelsResponse = Struct.new(:availability_mode, :limit, :models, :offset, :ok, :privacy_scope, :total, keyword_init: true)
     # @!attribute [rw] app_id
     #   @return [String, nil]
     # @!attribute [rw] byok
@@ -821,6 +823,8 @@ module AiStats
     #   @return [Array<String>, nil]
     # @!attribute [rw] architecture
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] availability
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] canonical_slug
     #   @return [String, nil]
     # @!attribute [rw] created
@@ -871,7 +875,16 @@ module AiStats
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] top_provider_id
     #   @return [String, nil]
-    Model = Struct.new(:aliases, :architecture, :canonical_slug, :created, :deprecation_date, :description, :endpoints, :id, :input_types, :lifecycle, :model_id, :name, :organisation_colour, :organisation_id, :organisation_name, :output_types, :per_request_limits, :pricing, :pricing_detail, :providers, :release_date, :retirement_date, :status, :supported_parameters, :supported_params, :top_provider, :top_provider_id, keyword_init: true)
+    Model = Struct.new(:aliases, :architecture, :availability, :canonical_slug, :created, :deprecation_date, :description, :endpoints, :id, :input_types, :lifecycle, :model_id, :name, :organisation_colour, :organisation_id, :organisation_name, :output_types, :per_request_limits, :pricing, :pricing_detail, :providers, :release_date, :retirement_date, :status, :supported_parameters, :supported_params, :top_provider, :top_provider_id, keyword_init: true)
+    # @!attribute [rw] active_provider_count
+    #   @return [Integer]
+    # @!attribute [rw] inactive_provider_count
+    #   @return [Integer]
+    # @!attribute [rw] provider_count
+    #   @return [Integer]
+    # @!attribute [rw] status
+    #   @return [String]
+    ModelAvailability = Struct.new(:active_provider_count, :inactive_provider_count, :provider_count, :status, keyword_init: true)
     ModelId = Object
     # @!attribute [rw] deprecation_date
     #   @return [String, nil]
@@ -884,6 +897,33 @@ module AiStats
     # @!attribute [rw] status
     #   @return [String, nil]
     ModelLifecycle = Struct.new(:deprecation_date, :message, :replacement_model_id, :retirement_date, :status, keyword_init: true)
+    # @!attribute [rw] api_provider_id
+    #   @return [String]
+    # @!attribute [rw] api_provider_name
+    #   @return [String, nil]
+    # @!attribute [rw] availability_reason
+    #   @return [String]
+    # @!attribute [rw] availability_status
+    #   @return [String]
+    # @!attribute [rw] capability_status
+    #   @return [String]
+    # @!attribute [rw] effective_from
+    #   @return [String, nil]
+    # @!attribute [rw] effective_to
+    #   @return [String, nil]
+    # @!attribute [rw] endpoints
+    #   @return [Array<String>]
+    # @!attribute [rw] is_active_gateway
+    #   @return [Boolean]
+    # @!attribute [rw] model_routing_status
+    #   @return [String]
+    # @!attribute [rw] params
+    #   @return [Array<String>]
+    # @!attribute [rw] provider_routing_status
+    #   @return [String]
+    # @!attribute [rw] provider_status
+    #   @return [String]
+    ModelProviderAvailability = Struct.new(:api_provider_id, :api_provider_name, :availability_reason, :availability_status, :capability_status, :effective_from, :effective_to, :endpoints, :is_active_gateway, :model_routing_status, :params, :provider_routing_status, :provider_status, keyword_init: true)
     # @!attribute [rw] code
     #   @return [String]
     # @!attribute [rw] error

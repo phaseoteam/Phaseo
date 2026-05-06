@@ -380,6 +380,7 @@ class GatewayDatetimeToolDefinition(TypedDict):
 	type: Literal["gateway:datetime"]
 
 class GatewayModelsResponse(TypedDict):
+	availability_mode: Literal["active", "all"]
 	limit: int
 	models: List[Dict[str, Any]]
 	offset: int
@@ -521,6 +522,7 @@ MessageContentPart = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[
 class Model(TypedDict):
 	aliases: NotRequired[List[str]]
 	architecture: NotRequired[Dict[str, Any]]
+	availability: NotRequired[Dict[str, Any]]
 	canonical_slug: NotRequired[str]
 	created: NotRequired[Optional[int]]
 	deprecation_date: NotRequired[Optional[str]]
@@ -547,6 +549,12 @@ class Model(TypedDict):
 	top_provider: NotRequired[Dict[str, Any]]
 	top_provider_id: NotRequired[Optional[str]]
 
+class ModelAvailability(TypedDict):
+	active_provider_count: int
+	inactive_provider_count: int
+	provider_count: int
+	status: Literal["active", "coming_soon", "inactive", "not_listed"]
+
 ModelId = str
 
 class ModelLifecycle(TypedDict):
@@ -555,6 +563,21 @@ class ModelLifecycle(TypedDict):
 	replacement_model_id: NotRequired[Optional[str]]
 	retirement_date: NotRequired[Optional[str]]
 	status: NotRequired[Optional[Literal["active", "deprecated", "retired"]]]
+
+class ModelProviderAvailability(TypedDict):
+	api_provider_id: str
+	api_provider_name: NotRequired[Optional[str]]
+	availability_reason: Literal["active", "preview_only", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "internal_testing", "scheduled", "coming_soon", "provider_disabled", "model_disabled", "capability_disabled", "provider_not_ready", "provider_inactive", "inactive", "retired"]
+	availability_status: Literal["active", "coming_soon", "inactive"]
+	capability_status: Literal["active", "coming_soon", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "internal_testing"]
+	effective_from: NotRequired[Optional[str]]
+	effective_to: NotRequired[Optional[str]]
+	endpoints: List[str]
+	is_active_gateway: bool
+	model_routing_status: Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
+	params: List[str]
+	provider_routing_status: Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
+	provider_status: Literal["active", "beta", "alpha", "not_ready", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked"]
 
 class ModelsPrivacyScopeNotImplementedResponse(TypedDict):
 	code: Literal["models_privacy_scope_not_implemented"]
@@ -970,4 +993,4 @@ class WorkspaceUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	slug: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorResponse", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayModelsResponse", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelId", "ModelLifecycle", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "ServerToolUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]
+models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorResponse", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayModelsResponse", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "ServerToolUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]

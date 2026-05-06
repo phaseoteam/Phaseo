@@ -7,6 +7,12 @@ export interface Model {
     output_modalities?: string[];
     tokenizer?: string | null;
   };
+  availability?: {
+    active_provider_count: number;
+    inactive_provider_count: number;
+    provider_count: number;
+    status: "active" | "coming_soon" | "inactive" | "not_listed";
+  };
   canonical_slug?: string;
   created?: number | null;
   deprecation_date?: string | null;
@@ -46,9 +52,67 @@ export interface Model {
     pricing_plan?: string;
   };
   providers?: {
-    api_provider_id?: string;
-    is_active_gateway?: boolean;
-    params?: string[];
+    api_provider_id: string;
+    api_provider_name?: string | null;
+    availability_reason:
+      | "active"
+      | "preview_only"
+      | "gated"
+      | "access_limited"
+      | "region_limited"
+      | "project_limited"
+      | "paused"
+      | "soft_blocked"
+      | "deranked_lvl1"
+      | "deranked_lvl2"
+      | "deranked_lvl3"
+      | "internal_testing"
+      | "scheduled"
+      | "coming_soon"
+      | "provider_disabled"
+      | "model_disabled"
+      | "capability_disabled"
+      | "provider_not_ready"
+      | "provider_inactive"
+      | "inactive"
+      | "retired";
+    availability_status: "active" | "coming_soon" | "inactive";
+    capability_status:
+      | "active"
+      | "coming_soon"
+      | "deranked_lvl1"
+      | "deranked_lvl2"
+      | "deranked_lvl3"
+      | "disabled"
+      | "internal_testing";
+    effective_from?: string | null;
+    effective_to?: string | null;
+    endpoints: string[];
+    is_active_gateway: boolean;
+    model_routing_status:
+      | "active"
+      | "deranked_lvl1"
+      | "deranked_lvl2"
+      | "deranked_lvl3"
+      | "disabled";
+    params: string[];
+    provider_routing_status:
+      | "active"
+      | "deranked_lvl1"
+      | "deranked_lvl2"
+      | "deranked_lvl3"
+      | "disabled";
+    provider_status:
+      | "active"
+      | "beta"
+      | "alpha"
+      | "not_ready"
+      | "gated"
+      | "access_limited"
+      | "region_limited"
+      | "project_limited"
+      | "paused"
+      | "soft_blocked";
   }[];
   release_date?: string | null;
   retirement_date?: string | null;
