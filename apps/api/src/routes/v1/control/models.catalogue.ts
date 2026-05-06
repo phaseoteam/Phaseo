@@ -654,6 +654,128 @@ function availabilityPriority(value: "active" | "coming_soon" | "inactive"): num
     return 2;
 }
 
+const AVAILABILITY_REASON_PRIORITY: Record<ProviderInfo["availability_reason"], number> = {
+    deranked_lvl3: 0,
+    deranked_lvl2: 1,
+    deranked_lvl1: 2,
+    active: 3,
+    internal_testing: 4,
+    scheduled: 5,
+    preview_only: 6,
+    coming_soon: 7,
+    provider_not_ready: 8,
+    gated: 9,
+    access_limited: 10,
+    region_limited: 11,
+    project_limited: 12,
+    paused: 13,
+    soft_blocked: 14,
+    provider_disabled: 15,
+    model_disabled: 16,
+    capability_disabled: 17,
+    provider_inactive: 18,
+    retired: 19,
+    inactive: 20,
+};
+
+const ROUTING_STATUS_PRIORITY: Record<ProviderInfo["provider_routing_status"], number> = {
+    deranked_lvl3: 0,
+    deranked_lvl2: 1,
+    deranked_lvl1: 2,
+    active: 3,
+    disabled: 4,
+};
+
+const CAPABILITY_STATUS_PRIORITY: Record<ProviderInfo["capability_status"], number> = {
+    deranked_lvl3: 0,
+    deranked_lvl2: 1,
+    deranked_lvl1: 2,
+    active: 3,
+    internal_testing: 4,
+    coming_soon: 5,
+    disabled: 6,
+};
+
+function compareNullableString(a: string | null | undefined, b: string | null | undefined): number {
+    return (a ?? "").localeCompare(b ?? "");
+}
+
+function compareProviderInfoCandidate(
+    candidate: Pick<
+        ProviderInfo,
+        | "availability_status"
+        | "availability_reason"
+        | "provider_routing_status"
+        | "model_routing_status"
+        | "capability_status"
+        | "effective_from"
+        | "effective_to"
+        | "endpoints"
+        | "params"
+    >,
+    current: Pick<
+        ProviderInfo,
+        | "availability_status"
+        | "availability_reason"
+        | "provider_routing_status"
+        | "model_routing_status"
+        | "capability_status"
+        | "effective_from"
+        | "effective_to"
+        | "endpoints"
+        | "params"
+    >
+): number {
+    const availabilityDelta =
+        availabilityPriority(candidate.availability_status) - availabilityPriority(current.availability_status);
+    if (availabilityDelta !== 0) return availabilityDelta;
+
+    const reasonDelta =
+        AVAILABILITY_REASON_PRIORITY[candidate.availability_reason] -
+        AVAILABILITY_REASON_PRIORITY[current.availability_reason];
+    if (reasonDelta !== 0) return reasonDelta;
+
+    const providerRoutingDelta =
+        ROUTING_STATUS_PRIORITY[candidate.provider_routing_status] -
+        ROUTING_STATUS_PRIORITY[current.provider_routing_status];
+    if (providerRoutingDelta !== 0) return providerRoutingDelta;
+
+    const modelRoutingDelta =
+        ROUTING_STATUS_PRIORITY[candidate.model_routing_status] -
+        ROUTING_STATUS_PRIORITY[current.model_routing_status];
+    if (modelRoutingDelta !== 0) return modelRoutingDelta;
+
+    const capabilityDelta =
+        CAPABILITY_STATUS_PRIORITY[candidate.capability_status] -
+        CAPABILITY_STATUS_PRIORITY[current.capability_status];
+    if (capabilityDelta !== 0) return capabilityDelta;
+
+    const effectiveFromDelta = compareNullableString(candidate.effective_from, current.effective_from);
+    if (effectiveFromDelta !== 0) return effectiveFromDelta;
+
+    const effectiveToDelta = compareNullableString(candidate.effective_to, current.effective_to);
+    if (effectiveToDelta !== 0) return effectiveToDelta;
+
+    const endpointsDelta = candidate.endpoints.join(",").localeCompare(current.endpoints.join(","));
+    if (endpointsDelta !== 0) return endpointsDelta;
+
+    return candidate.params.join(",").localeCompare(current.params.join(","));
+}
+
+function scopePricingSummary(pricing: PricingSummary, visibleProviderIds: Set<string>): PricingSummary {
+    const scopedMeters = Object.fromEntries(
+        Object.entries(pricing.meters).map(([meter, summary]) => [
+            meter,
+            summary && visibleProviderIds.has(summary.provider_id) ? { ...summary } : null,
+        ])
+    ) as PricingSummary["meters"];
+
+    return {
+        pricing_plan: pricing.pricing_plan,
+        meters: scopedMeters,
+    };
+}
+
 function getTopProvider(providerMeters: Map<string, Map<string, number>>): string | null {
     let best: { provider: string; cost: number } | null = null;
     for (const [providerId, meters] of providerMeters) {
@@ -1139,7 +1261,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
             existing.endpoints = Array.from(new Set([...existing.endpoints, ...entry.endpoints])).sort();
             existing.params = Array.from(new Set([...existing.params, ...entry.params])).sort((a, b) => a.localeCompare(b));
-            if (availabilityPriority(entry.availability_status) < availabilityPriority(existing.availability_status)) {
+            if (compareProviderInfoCandidate(entry, existing) < 0) {
                 existing.is_active_gateway = entry.is_active_gateway;
                 existing.availability_status = entry.availability_status;
                 existing.availability_reason = entry.availability_reason;
@@ -1173,6 +1295,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
         const pricing = pricingByModel.get(modelId) ?? initPricingSummary();
         const filteredProviderIds = new Set(providerInfos.map((provider) => provider.api_provider_id));
+        const scopedPricing = scopePricingSummary(pricing, filteredProviderIds);
         const filteredProviderMeters = new Map(
             Array.from(providerMeterByModel.get(modelId) ?? new Map()).filter(([providerId]) =>
                 filteredProviderIds.has(providerId)
@@ -1198,7 +1321,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             providers: providerInfos,
             supported_params: supportedParams,
             top_provider: topProvider,
-            pricing,
+            pricing: scopedPricing,
             availability: {
                 status: availabilityStatus,
                 provider_count: providerInfos.length,

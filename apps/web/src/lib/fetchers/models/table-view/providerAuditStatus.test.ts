@@ -40,6 +40,23 @@ describe("classifyProviderAuditRoutability", () => {
 		});
 	});
 
+	test("classifies coming-soon capabilities as preview", () => {
+		expect(
+			classifyProviderAuditRoutability({
+				isActiveGateway: true,
+				providerStatus: "active",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "active",
+				capabilityStatus: "coming_soon",
+				now,
+			})
+		).toMatchObject({
+			key: "coming_soon",
+			availability: "coming_soon",
+			isRoutableNow: false,
+		});
+	});
+
 	test("classifies beta providers as preview-only instead of generic inactive", () => {
 		expect(
 			classifyProviderAuditRoutability({
@@ -216,6 +233,31 @@ describe("aggregateProviderAuditRoutability", () => {
 		]);
 
 		expect(aggregate.state.key).toBe("preview_only");
+		expect(aggregate.previewCount).toBe(1);
+		expect(aggregate.inactiveCount).toBe(1);
+	});
+
+	test("prefers coming-soon over inactive when preview state comes from capability rollout", () => {
+		const aggregate = aggregateProviderAuditRoutability([
+			{
+				capabilityId: "text.generate",
+				capabilityStatus: "coming_soon",
+				routability: classifyProviderAuditRoutability({
+					isActiveGateway: true,
+					capabilityStatus: "coming_soon",
+				}),
+			},
+			{
+				capabilityId: "image.generate",
+				capabilityStatus: "disabled",
+				routability: classifyProviderAuditRoutability({
+					isActiveGateway: true,
+					capabilityStatus: "disabled",
+				}),
+			},
+		]);
+
+		expect(aggregate.state.key).toBe("coming_soon");
 		expect(aggregate.previewCount).toBe(1);
 		expect(aggregate.inactiveCount).toBe(1);
 	});

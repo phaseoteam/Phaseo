@@ -531,7 +531,38 @@ describe("fetchCatalogue", () => {
                     error: null,
                 },
             ],
-            data_api_pricing_rules: [{ data: [], error: null }, { data: [], error: null }],
+            data_api_pricing_rules: [
+                {
+                    data: [
+                        {
+                            model_key: "openai:test/model-multi-provider:responses",
+                            capability_id: "responses",
+                            pricing_plan: "standard",
+                            meter: "input_tokens",
+                            unit: "token",
+                            unit_size: 1,
+                            price_per_unit: "2",
+                            currency: "USD",
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            model_key: "anthropic:test/model-multi-provider:messages",
+                            capability_id: "messages",
+                            pricing_plan: "standard",
+                            meter: "input_tokens",
+                            unit: "token",
+                            unit_size: 1,
+                            price_per_unit: "1",
+                            currency: "USD",
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                { data: [], error: null },
+            ],
         };
 
         getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
@@ -544,6 +575,7 @@ describe("fetchCatalogue", () => {
             model_id: "test/model-multi-provider",
             endpoints: ["messages"],
             supported_params: ["top_k"],
+            top_provider: "anthropic",
             availability: {
                 status: "active",
                 provider_count: 1,
@@ -558,6 +590,124 @@ describe("fetchCatalogue", () => {
                 },
             ],
         });
+        expect(models[0]?.pricing.meters.input_tokens?.provider_id).toBe("anthropic");
+        expect(models[0]?.pricing.meters.output_tokens).toBeNull();
+    });
+
+    it("collapses same-provider availability deterministically when statuses tie", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-provider-collapse",
+                            name: "Provider Collapse Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_active",
+                            provider_id: "openai",
+                            api_model_id: "test/model-provider-collapse",
+                            model_id: "test/model-provider-collapse",
+                            provider_model_slug: "collapse-a",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_openai_deranked",
+                            provider_id: "openai",
+                            api_model_id: "test/model-provider-collapse",
+                            model_id: "test/model-provider-collapse",
+                            provider_model_slug: "collapse-z",
+                            is_active_gateway: true,
+                            routing_status: "deranked_lvl2",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_active",
+                            capability_id: "chat/completions",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_openai_deranked",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { top_p: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.providers).toMatchObject([
+            {
+                api_provider_id: "openai",
+                availability_status: "active",
+                availability_reason: "deranked_lvl2",
+                provider_routing_status: "active",
+                model_routing_status: "deranked_lvl2",
+                endpoints: ["chat/completions", "responses"],
+                params: ["temperature", "top_p"],
+            },
+        ]);
     });
 
     it("filters provider entries by availability status and reason and recomputes model availability", async () => {

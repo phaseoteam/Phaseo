@@ -5,6 +5,7 @@ export type ProviderAuditRoutabilityKey =
 	| "deranked_lvl3"
 	| "preview_only"
 	| "internal_testing"
+	| "coming_soon"
 	| "scheduled"
 	| "provider_not_ready"
 	| "gated"
@@ -291,6 +292,16 @@ export function classifyProviderAuditRoutability(
 		};
 	}
 
+	if (capabilityStatus === "coming_soon") {
+		return {
+			key: "coming_soon",
+			label: "Coming Soon",
+			detail: "Capability is staged for a future public rollout.",
+			availability: "coming_soon",
+			isRoutableNow: false,
+		};
+	}
+
 	if (!input.isActiveGateway) {
 		return {
 			key: "inactive",
@@ -349,6 +360,7 @@ function chooseAggregateState(states: ProviderAuditRoutability[]): ProviderAudit
 			previewStates.find((state) => state.key === "internal_testing") ??
 			previewStates.find((state) => state.key === "scheduled") ??
 			previewStates.find((state) => state.key === "preview_only") ??
+			previewStates.find((state) => state.key === "coming_soon") ??
 			previewStates[0]
 		);
 	}
