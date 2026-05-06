@@ -38,13 +38,11 @@ import {
 	AppWindow,
 } from "lucide-react";
 import {
-        fetchPaginatedRequests,
-        investigateGeneration,
-        fetchModelMetadata,
-        PaginatedRequestsParams,
-        type InvestigateGenerationResult,
-        type ProviderMetadataEntry,
-        RequestRow,
+	fetchPaginatedRequests,
+	fetchModelMetadata,
+	PaginatedRequestsParams,
+	type ProviderMetadataEntry,
+	RequestRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 import { exportToCSV, exportToPDF } from "./export-utils";
 import ExportDropdown from "./ExportDropdown";
@@ -59,7 +57,6 @@ import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { buildUsageDisplay, extractUsageMeters, formatUsageNumber } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
-import { toast } from "sonner";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -166,24 +163,17 @@ export default function UnifiedRequestsTable({
 	const [totalPages, setTotalPages] = useState(initialTotalPages);
 	const [loading, setLoading] = useState(false);
 	const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
-        const [selectedRequest, setSelectedRequest] = useState<RequestRow | null>(
-                null,
-        );
-        const [selectedAppName, setSelectedAppName] = useState<string | null>(
-                null,
-        );
-        const [resolvedModelMetadata, setResolvedModelMetadata] =
-                useState<ModelMetadataMap>(new Map(modelMetadata));
-        const [resolvedProviderNames, setResolvedProviderNames] = useState<
-                Map<string, string>
-        >(new Map(providerNames));
-        const [resolvedProviderMetadata, setResolvedProviderMetadata] = useState<
-                Map<string, ProviderMetadataEntry>
-        >(new Map(providerMetadata));
-        const [dialogOpen, setDialogOpen] = useState(false);
-        const detailCacheRef = React.useRef(
-                new Map<string, InvestigateGenerationResult>(),
-        );
+	const [selectedRequest, setSelectedRequest] = useState<RequestRow | null>(null);
+	const [selectedAppName, setSelectedAppName] = useState<string | null>(null);
+	const [resolvedModelMetadata, setResolvedModelMetadata] =
+		useState<ModelMetadataMap>(new Map(modelMetadata));
+	const [resolvedProviderNames, setResolvedProviderNames] = useState<
+		Map<string, string>
+	>(new Map(providerNames));
+	const [resolvedProviderMetadata, setResolvedProviderMetadata] = useState<
+		Map<string, ProviderMetadataEntry>
+	>(new Map(providerMetadata));
+	const [dialogOpen, setDialogOpen] = useState(false);
 
 	// Build cache key from filters
 	const getCacheKey = useCallback(() => {
@@ -307,17 +297,17 @@ export default function UnifiedRequestsTable({
 		}
 	}, [getCacheKey, currentCacheKey, setPage]);
 
-        useEffect(() => {
-                setResolvedModelMetadata(new Map(modelMetadata));
-        }, [modelMetadata]);
+	useEffect(() => {
+		setResolvedModelMetadata(new Map(modelMetadata));
+	}, [modelMetadata]);
 
-        useEffect(() => {
-                setResolvedProviderNames(new Map(providerNames));
-        }, [providerNames]);
+	useEffect(() => {
+		setResolvedProviderNames(new Map(providerNames));
+	}, [providerNames]);
 
-        useEffect(() => {
-                setResolvedProviderMetadata(new Map(providerMetadata));
-        }, [providerMetadata]);
+	useEffect(() => {
+		setResolvedProviderMetadata(new Map(providerMetadata));
+	}, [providerMetadata]);
 
 	useEffect(() => {
 		setPageCache(new Map([[initialPage, initialRows]]));
@@ -366,70 +356,11 @@ export default function UnifiedRequestsTable({
 		setPage(1);
 	};
 
-        const applyInvestigatedResult = useCallback(
-                (result: InvestigateGenerationResult) => {
-                        setSelectedRequest(result.request);
-                        setSelectedAppName(result.appName ?? null);
-                        setResolvedModelMetadata((prev) => {
-                                const merged = new Map(prev);
-                                for (const [key, value] of result.modelMetadata ?? []) {
-                                        merged.set(key, value);
-                                }
-                                return merged;
-                        });
-                        setResolvedProviderNames((prev) => {
-                                const merged = new Map(prev);
-                                for (const [key, value] of result.providerNames ?? []) {
-                                        merged.set(key, value);
-                                }
-                                return merged;
-                        });
-                        setResolvedProviderMetadata((prev) => {
-                                const merged = new Map(prev);
-                                for (const [key, value] of result.providerMetadata ?? []) {
-                                        merged.set(key, value);
-                                }
-                                return merged;
-                        });
-                        setDialogOpen(true);
-                },
-                [],
-        );
-
-        const handleRowClick = useCallback(
-                async (request: RequestRow) => {
-                        const requestId =
-                                typeof request.request_id === "string"
-                                        ? request.request_id.trim()
-                                        : "";
-                        if (!requestId) {
-                                setSelectedRequest(request);
-                                setSelectedAppName(request.app_title ?? null);
-                                setDialogOpen(true);
-                                return;
-                        }
-
-                        const cached = detailCacheRef.current.get(requestId);
-                        if (cached) {
-                                applyInvestigatedResult(cached);
-                                return;
-                        }
-
-                        const response = await investigateGeneration(requestId);
-                        if (!response.success || !response.data) {
-                                setSelectedRequest(request);
-                                setSelectedAppName(request.app_title ?? null);
-                                setDialogOpen(true);
-                                if (response.error) toast.error(response.error);
-                                return;
-                        }
-
-                        const result = response.data as InvestigateGenerationResult;
-                        detailCacheRef.current.set(requestId, result);
-                        applyInvestigatedResult(result);
-                },
-                [applyInvestigatedResult],
-        );
+	const handleRowClick = useCallback((request: RequestRow) => {
+		setSelectedRequest(request);
+		setSelectedAppName(request.app_title ?? null);
+		setDialogOpen(true);
+	}, []);
 
 	const handleExport = React.useCallback(
 		(format: "csv" | "pdf") => {

@@ -1406,7 +1406,6 @@ export async function investigateGeneration(
 		model_id,
 		provider,
 		native_response_id,
-		upstream_request_id,
 		stream,
 		session_id,
 		app_id,
@@ -1425,7 +1424,6 @@ export async function investigateGeneration(
 		status_code,
 		error_code,
 		error_message,
-		error_payload,
 		key_id,
 		pricing_lines,
 		throughput,
@@ -1437,6 +1435,8 @@ export async function investigateGeneration(
 		.select(requestSelect)
 		.eq("workspace_id", workspaceId)
 		.eq("request_id", trimmedRequestId)
+		.order("created_at", { ascending: false })
+		.limit(1)
 		.maybeSingle();
 
 	if (error) {
@@ -1451,7 +1451,6 @@ export async function investigateGeneration(
 				model_id,
 				provider,
 				native_response_id,
-				upstream_request_id,
 				stream,
 				session_id,
 				app_id,
@@ -1464,7 +1463,6 @@ export async function investigateGeneration(
 				status_code,
 				error_code,
 				error_message,
-				error_payload,
 				key_id,
 				pricing_lines,
 				throughput,
@@ -1473,6 +1471,8 @@ export async function investigateGeneration(
 			)
 			.eq("workspace_id", workspaceId)
 			.eq("request_id", trimmedRequestId)
+			.order("created_at", { ascending: false })
+			.limit(1)
 			.maybeSingle();
 
 		if (fallbackError) {
@@ -2424,7 +2424,6 @@ export async function fetchSessionRequests(params: {
 			model_id,
 			provider,
 			native_response_id,
-			upstream_request_id,
 			stream,
 			session_id,
 			app_id,
@@ -3078,7 +3077,7 @@ export async function fetchAsyncJobDetail(input: {
 	if (base.request_id) {
 		const { data: requestData } = await admin
 			.from("gateway_requests")
-			.select("created_at,cost_nanos,native_response_id,upstream_request_id,endpoint,model_id,success,status_code,error_code,error_message,error_payload,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
+			.select("created_at,cost_nanos,native_response_id,endpoint,model_id,success,status_code,error_code,error_message,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
 			.eq("workspace_id", workspaceId)
 			.eq("request_id", base.request_id)
 			.order("created_at", { ascending: false })
@@ -3087,14 +3086,12 @@ export async function fetchAsyncJobDetail(input: {
 		requestCreatedAt = normalizeIsoDate(requestData?.created_at);
 		requestCostNanos = normalizeFiniteNumber(requestData?.cost_nanos);
 		requestNativeResponseId = normalizeText(requestData?.native_response_id);
-		requestUpstreamRequestId = normalizeText(requestData?.upstream_request_id);
 		requestEndpoint = normalizeText(requestData?.endpoint);
 		requestModelId = normalizeText(requestData?.model_id);
 		requestSuccess = typeof requestData?.success === "boolean" ? requestData.success : null;
 		requestStatusCode = normalizeFiniteNumber(requestData?.status_code);
 		requestErrorCode = normalizeText(requestData?.error_code);
 		requestErrorMessage = normalizeText(requestData?.error_message);
-		requestErrorPayload = normalizePlainObject(requestData?.error_payload);
 		requestFinishReason = normalizeText(requestData?.finish_reason);
 		requestLatencyMs = normalizeFiniteNumber(requestData?.latency_ms);
 		requestGenerationMs = normalizeFiniteNumber(requestData?.generation_ms);
