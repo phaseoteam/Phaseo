@@ -124,11 +124,15 @@ The main telemetry entry structure:
 - `audio.transcriptions` - Speech-to-text
 - `audio.translations` - Audio translation
 - `video.generations` - Video generation
+- `video.list` - List video jobs
+- `video.retrieve` - Retrieve video status
+- `video.cancel` - Cancel video generation
 - `embeddings` - Text embeddings
 - `moderations` - Content moderation
 - `responses` - Anthropic-style responses
 - `batches.create` - Create batch job
 - `batches.retrieve` - Retrieve batch status
+- `batches.cancel` - Cancel an in-flight batch
 - `files.list` - List files
 - `files.retrieve` - Get file
 - `files.upload` - Upload file

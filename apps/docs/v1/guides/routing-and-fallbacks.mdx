@@ -13,6 +13,36 @@ The AI Stats Gateway routes each request to a provider that can serve your chose
 
 Inspect request outcomes through your activity logs and response metadata when debugging routing behavior.
 
+## Public control surfaces
+
+The current public fallback and routing controls are intentionally explicit:
+
+### 1) Presets constrain the fallback pool
+
+In **Dashboard -> Settings -> Presets**, you can define:
+
+- allowed models
+- provider allow lists
+- provider ignore lists
+- default prompt and parameter behavior
+
+Those constraints are applied before provider selection, so a preset can intentionally narrow which providers are eligible for retries and failover.
+
+### 2) Routing mode changes provider ranking
+
+In **Dashboard -> Settings -> Routing**, workspaces can tune how the Gateway ranks compatible providers:
+
+- `balanced`
+- `price`
+- `latency`
+- `throughput`
+
+The same page also exposes beta and alpha channel toggles so preview traffic can be introduced intentionally instead of appearing as an untracked routing side effect.
+
+### 3) BYOK fallback is explicit
+
+In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed BYOK request is allowed to fall back to AI Stats credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
+
 ## Fallback behavior
 
 If a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model. You should still handle 429 and 5xx responses with exponential backoff.
@@ -29,3 +59,8 @@ If you bring your own provider key, that provider's limits and policies apply. F
 ## What to log
 
 For production workloads, log request ids, response status codes, and model ids so you can correlate failures and confirm routing behavior when debugging.
+
+## Related guides
+
+- [Presets](./presets.mdx)
+- [Feature Parity Matrix](../migration-guides/feature-parity-matrix.mdx)

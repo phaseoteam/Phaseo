@@ -1,32 +1,46 @@
 ---
 title: "Video generation"
-description: "Call /video/generation with the Ruby SDK."
+description: "Create and manage async video jobs with the Ruby SDK."
 ---
 
-**Method**: `VideoApi#video_generation_post`.
+**Methods**:
+
+- `client.create_video(...)`
+- `client.list_videos(...)`
+- `client.get_video(...)`
+- `client.retrieve_video_content(...)`
+- `client.get_video_download_url(...)`
+- `client.cancel_video(...)`
+- `client.delete_video(...)`
+- `client.list_video_models(...)`
+- `client.get_async_job_websocket_url(...)`
+- `client.video_websocket_url(...)`
+- `client.async_jobs.websocket_url(...)`
 
 ### Example
 ```ruby
-require 'ai_stats_sdk'
+require_relative "../lib/index"
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-video_api = AIStatsSdk::VideoApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
 
-request = AIStatsSdk::VideoGenerationRequest.new(
-  model: 'openai/gpt-video-1',
-  prompt: 'A calm ocean at dusk'
+job = client.create_video(
+  model: "openai/sora-2",
+  prompt: "A calm ocean at dusk"
 )
 
-video = video_api.video_generation_post(request)
+jobs = client.list_videos(
+  status: "queued,completed",
+  limit: 2
+)
+
+websocket_url = client.video_websocket_url(job["id"], interval_ms: 1500)
 ```
 
-### Key parameters
-- `model` (required): Video-capable model id.
-- `prompt` (required): Text description of the video.
-- Optional provider-specific controls (per API spec), e.g., duration, format, or aspect (when supported by the upstream).
+The create response is an async job object. Poll status and then use content or signed download endpoints once the job is complete.
 
-### Returns
-`VideoGenerationResponse`
+Use `client.video_websocket_url(...)` when you want to subscribe to the documented `/v1/async/video/{id}/ws` lifecycle stream instead of polling only.
+Use `client.async_jobs.websocket_url("video", job["id"], ...)` when you want the generic async-jobs resource helper.
+Use `client.get_async_job_websocket_url("video", job["id"], ...)` when you want the same generic helper without going through the resource object.
+
+`client.cancel_video(...)` is exposed, but the public video cancel route currently returns a structured `501 not_implemented_yet` error while provider-level cancellation is standardized.
 

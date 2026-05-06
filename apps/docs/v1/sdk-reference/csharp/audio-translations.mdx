@@ -3,18 +3,18 @@ title: "Translations"
 description: "Call /audio/translations with the C# SDK."
 ---
 
-**Method**: `client.AudioApi.AudioTranslationsPostAsync()`
+**Method**: `client.CreateTranslation(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new AudioTranslationRequest(
-    model: "openai/gpt-4o-translate",
-    file: new FileParameter(new MemoryStream(audioBytes), "audio.mp3")
-);
-
-var response = client.AudioApi.AudioTranslationsPostAsync(request).Result;
+var client = new AIStats(apiKey);
+var response = await client.CreateTranslation(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-transcribe",
+    ["audio_b64"] = "base64-audio"
+});
 ```
 
 ### Key parameters

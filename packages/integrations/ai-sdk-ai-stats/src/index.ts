@@ -18,11 +18,11 @@
  * import { streamText } from 'ai';
  *
  * const aiStats = createAIStats({
- *   apiKey: process.env.AI_STATS_API_KEY,
+ *   apiKey: process.env.AI_STATS_API_KEY ?? process.env.OPENAI_GATEWAY_API_KEY,
  *   baseURL: 'https://api.phaseo.app/v1',
  * });
  *
- * const { textStream } = await streamText({
+ * const { textStream } = streamText({
  *   model: aiStats('anthropic/claude-3-5-sonnet'),
  *   prompt: 'Write a poem',
  * });
@@ -47,7 +47,7 @@ import { createAIStats } from './ai-stats-provider.js';
 
 /**
  * Default AI Stats provider instance.
- * Uses the AI_STATS_API_KEY environment variable for authentication.
+ * Uses the AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY environment variable for authentication.
  *
  * @example
  * ```typescript
@@ -68,6 +68,6 @@ export const aiStats = resolvedApiKey
   : ((() => {
       throw new Error(
         'AI Stats API key is required. ' +
-          'Provide it via the apiKey option or set the AI_STATS_API_KEY environment variable.'
+          'Provide it via the apiKey option or set the AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY environment variable.'
       );
     }) as unknown as ReturnType<typeof createAIStats>);

@@ -38,7 +38,10 @@ async function main() {
       console.log(result.text);
 
       console.log('\n📊 Usage:');
-      console.log(`- Tokens: ${result.usage.promptTokens + result.usage.completionTokens}`);
+      console.log(`- Tokens: ${result.usage.inputTokens + result.usage.outputTokens}`);
+
+      console.log('\n🧭 Provider Metadata:');
+      console.log(JSON.stringify(result.providerMetadata ?? {}, null, 2));
     } catch (error: any) {
       console.error(`\n❌ Error: ${error.message}`);
     }

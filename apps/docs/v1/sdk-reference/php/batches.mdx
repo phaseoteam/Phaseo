@@ -3,7 +3,7 @@ title: "Batches"
 description: "Call /batches with the PHP SDK."
 ---
 
-**Methods**: BatchApi#batchesPost, BatchApi#batchesBatchIdGet
+**Methods**: `createBatch()`, `retrieveBatch()`, `cancelBatch()`, `getAsyncJobWebSocketUrl()`, `getBatchWebSocketUrl()`, `asyncJobs()->websocketUrl()`
 
 ### Example
 
@@ -12,25 +12,21 @@ description: "Call /batches with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\BatchApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\BatchRequest;
+use AIStats\Sdk\AIStats;
 
 $apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new AIStats(apiKey: $apiKey);
 
-$batchApi = new BatchApi(null, $config);
-
-$request = new BatchRequest([
+$batch = $client->createBatch([
     'endpoint' => 'responses',
     'input_file_id' => 'file_123',
-    'completion_window' => '24h'
+    'completion_window' => '24h',
+    'session_id' => 'agent-run-42',
 ]);
 
-$batch = $batchApi->batchesPost($request);
-$status = $batchApi->batchesBatchIdGet($batch->getId());
+$status = $client->retrieveBatch($batch['id']);
+$cancelling = $client->cancelBatch($batch['id']);
+$websocketUrl = $client->getBatchWebSocketUrl($batch['id'], 1500);
 ```
 
 ### Key parameters
@@ -38,8 +34,16 @@ $status = $batchApi->batchesBatchIdGet($batch->getId());
 -   `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
 -   `input_file_id` (required): File id uploaded via `/files`.
 -   `completion_window`: e.g., `24h`.
+-   `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+-   `webhook`: Optional webhook configuration for async lifecycle notifications.
 -   `metadata`: Optional object stored with the batch.
 
 ### Returns
 
 BatchResponse
+
+Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
+
+Use `$client->getBatchWebSocketUrl(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `$client->asyncJobs()->websocketUrl("batch", $batchId, ...)` when you want the generic async-jobs resource helper.
+Use `$client->getAsyncJobWebSocketUrl("batch", $batchId, ...)` when you want the same generic helper without going through the resource object.

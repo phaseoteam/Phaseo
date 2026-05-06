@@ -1,44 +1,36 @@
 ---
 title: "Java SDK Usage"
-description: "How to initialize and call generated Java SDK operations."
+description: "How to initialize and use the Java SDK wrapper."
 ---
 
 ## Setup
 
 ```java
-import ai.stats.gen.Client;
-
-import java.net.http.HttpClient;
-import java.util.HashMap;
-import java.util.Map;
+import ai.stats.sdk.AIStats;
 
 String apiKey = System.getenv("AI_STATS_API_KEY");
-String baseUrl = System.getenv("AI_STATS_BASE_URL");
-if (baseUrl == null || baseUrl.isEmpty()) {
-  baseUrl = "https://api.phaseo.app/v1";
-}
-
-Map<String, String> headers = new HashMap<>();
-headers.put("Authorization", "Bearer " + apiKey);
-
-Client client = new Client(baseUrl, HttpClient.newHttpClient(), headers);
+AIStats client = new AIStats(apiKey);
 ```
 
 ## Pattern
 
-Most calls follow this shape:
+Common wrapper calls look like this:
 
 ```java
-Object response = Operations.someMethod(client, path, query, extraHeaders, bodyJsonString);
+Object response = client.createChatCompletion("""
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Say hello from Java" }
+  ]
+}
+""");
 ```
 
-- `path`: `Map<String, String>` for path params, or `null`.
-- `query`: `Map<String, String>` for query params, or `null`.
-- `extraHeaders`: extra request headers, or `null`.
-- `bodyJsonString`: raw JSON body string for POST/PATCH, or `null`.
+Wrapper methods return parsed JSON nodes for most JSON endpoints, and byte arrays for file/video content helpers.
 
 ## Recommended
 
-- Keep a small helper that builds path/query maps.
-- Centralize JSON serialization in your app layer.
-- Start from endpoint-specific examples in this section.
+- Use `ai.stats.sdk.AIStats` for the common gateway surfaces first.
+- Drop to `ai.stats.gen.Client` and `ai.stats.gen.Operations` only when you need a lower-level operation that has not been promoted to the wrapper yet.
+- Start from the endpoint-specific examples in this section for the current wrapper method names.

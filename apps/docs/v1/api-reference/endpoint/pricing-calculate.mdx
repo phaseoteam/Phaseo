@@ -1,0 +1,17 @@
+---
+title: "Calculate Pricing"
+badge: "Beta"
+openapi: "POST /pricing/calculate"
+description: "Estimate the bill for a specific provider/model/endpoint usage payload."
+---
+
+Calculates pricing for a supplied usage payload against the active gateway pricing rules.
+
+Provide:
+
+- `provider`: provider ID, for example `openai`
+- `model`: routed model ID
+- `endpoint`: endpoint family, for example `responses` or `chat.completions`
+- `usage`: the usage object to price, such as token counts or other meter inputs
+
+Use this route when you already know the target provider/model/endpoint and want a bill estimate for a specific usage payload, as opposed to `GET /pricing/models`, which lists the current public catalogue pricing surfaces.

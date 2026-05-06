@@ -1,25 +1,40 @@
 ---
 title: "Files"
-description: "Use the generated Go client for /files."
+description: "Use the Go SDK for file metadata and file-content retrieval."
 ---
 
-The preview Go wrapper does not yet expose file helpers. Use the generated
-client in `src/gen`.
+**Methods**: `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
 
 ```go
 import (
   "fmt"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  "context"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
-client := gen.NewClient("https://api.phaseo.app/v1")
-client.Headers["Authorization"] = "Bearer " + apiKey
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
 
-files, err := gen.ListFiles(client, nil, nil, nil, nil)
+file, err := client.RetrieveFile(context.Background(), "file_123")
 if err != nil {
   panic(err)
 }
 
-fmt.Println(files)
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
 ```
+
+<Note>
+`ListFiles()` is available in the wrapper, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+when you use the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
+</Note>
+
+<Note>
+The Go wrapper still does not provide a first-class multipart upload helper for `POST /files`. Use direct REST or the generated
+client if you need to experiment with upload wiring.
+</Note>
 

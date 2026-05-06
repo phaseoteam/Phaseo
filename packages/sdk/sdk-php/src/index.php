@@ -14,6 +14,22 @@ require_once __DIR__ . "/ModelIds.php";
 use AIStats\Gen\Client as GenClient;
 use RuntimeException;
 
+class AsyncJobsResource
+{
+    public function __construct(private AIStats $parent)
+    {
+    }
+
+    public function websocketUrl(
+        string $kind,
+        string $jobId,
+        ?int $intervalMs = null,
+        ?bool $closeOnTerminal = null
+    ): string {
+        return $this->parent->getAsyncJobWebSocketUrl($kind, $jobId, $intervalMs, $closeOnTerminal);
+    }
+}
+
 class AIStats
 {
     private const ACTIVE_MODEL_SOURCE_STATUSES = ["active", "available"];
@@ -45,6 +61,8 @@ class AIStats
     /** @var array<string, array<string, mixed>|null> */
     private array $modelLifecycleCache = [];
     private TelemetryRecorder $telemetryRecorder;
+    private string $basePath;
+    private AsyncJobsResource $asyncJobs;
 
     public function __construct(
         ?string $apiKey = null,
@@ -61,8 +79,9 @@ class AIStats
         if (!$apiKey) {
             throw new \InvalidArgumentException("Missing API key. Pass apiKey or set AI_STATS_API_KEY.");
         }
+        $this->basePath = rtrim($basePath, "/");
         $this->client = new GenClient(
-            rtrim($basePath, "/"),
+            $this->basePath,
             ["Authorization" => "Bearer " . $apiKey],
             $caBundlePath,
             $verifyTls
@@ -72,11 +91,17 @@ class AIStats
         $this->logger = $logger;
         $this->lifecycleResolver = $lifecycleResolver;
         $this->telemetryRecorder = new TelemetryRecorder($devtools, "2.0.3");
+        $this->asyncJobs = new AsyncJobsResource($this);
     }
 
     public function rawClient(): GenClient
     {
         return $this->client;
+    }
+
+    public function asyncJobs(): AsyncJobsResource
+    {
+        return $this->asyncJobs;
     }
 
     /** @return array<string, mixed>|null */
@@ -182,6 +207,71 @@ class AIStats
         return $this->generateImageEdit($payload);
     }
 
+    public function generateVideo(array $payload): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.generations",
+            $payload,
+            true,
+            fn () => \AIStats\Gen\createVideo($this->client, null, null, null, $payload)
+        );
+    }
+
+    public function createVideo(array $payload): mixed
+    {
+        return $this->generateVideo($payload);
+    }
+
+    public function getVideo(string $videoId): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.retrieve",
+            ["video_id" => $videoId],
+            false,
+            fn () => \AIStats\Gen\getVideo($this->client, ["video_id" => $videoId])
+        );
+    }
+
+    public function cancelVideo(string $videoId): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.cancel",
+            ["video_id" => $videoId],
+            false,
+            fn () => \AIStats\Gen\cancelVideo($this->client, ["video_id" => $videoId])
+        );
+    }
+
+    public function deleteVideo(string $videoId): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.delete",
+            ["video_id" => $videoId],
+            false,
+            fn () => \AIStats\Gen\deleteVideo($this->client, ["video_id" => $videoId])
+        );
+    }
+
+    public function listVideoModels(): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.models",
+            null,
+            false,
+            fn () => \AIStats\Gen\listVideoModels($this->client)
+        );
+    }
+
+    public function listVideos(array $query = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.list",
+            $query,
+            false,
+            fn () => \AIStats\Gen\listVideos($this->client, null, $query)
+        );
+    }
+
     public function generateEmbedding(array $payload): mixed
     {
         return $this->withLifecycleAndTelemetry(
@@ -272,6 +362,68 @@ class AIStats
         );
     }
 
+    public function cancelBatch(string $batchId): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "batches.cancel",
+            ["batch_id" => $batchId],
+            false,
+            fn () => \AIStats\Gen\cancelBatch($this->client, ["batch_id" => $batchId])
+        );
+    }
+
+    public function getAsyncJobWebSocketUrl(
+        string $kind,
+        string $jobId,
+        ?int $intervalMs = null,
+        ?bool $closeOnTerminal = null
+    ): string {
+        $normalizedKind = trim($kind);
+        $normalizedJobId = trim($jobId);
+        if ($normalizedKind === "") {
+            throw new \InvalidArgumentException("kind is required");
+        }
+        if ($normalizedJobId === "") {
+            throw new \InvalidArgumentException("jobId is required");
+        }
+
+        $parts = parse_url($this->basePath);
+        $scheme = ($parts["scheme"] ?? "https") === "https" ? "wss" : "ws";
+        $host = $parts["host"] ?? "";
+        $port = isset($parts["port"]) ? ":" . $parts["port"] : "";
+        $path = rtrim((string) ($parts["path"] ?? ""), "/");
+        $url = $scheme . "://" . $host . $port . $path . "/async/" . rawurlencode($normalizedKind) . "/" . rawurlencode($normalizedJobId) . "/ws";
+
+        $query = [];
+        if ($intervalMs !== null) {
+            $query["interval_ms"] = (string) $intervalMs;
+        }
+        if ($closeOnTerminal !== null) {
+            $query["close_on_terminal"] = $closeOnTerminal ? "true" : "false";
+        }
+        if ($query !== []) {
+            $url .= "?" . http_build_query($query);
+        }
+
+        return $url;
+    }
+
+    public function getBatchWebSocketUrl(
+        string $batchId,
+        ?int $intervalMs = null,
+        ?bool $closeOnTerminal = null
+    ): string {
+        return $this->getAsyncJobWebSocketUrl("batch", $batchId, $intervalMs, $closeOnTerminal);
+    }
+
+    public function getVideoWebSocketUrl(
+        string $videoId,
+        ?int $intervalMs = null,
+        ?bool $closeOnTerminal = null
+    ): string {
+        return $this->getAsyncJobWebSocketUrl("video", $videoId, $intervalMs, $closeOnTerminal);
+    }
+
     public function listFiles(array $params = []): mixed
     {
         return $this->withLifecycleAndTelemetry(
@@ -289,6 +441,36 @@ class AIStats
             ["file_id" => $fileId],
             false,
             fn () => \AIStats\Gen\retrieveFile($this->client, ["file_id" => $fileId])
+        );
+    }
+
+    public function retrieveFileContent(string $fileId): string
+    {
+        return $this->withLifecycleAndTelemetry(
+            "files.content",
+            ["file_id" => $fileId],
+            false,
+            fn (): string => $this->client->requestRaw("GET", "/files/" . rawurlencode($fileId) . "/content", null, null, null)
+        );
+    }
+
+    public function retrieveVideoContent(string $videoId): string
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.content",
+            ["video_id" => $videoId],
+            false,
+            fn (): string => $this->client->requestRaw("GET", "/videos/" . rawurlencode($videoId) . "/content", null, null, null)
+        );
+    }
+
+    public function getVideoDownloadUrl(string $videoId, array $params = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "video.download_url",
+            ["video_id" => $videoId, "body" => $params],
+            false,
+            fn () => $this->client->request("POST", "/videos/" . rawurlencode($videoId) . "/download_url", null, null, $params)
         );
     }
 
@@ -312,6 +494,16 @@ class AIStats
         );
     }
 
+    public function listTeamModels(array $params = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "models.team",
+            $params,
+            false,
+            fn () => \AIStats\Gen\listTeamModels($this->client, null, $params, null, null)
+        );
+    }
+
     public function listProviders(array $params = []): mixed
     {
         return $this->withLifecycleAndTelemetry(
@@ -328,7 +520,7 @@ class AIStats
             "analytics",
             $params,
             false,
-            fn () => \AIStats\Gen\getAnalytics($this->client, null, $params, null, null)
+            fn () => \AIStats\Gen\getActivityAlias($this->client, null, $params, null, null)
         );
     }
 
@@ -352,13 +544,173 @@ class AIStats
         );
     }
 
+    public function getGeneration(string $generationId): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "generations.retrieve",
+            ["id" => $generationId],
+            false,
+            fn () => \AIStats\Gen\getGeneration($this->client, null, ["id" => $generationId], null, null)
+        );
+    }
+
+    public function listEndpoints(): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "endpoints.list",
+            [],
+            false,
+            fn () => \AIStats\Gen\listEndpoints($this->client, null, null, null, null)
+        );
+    }
+
+    public function listOrganisations(array $params = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "organisations.list",
+            $params,
+            false,
+            fn () => \AIStats\Gen\listOrganisations($this->client, null, $params, null, null)
+        );
+    }
+
+    public function listPricingModels(array $params = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "pricing.models",
+            $params,
+            false,
+            fn () => \AIStats\Gen\listPricingModels($this->client, null, $params, null, null)
+        );
+    }
+
+    public function calculatePricing(array $payload): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "pricing.calculate",
+            $payload,
+            false,
+            fn () => \AIStats\Gen\calculatePricing($this->client, null, null, null, $payload)
+        );
+    }
+
+    public function listApiKeys(array $params = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.keys.list",
+            $params,
+            false,
+            fn () => \AIStats\Gen\listApiKeys($this->client, null, $params, null, null)
+        );
+    }
+
+    public function createApiKey(array $payload): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.keys.create",
+            $payload,
+            false,
+            fn () => \AIStats\Gen\createApiKey($this->client, null, null, null, $payload)
+        );
+    }
+
+    public function getApiKey(string $id): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.keys.get",
+            ["id" => $id],
+            false,
+            fn () => \AIStats\Gen\getApiKey($this->client, ["id" => $id], null, null, null)
+        );
+    }
+
+    public function updateApiKey(string $id, array $payload): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.keys.update",
+            ["id" => $id, "body" => $payload],
+            false,
+            fn () => \AIStats\Gen\updateApiKey($this->client, ["id" => $id], null, null, $payload)
+        );
+    }
+
+    public function deleteApiKey(string $id): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.keys.delete",
+            ["id" => $id],
+            false,
+            fn () => \AIStats\Gen\deleteApiKey($this->client, ["id" => $id], null, null, null)
+        );
+    }
+
+    public function listWorkspaces(array $params = []): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.workspaces.list",
+            $params,
+            false,
+            fn () => \AIStats\Gen\listWorkspaces($this->client, null, $params, null, null)
+        );
+    }
+
+    public function getWorkspace(string $id): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.workspaces.get",
+            ["id" => $id],
+            false,
+            fn () => \AIStats\Gen\getWorkspace($this->client, ["id" => $id], null, null, null)
+        );
+    }
+
+    public function createWorkspace(array $body): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.workspaces.create",
+            $body,
+            false,
+            fn () => \AIStats\Gen\createWorkspace($this->client, null, null, null, $body)
+        );
+    }
+
+    public function updateWorkspace(string $id, array $body): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.workspaces.update",
+            array_merge(["id" => $id], $body),
+            false,
+            fn () => \AIStats\Gen\updateWorkspace($this->client, ["id" => $id], null, null, $body)
+        );
+    }
+
+    public function deleteWorkspace(string $id): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "provisioning.workspaces.delete",
+            ["id" => $id],
+            false,
+            fn () => \AIStats\Gen\deleteWorkspace($this->client, ["id" => $id], null, null, null)
+        );
+    }
+
+    public function getCurrentApiKey(): mixed
+    {
+        return $this->withLifecycleAndTelemetry(
+            "key.current",
+            [],
+            false,
+            fn () => \AIStats\Gen\getCurrentApiKey($this->client, null, null, null, null)
+        );
+    }
+
     public function health(): mixed
     {
         return $this->withLifecycleAndTelemetry(
             "health",
             null,
             false,
-            fn () => \AIStats\Gen\healthz($this->client)
+            fn () => $this->client->request("GET", "/health", null, null, null)
         );
     }
 
@@ -801,6 +1153,7 @@ final class TelemetryRecorder
         if ($provider !== null) {
             $metadata["provider"] = $provider;
         }
+        $this->enrichMetadataFromResponse($metadata, $this->normalizeToArray($response));
         if (!$this->captureHeaders) {
             unset($metadata["headers"]);
         }
@@ -829,6 +1182,7 @@ final class TelemetryRecorder
             "sdk_version" => $this->sdkVersion,
             "stream" => false,
         ];
+        $errorResponse = $this->extractErrorResponse($error);
 
         [$model, $provider] = $this->extractModelProvider(null, $request);
         if ($model !== null) {
@@ -837,6 +1191,8 @@ final class TelemetryRecorder
         if ($provider !== null) {
             $metadata["provider"] = $provider;
         }
+        $this->enrichMetadataFromResponse($metadata, $errorResponse);
+        $statusCode = $this->extractErrorStatusCode($error);
 
         $entry = [
             "id" => $this->newEntryId(),
@@ -844,8 +1200,11 @@ final class TelemetryRecorder
             "timestamp" => $this->currentTimestampMs(),
             "duration_ms" => $durationMs,
             "request" => $this->normalizeJsonValue($request),
-            "response" => null,
-            "error" => ["message" => $error->getMessage()],
+            "response" => $this->normalizeJsonValue($errorResponse),
+            "error" => array_filter([
+                "message" => $error->getMessage(),
+                "status_code" => $statusCode,
+            ], static fn ($value) => $value !== null),
             "metadata" => $metadata,
         ];
         $this->appendEntry($entry);
@@ -948,8 +1307,98 @@ final class TelemetryRecorder
     /** @return array<string,mixed>|null */
     private function normalizeToArray(mixed $value): ?array
     {
+        if (is_string($value) && trim($value) !== "") {
+            try {
+                $decoded = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+                return is_array($decoded) ? $decoded : null;
+            } catch (\JsonException) {
+            }
+        }
         $normalized = $this->normalizeJsonValue($value);
         return is_array($normalized) ? $normalized : null;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function extractErrorResponse(\Throwable $error): ?array
+    {
+        if ($error instanceof \AIStats\Gen\RequestException) {
+            $parsed = $this->normalizeToArray($error->getResponseBody());
+            if (is_array($parsed)) {
+                return $parsed;
+            }
+
+            $fallback = [
+                "status_code" => $error->getStatusCode(),
+            ];
+            $body = $this->asTrimmedString($error->getResponseBody());
+            if ($body !== null) {
+                $fallback["error"] = $body;
+            }
+            return $fallback;
+        }
+
+        if (property_exists($error, "response")) {
+            $response = $error->response;
+            if (is_array($response)) {
+                return $response;
+            }
+            $normalized = $this->normalizeToArray($response);
+            if (is_array($normalized)) {
+                return $normalized;
+            }
+        }
+
+        if (property_exists($error, "body")) {
+            $normalized = $this->normalizeToArray($error->body);
+            if (is_array($normalized)) {
+                return $normalized;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractErrorStatusCode(\Throwable $error): ?int
+    {
+        if ($error instanceof \AIStats\Gen\RequestException) {
+            return $error->getStatusCode();
+        }
+        if (property_exists($error, "statusCode") && is_int($error->statusCode)) {
+            return $error->statusCode;
+        }
+        return null;
+    }
+
+    /** @param array<string,mixed>|null $payload */
+    private function enrichMetadataFromResponse(array &$metadata, ?array $payload): void
+    {
+        if (!is_array($payload)) {
+            return;
+        }
+
+        foreach ([
+            "request_id",
+            "session_id",
+            "upstream_request_id",
+            "native_response_id",
+            "status_code",
+            "latency_ms",
+            "generation_ms",
+            "throughput",
+            "provider_attempts",
+            "pricing_lines",
+            "request_counts",
+            "billing",
+        ] as $key) {
+            if (array_key_exists($key, $payload) && $payload[$key] !== null) {
+                $metadata[$key] = $payload[$key];
+            }
+        }
+
+        $finishReason = $payload["finish_reason"] ?? $payload["stop_reason"] ?? null;
+        if ($finishReason !== null) {
+            $metadata["finish_reason"] = $finishReason;
+        }
     }
 
     private function asTrimmedString(?string $value): ?string

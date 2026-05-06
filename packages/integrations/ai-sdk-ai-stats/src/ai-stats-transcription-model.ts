@@ -3,6 +3,7 @@ import type {
   TranscriptionModelV3CallOptions,
 } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
+import { mapAIStatsProviderMetadata } from './map-ai-stats-provider-metadata.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
 /**
@@ -85,6 +86,9 @@ export class AIStatsTranscriptionModel implements TranscriptionModelV3 {
 
     // Parse response
     const data = await response.json();
+    const responseHeaders = Object.fromEntries(
+      Array.from(response.headers as any) as [string, string][]
+    );
 
     return {
       text: data.text,
@@ -96,10 +100,11 @@ export class AIStatsTranscriptionModel implements TranscriptionModelV3 {
       language: data.language,
       durationInSeconds: data.duration,
       warnings: [],
+      providerMetadata: mapAIStatsProviderMetadata(data, responseHeaders),
       response: {
         timestamp: new Date(),
         modelId: this.modelId,
-        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
+        headers: responseHeaders,
         body: data,
       },
     };

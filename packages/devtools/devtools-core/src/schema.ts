@@ -12,15 +12,25 @@ export const EndpointTypeSchema = z.enum([
   "audio.transcriptions",
   "audio.translations",
   "video.generations",
+  "video.list",
+  "video.retrieve",
+  "video.cancel",
   "embeddings",
   "moderations",
   "responses",
   "batches.create",
   "batches.retrieve",
+  "batches.cancel",
   "files.list",
   "files.retrieve",
   "files.upload",
+  "endpoints.list",
+  "organisations.list",
+  "pricing.models",
+  "pricing.calculate",
+  "key.current",
   "models.list",
+  "models.team",
   "providers",
   "credits",
   "activity",
@@ -31,7 +41,12 @@ export const EndpointTypeSchema = z.enum([
   "provisioning.keys.create",
   "provisioning.keys.get",
   "provisioning.keys.update",
-  "provisioning.keys.delete"
+  "provisioning.keys.delete",
+  "provisioning.workspaces.list",
+  "provisioning.workspaces.get",
+  "provisioning.workspaces.create",
+  "provisioning.workspaces.update",
+  "provisioning.workspaces.delete"
 ]);
 
 export type EndpointType = z.infer<typeof EndpointTypeSchema>;
@@ -95,6 +110,29 @@ export const CostInfoSchema = z.object({
 export type CostInfo = z.infer<typeof CostInfoSchema>;
 
 /**
+ * Provider-level routing attempt metadata.
+ * Shared across SDKs so the viewer can render multi-provider failover consistently.
+ */
+export const ProviderAttemptSchema = z.object({
+  provider: z.string(),
+  provider_label: z.string().optional(),
+  request_id: z.string().optional(),
+  status_code: z.number().optional(),
+  status_text: z.string().optional(),
+  outcome: z.string().optional(),
+  duration_ms: z.number().optional(),
+  latency_ms: z.number().optional(),
+  generation_ms: z.number().optional(),
+  throughput: z.number().optional(),
+  started_at: z.number().optional(),
+  completed_at: z.number().optional(),
+  error_code: z.string().optional(),
+  error_message: z.string().optional()
+});
+
+export type ProviderAttempt = z.infer<typeof ProviderAttemptSchema>;
+
+/**
  * Metadata about the API request
  */
 export const MetadataSchema = z.object({
@@ -106,7 +144,17 @@ export const MetadataSchema = z.object({
   cost: CostInfoSchema.optional(),
   model: z.string().optional(),
   provider: z.string().optional(),
+  request_id: z.string().optional(),
+  session_id: z.string().optional(),
+  upstream_request_id: z.string().optional(),
+  native_response_id: z.string().optional(),
   status_code: z.number().optional(),
+  latency_ms: z.number().optional(),
+  generation_ms: z.number().optional(),
+  throughput: z.number().optional(),
+  finish_reason: z.string().optional(),
+  pricing_lines: z.array(z.any()).optional(),
+  provider_attempts: z.array(ProviderAttemptSchema).optional(),
   headers: z.record(z.string(), z.string()).optional()
 });
 

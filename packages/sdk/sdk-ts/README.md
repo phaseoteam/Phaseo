@@ -45,8 +45,48 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
 - `client.models.list(...)`
+- `client.listOrganisations(...)` for paginated `/organisations` discovery
+- `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
+- `client.calculatePricing(...)` for `/pricing/calculate` usage estimation
+- `client.listProviders(...)`, `client.getCredits(...)`, `client.getActivity(...)`, and `client.getAnalytics(...)` for provider discovery and management-key usage surfaces
+- `client.listApiKeys(...)` for management-key `/keys` discovery
+- `client.createApiKey(...)`, `client.updateApiKey(id, ...)`, and `client.deleteApiKey(id)` for management-key API-key lifecycle changes
+- `client.getApiKey(id)` for management-key `/keys/{id}` lookup
+- `client.listWorkspaces(...)`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, and `client.deleteWorkspace(id)` for management-key workspace lifecycle management
+- `client.getCurrentApiKey()`
+- `client.getHealth()`
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
+
+Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
+
+Use `provider_availability_reason` with `availability: "all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability: "all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
+
+```ts
+const models = await client.models.list({
+  provider: ["anthropic"],
+  provider_status: ["beta", "not_ready"],
+  provider_availability_reason: ["preview_only", "provider_not_ready"],
+  capability_status: ["coming_soon", "internal_testing"],
+  availability: "all",
+});
+```
+
+## Async job websocket helpers
+
+Batch and video operations can expose a websocket lifecycle stream at `/v1/async/{kind}/{id}/ws`.
+
+```ts
+const batchSocketUrl = client.batches.websocketUrl("batch_123", {
+  intervalMs: 1500,
+});
+
+const videoSocketUrl = client.videos.websocketUrl("video_123", {
+  closeOnTerminal: true,
+});
+
+const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
+```
 
 ## Free and paid models
 
@@ -96,5 +136,6 @@ npx @ai-stats/devtools-viewer
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:ts`
-- Build package: `pnpm --filter @ai-stats/ts-sdk build`
-- Smoke tests: `pnpm --filter @ai-stats/ts-sdk test:smoke`
+- Run local compatibility tests: `pnpm --filter @ai-stats/sdk test`
+- Build package: `pnpm --filter @ai-stats/sdk build`
+- Run live smoke tests explicitly: `pnpm --filter @ai-stats/sdk test:smoke`

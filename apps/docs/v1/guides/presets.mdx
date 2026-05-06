@@ -11,8 +11,32 @@ Presets are reusable configurations that help teams standardize prompts, model p
 - Allowed models or model families.
 - Provider allow/ignore lists for routing preferences.
 - Default parameters (temperature, top_p, max_tokens, and similar settings).
+- Optional reasoning defaults for supported models.
 
 Preset names are prefixed with `@` to keep them easy to recognize.
+
+## How preset merging works
+
+When a request resolves with a preset in gateway context, the preset is applied before provider routing:
+
+- Default parameters only fill fields that are missing in the request body. They do not overwrite values already provided by the caller.
+- If the request already has a system message, the preset prompt is prepended. If the request uses an Anthropic-style `system` field, the preset prompt is prepended there instead.
+- Provider allow/ignore lists are applied before provider selection, so they narrow the fallback pool instead of acting as a cosmetic label.
+- Requests outside the preset's allowed model list are rejected early instead of being silently rerouted.
+
+This makes presets the main public surface for reusable request defaults and lightweight compatibility transforms without forcing every caller to duplicate the same prompt or parameter logic.
+
+## Current public preset surface
+
+The dashboard preset flow is intentionally scoped to a stable, explicit subset of request shaping:
+
+- system prompt injection
+- model allowlists
+- provider allow/ignore routing constraints
+- decoding and generation defaults
+- reasoning defaults
+
+If you need more complex caller-specific transforms, keep them in one application boundary layer and let presets carry the reusable team-wide defaults.
 
 ## Where to manage presets
 
@@ -23,3 +47,10 @@ Create and manage presets in **Dashboard -> Settings -> Presets**. Use them cons
 - Standardize system prompts across multiple services.
 - Constrain routing to approved providers for compliance.
 - Keep default parameters consistent across environments.
+- Give migration projects one durable place to carry prompt, routing, and parameter defaults while the application code stays mostly unchanged.
+
+## Related guides
+
+- [Routing and Fallbacks](./routing-and-fallbacks.mdx)
+- [Inference Parameters](./inference-parameters.mdx)
+- [Feature Parity Matrix](../migration-guides/feature-parity-matrix.mdx)

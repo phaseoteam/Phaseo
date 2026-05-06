@@ -3,23 +3,18 @@ title: "Moderations"
 description: "Call /moderations with the Ruby SDK."
 ---
 
-**Method**: `ModerationsApi#moderations_post`.
+**Methods**: `client.generate_moderation(...)`, `client.create_moderation(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-moderations_api = AIStatsSdk::ModerationsApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
 
-request = AIStatsSdk::ModerationRequest.new(
-  model: 'openai/omni-moderation-latest',
-  input: 'Text to classify'
+moderation = client.create_moderation(
+  "model" => "openai/omni-moderation-latest",
+  "input" => "Text to classify"
 )
-
-moderation = moderations_api.moderations_post(request)
 ```
 
 ### Key parameters

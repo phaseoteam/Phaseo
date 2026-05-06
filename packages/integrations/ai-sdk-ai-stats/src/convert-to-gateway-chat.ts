@@ -121,7 +121,7 @@ export function convertToGatewayChatRequest(
   }
 
   // Add response format for structured output modes
-  if (mode?.type === 'object-json') {
+  if (mode?.type === 'object-json' || options.responseFormat?.type === 'json') {
     body.response_format = { type: 'json_object' };
   }
 

@@ -48,8 +48,47 @@ for chunk in client.stream_text(
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
 - `client.models.list(...)`
+- `client.list_organisations(...)` for paginated `/organisations` discovery
+- `client.list_pricing_models(...)` for `/pricing/models` catalogue pricing discovery
+- `client.calculate_pricing(...)` for `/pricing/calculate` usage estimation
+- `client.list_providers(...)`, `client.get_credits(...)`, `client.get_activity(...)`, and `client.get_analytics(...)` for provider discovery and management-key usage surfaces
+- `client.list_api_keys(...)` for management-key `/keys` discovery
+- `client.create_api_key(...)`, `client.update_api_key(key_id, ...)`, and `client.delete_api_key(key_id)` for management-key API-key lifecycle changes
+- `client.get_api_key(key_id)` for management-key `/keys/{id}` lookup
+- `client.list_workspaces(...)`, `client.get_workspace(workspace_id)`, `client.create_workspace(...)`, `client.update_workspace(workspace_id, ...)`, and `client.delete_workspace(workspace_id)` for management-key workspace lifecycle management
+- `client.get_current_api_key()`
+- `client.get_health()`
 - `client.models.get_deprecation_info(model_id)`
 - `client.models.validate(model_id)`
+
+Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
+
+Use `provider_availability_reason` with `availability="all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability="all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
+
+```python
+models = client.get_models({
+    "provider": ["anthropic"],
+    "provider_status": ["beta", "not_ready"],
+    "provider_availability_reason": ["preview_only", "provider_not_ready"],
+    "capability_status": ["coming_soon", "internal_testing"],
+    "availability": "all",
+})
+```
+
+## Async job websocket helpers
+
+Batch and video operations can expose a websocket lifecycle stream at `/v1/async/{kind}/{id}/ws`.
+
+```python
+batch_socket_url = client.batches.websocket_url("batch_123", interval_ms=1500)
+
+video_socket_url = client.videos.websocket_url(
+    "video_123",
+    close_on_terminal=True,
+)
+
+generic_socket_url = client.get_async_job_websocket_url("video", "video_123")
+```
 
 ## Free and paid models
 

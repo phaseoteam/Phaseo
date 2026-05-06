@@ -12,11 +12,9 @@ The AI Stats Python SDK currently provides a synchronous client for the AI Stats
 ## Features
 
 -   Typed request models generated from the OpenAPI spec.
--   Built-in helpers for chat, responses, messages, embeddings, and moderations.
+-   Built-in helpers for chat, responses, messages, images, audio, embeddings, moderations, files, batches, generations, and async video jobs.
 -   Streaming helpers for text, responses, and messages (`stream_*` iterators).
--   Control-plane helpers such as models, health, providers, credits, and activity.
-
-Some surfaces are still stubbed in the Python SDK and return a `coming_soon` payload (for example images, audio, video, files, batches, and generation lookup).
+-   Control-plane helpers such as models, endpoints, organisations, pricing discovery/calculation, API-key lifecycle, workspace lifecycle, current-key inspection, health, providers, credits, activity, and analytics.
 
 ## Quick example
 
@@ -39,5 +37,8 @@ print(response.get("id"))
 
 -   `AIStats` client
 -   `chat.completions.create(...)` and `responses.create(...)` compatibility helpers
+-   Resource helpers such as `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   Async-job websocket URL helpers for batch and video lifecycle streams
+-   Model lifecycle helpers such as `get_model_deprecation_info(...)` and `validate_model(...)`
 -   Streaming iterators for text, responses, and messages
 -   Generated request/response models in `ai_stats.models`

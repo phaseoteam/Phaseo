@@ -3,16 +3,15 @@ title: "Generation lookup"
 description: "Call /generations to retrieve a prior generation record."
 ---
 
-**Method**: `Operations.getGeneration(...)`
+**Method**: `client.getGeneration(...)`
 
 ```java
-import ai.stats.gen.Operations;
-import java.util.HashMap;
-import java.util.Map;
+import ai.stats.sdk.AIStats;
 
-Map<String, String> query = new HashMap<>();
-query.put("id", "G-01ABC123");
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
 
-Object generation = Operations.getGeneration(client, null, query, null, null);
+Object generation = client.getGeneration("G-01ABC123");
 System.out.println(String.valueOf(generation));
 ```
+
+When request details were stored, the returned generation record also includes `replay_supported` and `replay_request` so you can resubmit the captured payload to the original endpoint.

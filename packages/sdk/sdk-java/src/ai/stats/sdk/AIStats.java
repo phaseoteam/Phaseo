@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -80,8 +82,10 @@ public final class AIStats {
 	private final AIStatsLogger logger;
 	private final TelemetryRecorder telemetry;
 	private final ModelLifecycleResolver lifecycleResolver;
+	private final String basePath;
 	private final Set<String> warnedModels = new HashSet<>();
 	private final Map<String, ModelLifecycleInfo> lifecycleCache = new HashMap<>();
+	public final AsyncJobsResource asyncJobs;
 
 	public AIStats() {
 		this(resolveApiKey(null), DEFAULT_BASE_URL);
@@ -127,10 +131,11 @@ public final class AIStats {
 		DevtoolsConfig devtoolsConfig
 	) {
 		String resolvedApiKey = resolveApiKey(apiKey);
+		this.basePath = normalizeBasePath(basePath);
 		Map<String, String> headers = new HashMap<>();
 		headers.put("Authorization", "Bearer " + resolvedApiKey);
 		this.rawClient = new Client(
-			basePath,
+			this.basePath,
 			httpClient == null ? java.net.http.HttpClient.newHttpClient() : httpClient,
 			headers
 		);
@@ -139,10 +144,93 @@ public final class AIStats {
 		this.logger = logger;
 		this.telemetry = new TelemetryRecorder(devtoolsConfig, "2.0.3");
 		this.lifecycleResolver = lifecycleResolver == null ? this::fetchModelLifecycle : lifecycleResolver;
+		this.asyncJobs = new AsyncJobsResource(this);
 	}
 
 	public Client rawClient() {
 		return rawClient;
+	}
+
+	public String getAsyncJobWebSocketUrl(String kind, String jobId) {
+		return getAsyncJobWebSocketUrl(kind, jobId, null, null);
+	}
+
+	public String getAsyncJobWebSocketUrl(
+		String kind,
+		String jobId,
+		Integer intervalMs,
+		Boolean closeOnTerminal
+	) {
+		String normalizedKind = asTrimmedString(kind);
+		String normalizedJobId = asTrimmedString(jobId);
+		if (normalizedKind == null) {
+			throw new IllegalArgumentException("kind is required");
+		}
+		if (normalizedJobId == null) {
+			throw new IllegalArgumentException("jobId is required");
+		}
+
+		String wsBasePath = basePath.startsWith("https://")
+			? "wss://" + basePath.substring("https://".length())
+			: basePath.startsWith("http://")
+				? "ws://" + basePath.substring("http://".length())
+				: basePath;
+		StringBuilder url = new StringBuilder(wsBasePath);
+		url.append("/async/")
+			.append(encodePathSegment(normalizedKind))
+			.append("/")
+			.append(encodePathSegment(normalizedJobId))
+			.append("/ws");
+		StringBuilder query = new StringBuilder();
+		if (intervalMs != null) {
+			query.append("interval_ms=").append(intervalMs);
+		}
+		if (closeOnTerminal != null) {
+			if (query.length() > 0) {
+				query.append("&");
+			}
+			query.append("close_on_terminal=").append(closeOnTerminal);
+		}
+		if (query.length() > 0) {
+			url.append("?").append(query);
+		}
+		return url.toString();
+	}
+
+	private static String encodePathSegment(String value) {
+		return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+	}
+
+	public String getBatchWebSocketUrl(String batchId) {
+		return getAsyncJobWebSocketUrl("batch", batchId, null, null);
+	}
+
+	public String getBatchWebSocketUrl(String batchId, Integer intervalMs, Boolean closeOnTerminal) {
+		return getAsyncJobWebSocketUrl("batch", batchId, intervalMs, closeOnTerminal);
+	}
+
+	public String getVideoWebSocketUrl(String videoId) {
+		return getAsyncJobWebSocketUrl("video", videoId, null, null);
+	}
+
+	public String getVideoWebSocketUrl(String videoId, Integer intervalMs, Boolean closeOnTerminal) {
+		return getAsyncJobWebSocketUrl("video", videoId, intervalMs, closeOnTerminal);
+	}
+
+	public static final class AsyncJobsResource {
+		private final AIStats parent;
+
+		private AsyncJobsResource(AIStats parent) {
+			this.parent = parent;
+		}
+
+		public String websocketUrl(String kind, String jobId) {
+			return parent.getAsyncJobWebSocketUrl(kind, jobId);
+		}
+
+		public String websocketUrl(String kind, String jobId, Integer intervalMs, Boolean closeOnTerminal) {
+			return parent.getAsyncJobWebSocketUrl(kind, jobId, intervalMs, closeOnTerminal);
+		}
 	}
 
 	public JsonNode request(
@@ -243,6 +331,64 @@ public final class AIStats {
 		);
 	}
 
+	public JsonNode createVideo(Object request) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.generations",
+			request,
+			true,
+			() -> parse(Operations.createVideo(rawClient, null, null, null, stringify(request)))
+		);
+	}
+
+	public JsonNode getVideo(String videoId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.retrieve",
+			Map.of("video_id", videoId),
+			false,
+			() -> {
+				Map<String, String> path = new HashMap<>();
+				path.put("video_id", videoId);
+				return parse(Operations.getVideo(rawClient, path, null, null, null));
+			}
+		);
+	}
+
+	public JsonNode cancelVideo(String videoId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.cancel",
+			Map.of("video_id", videoId),
+			false,
+			() -> parse(Operations.cancelVideo(rawClient, Map.of("video_id", videoId), null, null, null))
+		);
+	}
+
+	public JsonNode deleteVideo(String videoId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.delete",
+			Map.of("video_id", videoId),
+			false,
+			() -> parse(Operations.deleteVideo(rawClient, Map.of("video_id", videoId), null, null, null))
+		);
+	}
+
+	public JsonNode listVideoModels() throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.models",
+			null,
+			false,
+			() -> parse(Operations.listVideoModels(rawClient, null, null, null, null))
+		);
+	}
+
+	public JsonNode listVideos(Map<String, String> query) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.list",
+			query,
+			false,
+			() -> parse(Operations.listVideos(rawClient, null, query, null, null))
+		);
+	}
+
 	public JsonNode createModeration(Object request) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry(
 			"moderations",
@@ -301,8 +447,25 @@ public final class AIStats {
 		);
 	}
 
+	public JsonNode cancelBatch(String batchId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"batches.cancel",
+			Map.of("batch_id", batchId),
+			false,
+			() -> {
+				Map<String, String> path = new HashMap<>();
+				path.put("batch_id", batchId);
+				return parse(Operations.cancelBatch(rawClient, path, null, null, null));
+			}
+		);
+	}
+
 	public JsonNode listModels(Map<String, String> query) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry("models.list", query, false, () -> parse(Operations.listModels(rawClient, null, query, null, null)));
+	}
+
+	public JsonNode listTeamModels(Map<String, String> query) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("models.team", query, false, () -> parse(Operations.listTeamModels(rawClient, null, query, null, null)));
 	}
 
 	public JsonNode listProviders(Map<String, String> query) throws IOException, InterruptedException {
@@ -321,6 +484,97 @@ public final class AIStats {
 		return withLifecycleAndTelemetry("activity", query, false, () -> parse(Operations.getActivity(rawClient, null, query, null, null)));
 	}
 
+	public JsonNode getGeneration(String generationId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"generations.retrieve",
+			Map.of("id", generationId),
+			false,
+			() -> parse(Operations.getGeneration(rawClient, null, Map.of("id", generationId), null, null))
+		);
+	}
+
+	public JsonNode listEndpoints() throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("endpoints.list", Map.of(), false, () -> parse(Operations.listEndpoints(rawClient, null, null, null, null)));
+	}
+
+	public JsonNode listOrganisations(Map<String, String> query) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("organisations.list", query, false, () -> parse(Operations.listOrganisations(rawClient, null, query, null, null)));
+	}
+
+	public JsonNode listPricingModels(Map<String, String> query) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("pricing.models", query, false, () -> parse(Operations.listPricingModels(rawClient, null, query, null, null)));
+	}
+
+	public JsonNode calculatePricing(Object request) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"pricing.calculate",
+			request,
+			false,
+			() -> parse(Operations.calculatePricing(rawClient, null, null, null, stringify(request)))
+		);
+	}
+
+	public JsonNode listApiKeys(Map<String, String> query) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("provisioning.keys.list", query, false, () -> parse(Operations.listApiKeys(rawClient, null, query, null, null)));
+	}
+
+	public JsonNode createApiKey(Object request) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"provisioning.keys.create",
+			request,
+			false,
+			() -> parse(Operations.createApiKey(rawClient, null, null, null, stringify(request)))
+		);
+	}
+
+	public JsonNode getApiKey(String id) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("provisioning.keys.get", Map.of("id", id), false, () -> parse(Operations.getApiKey(rawClient, Map.of("id", id), null, null, null)));
+	}
+
+	public JsonNode updateApiKey(String id, Object request) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"provisioning.keys.update",
+			Map.of("id", id, "body", request),
+			false,
+			() -> parse(Operations.updateApiKey(rawClient, Map.of("id", id), null, null, stringify(request)))
+		);
+	}
+
+	public JsonNode deleteApiKey(String id) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"provisioning.keys.delete",
+			Map.of("id", id),
+			false,
+			() -> parse(Operations.deleteApiKey(rawClient, Map.of("id", id), null, null, null))
+		);
+	}
+
+	public JsonNode listWorkspaces(Map<String, String> query) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("provisioning.workspaces.list", query, false, () -> parse(Operations.listWorkspaces(rawClient, null, query, null, null)));
+	}
+
+	public JsonNode getWorkspace(String id) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("provisioning.workspaces.get", Map.of("id", id), false, () -> parse(Operations.getWorkspace(rawClient, Map.of("id", id), null, null, null)));
+	}
+
+	public JsonNode createWorkspace(Map<String, Object> body) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("provisioning.workspaces.create", body, false, () -> parse(Operations.createWorkspace(rawClient, null, null, null, stringify(body))));
+	}
+
+	public JsonNode updateWorkspace(String id, Map<String, Object> body) throws IOException, InterruptedException {
+		Map<String, Object> payload = new HashMap<>(body);
+		payload.put("id", id);
+		return withLifecycleAndTelemetry("provisioning.workspaces.update", payload, false, () -> parse(Operations.updateWorkspace(rawClient, Map.of("id", id), null, null, stringify(body))));
+	}
+
+	public JsonNode deleteWorkspace(String id) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("provisioning.workspaces.delete", Map.of("id", id), false, () -> parse(Operations.deleteWorkspace(rawClient, Map.of("id", id), null, null, null)));
+	}
+
+	public JsonNode getCurrentApiKey() throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry("key.current", Map.of(), false, () -> parse(Operations.getCurrentApiKey(rawClient, null, null, null, null)));
+	}
+
 	public JsonNode listFiles(Map<String, String> query) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry("files.list", query, false, () -> parse(Operations.listFiles(rawClient, null, query, null, null)));
 	}
@@ -335,6 +589,52 @@ public final class AIStats {
 				path.put("file_id", fileId);
 				return parse(Operations.retrieveFile(rawClient, path, null, null, null));
 			}
+		);
+	}
+
+	public byte[] retrieveFileContent(String fileId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"files.content",
+			Map.of("file_id", fileId),
+			false,
+			() -> rawClient.requestBytes(
+				"GET",
+				"/files/" + URLEncoder.encode(fileId, StandardCharsets.UTF_8).replace("+", "%20") + "/content",
+				null,
+				null,
+				null
+			)
+		);
+	}
+
+	public byte[] retrieveVideoContent(String videoId) throws IOException, InterruptedException {
+		return withLifecycleAndTelemetry(
+			"video.content",
+			Map.of("video_id", videoId),
+			false,
+			() -> rawClient.requestBytes(
+				"GET",
+				"/videos/" + URLEncoder.encode(videoId, StandardCharsets.UTF_8).replace("+", "%20") + "/content",
+				null,
+				null,
+				null
+			)
+		);
+	}
+
+	public JsonNode getVideoDownloadUrl(String videoId, Object request) throws IOException, InterruptedException {
+		Object body = request == null ? Map.of() : request;
+		return withLifecycleAndTelemetry(
+			"video.download_url",
+			Map.of("video_id", videoId, "body", body),
+			false,
+			() -> parse(rawClient.request(
+				"POST",
+				"/videos/" + URLEncoder.encode(videoId, StandardCharsets.UTF_8).replace("+", "%20") + "/download_url",
+				null,
+				null,
+				stringify(body)
+			))
 		);
 	}
 
@@ -641,6 +941,13 @@ public final class AIStats {
 			return null;
 		}
 		return value.trim();
+	}
+
+	private static String normalizeBasePath(String basePath) {
+		if (basePath == null || basePath.isBlank()) {
+			return DEFAULT_BASE_URL;
+		}
+		return basePath.replaceAll("/+$", "");
 	}
 
 	private static String resolveApiKey(String explicitApiKey) {

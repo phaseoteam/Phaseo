@@ -242,6 +242,7 @@ export type CreateAnthropicMessageParams = {
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
     };
+    session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
     system?:
@@ -447,26 +448,128 @@ export type CreateBatchParams = {
     };
     endpoint: string;
     input_file_id: string;
-    metadata?: {};
+    metadata?: {
+      [key: string]: unknown;
+    };
     provider?: {
       ignore?: string[];
       include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
+    session_id?: string;
+    webhook?: {
+      events?: string[];
+      secret?: string;
+      url?: string;
+    };
   };
 };
 
 /**
- * Placeholder endpoint. Batch creation is not implemented yet.
+ * Creates an async batch job and returns the upstream batch object. The gateway also accepts `session_id` and `webhook` for observability and async notifications.
  */
 export async function createBatch(
   client: Client,
   args: CreateBatchParams = {},
-): Promise<unknown> {
+): Promise<{
+  billing?: {
+    billed?: boolean;
+    charged?: boolean;
+    cost_nanos?: number;
+    cost_usd?: number;
+    finalized_at?: string;
+    pricing_breakdown?: {
+      [key: string]: unknown;
+    };
+    reason?: string;
+  };
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  metadata?: {};
+  object?: string;
+  output_file_id?: string;
+  pricing_lines?: {
+    [key: string]: unknown;
+  }[];
+  provider?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  request_id?: string;
+  session_id?: string;
+  status?: string;
+  webhook?: {
+    events?: string[];
+    secret?: string;
+    url?: string;
+  };
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/batches";
-  return client.request<unknown>({
+  return client.request<{
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number;
+      cost_usd?: number;
+      finalized_at?: string;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+    };
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    metadata?: {};
+    object?: string;
+    output_file_id?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      events?: string[];
+      secret?: string;
+      url?: string;
+    };
+  }>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -490,26 +593,128 @@ export type CreateBatchAliasParams = {
     };
     endpoint: string;
     input_file_id: string;
-    metadata?: {};
+    metadata?: {
+      [key: string]: unknown;
+    };
     provider?: {
       ignore?: string[];
       include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
+    session_id?: string;
+    webhook?: {
+      events?: string[];
+      secret?: string;
+      url?: string;
+    };
   };
 };
 
 /**
- * Alias of /batches. Currently not implemented.
+ * Alias of /batches.
  */
 export async function createBatchAlias(
   client: Client,
   args: CreateBatchAliasParams = {},
-): Promise<unknown> {
+): Promise<{
+  billing?: {
+    billed?: boolean;
+    charged?: boolean;
+    cost_nanos?: number;
+    cost_usd?: number;
+    finalized_at?: string;
+    pricing_breakdown?: {
+      [key: string]: unknown;
+    };
+    reason?: string;
+  };
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  metadata?: {};
+  object?: string;
+  output_file_id?: string;
+  pricing_lines?: {
+    [key: string]: unknown;
+  }[];
+  provider?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  request_id?: string;
+  session_id?: string;
+  status?: string;
+  webhook?: {
+    events?: string[];
+    secret?: string;
+    url?: string;
+  };
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/batch";
-  return client.request<unknown>({
+  return client.request<{
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number;
+      cost_usd?: number;
+      finalized_at?: string;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+    };
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    metadata?: {};
+    object?: string;
+    output_file_id?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      events?: string[];
+      secret?: string;
+      url?: string;
+    };
+  }>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -678,6 +883,7 @@ export type CreateChatCompletionParams = {
     safety_identifier?: string | null;
     seed?: number;
     service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+    session_id?: string;
     stop?: string | string[];
     store?: boolean;
     stream?: boolean;
@@ -791,7 +997,9 @@ export async function createChatCompletion(
   created?: number;
   id?: string;
   model?: string;
+  nativeResponseId?: string | null;
   object?: string;
+  provider?: string;
   usage?: {
     completion_tokens?: number;
     prompt_tokens?: number;
@@ -879,7 +1087,9 @@ export async function createChatCompletion(
     created?: number;
     id?: string;
     model?: string;
+    nativeResponseId?: string | null;
     object?: string;
+    provider?: string;
     usage?: {
       completion_tokens?: number;
       prompt_tokens?: number;
@@ -1532,6 +1742,7 @@ export type CreateResponseParams = {
     };
     safety_identifier?: string | null;
     service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+    session_id?: string;
     store?: boolean;
     stream?: boolean;
     temperature?: number;
@@ -1942,10 +2153,18 @@ export async function createVideo(
   progress?: number | null;
   progress_source?: string;
   provider?: string;
+  request_id?: string;
   seconds?: number;
+  session_id?: string;
   size?: string;
   started_at?: number | string | null;
-  status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -1992,10 +2211,18 @@ export async function createVideo(
     progress?: number | null;
     progress_source?: string;
     provider?: string;
+    request_id?: string;
     seconds?: number;
+    session_id?: string;
     size?: string;
     started_at?: number | string | null;
-    status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     usage?: {
       cost?: number;
       is_byok?: boolean;
@@ -2101,10 +2328,18 @@ export async function createVideoAlias(
   progress?: number | null;
   progress_source?: string;
   provider?: string;
+  request_id?: string;
   seconds?: number;
+  session_id?: string;
   size?: string;
   started_at?: number | string | null;
-  status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -2151,10 +2386,18 @@ export async function createVideoAlias(
     progress?: number | null;
     progress_source?: string;
     provider?: string;
+    request_id?: string;
     seconds?: number;
+    session_id?: string;
     size?: string;
     started_at?: number | string | null;
-    status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     usage?: {
       cost?: number;
       is_byok?: boolean;
@@ -2808,6 +3051,7 @@ export async function getGeneration(
   app_id?: string | null;
   byok?: boolean;
   cost_nanos?: number;
+  created_at?: string;
   currency?: string;
   endpoint?: string;
   error_code?: string | null;
@@ -2819,6 +3063,10 @@ export async function getGeneration(
   native_response_id?: string | null;
   pricing_lines?: {}[];
   provider?: string;
+  replay_request?: {
+    [key: string]: unknown;
+  } | null;
+  replay_supported?: boolean;
   request_id?: string;
   status_code?: number;
   stream?: boolean;
@@ -2837,6 +3085,7 @@ export async function getGeneration(
     app_id?: string | null;
     byok?: boolean;
     cost_nanos?: number;
+    created_at?: string;
     currency?: string;
     endpoint?: string;
     error_code?: string | null;
@@ -2848,6 +3097,10 @@ export async function getGeneration(
     native_response_id?: string | null;
     pricing_lines?: {}[];
     provider?: string;
+    replay_request?: {
+      [key: string]: unknown;
+    } | null;
+    replay_supported?: boolean;
     request_id?: string;
     status_code?: number;
     stream?: boolean;
@@ -3018,10 +3271,18 @@ export async function getVideo(
   progress?: number | null;
   progress_source?: string;
   provider?: string;
+  request_id?: string;
   seconds?: number;
+  session_id?: string;
   size?: string;
   started_at?: number | string | null;
-  status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -3068,10 +3329,18 @@ export async function getVideo(
     progress?: number | null;
     progress_source?: string;
     provider?: string;
+    request_id?: string;
     seconds?: number;
+    session_id?: string;
     size?: string;
     started_at?: number | string | null;
-    status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     usage?: {
       cost?: number;
       is_byok?: boolean;
@@ -3139,10 +3408,18 @@ export async function getVideoAlias(
   progress?: number | null;
   progress_source?: string;
   provider?: string;
+  request_id?: string;
   seconds?: number;
+  session_id?: string;
   size?: string;
   started_at?: number | string | null;
-  status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -3189,10 +3466,18 @@ export async function getVideoAlias(
     progress?: number | null;
     progress_source?: string;
     provider?: string;
+    request_id?: string;
     seconds?: number;
+    session_id?: string;
     size?: string;
     started_at?: number | string | null;
-    status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     usage?: {
       cost?: number;
       is_byok?: boolean;
@@ -3598,7 +3883,7 @@ export type ListFilesParams = {
 };
 
 /**
- * Placeholder endpoint. File listing is not implemented yet.
+ * Currently returns `not_supported` on the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
  */
 export async function listFiles(
   client: Client,
@@ -4777,15 +5062,109 @@ export type RetrieveBatchParams = {
 };
 
 /**
- * Placeholder endpoint. Batch retrieval is not implemented yet.
+ * Retrieves a previously created batch job.
  */
 export async function retrieveBatch(
   client: Client,
   args: RetrieveBatchParams = {},
-): Promise<unknown> {
+): Promise<{
+  billing?: {
+    billed?: boolean;
+    charged?: boolean;
+    cost_nanos?: number;
+    cost_usd?: number;
+    finalized_at?: string;
+    pricing_breakdown?: {
+      [key: string]: unknown;
+    };
+    reason?: string;
+  };
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  metadata?: {};
+  object?: string;
+  output_file_id?: string;
+  pricing_lines?: {
+    [key: string]: unknown;
+  }[];
+  provider?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  request_id?: string;
+  session_id?: string;
+  status?: string;
+  webhook?: {
+    events?: string[];
+    secret?: string;
+    url?: string;
+  };
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}`;
-  return client.request<unknown>({
+  return client.request<{
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number;
+      cost_usd?: number;
+      finalized_at?: string;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+    };
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    metadata?: {};
+    object?: string;
+    output_file_id?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      events?: string[];
+      secret?: string;
+      url?: string;
+    };
+  }>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4804,15 +5183,109 @@ export type RetrieveBatchAliasParams = {
 };
 
 /**
- * Alias of /batches/{batch_id}. Currently not implemented.
+ * Alias of /batches/{batch_id}.
  */
 export async function retrieveBatchAlias(
   client: Client,
   args: RetrieveBatchAliasParams = {},
-): Promise<unknown> {
+): Promise<{
+  billing?: {
+    billed?: boolean;
+    charged?: boolean;
+    cost_nanos?: number;
+    cost_usd?: number;
+    finalized_at?: string;
+    pricing_breakdown?: {
+      [key: string]: unknown;
+    };
+    reason?: string;
+  };
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  metadata?: {};
+  object?: string;
+  output_file_id?: string;
+  pricing_lines?: {
+    [key: string]: unknown;
+  }[];
+  provider?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  request_id?: string;
+  session_id?: string;
+  status?: string;
+  webhook?: {
+    events?: string[];
+    secret?: string;
+    url?: string;
+  };
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}`;
-  return client.request<unknown>({
+  return client.request<{
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number;
+      cost_usd?: number;
+      finalized_at?: string;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+    };
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    metadata?: {};
+    object?: string;
+    output_file_id?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      events?: string[];
+      secret?: string;
+      url?: string;
+    };
+  }>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4831,15 +5304,33 @@ export type RetrieveFileParams = {
 };
 
 /**
- * Placeholder endpoint. File retrieval is not implemented yet.
+ * Retrieves metadata for a file that belongs to the authenticated workspace.
  */
 export async function retrieveFile(
   client: Client,
   args: RetrieveFileParams = {},
-): Promise<unknown> {
+): Promise<{
+  bytes?: number;
+  created_at?: number;
+  filename?: string;
+  id?: string;
+  object?: string;
+  purpose?: string;
+  status?: string;
+  status_details?: {};
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/files/${encodeURIComponent(String(path?.file_id))}`;
-  return client.request<unknown>({
+  return client.request<{
+    bytes?: number;
+    created_at?: number;
+    filename?: string;
+    id?: string;
+    object?: string;
+    purpose?: string;
+    status?: string;
+    status_details?: {};
+  }>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4858,7 +5349,7 @@ export type RetrieveFileContentParams = {
 };
 
 /**
- * Retrieves binary content for a previously uploaded file.
+ * Retrieves binary content for a previously uploaded file that belongs to the authenticated workspace.
  */
 export async function retrieveFileContent(
   client: Client,
@@ -5006,15 +5497,33 @@ export type UploadFileParams = {
 };
 
 /**
- * Placeholder endpoint. File upload is not implemented yet.
+ * Uploads a file for batch processing and returns the upstream file metadata.
  */
 export async function uploadFile(
   client: Client,
   args: UploadFileParams = {},
-): Promise<unknown> {
+): Promise<{
+  bytes?: number;
+  created_at?: number;
+  filename?: string;
+  id?: string;
+  object?: string;
+  purpose?: string;
+  status?: string;
+  status_details?: {};
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/files";
-  return client.request<unknown>({
+  return client.request<{
+    bytes?: number;
+    created_at?: number;
+    filename?: string;
+    id?: string;
+    object?: string;
+    purpose?: string;
+    status?: string;
+    status_details?: {};
+  }>({
     method: "POST",
     path: resolvedPath,
     query,

@@ -3,25 +3,19 @@ title: "TTS (Text to Speech)"
 description: "Call /audio/speech with the Ruby SDK."
 ---
 
-**Method**: `AudioApi#audio_speech_post`.
+**Method**: `client.generate_speech(...)` or `client.create_speech(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-audio_api = AIStatsSdk::AudioApi.new(api_client)
-
-request = AIStatsSdk::AudioSpeechRequest.new(
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+audio = client.generate_speech(
   model: 'openai/gpt-4o-mini-tts',
   input: 'Hello world',
   voice: 'alloy',
   format: 'mp3'
 )
-
-audio = audio_api.audio_speech_post(request)
 ```
 
 ### Key parameters

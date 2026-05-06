@@ -16,24 +16,27 @@ async function main() {
   console.log('Streaming text with Anthropic Claude...\n');
   console.log('📝 Generated Text:\n');
 
-  const { textStream, usage } = await streamText({
+  const result = streamText({
     model: aiStats('anthropic/claude-3-5-sonnet'),
     prompt: 'Write a short poem about TypeScript (4 lines max).',
   });
 
   // Stream the text as it's generated
-  for await (const chunk of textStream) {
+  for await (const chunk of result.textStream) {
     process.stdout.write(chunk);
   }
 
   console.log('\n');
 
   // Wait for usage stats
-  const usageStats = await usage;
+  const usageStats = await result.usage;
   console.log('\n📊 Usage:');
-  console.log(`- Prompt tokens: ${usageStats.promptTokens}`);
-  console.log(`- Completion tokens: ${usageStats.completionTokens}`);
-  console.log(`- Total tokens: ${usageStats.promptTokens + usageStats.completionTokens}`);
+  console.log(`- Input tokens: ${usageStats.inputTokens}`);
+  console.log(`- Output tokens: ${usageStats.outputTokens}`);
+  console.log(`- Total tokens: ${usageStats.inputTokens + usageStats.outputTokens}`);
+
+  console.log('\n🧭 Provider Metadata:');
+  console.log(JSON.stringify(await result.providerMetadata, null, 2));
 }
 
 main().catch(console.error);

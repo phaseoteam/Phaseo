@@ -7,6 +7,19 @@ using System.Threading.Tasks;
 
 namespace AiStats.Gen;
 
+public sealed class ApiErrorException : Exception
+{
+	public int StatusCode { get; }
+	public string ResponseBody { get; }
+
+	public ApiErrorException(int statusCode, string responseBody, string message)
+		: base(message)
+	{
+		StatusCode = statusCode;
+		ResponseBody = responseBody;
+	}
+}
+
 public sealed class Client
 {
 	private readonly HttpClient _http;
@@ -20,7 +33,7 @@ public sealed class Client
 		_headers = headers ?? new Dictionary<string, string>();
 	}
 
-	public async Task<T?> SendAsync<T>(string method, string path, Dictionary<string, string>? query = null, Dictionary<string, string>? headers = null, object? body = null)
+	private HttpRequestMessage BuildRequest(string method, string path, Dictionary<string, string>? query = null, Dictionary<string, string>? headers = null, object? body = null)
 	{
 		var url = _baseUrl + path;
 		if (query != null && query.Count > 0)
@@ -49,13 +62,43 @@ public sealed class Client
 			var json = JsonSerializer.Serialize(body);
 			request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 		}
+		return request;
+	}
+
+	private static string BuildErrorMessage(int statusCode, string responseBody)
+	{
+		var trimmed = responseBody?.Trim();
+		return string.IsNullOrWhiteSpace(trimmed)
+			? $"Request failed with status code {statusCode}."
+			: $"Request failed with status code {statusCode}: {trimmed}";
+	}
+
+	public async Task<T?> SendAsync<T>(string method, string path, Dictionary<string, string>? query = null, Dictionary<string, string>? headers = null, object? body = null)
+	{
+		var request = BuildRequest(method, path, query, headers, body);
 		var response = await _http.SendAsync(request).ConfigureAwait(false);
-		response.EnsureSuccessStatusCode();
 		var raw = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+		if (!response.IsSuccessStatusCode)
+		{
+			throw new ApiErrorException((int)response.StatusCode, raw, BuildErrorMessage((int)response.StatusCode, raw));
+		}
 		if (string.IsNullOrWhiteSpace(raw))
 		{
 			return default;
 		}
 		return JsonSerializer.Deserialize<T>(raw);
+	}
+
+	public async Task<byte[]> SendBytesAsync(string method, string path, Dictionary<string, string>? query = null, Dictionary<string, string>? headers = null, object? body = null)
+	{
+		var request = BuildRequest(method, path, query, headers, body);
+		var response = await _http.SendAsync(request).ConfigureAwait(false);
+		var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+		if (!response.IsSuccessStatusCode)
+		{
+			var raw = bytes.Length == 0 ? string.Empty : Encoding.UTF8.GetString(bytes);
+			throw new ApiErrorException((int)response.StatusCode, raw, BuildErrorMessage((int)response.StatusCode, raw));
+		}
+		return bytes;
 	}
 }

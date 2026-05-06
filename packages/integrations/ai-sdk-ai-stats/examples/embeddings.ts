@@ -24,6 +24,8 @@ async function main() {
   console.log(`- Dimension: ${singleResult.embedding.length}`);
   console.log(`- First 5 values: [${singleResult.embedding.slice(0, 5).join(', ')}...]`);
   console.log(`- Tokens used: ${singleResult.usage?.tokens ?? 'N/A'}`);
+  console.log('- Provider metadata:');
+  console.log(JSON.stringify(singleResult.providerMetadata ?? {}, null, 2));
 
   // Batch embeddings
   console.log('\n\nGenerating batch embeddings...');
@@ -40,6 +42,8 @@ async function main() {
   console.log(`- Number of embeddings: ${batchResult.embeddings.length}`);
   console.log(`- Dimension: ${batchResult.embeddings[0].length}`);
   console.log(`- Total tokens used: ${batchResult.usage?.tokens ?? 'N/A'}`);
+  console.log('- Provider metadata:');
+  console.log(JSON.stringify(batchResult.providerMetadata ?? {}, null, 2));
 
   // Compute similarity between first two (AI-related) and last (weather)
   const cosineSimilarity = (a: number[], b: number[]) => {

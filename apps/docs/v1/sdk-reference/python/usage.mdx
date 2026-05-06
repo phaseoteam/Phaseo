@@ -98,29 +98,50 @@ credits = client.get_credits({"team_id": "your-team-id"})
 activity = client.get_activity({"team_id": "your-team-id", "days": 30})
 ```
 
-## Endpoints currently returning `coming_soon`
-
-These helpers exist in the SDK but currently return a placeholder payload:
-
-- `generate_image`, `generate_image_edit`
-- `generate_speech`, `generate_transcription`, `generate_translation`
-- `generate_video`
-- `create_batch`, `get_batch`
-- `upload_file`, `list_files`, `get_file`
-- `get_generation`
+## Images and audio
 
 ```python
-placeholder = client.generate_video(
-    {"model": "openai/gpt-video-1", "prompt": "A mountain sunrise"}
+image = client.generate_image(
+    {"model": "openai/gpt-image-1", "prompt": "A lighthouse at golden hour"}
 )
 
-print(placeholder)
-# {
-#   "status": "coming_soon",
-#   "endpoint": "videos",
-#   "message": "This endpoint is not yet supported in the SDK.",
-#   "payload": {...}
-# }
+transcription = client.generate_transcription(
+    {"model": "openai/gpt-4o-transcribe", "audio_b64": "base64-audio"}
+)
+
+speech = client.generate_speech(
+    {"model": "openai/gpt-4o-mini-tts", "input": "Hello world"}
+)
+```
+
+## Batches
+
+```python
+batch = client.create_batch(
+    {
+        "endpoint": "responses",
+        "input_file_id": "file_123",
+        "completion_window": "24h",
+        "session_id": "agent-run-42",
+    }
+)
+
+status = client.get_batch(batch["id"])
+```
+
+## Files, generations, and video jobs
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+
+generation = client.get_generation("G-01ABC...")
+
+job = client.generate_video(
+    {"model": "openai/sora-2", "prompt": "A mountain sunrise"}
+)
 ```
 
 ## Error handling

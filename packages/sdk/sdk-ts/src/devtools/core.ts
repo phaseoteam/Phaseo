@@ -10,15 +10,25 @@ export type EndpointType =
   | "audio.transcriptions"
   | "audio.translations"
   | "video.generations"
+  | "video.list"
+  | "video.retrieve"
+  | "video.cancel"
   | "embeddings"
   | "moderations"
   | "responses"
   | "batches.create"
   | "batches.retrieve"
+  | "batches.cancel"
   | "files.list"
   | "files.retrieve"
   | "files.upload"
+  | "endpoints.list"
+  | "organisations.list"
+  | "pricing.models"
+  | "pricing.calculate"
+  | "key.current"
   | "models.list"
+  | "models.team"
   | "providers"
   | "credits"
   | "activity"
@@ -29,7 +39,12 @@ export type EndpointType =
   | "provisioning.keys.create"
   | "provisioning.keys.get"
   | "provisioning.keys.update"
-  | "provisioning.keys.delete";
+  | "provisioning.keys.delete"
+  | "provisioning.workspaces.list"
+  | "provisioning.workspaces.get"
+  | "provisioning.workspaces.create"
+  | "provisioning.workspaces.update"
+  | "provisioning.workspaces.delete";
 
 export type SdkIdentifier =
   | "typescript"
@@ -68,6 +83,23 @@ export type CostInfo = {
   total_cost: number;
 };
 
+export type ProviderAttempt = {
+  provider: string;
+  provider_label?: string;
+  request_id?: string;
+  status_code?: number;
+  status_text?: string;
+  outcome?: string;
+  duration_ms?: number;
+  latency_ms?: number;
+  generation_ms?: number;
+  throughput?: number;
+  started_at?: number;
+  completed_at?: number;
+  error_code?: string;
+  error_message?: string;
+};
+
 export type Metadata = {
   sdk: SdkIdentifier;
   sdk_version: string;
@@ -77,7 +109,17 @@ export type Metadata = {
   cost?: CostInfo;
   model?: string;
   provider?: string;
+  request_id?: string;
+  session_id?: string;
+  upstream_request_id?: string;
+  native_response_id?: string;
   status_code?: number;
+  latency_ms?: number;
+  generation_ms?: number;
+  throughput?: number;
+  finish_reason?: string;
+  pricing_lines?: Array<Record<string, any> | string | number | boolean | null>;
+  provider_attempts?: ProviderAttempt[];
   headers?: Record<string, string>;
 };
 

@@ -8,7 +8,7 @@
  */
 
 import { aiStats } from '../src/index.js';
-import { transcribe } from 'ai';
+import { experimental_transcribe } from 'ai';
 import { readFileSync } from 'fs';
 
 async function main() {
@@ -23,10 +23,12 @@ async function main() {
     const audioData = readFileSync(audioFilePath);
 
     console.log('Transcribing audio with Whisper...');
-    const result = await transcribe({
+    const result = await experimental_transcribe({
       model: aiStats.transcriptionModel('openai/whisper-1'),
-      audioData: new Blob([audioData], { type: 'audio/mp3' }),
-      language: 'en', // Optional: specify language
+      audio: audioData,
+      providerOptions: {
+        openai: { language: 'en' }, // Optional: specify language
+      },
     });
 
     console.log('\n📝 Transcription:');
@@ -35,7 +37,7 @@ async function main() {
     if (result.segments) {
       console.log('\n⏱️  Segments:');
       result.segments.forEach((segment, i) => {
-        console.log(`  ${i + 1}. [${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s]: ${segment.text}`);
+        console.log(`  ${i + 1}. [${segment.startSecond.toFixed(2)}s - ${segment.endSecond.toFixed(2)}s]: ${segment.text}`);
       });
     }
 
@@ -43,9 +45,12 @@ async function main() {
       console.log(`\n🌐 Detected Language: ${result.language}`);
     }
 
-    if (result.duration) {
-      console.log(`⏱️  Duration: ${result.duration.toFixed(2)}s`);
+    if (result.durationInSeconds) {
+      console.log(`⏱️  Duration: ${result.durationInSeconds.toFixed(2)}s`);
     }
+
+    console.log('\n- Provider metadata:');
+    console.log(JSON.stringify(result.providerMetadata ?? {}, null, 2));
 
     console.log('\n✅ Transcription example complete!');
   } catch (error: any) {

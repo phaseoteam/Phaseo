@@ -36,10 +36,18 @@ export interface VideoGenerationResponse {
   progress?: number | null;
   progress_source?: string;
   provider?: string;
+  request_id?: string;
   seconds?: number;
+  session_id?: string;
   size?: string;
   started_at?: number | string | null;
-  status?: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;

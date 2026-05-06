@@ -16,6 +16,22 @@ type Client struct {
 	Headers    map[string]string
 }
 
+type HTTPError struct {
+	StatusCode int
+	Status     string
+	Body       []byte
+}
+
+func (e *HTTPError) Error() string {
+	if e == nil {
+		return "http error"
+	}
+	if text := strings.TrimSpace(string(e.Body)); text != "" {
+		return fmt.Sprintf("request failed: %s: %s", e.Status, text)
+	}
+	return fmt.Sprintf("request failed: %s", e.Status)
+}
+
 func NewClient(baseURL string) *Client {
 	return &Client{
 		BaseURL:    strings.TrimRight(baseURL, "/"),
@@ -59,10 +75,14 @@ func (c *Client) Request(method string, path string, query map[string]string, he
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("request failed: %s", resp.Status)
+	data, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, readErr
 	}
-	return io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status, Body: data}
+	}
+	return data, nil
 }
 
 func DecodeJSON[T any](data []byte, out *T) error {

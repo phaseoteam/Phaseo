@@ -1,20 +1,12 @@
 ---
 title: "Generation lookup"
-description: "Python SDK placeholder for /generations lookup."
+description: "Call /generations lookup with the Python SDK."
 ---
-
-<Note type="warning">
-  `client.get_generation(...)` currently returns a `coming_soon` placeholder.
-</Note>
 
 ```python
 record = client.get_generation("G-01ABC...")
 
 print(record)
-# {
-#   "status": "coming_soon",
-#   "endpoint": "generation",
-#   "message": "This endpoint is not yet supported in the SDK.",
-#   "payload": {"id": "G-01ABC..."}
-# }
 ```
+
+When request details were stored, the returned record also includes `replay_supported` and `replay_request` so you can resubmit the captured payload to the original endpoint.

@@ -3,26 +3,20 @@ title: "Image generations"
 description: "Call /images/generations with the Ruby SDK."
 ---
 
-**Method**: `ImagesApi#images_generations_post`.
+**Method**: `client.generate_image(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-images_api = AIStatsSdk::ImagesApi.new(api_client)
-
-request = AIStatsSdk::ImageGenerationRequest.new(
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+image = client.generate_image(
   model: 'openai/gpt-image-1',
   prompt: 'A lighthouse at golden hour',
   size: '1024x1024',
   n: 1,
   response_format: 'url'
 )
-
-image = images_api.images_generations_post(request)
 ```
 
 ### Key parameters

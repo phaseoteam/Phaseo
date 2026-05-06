@@ -7,9 +7,11 @@ description: "Current wrapper methods supported by the preview PHP SDK."
 
 ```php
 <?php
-require_once __DIR__ . '/../ai-stats-public/packages/sdk/sdk-php/src/index.php';
+require 'vendor/autoload.php';
 
-$client = new \AIStats\Sdk\Client(getenv('AI_STATS_API_KEY'));
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(getenv('AI_STATS_API_KEY'));
 ```
 
 ## Chat completions

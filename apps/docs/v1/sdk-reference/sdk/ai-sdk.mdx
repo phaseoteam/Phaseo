@@ -23,6 +23,7 @@ const result = await generateText({
 });
 
 console.log(result.text);
+console.log(result.providerMetadata);
 ```
 
 ## Environment variables
@@ -58,6 +59,7 @@ const result = await generateText({
 });
 
 console.log(result.text);
+console.log(result.providerMetadata);
 ```
 
 ## What this reference covers
@@ -85,4 +87,11 @@ const result = streamText({
 for await (const chunk of result.textStream) {
   process.stdout.write(chunk);
 }
+
+console.log(await result.providerMetadata);
 ```
+
+## Notes
+
+- Text, embeddings, image, speech, and transcription calls expose gateway routing metadata through `providerMetadata`.
+- Audio currently uses the AI SDK experimental entry points: `experimental_transcribe(...)` and `experimental_generateSpeech(...)`.

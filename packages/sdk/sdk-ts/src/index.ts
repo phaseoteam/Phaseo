@@ -25,8 +25,15 @@ import type {
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
 import * as ops from "./oapi-gen/client/index.js";
-import { Client } from "./runtime/client.js";
-import { TelemetryCapture, extractChatMetadata, extractImageMetadata } from "./devtools/telemetry.js";
+import { AIStatsHttpError, Client } from "./runtime/client.js";
+import {
+  TelemetryCapture,
+  extractBatchMetadata,
+  extractChatMetadata,
+  extractGatewayMetadata,
+  extractImageMetadata
+  ,extractVideoMetadata
+} from "./devtools/telemetry.js";
 import type { DevToolsConfig } from "./devtools/core.js";
 import type { KnownModelId as GeneratedKnownModelId } from "./modelIds.js";
 
@@ -110,6 +117,10 @@ export type VideoStatusResponse = {
   poll_after_seconds?: number;
   provider?: string | null;
   model?: string | null;
+  request_id?: string | null;
+  session_id?: string | null;
+  output_access?: "bytes" | "signed_url" | "both" | null;
+  generation_id?: string | null;
   created_at?: string | number | null;
   started_at?: string | number | null;
   completed_at?: string | number | null;
@@ -138,8 +149,15 @@ export type VideoStatusResponse = {
     download_url?: string;
     expires_at?: number | null;
   }>;
+  billing?: Record<string, unknown>;
   usage?: Record<string, unknown>;
   error?: unknown;
+};
+
+export type AsyncJobKind = "batch" | "video";
+export type AsyncJobWebSocketOptions = {
+  intervalMs?: number;
+  closeOnTerminal?: boolean;
 };
 
 type ChatMessageInput =
@@ -154,6 +172,14 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
 };
 
 const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+  return end === value.length ? value : value.slice(0, end);
+}
 
 export type {
   AudioSpeechRequest,
@@ -183,6 +209,7 @@ export type {
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
 export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
+export type VideoListResponse = { object: "list"; data: VideoStatusResponse[] };
 export type Healthz200Response = {
   status: string;
 };
@@ -230,6 +257,14 @@ export class AIStats {
       this.validateModel(modelId),
   };
 
+  readonly batches = {
+    create: async (req: BatchRequest): Promise<BatchResponse> => this.createBatch(req),
+    get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
+    cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
+    websocketUrl: (batchId: string, options: AsyncJobWebSocketOptions = {}): string =>
+      this.getAsyncJobWebSocketUrl("batch", batchId, options),
+  };
+
   readonly videos = {
     create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
     get: async (videoId: string): Promise<VideoStatusResponse> => this.getVideo(videoId),
@@ -242,11 +277,18 @@ export class AIStats {
     delete: async (videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> =>
       this.deleteVideo(videoId),
     listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
+    websocketUrl: (videoId: string, options: AsyncJobWebSocketOptions = {}): string =>
+      this.getAsyncJobWebSocketUrl("video", videoId, options),
+  };
+
+  readonly asyncJobs = {
+    websocketUrl: (kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string =>
+      this.getAsyncJobWebSocketUrl(kind, jobId, options),
   };
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
-    this.basePath = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    this.basePath = trimTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
     this.headers = { Authorization: `Bearer ${apiKey}` };
     this.client = new Client({
       baseUrl: this.basePath,
@@ -289,7 +331,7 @@ export class AIStats {
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+      throw createHttpError(res, text);
     }
     if (res.status === 204) return null;
     const text = await res.text();
@@ -299,6 +341,23 @@ export class AIStats {
     } catch {
       return text;
     }
+  }
+
+  getAsyncJobWebSocketUrl(kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string {
+    const normalizedId = String(jobId ?? "").trim();
+    if (!normalizedId) {
+      throw new Error("jobId is required");
+    }
+
+    const url = new URL(`async/${encodeURIComponent(kind)}/${encodeURIComponent(normalizedId)}/ws`, `${this.basePath}/`);
+    if (options.intervalMs !== undefined) {
+      url.searchParams.set("interval_ms", String(options.intervalMs));
+    }
+    if (options.closeOnTerminal !== undefined) {
+      url.searchParams.set("close_on_terminal", String(options.closeOnTerminal));
+    }
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    return url.toString();
   }
 
   async getModelDeprecationInfo(modelId: string): Promise<ModelLifecycleInfo | null> {
@@ -415,7 +474,7 @@ export class AIStats {
       });
       if (!res.ok || !res.body) {
         const text = await res.text();
-        throw new Error(`Stream request failed: ${res.status} ${res.statusText} - ${text}`);
+        throw createStreamHttpError(res, text);
       }
       for await (const line of readSseLines(res)) {
         yield line;
@@ -459,7 +518,7 @@ export class AIStats {
         });
         if (!res.ok) {
           const text = await res.text();
-          throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+          throw createHttpError(res, text);
         }
         return (await res.json()) as ImagesEditResponse;
       },
@@ -485,13 +544,27 @@ export class AIStats {
       () => this.telemetry.wrap(
         "video.generations",
         () => ops.createVideo(this.client, { body: req as unknown as VideoGenerationRequest }) as Promise<VideoStatusResponse>,
-        () => req
+        () => req,
+        extractVideoMetadata
       )
     );
   }
 
+  listVideos(params: Record<string, string | number | boolean> = {}): Promise<VideoListResponse> {
+    return this.telemetry.wrap(
+      "video.list",
+      () => ops.listVideos(this.client, { query: params as any }) as Promise<VideoListResponse>,
+      () => params,
+    );
+  }
+
   getVideo(videoId: string): Promise<VideoStatusResponse> {
-    return this.request("GET", `/videos/${encodeURIComponent(videoId)}`) as Promise<VideoStatusResponse>;
+    return this.telemetry.wrap(
+      "video.retrieve",
+      () => this.request("GET", `/videos/${encodeURIComponent(videoId)}`) as Promise<VideoStatusResponse>,
+      () => ({ video_id: videoId }),
+      extractVideoMetadata
+    );
   }
 
   async getVideoContent(videoId: string): Promise<Uint8Array> {
@@ -502,13 +575,18 @@ export class AIStats {
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+      throw createHttpError(res, text);
     }
     return new Uint8Array(await res.arrayBuffer());
   }
 
   cancelVideo(videoId: string): Promise<VideoStatusResponse> {
-    return this.request("POST", `/videos/${encodeURIComponent(videoId)}/cancel`) as Promise<VideoStatusResponse>;
+    return this.telemetry.wrap(
+      "video.cancel",
+      () => this.request("POST", `/videos/${encodeURIComponent(videoId)}/cancel`) as Promise<VideoStatusResponse>,
+      () => ({ video_id: videoId }),
+      extractVideoMetadata
+    );
   }
 
   getVideoDownloadUrl(
@@ -561,7 +639,7 @@ export class AIStats {
       });
       if (!res.ok || !res.body) {
         const text = await res.text();
-        throw new Error(`Stream request failed: ${res.status} ${res.statusText} - ${text}`);
+        throw createStreamHttpError(res, text);
       }
       for await (const line of readSseLines(res)) {
         yield line;
@@ -579,7 +657,8 @@ export class AIStats {
     return this.telemetry.wrap(
       "batches.create",
       () => ops.createBatch(this.client, { body: req }),
-      () => req
+      () => req,
+      extractBatchMetadata
     );
   }
 
@@ -587,7 +666,17 @@ export class AIStats {
     return this.telemetry.wrap(
       "batches.retrieve",
       () => ops.retrieveBatch(this.client, { path: { batch_id: batchId } as any }),
-      () => ({ batch_id: batchId })
+      () => ({ batch_id: batchId }),
+      extractBatchMetadata
+    );
+  }
+
+  cancelBatch(batchId: string): Promise<BatchResponse> {
+    return this.telemetry.wrap(
+      "batches.cancel",
+      () => ops.cancelBatch(this.client, { path: { batch_id: batchId } as any }),
+      () => ({ batch_id: batchId }),
+      extractBatchMetadata
     );
   }
 
@@ -607,6 +696,19 @@ export class AIStats {
     );
   }
 
+  async getFileContent(fileId: string): Promise<Uint8Array> {
+    const url = new URL(`files/${encodeURIComponent(fileId)}/content`, `${this.basePath}/`);
+    const res = await this.fetchImpl(url.toString(), {
+      method: "GET",
+      headers: this.headers,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw createHttpError(res, text);
+    }
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
   async uploadFile(params: { purpose?: string; file: Blob | File | BufferSource | string }): Promise<FileObject> {
     return this.telemetry.wrap(
       "files.upload",
@@ -623,7 +725,7 @@ export class AIStats {
         });
         if (!res.ok) {
           const text = await res.text();
-          throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+          throw createHttpError(res, text);
         }
         return (await res.json()) as FileObject;
       },
@@ -639,6 +741,158 @@ export class AIStats {
     );
   }
 
+  listTeamModels(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "models.team",
+      () => ops.listTeamModels(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  listProviders(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "providers",
+      () => ops.listProviders(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  getCredits(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "credits",
+      () => ops.getCredits(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  getActivity(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "activity",
+      () => ops.getActivity(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  listEndpoints(): Promise<unknown> {
+    return this.telemetry.wrap(
+      "endpoints.list",
+      () => ops.listEndpoints(this.client),
+      () => ({})
+    );
+  }
+
+  listOrganisations(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "organisations.list",
+      () => ops.listOrganisations(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  listPricingModels(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "pricing.models",
+      () => ops.listPricingModels(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  calculatePricing(body: Record<string, unknown>): Promise<unknown> {
+    return this.telemetry.wrap(
+      "pricing.calculate",
+      () => ops.calculatePricing(this.client, { body: body as any }),
+      () => body
+    );
+  }
+
+  listApiKeys(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.keys.list",
+      () => ops.listApiKeys(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  createApiKey(body: Record<string, unknown>): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.keys.create",
+      () => ops.createApiKey(this.client, { body: body as any }),
+      () => body
+    );
+  }
+
+  getApiKey(id: string): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.keys.get",
+      () => ops.getApiKey(this.client, { path: { id } as any }),
+      () => ({ id })
+    );
+  }
+
+  updateApiKey(id: string, body: Record<string, unknown>): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.keys.update",
+      () => ops.updateApiKey(this.client, { path: { id } as any, body: body as any }),
+      () => ({ id, ...body })
+    );
+  }
+
+  deleteApiKey(id: string): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.keys.delete",
+      () => ops.deleteApiKey(this.client, { path: { id } as any }),
+      () => ({ id })
+    );
+  }
+
+  listWorkspaces(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.workspaces.list",
+      () => ops.listWorkspaces(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  getWorkspace(id: string): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.workspaces.get",
+      () => ops.getWorkspace(this.client, { path: { id } as any }),
+      () => ({ id })
+    );
+  }
+
+  createWorkspace(body: Record<string, unknown>): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.workspaces.create",
+      () => ops.createWorkspace(this.client, { body: body as any }),
+      () => body
+    );
+  }
+
+  updateWorkspace(id: string, body: Record<string, unknown>): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.workspaces.update",
+      () => ops.updateWorkspace(this.client, { path: { id } as any, body: body as any }),
+      () => ({ id, ...body })
+    );
+  }
+
+  deleteWorkspace(id: string): Promise<unknown> {
+    return this.telemetry.wrap(
+      "provisioning.workspaces.delete",
+      () => ops.deleteWorkspace(this.client, { path: { id } as any }),
+      () => ({ id })
+    );
+  }
+
+  getCurrentApiKey(): Promise<unknown> {
+    return this.telemetry.wrap(
+      "key.current",
+      () => ops.getCurrentApiKey(this.client),
+      () => ({})
+    );
+  }
+
   getHealth(): Promise<Healthz200Response> {
     return this.telemetry.wrap(
       "health",
@@ -650,7 +904,7 @@ export class AIStats {
   getAnalytics(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "analytics",
-      () => ops.getActivity(this.client, { query: params as any }),
+      () => ops.getActivityAlias(this.client, { query: params as any }),
       () => params
     );
   }
@@ -667,7 +921,7 @@ export class AIStats {
         });
         if (!res.ok) {
           const text = await res.text();
-          throw new Error(`Request failed: ${res.status} ${res.statusText} - ${text}`);
+          throw createHttpError(res, text);
         }
         return await res.blob();
       },
@@ -706,7 +960,8 @@ export class AIStats {
     return this.telemetry.wrap(
       "generations.retrieve",
       () => ops.getGeneration(this.client, { query: { id } as any }),
-      () => ({ id })
+      () => ({ id }),
+      extractGatewayMetadata
     );
   }
 }
@@ -789,6 +1044,48 @@ function readEnv(name: string): string | undefined {
     return process.env[name];
   }
   return undefined;
+}
+
+function createHttpError(response: Response, text: string): AIStatsHttpError {
+  return new AIStatsHttpError({
+    status: response.status,
+    statusText: response.statusText,
+    body: parseResponseBody(text),
+    headers: Object.fromEntries(response.headers.entries())
+  });
+}
+
+function createStreamHttpError(response: Response, text: string): AIStatsHttpError {
+  return new AIStatsHttpError({
+    status: response.status,
+    statusText: response.statusText,
+    body: parseResponseBody(text),
+    headers: Object.fromEntries(response.headers.entries()),
+    message: `Stream request failed: ${response.status} ${response.statusText}${formatErrorBodySuffix(parseResponseBody(text))}`
+  });
+}
+
+function parseResponseBody(text: string): unknown {
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function formatErrorBodySuffix(body: unknown): string {
+  if (body === undefined || body === null || body === "") {
+    return "";
+  }
+  if (typeof body === "string") {
+    return ` - ${body}`;
+  }
+  try {
+    return ` - ${JSON.stringify(body)}`;
+  } catch {
+    return "";
+  }
 }
 
 function extractModelIdFromPayload(payload: unknown): string | null {

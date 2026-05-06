@@ -102,7 +102,7 @@ def createBatch(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/batches"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -115,7 +115,7 @@ def createBatchAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/batch"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -765,7 +765,7 @@ def retrieveBatch(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/batches/{path.get("batch_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -778,7 +778,7 @@ def retrieveBatchAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/batch/{path.get("id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -791,7 +791,7 @@ def retrieveFile(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/files/{path.get("file_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -843,7 +843,7 @@ def uploadFile(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/files"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)

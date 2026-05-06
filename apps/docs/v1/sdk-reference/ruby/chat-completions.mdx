@@ -3,26 +3,21 @@ title: "Chat completions"
 description: "Call /chat/completions with the Ruby SDK."
 ---
 
-**Method**: `CompletionsApi#create_chat_completion`.
+**Methods**: `client.generate_text(...)`, `client.create_chat_completion(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-completions_api = AIStatsSdk::CompletionsApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
 
-request = AIStatsSdk::ChatCompletionsRequest.new(
-  model: 'openai/gpt-4o-mini',
+response = client.create_chat_completion(
+  "model" => "openai/gpt-4o-mini",
   messages: [
-    AIStatsSdk::ChatMessageUser.new(content: 'Write a limerick about lighthouses.', role: 'user')
+    { "role" => "user", "content" => "Write a limerick about lighthouses." }
   ],
-  temperature: 0.5
+  "temperature" => 0.5
 )
-
-response = completions_api.create_chat_completion(request)
 ```
 
 ### Key parameters

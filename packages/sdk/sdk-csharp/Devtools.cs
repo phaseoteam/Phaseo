@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
+using AiStats.Gen;
 
 namespace AiStatsSdk
 {
@@ -108,6 +109,7 @@ namespace AiStatsSdk
             {
                 metadata["provider"] = provider;
             }
+            EnrichMetadataFromResponse(metadata, NormalizeToMap(response));
             if (!_captureHeaders)
             {
                 metadata.Remove("headers");
@@ -141,6 +143,7 @@ namespace AiStatsSdk
                 ["sdk_version"] = _sdkVersion,
                 ["stream"] = false
             };
+            var errorResponse = ExtractErrorResponse(ex);
 
             var (model, provider) = ExtractModelProvider(null, request);
             if (!string.IsNullOrWhiteSpace(model))
@@ -151,6 +154,8 @@ namespace AiStatsSdk
             {
                 metadata["provider"] = provider;
             }
+            EnrichMetadataFromResponse(metadata, errorResponse);
+            var statusCode = ExtractErrorStatusCode(ex);
 
             var entry = new Dictionary<string, object?>
             {
@@ -159,10 +164,11 @@ namespace AiStatsSdk
                 ["timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 ["duration_ms"] = durationMs,
                 ["request"] = Normalize(request),
-                ["response"] = null,
+                ["response"] = errorResponse.Count > 0 ? errorResponse : null,
                 ["error"] = new Dictionary<string, object?>
                 {
-                    ["message"] = ex.Message
+                    ["message"] = ex.Message,
+                    ["status_code"] = statusCode
                 },
                 ["metadata"] = metadata
             };
@@ -276,6 +282,21 @@ namespace AiStatsSdk
             {
                 return typed;
             }
+            if (value is string text && !string.IsNullOrWhiteSpace(text))
+            {
+                try
+                {
+                    using var document = JsonDocument.Parse(text);
+                    if (document.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        return JsonSerializer.Deserialize<Dictionary<string, object?>>(document.RootElement.GetRawText())
+                            ?? new Dictionary<string, object?>();
+                    }
+                }
+                catch (JsonException)
+                {
+                }
+            }
             var normalized = Normalize(value);
             if (normalized is Dictionary<string, object?> dict)
             {
@@ -287,6 +308,71 @@ namespace AiStatsSdk
                     ?? new Dictionary<string, object?>();
             }
             return new Dictionary<string, object?>();
+        }
+
+        private static Dictionary<string, object?> ExtractErrorResponse(Exception error)
+        {
+            if (error is ApiErrorException apiError)
+            {
+                var parsed = NormalizeToMap(apiError.ResponseBody);
+                if (parsed.Count > 0)
+                {
+                    return parsed;
+                }
+
+                var fallback = new Dictionary<string, object?>
+                {
+                    ["status_code"] = apiError.StatusCode
+                };
+                if (!string.IsNullOrWhiteSpace(apiError.ResponseBody))
+                {
+                    fallback["error"] = apiError.ResponseBody.Trim();
+                }
+                return fallback;
+            }
+
+            return new Dictionary<string, object?>();
+        }
+
+        private static int? ExtractErrorStatusCode(Exception error)
+        {
+            return error is ApiErrorException apiError ? apiError.StatusCode : null;
+        }
+
+        private static void EnrichMetadataFromResponse(Dictionary<string, object?> metadata, Dictionary<string, object?> payload)
+        {
+            if (payload.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var key in new[]
+            {
+                "request_id",
+                "session_id",
+                "upstream_request_id",
+                "native_response_id",
+                "status_code",
+                "latency_ms",
+                "generation_ms",
+                "throughput",
+                "provider_attempts",
+                "pricing_lines",
+                "request_counts",
+                "billing"
+            })
+            {
+                if (payload.TryGetValue(key, out var value) && value is not null)
+                {
+                    metadata[key] = value;
+                }
+            }
+
+            var finishReason = FirstNonNull(payload, "finish_reason", "stop_reason");
+            if (finishReason is not null)
+            {
+                metadata["finish_reason"] = finishReason;
+            }
         }
 
         private static object? FirstNonNull(Dictionary<string, object?> source, params string[] keys)

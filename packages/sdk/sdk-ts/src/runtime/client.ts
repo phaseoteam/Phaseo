@@ -13,6 +13,31 @@ export type ClientOptions = {
 	timeoutMs?: number;
 };
 
+export class AIStatsHttpError extends Error {
+	readonly status: number;
+	readonly statusText: string;
+	readonly body: unknown;
+	readonly headers: Record<string, string>;
+
+	constructor(args: {
+		status: number;
+		statusText: string;
+		body: unknown;
+		headers?: Record<string, string>;
+		message?: string;
+	}) {
+		super(
+			args.message ??
+			`Request failed: ${args.status} ${args.statusText}${formatErrorBodySuffix(args.body)}`
+		);
+		this.name = "AIStatsHttpError";
+		this.status = args.status;
+		this.statusText = args.statusText;
+		this.body = args.body;
+		this.headers = args.headers ?? {};
+	}
+}
+
 export class Client {
 	private readonly baseUrl: string;
 	private readonly headers: Record<string, string>;
@@ -20,7 +45,7 @@ export class Client {
 	private readonly timeoutMs: number;
 
 	constructor(options: ClientOptions) {
-		this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+		this.baseUrl = trimTrailingSlashes(options.baseUrl);
 		this.headers = options.headers ?? {};
 		this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
 		if (!this.fetchImpl) {
@@ -57,16 +82,55 @@ export class Client {
 				signal: controller.signal
 			});
 			const text = await response.text();
+			const parsedBody = parseResponseText(text);
 			if (!response.ok) {
-				throw new Error(`Request failed: ${response.status} ${response.statusText} - ${text}`);
+				throw new AIStatsHttpError({
+					status: response.status,
+					statusText: response.statusText,
+					body: parsedBody,
+					headers: Object.fromEntries(response.headers.entries())
+				});
 			}
 			if (!text) {
 				return undefined as T;
 			}
-			return JSON.parse(text) as T;
+			return parsedBody as T;
 		} finally {
 			clearTimeout(timeout);
 		}
+	}
+}
+
+function trimTrailingSlashes(value: string): string {
+	let end = value.length;
+	while (end > 0 && value.charCodeAt(end - 1) === 47) {
+		end -= 1;
+	}
+	return end === value.length ? value : value.slice(0, end);
+}
+
+function parseResponseText(text: string): unknown {
+	if (!text) {
+		return undefined;
+	}
+	try {
+		return JSON.parse(text);
+	} catch {
+		return text;
+	}
+}
+
+function formatErrorBodySuffix(body: unknown): string {
+	if (body === undefined || body === null || body === "") {
+		return "";
+	}
+	if (typeof body === "string") {
+		return ` - ${body}`;
+	}
+	try {
+		return ` - ${JSON.stringify(body)}`;
+	} catch {
+		return "";
 	}
 }
 

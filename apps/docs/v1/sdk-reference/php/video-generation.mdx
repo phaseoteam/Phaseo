@@ -1,9 +1,21 @@
 ---
 title: "Video generation"
-description: "Call /video/generation with the PHP SDK."
+description: "Create and manage async video jobs with the PHP SDK."
 ---
 
-**Method**: VideoApi#videoGenerationPost
+**Methods**:
+
+- `$client->createVideo(...)`
+- `$client->listVideos(...)`
+- `$client->getVideo(...)`
+- `$client->retrieveVideoContent(...)`
+- `$client->getVideoDownloadUrl(...)`
+- `$client->cancelVideo(...)`
+- `$client->deleteVideo(...)`
+- `$client->listVideoModels(...)`
+- `$client->getAsyncJobWebSocketUrl(...)`
+- `$client->getVideoWebSocketUrl(...)`
+- `$client->asyncJobs()->websocketUrl(...)`
 
 ### Example
 
@@ -12,33 +24,28 @@ description: "Call /video/generation with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\VideoApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\VideoGenerationRequest;
+use AIStats\Sdk\AIStats;
 
 $apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new AIStats($apiKey);
 
-$videoApi = new VideoApi(null, $config);
-
-$request = new VideoGenerationRequest([
+$job = $client->createVideo([
     'model' => 'openai/gpt-video-1',
     'prompt' => 'A calm ocean at dusk'
 ]);
 
-$video = $videoApi->videoGenerationPost($request);
-echo $video->getData()[0]->getUrl();
+$jobs = $client->listVideos([
+    'status' => 'queued,completed',
+    'limit' => '2',
+]);
+
+$websocketUrl = $client->getVideoWebSocketUrl($job['id'], 1500);
 ```
 
-### Key parameters
+The create response is an async job record. Poll status before attempting content or signed download retrieval.
 
--   `model` (required): Video-capable model id.
--   `prompt` (required): Text description of the video.
--   `duration` (optional): Video duration in seconds.
--   `ratio` (optional): Aspect ratio (e.g., "16:9").
+Use `$client->getVideoWebSocketUrl(...)` when you want to subscribe to the documented `/v1/async/video/{id}/ws` lifecycle stream instead of polling only.
+Use `$client->asyncJobs()->websocketUrl("video", $job['id'], ...)` when you want the generic async-jobs resource helper.
+Use `$client->getAsyncJobWebSocketUrl("video", $job['id'], ...)` when you want the same generic helper without going through the resource object.
 
-### Returns
-
-VideoGenerationResponse
+`$client->cancelVideo(...)` is exposed, but the public video cancel route currently returns a structured `501 not_implemented_yet` error while provider-level cancellation is standardized.

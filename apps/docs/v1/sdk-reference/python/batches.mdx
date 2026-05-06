@@ -1,27 +1,36 @@
 ---
 title: "Batches"
-description: "Python SDK placeholder for /batches."
+description: "Create and inspect batch jobs with the Python SDK."
 ---
 
-<Note type="warning">
-  `client.create_batch()` and `client.get_batch()` currently return `coming_soon` placeholders.
-</Note>
+**Methods**: `client.create_batch()`, `client.get_batch()`, `client.cancel_batch()`, `client.get_async_job_websocket_url("batch", batch_id, ...)`, `client.batches.websocket_url(batch_id, ...)`.
 
 ```python
 batch = client.create_batch({
     "endpoint": "responses",
     "input_file_id": "file_123",
     "completion_window": "24h",
+    "session_id": "agent-run-42",
 })
 
 status = client.get_batch("batch_123")
+cancelling = client.cancel_batch("batch_123")
+websocket_url = client.batches.websocket_url("batch_123", interval_ms=1500)
 
 print(batch)
 print(status)
-# {
-#   "status": "coming_soon",
-#   "endpoint": "batches",
-#   "message": "This endpoint is not yet supported in the SDK.",
-#   ...
-# }
 ```
+
+### Key parameters
+
+- `endpoint` (required): Target endpoint for batch items such as `responses`.
+- `input_file_id` (required): File id uploaded through the files API.
+- `completion_window`: Upstream batch completion window such as `24h`.
+- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `webhook`: Optional webhook configuration for async lifecycle notifications.
+- `metadata`: Optional object persisted with the batch.
+
+Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
+
+Use `client.batches.websocket_url(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `client.get_async_job_websocket_url("batch", batch_id, ...)` when you already have a generic async job kind/id pair and do not want to go through the resource helper.

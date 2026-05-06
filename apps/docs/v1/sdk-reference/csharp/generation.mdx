@@ -3,15 +3,15 @@ title: "Generation lookup"
 description: "Call /generations to retrieve a past generation."
 ---
 
-**Method**: Direct HTTP GET `/generations?id=<request_id>`
+**Method**: `client.GetGeneration(...)`
 
 ### Example
 
 ```csharp
-var client = new HttpClient();
-client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+using AiStatsSdk;
 
-var response = await client.GetAsync("https://api.phaseo.app/v1/generations?id=G-01ABC...");
+var client = new AIStats(apiKey);
+var response = await client.GetGeneration("G-01ABC...");
 ```
 
 ### Parameters
@@ -22,8 +22,16 @@ var response = await client.GetAsync("https://api.phaseo.app/v1/generations?id=G
 
 Generation record (JSON)
 
+If the gateway stored full request details, the returned record includes `replay_supported` plus `replay_request`, which can be sent back to the original endpoint for a controlled rerun.
+
+Timing fields follow the shared gateway semantics:
+
+- `latency_ms`: time to first token or first output byte/frame when tracked
+- `generation_ms`: post-latency generation time when tracked
+
 ```json
 {
+	"created_at": "2026-05-05T12:00:00.000Z",
 	"request_id": "G-01ABC123",
 	"team_id": "team-123",
 	"app_id": "app-123",
@@ -48,6 +56,13 @@ Generation record (JSON)
 	"currency": "USD",
 	"pricing_lines": [],
 	"key_id": "key-123",
-	"throughput": null
+	"throughput": null,
+	"replay_supported": true,
+	"replay_request": {
+		"model": "openai/gpt-4o-mini",
+		"messages": [
+			{ "role": "user", "content": "Say hello" }
+		]
+	}
 }
 ```

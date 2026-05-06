@@ -3,7 +3,7 @@ title: "Responses"
 description: "Call the Responses API with the PHP SDK."
 ---
 
-**Method**: ResponsesApi#createResponse
+**Methods**: `generateResponse()`, `createResponse()`
 
 ### Example
 
@@ -12,18 +12,12 @@ description: "Call the Responses API with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\ResponsesApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\ResponsesRequest;
+use AIStats\Sdk\AIStats;
 
 $apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new AIStats(apiKey: $apiKey);
 
-$responsesApi = new ResponsesApi(null, $config);
-
-$request = new ResponsesRequest([
+$response = $client->createResponse([
     'model' => 'openai/gpt-4.1',
     'input' => [
         [
@@ -39,9 +33,7 @@ $request = new ResponsesRequest([
     'temperature' => 0.7,
     'stream' => false
 ]);
-
-$response = $responsesApi->createResponse($request);
-echo $response->getOutput()[0]['content'][0]['text'];
+echo $response['output'][0]['content'][0]['text'];
 ```
 
 ### Key parameters

@@ -1,22 +1,50 @@
 ---
 title: "Video generation"
-description: "Call /video/generations (alias) with the Java SDK."
+description: "Create and manage async video jobs with the Java SDK."
 ---
 
-**Method**: `Operations.createVideoAlias(...)`
+**Methods**:
+
+- `client.createVideo(...)`
+- `client.listVideos(...)`
+- `client.getVideo(...)`
+- `client.retrieveVideoContent(...)`
+- `client.getVideoDownloadUrl(...)`
+- `client.cancelVideo(...)`
+- `client.deleteVideo(...)`
+- `client.listVideoModels(...)`
+- `client.getAsyncJobWebSocketUrl(...)`
+- `client.getVideoWebSocketUrl(...)`
+- `client.asyncJobs.websocketUrl(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
+import java.util.Map;
 
-String body = """
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
+
+Object response = client.createVideo("""
 {
-  "model": "openai/gpt-video-1",
+  "model": "openai/sora-2",
   "prompt": "A serene mountain lake at sunrise"
 }
-""";
+""");
 
-Object response = Operations.createVideoAlias(client, null, null, null, body);
+Object jobs = client.listVideos(Map.of(
+  "status", "queued,completed",
+  "limit", "2"
+));
+
+String websocketUrl = client.getVideoWebSocketUrl("video_123", 1500, null);
+
 System.out.println(String.valueOf(response));
+System.out.println(websocketUrl);
 ```
 
-`Operations.createVideo(...)` is also available and calls `/videos`.
+The create response is an async job record. Poll the status endpoint before attempting content or signed download retrieval.
+
+Use `client.getVideoWebSocketUrl(...)` when you want to subscribe to the documented `/v1/async/video/{id}/ws` lifecycle stream instead of polling only.
+Use `client.asyncJobs.websocketUrl("video", videoId, ...)` when you want the generic async-jobs resource helper.
+Use `client.getAsyncJobWebSocketUrl("video", videoId, ...)` when you want the same generic helper without going through the resource object.
+
+`cancelVideo(...)` is exposed, but the public video cancel route currently returns a structured `501 not_implemented_yet` error while provider-level cancellation is standardized.

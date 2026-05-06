@@ -24,9 +24,12 @@ async function main() {
   console.log(result.text);
 
   console.log('\n📊 Usage:');
-  console.log(`- Prompt tokens: ${result.usage.promptTokens}`);
-  console.log(`- Completion tokens: ${result.usage.completionTokens}`);
-  console.log(`- Total tokens: ${result.usage.promptTokens + result.usage.completionTokens}`);
+  console.log(`- Input tokens: ${result.usage.inputTokens}`);
+  console.log(`- Output tokens: ${result.usage.outputTokens}`);
+  console.log(`- Total tokens: ${result.usage.inputTokens + result.usage.outputTokens}`);
+
+  console.log('\n🧭 Provider Metadata:');
+  console.log(JSON.stringify(result.providerMetadata ?? {}, null, 2));
 
   console.log('\n✅ Finish Reason:', result.finishReason);
 }

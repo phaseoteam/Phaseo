@@ -1,32 +1,77 @@
 ---
 title: "Video generation"
-description: "Call /video/generation with the TypeScript SDK."
+description: "Create and manage async video jobs with the TypeScript SDK."
 ---
 
-**Method**: `client.generateVideo()`.
+**Methods**:
+
+- `client.generateVideo()`
+- `client.listVideos()`
+- `client.getVideo()`
+- `client.getVideoContent()`
+- `client.getVideoDownloadUrl()`
+- `client.cancelVideo()`
+- `client.deleteVideo()`
+- `client.listVideoModels()`
+- `client.getAsyncJobWebSocketUrl("video", videoId, options)`
+- `client.videos.websocketUrl(videoId, options)`
+- `client.videos.create/list/get/content/downloadUrl/cancel/delete/listModels()`
 
 ### Example
 ```typescript
-const video = await client.generateVideo({
-  model: "openai/gpt-video-1",
+const job = await client.generateVideo({
+  model: "openai/sora-2",
   prompt: "A calm ocean at dusk",
 });
+
+const jobs = await client.listVideos({ status: "queued,completed", limit: 2 });
+
+const status = await client.getVideo(job.id);
+const websocketUrl = client.videos.websocketUrl(job.id, { intervalMs: 1500 });
+
+if (status.status === "completed" && status.download_url) {
+  console.log(status.download_url);
+}
 ```
 
 ### Key parameters
 - `model` (required): Video-capable model id.
 - `prompt` (required): Text description of the video.
-- Optional provider-specific controls (per API spec), e.g., duration, format, or aspect (when supported by the upstream).
+- `webhook` (optional): Receive lifecycle notifications instead of polling only.
+- `output.access` (optional): Control whether the job returns authenticated byte URLs, signed download URLs, or both.
+- Optional provider-specific controls (for example duration, aspect, audio, or quality) when the upstream supports them.
 
 ### Returns
-`VideoGenerationResponse`
+The create call returns an async video job object rather than raw video bytes.
 
 ```json
 {
+  "id": "vid_123",
+  "object": "video",
+  "status": "queued",
+  "polling_url": "/v1/videos/vid_123",
+  "poll_after_seconds": 20
+}
+```
+
+When the job completes, `getVideo()` can also surface `content_url`, `download_url`, `outputs`, and `billing`.
+
+Use `client.videos.websocketUrl(...)` when you want to subscribe to the documented `/v1/async/video/{id}/ws` lifecycle stream instead of polling only.
+Use `client.getAsyncJobWebSocketUrl("video", job.id, options)` when you already have a generic async job kind/id pair and do not want to go through the resource helper.
+
+`listVideos()` returns the gateway list envelope:
+
+```json
+{
+  "object": "list",
   "data": [
     {
-      "url": "https://example.com/generated_video.mp4"
+      "id": "vid_123",
+      "object": "video",
+      "status": "queued"
     }
   ]
 }
 ```
+
+`cancelVideo()` is exposed, but the public video cancel route currently returns a structured `501 not_implemented_yet` error while provider-level cancellation is standardized.

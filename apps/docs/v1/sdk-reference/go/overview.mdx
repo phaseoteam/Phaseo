@@ -13,15 +13,38 @@ The local wrapper at `packages/sdk/sdk-go/index.go` currently exposes these meth
 - `GenerateResponse(...)`
 - `GenerateEmbedding(...)`
 - `GenerateModeration(...)`
+- `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
+- `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `ListOrganisations(...)`
+- `ListPricingModels(...)`
+- `CalculatePricing(...)`
+- `ListApiKeys(...)`
+- `CreateApiKey(...)`, `UpdateApiKey(...)`, `DeleteApiKey(...)`
+- `GetApiKey(...)`
+- `ListWorkspaces(...)`, `GetWorkspace(...)`, `CreateWorkspace(...)`, `UpdateWorkspace(...)`, `DeleteWorkspace(...)`
+- `GetCurrentApiKey(...)`
+- `ListEndpoints(...)`
+- `ListProviders(...)`
+- `GetAnalytics(...)`, `GetCredits(...)`, `GetActivity(...)`
+- `CreateBatch(...)`, `RetrieveBatch(...)`, `CancelBatch(...)`
+- `GetAsyncJobWebSocketURL(...)`, `GetBatchWebSocketURL(...)`, `GetVideoWebSocketURL(...)`, `client.AsyncJobs.WebSocketURL(...)`
+- `ListFiles(...)`, `RetrieveFile(...)`, `RetrieveFileContent(...)`
+- `RetrieveVideoContent(...)`, `GetVideoDownloadURL(...)`
+- `GetGeneration(...)`
+- `Health(...)`
+- `GetModelDeprecationInfo(...)`, `ValidateModel(...)`
+- `CreateImage(...)`, `CreateImageEdit(...)`
+- `GenerateVideo(...)`, `GetVideo(...)`, `CancelVideo(...)`, `DeleteVideo(...)`
+- `ListVideoModels(...)`, `ListVideos(...)`
 
-For other endpoints, use the generated client under `packages/sdk/sdk-go/src/gen` directly.
+For endpoints that are not yet promoted to the wrapper, use the generated client under `packages/sdk/sdk-go/src/gen` directly.
 
 ```go
 import (
   "context"
   "fmt"
-  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
 client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")

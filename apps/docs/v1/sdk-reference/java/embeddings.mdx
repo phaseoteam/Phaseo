@@ -3,10 +3,12 @@ title: "Embeddings"
 description: "Call /embeddings with the Java SDK."
 ---
 
-**Method**: `Operations.createEmbedding(...)`
+**Method**: `client.createEmbedding(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
+
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
 
 String body = """
 {
@@ -15,6 +17,6 @@ String body = """
 }
 """;
 
-Object response = Operations.createEmbedding(client, null, null, null, body);
+Object response = client.createEmbedding(body);
 System.out.println(String.valueOf(response));
 ```

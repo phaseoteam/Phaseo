@@ -32,12 +32,18 @@ type CompareResponse = {
 		endpoint: "chat_completions" | "responses";
 		gatewayBaseUrl: string;
 		openRouterBaseUrl: string;
+		llmGatewayBaseUrl: string;
+		vercelAiGatewayBaseUrl: string;
 	};
 	results: CompareTraceResult[];
 	summaries: CompareSummary[];
 };
 
-type LiveTarget = "ai-stats" | "openrouter";
+type LiveTarget =
+	| "ai-stats"
+	| "openrouter"
+	| "llmgateway"
+	| "vercel-ai-gateway";
 
 type LiveEvent =
 	| { type: "started"; target: LiveTarget }
@@ -83,6 +89,19 @@ function formatStats(stats: Stats | null) {
 
 function getSummary(data: CompareResponse | null, target: CompareSummary["target"]) {
 	return data?.summaries.find((summary) => summary.target === target) ?? null;
+}
+
+function targetLabel(target: CompareSummary["target"]): string {
+	switch (target) {
+		case "ai-stats":
+			return "AI Stats Gateway";
+		case "openrouter":
+			return "OpenRouter";
+		case "llmgateway":
+			return "LLMGateway";
+		case "vercel-ai-gateway":
+			return "Vercel AI Gateway";
+	}
 }
 
 function formatCompactStats(stats: Stats | null) {
@@ -355,6 +374,8 @@ export default function GatewayBenchmarkClient() {
 	const [endpoint, setEndpoint] = useState<"chat_completions" | "responses">("chat_completions");
 	const [gatewayBaseUrl, setGatewayBaseUrl] = useState("https://api.phaseo.app/v1");
 	const [openRouterBaseUrl, setOpenRouterBaseUrl] = useState("https://openrouter.ai/api/v1");
+	const [llmGatewayBaseUrl, setLlmGatewayBaseUrl] = useState("https://api.llmgateway.io/v1");
+	const [vercelAiGatewayBaseUrl, setVercelAiGatewayBaseUrl] = useState("https://ai-gateway.vercel.sh/v1");
 	const [data, setData] = useState<CompareResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [isRunning, setIsRunning] = useState(false);
@@ -363,10 +384,14 @@ export default function GatewayBenchmarkClient() {
 	const [livePanes, setLivePanes] = useState<Record<LiveTarget, LivePaneState>>({
 		"ai-stats": { ...EMPTY_LIVE_PANE },
 		openrouter: { ...EMPTY_LIVE_PANE },
+		llmgateway: { ...EMPTY_LIVE_PANE },
+		"vercel-ai-gateway": { ...EMPTY_LIVE_PANE },
 	});
 
 	const aiStatsSummary = getSummary(data, "ai-stats");
 	const openRouterSummary = getSummary(data, "openrouter");
+	const llmGatewaySummary = getSummary(data, "llmgateway");
+	const vercelAiGatewaySummary = getSummary(data, "vercel-ai-gateway");
 	const maxValue = data ? maxTimelineValue(data.results) : 1;
 
 	const runSummary = async () => {
@@ -383,6 +408,8 @@ export default function GatewayBenchmarkClient() {
 					endpoint,
 					gatewayBaseUrl,
 					openRouterBaseUrl,
+					llmGatewayBaseUrl,
+					vercelAiGatewayBaseUrl,
 				}),
 			});
 			const payload = (await response.json()) as CompareResponse & {
@@ -411,6 +438,8 @@ export default function GatewayBenchmarkClient() {
 		setLivePanes({
 			"ai-stats": { ...EMPTY_LIVE_PANE },
 			openrouter: { ...EMPTY_LIVE_PANE },
+			llmgateway: { ...EMPTY_LIVE_PANE },
+			"vercel-ai-gateway": { ...EMPTY_LIVE_PANE },
 		});
 		setIsStreaming(true);
 
@@ -424,6 +453,8 @@ export default function GatewayBenchmarkClient() {
 				endpoint,
 				gatewayBaseUrl,
 				openRouterBaseUrl,
+				llmGatewayBaseUrl,
+				vercelAiGatewayBaseUrl,
 			}),
 		});
 
@@ -482,7 +513,7 @@ export default function GatewayBenchmarkClient() {
 				<div>
 					<h1 className="text-2xl font-semibold">Gateway Benchmark</h1>
 					<p className="text-sm text-muted-foreground">
-						Public client-visible compare view for AI Stats Gateway vs OpenRouter.
+						Public client-visible compare view for AI Stats Gateway vs OpenRouter, LLMGateway, and Vercel AI Gateway.
 					</p>
 					<p className="text-xs text-muted-foreground">
 						Current endpoint: {endpoint === "responses" ? "/responses" : "/chat/completions"}
@@ -547,7 +578,7 @@ export default function GatewayBenchmarkClient() {
 						</div>
 					</div>
 
-					<div className="grid gap-4 md:grid-cols-2">
+					<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 						<div className="space-y-2">
 							<Label htmlFor="gatewayUrl">Gateway base URL</Label>
 							<Input
@@ -562,6 +593,22 @@ export default function GatewayBenchmarkClient() {
 								id="openrouterUrl"
 								value={openRouterBaseUrl}
 								onChange={(event) => setOpenRouterBaseUrl(event.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="llmgatewayUrl">LLMGateway base URL</Label>
+							<Input
+								id="llmgatewayUrl"
+								value={llmGatewayBaseUrl}
+								onChange={(event) => setLlmGatewayBaseUrl(event.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="vercelGatewayUrl">Vercel AI Gateway base URL</Label>
+							<Input
+								id="vercelGatewayUrl"
+								value={vercelAiGatewayBaseUrl}
+								onChange={(event) => setVercelAiGatewayBaseUrl(event.target.value)}
 							/>
 						</div>
 					</div>
@@ -585,17 +632,32 @@ export default function GatewayBenchmarkClient() {
 						Both upstream requests start together. This view shows the content arriving in real time on each side.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="grid gap-4 xl:grid-cols-2">
-					<LiveStreamPane
-						label="AI Stats Gateway"
-						baseUrl={`${gatewayBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
-						state={livePanes["ai-stats"]}
-					/>
+				<CardContent className="space-y-4">
+					<div className="grid gap-4 xl:grid-cols-4">
+						<LiveStreamPane
+							label="AI Stats Gateway"
+							baseUrl={`${gatewayBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
+							state={livePanes["ai-stats"]}
+						/>
 					<LiveStreamPane
 						label="OpenRouter"
 						baseUrl={`${openRouterBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
 						state={livePanes.openrouter}
 					/>
+						<LiveStreamPane
+							label="LLMGateway"
+							baseUrl={`${llmGatewayBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
+							state={livePanes.llmgateway}
+						/>
+						<LiveStreamPane
+							label="Vercel AI Gateway"
+							baseUrl={`${vercelAiGatewayBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
+							state={livePanes["vercel-ai-gateway"]}
+						/>
+					</div>
+					<p className="text-xs text-muted-foreground">
+						The external-gateway panes appear when their benchmark keys are configured: `PERFORMANCE_KEY_LLMGATEWAY` or `LLM_GATEWAY_API_KEY`, and `PERFORMANCE_KEY_VERCEL_AI_GATEWAY` or `VERCEL_AI_GATEWAY_API_KEY`.
+					</p>
 				</CardContent>
 			</Card>
 
@@ -608,7 +670,7 @@ export default function GatewayBenchmarkClient() {
 
 			{data ? (
 				<>
-					<div className="grid gap-4 lg:grid-cols-2">
+					<div className="grid gap-4 lg:grid-cols-4">
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center justify-between">
@@ -648,6 +710,54 @@ export default function GatewayBenchmarkClient() {
 								<div>Total: {formatStats(openRouterSummary?.totalMs ?? null)}</div>
 							</CardContent>
 						</Card>
+
+						{llmGatewaySummary ? (
+							<Card>
+								<CardHeader>
+									<CardTitle className="flex items-center justify-between">
+										<span>LLMGateway</span>
+										<Badge variant="outline">
+											{llmGatewaySummary.successes ?? 0}/{data.config.runs} ok
+										</Badge>
+									</CardTitle>
+									<CardDescription>
+										{data.config.llmGatewayBaseUrl}
+										{" "}
+										{data.config.endpoint === "responses" ? "/responses" : "/chat/completions"}
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="space-y-2 text-sm">
+									<div>Headers: {formatStats(llmGatewaySummary.headersMs ?? null)}</div>
+									<div>First byte: {formatStats(llmGatewaySummary.firstByteMs ?? null)}</div>
+									<div>First content: {formatStats(llmGatewaySummary.firstContentMs ?? null)}</div>
+									<div>Total: {formatStats(llmGatewaySummary.totalMs ?? null)}</div>
+								</CardContent>
+							</Card>
+						) : null}
+
+						{vercelAiGatewaySummary ? (
+							<Card>
+								<CardHeader>
+									<CardTitle className="flex items-center justify-between">
+										<span>Vercel AI Gateway</span>
+										<Badge variant="outline">
+											{vercelAiGatewaySummary.successes ?? 0}/{data.config.runs} ok
+										</Badge>
+									</CardTitle>
+									<CardDescription>
+										{data.config.vercelAiGatewayBaseUrl}
+										{" "}
+										{data.config.endpoint === "responses" ? "/responses" : "/chat/completions"}
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="space-y-2 text-sm">
+									<div>Headers: {formatStats(vercelAiGatewaySummary.headersMs ?? null)}</div>
+									<div>First byte: {formatStats(vercelAiGatewaySummary.firstByteMs ?? null)}</div>
+									<div>First content: {formatStats(vercelAiGatewaySummary.firstContentMs ?? null)}</div>
+									<div>Total: {formatStats(vercelAiGatewaySummary.totalMs ?? null)}</div>
+								</CardContent>
+							</Card>
+						) : null}
 					</div>
 
 					{aiStatsSummary?.stageSummary ? (
@@ -668,6 +778,10 @@ export default function GatewayBenchmarkClient() {
 						{Array.from({ length: data.config.runs }, (_, index) => index + 1).map((run) => {
 							const aiStats = data.results.find((result) => result.target === "ai-stats" && result.run === run);
 							const openrouter = data.results.find((result) => result.target === "openrouter" && result.run === run);
+							const llmgateway = data.results.find((result) => result.target === "llmgateway" && result.run === run);
+							const vercelAiGateway = data.results.find(
+								(result) => result.target === "vercel-ai-gateway" && result.run === run,
+							);
 							return (
 								<Card key={run}>
 									<CardHeader>
@@ -677,13 +791,13 @@ export default function GatewayBenchmarkClient() {
 										</CardDescription>
 									</CardHeader>
 									<CardContent className="grid gap-6 xl:grid-cols-2">
-										{[aiStats, openrouter].map((result) =>
+										{[aiStats, openrouter, llmgateway, vercelAiGateway].map((result) =>
 											result ? (
 												<div key={`${result.target}-${run}`} className="space-y-4 rounded-lg border p-4">
 													<div className="flex items-center justify-between">
-														<div className="font-medium">
-															{result.target === "ai-stats" ? "AI Stats Gateway" : "OpenRouter"}
-														</div>
+                                                                                                <div className="font-medium">
+                                                                                                        {targetLabel(result.target)}
+                                                                                                </div>
 														<Badge variant={result.ok ? "outline" : "destructive"}>
 															{result.ok ? "ok" : "failed"}
 														</Badge>

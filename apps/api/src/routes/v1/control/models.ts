@@ -16,6 +16,7 @@ import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feed
 
 type ModelVisibilityScope = "shared" | "team";
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
+type AvailabilityMode = "active" | "all";
 
 type CompatibilityPricing = {
     prompt: string | null;
@@ -91,6 +92,15 @@ function parseMultiValue(params: URLSearchParams, name: string): string[] {
     const values = params.getAll(name);
     if (!values.length) return [];
     return values.flatMap((value) => toStringArray(value));
+}
+
+function parseAvailabilityMode(raw: string | null): AvailabilityMode | null {
+    if (!raw) return "active";
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === "active" || normalized === "all") {
+        return normalized;
+    }
+    return null;
 }
 
 function hasDeprecatedPrivacyScopeQuery(url: URL): boolean {
@@ -320,35 +330,58 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
     };
 
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
+    const statuses = parseMultiValue(url.searchParams, "status");
     const providerIds = parseMultiValue(url.searchParams, "provider");
     const providerStatuses = parseMultiValue(url.searchParams, "provider_status");
-    const providerRoutingStatuses = parseMultiValue(url.searchParams, "provider_routing_status");
-    const modelRoutingStatuses = parseMultiValue(url.searchParams, "model_routing_status");
+    const providerRoutingStatuses = parseMultiValue(
+        url.searchParams,
+        "provider_routing_status"
+    );
+    const modelRoutingStatuses = parseMultiValue(
+        url.searchParams,
+        "model_routing_status"
+    );
     const capabilityStatuses = parseMultiValue(url.searchParams, "capability_status");
+    const providerAvailabilityStatuses = parseMultiValue(
+        url.searchParams,
+        "provider_availability_status"
+    );
+    const providerAvailabilityReasons = parseMultiValue(
+        url.searchParams,
+        "provider_availability_reason"
+    );
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValue(url.searchParams, "input_types");
     const outputTypes = parseMultiValue(url.searchParams, "output_types");
     const params = parseMultiValue(url.searchParams, "params");
-    const statuses = parseMultiValue(url.searchParams, "status");
-    const providerAvailabilityStatuses = parseMultiValue(url.searchParams, "provider_availability_status");
-    const providerAvailabilityReasons = parseMultiValue(url.searchParams, "provider_availability_reason");
-    const availability = url.searchParams.get("availability") === "all" ? "all" : "active";
+    const availabilityMode = parseAvailabilityMode(url.searchParams.get("availability"));
+    if (availabilityMode === null) {
+        return json(
+            {
+                ok: false,
+                error: "invalid_request",
+                message: "availability must be one of: active, all",
+            },
+            400,
+            { "Cache-Control": "no-store" }
+        );
+    }
     try {
         const catalogue = await fetchCatalogue({
-            availability,
             endpoints,
+            statuses,
             providerIds,
             providerStatuses,
             providerRoutingStatuses,
             modelRoutingStatuses,
             capabilityStatuses,
+            providerAvailabilityStatuses,
+            providerAvailabilityReasons,
             organisationIds,
             inputTypes,
             outputTypes,
             params,
-            statuses,
-            providerAvailabilityStatuses,
-            providerAvailabilityReasons,
+            availability: availabilityMode,
         });
         const replacementByPreviousModel = buildReplacementByPreviousModel(catalogue);
         const models = catalogue.map((model) =>
@@ -373,7 +406,15 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
             });
         }
         return json(
-            { ok: true, privacy_scope: scope, limit, offset, total: models.length, models: paged },
+            {
+                ok: true,
+                privacy_scope: scope,
+                availability_mode: availabilityMode,
+                limit,
+                offset,
+                total: models.length,
+                models: paged,
+            },
             200,
             headers
         );

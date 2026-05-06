@@ -1,27 +1,47 @@
 ---
 title: "Video generation"
-description: "Call /video/generation with the C# SDK."
+description: "Create and manage async video jobs with the C# SDK."
 ---
 
-**Method**: `client.VideoApi.VideoGenerationPostAsync()`
+**Methods**:
+
+- `client.CreateVideo(...)`
+- `client.ListVideos(...)`
+- `client.GetVideo(...)`
+- `client.RetrieveVideoContent(...)`
+- `client.GetVideoDownloadUrl(...)`
+- `client.CancelVideo(...)`
+- `client.DeleteVideo(...)`
+- `client.ListVideoModels(...)`
+- `client.GetAsyncJobWebSocketUrl(...)`
+- `client.GetVideoWebSocketUrl(...)`
+- `client.AsyncJobs.WebSocketUrl(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new VideoGenerationRequest(
-    model: "openai/gpt-video-1",
-    prompt: "A calm ocean at dusk"
-);
+var client = new AIStats(apiKey);
 
-var response = client.VideoApi.VideoGenerationPostAsync(request).Result;
+var response = await client.CreateVideo(new Dictionary<string, object>
+{
+    ["model"] = "openai/sora-2",
+    ["prompt"] = "A calm ocean at dusk",
+});
+
+var jobs = await client.ListVideos(new Dictionary<string, string>
+{
+    ["status"] = "queued,completed",
+    ["limit"] = "2"
+});
+
+var websocketUrl = client.GetVideoWebSocketUrl((string)response!["id"], intervalMs: 1500);
 ```
 
-### Key parameters
-- `model` (required): Video-capable model id.
-- `prompt` (required): Text description of the video.
-- Optional provider-specific controls (per API spec), e.g., duration, format, or aspect (when supported by the upstream).
+The create response is an async job object. Poll status and then use content or signed download endpoints when the job is complete.
 
-### Returns
-`VideoGenerationResponse`
+Use `client.GetVideoWebSocketUrl(...)` when you want to subscribe to the documented `/v1/async/video/{id}/ws` lifecycle stream instead of polling only.
+Use `client.AsyncJobs.WebSocketUrl("video", videoId, ...)` when you want the generic async-jobs resource helper.
+Use `client.GetAsyncJobWebSocketUrl("video", videoId, ...)` when you want the same generic helper without going through the resource object.
 
+`CancelVideo(...)` is exposed, but the public video cancel route currently returns a structured `501 not_implemented_yet` error while provider-level cancellation is standardized.

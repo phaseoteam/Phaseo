@@ -78,6 +78,7 @@ export interface AnthropicMessagesRequest {
     max_tokens?: number;
     summary?: "auto" | "concise" | "detailed";
   };
+  session_id?: string;
   stop_sequences?: string[];
   stream?: boolean;
   system?:

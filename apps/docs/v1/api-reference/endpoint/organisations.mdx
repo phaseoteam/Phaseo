@@ -1,0 +1,16 @@
+---
+title: "List Organisations"
+badge: "Beta"
+openapi: "GET /organisations"
+description: "List provider organisations from the shared catalogue with simple pagination."
+---
+
+Returns a paginated list of catalogue organisations such as model vendors and labs known to the gateway.
+
+The response includes:
+
+- `limit` and `offset`: the applied pagination window
+- `total`: total visible organisations in the catalogue
+- `organisations`: the current page of organisation metadata
+
+This route is primarily useful for tooling or internal admin flows that want stable provider-organisation metadata such as name, country code, description, and colour.

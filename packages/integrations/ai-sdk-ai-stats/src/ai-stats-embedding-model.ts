@@ -4,6 +4,7 @@ import type {
   EmbeddingModelV3Result,
 } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
+import { mapAIStatsProviderMetadata } from './map-ai-stats-provider-metadata.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
 /**
@@ -73,6 +74,9 @@ export class AIStatsEmbeddingModel implements EmbeddingModelV3 {
 
     // Parse response
     const data = await response.json();
+    const responseHeaders = Object.fromEntries(
+      Array.from(response.headers as any) as [string, string][]
+    );
 
     // Extract embeddings in order
     const embeddings = data.data
@@ -89,8 +93,10 @@ export class AIStatsEmbeddingModel implements EmbeddingModelV3 {
     return {
       embeddings,
       usage,
+      providerMetadata: mapAIStatsProviderMetadata(data, responseHeaders),
       response: {
-        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
+        headers: responseHeaders,
+        body: data,
       },
       warnings: [],
     };

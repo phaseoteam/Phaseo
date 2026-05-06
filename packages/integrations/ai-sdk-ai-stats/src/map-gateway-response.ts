@@ -1,6 +1,7 @@
 import type { LanguageModelV3CallOptions, LanguageModelV3GenerateResult } from '@ai-sdk/provider';
 import { mapGatewayFinishReason } from './map-gateway-finish-reason.js';
 import { mapGatewayUsage } from './map-gateway-usage.js';
+import { mapAIStatsProviderMetadata } from './map-ai-stats-provider-metadata.js';
 
 /**
  * Maps AI Stats Gateway response to AI SDK format
@@ -50,11 +51,13 @@ export function mapGatewayResponse(
   // Map finish reason + usage
   const finishReason = mapGatewayFinishReason(choice.finish_reason);
   const usage = mapGatewayUsage(response?.usage ?? {});
+  const providerMetadata = mapAIStatsProviderMetadata(response, responseHeaders);
 
   return {
     content,
     finishReason,
     usage,
+    providerMetadata,
     request: {
       body: gatewayRequest,
     },

@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import type { DevToolsEntry } from "@/types";
 import { safeJson } from "@/utils/format";
+import { getGenerationCorrelationMetadata } from "@/utils/generationMetadata";
 
 interface GenerationDetailProps {
   id: string;
 }
 
 type AnyRecord = Record<string, any>;
+type ProviderAttemptRecord = NonNullable<DevToolsEntry["metadata"]["provider_attempts"]>[number];
 
 const SDK_BADGE_MAP: Record<string, { label: string; icon: string; darkIcon?: string }> = {
   typescript: { label: "TypeScript", icon: "/languages/typescript.svg" },
@@ -77,22 +79,43 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
   const sdkVersion = data.metadata.sdk_version ? ` v${data.metadata.sdk_version}` : "";
   const sdkLabel = `${getSdkLabel(data.metadata.sdk)}${sdkVersion}`;
   const completed = !data.error;
-  const upstreamRequestId = firstNonEmpty(
-    response.nativeResponseId,
-    response.id,
-    response.response_id,
-    response.request_id
-  );
-  const gatewayRequestId = firstNonEmpty(response?.metadata?.aistats_request_id, response?.request_id);
+  const correlation = getGenerationCorrelationMetadata(data);
+  const upstreamRequestId = correlation.upstreamRequestId;
+  const nativeResponseId = correlation.nativeResponseId;
+  const sessionId = correlation.sessionId;
+  const pricingLines = correlation.pricingLines;
+  const gatewayRequestId = correlation.gatewayRequestId;
   const canonicalRequestId = gatewayRequestId ?? data.id;
   const statusLabel = completed ? "Success" : "Error";
   const finishReason = firstNonEmpty(
+    data.metadata.finish_reason,
     response?.choices?.[0]?.finish_reason,
     response?.incomplete_details?.reason,
     response?.status
   );
   const resolvedUsage = resolveUsage(data, response);
   const resolvedCost = resolveCost(data, response);
+  const latencyMs = asFiniteNumber(data.metadata.latency_ms) ?? asFiniteNumber(response?.latency_ms);
+  const generationMs = asFiniteNumber(data.metadata.generation_ms) ?? asFiniteNumber(response?.generation_ms);
+  const throughput = asFiniteNumber(data.metadata.throughput) ?? asFiniteNumber(response?.throughput);
+  const providerAttempts = resolveProviderAttempts({
+    entry: data,
+    provider,
+    statusLabel,
+    completed,
+    latencyMs,
+    generationMs,
+  });
+  const providerRoutingTotalMs = providerAttempts.reduce((sum, attempt) => sum + (attempt.duration_ms ?? 0), 0);
+  const isBatchEntry = data.type.startsWith("batches.");
+  const batchRequestCounts = resolveBatchRequestCounts(response);
+  const batchStatus = firstNonEmpty(response.status, data.error ? "failed" : undefined, "N/A");
+  const batchTitle = firstNonEmpty(response.id, request.batch_id, request.input_file_id, "Batch job");
+  const batchInputFileId = firstNonEmpty(request.input_file_id, response.input_file_id);
+  const batchOutputFileId = firstNonEmpty(response.output_file_id);
+  const batchErrorFileId = firstNonEmpty(response.error_file_id);
+  const batchSessionId = firstNonEmpty(request.session_id, response.session_id);
+  const batchEndpoint = firstNonEmpty(request.endpoint, response.endpoint, "N/A");
 
   const tokenMetrics = [
     { label: "Prompt Tokens", value: formatMaybeNumber(resolvedUsage.prompt_tokens) },
@@ -100,14 +123,29 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
     { label: "Total Tokens", value: formatMaybeNumber(resolvedUsage.total_tokens) }
   ];
 
-  const topFacts: Array<{ label: string; value: string; copyable?: boolean; className?: string }> = [
-    { label: "Endpoint", value: endpointLabel, copyable: false },
-    { label: "Model", value: model, copyable: true },
-    { label: "SDK", value: sdkLabel, copyable: false },
-    { label: "Timestamp", value: formatDateTime(data.timestamp), copyable: false },
-    { label: "Provider", value: provider, copyable: false },
-    { label: "Request ID", value: canonicalRequestId, copyable: true }
+  const batchMetrics = [
+    { label: "Total Requests", value: formatMaybeNumber(batchRequestCounts.total) },
+    { label: "Completed", value: formatMaybeNumber(batchRequestCounts.completed) },
+    { label: "Failed", value: formatMaybeNumber(batchRequestCounts.failed) }
   ];
+
+  const topFacts: Array<{ label: string; value: string; copyable?: boolean; className?: string }> = isBatchEntry
+        ? [
+        { label: "Endpoint", value: batchEndpoint, copyable: false },
+        { label: "Batch ID", value: batchTitle, copyable: true },
+        { label: "Status", value: batchStatus, copyable: false },
+        { label: "Input File", value: batchInputFileId ?? "N/A", copyable: Boolean(batchInputFileId) },
+        { label: "Session ID", value: batchSessionId ?? "N/A", copyable: Boolean(batchSessionId) },
+        { label: "Gateway Request ID", value: canonicalRequestId, copyable: true }
+      ]
+    : [
+        { label: "Endpoint", value: endpointLabel, copyable: false },
+        { label: "Model", value: model, copyable: true },
+        { label: "Session ID", value: sessionId ?? "N/A", copyable: Boolean(sessionId) },
+        { label: "Timestamp", value: formatDateTime(data.timestamp), copyable: false },
+        { label: "Provider", value: provider, copyable: false },
+        { label: "Gateway Request ID", value: canonicalRequestId, copyable: true }
+      ];
 
   return (
     <div className="p-6 space-y-5">
@@ -115,7 +153,7 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{endpointLabel}</div>
-            <h2 className="text-xl font-semibold">{model}</h2>
+            <h2 className="text-xl font-semibold">{isBatchEntry ? batchTitle : model}</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill isError={!completed} label={statusLabel} />
@@ -139,12 +177,23 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <MetricCard icon={Timer} label="Duration" value={`${data.duration_ms}ms`} />
+          <MetricCard icon={Timer} label="Duration" value={formatDuration(data.duration_ms)} />
+          <MetricCard icon={Clock3} label="Latency" value={formatDuration(latencyMs)} />
+          <MetricCard icon={Workflow} label="Generation" value={formatDuration(generationMs)} />
           <MetricCard icon={Wallet} label="Cost" value={formatCost(resolvedCost)} />
           <MetricCard icon={Server} label="Provider" value={provider} />
-          {tokenMetrics.map((metric) => (
-            <MetricCard key={metric.label} icon={Hash} label={metric.label} value={metric.value} />
-          ))}
+          {isBatchEntry ? (
+            batchMetrics.map((metric) => (
+              <MetricCard key={metric.label} icon={Hash} label={metric.label} value={metric.value} />
+            ))
+          ) : (
+            <>
+              <MetricCard icon={Hash} label="Throughput" value={formatThroughput(throughput)} />
+              {tokenMetrics.map((metric) => (
+                <MetricCard key={metric.label} icon={Hash} label={metric.label} value={metric.value} />
+              ))}
+            </>
+          )}
         </div>
       </section>
 
@@ -153,7 +202,13 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
         title="Request"
         right={(
           <div className="text-xs text-muted-foreground">
-            {request.model ? `model: ${request.model}` : "request payload"}
+            {isBatchEntry
+              ? batchEndpoint !== "N/A"
+                ? `endpoint: ${batchEndpoint}`
+                : "batch request"
+              : request.model
+                ? `model: ${request.model}`
+                : "request payload"}
           </div>
         )}
       >
@@ -173,7 +228,13 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
         title="Response"
         right={(
           <div className="text-xs text-muted-foreground">
-            {finishReason ? `finish: ${finishReason}` : completed ? "completed" : "failed"}
+            {isBatchEntry
+              ? `status: ${batchStatus}`
+              : finishReason
+                ? `finish: ${finishReason}`
+                : completed
+                  ? "completed"
+                  : "failed"}
           </div>
         )}
       >
@@ -183,13 +244,26 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
           </Panel>
           <Panel title="Response Facts" icon={Clock3}>
             <KeyValueList
-              rows={[
-                { label: "Status", value: statusLabel },
-                { label: "Finish Reason", value: finishReason ?? "N/A" },
-                { label: "Provider", value: provider },
-                { label: "Object", value: firstNonEmpty(response.object, "N/A") },
-                { label: "Upstream Request ID", value: upstreamRequestId ?? "N/A" }
-              ]}
+              rows={isBatchEntry
+                ? [
+                    { label: "Status", value: batchStatus },
+                    { label: "Endpoint", value: batchEndpoint },
+                    { label: "Output File", value: batchOutputFileId ?? "N/A" },
+                    { label: "Error File", value: batchErrorFileId ?? "N/A" },
+                    { label: "Total Requests", value: formatMaybeNumber(batchRequestCounts.total) },
+                    { label: "Completed Requests", value: formatMaybeNumber(batchRequestCounts.completed) },
+                    { label: "Failed Requests", value: formatMaybeNumber(batchRequestCounts.failed) },
+                    { label: "Native Response ID", value: nativeResponseId ?? "N/A" },
+                    { label: "Upstream Request ID", value: upstreamRequestId ?? "N/A" }
+                  ]
+                : [
+                    { label: "Status", value: statusLabel },
+                    { label: "Finish Reason", value: finishReason ?? "N/A" },
+                    { label: "Provider", value: provider },
+                    { label: "Object", value: firstNonEmpty(response.object, "N/A") },
+                    { label: "Native Response ID", value: nativeResponseId ?? "N/A" },
+                    { label: "Upstream Request ID", value: upstreamRequestId ?? "N/A" }
+                  ]}
             />
           </Panel>
         </div>
@@ -202,7 +276,14 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
         )}
       </StepCard>
 
-      <StepCard step={3} title="Diagnostics & Metadata">
+      <StepCard step={3} title="Routing & Diagnostics">
+        <Panel title="Provider Routing" icon={Workflow}>
+          <ProviderRoutingSummary
+            attempts={providerAttempts}
+            totalMs={providerRoutingTotalMs || data.duration_ms}
+          />
+        </Panel>
+
         {data.error ? (
           <div className="rounded-xl border border-destructive/35 bg-destructive/10 p-4 space-y-3">
             <div className="flex items-center gap-2 text-destructive font-medium">
@@ -234,10 +315,15 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
               rows={[
                 { label: "SDK", value: sdkLabel },
                 { label: "Gateway Request ID", value: gatewayRequestId ?? "N/A" },
+                { label: "Session ID", value: sessionId ?? "N/A" },
+                { label: "Native Response ID", value: nativeResponseId ?? "N/A" },
+                { label: "Upstream Request ID", value: upstreamRequestId ?? "N/A" },
                 { label: "Telemetry Entry ID", value: data.id },
                 { label: "Stream", value: data.metadata.stream ? "true" : "false" },
                 { label: "Chunks", value: formatMaybeNumber(data.metadata.chunk_count) },
-                { label: "HTTP Status", value: formatMaybeNumber(data.metadata.status_code) }
+                { label: "HTTP Status", value: formatMaybeNumber(data.metadata.status_code) },
+                { label: "Latency", value: formatDuration(latencyMs) },
+                { label: "Generation", value: formatDuration(generationMs) }
               ]}
             />
           </Panel>
@@ -245,6 +331,11 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
             <JsonPreview value={data.metadata} />
           </Panel>
         </div>
+        {pricingLines.length > 0 ? (
+          <Panel title="Pricing Lines" icon={Wallet}>
+            <JsonPreview value={pricingLines} />
+          </Panel>
+        ) : null}
         <JsonDetails title="Full Entry JSON" value={data} defaultOpen={false} />
       </StepCard>
     </div>
@@ -312,6 +403,21 @@ function RequestHighlights({
           { label: "Input", value: previewValue(request.input) },
           { label: "Dimensions", value: stringifyValue(request.dimensions) },
           { label: "Encoding", value: stringifyValue(request.encoding_format) }
+        ]}
+      />
+    );
+  }
+
+  if (entry.type.startsWith("batches.")) {
+    return (
+      <KeyValueList
+        rows={[
+          { label: "Endpoint", value: firstNonEmpty(request.endpoint, "N/A") },
+          { label: "Input File ID", value: firstNonEmpty(request.input_file_id, "N/A") },
+          { label: "Completion Window", value: firstNonEmpty(request.completion_window, "N/A") },
+          { label: "Session ID", value: firstNonEmpty(request.session_id, "N/A") },
+          { label: "Webhook URL", value: firstNonEmpty(asRecord(request.webhook).url, "N/A") },
+          { label: "Webhook Events", value: formatWebhookEvents(asRecord(request.webhook).events) }
         ]}
       />
     );
@@ -434,6 +540,25 @@ function ResponseHighlights({
           { label: "Embeddings", value: `${vectors.length}` },
           { label: "Dimensions", value: vectors[0]?.embedding?.length ? `${vectors[0].embedding.length}` : "N/A" },
           { label: "Object", value: stringifyValue(response.object) }
+        ]}
+      />
+    );
+  }
+
+  if (entry.type.startsWith("batches.")) {
+    const requestCounts = resolveBatchRequestCounts(response);
+    return (
+      <KeyValueList
+        rows={[
+          { label: "Batch ID", value: firstNonEmpty(response.id, "N/A") },
+          { label: "Status", value: firstNonEmpty(response.status, "N/A") },
+          { label: "Endpoint", value: firstNonEmpty(response.endpoint, "N/A") },
+          { label: "Input File ID", value: firstNonEmpty(response.input_file_id, "N/A") },
+          { label: "Output File ID", value: firstNonEmpty(response.output_file_id, "N/A") },
+          { label: "Error File ID", value: firstNonEmpty(response.error_file_id, "N/A") },
+          { label: "Total Requests", value: formatMaybeNumber(requestCounts.total) },
+          { label: "Completed Requests", value: formatMaybeNumber(requestCounts.completed) },
+          { label: "Failed Requests", value: formatMaybeNumber(requestCounts.failed) }
         ]}
       />
     );
@@ -617,6 +742,11 @@ function normalizeMessages(endpoint: string, request: AnyRecord): Array<{ role: 
 function extractRequestRows(request: AnyRecord): Array<{ label: string; value: string }> {
   const preferredKeys = [
     "model",
+    "endpoint",
+    "input_file_id",
+    "completion_window",
+    "session_id",
+    "batch_id",
     "temperature",
     "top_p",
     "max_tokens",
@@ -797,6 +927,64 @@ function JsonDetails({
   );
 }
 
+function ProviderRoutingSummary({
+  attempts,
+  totalMs
+}: {
+  attempts: ProviderAttemptRecord[];
+  totalMs: number;
+}) {
+  if (attempts.length === 0) {
+    return <div className="text-sm text-muted-foreground">No provider routing data captured.</div>;
+  }
+
+  const safeTotal = Math.max(totalMs, attempts.reduce((sum, attempt) => sum + (attempt.duration_ms ?? 0), 0), 1);
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {attempts.map((attempt, index) => {
+          const width = Math.max(4, Math.min(100, ((attempt.duration_ms ?? 0) / safeTotal) * 100));
+          const tone = getProviderAttemptTone(attempt);
+          return (
+            <div key={`${attempt.provider}-${attempt.status_code ?? "none"}-${attempt.outcome ?? "unknown"}-${index}`} className="grid grid-cols-[minmax(0,220px)_minmax(0,1fr)_72px] items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="truncate text-sm font-medium">
+                  {attempt.provider_label ?? prettifyProviderName(attempt.provider)}
+                </div>
+                {attempt.status_code ? (
+                  <span className={`inline-flex min-w-[2.5rem] items-center justify-center rounded-sm border px-1.5 py-0.5 text-[10px] font-medium ${tone.badge}`}>
+                    {attempt.status_code}
+                  </span>
+                ) : attempt.outcome ? (
+                  <span className={`inline-flex min-w-[2.5rem] items-center justify-center rounded-sm border px-1.5 py-0.5 text-[10px] font-medium ${tone.badge}`}>
+                    {attempt.outcome}
+                  </span>
+                ) : null}
+              </div>
+              <div className="h-3 rounded-md bg-muted/70">
+                <div
+                  className={`h-full rounded-r-sm rounded-l-sm ${tone.bar}`}
+                  style={{ width: `${width}%` }}
+                  title={buildProviderAttemptSummary(attempt)}
+                />
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                {formatDuration(attempt.duration_ms)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-end">
+        <div className="w-[72px] border-t border-border/60 pt-1 text-right text-sm text-muted-foreground">
+          {formatDuration(totalMs)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatusPill({ isError, label }: { isError: boolean; label: string }) {
   return (
     <Pill
@@ -865,6 +1053,24 @@ function formatDateTime(timestampMs: number): string {
 function formatMaybeNumber(value: unknown): string {
   if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
   return value.toLocaleString();
+}
+
+function formatDuration(value: unknown): string {
+  if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
+  if (value >= 60_000) {
+    const minutes = Math.floor(value / 60_000);
+    const seconds = ((value % 60_000) / 1000).toFixed(1).replace(/\.0$/, "");
+    return `${minutes}m ${seconds}s`;
+  }
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(value >= 10_000 ? 1 : 2).replace(/\.0$/, "")}s`;
+  }
+  return `${Math.round(value)}ms`;
+}
+
+function formatThroughput(value: unknown): string {
+  if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
+  return `${value.toFixed(value >= 100 ? 0 : 1)} tok/s`;
 }
 
 function formatCost(value: unknown): string {
@@ -937,6 +1143,129 @@ function asNumber(value: unknown): number | undefined {
     if (Number.isFinite(parsed)) return parsed;
   }
   return undefined;
+}
+
+function resolveBatchRequestCounts(response: AnyRecord): {
+  total?: number;
+  completed?: number;
+  failed?: number;
+} {
+  const requestCounts = asRecord(response?.request_counts ?? response?.requestCounts);
+  return {
+    total: asNumber(requestCounts.total),
+    completed: asNumber(requestCounts.completed),
+    failed: asNumber(requestCounts.failed)
+  };
+}
+
+function formatWebhookEvents(value: unknown): string {
+  if (!Array.isArray(value)) return "N/A";
+  const events = value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  return events.length > 0 ? events.join(", ") : "N/A";
+}
+
+function asFiniteNumber(value: unknown): number | undefined {
+  return asNumber(value);
+}
+
+function resolveProviderAttempts(args: {
+  entry: DevToolsEntry;
+  provider: string;
+  statusLabel: string;
+  completed: boolean;
+  latencyMs?: number;
+  generationMs?: number;
+}): ProviderAttemptRecord[] {
+  const sourceAttempts = Array.isArray(args.entry.metadata.provider_attempts)
+    ? args.entry.metadata.provider_attempts.filter(Boolean)
+    : [];
+
+  if (sourceAttempts.length > 0) {
+    return sourceAttempts.map((attempt) => ({ ...attempt }));
+  }
+
+  const fallback: ProviderAttemptRecord[] = [];
+  if (args.provider && args.provider !== "N/A") {
+    fallback.push({
+      provider: args.provider,
+      provider_label: prettifyProviderName(args.provider),
+      status_code: args.entry.metadata.status_code,
+      outcome: args.completed ? "success" : "error",
+      duration_ms: args.latencyMs ?? args.entry.duration_ms,
+      latency_ms: args.latencyMs,
+      error_message: args.entry.error?.message,
+    });
+  }
+  if (args.generationMs && args.generationMs > 0) {
+    fallback.push({
+      provider: "generation",
+      provider_label: "Generation",
+      outcome: "generation",
+      duration_ms: args.generationMs,
+      generation_ms: args.generationMs,
+    });
+  }
+  return fallback;
+}
+
+function getProviderAttemptTone(attempt: ProviderAttemptRecord): { bar: string; badge: string } {
+  const statusCode = attempt.status_code;
+  const outcome = String(attempt.outcome ?? "").toLowerCase();
+
+  if (outcome === "generation") {
+    return {
+      bar: "bg-sky-500",
+      badge: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+    };
+  }
+  if (statusCode && statusCode >= 200 && statusCode < 300) {
+    return {
+      bar: "bg-emerald-500",
+      badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+    };
+  }
+  if (statusCode === 429) {
+    return {
+      bar: "bg-amber-500",
+      badge: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+    };
+  }
+  if (statusCode && statusCode >= 500) {
+    return {
+      bar: "bg-rose-500",
+      badge: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+    };
+  }
+  if (statusCode && statusCode >= 400) {
+    return {
+      bar: "bg-orange-500",
+      badge: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300"
+    };
+  }
+  return {
+    bar: "bg-slate-500",
+    badge: "border-border/60 bg-muted/70 text-muted-foreground"
+  };
+}
+
+function buildProviderAttemptSummary(attempt: ProviderAttemptRecord): string {
+  const parts = [
+    attempt.provider_label ?? prettifyProviderName(attempt.provider),
+    attempt.status_code ? `HTTP ${attempt.status_code}` : undefined,
+    attempt.error_code,
+    attempt.error_message,
+    attempt.duration_ms != null ? formatDuration(attempt.duration_ms) : undefined
+  ].filter((value): value is string => Boolean(value));
+
+  return parts.join(" • ");
+}
+
+function prettifyProviderName(provider: string): string {
+  return provider
+    .split(/[_-]+/g)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
 }
 
 function stringifyValue(value: unknown): string {

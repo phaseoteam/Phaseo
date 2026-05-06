@@ -1,101 +1,158 @@
 ---
 title: "Migration from OpenRouter"
-description: "Move from OpenRouter to AI Stats Gateway with minimal request-shape changes."
+description: "Move from OpenRouter to AI Stats Gateway with a controlled rollout, explicit parity checks, and minimal request-shape changes."
 ---
 
-If your app currently uses a gateway like OpenRouter, this guide shows the shortest migration path to AI Stats Gateway.
+If your app already uses OpenRouter through the OpenAI SDK or direct OpenAI-compatible HTTP calls, the safest migration path is usually:
 
-## What changes
+1. Keep payload shape unchanged.
+2. Swap base URL and API key source.
+3. Verify model IDs and any OpenRouter-only headers.
+4. Roll traffic gradually while comparing latency, output, and cost behavior.
 
-1. Swap base URL.
-2. Swap API key.
-3. Confirm model IDs.
-4. Remove any gateway-specific headers you no longer need.
+## Before you start
 
-For most OpenAI-compatible clients, request and response shapes remain the same.
+- Access to the current OpenRouter integration code and deployment config.
+- `AI_STATS_API_KEY` available in dev, staging, and production.
+- A short list of production model IDs and representative prompts.
 
-## 1) Base URL and key swap
+## 1) Inventory current OpenRouter usage
+
+Start by identifying every place OpenRouter is referenced: endpoint URLs, keys, model IDs, and any provider-specific headers.
+
+- Find `openrouter.ai` endpoint references.
+- Find `OPENROUTER_API_KEY` usage in code, CI, and hosting env vars.
+- Find OpenRouter-only headers such as `HTTP-Referer` and `X-Title`.
+- Document active model IDs and any fallback-chain logic.
+- Document any reusable prompt, provider, or parameter defaults that should move into Gateway presets instead of staying duplicated in application code.
+
+## 2) Swap base URL and credentials
+
+Keep request payload shape unchanged first. Do behavior parity before optimization.
 
 <CodeGroup>
-```bash cURL
-# Before
-curl https://openrouter.ai/api/v1/chat/completions \
-  -H "Authorization: Bearer sk-or-v1-..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-4o-mini",
-    "messages": [{"role": "user", "content": "Hello"}]
-  }'
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
 
-# After
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer aistats_v1_sk_<kid>_<secret>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-4o-mini",
-    "messages": [{"role": "user", "content": "Hello"}]
-  }'
-```
+const before = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
 
-```python Python
-from openai import OpenAI
-
-# Before
-before = OpenAI(
-    api_key="sk-or-v1-...",
-    base_url="https://openrouter.ai/api/v1",
-)
-
-# After
-after = OpenAI(
-    api_key="aistats_v1_sk_<kid>_<secret>",
-    base_url="https://api.phaseo.app/v1",
-)
+const response = await before.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
 ```
 
 ```typescript TypeScript
+// After
 import OpenAI from "openai";
 
-const client = new OpenAI({
+const after = new OpenAI({
   apiKey: process.env.AI_STATS_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
+
+const response = await after.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```bash cURL
+# Before
+curl -s "https://openrouter.ai/api/v1/chat/completions" \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+
+# After
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
 ```
 </CodeGroup>
 
-## 2) Model IDs
+## 3) Validate model IDs and remove OpenRouter-only behavior
 
-Most provider-prefixed IDs continue to work (for example `openai/gpt-4o-mini`, `anthropic/claude-sonnet-4.5`).
+Do not assume every previous alias is valid. Query `/v1/models` and verify each production model ID.
 
-Always verify available IDs via:
+<CodeGroup>
+```bash cURL
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.data[0:10] | map(.id)'
+```
 
-- [Models endpoint](../api-reference/endpoint/models.mdx)
-- [Models explorer](https://ai-stats.phaseo.app/models)
+```typescript TypeScript
+const MODEL_ALIASES: Record<string, string> = {
+  "openai/gpt-4.1-mini": "openai/gpt-4.1-mini",
+  "anthropic/claude-3.5-sonnet": "anthropic/claude-3.5-sonnet",
+};
 
-## 3) Free model behavior
+export function resolveModelId(input: string): string {
+  return MODEL_ALIASES[input] ?? input;
+}
+```
+</CodeGroup>
 
-AI Stats supports free-model IDs that end in `:free`.
+- Keep `Authorization: Bearer` format unchanged.
+- Remove legacy gateway-specific headers unless you still need them.
+- If callers depend on OpenRouter-only response fields, adapt them in one compatibility layer instead of changing every caller.
+- If your OpenRouter setup relies on provider allow/deny lists or routing defaults, map those into [Presets](../guides/presets.mdx) and [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) instead of scattering them across callers.
 
-- `:free` models can be called with zero deposited credits.
-- Paid models require available wallet balance.
+## 4) OpenRouter parity checklist
 
-## 4) Common migration checks
+Use this checklist before shifting meaningful traffic:
 
-- Ensure all requests send `Authorization: Bearer <AI_STATS_API_KEY>`.
-- Remove legacy gateway-specific headers unless you explicitly need them.
-- Test one text route first (`/v1/responses` or `/v1/chat/completions`) before migrating image/audio/video routes.
-- Validate tool-calling and structured-output behavior in staging with your real prompts.
+- Base URL updated to `https://api.phaseo.app/v1`.
+- `OPENROUTER_API_KEY` replaced with `AI_STATS_API_KEY` in all environments.
+- All production model IDs verified against `/v1/models`.
+- One non-streaming request validated through `/v1/chat/completions` or `/v1/responses`.
+- One streaming request validated through the same app-level integration path used in production.
+- Generation lookups rechecked through `GET /v1/generations?id=<request_id>` so failed requests can be replayed from the stored `replay_request` payload when `replay_supported=true`.
+- Tool-calling and structured-output flows rechecked with real prompts.
+- Invalid-key and invalid-model failures verified in staging.
+- Any OpenRouter-only headers or response fields either removed or explicitly normalized.
+- Shared prompt/routing defaults moved into presets where appropriate.
 
-## 5) Suggested rollout
+## 5) Roll out safely
 
-1. Route a small percentage of traffic to AI Stats.
-2. Compare latency, error rates, and output quality.
-3. Increase traffic gradually.
-4. Keep a rollback toggle until parity is confirmed.
+Use a staged rollout: dev first, then a small production slice, then full traffic once metrics are stable.
+
+1. Start with internal traffic only.
+2. Move to 5-10% production traffic and compare quality, latency, and cost metrics.
+3. Promote to 100% only after parity is confirmed.
+4. Keep rollback as a config-only endpoint/key switch until the cutover is stable.
+
+## Validation commands
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $AI_STATS_API_KEY"
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+Then:
+
+- Run one streaming request through your app-level integration test.
+- Run one negative test for invalid key or invalid model.
+- Replay a small golden prompt set and compare outputs to baseline.
 
 ## Next steps
 
 - [Quickstart](../quickstart.mdx)
+- [API Reference: Models](../api-reference/endpoint/models.mdx)
 - [Examples](../guides/examples.mdx)
 - [Error Handling](../developers/error-handling.mdx)
-

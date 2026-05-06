@@ -3,7 +3,7 @@ title: "Embeddings"
 description: "Call /embeddings with the PHP SDK."
 ---
 
-**Method**: Direct HTTP POST /embeddings
+**Method**: `$client->generateEmbedding(...)` or `$client->createEmbedding(...)`
 
 ### Example
 
@@ -12,28 +12,15 @@ description: "Call /embeddings with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Configuration;
-use GuzzleHttp\Client;
+use AIStats\Sdk\AIStats;
 
-$apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
-
-$client = new Client();
-$response = $client->post($config->getHost() . '/embeddings', [
-    'headers' => [
-        'Authorization' => 'Bearer ' . $apiKey,
-        'Content-Type' => 'application/json',
-    ],
-    'json' => [
-        'model' => 'openai/text-embedding-3-large',
-        'input' => 'Sample text'
-    ]
+$client = new AIStats(getenv('AI_STATS_API_KEY'));
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
 ]);
 
-$data = json_decode($response->getBody(), true);
-echo $data['data'][0]['embedding'][0];
+echo $response['data'][0]['embedding'][0] ?? '';
 ```
 
 ### Key parameters

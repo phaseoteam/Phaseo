@@ -1,5 +1,6 @@
 package ai.stats.sdk;
 
+import ai.stats.gen.Client.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -84,6 +85,7 @@ final class TelemetryRecorder {
 		if (modelProvider.get("provider") != null) {
 			metadata.put("provider", modelProvider.get("provider"));
 		}
+		enrichMetadataFromResponse(metadata, toMap(response));
 		if (!captureHeaders) {
 			metadata.remove("headers");
 		}
@@ -110,6 +112,7 @@ final class TelemetryRecorder {
 		metadata.put("sdk", "java");
 		metadata.put("sdk_version", sdkVersion);
 		metadata.put("stream", false);
+		Map<String, Object> errorResponse = extractErrorResponse(error);
 
 		Map<String, String> modelProvider = extractModelProvider(null, request);
 		if (modelProvider.get("model") != null) {
@@ -118,9 +121,14 @@ final class TelemetryRecorder {
 		if (modelProvider.get("provider") != null) {
 			metadata.put("provider", modelProvider.get("provider"));
 		}
+		enrichMetadataFromResponse(metadata, errorResponse);
 
 		Map<String, Object> errorInfo = new HashMap<>();
 		errorInfo.put("message", error.getMessage());
+		Integer statusCode = extractErrorStatusCode(error);
+		if (statusCode != null) {
+			errorInfo.put("status_code", statusCode);
+		}
 
 		Map<String, Object> entry = new HashMap<>();
 		entry.put("id", newEntryId());
@@ -128,7 +136,7 @@ final class TelemetryRecorder {
 		entry.put("timestamp", Instant.now().toEpochMilli());
 		entry.put("duration_ms", durationMs);
 		entry.put("request", normalize(request));
-		entry.put("response", null);
+		entry.put("response", errorResponse.isEmpty() ? null : errorResponse);
 		entry.put("error", errorInfo);
 		entry.put("metadata", metadata);
 
@@ -195,6 +203,15 @@ final class TelemetryRecorder {
 
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> toMap(Object value) {
+		if (value instanceof String text && !text.isBlank()) {
+			try {
+				JsonNode parsed = mapper.readTree(text);
+				if (parsed.isObject()) {
+					return mapper.convertValue(parsed, Map.class);
+				}
+			} catch (IOException ignored) {
+			}
+		}
 		Object normalized = normalize(value);
 		if (normalized instanceof Map<?, ?> map) {
 			return (Map<String, Object>) map;
@@ -240,6 +257,63 @@ final class TelemetryRecorder {
 		output.put("model", model);
 		output.put("provider", provider);
 		return output;
+	}
+
+	private Map<String, Object> extractErrorResponse(Exception error) {
+		if (error instanceof ApiException apiError) {
+			Map<String, Object> parsed = toMap(apiError.getResponseBody());
+			if (!parsed.isEmpty()) {
+				return parsed;
+			}
+
+			Map<String, Object> fallback = new HashMap<>();
+			fallback.put("status_code", apiError.getStatusCode());
+			String body = asTrimmedString(apiError.getResponseBody());
+			if (body != null) {
+				fallback.put("error", body);
+			}
+			return fallback;
+		}
+
+		return new HashMap<>();
+	}
+
+	private Integer extractErrorStatusCode(Exception error) {
+		if (error instanceof ApiException apiError) {
+			return apiError.getStatusCode();
+		}
+		return null;
+	}
+
+	private void enrichMetadataFromResponse(Map<String, Object> metadata, Map<String, Object> payload) {
+		if (payload.isEmpty()) {
+			return;
+		}
+
+		for (String key : new String[] {
+			"request_id",
+			"session_id",
+			"upstream_request_id",
+			"native_response_id",
+			"status_code",
+			"latency_ms",
+			"generation_ms",
+			"throughput",
+			"provider_attempts",
+			"pricing_lines",
+			"request_counts",
+			"billing"
+		}) {
+			Object value = payload.get(key);
+			if (value != null) {
+				metadata.put(key, value);
+			}
+		}
+
+		Object finishReason = firstNonNull(payload, "finish_reason", "stop_reason");
+		if (finishReason != null) {
+			metadata.put("finish_reason", finishReason);
+		}
 	}
 
 	private static Object firstNonNull(Map<String, Object> source, String... keys) {

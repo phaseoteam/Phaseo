@@ -1,103 +1,125 @@
 ---
 title: "Migrating from Vercel AI Gateway"
-description: "Step-by-step guide to migrate your Vercel AI Gateway integration to AI Stats Gateway."
+description: "Replace Vercel AI Gateway routing with AI Stats Gateway while preserving AI SDK or OpenAI-compatible application behavior."
 ---
 
-# Migrating from Vercel AI Gateway
+If you already use Vercel AI Gateway through the Vercel AI SDK or an OpenAI-compatible client, the safest migration path is to keep your app logic the same and swap only the provider boundary first.
 
-This guide will help you migrate from Vercel's AI Gateway to AI Stats Gateway.
+## Before you start
 
-## Overview
+- Current Vercel AI Gateway base URL and key configuration.
+- `AI_STATS_API_KEY` available in local, staging, and production environments.
+- A small prompt set or integration suite that covers non-streaming, streaming, and any tool-calling paths you rely on.
 
-Both Vercel AI Gateway and AI Stats provide unified access to multiple AI providers. Migration involves:
+## 1) Document your current gateway boundary
 
--   Updating API endpoints
--   Changing authentication
--   Adjusting configuration
+Find the single place where your app creates model providers or API clients. That is the preferred migration point.
 
-## Prerequisites
+- Locate the provider/client factory used by your app.
+- List the model IDs currently used in production.
+- Record retry, timeout, and fallback defaults.
+- Note whether both edge and server runtimes need the same config change.
+- Identify any shared prompt or parameter defaults that should become Gateway presets instead of remaining embedded in individual AI SDK call sites.
 
--   AI Stats account and API key
--   Existing Vercel AI Gateway setup
+## 2) Swap endpoint and key
 
-## Migration Steps
-
-### 1. Update Base URL
-
-Replace Vercel's gateway URL with AI Stats'.
+For most OpenAI-compatible client paths, this is a base URL and key replacement only.
 
 <CodeGroup>
-```bash
-# Before (Vercel AI Gateway)
-curl https://your-gateway.vercel.ai/v1/chat/completions \
-  -H "Authorization: Bearer your-vercel-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
-
-# After (AI Stats)
-
-curl https://api.phaseo.app/v1/chat/completions \
- -H "Authorization: Bearer your-ai-stats-key" \
- -H "Content-Type: application/json" \
- -d '{
-"model": "gpt-4",
-"messages": [{"role": "user", "content": "Hello!"}]
-}'
-
-````
-
-```python
-import openai
-
-client = openai.OpenAI(
-    api_key="your-ai-stats-key",
-    base_url="https://api.phaseo.app/v1"
-)
-
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-````
-
-```javascript
+```typescript TypeScript
+// OpenAI-compatible client before
 import OpenAI from "openai";
 
-const client = new OpenAI({
-	apiKey: "your-ai-stats-key",
-	baseURL: "https://api.phaseo.app/v1",
-});
-
-const response = await client.chat.completions.create({
-	model: "gpt-4",
-	messages: [{ role: "user", content: "Hello!" }],
+const before = new OpenAI({
+  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
+  baseURL: "https://ai-gateway.vercel.sh/v1",
 });
 ```
 
+```typescript TypeScript
+// OpenAI-compatible client after
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```typescript TypeScript
+// Official AI Stats provider for the Vercel AI SDK
+import { generateText } from "ai";
+import { createAIStats } from "@ai-stats/ai-sdk-provider";
+
+const aiStats = createAIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const { text } = await generateText({
+  model: aiStats("openai/gpt-4.1-mini"),
+  prompt: "Generate a migration checklist.",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
 </CodeGroup>
 
-### 2. Update Authentication
+## 3) Confirm behavior parity
 
-Use Bearer token instead of Vercel's auth method.
+Run the same prompt set against old and new paths, then compare latency, output format, and token usage.
 
-### 3. Model Configuration
+- Verify non-streaming text generation.
+- Verify streaming chunk handling through the same code path your app uses in production.
+- Verify tool-calling paths if your app depends on them.
+- Confirm application-level error mapping is unchanged.
+- Move durable routing defaults and provider restrictions into [Presets](../guides/presets.mdx) or [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) instead of rebuilding them ad hoc in every model factory.
 
-Vercel AI Gateway routes based on model names. AI Stats uses similar routing.
+## 4) Vercel AI SDK and gateway checklist
 
-Check available models via `/gateway/models` endpoint.
+Use this checklist before promoting traffic:
 
-### 4. Test Integration
+- Base URL updated to `https://api.phaseo.app/v1`.
+- `AI_STATS_API_KEY` configured in every runtime that previously used the Vercel gateway key.
+- Official `@ai-stats/ai-sdk-provider` wired in if your app uses the Vercel AI SDK directly.
+- Primary AI SDK text generation path passes in staging.
+- One app-level streaming test passes unchanged.
+- Tool-calling and structured-output flows rechecked if used.
+- Old/new outputs compared for a small prompt suite.
+- Rollback remains possible through config or feature-flag change only.
+- Shared prompt/routing defaults moved into presets where appropriate.
+- Generation lookups rechecked through `GET /v1/generations?id=<request_id>` so failed requests can be replayed from the stored `replay_request` payload when `replay_supported=true`.
 
-Verify your applications work with the new gateway.
+## 5) Release plan for low risk
 
-## Common Issues
+1. Ship behind a feature flag or percentage rollout.
+2. Start with internal traffic or a very small production slice.
+3. Monitor latency, error rate, and token/cost drift.
+4. Keep both configs available for at least one release window.
 
--   **Routing differences**: Model availability may vary.
--   **Caching**: Vercel's caching behavior may differ.
+## Validation commands
 
-## Next Steps
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $AI_STATS_API_KEY"
+```
 
--   Explore AI Stats' analytics and monitoring features.
+Then:
+
+- Run your app's primary text-generation integration test.
+- Run one streaming test in staging.
+- Compare old/new outputs for your top prompts before full rollout.
+
+## Next steps
+
+- [Migration from OpenRouter](./from-openrouter.mdx)
+- [Quickstart](../quickstart.mdx)
+- [Examples](../guides/examples.mdx)

@@ -3,20 +3,34 @@ title: "Models"
 description: "List models with the Ruby SDK."
 ---
 
-**Method**: `Client#get_models`.
+**Method**: `client.list_models(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-client = AIStatsSdk::Client.new(api_key: 'your_api_key')
-models = client.get_models()
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+models = client.list_models(
+  limit: "5",
+  provider: "anthropic",
+  provider_status: "beta,not_ready",
+  provider_availability_reason: "preview_only,provider_not_ready",
+  capability_status: "coming_soon,internal_testing",
+  availability: "all",
+)
 ```
 
 ### Key parameters
 - `provider` (optional): Filter by provider
+- `provider_status` / `provider_routing_status` / `model_routing_status` (optional): Filter by rollout and routing state
+- `capability_status` / `provider_availability_status` / `provider_availability_reason` (optional): Filter by capability and availability state
+- `provider_availability_reason` is useful with `availability: "all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`
+- `capability_status` is useful with `availability: "all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`
+- `status` (optional): Filter by model lifecycle state
 - `organisation` (optional): Filter by organisation
 - `endpoints` (optional): Array of endpoints
+- `input_types` / `output_types` / `params` (optional): Capability filters
+- `availability` (optional): `active` or `all`
 - `limit` (optional): Number
 - `offset` (optional): Number
 

@@ -1,35 +1,29 @@
 ---
 title: "Files"
-description: "Call /files with the Java SDK."
+description: "Use the Java SDK for file upload, metadata, and file-content retrieval."
 ---
 
-**Methods**: `Operations.uploadFile(...)`, `Operations.listFiles(...)`, `Operations.retrieveFile(...)`
+**Methods**: `AIStats#uploadFile(...)`, `AIStats#listFiles(...)`, `AIStats#retrieveFile(...)`, `AIStats#retrieveFileContent(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
 import java.util.HashMap;
 import java.util.Map;
 
-String uploadBody = """
-{
-  "purpose": "batch",
-  "file": "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
-}
-""";
+AIStats client = new AIStats(apiKey, "https://api.phaseo.app/v1");
 
-Object uploaded = Operations.uploadFile(client, null, null, null, uploadBody);
-System.out.println(String.valueOf(uploaded));
+Object uploaded = client.uploadFile("""
+  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
+  """);
 
-Object files = Operations.listFiles(client, null, null, null, null);
-System.out.println(String.valueOf(files));
+Object file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
 
-Map<String, String> path = new HashMap<>();
-path.put("file_id", "file_123");
-Object file = Operations.retrieveFile(client, path, null, null, null);
 System.out.println(String.valueOf(file));
+System.out.println(new String(content));
 ```
 
 <Note>
-The preview Java client is low-level and body handling is JSON-string based. If you need strict multipart upload behavior,
-use direct REST calls until higher-level Java helpers are available.
+`listFiles(...)` is wired through the SDK, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+on the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
 </Note>

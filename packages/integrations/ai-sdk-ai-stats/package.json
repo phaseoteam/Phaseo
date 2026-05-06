@@ -22,6 +22,7 @@
     "clean": "rimraf dist",
     "dev": "tsc -p tsconfig.build.json --watch",
     "test": "dotenv -e ../../../.env.local -- vitest run",
+    "test:gateway": "dotenv -e ../../../.env.local -- node ./scripts/run-gateway-tests.mjs",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm build"
   },

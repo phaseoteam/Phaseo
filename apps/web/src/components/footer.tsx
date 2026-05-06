@@ -30,6 +30,7 @@ const externalLinks = {
 	discord: "https://discord.gg/zDw73wamdX",
 	github: "https://github.com/AI-Stats/AI-Stats",
 	insta: "https://instagram.com/ai__stats",
+	linkedin: "https://www.linkedin.com/company/phaseoapp/",
 	reddit: "https://reddit.com/r/AIStats/",
 	x: "https://x.com/ai_stats_team",
 };
@@ -128,6 +129,27 @@ export default function Footer() {
 											className="h-4 w-4"
 										/>
 										<span className="text-xs">Reddit</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href={externalLinks.linkedin}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="LinkedIn"
+									>
+										<Logo
+											id="linkedin"
+											alt="LinkedIn"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										<span className="text-xs">LinkedIn</span>
 									</Link>
 								</Button>
 								<Button
@@ -463,6 +485,27 @@ export default function Footer() {
 										className="h-4 w-4"
 									/>
 									<span className="text-xs">Reddit</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link
+									href={externalLinks.linkedin}
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label="LinkedIn"
+								>
+									<Logo
+										id="linkedin"
+										alt="LinkedIn"
+										width={16}
+										height={16}
+										className="h-4 w-4"
+									/>
+									<span className="text-xs">LinkedIn</span>
 								</Link>
 							</Button>
 							<Button

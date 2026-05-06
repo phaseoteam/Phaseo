@@ -12,10 +12,12 @@ const compareRequestSchema = z.object({
 	model: z.string().min(1).max(200),
 	prompt: z.string().min(1).max(8_000),
 	runs: z.number().int().min(1).max(10),
-	maxCompletionTokens: z.number().int().min(1).max(512),
-	endpoint: z.enum(["chat_completions", "responses"]),
-	gatewayBaseUrl: trustedBaseUrlSchema.optional(),
-	openRouterBaseUrl: trustedBaseUrlSchema.optional(),
+        maxCompletionTokens: z.number().int().min(1).max(512),
+        endpoint: z.enum(["chat_completions", "responses"]),
+        gatewayBaseUrl: trustedBaseUrlSchema.optional(),
+        openRouterBaseUrl: trustedBaseUrlSchema.optional(),
+        llmGatewayBaseUrl: trustedBaseUrlSchema.optional(),
+        vercelAiGatewayBaseUrl: trustedBaseUrlSchema.optional(),
 });
 
 export async function POST(req: Request) {

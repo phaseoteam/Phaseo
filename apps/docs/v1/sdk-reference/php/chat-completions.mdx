@@ -3,7 +3,7 @@ title: "Chat completions"
 description: "Call /chat/completions with the PHP SDK."
 ---
 
-**Method**: CompletionsApi#createChatCompletion
+**Methods**: `generateText()`, `createChatCompletion()`
 
 ### Example
 
@@ -12,32 +12,20 @@ description: "Call /chat/completions with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\CompletionsApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\ChatCompletionsRequest;
-use AIStats\Sdk\Model\ChatMessageUser;
-use AIStats\Sdk\Model\MessageContentText;
+use AIStats\Sdk\AIStats;
 
 $apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new AIStats(apiKey: $apiKey);
 
-$completionsApi = new CompletionsApi(null, $config);
-
-$message = new ChatMessageUser([
-    'role' => 'user',
-    'content' => new MessageContentText(['text' => 'Write a limerick about lighthouses.'])
-]);
-
-$request = new ChatCompletionsRequest([
+$response = $client->createChatCompletion([
     'model' => 'openai/gpt-4o-mini',
-    'messages' => [$message],
+    'messages' => [[
+        'role' => 'user',
+        'content' => 'Write a limerick about lighthouses.',
+    ]],
     'temperature' => 0.5
 ]);
-
-$response = $completionsApi->createChatCompletion($request);
-echo $response->getChoices()[0]->getMessage()->getContent()->getText();
+echo $response['choices'][0]['message']['content'];
 ```
 
 ### Key parameters

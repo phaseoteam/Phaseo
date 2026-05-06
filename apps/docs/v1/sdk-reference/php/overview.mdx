@@ -11,16 +11,36 @@ The local wrapper at `packages/sdk/sdk-php/src/index.php` currently exposes thes
 
 - `generateText(...)`
 - `generateResponse(...)`
+- `createAnthropicMessage(...)`
 - `generateImage(...)`
 - `generateImageEdit(...)`
+- `generateVideo(...)`, `getVideo(...)`, `cancelVideo(...)`, `deleteVideo(...)`, `listVideoModels(...)`, `listVideos(...)`
 - `generateEmbedding(...)`
 - `generateModeration(...)`
+- `createSpeech(...)`
 - `generateTranscription(...)`
 - `generateTranslation(...)`
+- `createBatch(...)`, `retrieveBatch(...)`, `cancelBatch(...)`
+- `getAsyncJobWebSocketUrl(...)`, `getBatchWebSocketUrl(...)`, `getVideoWebSocketUrl(...)`, `asyncJobs()->websocketUrl(...)`
+- `listFiles(...)`, `retrieveFile(...)`, `retrieveFileContent(...)`, `retrieveVideoContent(...)`, `getVideoDownloadUrl(...)`, `uploadFile(...)`
 - `listModels(...)`
-- `health()`
+- `listApiKeys(...)`, `createApiKey(...)`, `updateApiKey(...)`, `deleteApiKey(...)`
+- `getApiKey(...)`
+- `listWorkspaces(...)`, `getWorkspace(...)`, `createWorkspace(...)`, `updateWorkspace(...)`, `deleteWorkspace(...)`
+- `listEndpoints()`
+- `listOrganisations(...)`
+- `listPricingModels(...)`
+- `calculatePricing(...)`
+- `getCurrentApiKey()`
+- `listProviders(...)`, `getAnalytics(...)`, `getCredits(...)`, `getActivity(...)`
+- `getGeneration(...)`
+- `health()`, `healthz()`
 
 ```php
-$client = new \AIStats\Sdk\Client('YOUR_KEY');
+require 'vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats('YOUR_KEY');
 $models = $client->listModels(['limit' => 5]);
 ```

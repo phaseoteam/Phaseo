@@ -1,4 +1,8 @@
-export type CompareTarget = "ai-stats" | "openrouter";
+export type CompareTarget =
+	| "ai-stats"
+	| "openrouter"
+	| "llmgateway"
+	| "vercel-ai-gateway";
 const COMPARE_FETCH_TIMEOUT_MS = 30_000;
 
 export type CompareArgs = {
@@ -9,6 +13,8 @@ export type CompareArgs = {
 	endpoint: "chat_completions" | "responses";
 	gatewayBaseUrl?: string;
 	openRouterBaseUrl?: string;
+	llmGatewayBaseUrl?: string;
+	vercelAiGatewayBaseUrl?: string;
 };
 
 export type FrameTrace = {
@@ -106,7 +112,14 @@ export type GatewayStageSummary = {
 
 const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const PROD_ALLOWED_BENCHMARK_HOSTS = new Set(["api.phaseo.app", "openrouter.ai"]);
+const DEFAULT_LLMGATEWAY_BASE_URL = "https://api.llmgateway.io/v1";
+const DEFAULT_VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
+const PROD_ALLOWED_BENCHMARK_HOSTS = new Set([
+	"api.phaseo.app",
+	"openrouter.ai",
+	"api.llmgateway.io",
+	"ai-gateway.vercel.sh",
+]);
 const DEV_ALLOWED_BENCHMARK_HOSTS = new Set([
 	...PROD_ALLOWED_BENCHMARK_HOSTS,
 	"localhost",
@@ -348,13 +361,52 @@ async function traceOne(
 	target: CompareTarget,
 	run: number,
 	args: CompareArgs,
-	keys: { gatewayApiKey: string; openRouterApiKey: string },
+	keys: {
+		gatewayApiKey: string;
+		openRouterApiKey: string;
+		llmGatewayApiKey?: string;
+		vercelAiGatewayApiKey?: string;
+	},
 ): Promise<CompareTraceResult> {
-	const apiKey = target === "ai-stats" ? keys.gatewayApiKey : keys.openRouterApiKey;
-	const baseUrl =
-		target === "ai-stats"
-			? args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL
-			: args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL;
+	const apiKeyByTarget: Record<CompareTarget, string | undefined> = {
+		"ai-stats": keys.gatewayApiKey,
+		openrouter: keys.openRouterApiKey,
+		llmgateway: keys.llmGatewayApiKey,
+		"vercel-ai-gateway": keys.vercelAiGatewayApiKey,
+	};
+	const baseUrlByTarget: Record<CompareTarget, string> = {
+		"ai-stats": args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL,
+		openrouter: args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL,
+		llmgateway: args.llmGatewayBaseUrl || DEFAULT_LLMGATEWAY_BASE_URL,
+		"vercel-ai-gateway":
+			args.vercelAiGatewayBaseUrl || DEFAULT_VERCEL_AI_GATEWAY_BASE_URL,
+	};
+	const apiKey = apiKeyByTarget[target];
+	const baseUrl = baseUrlByTarget[target];
+	if (!apiKey) {
+		return {
+			target,
+			run,
+			ok: false,
+			status: 0,
+			headersMs: 0,
+			firstByteMs: null,
+			firstFrameMs: null,
+			firstJsonFrameMs: null,
+			firstContentMs: null,
+			firstUsageMs: null,
+			doneMs: null,
+			totalMs: 0,
+			bodyBytes: 0,
+			chunkCount: 0,
+			frameCount: 0,
+			contentFrameCount: 0,
+			firstFrames: [],
+			serverTiming: null,
+			gatewayStageBreakdown: null,
+			error: `Missing API key for ${target}`,
+		};
+	}
 	const start = performance.now();
 	let headersMs = 0;
 	let firstByteMs: number | null = null;
@@ -639,19 +691,37 @@ export async function runGatewayCompare(args: CompareArgs) {
 		process.env.PERFORMANCE_KEY_OPENROUTER ??
 		process.env.OPENROUTER_API_KEY ??
 		"";
+	const llmGatewayApiKey =
+		process.env.PERFORMANCE_KEY_LLMGATEWAY ??
+		process.env.LLMGATEWAY_API_KEY ??
+		"";
+	const vercelAiGatewayApiKey =
+		process.env.PERFORMANCE_KEY_VERCEL_AI_GATEWAY ??
+		process.env.VERCEL_AI_GATEWAY_API_KEY ??
+		"";
 	if (!gatewayApiKey || !openRouterApiKey) {
 		throw new Error(
 			"Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
 		);
 	}
 
+	const enabledTargets: CompareTarget[] = ["ai-stats", "openrouter"];
+	if (llmGatewayApiKey) enabledTargets.push("llmgateway");
+	if (vercelAiGatewayApiKey) enabledTargets.push("vercel-ai-gateway");
+
 	const results: CompareTraceResult[] = [];
 	for (let run = 1; run <= args.runs; run += 1) {
-		const [aiStats, openrouter] = await Promise.all([
-			traceOne("ai-stats", run, args, { gatewayApiKey, openRouterApiKey }),
-			traceOne("openrouter", run, args, { gatewayApiKey, openRouterApiKey }),
-		]);
-		results.push(aiStats, openrouter);
+		const runResults = await Promise.all(
+			enabledTargets.map((target) =>
+				traceOne(target, run, args, {
+					gatewayApiKey,
+					openRouterApiKey,
+					llmGatewayApiKey,
+					vercelAiGatewayApiKey,
+				}),
+			),
+		);
+		results.push(...runResults);
 	}
 
 	return {
@@ -663,11 +733,11 @@ export async function runGatewayCompare(args: CompareArgs) {
 			endpoint: args.endpoint,
 			gatewayBaseUrl: args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL,
 			openRouterBaseUrl: args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL,
+			llmGatewayBaseUrl: args.llmGatewayBaseUrl || DEFAULT_LLMGATEWAY_BASE_URL,
+			vercelAiGatewayBaseUrl:
+				args.vercelAiGatewayBaseUrl || DEFAULT_VERCEL_AI_GATEWAY_BASE_URL,
 		},
 		results,
-		summaries: [
-			summarize(results, "ai-stats"),
-			summarize(results, "openrouter"),
-		],
+		summaries: enabledTargets.map((target) => summarize(results, target)),
 	};
 }

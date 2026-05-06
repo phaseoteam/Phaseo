@@ -30,6 +30,11 @@ let devtoolsDir = resolveDevtoolsDir();
 let writer = new DevToolsWriter(devtoolsDir);
 
 function getGatewayRequestId(entry: DevToolsEntry): string | undefined {
+  const metadataRequestId = entry.metadata?.request_id;
+  if (typeof metadataRequestId === "string" && metadataRequestId.trim().length > 0) {
+    return metadataRequestId;
+  }
+
   const response = entry.response;
   if (!response || typeof response !== "object") {
     return undefined;

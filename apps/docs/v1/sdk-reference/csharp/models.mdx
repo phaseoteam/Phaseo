@@ -3,17 +3,28 @@ title: "Models"
 description: "List models with the C# SDK."
 ---
 
-**Method**: `client.GetModels()`
+**Method**: `client.ListModels(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var models = client.GetModels();
+var client = new AIStats(apiKey);
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10"
+});
 ```
 
 ### Parameters
-- Optional filters: `provider`, `organisation`, `limit`, `offset`.
+- Optional filters: `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, `offset`.
+- `provider_availability_reason` is useful with `availability = "all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`.
+- `capability_status` is useful with `availability = "all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
 
 ### Returns
 `ModelListResponse`

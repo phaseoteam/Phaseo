@@ -90,7 +90,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> CreateBatchAsync(
+	public static Task<Dictionary<string, object>?> CreateBatchAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -99,10 +99,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batches";
-		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> CreateBatchAliasAsync(
+	public static Task<Dictionary<string, object>?> CreateBatchAliasAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -111,7 +111,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batch";
-		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> CreateChatCompletionAsync(
@@ -702,7 +702,7 @@ public static class Operations
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> RetrieveBatchAsync(
+	public static Task<Dictionary<string, object>?> RetrieveBatchAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -711,10 +711,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batches/" + (path != null && path.ContainsKey("batch_id") ? path["batch_id"] : "");
-		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> RetrieveBatchAliasAsync(
+	public static Task<Dictionary<string, object>?> RetrieveBatchAliasAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -723,10 +723,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batch/" + (path != null && path.ContainsKey("id") ? path["id"] : "");
-		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> RetrieveFileAsync(
+	public static Task<Dictionary<string, object>?> RetrieveFileAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -735,7 +735,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files/" + (path != null && path.ContainsKey("file_id") ? path["file_id"] : "");
-		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<object?> RetrieveFileContentAsync(
@@ -774,7 +774,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> UploadFileAsync(
+	public static Task<Dictionary<string, object>?> UploadFileAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -783,7 +783,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files";
-		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
 }

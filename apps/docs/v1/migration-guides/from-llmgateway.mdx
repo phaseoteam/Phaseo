@@ -1,0 +1,106 @@
+---
+title: "Migrating from LLM Gateway"
+description: "Move from LLMGateway to AI Stats Gateway with an OpenAI-compatible endpoint swap, model-ID verification, and staged rollout validation."
+---
+
+If your app already uses LLM Gateway through an OpenAI-compatible client, most teams can keep their request payloads unchanged and migrate by replacing only the gateway boundary first.
+
+## Before you start
+
+- Your existing LLM Gateway endpoint and API key configuration.
+- `AI_STATS_API_KEY` added to local, staging, and production environments.
+- A baseline sample of output quality, latency, and error rate.
+
+## 1) Inventory integration points
+
+Identify the exact files that create and configure your LLM Gateway client.
+
+- Locate all `LLM_GATEWAY_*` env var usage.
+- Find all base URL references in runtime config.
+- Capture the currently active model IDs and fallback chains.
+- Note any shared prompt defaults, provider allow/deny logic, or parameter presets that should move into Gateway presets.
+
+## 2) Switch endpoint and credentials
+
+Keep payloads unchanged first. Start with a pure endpoint and key migration to reduce risk.
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  baseURL: "https://api.llmgateway.io/v1",
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) Validate model compatibility
+
+Query the AI Stats model catalog and verify every model used in production.
+
+If your current setup uses unprefixed aliases such as `gpt-4o`, normalize them at one boundary layer instead of changing every caller.
+
+If your current gateway layer also centralizes request defaults or provider restrictions, map that behavior into [Presets](../guides/presets.mdx) and [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) during the migration instead of re-implementing it per caller.
+
+```bash
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.data | length'
+```
+
+## 4) LLMGateway migration checklist
+
+- All `LLM_GATEWAY_*` env vars mapped or removed.
+- Base URL updated to `https://api.phaseo.app/v1`.
+- `AI_STATS_API_KEY` configured in all deployment environments.
+- Production model IDs verified against `/v1/models`.
+- One non-streaming and one streaming request validated in staging.
+- Invalid-key and invalid-model failure handling rechecked.
+- Shared prompt/routing defaults moved into presets where appropriate.
+- Generation lookups rechecked through `GET /v1/generations?id=<request_id>` so failed requests can be replayed from the stored `replay_request` payload when `replay_supported=true`.
+
+## 5) Validate and roll out
+
+1. Run your golden prompt suite and compare quality, latency, and cost metrics to baseline.
+2. Confirm failed staging requests can be recovered through the replay payload returned by `GET /v1/generations`.
+2. Release behind a canary flag and move from a low percentage of traffic to full traffic once stable.
+3. Observe production metrics for at least one release cycle before removing old configuration.
+
+## Validation commands
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $AI_STATS_API_KEY"
+```
+
+Then:
+
+- Run one non-streaming and one streaming request in staging.
+- Replay your golden prompts and compare to baseline.
+
+## Next steps
+
+- [Migration from OpenRouter](./from-openrouter.mdx)
+- [Migrating from Vercel AI Gateway](./from-vercel.mdx)
+- [Quickstart](../quickstart.mdx)

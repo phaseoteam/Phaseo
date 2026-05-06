@@ -60,6 +60,7 @@ public final class Models {
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
+		public String session_id;
 		public java.util.List<String> stop_sequences;
 		public Boolean stream;
 		public Object system;
@@ -208,6 +209,16 @@ public final class Models {
 		public String text;
 	}
 
+	public static class BatchBillingSummary {
+		public Boolean billed;
+		public Boolean charged;
+		public Integer cost_nanos;
+		public Double cost_usd;
+		public String finalized_at;
+		public Object pricing_breakdown;
+		public String reason;
+	}
+
 	public static class BatchRequest {
 		public String completion_window;
 		public Object debug;
@@ -215,6 +226,8 @@ public final class Models {
 		public String input_file_id;
 		public Object metadata;
 		public Object provider;
+		public String session_id;
+		public Object webhook;
 	}
 
 	public static class BatchRequestCounts {
@@ -224,6 +237,7 @@ public final class Models {
 	}
 
 	public static class BatchResponse {
+		public Object billing;
 		public Integer cancelled_at;
 		public Integer cancelling_at;
 		public Integer completed_at;
@@ -242,8 +256,13 @@ public final class Models {
 		public Object metadata;
 		public String object;
 		public String output_file_id;
+		public java.util.List<Object> pricing_lines;
+		public String provider;
 		public Object request_counts;
+		public String request_id;
+		public String session_id;
 		public String status;
+		public Object webhook;
 	}
 
 	public static class BenchmarkId {
@@ -293,6 +312,7 @@ public final class Models {
 		public String safety_identifier;
 		public Integer seed;
 		public Object service_tier;
+		public String session_id;
 		public Object stop;
 		public Boolean store;
 		public Boolean stream;
@@ -312,7 +332,9 @@ public final class Models {
 		public Integer created;
 		public String id;
 		public String model;
+		public String nativeResponseId;
 		public String object;
+		public String provider;
 		public Object usage;
 	}
 
@@ -394,11 +416,73 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class ErrorFailureSampleItem {
+		public String provider;
+		public Boolean retryable;
+		public Integer status;
+		public String type;
+		public String upstream_error_code;
+		public String upstream_error_description;
+		public String upstream_error_message;
+		public String upstream_error_param;
+		public String upstream_payload_preview;
+	}
+
+	public static class ErrorProviderCandidateDiagnostics {
+		public Integer candidateCount;
+		public java.util.List<Object> droppedMissingAdapter;
+		public java.util.List<String> droppedUnsupportedEndpoint;
+		public Integer supportsEndpointCount;
+		public Integer totalProviders;
+	}
+
+	public static class ErrorProviderEnablementDiagnostics {
+		public String capability;
+		public java.util.List<Object> dropped;
+		public java.util.List<String> providersAfter;
+		public java.util.List<String> providersBefore;
+	}
+
+	public static class ErrorProviderFailureDiagnostics {
+		public Object category;
+		public String hint;
+		public String provider;
+	}
+
 	public static class ErrorResponse {
+		public Integer attempt_count;
 		public String description;
+		public java.util.List<Object> details;
 		public Object error;
+		public Object error_origin;
+		public Object error_type;
+		public java.util.List<String> failed_providers;
+		public java.util.List<Integer> failed_statuses;
+		public java.util.List<Object> failure_sample;
+		public String generation_id;
 		public String message;
+		public java.util.List<String> missing_pricing_providers;
 		public Boolean ok;
+		public Object provider_candidate_diagnostics;
+		public Object provider_enablement;
+		public Object provider_failure_diagnostics;
+		public String provider_payment_required_provider;
+		public String provider_payment_required_support_notice;
+		public String reason;
+		public Object routing_diagnostics;
+		public Integer status_code;
+		public Object upstream_error;
+	}
+
+	public static class ErrorRoutingDiagnostics {
+		public java.util.List<Object> filterStages;
+	}
+
+	public static class ErrorUpstreamError {
+		public String code;
+		public String description;
+		public String message;
+		public String param;
 	}
 
 	public static class FileResponse {
@@ -429,6 +513,7 @@ public final class Models {
 	}
 
 	public static class GatewayModelsResponse {
+		public Object availability_mode;
 		public Integer limit;
 		public java.util.List<Object> models;
 		public Integer offset;
@@ -441,6 +526,7 @@ public final class Models {
 		public String app_id;
 		public Boolean byok;
 		public Double cost_nanos;
+		public String created_at;
 		public String currency;
 		public String endpoint;
 		public String error_code;
@@ -452,6 +538,8 @@ public final class Models {
 		public String native_response_id;
 		public java.util.List<Object> pricing_lines;
 		public String provider;
+		public Object replay_request;
+		public Boolean replay_supported;
 		public String request_id;
 		public Double status_code;
 		public Boolean stream;
@@ -592,6 +680,7 @@ public final class Models {
 	public static class Model {
 		public java.util.List<String> aliases;
 		public Object architecture;
+		public Object availability;
 		public String canonical_slug;
 		public Integer created;
 		public String deprecation_date;
@@ -619,6 +708,13 @@ public final class Models {
 		public String top_provider_id;
 	}
 
+	public static class ModelAvailability {
+		public Integer active_provider_count;
+		public Integer inactive_provider_count;
+		public Integer provider_count;
+		public Object status;
+	}
+
 	public static class ModelId {
 	}
 
@@ -628,6 +724,22 @@ public final class Models {
 		public String replacement_model_id;
 		public String retirement_date;
 		public Object status;
+	}
+
+	public static class ModelProviderAvailability {
+		public String api_provider_id;
+		public String api_provider_name;
+		public Object availability_reason;
+		public Object availability_status;
+		public Object capability_status;
+		public String effective_from;
+		public String effective_to;
+		public java.util.List<String> endpoints;
+		public Boolean is_active_gateway;
+		public Object model_routing_status;
+		public java.util.List<String> params;
+		public Object provider_routing_status;
+		public Object provider_status;
 	}
 
 	public static class ModelsPrivacyScopeNotImplementedResponse {
@@ -884,6 +996,7 @@ public final class Models {
 		public Object reasoning;
 		public String safety_identifier;
 		public Object service_tier;
+		public String session_id;
 		public Boolean store;
 		public Boolean stream;
 		public Double temperature;
@@ -1024,7 +1137,9 @@ public final class Models {
 		public Integer progress;
 		public String progress_source;
 		public String provider;
+		public String request_id;
 		public Double seconds;
+		public String session_id;
 		public String size;
 		public Object started_at;
 		public Object status;
