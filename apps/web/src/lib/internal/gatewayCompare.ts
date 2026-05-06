@@ -706,7 +706,6 @@ export async function runGatewayCompare(args: CompareArgs) {
 			"Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
 		);
 	}
-
 	const enabledTargets: CompareTarget[] = ["ai-stats", "openrouter"];
 	if (llmGatewayApiKey) enabledTargets.push("llmgateway");
 	if (vercelAiGatewayApiKey) enabledTargets.push("vercel-ai-gateway");
