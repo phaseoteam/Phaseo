@@ -92,7 +92,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			dynamicKey,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				key: { ok: true, reason: null },
 				keyLimit: { ok: true, reason: null },
 				credit: { ok: true, reason: null },
@@ -102,7 +102,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			staticKey,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				resolvedModel: model,
 				providers: [],
 				pricing: {},
@@ -112,19 +112,19 @@ describe("before context warm-cache latency", () => {
 
 		kv.resetCounts();
 
-		const first = await fetchGatewayContext({
-			teamId,
-			model,
-			endpoint,
-			apiKeyId,
-			disableCache: false,
-		});
-		const second = await fetchGatewayContext({
-			teamId,
-			model,
-			endpoint,
-			apiKeyId,
-			disableCache: false,
+                const first = await fetchGatewayContext({
+                        workspaceId: teamId,
+                        model,
+                        endpoint,
+                        apiKeyId,
+                        disableCache: false,
+                });
+                const second = await fetchGatewayContext({
+                        workspaceId: teamId,
+                        model,
+                        endpoint,
+                        apiKeyId,
+                        disableCache: false,
 		});
 
 		expect(first.contextTelemetry?.cacheStatus).toBe("hit");
@@ -152,7 +152,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			dynamicKey,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				key: { ok: true, reason: null },
 				keyLimit: { ok: true, reason: null },
 				credit: { ok: true, reason: null },
@@ -162,7 +162,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			staticKey,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				resolvedModel: model,
 				providers: [],
 				pricing: {},
@@ -170,24 +170,24 @@ describe("before context warm-cache latency", () => {
 			}),
 		);
 
-		await fetchGatewayContext({
-			teamId,
-			model,
-			endpoint,
-			apiKeyId,
-			disableCache: false,
-		});
+                await fetchGatewayContext({
+                        workspaceId: teamId,
+                        model,
+                        endpoint,
+                        apiKeyId,
+                        disableCache: false,
+                });
 
 		const samples: number[] = [];
 		const iterations = 300;
 		for (let i = 0; i < iterations; i += 1) {
 			const started = performance.now();
-			await fetchGatewayContext({
-				teamId,
-				model,
-				endpoint,
-				apiKeyId,
-				disableCache: false,
+                        await fetchGatewayContext({
+                                workspaceId: teamId,
+                                model,
+                                endpoint,
+                                apiKeyId,
+                                disableCache: false,
 			});
 			samples.push(performance.now() - started);
 		}
@@ -224,7 +224,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			dynamicKey,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				key: { ok: true, reason: null },
 				keyLimit: { ok: true, reason: null },
 				credit: { ok: true, reason: null },
@@ -234,7 +234,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			staticKeyA,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				resolvedModel: modelA,
 				providers: [],
 				pricing: {},
@@ -244,7 +244,7 @@ describe("before context warm-cache latency", () => {
 		await kv.put(
 			staticKeyB,
 			JSON.stringify({
-				teamId,
+				workspaceId: teamId,
 				resolvedModel: modelB,
 				providers: [],
 				pricing: {},
@@ -254,19 +254,19 @@ describe("before context warm-cache latency", () => {
 
 		kv.resetCounts();
 
-		const a = await fetchGatewayContext({
-			teamId,
-			model: modelA,
-			endpoint,
-			apiKeyId,
-			disableCache: false,
-		});
-		const b = await fetchGatewayContext({
-			teamId,
-			model: modelB,
-			endpoint,
-			apiKeyId,
-			disableCache: false,
+                const a = await fetchGatewayContext({
+                        workspaceId: teamId,
+                        model: modelA,
+                        endpoint,
+                        apiKeyId,
+                        disableCache: false,
+                });
+                const b = await fetchGatewayContext({
+                        workspaceId: teamId,
+                        model: modelB,
+                        endpoint,
+                        apiKeyId,
+                        disableCache: false,
 		});
 
 		expect(a.contextTelemetry?.cacheStatus).toBe("hit");

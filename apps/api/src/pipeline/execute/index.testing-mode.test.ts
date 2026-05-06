@@ -119,9 +119,10 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			byokKeyId: null,
 		});
 		resolveProviderExecutorMock.mockReturnValue(executor);
+		const ctx = createCtx({ testingMode: true });
 
 		const result = await doRequestWithIR(
-			createCtx({ testingMode: true }),
+			ctx,
 			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
 			createTiming(),
 		);
@@ -130,6 +131,16 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate");
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "openai",
+				outcome: "success",
+				type: "success",
+				status: 200,
+				response_kind: "completed",
+			}),
+		]);
 	});
 
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {
@@ -214,9 +225,10 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			if (providerId === "second") return secondExecutor;
 			return null;
 		});
+		const ctx = createCtx({ testingMode: false });
 
 		const result = await doRequestWithIR(
-			createCtx({ testingMode: false }),
+			ctx,
 			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
 			createTiming(),
 		);
@@ -234,6 +246,24 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				ok: false,
 			}),
 		);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "first",
+				outcome: "upstream_non_2xx",
+				type: "upstream_non_2xx",
+				status: 429,
+				response_kind: "completed",
+			}),
+			expect.objectContaining({
+				attempt_number: 2,
+				provider: "second",
+				outcome: "success",
+				type: "success",
+				status: 200,
+				response_kind: "completed",
+			}),
+		]);
 	});
 
 	it("fails over to next provider when a retryable transport error occurs", async () => {
@@ -295,9 +325,10 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			if (providerId === "second") return secondExecutor;
 			return null;
 		});
+		const ctx = createCtx({ testingMode: false });
 
 		const result = await doRequestWithIR(
-			createCtx({ testingMode: false }),
+			ctx,
 			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
 			createTiming(),
 		);
@@ -306,6 +337,21 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as any).result.provider).toBe("second");
 		expect(firstExecutor).toHaveBeenCalledTimes(1);
 		expect(secondExecutor).toHaveBeenCalledTimes(1);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "first",
+				outcome: "retryable_error",
+				type: "retryable_error",
+			}),
+			expect.objectContaining({
+				attempt_number: 2,
+				provider: "second",
+				outcome: "success",
+				type: "success",
+				status: 200,
+			}),
+		]);
 	});
 
 	it("skips breaker-blocked providers and falls back to the next candidate", async () => {
@@ -367,9 +413,10 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			if (providerId === "second") return secondExecutor;
 			return null;
 		});
+		const ctx = createCtx({ testingMode: false });
 
 		const result = await doRequestWithIR(
-			createCtx({ testingMode: false }),
+			ctx,
 			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
 			createTiming(),
 		);
@@ -378,6 +425,21 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as any).result.provider).toBe("second");
 		expect(firstExecutor).not.toHaveBeenCalled();
 		expect(secondExecutor).toHaveBeenCalledTimes(1);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "first",
+				outcome: "blocked",
+				type: "blocked",
+			}),
+			expect.objectContaining({
+				attempt_number: 2,
+				provider: "second",
+				outcome: "success",
+				type: "success",
+				status: 200,
+			}),
+		]);
 	});
 
 	it("does not retry transient single-provider upstream failures", async () => {
@@ -467,9 +529,10 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		resolveProviderExecutorMock.mockImplementation((providerId: string) =>
 			providerId === "only" ? onlyExecutor : null,
 		);
+		const ctx = createCtx({ testingMode: false });
 
 		const result = await doRequestWithIR(
-			createCtx({ testingMode: false }),
+			ctx,
 			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
 			createTiming(),
 		);
@@ -478,6 +541,161 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as Response).status).toBe(502);
 		expect(onlyExecutor).toHaveBeenCalledTimes(1);
 		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "only",
+				outcome: "upstream_non_2xx",
+				type: "upstream_non_2xx",
+				status: 503,
+				response_kind: "completed",
+			}),
+		]);
+	});
+
+	it("captures AWS-style upstream exception codes from response headers", async () => {
+		const pricingCard = {
+			provider: "amazon-bedrock",
+			model: "anthropic.claude-3-5-sonnet-v1:0",
+			endpoint: "chat.completions",
+			currency: "USD",
+			rules: [],
+		};
+		const onlyCandidate = {
+			providerId: "amazon-bedrock",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "anthropic.claude-3-5-sonnet-v1:0",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: [onlyCandidate],
+		});
+		rankProvidersMock.mockResolvedValue([
+			{ candidate: onlyCandidate, health: {} },
+		]);
+
+		const onlyExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {},
+			upstream: new Response(
+				JSON.stringify({ message: "You don't have access to invoke this model." }),
+				{
+					status: 403,
+					headers: {
+						"x-amzn-errortype": "AccessDeniedException:",
+					},
+				},
+			),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		resolveProviderExecutorMock.mockImplementation((providerId: string) =>
+			providerId === "amazon-bedrock" ? onlyExecutor : null,
+		);
+
+		const result = await doRequestWithIR(
+			createCtx({
+				testingMode: false,
+				endpoint: "chat.completions",
+				capability: "text.generate",
+				model: "anthropic.claude-3-5-sonnet-v1:0",
+			}),
+			{
+				model: "anthropic.claude-3-5-sonnet-v1:0",
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any,
+			createTiming(),
+		);
+
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(502);
+		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
+
+		const forwardedCtx = guardAllFailedMock.mock.calls[0]?.[0];
+		expect(forwardedCtx?.attemptErrors?.[0]).toMatchObject({
+			provider: "amazon-bedrock",
+			status: 403,
+			upstream_error_code: "AccessDeniedException",
+			upstream_error_message: "You don't have access to invoke this model.",
+		});
+	});
+
+	it("captures Google-style nested error status codes from response bodies", async () => {
+		const pricingCard = {
+			provider: "google-ai-studio",
+			model: "google/gemini-2.5-pro",
+			endpoint: "responses",
+			currency: "USD",
+			rules: [],
+		};
+		const onlyCandidate = {
+			providerId: "google-ai-studio",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "google/gemini-2.5-pro",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: [onlyCandidate],
+		});
+		rankProvidersMock.mockResolvedValue([
+			{ candidate: onlyCandidate, health: {} },
+		]);
+
+		const onlyExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {},
+			upstream: new Response(
+				JSON.stringify({
+					error: {
+						code: 403,
+						message: "The caller does not have permission.",
+						status: "PERMISSION_DENIED",
+					},
+				}),
+				{ status: 403 },
+			),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		resolveProviderExecutorMock.mockImplementation((providerId: string) =>
+			providerId === "google-ai-studio" ? onlyExecutor : null,
+		);
+
+		const result = await doRequestWithIR(
+			createCtx({
+				testingMode: false,
+				endpoint: "responses",
+				capability: "text.generate",
+				model: "google/gemini-2.5-pro",
+			}),
+			{
+				model: "google/gemini-2.5-pro",
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any,
+			createTiming(),
+		);
+
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(502);
+		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
+
+		const forwardedCtx = guardAllFailedMock.mock.calls[0]?.[0];
+		expect(forwardedCtx?.attemptErrors?.[0]).toMatchObject({
+			provider: "google-ai-studio",
+			status: 403,
+			upstream_error_code: "PERMISSION_DENIED",
+			upstream_error_message: "The caller does not have permission.",
+		});
 	});
 
 	it("tries at most the top three providers when multiple candidates are available", async () => {

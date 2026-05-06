@@ -5,6 +5,7 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 
 export type AsyncOperationKind = "video" | "batch" | "music";
+const ASYNC_OPERATION_L1_TTL_MS = 1_000;
 
 export type AsyncOperationRecord = {
 	workspaceId: string;
@@ -39,6 +40,54 @@ type AsyncOperationRow = {
 	created_at: string | null;
 	updated_at: string | null;
 };
+
+type AsyncOperationL1Entry = {
+	value: AsyncOperationRecord | null;
+	expiresAtMs: number;
+};
+
+const asyncOperationL1 = new Map<string, AsyncOperationL1Entry>();
+const asyncOperationInflight = new Map<string, Promise<AsyncOperationRecord | null>>();
+const asyncOperationEpoch = new Map<string, number>();
+
+function asyncOperationCacheKey(workspaceId: string, kind: AsyncOperationKind, internalId: string): string {
+	return `${workspaceId}:${kind}:${internalId}`;
+}
+
+function readAsyncOperationL1(key: string): AsyncOperationRecord | null | undefined {
+	const entry = asyncOperationL1.get(key);
+	if (!entry) return undefined;
+	if (entry.expiresAtMs <= Date.now()) {
+		asyncOperationL1.delete(key);
+		return undefined;
+	}
+	return entry.value;
+}
+
+function writeAsyncOperationL1(key: string, value: AsyncOperationRecord | null, ttlMs = ASYNC_OPERATION_L1_TTL_MS): void {
+	if (!Number.isFinite(ttlMs) || ttlMs <= 0) return;
+	asyncOperationL1.set(key, {
+		value,
+		expiresAtMs: Date.now() + ttlMs,
+	});
+}
+
+function currentAsyncOperationEpoch(key: string): number {
+	return asyncOperationEpoch.get(key) ?? 0;
+}
+
+function invalidateAsyncOperationCache(workspaceId: string, kind: AsyncOperationKind, internalId: string): void {
+	const key = asyncOperationCacheKey(workspaceId, kind, internalId);
+	asyncOperationL1.delete(key);
+	asyncOperationInflight.delete(key);
+	asyncOperationEpoch.set(key, currentAsyncOperationEpoch(key) + 1);
+}
+
+export function __resetAsyncOperationCachesForTests(): void {
+	asyncOperationL1.clear();
+	asyncOperationInflight.clear();
+	asyncOperationEpoch.clear();
+}
 
 function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -115,6 +164,7 @@ export async function upsertAsyncOperation(args: {
 		.from("gateway_async_operations")
 		.upsert(payload, { onConflict: "workspace_id,kind,internal_id" });
 	if (error) throw error;
+	invalidateAsyncOperationCache(workspaceId, args.kind, internalId);
 }
 
 export async function listAsyncOperations(args: {
@@ -215,19 +265,40 @@ export async function getAsyncOperation(
 	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
 	if (!workspaceId || !internalId) return null;
+	const cacheKey = asyncOperationCacheKey(workspaceId, kind, internalId);
+	const cached = readAsyncOperationL1(cacheKey);
+	if (cached !== undefined) return cached;
 
-	const { data, error } = await getSupabaseAdmin()
-		.from("gateway_async_operations")
-		.select(
-			"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
-		)
-		.eq("workspace_id", workspaceId)
-		.eq("kind", kind)
-		.eq("internal_id", internalId)
-		.maybeSingle();
-	if (error) throw error;
-	if (!data) return null;
-	return mapRow(data as AsyncOperationRow);
+	const inflight = asyncOperationInflight.get(cacheKey);
+	if (inflight) return inflight;
+
+	const epoch = currentAsyncOperationEpoch(cacheKey);
+	const loader = (async (): Promise<AsyncOperationRecord | null> => {
+		const { data, error } = await getSupabaseAdmin()
+			.from("gateway_async_operations")
+			.select(
+				"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
+			)
+			.eq("workspace_id", workspaceId)
+			.eq("kind", kind)
+			.eq("internal_id", internalId)
+			.maybeSingle();
+		if (error) throw error;
+		const record = data ? mapRow(data as AsyncOperationRow) : null;
+		if (currentAsyncOperationEpoch(cacheKey) === epoch) {
+			writeAsyncOperationL1(cacheKey, record);
+		}
+		return record;
+	})();
+
+	asyncOperationInflight.set(cacheKey, loader);
+	try {
+		return await loader;
+	} finally {
+		if (asyncOperationInflight.get(cacheKey) === loader) {
+			asyncOperationInflight.delete(cacheKey);
+		}
+	}
 }
 
 export async function findAsyncOperationByNativeId(
@@ -305,6 +376,7 @@ export async function markAsyncOperationBilled(
 		.select("internal_id")
 		.maybeSingle();
 	if (error) throw error;
+	if (data) invalidateAsyncOperationCache(workspaceId, kind, internalId);
 	return Boolean(data);
 }
 
@@ -349,6 +421,7 @@ export async function setAsyncOperationStatus(args: {
 		.eq("kind", args.kind)
 		.eq("internal_id", internalId);
 	if (error) throw error;
+	invalidateAsyncOperationCache(workspaceId, args.kind, internalId);
 }
 
 export async function patchAsyncOperationMeta(args: {
@@ -388,5 +461,6 @@ export async function patchAsyncOperationMeta(args: {
 		.eq("kind", args.kind)
 		.eq("internal_id", internalId);
 	if (error) throw error;
+	invalidateAsyncOperationCache(workspaceId, args.kind, internalId);
 }
 

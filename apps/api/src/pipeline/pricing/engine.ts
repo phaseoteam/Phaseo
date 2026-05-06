@@ -11,11 +11,11 @@ const KNOWN_METERS = new Set<string>([
     "input_tokens",
     "input_text_tokens", "input_image_tokens", "input_audio_tokens", "input_video_tokens",
     "output_tokens",
-    "output_text_tokens", "output_image_tokens", "output_audio_tokens", "output_video_tokens",
-    "output_image", "output_video_seconds",
+    "output_text_tokens", "output_reasoning_tokens", "output_image_tokens", "output_audio_tokens", "output_video_tokens",
+    "output_image", "output_video", "output_video_seconds",
     "cached_write_text_tokens", "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
-    "embedding_tokens", "requests",
+    "embedding_tokens", "bfl_credits", "requests",
 ]);
 
 function isPricingDebugEnabled(): boolean {
@@ -192,12 +192,21 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         "output_tokens_details.cached_tokens",
         "completion_tokens_details.cached_tokens",
     ]);
+    const reasoningTokens = pickFirstFiniteNumber(usageRaw, [
+        "output_reasoning_tokens",
+        "reasoning_tokens",
+        "output_tokens_details.reasoning_tokens",
+        "completion_tokens_details.reasoning_tokens",
+    ]);
     const requests = resolveRequestCountUsage(usageRaw);
     if (typeof cachedReadTokens === "number" && meters.cached_read_text_tokens == null) {
         meters.cached_read_text_tokens = cachedReadTokens;
     }
     if (typeof cachedWriteTokens === "number" && meters.cached_write_text_tokens == null) {
         meters.cached_write_text_tokens = cachedWriteTokens;
+    }
+    if (typeof reasoningTokens === "number" && meters.output_reasoning_tokens == null) {
+        meters.output_reasoning_tokens = reasoningTokens;
     }
     if (typeof requests === "number" && meters.requests == null) {
         meters.requests = requests;
@@ -223,7 +232,19 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
                 : canonicalInputTokens;
     }
     if (meters.output_text_tokens == null) {
-        meters.output_text_tokens = canonicalOutputTokens;
+        meters.output_text_tokens =
+            card.rules.some((rule) => rule.meter === "output_reasoning_tokens") &&
+            typeof reasoningTokens === "number"
+                ? Math.max(0, canonicalOutputTokens - reasoningTokens)
+                : canonicalOutputTokens;
+    }
+    if (
+        card.rules.some((rule) => rule.meter === "output_reasoning_tokens") &&
+        typeof meters.output_text_tokens === "number" &&
+        typeof reasoningTokens === "number" &&
+        meters.output_text_tokens === canonicalOutputTokens
+    ) {
+        meters.output_text_tokens = Math.max(0, meters.output_text_tokens - reasoningTokens);
     }
     if (
         shouldTreatCachedReadAsSubset &&

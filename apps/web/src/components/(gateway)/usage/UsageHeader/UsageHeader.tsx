@@ -128,12 +128,12 @@ export default function UsageHeader({
 	}
 
 	async function onRefresh() {
-		try {
-			setRefreshing(true);
-			const res = await revalidateUsage();
-			router.refresh();
-			if (res?.ok) toast.success("Refresh Successful");
-			else toast.error("Refresh Failed");
+                try {
+                        setRefreshing(true);
+                        const res = await revalidateUsage("dashboard");
+                        router.refresh();
+                        if (res?.ok) toast.success("Refresh Successful");
+                        else toast.error("Refresh Failed");
 		} catch {
 			toast.error("Refresh Failed");
 		} finally {

@@ -6,6 +6,12 @@ import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
 
+function azureConfigError(code: string): Error & { code: string } {
+    const error = new Error(code) as Error & { code: string };
+    error.code = code;
+    return error;
+}
+
 export type AzureOpenAIConfig = {
     baseUrl: string;
     apiVersion: string;
@@ -15,7 +21,7 @@ export function resolveAzureConfig(): AzureOpenAIConfig {
     const bindings = getBindings();
     const baseUrl = bindings.AZURE_OPENAI_BASE_URL;
     if (!baseUrl) {
-        throw new Error("azure_base_url_missing");
+        throw azureConfigError("azure_base_url_missing");
     }
     return {
         baseUrl,

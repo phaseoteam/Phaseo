@@ -4,6 +4,12 @@ type VertexServiceAccount = {
 	token_uri?: string;
 };
 
+function vertexError(code: string): Error & { code: string } {
+	const error = new Error(code) as Error & { code: string };
+	error.code = code;
+	return error;
+}
+
 export function resolveVertexApiBase(bindings: Record<string, unknown>): string {
 	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
@@ -13,20 +19,20 @@ export function resolveVertexApiBase(bindings: Record<string, unknown>): string 
 		if (/\/v\d+(?:beta\d+)?\/projects\/[^/]+\/locations\/[^/]+$/i.test(rawBase)) {
 			return rawBase;
 		}
-		if (!project) throw new Error("google-vertex_project_missing");
+		if (!project) throw vertexError("google-vertex_project_missing");
 		if (/\/v\d+(?:beta\d+)?$/i.test(rawBase)) {
 			return `${rawBase}/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 		}
 		return `${rawBase}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 	}
 
-	if (!project) throw new Error("google-vertex_project_missing");
+	if (!project) throw vertexError("google-vertex_project_missing");
 	return `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
 export async function resolveVertexAccessToken(rawKey: string): Promise<string> {
 	const value = rawKey.trim();
-	if (!value) throw new Error("google-vertex_access_token_missing");
+	if (!value) throw vertexError("google-vertex_access_token_missing");
 
 	if (value.startsWith("{")) {
 		try {
@@ -100,11 +106,11 @@ async function mintServiceAccountAccessToken(sa: VertexServiceAccount): Promise<
 	});
 
 	if (!res.ok) {
-		throw new Error(`google-vertex_oauth_error_${res.status}`);
+		throw vertexError(`google-vertex_oauth_error_${res.status}`);
 	}
 	const json = await res.json() as { access_token?: string };
 	if (!json?.access_token) {
-		throw new Error("google-vertex_oauth_access_token_missing");
+		throw vertexError("google-vertex_oauth_access_token_missing");
 	}
 	return json.access_token;
 }

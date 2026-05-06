@@ -248,6 +248,19 @@ describe("beforeRequest pricing loss-prevention", () => {
 		const payload = await result.response.json();
 		expect(payload.error).toBe("unsupported_model_or_endpoint");
 		expect(payload.reason).toBe("pricing_not_configured");
+		expect(payload.provider_candidate_diagnostics).toEqual({
+			totalProviders: 1,
+			supportsEndpointCount: 1,
+			candidateCount: 1,
+			droppedUnsupportedEndpoint: [],
+			droppedMissingAdapter: [],
+		});
+		expect(payload.provider_enablement).toEqual({
+			capability: "text.generate",
+			providersBefore: ["openai"],
+			providersAfter: [],
+			dropped: [{ providerId: "openai", reason: "pricing_missing" }],
+		});
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
 	});
 

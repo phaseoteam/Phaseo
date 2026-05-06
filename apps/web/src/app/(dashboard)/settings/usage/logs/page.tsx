@@ -29,12 +29,12 @@ import {
 import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
 import {
 	fetchAppNames,
+	fetchPaginatedRequests,
 	fetchRecentAsyncJobs,
 	fetchAppMetadata,
 	fetchModelMetadata,
 	fetchProviderMetadata,
 	fetchProviderNames,
-	fetchPaginatedRequests,
 	fetchSessionRollups,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
@@ -74,6 +74,15 @@ function firstSearchParam(
 	if (typeof value === "string") return value;
 	if (Array.isArray(value)) return value[0];
 	return undefined;
+}
+
+function parsePositivePage(value: string | undefined): number {
+	const parsed = Number.parseInt(value ?? "", 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function parseSortDirection(value: string | undefined): "asc" | "desc" {
+	return value === "asc" ? "asc" : "desc";
 }
 
 export default function Page(props: {
@@ -143,6 +152,9 @@ async function UsageLogsContent({
 	const sessionAppFilter = firstSearchParam(sp?.session_app)?.trim() || null;
 	const sessionModelFilter = firstSearchParam(sp?.session_model)?.trim() || null;
 	const sessionProviderFilter = firstSearchParam(sp?.session_provider)?.trim() || null;
+	const logsPage = parsePositivePage(firstSearchParam(sp?.page));
+	const logsSortField = firstSearchParam(sp?.sort)?.trim() || "created_at";
+	const logsSortDir = parseSortDirection(firstSearchParam(sp?.dir));
 	const viewHref = {
 		logs: buildViewHref("logs", sp),
 		jobs: buildViewHref("jobs", sp),
@@ -201,9 +213,20 @@ async function UsageLogsContent({
 					),
 			),
 		);
-		const [providerNames, modelMetadata] = await Promise.all([
+		const jobAppIds = Array.from(
+			new Set(
+				recentJobs
+					.map((job) => job.app_id)
+					.filter(
+						(appId): appId is string =>
+							typeof appId === "string" && appId.trim().length > 0,
+					),
+			),
+		);
+		const [providerNames, modelMetadata, appMetadata] = await Promise.all([
 			fetchProviderNames(jobProviders),
 			fetchModelMetadata(jobModels),
+			fetchAppMetadata(jobAppIds),
 		]);
 		filters = (
 			<UsageViewFilters
@@ -222,6 +245,7 @@ async function UsageLogsContent({
 				includeWithoutWebhook
 				providerNames={providerNames}
 				modelMetadata={modelMetadata}
+				appMetadata={appMetadata}
 				variant="logs"
 				timeRange={timeRange}
 				showRefreshButton={false}
@@ -264,6 +288,7 @@ async function UsageLogsContent({
 				appMetadata={appMetadata}
 				modelMetadata={modelMetadata}
 				providerNames={providerNames}
+				providerMetadata={providerMetadata}
 				sessionAppIds={sessionAppIds}
 				sessionModelIds={sessionModelIds}
 				sessionProviderIds={sessionProviderIds}
@@ -287,19 +312,49 @@ async function UsageLogsContent({
 		);
 	} else {
 		// Fetch unique models/providers/apps for table filters (best-effort)
-		const { data: uniqueData } = await supabase
-			.from("gateway_requests")
-			.select("model_id, provider, app_id")
-			.eq("workspace_id", workspaceId)
-			.gte("created_at", timeRange.from)
-			.lte("created_at", timeRange.to)
-			.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
-		const { data: rollupData } = await supabase
-			.from("gateway_usage_rollup_15m_workspace_provider_model")
-			.select("canonical_model_id, provider")
-			.eq("workspace_id", workspaceId)
-			.gte("bucket_15m", timeRange.from)
-			.lte("bucket_15m", timeRange.to);
+		const [
+			{ data: uniqueData },
+			{ data: rollupData },
+			{ data: keyRows },
+			initialRequestsPage,
+		] = await Promise.all([
+			supabase
+				.from("gateway_requests")
+				.select("model_id, provider, app_id")
+				.eq("workspace_id", workspaceId)
+				.gte("created_at", timeRange.from)
+				.lte("created_at", timeRange.to)
+				.not(
+					"endpoint",
+					"in",
+					buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS),
+				),
+			supabase
+				.from("gateway_usage_rollup_15m_workspace_provider_model")
+				.select("canonical_model_id, provider")
+				.eq("workspace_id", workspaceId)
+				.gte("bucket_15m", timeRange.from)
+				.lte("bucket_15m", timeRange.to),
+			supabase
+				.from("keys")
+				.select("id,name,prefix")
+				.eq("workspace_id", workspaceId)
+				.neq("status", "deleted")
+				.neq("name", CHAT_MANAGED_KEY_NAME)
+				.order("created_at", { ascending: true }),
+			fetchPaginatedRequests({
+				timeRange,
+				modelFilter: logModelFilter,
+				providerFilter: logProviderFilter,
+				keyFilter: logKeyFilter,
+				statusFilter: logStatusFilter,
+				requestFilter: logRequestFilter,
+				sessionFilter,
+				page: logsPage,
+				sortField: logsSortField,
+				sortDirection: logsSortDir,
+			}),
+		]);
 
 		const uniqueModels = Array.from(
 			new Set((uniqueData ?? []).map((r: any) => r.model_id).filter(Boolean)),
@@ -361,31 +416,8 @@ async function UsageLogsContent({
 			fetchProviderMetadata(dedupedProviders),
 			fetchModelMetadata(dedupedModels),
 		]);
-		const initialPage = Math.max(1, Number.parseInt(firstSearchParam(sp?.page) ?? "1", 10) || 1);
-		const initialSortField = firstSearchParam(sp?.sort)?.trim() || "created_at";
-		const initialSortDirection =
-			firstSearchParam(sp?.dir)?.trim().toLowerCase() === "asc" ? "asc" : "desc";
-		const initialRequests = await fetchPaginatedRequests({
-			timeRange,
-			modelFilter: logModelFilter,
-			providerFilter: logProviderFilter,
-			keyFilter: logKeyFilter,
-			statusFilter: logStatusFilter,
-			requestFilter: logRequestFilter,
-			sessionFilter,
-			page: initialPage,
-			sortField: initialSortField,
-			sortDirection: initialSortDirection,
-		});
 
 		// Keys list for key label rendering inside the logs table.
-		const { data: keyRows } = await supabase
-			.from("keys")
-			.select("id,name,prefix")
-			.eq("workspace_id", workspaceId)
-			.neq("status", "deleted")
-			.neq("name", CHAT_MANAGED_KEY_NAME)
-			.order("created_at", { ascending: true });
 		const availableKeys = (keyRows ?? []).map((row: any) => ({
 			id: row.id,
 			name: row?.name ?? null,
@@ -411,10 +443,10 @@ async function UsageLogsContent({
 				providerNames={providerNames}
 				providerMetadata={providerMetadata}
 				modelMetadata={modelMetadata}
-				initialPage={initialRequests.page}
-				initialRows={initialRequests.data}
-				initialTotal={initialRequests.total}
-				initialTotalPages={initialRequests.totalPages}
+				initialPage={logsPage}
+				initialRows={initialRequestsPage.data}
+				initialTotal={initialRequestsPage.total}
+				initialTotalPages={initialRequestsPage.totalPages}
 			/>
 		);
 	}

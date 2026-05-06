@@ -6,6 +6,12 @@ import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
 
+function configError(code: string): Error & { code: string } {
+    const error = new Error(code) as Error & { code: string };
+    error.code = code;
+    return error;
+}
+
 export type OpenAICompatConfig = {
     providerId: string;
     baseUrl?: string;
@@ -686,7 +692,7 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
         (config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
         config.baseUrl;
     if (!baseUrl) {
-        throw new Error(`${providerId}_base_url_missing`);
+        throw configError(`${providerId}_base_url_missing`);
     }
 
     return {

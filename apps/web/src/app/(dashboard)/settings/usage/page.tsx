@@ -12,9 +12,12 @@ import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
 import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
 import AsyncJobsPanel from "@/components/(gateway)/usage/AsyncJobsPanel";
 import {
+	fetchAppMetadata,
+	fetchChartData,
 	fetchRecentAsyncJobs,
 	fetchOrganizationColors,
 	fetchModelMetadata,
+	fetchProviderNames,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 export const metadata: Metadata = {
@@ -121,40 +124,42 @@ async function UsageSettingsContent({
 		);
 	}
 
-	const { data: keyRows } = await supabase
-		.from("keys")
-		.select("id,name,prefix")
-		.eq("workspace_id", workspaceId)
-		.neq("status", "deleted")
-		.neq("name", CHAT_MANAGED_KEY_NAME)
-		.order("created_at", { ascending: true });
-	const availableKeys: ApiKeyOption[] = (keyRows ?? []).map((row: any) => ({
-		id: row.id,
-		name: row?.name ?? null,
-		prefix: row?.prefix ?? null,
-	}));
-	if (keyParam && groupBy === "key") {
-		activeKey = availableKeys.find((k) => k.id === keyParam) ?? null;
-	}
+        const from = fromForRange(range).toISOString();
+        const nowIso = new Date().toISOString();
 
-	const from = fromForRange(range).toISOString();
-	const nowIso = new Date().toISOString();
+        // Prefer rollup-derived IDs, but union with request-derived IDs so usage
+        // metadata still populates when rollups are delayed.
+        const [{ data: keyRows }, { data: modelProviderRollups }, { data: requestUniques }] =
+                await Promise.all([
+                        supabase
+                                .from("keys")
+                                .select("id,name,prefix")
+                                .eq("workspace_id", workspaceId)
+                                .neq("status", "deleted")
+                                .neq("name", CHAT_MANAGED_KEY_NAME)
+                                .order("created_at", { ascending: true }),
+                        supabase
+                                .from("gateway_usage_rollup_15m_workspace_provider_model")
+                                .select("canonical_model_id, provider")
+                                .eq("workspace_id", workspaceId)
+                                .gte("bucket_15m", from)
+                                .lte("bucket_15m", nowIso),
+                        supabase
+                                .from("gateway_requests")
+                                .select("model_id")
+                                .eq("workspace_id", workspaceId)
+                                .gte("created_at", from)
+                                .lte("created_at", nowIso),
+                ]);
 
-	// Prefer rollup-derived IDs, but union with request-derived IDs so usage
-	// metadata still populates when rollups are delayed.
-	const { data: modelProviderRollups } = await supabase
-		.from("gateway_usage_rollup_15m_workspace_provider_model")
-		.select("canonical_model_id, provider")
-		.eq("workspace_id", workspaceId)
-		.gte("bucket_15m", from)
-		.lte("bucket_15m", nowIso);
-
-	const { data: requestUniques } = await supabase
-		.from("gateway_requests")
-		.select("model_id")
-		.eq("workspace_id", workspaceId)
-		.gte("created_at", from)
-		.lte("created_at", nowIso);
+        const availableKeys: ApiKeyOption[] = (keyRows ?? []).map((row: any) => ({
+                id: row.id,
+                name: row?.name ?? null,
+                prefix: row?.prefix ?? null,
+        }));
+        if (keyParam && groupBy === "key") {
+                activeKey = availableKeys.find((k) => k.id === keyParam) ?? null;
+        }
 
 	// Extract unique values for filters
 	const uniqueModels = Array.from(
@@ -165,10 +170,50 @@ async function UsageSettingsContent({
 			].filter(Boolean),
 		),
 	);
-	const [colorMap, modelMetadata, recentAsyncJobs] = await Promise.all([
+	const [colorMap, modelMetadata, recentAsyncJobs, initialChartData] = await Promise.all([
 		fetchOrganizationColors(uniqueModels),
 		fetchModelMetadata(uniqueModels),
 		fetchRecentAsyncJobs({ limit: 20 }),
+		fetchChartData({
+			timeRange: { from, to: nowIso },
+			range,
+			keyFilter: activeKey?.id ?? null,
+		}),
+	]);
+	const asyncJobModelIds = Array.from(
+		new Set(
+			recentAsyncJobs
+				.map((job) => job.model)
+				.filter(
+					(modelId): modelId is string =>
+						typeof modelId === "string" && modelId.trim().length > 0,
+				),
+		),
+	);
+	const asyncJobProviderIds = Array.from(
+		new Set(
+			recentAsyncJobs
+				.map((job) => job.provider)
+				.filter(
+					(providerId): providerId is string =>
+						typeof providerId === "string" && providerId.trim().length > 0,
+				),
+		),
+	);
+	const asyncJobAppIds = Array.from(
+		new Set(
+			recentAsyncJobs
+				.map((job) => job.app_id)
+				.filter(
+					(appId): appId is string =>
+						typeof appId === "string" && appId.trim().length > 0,
+				),
+		),
+	);
+	const [asyncJobProviderNames, asyncJobModelMetadata, asyncJobAppMetadata] = await Promise.all([
+		fetchProviderNames(asyncJobProviderIds),
+		fetchModelMetadata(asyncJobModelIds),
+		fetchAppMetadata(asyncJobAppIds),
 	]);
 
 	return (
@@ -198,9 +243,15 @@ async function UsageSettingsContent({
 				colorMap={Object.fromEntries(colorMap)}
 				modelMetadata={modelMetadata}
 				validKeyIds={availableKeys.map((key) => key.id)}
+				initialChartData={initialChartData}
 			/>
 
-			<AsyncJobsPanel initialJobs={recentAsyncJobs} />
+			<AsyncJobsPanel
+				initialJobs={recentAsyncJobs}
+				providerNames={asyncJobProviderNames}
+				modelMetadata={asyncJobModelMetadata}
+				appMetadata={asyncJobAppMetadata}
+			/>
 		</div>
 	);
 }
