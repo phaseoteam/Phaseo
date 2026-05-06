@@ -9,6 +9,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 				input_file_id: "file_123",
 				endpoint: "/v1/responses",
 				completion_window: "24h",
+				session_id: "session_123",
 				webhook: {
 					url: "https://example.com/hooks/batch",
 					events: ["job.completed"],
@@ -32,6 +33,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 			splitGatewayBatchCreatePayload({
 				input_file_id: "file_123",
 				endpoint: "/v1/responses",
+				sessionId: "session_456",
 			}),
 		).toEqual({
 			upstreamPayload: {

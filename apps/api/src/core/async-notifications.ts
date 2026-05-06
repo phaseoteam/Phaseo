@@ -239,6 +239,86 @@ function normalizeWebhookEvent(kind: SupportedAsyncNotificationKind, value: unkn
 	return null;
 }
 
+function normalizePlainObject(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	return value as Record<string, unknown>;
+}
+
+function normalizeAsyncUpstreamError(value: unknown): Record<string, unknown> | null {
+	const record = normalizePlainObject(value);
+	if (!record) return null;
+	const normalized = {
+		code: normalizeText(record.code),
+		type: normalizeText(record.type),
+		message: normalizeText(record.message),
+		description: normalizeText(record.description),
+		param: normalizeText(record.param),
+		status: toFiniteNumber(record.status),
+	};
+	if (Object.values(normalized).every((entry) => entry == null)) return null;
+	return normalized;
+}
+
+function normalizeAsyncFailureSample(value: unknown): Record<string, unknown>[] | null {
+	if (!Array.isArray(value)) return null;
+	const entries = value
+		.map((entry) => {
+			const record = normalizePlainObject(entry);
+			if (!record) return null;
+			const normalized = {
+				provider: normalizeText(record.provider),
+				type: normalizeText(record.type),
+				status: toFiniteNumber(record.status),
+				retryable: toBoolean(record.retryable),
+				upstream_error_code: normalizeText(record.upstream_error_code),
+				upstream_error_message: normalizeText(record.upstream_error_message),
+				upstream_error_description: normalizeText(record.upstream_error_description),
+				upstream_error_param: normalizeText(record.upstream_error_param),
+			};
+			if (Object.values(normalized).every((field) => field == null)) return null;
+			return normalized;
+		})
+		.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+	return entries.length > 0 ? entries : null;
+}
+
+function resolveAsyncErrorMeta(meta: AsyncNotificationMeta) {
+	const errorRoot = normalizePlainObject(meta.error);
+	return {
+		upstreamError:
+			normalizeAsyncUpstreamError(meta.upstreamError ?? meta.upstream_error) ??
+			normalizeAsyncUpstreamError(errorRoot?.upstream_error) ??
+			normalizeAsyncUpstreamError(errorRoot),
+		providerFailureDiagnostics:
+			normalizePlainObject(meta.providerFailureDiagnostics ?? meta.provider_failure_diagnostics) ??
+			normalizePlainObject(errorRoot?.provider_failure_diagnostics),
+		failureSample:
+			normalizeAsyncFailureSample(meta.failureSample ?? meta.failure_sample) ??
+			normalizeAsyncFailureSample(errorRoot?.failure_sample),
+		routingDiagnostics:
+			normalizePlainObject(meta.routingDiagnostics ?? meta.routing_diagnostics) ??
+			normalizePlainObject(errorRoot?.routing_diagnostics),
+		providerEnablement:
+			normalizePlainObject(meta.providerEnablement ?? meta.provider_enablement) ??
+			normalizePlainObject(errorRoot?.provider_enablement),
+		providerCandidateDiagnostics:
+			normalizePlainObject(meta.providerCandidateDiagnostics ?? meta.provider_candidate_diagnostics) ??
+			normalizePlainObject(errorRoot?.provider_candidate_diagnostics),
+	};
+}
+
+function sanitizePublicWebhookConfig(
+	kind: SupportedAsyncNotificationKind,
+	value: unknown,
+): { url: string; events: AsyncNotificationEventType[] } | null {
+	const parsed = parseAsyncWebhookConfig(kind, value);
+	if (!parsed) return null;
+	return {
+		url: parsed.url,
+		events: parsed.events,
+	};
+}
+
 export function parseAsyncWebhookConfig(
 	kind: SupportedAsyncNotificationKind,
 	value: unknown,
@@ -295,10 +375,21 @@ function isWebhookEventSubscribed(args: {
 }
 
 function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
-	const estimated = toFiniteNumber(meta.costUsd);
+	const settledNanos = toFiniteNumber(meta.costNanos ?? meta.cost_nanos);
+	const settledUsd =
+		toFiniteNumber(meta.costUsd ?? meta.cost_usd) ??
+		(settledNanos != null ? settledNanos / 1e9 : null);
+	const estimated = settledUsd;
 	const status = toPublicVideoStatus(record.status);
+	const chargeReason = normalizeText(meta.billingReason ?? meta.billing_reason);
+	const charged = toBoolean(meta.charged);
 	const isVoided = status === "failed" || status === "cancelled" || status === "expired";
-	const settled = status === "completed" ? estimated : isVoided ? 0 : null;
+	const settled =
+		status === "completed"
+			? settledUsd
+			: isVoided
+				? 0
+				: null;
 	return {
 		currency: "usd",
 		estimated_provider_cost: estimated != null ? estimated.toFixed(2) : null,
@@ -306,9 +397,120 @@ function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 		settled_provider_cost: settled != null ? settled.toFixed(2) : null,
 		settled_user_cost: settled != null ? settled.toFixed(2) : null,
 		state: status === "completed" ? "settled" : isVoided ? "void" : "estimated",
-		billable: status === "completed",
+		billable: charged === true || status === "completed",
+		total_nanos: settledNanos,
+		charge_reason: chargeReason,
+		charged,
 		...(record.billedAt ? { billed_at: record.billedAt } : {}),
 	};
+}
+
+function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
+	const settledNanos = toFiniteNumber(meta.costNanos ?? meta.cost_nanos);
+	const settledUsd =
+		toFiniteNumber(meta.costUsd ?? meta.cost_usd) ??
+		(settledNanos != null ? settledNanos / 1e9 : null);
+	const status = toPublicBatchStatus(record.status ?? meta.status);
+	const chargeReason = normalizeText(meta.billingReason ?? meta.billing_reason);
+	const charged = toBoolean(meta.charged);
+	const isVoided = status === "failed" || status === "cancelled";
+	return {
+		currency: "usd",
+		settled_provider_cost: settledUsd != null ? settledUsd.toFixed(2) : null,
+		settled_user_cost: settledUsd != null ? settledUsd.toFixed(2) : null,
+		state:
+			settledUsd != null
+				? "settled"
+				: isVoided
+					? "void"
+					: "pending",
+		billable: charged === true || (settledNanos != null && settledNanos > 0),
+		total_nanos: settledNanos,
+		charge_reason: chargeReason,
+		charged,
+		...(record.billedAt ? { billed_at: record.billedAt } : {}),
+	};
+}
+
+function resolveBatchRequestCounts(meta: AsyncNotificationMeta): {
+	total: number | null;
+	completed: number | null;
+	failed: number | null;
+} | null {
+	const counts =
+		meta.requestCounts && typeof meta.requestCounts === "object" && !Array.isArray(meta.requestCounts)
+			? (meta.requestCounts as Record<string, unknown>)
+			: meta.request_counts && typeof meta.request_counts === "object" && !Array.isArray(meta.request_counts)
+				? (meta.request_counts as Record<string, unknown>)
+				: null;
+	if (!counts) return null;
+	return {
+		total: toFiniteNumber(counts.total),
+		completed: toFiniteNumber(counts.completed),
+		failed: toFiniteNumber(counts.failed),
+	};
+}
+
+function resolveBatchPricingLines(meta: AsyncNotificationMeta): Record<string, unknown>[] {
+	const directLines =
+		meta.pricingLines && Array.isArray(meta.pricingLines)
+			? meta.pricingLines
+			: meta.pricing_lines && Array.isArray(meta.pricing_lines)
+				? meta.pricing_lines
+				: meta.pricedUsage &&
+					  typeof meta.pricedUsage === "object" &&
+					  !Array.isArray(meta.pricedUsage) &&
+					  (meta.pricedUsage as Record<string, unknown>).pricing &&
+					  typeof (meta.pricedUsage as Record<string, unknown>).pricing === "object" &&
+					  !Array.isArray((meta.pricedUsage as Record<string, unknown>).pricing) &&
+					  Array.isArray(((meta.pricedUsage as Record<string, unknown>).pricing as Record<string, unknown>).lines)
+					? (((meta.pricedUsage as Record<string, unknown>).pricing as Record<string, unknown>).lines as unknown[])
+					: meta.priced_usage &&
+						  typeof meta.priced_usage === "object" &&
+						  !Array.isArray(meta.priced_usage) &&
+						  (meta.priced_usage as Record<string, unknown>).pricing &&
+						  typeof (meta.priced_usage as Record<string, unknown>).pricing === "object" &&
+						  !Array.isArray((meta.priced_usage as Record<string, unknown>).pricing) &&
+						  Array.isArray(((meta.priced_usage as Record<string, unknown>).pricing as Record<string, unknown>).lines)
+						? (((meta.priced_usage as Record<string, unknown>).pricing as Record<string, unknown>).lines as unknown[])
+						: null;
+	if (directLines) {
+		return directLines.filter(
+			(line): line is Record<string, unknown> =>
+				Boolean(line) && typeof line === "object" && !Array.isArray(line),
+		);
+	}
+
+	const totalNanos = toFiniteNumber(meta.costNanos ?? meta.cost_nanos);
+	if (totalNanos == null) return [];
+
+	const requestCounts = resolveBatchRequestCounts(meta);
+	const pricingBreakdown =
+		meta.pricingBreakdown && typeof meta.pricingBreakdown === "object" && !Array.isArray(meta.pricingBreakdown)
+			? (meta.pricingBreakdown as Record<string, unknown>)
+			: meta.pricing_breakdown && typeof meta.pricing_breakdown === "object" && !Array.isArray(meta.pricing_breakdown)
+				? (meta.pricing_breakdown as Record<string, unknown>)
+				: null;
+
+	return [
+		{
+			dimension: "batch_requests",
+			pricing_plan: "batch",
+			service_tier: "batch",
+			endpoint: normalizeText(meta.endpoint),
+			units:
+				requestCounts?.completed ??
+				requestCounts?.total ??
+				null,
+			total_nanos: totalNanos,
+			total_usd_str:
+				typeof meta.costUsd === "number"
+					? meta.costUsd.toFixed(9)
+					: typeof meta.cost_usd === "number"
+						? meta.cost_usd.toFixed(9)
+						: normalizeText(pricingBreakdown?.total_usd_str),
+		},
+	];
 }
 
 function toPublicBatchStatus(value: unknown): "pending" | "in_progress" | "completed" | "failed" | "cancelled" {
@@ -343,6 +545,7 @@ function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyn
 
 async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, meta: AsyncNotificationMeta, progress?: number | null) {
 	const status = toPublicVideoStatus(record.status);
+	const errorMeta = resolveAsyncErrorMeta(meta);
 	const download = status === "completed"
 		? await issueSignedVideoDownloadUrl({
 			baseUrl,
@@ -356,6 +559,10 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 		object: "video",
 		kind: "video",
 		status,
+		request_id: normalizeText(record.requestId),
+		native_id: normalizeText(record.nativeId),
+		session_id: normalizeText(record.sessionId),
+		app_id: normalizeText(record.appId),
 		progress: typeof progress === "number" ? Math.max(0, Math.min(100, Math.round(progress))) : status === "completed" ? 100 : 0,
 		provider: toPublicVideoProviderId(record.provider ?? normalizeText(meta.provider)),
 		model: normalizeText(record.model) ?? normalizeText(meta.model),
@@ -365,8 +572,37 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 		download_url: download?.download_url ?? null,
 		expires_at: download?.expires_at ?? null,
 		duration_seconds: toFiniteNumber(meta.seconds),
+		duration_ms: toFiniteNumber(meta.durationMs ?? meta.duration_ms),
+		total_duration_ms: toFiniteNumber(meta.durationMs ?? meta.duration_ms),
+		latency_ms: toFiniteNumber(meta.latencyMs ?? meta.latency_ms),
+		generation_ms: toFiniteNumber(meta.generationMs ?? meta.generation_ms),
 		resolution: normalizeText(meta.resolution),
 		quality: normalizeText(meta.quality),
+		output_access: normalizeText(meta.outputAccess ?? meta.output_access),
+		key_source: normalizeText(meta.keySource ?? meta.key_source),
+		byok_key_id: normalizeText(meta.byokKeyId ?? meta.byok_key_id),
+		reservation_id: normalizeText(meta.reservationId ?? meta.reservation_id),
+		reservation_status: normalizeText(meta.reservationStatus ?? meta.reservation_status),
+		next_webhook_retry_at: normalizeIsoDate(meta.nextWebhookRetryAt ?? meta.next_webhook_retry_at),
+		last_webhook_progress: toFiniteNumber(meta.lastWebhookProgress ?? meta.last_webhook_progress),
+		last_webhook_progress_at: normalizeIsoDate(meta.lastWebhookProgressAt ?? meta.last_webhook_progress_at),
+		last_webhook_dispatched_at: normalizeIsoDate(meta.lastWebhookDispatchedAt ?? meta.last_webhook_dispatched_at),
+		finalized_at: normalizeIsoDate(meta.finalizedAt ?? meta.finalized_at),
+		last_polled_at: normalizeIsoDate(meta.lastPolledAt ?? meta.last_polled_at),
+		polled_status: normalizeText(meta.polledStatus ?? meta.polled_status),
+		last_reconciled_at: normalizeIsoDate(meta.lastReconciledAt ?? meta.last_reconciled_at),
+		upstream_error: errorMeta.upstreamError,
+		provider_failure_diagnostics: errorMeta.providerFailureDiagnostics,
+		failure_sample: errorMeta.failureSample,
+		routing_diagnostics: errorMeta.routingDiagnostics,
+		provider_enablement: errorMeta.providerEnablement,
+		provider_candidate_diagnostics: errorMeta.providerCandidateDiagnostics,
+		pricing_breakdown:
+			meta.pricingBreakdown && typeof meta.pricingBreakdown === "object" && !Array.isArray(meta.pricingBreakdown)
+				? meta.pricingBreakdown
+				: meta.pricing_breakdown && typeof meta.pricing_breakdown === "object" && !Array.isArray(meta.pricing_breakdown)
+					? meta.pricing_breakdown
+					: null,
 		billing: resolveVideoBilling(record, meta),
 		created_at: record.createdAt,
 		updated_at: record.updatedAt,
@@ -376,21 +612,44 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
 	const status = toPublicBatchStatus(record.status ?? meta.status);
 	const cancellable = status === "pending" || status === "in_progress";
+	const requestCounts = resolveBatchRequestCounts(meta);
+	const errorMeta = resolveAsyncErrorMeta(meta);
 	return {
 		id: record.internalId,
 		object: "batch",
 		kind: "batch",
 		status,
+		request_id: normalizeText(record.requestId),
+		session_id: normalizeText(record.sessionId),
+		app_id: normalizeText(record.appId),
+		native_id: normalizeText(record.nativeId),
 		provider: normalizeText(record.provider) ?? normalizeText(meta.provider),
 		model: normalizeText(record.model) ?? normalizeText(meta.model),
 		polling_url: buildBatchPollingUrl(baseUrl, record.internalId),
 		websocket_url: buildAsyncWebSocketUrl(baseUrl, "batch", record.internalId),
 		cancel_url: cancellable ? buildBatchCancelUrl(baseUrl, record.internalId) : null,
+		webhook: sanitizePublicWebhookConfig("batch", meta.webhook),
 		endpoint: normalizeText(meta.endpoint),
 		completion_window: normalizeText(meta.completionWindow) ?? normalizeText(meta.completion_window),
 		input_file_id: normalizeText(meta.inputFileId) ?? normalizeText(meta.input_file_id),
 		output_file_id: normalizeText(meta.outputFileId) ?? normalizeText(meta.output_file_id),
 		error_file_id: normalizeText(meta.errorFileId) ?? normalizeText(meta.error_file_id),
+		key_source: normalizeText(meta.keySource ?? meta.key_source),
+		byok_key_id: normalizeText(meta.byokKeyId ?? meta.byok_key_id),
+		pricing_lines: resolveBatchPricingLines(meta),
+		next_webhook_retry_at: normalizeIsoDate(meta.nextWebhookRetryAt ?? meta.next_webhook_retry_at),
+		last_webhook_progress: toFiniteNumber(meta.lastWebhookProgress ?? meta.last_webhook_progress),
+		last_webhook_progress_at: normalizeIsoDate(meta.lastWebhookProgressAt ?? meta.last_webhook_progress_at),
+		last_webhook_dispatched_at: normalizeIsoDate(meta.lastWebhookDispatchedAt ?? meta.last_webhook_dispatched_at),
+		finalized_at: normalizeIsoDate(meta.finalizedAt ?? meta.finalized_at),
+		request_counts: requestCounts,
+		upstream_error: errorMeta.upstreamError,
+		provider_failure_diagnostics: errorMeta.providerFailureDiagnostics,
+		failure_sample: errorMeta.failureSample,
+		routing_diagnostics: errorMeta.routingDiagnostics,
+		provider_enablement: errorMeta.providerEnablement,
+		provider_candidate_diagnostics: errorMeta.providerCandidateDiagnostics,
+		billing: resolveBatchBilling(record, meta),
 		created_at: record.createdAt,
 		updated_at: record.updatedAt,
 	};

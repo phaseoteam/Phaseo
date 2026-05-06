@@ -25,6 +25,7 @@ const {
 	enrichVideoPayloadWithJobMetrics,
 	finalizeVideoStatusIfTerminal,
 	fetchOpenAIVideoStatus,
+	normalizeVideoUpstreamErrorResponse,
 	extractGoogleGeneratedVideoPayload,
 	extractGoogleVertexGeneratedVideoPayload,
 	fetchGoogleOperation,
@@ -94,7 +95,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		const res = await fetchGoogleVertexOperation(authValue, videoMeta, vertexOperationName);
 		if (res instanceof Response && res.headers?.get("content-type")?.includes("application/json")) {
 			const json = await res.clone().json().catch(() => null);
-			if (!res.ok) return res;
+			if (!res.ok) {
+				return normalizeVideoUpstreamErrorResponse({
+					response: res,
+					requestId: authValue.requestId,
+					workspaceId: authValue.workspaceId,
+					provider: videoMeta?.provider ?? "google-vertex",
+					reason: "google_vertex_operation_fetch_failed",
+					extra: {
+						operation_name: vertexOperationName,
+					},
+				});
+			}
 			const done = Boolean(json?.done);
 			const operationError = done ? extractGoogleOperationError(json) : undefined;
 			const failed = done && operationError !== undefined;
@@ -244,7 +256,16 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						headers: { "Content-Type": "application/json" },
 					});
 				}
-				return res;
+				return normalizeVideoUpstreamErrorResponse({
+					response: res,
+					requestId: authValue.requestId,
+					workspaceId: authValue.workspaceId,
+					provider: videoMeta?.provider ?? "google-ai-studio",
+					reason: "google_video_operation_fetch_failed",
+					extra: {
+						operation_name: operationName,
+					},
+				});
 			}
 			const done = Boolean(json?.done);
 			const operationError = done ? extractGoogleOperationError(json) : undefined;
@@ -340,7 +361,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	const dashscopeTaskId = resolveDashscopeTaskId(videoRecord, videoMeta, id);
 	if (dashscopeTaskId) {
 		const res = await fetchDashscopeTask(authValue, videoMeta, dashscopeTaskId);
-		if (!res.ok) return res;
+		if (!res.ok) {
+			return normalizeVideoUpstreamErrorResponse({
+				response: res,
+				requestId: authValue.requestId,
+				workspaceId: authValue.workspaceId,
+				provider: videoMeta?.provider ?? "alibaba",
+				reason: "dashscope_task_fetch_failed",
+				extra: {
+					task_id: dashscopeTaskId,
+				},
+			});
+		}
 		const json = await res.clone().json().catch(() => null);
 		const taskStatus = String(json?.output?.task_status ?? json?.status ?? "").toUpperCase();
 		const completed = taskStatus === "SUCCEEDED";
@@ -414,7 +446,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	if (xaiVideoId) {
 		const res = await fetchXAiVideoStatus(authValue, videoMeta, xaiVideoId);
 		if (!(res instanceof Response)) return res;
-		if (!res.ok) return res;
+		if (!res.ok) {
+			return normalizeVideoUpstreamErrorResponse({
+				response: res,
+				requestId: authValue.requestId,
+				workspaceId: authValue.workspaceId,
+				provider: videoMeta?.provider ?? XAI_PROVIDER_ID,
+				reason: "xai_video_status_fetch_failed",
+				extra: {
+					video_native_id: xaiVideoId,
+				},
+			});
+		}
 		const json = await res.clone().json().catch(() => null);
 			const status = mapXAiVideoStatus(json?.status);
 			const output = extractVideoOutputFromPayload(json);
@@ -472,7 +515,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	if (minimaxTaskId) {
 		const res = await fetchMiniMaxVideoTask(authValue, videoMeta, minimaxTaskId);
 		if (!(res instanceof Response)) return res;
-		if (!res.ok) return res;
+		if (!res.ok) {
+			return normalizeVideoUpstreamErrorResponse({
+				response: res,
+				requestId: authValue.requestId,
+				workspaceId: authValue.workspaceId,
+				provider: videoMeta?.provider ?? MINIMAX_PROVIDER_ID,
+				reason: "minimax_video_task_fetch_failed",
+				extra: {
+					task_id: minimaxTaskId,
+				},
+			});
+		}
 		const json = await res.clone().json().catch(() => null);
 			const status = mapMiniMaxVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
 			const output = extractVideoOutputFromPayload(json);
@@ -529,7 +583,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	if (bytedanceTaskId) {
 		const res = await fetchBytedanceTask(authValue, videoMeta, bytedanceTaskId);
 		if (!(res instanceof Response)) return res;
-		if (!res.ok) return res;
+		if (!res.ok) {
+			return normalizeVideoUpstreamErrorResponse({
+				response: res,
+				requestId: authValue.requestId,
+				workspaceId: authValue.workspaceId,
+				provider: videoMeta?.provider ?? BYTEDANCE_PROVIDER_ID,
+				reason: "bytedance_video_task_fetch_failed",
+				extra: {
+					task_id: bytedanceTaskId,
+				},
+			});
+		}
 		const json = await res.clone().json().catch(() => null);
 		const status = mapBytedanceVideoStatus(json?.status ?? json?.data?.status ?? json?.task_status);
 		const output = extractVideoOutputFromPayload(json);
@@ -594,7 +659,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	if (runwayTaskId) {
 		const res = await fetchRunwayTask(authValue, videoMeta, runwayTaskId);
 		if (!(res instanceof Response)) return res;
-		if (!res.ok) return res;
+		if (!res.ok) {
+			return normalizeVideoUpstreamErrorResponse({
+				response: res,
+				requestId: authValue.requestId,
+				workspaceId: authValue.workspaceId,
+				provider: videoMeta?.provider ?? RUNWAY_PROVIDER_ID,
+				reason: "runway_video_task_fetch_failed",
+				extra: {
+					task_id: runwayTaskId,
+				},
+			});
+		}
 		const json = await res.clone().json().catch(() => null);
 		const status = mapRunwayVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
 		const output = extractVideoOutputFromPayload(json);
@@ -657,7 +733,18 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 	const atlasTaskId = resolveAtlasTaskId(videoRecord, videoMeta, id);
 	if (atlasTaskId) {
 		const res = await fetchAtlasPrediction(authValue, videoMeta, atlasTaskId);
-		if (!res.ok) return res;
+		if (!res.ok) {
+			return normalizeVideoUpstreamErrorResponse({
+				response: res,
+				requestId: authValue.requestId,
+				workspaceId: authValue.workspaceId,
+				provider: videoMeta?.provider ?? ATLAS_PROVIDER_ID,
+				reason: "atlas_prediction_fetch_failed",
+				extra: {
+					prediction_id: atlasTaskId,
+				},
+			});
+		}
 		const json = await res.clone().json().catch(() => null);
 		const payload = extractAtlasPredictionPayload(json);
 		const status = mapAtlasVideoStatus(payload.status);

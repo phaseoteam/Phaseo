@@ -25,6 +25,18 @@ export type BatchJobMeta = {
 	inputFileId?: string | null;
 	outputFileId?: string | null;
 	errorFileId?: string | null;
+	requestCounts?: {
+		total?: number | null;
+		completed?: number | null;
+		failed?: number | null;
+	} | null;
+	costNanos?: number | null;
+	costUsd?: number | null;
+	charged?: boolean | null;
+	billingReason?: string | null;
+	finalizedAt?: string | null;
+	pricedUsage?: Record<string, unknown> | null;
+	pricingBreakdown?: Record<string, unknown> | null;
 	webhook?: Record<string, unknown> | null;
 	webhookDeliveries?: Record<string, string> | null;
 	webhookAttempts?: Record<string, unknown>[] | null;
@@ -87,6 +99,40 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.inputFileId === "string") out.inputFileId = source.inputFileId;
 	if (typeof source.outputFileId === "string") out.outputFileId = source.outputFileId;
 	if (typeof source.errorFileId === "string") out.errorFileId = source.errorFileId;
+	const requestCountsRaw =
+		source.requestCounts && typeof source.requestCounts === "object" && !Array.isArray(source.requestCounts)
+			? (source.requestCounts as Record<string, unknown>)
+			: source.request_counts && typeof source.request_counts === "object" && !Array.isArray(source.request_counts)
+				? (source.request_counts as Record<string, unknown>)
+				: null;
+	if (requestCountsRaw) {
+		out.requestCounts = {
+			total: typeof requestCountsRaw.total === "number" ? requestCountsRaw.total : null,
+			completed: typeof requestCountsRaw.completed === "number" ? requestCountsRaw.completed : null,
+			failed: typeof requestCountsRaw.failed === "number" ? requestCountsRaw.failed : null,
+		};
+	}
+	if (typeof source.costNanos === "number") out.costNanos = source.costNanos;
+	if (typeof source.cost_nanos === "number") out.costNanos = source.cost_nanos;
+	if (typeof source.costUsd === "number") out.costUsd = source.costUsd;
+	if (typeof source.cost_usd === "number") out.costUsd = source.cost_usd;
+	if (typeof source.charged === "boolean") out.charged = source.charged;
+	if (typeof source.billingReason === "string") out.billingReason = source.billingReason;
+	if (typeof source.billing_reason === "string") out.billingReason = source.billing_reason;
+	if (typeof source.finalizedAt === "string") out.finalizedAt = source.finalizedAt;
+	if (typeof source.finalized_at === "string") out.finalizedAt = source.finalized_at;
+	if (source.pricedUsage && typeof source.pricedUsage === "object" && !Array.isArray(source.pricedUsage)) {
+		out.pricedUsage = source.pricedUsage as Record<string, unknown>;
+	}
+	if (source.priced_usage && typeof source.priced_usage === "object" && !Array.isArray(source.priced_usage)) {
+		out.pricedUsage = source.priced_usage as Record<string, unknown>;
+	}
+	if (source.pricingBreakdown && typeof source.pricingBreakdown === "object" && !Array.isArray(source.pricingBreakdown)) {
+		out.pricingBreakdown = source.pricingBreakdown as Record<string, unknown>;
+	}
+	if (source.pricing_breakdown && typeof source.pricing_breakdown === "object" && !Array.isArray(source.pricing_breakdown)) {
+		out.pricingBreakdown = source.pricing_breakdown as Record<string, unknown>;
+	}
 	if (source.webhook && typeof source.webhook === "object" && !Array.isArray(source.webhook)) {
 		out.webhook = source.webhook as Record<string, unknown>;
 	}

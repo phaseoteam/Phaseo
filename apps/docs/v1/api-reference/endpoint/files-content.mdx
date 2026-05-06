@@ -1,0 +1,8 @@
+---
+title: "Retrieve file content (Beta)"
+badge: "Beta"
+openapi: "GET /files/{file_id}/content"
+description: "Download the content for a file that belongs to the authenticated workspace."
+---
+
+This route proxies the upstream file bytes only after confirming the file belongs to the current workspace.

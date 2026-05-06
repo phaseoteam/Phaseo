@@ -2,8 +2,16 @@
 title: "Files (Beta)"
 badge: "Beta"
 openapi: "POST /files"
-description: "Files endpoints are currently placeholders and return 501 not_implemented."
+description: "Upload a file for batch processing. The gateway stores ownership metadata so the same workspace can later retrieve the file or its content."
 ---
 
-This route is reserved for upcoming file upload support.
+Use this endpoint to upload input files for batch jobs. The returned `file_id` should be persisted by your application and reused for:
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+`GET /v1/files` is not currently supported on the shared gateway key, so the upload response is the canonical place to capture the file id.
+</Note>
 

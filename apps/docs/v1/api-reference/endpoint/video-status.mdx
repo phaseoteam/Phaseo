@@ -8,3 +8,43 @@ Fetches the current state of a video generation job and returns the latest provi
 
 Use this endpoint for polling while the job is running.
 
+Common response fields include:
+
+- `id`
+- `object`
+- `status`
+- `output_access`
+- `progress`
+- `progress_source`
+- `polling_url`
+- `poll_after_seconds`
+- `generation_id`
+- `created_at`
+- `started_at`
+- `completed_at`
+- `provider`
+- `model`
+- `seconds`
+- `size`
+- `audio`
+- `asset`
+- `outputs`
+- `usage`
+- `billing`
+- `error`
+
+Output-access fields are conditional:
+
+- `content_url` is present when `output_access` is `bytes` or `both`.
+- `download_url` and `expires_at` are present when `output_access` is `signed_url` or `both`.
+
+Each entry in `outputs` includes:
+
+- `index`
+- `mime_type`
+- `bytes_available`
+- `content_url` when unsigned byte access is enabled
+- `download_url` and `expires_at` when signed download access is enabled
+
+When the job becomes terminal, this response is also where billing, asset metadata, output access, and any final provider error payload become most useful.
+

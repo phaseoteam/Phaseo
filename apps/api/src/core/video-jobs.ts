@@ -39,6 +39,8 @@ export type VideoJobMeta = {
 	googleVideoUri?: string | null;
 	googleVideoMimeType?: string | null;
 	durationMs?: number | null;
+	latencyMs?: number | null;
+	generationMs?: number | null;
 	costUsd?: number | null;
 	costNanos?: number | null;
 	charged?: boolean | null;
@@ -140,6 +142,10 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.google_video_mime_type === "string") out.googleVideoMimeType = source.google_video_mime_type;
 	if (typeof source.durationMs === "number") out.durationMs = source.durationMs;
 	if (typeof source.duration_ms === "number") out.durationMs = source.duration_ms;
+	if (typeof source.latencyMs === "number") out.latencyMs = source.latencyMs;
+	if (typeof source.latency_ms === "number") out.latencyMs = source.latency_ms;
+	if (typeof source.generationMs === "number") out.generationMs = source.generationMs;
+	if (typeof source.generation_ms === "number") out.generationMs = source.generation_ms;
 	if (typeof source.costUsd === "number") out.costUsd = source.costUsd;
 	if (typeof source.cost_usd === "number") out.costUsd = source.cost_usd;
 	if (typeof source.costNanos === "number") out.costNanos = source.costNanos;

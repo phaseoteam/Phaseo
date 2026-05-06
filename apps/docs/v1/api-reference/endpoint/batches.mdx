@@ -2,8 +2,24 @@
 title: "Batches (Beta)"
 badge: "Beta"
 openapi: "POST /batches"
-description: "Batch endpoints are currently placeholders and return 501 not_implemented."
+description: "Create an async batch job and attach observability metadata such as session ids and webhooks."
 ---
 
-This route is reserved for upcoming batch support.
+Create a batch job for asynchronous processing.
 
+The gateway forwards the upstream batch request and also accepts AI Stats-specific observability fields:
+
+- `session_id` to group the batch with related requests in logs and investigate tooling.
+- `webhook` to configure async notifications when the batch transitions state.
+- `metadata` to persist caller-defined tags alongside the batch.
+
+Use `GET /batches/{batch_id}` to poll status and `POST /batches/{batch_id}/cancel` to stop a pending or processing batch.
+
+Batch responses also include gateway observability fields when available:
+
+- `request_id`
+- `provider`
+- echoed `session_id`
+- echoed `webhook`
+- terminal `billing` summary data
+- terminal `pricing_lines`

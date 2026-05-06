@@ -556,4 +556,65 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		});
 		expect(gatewayRequest?.cost_nanos).toBe(0);
 	});
+
+	it("normalizes Google Vertex status fetch failures through the public error contract", async () => {
+		const requestId = "vid_veo_lite_vertex_forbidden";
+		const operationName =
+			"projects/test-project/locations/us-east5/publishers/google/models/veo-3.1-lite-generate-preview/operations/vertex-op-forbidden";
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = String(input);
+				if (url.includes(":predictLongRunning")) {
+					return jsonResponse({
+						name: operationName,
+						done: false,
+					});
+				}
+				if (url.includes(":fetchPredictOperation")) {
+					const body = JSON.parse(String(init?.body ?? "{}"));
+					expect(body.operationName).toBe(operationName);
+					return jsonResponse({
+						error: {
+							code: "PERMISSION_DENIED",
+							message: "The caller does not have permission.",
+						},
+					}, 403);
+				}
+				throw new Error(`Unexpected fetch url: ${url}`);
+			}),
+		);
+
+		const submitResult = await execute(buildExecutorArgs(requestId));
+		expect(submitResult.ir?.status).toBe("queued");
+
+		const statusResponse = await getVideoByIdHandler(
+			new Request(`https://api.phaseo.app/v1/videos/${requestId}`),
+		);
+		expect(statusResponse.status).toBe(502);
+		const statusBody = await statusResponse.json();
+		expect(statusBody).toMatchObject({
+			error: "upstream_error",
+			reason: "google_vertex_operation_fetch_failed",
+			request_id: "req_auth_video_e2e",
+			workspace_id: "ws_video_e2e",
+			generation_id: "req_auth_video_e2e",
+			status_code: 502,
+			error_type: "system",
+			error_origin: "upstream",
+			provider: "google-vertex",
+			upstream_status: 403,
+			upstream_error: {
+				code: "PERMISSION_DENIED",
+				message: "The caller does not have permission.",
+				description: "The caller does not have permission.",
+			},
+			provider_failure_diagnostics: {
+				category: "provider_access_missing",
+				provider: "google-vertex",
+			},
+			operation_name: operationName,
+		});
+	});
 });
