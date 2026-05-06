@@ -439,13 +439,13 @@ export default function Quickstart({
                 : "";
 
         function getInstallationCode(language: string): string {
-                switch (language) {
+                        switch (language) {
                         case "ai-sdk":
-                                return "npm install ai @ai-sdk/openai";
+                                return "npm install ai @ai-stats/ai-sdk-provider";
                         case "typescript-sdk":
                                 return "npm install @ai-stats/sdk";
 			case "python-sdk":
-				return "pip install ai-stats";
+				return "pip install ai-stats-py-sdk";
 			case "go-sdk":
 				return "go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest";
 			case "csharp-sdk":
@@ -541,7 +541,7 @@ print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("
         const aiSdkPromptLiteral = JSON.stringify(aiSdkPrompt);
 
         const typescriptSdkUsage = aiStatsMethod
-                ? `import { AIStats } from '@ai-stats/sdk';
+                ? `import AIStats from '@ai-stats/sdk';
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
@@ -557,15 +557,10 @@ console.log(response);`
         const aiSdkUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
                 ? shouldStream
                         ? `import { streamText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { aiStats } from "@ai-stats/ai-sdk-provider";
 
-const openai = createOpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${BASE_URL}",
-});
-
-const { textStream } = await streamText({
-  model: openai("${model}"),
+const { textStream } = streamText({
+  model: aiStats("${model}"),
   prompt: ${aiSdkPromptLiteral},
 });
 
@@ -573,15 +568,10 @@ for await (const chunk of textStream) {
   process.stdout.write(chunk);
 }`
                         : `import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-
-const openai = createOpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${BASE_URL}",
-});
+import { aiStats } from "@ai-stats/ai-sdk-provider";
 
 const { text } = await generateText({
-  model: openai("${model}"),
+  model: aiStats("${model}"),
   prompt: ${aiSdkPromptLiteral},
 });
 

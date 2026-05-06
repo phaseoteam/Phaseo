@@ -263,7 +263,7 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
     };
 }
 
-async function handleModels(req: Request, scope: ModelVisibilityScope) {
+export async function handleModels(req: Request, scope: ModelVisibilityScope) {
     const url = new URL(req.url);
     if (hasDeprecatedPrivacyScopeQuery(url)) {
         return json(
@@ -320,17 +320,35 @@ async function handleModels(req: Request, scope: ModelVisibilityScope) {
     };
 
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
+    const providerIds = parseMultiValue(url.searchParams, "provider");
+    const providerStatuses = parseMultiValue(url.searchParams, "provider_status");
+    const providerRoutingStatuses = parseMultiValue(url.searchParams, "provider_routing_status");
+    const modelRoutingStatuses = parseMultiValue(url.searchParams, "model_routing_status");
+    const capabilityStatuses = parseMultiValue(url.searchParams, "capability_status");
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValue(url.searchParams, "input_types");
     const outputTypes = parseMultiValue(url.searchParams, "output_types");
     const params = parseMultiValue(url.searchParams, "params");
+    const statuses = parseMultiValue(url.searchParams, "status");
+    const providerAvailabilityStatuses = parseMultiValue(url.searchParams, "provider_availability_status");
+    const providerAvailabilityReasons = parseMultiValue(url.searchParams, "provider_availability_reason");
+    const availability = url.searchParams.get("availability") === "all" ? "all" : "active";
     try {
         const catalogue = await fetchCatalogue({
+            availability,
             endpoints,
+            providerIds,
+            providerStatuses,
+            providerRoutingStatuses,
+            modelRoutingStatuses,
+            capabilityStatuses,
             organisationIds,
             inputTypes,
             outputTypes,
             params,
+            statuses,
+            providerAvailabilityStatuses,
+            providerAvailabilityReasons,
         });
         const replacementByPreviousModel = buildReplacementByPreviousModel(catalogue);
         const models = catalogue.map((model) =>

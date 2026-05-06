@@ -1039,6 +1039,7 @@ type GatewayDatetimeToolDefinition struct {
 }
 
 type GatewayModelsResponse struct {
+	AvailabilityMode string `json:"availability_mode"`
 	Limit int `json:"limit"`
 	Models []map[string]interface{} `json:"models"`
 	Offset int `json:"offset"`
@@ -1611,6 +1612,7 @@ type MessageContentPart = interface{}
 type Model struct {
 	Aliases *[]string `json:"aliases,omitempty"`
 	Architecture *map[string]interface{} `json:"architecture,omitempty"`
+	Availability *map[string]interface{} `json:"availability,omitempty"`
 	CanonicalSlug *string `json:"canonical_slug,omitempty"`
 	Created *int `json:"created,omitempty"`
 	DeprecationDate *string `json:"deprecation_date,omitempty"`
@@ -1638,6 +1640,13 @@ type Model struct {
 	TopProviderId *string `json:"top_provider_id,omitempty"`
 }
 
+type ModelAvailability struct {
+	ActiveProviderCount int `json:"active_provider_count"`
+	InactiveProviderCount int `json:"inactive_provider_count"`
+	ProviderCount int `json:"provider_count"`
+	Status string `json:"status"`
+}
+
 type ModelId = string
 
 type ModelLifecycle struct {
@@ -1646,6 +1655,22 @@ type ModelLifecycle struct {
 	ReplacementModelId *string `json:"replacement_model_id,omitempty"`
 	RetirementDate *string `json:"retirement_date,omitempty"`
 	Status *string `json:"status,omitempty"`
+}
+
+type ModelProviderAvailability struct {
+	ApiProviderId string `json:"api_provider_id"`
+	ApiProviderName *string `json:"api_provider_name,omitempty"`
+	AvailabilityReason string `json:"availability_reason"`
+	AvailabilityStatus string `json:"availability_status"`
+	CapabilityStatus string `json:"capability_status"`
+	EffectiveFrom *string `json:"effective_from,omitempty"`
+	EffectiveTo *string `json:"effective_to,omitempty"`
+	Endpoints []string `json:"endpoints"`
+	IsActiveGateway bool `json:"is_active_gateway"`
+	ModelRoutingStatus string `json:"model_routing_status"`
+	Params []string `json:"params"`
+	ProviderRoutingStatus string `json:"provider_routing_status"`
+	ProviderStatus string `json:"provider_status"`
 }
 
 type ModelsPrivacyScopeNotImplementedResponse struct {

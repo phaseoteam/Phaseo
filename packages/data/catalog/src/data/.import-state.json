@@ -701,13 +701,13 @@
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/api_provider.json": {
       "hash": "c81da16506d6a61125f3c342a1edc50e",
       "meta": {
-        "api_provider_id": "venice/e2ee"
+        "api_provider_id": "venice-e2ee"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/models.json": {
       "hash": "da18a57d9098f13c14381472b9eda707",
       "meta": {
-        "api_provider_id": "venice/e2ee",
+        "api_provider_id": "venice-e2ee",
         "kind": "provider_models"
       }
     },

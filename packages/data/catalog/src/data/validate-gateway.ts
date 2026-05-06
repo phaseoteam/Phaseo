@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runWebDataValidation } from './validate';
 
 const GATEWAY_ERROR_PATTERN = /active on gateway but no rules/i;
@@ -24,6 +26,10 @@ function runGatewayValidation() {
     console.log('Gateway validation passed. All active gateway models include pricing rules.');
 }
 
-if ('main' in import.meta && (import.meta as ImportMeta & { main?: unknown }).main) {
+const VALIDATE_GATEWAY_SCRIPT_PATH = path.resolve(fileURLToPath(import.meta.url));
+const CLI_ENTRY_PATH = process.argv[1] ? path.resolve(process.argv[1]) : null;
+const IS_DIRECT_CLI_RUN = CLI_ENTRY_PATH === VALIDATE_GATEWAY_SCRIPT_PATH;
+
+if (IS_DIRECT_CLI_RUN) {
     runGatewayValidation();
 }

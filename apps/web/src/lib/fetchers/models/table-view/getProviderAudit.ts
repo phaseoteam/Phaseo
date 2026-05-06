@@ -1,4 +1,10 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import {
+	aggregateProviderAuditRoutability,
+	classifyProviderAuditRoutability,
+	type ProviderAuditCapabilityState,
+	type ProviderAuditRoutability,
+} from "./providerAuditStatus";
 
 type ProviderModelRow = {
 	provider_api_model_id: string | null;
@@ -7,26 +13,35 @@ type ProviderModelRow = {
 	provider_model_slug: string | null;
 	internal_model_id: string | null;
 	is_active_gateway: boolean | null;
+	routing_status: string | null;
 	effective_from: string | null;
 	effective_to: string | null;
 	provider:
 		| {
 			api_provider_id: string | null;
 			api_provider_name: string | null;
+			status: string | null;
+			routing_status: string | null;
 		}
 		| Array<{
 			api_provider_id: string | null;
 			api_provider_name: string | null;
+			status: string | null;
+			routing_status: string | null;
 		}>
 		| null;
 	capabilities?:
 		| Array<{
 			capability_id: string | null;
 			status: string | null;
+			effective_from: string | null;
+			effective_to: string | null;
 		}>
 		| {
 			capability_id: string | null;
 			status: string | null;
+			effective_from: string | null;
+			effective_to: string | null;
 		}
 		| null;
 };
@@ -43,11 +58,14 @@ export interface ProviderAuditModelRow {
 	providerModelSlug: string | null;
 	isGatewayActiveNow: boolean;
 	isGatewayEnabled: boolean;
+	routability: ProviderAuditRoutability;
+	routabilitySummary: string;
 	pricingRulesCount: number;
 	totalPricingRulesCount: number;
 	hasPricing: boolean;
 	gapReason: string | null;
 	capabilities: string[];
+	capabilityStates: ProviderAuditCapabilityState[];
 }
 
 export interface ProviderAuditProvider {
@@ -55,6 +73,8 @@ export interface ProviderAuditProvider {
 	providerName: string;
 	totalModels: number;
 	activeGatewayModels: number;
+	previewGatewayModels: number;
+	inactiveGatewayModels: number;
 	modelsWithPricing: number;
 	activeWithoutPricing: number;
 	rows: ProviderAuditModelRow[];
@@ -64,6 +84,8 @@ export interface ProviderAuditSummary {
 	totalProviders: number;
 	totalModels: number;
 	activeGatewayModels: number;
+	previewGatewayModels: number;
+	inactiveGatewayModels: number;
 	activeWithoutPricing: number;
 }
 
@@ -98,12 +120,6 @@ function toArray<T>(value: T | T[] | null | undefined): T[] {
 	return Array.isArray(value) ? value : [value];
 }
 
-function isEffectiveNow(effectiveFrom: string | null, effectiveTo: string | null, nowIso: string): boolean {
-	const fromOk = !effectiveFrom || effectiveFrom <= nowIso;
-	const toOk = !effectiveTo || effectiveTo > nowIso;
-	return fromOk && toOk;
-}
-
 function formatShortIsoDate(iso: string | null): string | null {
 	if (!iso) return null;
 	const timestamp = Date.parse(iso);
@@ -127,15 +143,20 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 					provider_model_slug,
 					internal_model_id,
 					is_active_gateway,
+					routing_status,
 					effective_from,
 					effective_to,
 					provider:data_api_providers(
 						api_provider_id,
-						api_provider_name
+						api_provider_name,
+						status,
+						routing_status
 					),
 					capabilities:data_api_provider_model_capabilities(
 						capability_id,
-						status
+						status,
+						effective_from,
+						effective_to
 					)
 					`
 				),
@@ -208,9 +229,13 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 		apiModelId: string;
 		internalModelId: string | null;
 		providerModelSlug: string | null;
+		providerStatus: string | null;
+		providerRoutingStatus: string | null;
+		modelRoutingStatus: string | null;
 		isGatewayEnabled: boolean;
-		isGatewayActiveNow: boolean;
-		capabilities: Set<string>;
+		effectiveFrom: string | null;
+		effectiveTo: string | null;
+		capabilityStates: Map<string, ProviderAuditCapabilityState>;
 	};
 
 	const byProviderModel = new Map<string, AggregatedProviderModel>();
@@ -225,6 +250,8 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 			providerData?.api_provider_name?.trim() ||
 			providerData?.api_provider_id?.trim() ||
 			providerId;
+		const providerStatus = providerData?.status ?? null;
+		const providerRoutingStatus = providerData?.routing_status ?? null;
 
 		const key = `${providerId}:${apiModelId}`;
 		if (!byProviderModel.has(key)) {
@@ -234,9 +261,13 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 				apiModelId,
 				internalModelId: raw.internal_model_id ?? null,
 				providerModelSlug: raw.provider_model_slug ?? null,
+				providerStatus,
+				providerRoutingStatus,
+				modelRoutingStatus: raw.routing_status ?? null,
 				isGatewayEnabled: false,
-				isGatewayActiveNow: false,
-				capabilities: new Set<string>(),
+				effectiveFrom: raw.effective_from,
+				effectiveTo: raw.effective_to,
+				capabilityStates: new Map<string, ProviderAuditCapabilityState>(),
 			});
 		}
 
@@ -248,16 +279,59 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 		if (!target.providerModelSlug && raw.provider_model_slug) {
 			target.providerModelSlug = raw.provider_model_slug;
 		}
+		if (!target.providerStatus && providerStatus) {
+			target.providerStatus = providerStatus;
+		}
+		if (!target.providerRoutingStatus && providerRoutingStatus) {
+			target.providerRoutingStatus = providerRoutingStatus;
+		}
+		if (!target.modelRoutingStatus && raw.routing_status) {
+			target.modelRoutingStatus = raw.routing_status;
+		}
+		if (!target.effectiveFrom && raw.effective_from) {
+			target.effectiveFrom = raw.effective_from;
+		}
+		if (!target.effectiveTo && raw.effective_to) {
+			target.effectiveTo = raw.effective_to;
+		}
 
 		const isGatewayEnabledRow = Boolean(raw.is_active_gateway);
-		const activeNow = isGatewayEnabledRow && isEffectiveNow(raw.effective_from, raw.effective_to, nowIso);
 		if (isGatewayEnabledRow) target.isGatewayEnabled = true;
-		if (activeNow) target.isGatewayActiveNow = true;
 
 		for (const cap of toArray(raw.capabilities)) {
 			if (!cap?.capability_id) continue;
-			if (cap.status === "disabled") continue;
-			target.capabilities.add(cap.capability_id);
+			target.capabilityStates.delete("unmapped");
+			target.capabilityStates.set(cap.capability_id, {
+				capabilityId: cap.capability_id,
+				capabilityStatus: cap.status ?? null,
+				routability: classifyProviderAuditRoutability({
+					isActiveGateway: Boolean(raw.is_active_gateway),
+					providerStatus,
+					providerRoutingStatus,
+					modelRoutingStatus: raw.routing_status ?? null,
+					capabilityStatus: cap.status ?? null,
+					effectiveFrom: cap.effective_from ?? raw.effective_from,
+					effectiveTo: cap.effective_to ?? raw.effective_to,
+					now: new Date(nowIso),
+				}),
+			});
+		}
+
+		if (target.capabilityStates.size === 0) {
+			target.capabilityStates.set("unmapped", {
+				capabilityId: "unmapped",
+				capabilityStatus: null,
+				routability: classifyProviderAuditRoutability({
+					isActiveGateway: Boolean(raw.is_active_gateway),
+					providerStatus,
+					providerRoutingStatus,
+					modelRoutingStatus: raw.routing_status ?? null,
+					capabilityStatus: null,
+					effectiveFrom: raw.effective_from,
+					effectiveTo: raw.effective_to,
+					now: new Date(nowIso),
+				}),
+			});
 		}
 	}
 
@@ -271,6 +345,8 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 				providerName: aggregate.providerName,
 				totalModels: 0,
 				activeGatewayModels: 0,
+				previewGatewayModels: 0,
+				inactiveGatewayModels: 0,
 				modelsWithPricing: 0,
 				activeWithoutPricing: 0,
 				rows: [],
@@ -284,9 +360,14 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 		const totalPricingRulesCount = pricingSummaryByKey?.size ?? 0;
 		const pricingRulesCount = pricingEntries.filter((entry) => entry.hasActive).length;
 		const hasPricing = pricingRulesCount > 0;
+		const capabilityStates = Array.from(aggregate.capabilityStates.values()).sort((a, b) =>
+			a.capabilityId.localeCompare(b.capabilityId)
+		);
+		const routability = aggregateProviderAuditRoutability(capabilityStates);
+		const isGatewayActiveNow = routability.state.isRoutableNow;
 
 		let gapReason: string | null = null;
-		if (!hasPricing) {
+		if (isGatewayActiveNow && !hasPricing) {
 			if (totalPricingRulesCount === 0) {
 				gapReason = "No pricing rules found";
 			} else {
@@ -324,17 +405,26 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 			internalModelId: aggregate.internalModelId,
 			providerModelSlug: aggregate.providerModelSlug,
 			isGatewayEnabled: aggregate.isGatewayEnabled,
-			isGatewayActiveNow: aggregate.isGatewayActiveNow,
+			isGatewayActiveNow,
+			routability: routability.state,
+			routabilitySummary: routability.summary,
 			pricingRulesCount,
 			totalPricingRulesCount,
 			hasPricing,
 			gapReason,
-			capabilities: Array.from(aggregate.capabilities).sort((a, b) => a.localeCompare(b)),
+			capabilities: capabilityStates.map((entry) =>
+				entry.capabilityStatus
+					? `${entry.capabilityId} (${entry.capabilityStatus})`
+					: entry.capabilityId
+			),
+			capabilityStates,
 		};
 
 		provider.rows.push(row);
 		provider.totalModels += 1;
 		if (row.isGatewayActiveNow) provider.activeGatewayModels += 1;
+		else if (row.routability.availability === "coming_soon") provider.previewGatewayModels += 1;
+		else provider.inactiveGatewayModels += 1;
 		if (row.hasPricing) provider.modelsWithPricing += 1;
 		if (row.isGatewayActiveNow && !row.hasPricing) provider.activeWithoutPricing += 1;
 	}
@@ -350,6 +440,8 @@ export async function getProviderAudit(): Promise<ProviderAuditData> {
 		totalProviders: providers.length,
 		totalModels: providers.reduce((sum, provider) => sum + provider.totalModels, 0),
 		activeGatewayModels: providers.reduce((sum, provider) => sum + provider.activeGatewayModels, 0),
+		previewGatewayModels: providers.reduce((sum, provider) => sum + provider.previewGatewayModels, 0),
+		inactiveGatewayModels: providers.reduce((sum, provider) => sum + provider.inactiveGatewayModels, 0),
 		activeWithoutPricing: providers.reduce((sum, provider) => sum + provider.activeWithoutPricing, 0),
 	};
 

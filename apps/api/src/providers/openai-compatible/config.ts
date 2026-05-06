@@ -402,8 +402,8 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "VENICE_BASE_URL",
         supportsResponses: true,
     },
-    "venice/e2ee": {
-        providerId: "venice/e2ee",
+    "venice-e2ee": {
+        providerId: "venice-e2ee",
         baseUrl: "https://api.venice.ai",
         pathPrefix: "/api/v1",
         apiKeyEnv: "VENICE_API_KEY",

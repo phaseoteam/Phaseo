@@ -4,6 +4,11 @@
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
+import {
+    normalizeCapabilityStatus,
+    normalizeProviderStatus,
+    normalizeRoutingStatus,
+} from "@pipeline/before/context.shared";
 
 type ProviderModelRow = {
     provider_api_model_id: string | null;
@@ -12,6 +17,7 @@ type ProviderModelRow = {
     model_id: string | null;
     provider_model_slug?: string | null;
     is_active_gateway: boolean | null;
+    routing_status?: string | null;
     input_modalities?: unknown;
     output_modalities?: unknown;
     effective_from?: string | null;
@@ -21,6 +27,7 @@ type ProviderModelRow = {
 type CapabilityRow = {
     provider_api_model_id: string | null;
     capability_id: string | null;
+    status?: string | null;
     params?: unknown;
     effective_from?: string | null;
     effective_to?: string | null;
@@ -44,6 +51,8 @@ type ProviderDetails = {
     api_provider_name: string | null;
     link: string | null;
     country_code: string | null;
+    status: string | null;
+    routing_status: string | null;
 };
 
 type OrganisationDetails = {
@@ -58,9 +67,53 @@ type CatalogueProvider = {
     api_provider_name: string | null;
     link: string | null;
     country_code: string | null;
-    endpoint: Endpoint;
+    endpoints: Endpoint[];
     provider_model_slug: string | null;
     is_active_gateway: boolean;
+    availability_status: "active" | "coming_soon" | "inactive";
+    availability_reason:
+        | "active"
+        | "preview_only"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "internal_testing"
+        | "scheduled"
+        | "coming_soon"
+        | "provider_disabled"
+        | "model_disabled"
+        | "capability_disabled"
+        | "provider_not_ready"
+        | "provider_inactive"
+        | "inactive"
+        | "retired";
+    provider_status:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+    provider_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    model_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    capability_status:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
     input_modalities: string[];
     output_modalities: string[];
     effective_from: string | null;
@@ -70,6 +123,55 @@ type CatalogueProvider = {
 
 type ProviderInfo = {
     api_provider_id: string;
+    api_provider_name: string | null;
+    is_active_gateway: boolean;
+    availability_status: "active" | "coming_soon" | "inactive";
+    availability_reason:
+        | "active"
+        | "preview_only"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "internal_testing"
+        | "scheduled"
+        | "coming_soon"
+        | "provider_disabled"
+        | "model_disabled"
+        | "capability_disabled"
+        | "provider_not_ready"
+        | "provider_inactive"
+        | "inactive"
+        | "retired";
+    provider_status:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+    provider_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    model_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    capability_status:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
+    effective_from: string | null;
+    effective_to: string | null;
+    endpoints: Endpoint[];
     params: string[];
 };
 
@@ -105,15 +207,29 @@ export type CatalogueModel = {
     supported_params: string[];
     top_provider: string | null;
     pricing: PricingSummary;
+    availability: {
+        status: "active" | "coming_soon" | "inactive" | "not_listed";
+        provider_count: number;
+        active_provider_count: number;
+        inactive_provider_count: number;
+    };
 };
 
 export type CatalogueFilters = {
     endpoints?: string[];
+    providerIds?: string[];
+    providerStatuses?: string[];
+    providerRoutingStatuses?: string[];
+    modelRoutingStatuses?: string[];
+    capabilityStatuses?: string[];
     organisationIds?: string[];
     inputTypes?: string[];
     outputTypes?: string[];
     params?: string[];
     statuses?: string[];
+    providerAvailabilityStatuses?: string[];
+    providerAvailabilityReasons?: string[];
+    availability?: "active" | "all";
 };
 
 const PRICING_METERS = [
@@ -187,6 +303,22 @@ function withinEffectiveWindow(
     if (from && Number.isFinite(from.getTime()) && now < from) return false;
     if (to && Number.isFinite(to.getTime()) && now >= to) return false;
     return true;
+}
+
+function isExpiredEffectiveWindow(
+    effectiveTo: string | null | undefined,
+    now: Date
+): boolean {
+    const to = parseEffectiveDate(effectiveTo);
+    return Boolean(to && Number.isFinite(to.getTime()) && now >= to);
+}
+
+function isFutureEffectiveWindow(
+    effectiveFrom: string | null | undefined,
+    now: Date
+): boolean {
+    const from = parseEffectiveDate(effectiveFrom);
+    return Boolean(from && Number.isFinite(from.getTime()) && now < from);
 }
 
 function toParamsList(value: unknown): string[] {
@@ -316,6 +448,334 @@ function initPricingSummary(): PricingSummary {
     return { pricing_plan: "standard", meters };
 }
 
+function isPublicRoutingStatus(
+    status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled"
+): boolean {
+    return status !== "disabled";
+}
+
+function isPublicCapabilityStatus(
+    status:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing"
+): boolean {
+    return status !== "disabled" && status !== "internal_testing" && status !== "coming_soon";
+}
+
+function resolveProviderAvailabilityStatus(args: {
+    isActiveGateway: boolean;
+    providerStatus:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+    providerRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    modelRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    capabilityStatus:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
+    effectiveFrom: string | null;
+    effectiveTo: string | null;
+    now: Date;
+}): "active" | "coming_soon" | "inactive" {
+    if (isExpiredEffectiveWindow(args.effectiveTo, args.now)) {
+        return "inactive";
+    }
+
+    if (
+        args.isActiveGateway &&
+        !isFutureEffectiveWindow(args.effectiveFrom, args.now) &&
+        args.providerStatus === "active" &&
+        isPublicRoutingStatus(args.providerRoutingStatus) &&
+        isPublicRoutingStatus(args.modelRoutingStatus) &&
+        isPublicCapabilityStatus(args.capabilityStatus)
+    ) {
+        return "active";
+    }
+
+    if (
+        isFutureEffectiveWindow(args.effectiveFrom, args.now) ||
+        args.providerStatus === "beta" ||
+        args.providerStatus === "alpha" ||
+        args.capabilityStatus === "coming_soon" ||
+        args.capabilityStatus === "internal_testing"
+    ) {
+        return "coming_soon";
+    }
+
+    return "inactive";
+}
+
+function resolveProviderAvailabilityReason(args: {
+    isActiveGateway: boolean;
+    providerStatus:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+    providerRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    modelRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    capabilityStatus:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
+    effectiveFrom: string | null;
+    effectiveTo: string | null;
+    now: Date;
+}):
+    | "active"
+    | "preview_only"
+    | "gated"
+    | "access_limited"
+    | "region_limited"
+    | "project_limited"
+    | "paused"
+    | "soft_blocked"
+    | "deranked_lvl1"
+    | "deranked_lvl2"
+    | "deranked_lvl3"
+    | "internal_testing"
+    | "scheduled"
+    | "coming_soon"
+    | "provider_disabled"
+    | "model_disabled"
+    | "capability_disabled"
+    | "provider_not_ready"
+    | "provider_inactive"
+    | "inactive"
+    | "retired" {
+    if (isExpiredEffectiveWindow(args.effectiveTo, args.now)) {
+        return "retired";
+    }
+    if (isFutureEffectiveWindow(args.effectiveFrom, args.now)) {
+        return "scheduled";
+    }
+    if (args.providerStatus === "beta" || args.providerStatus === "alpha") {
+        return "preview_only";
+    }
+    if (args.providerStatus === "not_ready") {
+        return "provider_not_ready";
+    }
+    if (args.providerStatus === "gated") {
+        return "gated";
+    }
+    if (args.providerStatus === "access_limited") {
+        return "access_limited";
+    }
+    if (args.providerStatus === "region_limited") {
+        return "region_limited";
+    }
+    if (args.providerStatus === "project_limited") {
+        return "project_limited";
+    }
+    if (args.providerStatus === "paused") {
+        return "paused";
+    }
+    if (args.providerStatus === "soft_blocked") {
+        return "soft_blocked";
+    }
+    if (args.providerStatus !== "active") {
+        return "provider_inactive";
+    }
+    if (args.providerRoutingStatus === "disabled") {
+        return "provider_disabled";
+    }
+    if (args.modelRoutingStatus === "disabled") {
+        return "model_disabled";
+    }
+    if (args.capabilityStatus === "disabled") {
+        return "capability_disabled";
+    }
+    if (
+        args.providerRoutingStatus === "deranked_lvl1" ||
+        args.providerRoutingStatus === "deranked_lvl2" ||
+        args.providerRoutingStatus === "deranked_lvl3"
+    ) {
+        return args.providerRoutingStatus;
+    }
+    if (
+        args.modelRoutingStatus === "deranked_lvl1" ||
+        args.modelRoutingStatus === "deranked_lvl2" ||
+        args.modelRoutingStatus === "deranked_lvl3"
+    ) {
+        return args.modelRoutingStatus;
+    }
+    if (args.capabilityStatus === "internal_testing") {
+        return "internal_testing";
+    }
+    if (args.capabilityStatus === "coming_soon") {
+        return "coming_soon";
+    }
+    if (!args.isActiveGateway) {
+        return "inactive";
+    }
+    if (!isPublicCapabilityStatus(args.capabilityStatus)) {
+        return "inactive";
+    }
+    if (!isPublicRoutingStatus(args.providerRoutingStatus) || !isPublicRoutingStatus(args.modelRoutingStatus)) {
+        return "inactive";
+    }
+    return "active";
+}
+
+function isPubliclyRoutableProvider(provider: CatalogueProvider): boolean {
+    return provider.availability_status === "active";
+}
+
+function availabilityPriority(value: "active" | "coming_soon" | "inactive"): number {
+    if (value === "active") return 0;
+    if (value === "coming_soon") return 1;
+    return 2;
+}
+
+const AVAILABILITY_REASON_PRIORITY: Record<ProviderInfo["availability_reason"], number> = {
+    deranked_lvl3: 0,
+    deranked_lvl2: 1,
+    deranked_lvl1: 2,
+    active: 3,
+    internal_testing: 4,
+    scheduled: 5,
+    preview_only: 6,
+    coming_soon: 7,
+    provider_not_ready: 8,
+    gated: 9,
+    access_limited: 10,
+    region_limited: 11,
+    project_limited: 12,
+    paused: 13,
+    soft_blocked: 14,
+    provider_disabled: 15,
+    model_disabled: 16,
+    capability_disabled: 17,
+    provider_inactive: 18,
+    retired: 19,
+    inactive: 20,
+};
+
+const ROUTING_STATUS_PRIORITY: Record<ProviderInfo["provider_routing_status"], number> = {
+    deranked_lvl3: 0,
+    deranked_lvl2: 1,
+    deranked_lvl1: 2,
+    active: 3,
+    disabled: 4,
+};
+
+const CAPABILITY_STATUS_PRIORITY: Record<ProviderInfo["capability_status"], number> = {
+    deranked_lvl3: 0,
+    deranked_lvl2: 1,
+    deranked_lvl1: 2,
+    active: 3,
+    internal_testing: 4,
+    coming_soon: 5,
+    disabled: 6,
+};
+
+function compareNullableString(a: string | null | undefined, b: string | null | undefined): number {
+    return (a ?? "").localeCompare(b ?? "");
+}
+
+function compareProviderInfoCandidate(
+    candidate: Pick<
+        ProviderInfo,
+        | "availability_status"
+        | "availability_reason"
+        | "provider_routing_status"
+        | "model_routing_status"
+        | "capability_status"
+        | "effective_from"
+        | "effective_to"
+        | "endpoints"
+        | "params"
+    >,
+    current: Pick<
+        ProviderInfo,
+        | "availability_status"
+        | "availability_reason"
+        | "provider_routing_status"
+        | "model_routing_status"
+        | "capability_status"
+        | "effective_from"
+        | "effective_to"
+        | "endpoints"
+        | "params"
+    >
+): number {
+    const availabilityDelta =
+        availabilityPriority(candidate.availability_status) - availabilityPriority(current.availability_status);
+    if (availabilityDelta !== 0) return availabilityDelta;
+
+    const reasonDelta =
+        AVAILABILITY_REASON_PRIORITY[candidate.availability_reason] -
+        AVAILABILITY_REASON_PRIORITY[current.availability_reason];
+    if (reasonDelta !== 0) return reasonDelta;
+
+    const providerRoutingDelta =
+        ROUTING_STATUS_PRIORITY[candidate.provider_routing_status] -
+        ROUTING_STATUS_PRIORITY[current.provider_routing_status];
+    if (providerRoutingDelta !== 0) return providerRoutingDelta;
+
+    const modelRoutingDelta =
+        ROUTING_STATUS_PRIORITY[candidate.model_routing_status] -
+        ROUTING_STATUS_PRIORITY[current.model_routing_status];
+    if (modelRoutingDelta !== 0) return modelRoutingDelta;
+
+    const capabilityDelta =
+        CAPABILITY_STATUS_PRIORITY[candidate.capability_status] -
+        CAPABILITY_STATUS_PRIORITY[current.capability_status];
+    if (capabilityDelta !== 0) return capabilityDelta;
+
+    const effectiveFromDelta = compareNullableString(candidate.effective_from, current.effective_from);
+    if (effectiveFromDelta !== 0) return effectiveFromDelta;
+
+    const effectiveToDelta = compareNullableString(candidate.effective_to, current.effective_to);
+    if (effectiveToDelta !== 0) return effectiveToDelta;
+
+    const endpointsDelta = candidate.endpoints.join(",").localeCompare(current.endpoints.join(","));
+    if (endpointsDelta !== 0) return endpointsDelta;
+
+    return candidate.params.join(",").localeCompare(current.params.join(","));
+}
+
+function scopePricingSummary(pricing: PricingSummary, visibleProviderIds: Set<string>): PricingSummary {
+    const scopedMeters = Object.fromEntries(
+        Object.entries(pricing.meters).map(([meter, summary]) => [
+            meter,
+            summary && visibleProviderIds.has(summary.provider_id) ? { ...summary } : null,
+        ])
+    ) as PricingSummary["meters"];
+
+    return {
+        pricing_plan: pricing.pricing_plan,
+        meters: scopedMeters,
+    };
+}
+
 function getTopProvider(providerMeters: Map<string, Map<string, number>>): string | null {
     let best: { provider: string; cost: number } | null = null;
     for (const [providerId, meters] of providerMeters) {
@@ -339,6 +799,8 @@ function getTopProvider(providerMeters: Map<string, Map<string, number>>): strin
 
 export async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
     const supabase = getSupabaseAdmin();
+    const availabilityMode = filter.availability ?? "active";
+    const includeNonRoutable = availabilityMode === "all";
     const modelQuery = supabase
         .from("data_models")
         .select(
@@ -402,7 +864,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         const { data, error: providerError } = await supabase
             .from("data_api_provider_models")
             .select(
-                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+                "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, routing_status, input_modalities, output_modalities, effective_from, effective_to"
             )
             .in("model_id", modelIdChunk);
 
@@ -421,8 +883,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     for (const providerModelIdChunk of chunkArray(providerModelIds, 200)) {
         const { data: capabilityRowsRaw, error: capabilityError } = await supabase
             .from("data_api_provider_model_capabilities")
-            .select("provider_api_model_id, capability_id, params")
-            .eq("status", "active")
+            .select("provider_api_model_id, capability_id, status, params, effective_from, effective_to")
             .in("provider_api_model_id", providerModelIdChunk);
         if (capabilityError) {
             throw new Error(`Failed to load provider capabilities: ${capabilityError.message || "unknown error"}`);
@@ -477,8 +938,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         const canonicalModelId = row?.model_id ?? row?.api_model_id;
         if (!canonicalModelId || !row?.provider_id) continue;
         providerIdSet.add(row.provider_id);
-        if (!row.is_active_gateway) continue;
-        if (!withinEffectiveWindow(row.effective_from, row.effective_to, now)) continue;
+        if (!includeNonRoutable && !withinEffectiveWindow(row.effective_from, row.effective_to, now)) continue;
         const existing = providersByModel.get(canonicalModelId) ?? [];
         existing.push(row as ProviderModelRow);
         providersByModel.set(canonicalModelId, existing);
@@ -487,7 +947,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const capabilitiesByProviderModel = new Map<string, CapabilityRow[]>();
     for (const cap of capabilityRows) {
         if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
-        if (!withinEffectiveWindow(cap.effective_from, cap.effective_to, now)) continue;
+        if (!includeNonRoutable && !withinEffectiveWindow(cap.effective_from, cap.effective_to, now)) continue;
         const existing = capabilitiesByProviderModel.get(cap.provider_api_model_id) ?? [];
         existing.push(cap as CapabilityRow);
         capabilitiesByProviderModel.set(cap.provider_api_model_id, existing);
@@ -499,7 +959,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         for (const providerIdChunk of chunkArray(Array.from(providerIdSet), 200)) {
             const { data, error: providerDetailsError } = await supabase
                 .from("data_api_providers")
-                .select("api_provider_id, api_provider_name, link, country_code")
+                .select("api_provider_id, api_provider_name, link, country_code, status, routing_status")
                 .in("api_provider_id", providerIdChunk);
             if (providerDetailsError) {
                 throw new Error(`Failed to load provider metadata: ${providerDetailsError.message || "unknown error"}`);
@@ -513,6 +973,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 api_provider_name: provider.api_provider_name ?? null,
                 link: provider.link ?? null,
                 country_code: provider.country_code ?? null,
+                status: (provider as any).status ?? null,
+                routing_status: (provider as any).routing_status ?? null,
             });
         }
     }
@@ -589,11 +1051,18 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     }
 
     const endpointsFilter = normalizeStringSet(filter.endpoints)?.map((value) => value as Endpoint);
+    const providerIdsFilter = normalizeStringSet(filter.providerIds)?.map((value) => value.toLowerCase());
+    const providerStatusesFilter = normalizeStringSet(filter.providerStatuses)?.map((value) => value.toLowerCase());
+    const providerRoutingStatusesFilter = normalizeStringSet(filter.providerRoutingStatuses)?.map((value) => value.toLowerCase());
+    const modelRoutingStatusesFilter = normalizeStringSet(filter.modelRoutingStatuses)?.map((value) => value.toLowerCase());
+    const capabilityStatusesFilter = normalizeStringSet(filter.capabilityStatuses)?.map((value) => value.toLowerCase());
     const organisationIds = normalizeStringSet(filter.organisationIds);
     const inputTypesFilter = normalizeStringSet(filter.inputTypes)?.map((value) => value.toLowerCase());
     const outputTypesFilter = normalizeStringSet(filter.outputTypes)?.map((value) => value.toLowerCase());
     const paramsFilter = normalizeStringSet(filter.params);
     const statusesFilter = normalizeStringSet(filter.statuses)?.map((value) => value.toLowerCase());
+    const providerAvailabilityStatusesFilter = normalizeStringSet(filter.providerAvailabilityStatuses)?.map((value) => value.toLowerCase());
+    const providerAvailabilityReasonsFilter = normalizeStringSet(filter.providerAvailabilityReasons)?.map((value) => value.toLowerCase());
 
     const models: CatalogueModel[] = [];
     for (const [modelId, info] of baseModels) {
@@ -622,33 +1091,125 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             const providerDetails = row.provider_id ? providerMap.get(row.provider_id) : null;
             for (const cap of caps) {
                 if (!cap.capability_id) continue;
+                const providerStatus = normalizeProviderStatus(providerDetails?.status);
+                const providerRoutingStatus = normalizeRoutingStatus(providerDetails?.routing_status);
+                const modelRoutingStatus = normalizeRoutingStatus(row.routing_status);
+                const capabilityStatus = normalizeCapabilityStatus(cap.status);
+                const effectiveFrom = cap.effective_from ?? row.effective_from ?? null;
+                const effectiveTo = cap.effective_to ?? row.effective_to ?? null;
                 providerEntries.push({
                     api_provider_id: row.provider_id!,
                     api_provider_name: providerDetails?.api_provider_name ?? null,
                     link: providerDetails?.link ?? null,
                     country_code: providerDetails?.country_code ?? null,
-                    endpoint: String(cap.capability_id) as Endpoint,
+                    endpoints: [String(cap.capability_id) as Endpoint],
                     provider_model_slug: row.provider_model_slug ?? null,
-                    is_active_gateway: true,
+                    is_active_gateway: Boolean(row.is_active_gateway),
+                    availability_status: resolveProviderAvailabilityStatus({
+                        isActiveGateway: Boolean(row.is_active_gateway),
+                        providerStatus,
+                        providerRoutingStatus,
+                        modelRoutingStatus,
+                        capabilityStatus,
+                        effectiveFrom,
+                        effectiveTo,
+                        now,
+                    }),
+                    availability_reason: resolveProviderAvailabilityReason({
+                        isActiveGateway: Boolean(row.is_active_gateway),
+                        providerStatus,
+                        providerRoutingStatus,
+                        modelRoutingStatus,
+                        capabilityStatus,
+                        effectiveFrom,
+                        effectiveTo,
+                        now,
+                    }),
+                    provider_status: providerStatus,
+                    provider_routing_status: providerRoutingStatus,
+                    model_routing_status: modelRoutingStatus,
+                    capability_status: capabilityStatus,
                     input_modalities: toStringArray(row.input_modalities),
                     output_modalities: toStringArray(row.output_modalities),
-                    effective_from: cap.effective_from ?? row.effective_from ?? null,
-                    effective_to: cap.effective_to ?? row.effective_to ?? null,
+                    effective_from: effectiveFrom,
+                    effective_to: effectiveTo,
                     params: toParamsList(cap.params),
                 });
             }
         }
 
-        providerEntries.sort((a, b) => {
+        const visibleProviderEntries = includeNonRoutable
+            ? providerEntries
+            : providerEntries.filter(isPubliclyRoutableProvider);
+
+        const filteredProviderEntries = visibleProviderEntries.filter((entry) => {
+            if (
+                providerIdsFilter?.length &&
+                !providerIdsFilter.includes(entry.api_provider_id.toLowerCase())
+            ) {
+                return false;
+            }
+            if (
+                providerStatusesFilter?.length &&
+                !providerStatusesFilter.includes(entry.provider_status.toLowerCase())
+            ) {
+                return false;
+            }
+            if (
+                providerRoutingStatusesFilter?.length &&
+                !providerRoutingStatusesFilter.includes(
+                    entry.provider_routing_status.toLowerCase()
+                )
+            ) {
+                return false;
+            }
+            if (
+                modelRoutingStatusesFilter?.length &&
+                !modelRoutingStatusesFilter.includes(
+                    entry.model_routing_status.toLowerCase()
+                )
+            ) {
+                return false;
+            }
+            if (
+                capabilityStatusesFilter?.length &&
+                !capabilityStatusesFilter.includes(entry.capability_status.toLowerCase())
+            ) {
+                return false;
+            }
+            if (
+                providerAvailabilityStatusesFilter?.length &&
+                !providerAvailabilityStatusesFilter.includes(
+                    entry.availability_status.toLowerCase()
+                )
+            ) {
+                return false;
+            }
+            if (
+                providerAvailabilityReasonsFilter?.length &&
+                !providerAvailabilityReasonsFilter.includes(
+                    entry.availability_reason.toLowerCase()
+                )
+            ) {
+                return false;
+            }
+            return true;
+        });
+
+        if (filteredProviderEntries.length === 0) {
+            continue;
+        }
+
+        filteredProviderEntries.sort((a, b) => {
             const aName = (a.api_provider_name ?? a.api_provider_id).toLowerCase();
             const bName = (b.api_provider_name ?? b.api_provider_id).toLowerCase();
             if (aName !== bName) return aName.localeCompare(bName);
-            if (a.endpoint !== b.endpoint) return a.endpoint.localeCompare(b.endpoint);
+            if (a.endpoints[0] !== b.endpoints[0]) return a.endpoints[0].localeCompare(b.endpoints[0]);
             return (a.provider_model_slug ?? "").localeCompare(b.provider_model_slug ?? "");
         });
 
         const endpoints = Array.from(
-            new Set(providerEntries.map((entry) => entry.endpoint))
+            new Set(filteredProviderEntries.flatMap((entry) => entry.endpoints))
         ).sort();
 
         if (endpointsFilter?.length) {
@@ -669,31 +1230,78 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         }
 
         if (paramsFilter?.length) {
-            const modelParams = providerEntries.flatMap((entry) => entry.params);
+            const modelParams = filteredProviderEntries.flatMap((entry) => entry.params);
             const hasParam = paramsFilter.some((param) => modelParams.includes(param));
             if (!hasParam) continue;
         }
 
         const aliases = aliasMap.get(modelId) ?? [];
 
-        const providerMapForModel = new Map<string, string[]>();
-        for (const entry of providerEntries) {
-            const existing = providerMapForModel.get(entry.api_provider_id) ?? [];
-            for (const param of entry.params) {
-                if (!existing.includes(param)) existing.push(param);
+        const providerMapForModel = new Map<string, ProviderInfo>();
+        for (const entry of filteredProviderEntries) {
+            const existing = providerMapForModel.get(entry.api_provider_id);
+            if (!existing) {
+                providerMapForModel.set(entry.api_provider_id, {
+                    api_provider_id: entry.api_provider_id,
+                    api_provider_name: entry.api_provider_name,
+                    is_active_gateway: entry.is_active_gateway,
+                    availability_status: entry.availability_status,
+                    availability_reason: entry.availability_reason,
+                    provider_status: entry.provider_status,
+                    provider_routing_status: entry.provider_routing_status,
+                    model_routing_status: entry.model_routing_status,
+                    capability_status: entry.capability_status,
+                    effective_from: entry.effective_from,
+                    effective_to: entry.effective_to,
+                    endpoints: [...entry.endpoints],
+                    params: [...entry.params].sort((a, b) => a.localeCompare(b)),
+                });
+                continue;
             }
-            providerMapForModel.set(entry.api_provider_id, existing);
+
+            existing.endpoints = Array.from(new Set([...existing.endpoints, ...entry.endpoints])).sort();
+            existing.params = Array.from(new Set([...existing.params, ...entry.params])).sort((a, b) => a.localeCompare(b));
+            if (compareProviderInfoCandidate(entry, existing) < 0) {
+                existing.is_active_gateway = entry.is_active_gateway;
+                existing.availability_status = entry.availability_status;
+                existing.availability_reason = entry.availability_reason;
+                existing.provider_status = entry.provider_status;
+                existing.provider_routing_status = entry.provider_routing_status;
+                existing.model_routing_status = entry.model_routing_status;
+                existing.capability_status = entry.capability_status;
+                existing.effective_from = entry.effective_from;
+                existing.effective_to = entry.effective_to;
+            }
         }
-        const providerInfos: ProviderInfo[] = Array.from(providerMapForModel.entries())
-            .map(([api_provider_id, params]) => ({ api_provider_id, params: params.sort() }))
-            .sort((a, b) => a.api_provider_id.localeCompare(b.api_provider_id));
+        const providerInfos: ProviderInfo[] = Array.from(providerMapForModel.values()).sort((a, b) =>
+            a.api_provider_id.localeCompare(b.api_provider_id)
+        );
 
         const supportedParams = Array.from(
-            new Set(providerEntries.flatMap((entry) => entry.params))
+            new Set(filteredProviderEntries.flatMap((entry) => entry.params))
         ).sort((a, b) => a.localeCompare(b));
 
+        const activeProviderCount = providerInfos.filter((provider) => provider.availability_status === "active").length;
+        const comingSoonProviderCount = providerInfos.filter((provider) => provider.availability_status === "coming_soon").length;
+        const inactiveProviderCount = providerInfos.filter((provider) => provider.availability_status === "inactive").length;
+        const availabilityStatus: CatalogueModel["availability"]["status"] =
+            activeProviderCount > 0
+                ? "active"
+                : comingSoonProviderCount > 0
+                    ? "coming_soon"
+                    : inactiveProviderCount > 0
+                        ? "inactive"
+                        : "not_listed";
+
         const pricing = pricingByModel.get(modelId) ?? initPricingSummary();
-        const topProvider = getTopProvider(providerMeterByModel.get(modelId) ?? new Map());
+        const filteredProviderIds = new Set(providerInfos.map((provider) => provider.api_provider_id));
+        const scopedPricing = scopePricingSummary(pricing, filteredProviderIds);
+        const filteredProviderMeters = new Map(
+            Array.from(providerMeterByModel.get(modelId) ?? new Map()).filter(([providerId]) =>
+                filteredProviderIds.has(providerId)
+            )
+        );
+        const topProvider = getTopProvider(filteredProviderMeters);
 
         const model: CatalogueModel = {
             model_id: info.model_id,
@@ -713,7 +1321,13 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             providers: providerInfos,
             supported_params: supportedParams,
             top_provider: topProvider,
-            pricing,
+            pricing: scopedPricing,
+            availability: {
+                status: availabilityStatus,
+                provider_count: providerInfos.length,
+                active_provider_count: activeProviderCount,
+                inactive_provider_count: inactiveProviderCount,
+            },
         };
 
         models.push(model);

@@ -87,7 +87,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     sambanova: createOpenAICompatibleAdapter("sambanova"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
     together: createOpenAICompatibleAdapter("together"),
-    "venice/e2ee": createOpenAICompatibleAdapter("venice/e2ee"),
+    "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),
     "weights-and-biases": createOpenAICompatibleAdapter("weights-and-biases"),
     // New providers - added during IR optimization and provider onboarding
     fireworks: createOpenAICompatibleAdapter("fireworks"),

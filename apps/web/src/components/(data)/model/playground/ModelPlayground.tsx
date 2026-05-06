@@ -1318,7 +1318,7 @@ print(response)`,
 			description: "Official AI Stats SDK for TypeScript.",
 			lang: "ts",
 			installCommand: "npm install @ai-stats/sdk",
-			code: `import { AIStats } from "@ai-stats/sdk";
+			code: `import AIStats from "@ai-stats/sdk";
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
@@ -1336,7 +1336,7 @@ console.log(response);`,
 			category: "AI Stats SDK",
 			description: "Official AI Stats SDK for Python.",
 			lang: "python",
-			installCommand: "pip install ai-stats",
+			installCommand: "pip install ai-stats-py-sdk",
 			code: `import os
 from ai_stats import AIStats
 

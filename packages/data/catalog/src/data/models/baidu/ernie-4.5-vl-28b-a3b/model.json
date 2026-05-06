@@ -12,7 +12,7 @@
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "baidu/ernie-4.5-vl-28b-a3b",
-  "family_id": "baidu/ernie-4-5",
+  "family_id": "baidu/ernie-4.5",
   "links": [],
   "details": [],
   "benchmarks": [

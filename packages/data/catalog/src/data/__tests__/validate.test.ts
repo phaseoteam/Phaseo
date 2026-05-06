@@ -1,4 +1,4 @@
-import { checkPricingEntrySafety, isMajorError } from '@/data/validate';
+import { checkApiProviderModelEntrySafety, checkPricingEntrySafety, isMajorError } from '@/data/validate';
 
 describe('pricing safety checks', () => {
     test('active on gateway with no rules -> error flagged', () => {
@@ -43,6 +43,22 @@ describe('pricing safety checks', () => {
         };
         const errs = checkPricingEntrySafety(bad);
         expect(errs.some((e) => /unknown meter/.test(e))).toBe(true);
+    });
+
+    test('new canonical pricing meters are accepted', () => {
+        const allowed = ['output_reasoning_tokens', 'bfl_credits', 'output_video'] as const;
+        for (const meter of allowed) {
+            const entry = {
+                key: 'foo:bar:baz',
+                api_provider_id: 'foo',
+                model_id: 'bar',
+                endpoint: 'baz',
+                is_active_gateway: false,
+                rules: [{ meter, unit_size: 1, price_per_unit: 0.01, bill: { mode: 'all' } }],
+            };
+            const errs = checkPricingEntrySafety(entry);
+            expect(errs.some((e) => /unknown meter/.test(e))).toBe(false);
+        }
     });
 
     test('mixed aggregate and detailed input meters -> error', () => {
@@ -91,6 +107,112 @@ describe('pricing safety checks', () => {
         };
         const errs = checkPricingEntrySafety(bad);
         expect(errs.some((e) => /cached_read_text_tokens price > input_text_tokens/.test(e))).toBe(true);
+    });
+});
+
+describe('api provider model safety checks', () => {
+    test('missing provider_model_slug -> error flagged', () => {
+        const bad = {
+            api_model_id: 'z-ai/glm-5.1',
+            provider_api_model_id: 'gmicloud:z-ai/glm-5.1',
+            provider_model_slug: null,
+            internal_model_id: 'z-ai/glm-5.1',
+            is_active_gateway: true,
+            input_modalities: 'text',
+            output_modalities: 'text',
+            capabilities: [{ capability_id: 'text.generate', status: 'active', params: [] }],
+        };
+        const result = checkApiProviderModelEntrySafety(bad, { providerId: 'gmicloud' });
+        expect(result.errors).toEqual(
+            expect.arrayContaining([expect.stringContaining('missing provider_model_slug')])
+        );
+    });
+
+    test('active gateway row with active capabilities and missing modalities -> warning', () => {
+        const bad = {
+            api_model_id: 'deepseek/deepseek-v3.1',
+            provider_api_model_id: 'gmicloud:deepseek/deepseek-v3.1',
+            provider_model_slug: 'deepseek-ai/DeepSeek-V3.1',
+            internal_model_id: 'deepseek/deepseek-v3.1',
+            is_active_gateway: true,
+            input_modalities: null,
+            output_modalities: null,
+            capabilities: [{ capability_id: 'text.generate', status: 'active', params: [] }],
+        };
+        const result = checkApiProviderModelEntrySafety(bad, { providerId: 'gmicloud' });
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining('active on gateway with active capabilities but missing input_modalities and output_modalities'),
+            ])
+        );
+    });
+
+    test('array-valued modalities do not trigger missing-modality warning', () => {
+        const good = {
+            api_model_id: 'google/gemma-3-27b',
+            provider_api_model_id: 'venice-e2ee:google/gemma-3-27b',
+            provider_model_slug: 'google/gemma-3-27b',
+            internal_model_id: 'google/gemma-3-27b',
+            is_active_gateway: true,
+            input_modalities: ['text', 'image'],
+            output_modalities: ['text'],
+            capabilities: [{ capability_id: 'text.generate', status: 'active', params: [] }],
+        };
+        const result = checkApiProviderModelEntrySafety(good, { providerId: 'venice-e2ee' });
+        expect(result.warnings.some((warning) => warning.includes('missing input_modalities'))).toBe(false);
+    });
+
+    test('canonical model modalities suppress duplicate provider-row warning', () => {
+        const row = {
+            api_model_id: 'google/gemma-3-27b',
+            provider_api_model_id: 'venice-e2ee:google/gemma-3-27b',
+            provider_model_slug: 'google/gemma-3-27b',
+            internal_model_id: 'google/gemma-3-27b',
+            is_active_gateway: true,
+            input_modalities: null,
+            output_modalities: null,
+            capabilities: [{ capability_id: 'text.generate', status: 'active', params: [] }],
+        };
+        const result = checkApiProviderModelEntrySafety(row, {
+            providerId: 'venice-e2ee',
+            fallbackInputModalities: 'text,image,video',
+            fallbackOutputModalities: 'text',
+        });
+        expect(result.warnings.some((warning) => warning.includes('missing input_modalities'))).toBe(false);
+    });
+
+    test('active gateway row with no active capabilities -> warning', () => {
+        const bad = {
+            api_model_id: 'qwen/text-embedding-v3',
+            provider_api_model_id: 'alibaba-cloud:qwen/text-embedding-v3',
+            provider_model_slug: 'text-embedding-v3',
+            internal_model_id: 'qwen/text-embedding-v3',
+            is_active_gateway: true,
+            input_modalities: null,
+            output_modalities: null,
+            capabilities: [],
+        };
+        const result = checkApiProviderModelEntrySafety(bad, { providerId: 'alibaba-cloud' });
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([expect.stringContaining('active on gateway but has no configured non-disabled capabilities')])
+        );
+    });
+
+    test('deranked capabilities count as configured and do not trigger no-capability warning', () => {
+        const row = {
+            api_model_id: 'anthropic/claude-opus-4.5',
+            provider_api_model_id: 'venice:anthropic/claude-opus-4.5',
+            provider_model_slug: 'claude-opus-4-5',
+            internal_model_id: 'anthropic/claude-opus-4.5',
+            is_active_gateway: true,
+            input_modalities: ['text', 'image'],
+            output_modalities: ['text'],
+            capabilities: [{ capability_id: 'text.generate', status: 'deranked_lvl2', params: [] }],
+        };
+        const result = checkApiProviderModelEntrySafety(row, { providerId: 'venice' });
+        expect(
+            result.warnings.some((warning) => warning.includes('no configured non-disabled capabilities'))
+        ).toBe(false);
     });
 });
 

@@ -260,7 +260,13 @@
     "max_output_tokens": 1024,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": "2026-07-23T00:00:00",
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/curie",
@@ -408,7 +414,7 @@
     "api_model_id": "openai/gpt-3.5-turbo",
     "provider_api_model_id": "openai:openai/gpt-3.5-turbo",
     "provider_model_slug": "gpt-3.5-turbo-1106",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-3.5-turbo-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -528,7 +534,7 @@
     "api_model_id": "openai/gpt-3.5-turbo-16k",
     "provider_api_model_id": "openai:openai/gpt-3.5-turbo-16k",
     "provider_model_slug": "gpt-3.5-turbo-16k",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-3.5-turbo-0613",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -648,7 +654,7 @@
     "api_model_id": "openai/gpt-3.5-turbo-2023-03-21",
     "provider_api_model_id": "openai:openai/gpt-3.5-turbo-2023-03-21",
     "provider_model_slug": "gpt-3.5-turbo-2023-03-21",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-3.5-turbo-2023-11-06",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -669,7 +675,7 @@
     "api_model_id": "openai/gpt-3.5-turbo-2023-09-28",
     "provider_api_model_id": "openai:openai/gpt-3.5-turbo-2023-09-28",
     "provider_model_slug": "gpt-3.5-turbo-2023-09-28",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-3.5-turbo-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1044,7 +1050,7 @@
     "api_model_id": "openai/gpt-4-2023-06-13",
     "provider_api_model_id": "openai:openai/gpt-4-2023-06-13",
     "provider_model_slug": "gpt-4-0613",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-4",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1417,8 +1423,8 @@
   {
     "api_model_id": "openai/gpt-4o-2024-11-20",
     "provider_api_model_id": "openai:openai/gpt-4o-2024-11-20",
-    "provider_model_slug": "gpt-4o-2024-08-06",
-    "internal_model_id": "",
+    "provider_model_slug": "gpt-4o-2024-11-20",
+    "internal_model_id": "openai/gpt-4o",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -1587,7 +1593,7 @@
     "api_model_id": "openai/gpt-4o-audio-2025-06-03",
     "provider_api_model_id": "openai:openai/gpt-4o-audio-2025-06-03",
     "provider_model_slug": "gpt-4o-audio-preview-2025-06-03",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-4o-audio",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,audio",
@@ -1882,7 +1888,7 @@
     "api_model_id": "openai/gpt-4-turbo-2024-01-25",
     "provider_api_model_id": "openai:openai/gpt-4-turbo-2024-01-25",
     "provider_model_slug": "gpt-4-turbo-2024-01-25",
-    "internal_model_id": "",
+    "internal_model_id": "openai/gpt-4-turbo",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -3875,7 +3881,18 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": "2026-10-23T00:00:00",
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-image-1.5",
@@ -4825,7 +4842,7 @@
     "api_model_id": "openai/sora-2-2025-10-06",
     "provider_api_model_id": "openai:openai/sora-2-2025-10-06",
     "provider_model_slug": "sora-2-2025-10-06",
-    "internal_model_id": "",
+    "internal_model_id": "openai/sora-2",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",

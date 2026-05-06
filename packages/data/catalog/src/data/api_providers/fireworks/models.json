@@ -6,13 +6,19 @@
     "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-1-kontext-max",
@@ -21,13 +27,24 @@
     "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-1-kontext-pro",
@@ -36,13 +53,24 @@
     "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-1-schnell",
@@ -51,13 +79,19 @@
     "internal_model_id": "",
     "is_active_gateway": true,
     "quantization_scheme": "FP8",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "cogito/cogito-671b-v2.1",
@@ -471,7 +505,13 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-reranker",
@@ -480,13 +520,19 @@
     "internal_model_id": "qwen/qwen3-reranker-8b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "rerank",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",

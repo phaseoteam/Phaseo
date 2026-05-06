@@ -58,12 +58,12 @@ const LANGUAGE_TO_SHIKI: Record<Language, ShikiLang> = {
 };
 
 const SDK_METHODS: Record<EndpointId, { js: string; py: string }> = {
-	completions: { js: "chatCompletions", py: "chat_completions" },
-	images: { js: "generateImages", py: "generate_images" },
+	completions: { js: "generateText", py: "generate_text" },
+	images: { js: "generateImage", py: "generate_image" },
 	video: { js: "generateVideo", py: "generate_video" },
-	audio: { js: "generateAudio", py: "generate_audio" },
-	embeddings: { js: "embeddings", py: "embeddings" },
-	moderations: { js: "moderations", py: "moderations" },
+	audio: { js: "generateSpeech", py: "generate_speech" },
+	embeddings: { js: "generateEmbedding", py: "generate_embedding" },
+	moderations: { js: "generateModeration", py: "generate_moderation" },
 };
 
 type EndpointId =
@@ -135,7 +135,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		summary:
 			"Launch product teasers or walkthroughs without juggling bespoke video APIs.",
 		highlight: "Duration, format, and seed controls stay consistent.",
-		path: "/video/generation",
+		path: "/videos",
 		body: (model) => ({
 			model,
 			prompt: "An engineer exploring a real-time operations room, charts updating smoothly, confident tone.",
@@ -238,7 +238,7 @@ const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 const OPENAI_CLIENT_METHODS: Record<EndpointId, string> = {
 	completions: "chat.completions.create",
 	images: "images.generate",
-	video: "video.generate",
+	video: "videos.create",
 	audio: "audio.speech.create",
 	embeddings: "embeddings.create",
 	moderations: "moderations.create",
@@ -398,7 +398,7 @@ response = requests.post(
 
 response.raise_for_status()
 print(response.json())`,
-		"typescript-sdk": `import { AIStats } from "@ai-stats/ts-sdk";
+		"typescript-sdk": `import AIStats from "@ai-stats/sdk";
 
 const client = new AIStats({
     apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
@@ -580,7 +580,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 					</h2>
 					<p className="text-sm text-slate-600 dark:text-slate-400">
 						Swap endpoints and models without touching your
-						integration. Use the TypeScript SDK (`@ai-stats/ts-sdk`)
+						integration. Use the TypeScript SDK (`@ai-stats/sdk`)
 						or Python SDK (`ai-stats-py-sdk`), or call the Gateway
 						directly from cURL/fetch.
 					</p>

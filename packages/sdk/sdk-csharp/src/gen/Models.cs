@@ -1030,6 +1030,9 @@ public sealed class GatewayDatetimeToolDefinition
 
 public sealed class GatewayModelsResponse
 {
+	[JsonPropertyName("availability_mode")]
+	public string AvailabilityMode { get; set; }
+
 	[JsonPropertyName("limit")]
 	public int Limit { get; set; }
 
@@ -1405,6 +1408,9 @@ public sealed class Model
 	[JsonPropertyName("architecture")]
 	public Dictionary<string, object>? Architecture { get; set; }
 
+	[JsonPropertyName("availability")]
+	public Dictionary<string, object>? Availability { get; set; }
+
 	[JsonPropertyName("canonical_slug")]
 	public string? CanonicalSlug { get; set; }
 
@@ -1482,6 +1488,22 @@ public sealed class Model
 
 }
 
+public sealed class ModelAvailability
+{
+	[JsonPropertyName("active_provider_count")]
+	public int ActiveProviderCount { get; set; }
+
+	[JsonPropertyName("inactive_provider_count")]
+	public int InactiveProviderCount { get; set; }
+
+	[JsonPropertyName("provider_count")]
+	public int ProviderCount { get; set; }
+
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
+
+}
+
 public sealed class ModelId { }
 
 public sealed class ModelLifecycle
@@ -1500,6 +1522,49 @@ public sealed class ModelLifecycle
 
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
+
+}
+
+public sealed class ModelProviderAvailability
+{
+	[JsonPropertyName("api_provider_id")]
+	public string ApiProviderId { get; set; }
+
+	[JsonPropertyName("api_provider_name")]
+	public string? ApiProviderName { get; set; }
+
+	[JsonPropertyName("availability_reason")]
+	public string AvailabilityReason { get; set; }
+
+	[JsonPropertyName("availability_status")]
+	public string AvailabilityStatus { get; set; }
+
+	[JsonPropertyName("capability_status")]
+	public string CapabilityStatus { get; set; }
+
+	[JsonPropertyName("effective_from")]
+	public string? EffectiveFrom { get; set; }
+
+	[JsonPropertyName("effective_to")]
+	public string? EffectiveTo { get; set; }
+
+	[JsonPropertyName("endpoints")]
+	public List<string> Endpoints { get; set; }
+
+	[JsonPropertyName("is_active_gateway")]
+	public bool IsActiveGateway { get; set; }
+
+	[JsonPropertyName("model_routing_status")]
+	public string ModelRoutingStatus { get; set; }
+
+	[JsonPropertyName("params")]
+	public List<string> Params { get; set; }
+
+	[JsonPropertyName("provider_routing_status")]
+	public string ProviderRoutingStatus { get; set; }
+
+	[JsonPropertyName("provider_status")]
+	public string ProviderStatus { get; set; }
 
 }
 

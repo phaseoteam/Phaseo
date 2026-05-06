@@ -100,7 +100,17 @@ export type PresetData = {
     visibility: "private" | "team" | "public";
 };
 
-export type ProviderRolloutStatus = "active" | "beta" | "alpha" | "not_ready";
+export type ProviderRolloutStatus =
+    | "active"
+    | "beta"
+    | "alpha"
+    | "not_ready"
+    | "gated"
+    | "access_limited"
+    | "region_limited"
+    | "project_limited"
+    | "paused"
+    | "soft_blocked";
 
 export type RoutingStatus =
     | "active"
@@ -109,7 +119,7 @@ export type RoutingStatus =
     | "deranked_lvl3"
     | "disabled";
 
-export type CapabilityRoutingStatus = RoutingStatus | "internal_testing";
+export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "coming_soon";
 
 /**
  * Snapshot of a provider's configuration and capabilities

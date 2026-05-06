@@ -1,0 +1,199 @@
+---
+title: "Gateway Rollout Checklists"
+description: "Operational checklists for enabling providers, shipping async endpoints, exposing metadata, and keeping validation tight after large gateway changes."
+---
+
+Use this page when you are landing a gateway feature that spans API behavior, docs, SDKs, usage tooling, and observability. The goal is to make rollout work repeatable and to reduce cleanup after large merges.
+
+## 1) Enable a new provider
+
+Use this checklist when a provider already exists in the codebase or catalog pipeline, but needs to become safely routable for real traffic.
+
+- Confirm the provider and model IDs are canonical in the catalog data and do not introduce a duplicate slug or alias.
+- Confirm activation state is intentional:
+  - active and publicly routable
+  - preview or internal testing only
+  - disabled or region-limited with a clear reason
+- Add or verify provider credential wiring and any required base URL, region, project, or account configuration.
+- Make sure unsupported or gated mappings return structured diagnostics rather than disappearing from the catalog silently.
+- Verify endpoint capability mapping per modality:
+  - text
+  - embeddings
+  - images
+  - audio
+  - video
+  - async jobs or batches where applicable
+- Verify pricing coverage for every exposed meter before activation.
+- Verify routing and fallback behavior:
+  - direct provider selection
+  - ranked routing
+  - disabled-path failure messaging
+- Expose the provider/model state correctly in:
+  - `/v1/models`
+  - product UI
+  - admin audit views
+  - docs examples where the provider is mentioned
+- If public contract fields changed, sync:
+  - OpenAPI
+  - generated SDKs
+  - SDK docs
+  - integration examples
+- Add targeted regression coverage for:
+  - activation-state classification
+  - operator diagnostics
+  - at least one success path or controlled mock path
+
+### Required validation
+
+- `pnpm validate:data`
+- `pnpm validate:pricing`
+- `pnpm validate:gateway`
+- `pnpm --filter @ai-stats/gateway-api typecheck`
+- `pnpm --filter @ai-stats/web typecheck`
+- relevant provider or routing tests
+- `pnpm exec mintlify validate` in `apps/docs`
+- `pnpm run openapi:gen` if any public contract changed
+
+## 2) Enable a new async endpoint
+
+Use this checklist when adding a new long-running route such as video, batch, transcription, or another provider-backed async workflow.
+
+- Define the full lifecycle explicitly:
+  - create
+  - status or retrieve
+  - content or artifact retrieval
+  - cancel, if supported
+  - terminal failure behavior
+- Persist the async job in a single authoritative store with stable identifiers:
+  - internal job ID
+  - request ID
+  - session ID where available
+  - app ID where available
+  - provider/model
+  - created and updated timestamps
+- Preserve webhook configuration and delivery history in async job metadata.
+- Ensure owned artifacts are retrievable only by the owning workspace or request path.
+- Make billing rules explicit for:
+  - success
+  - failure
+  - cancellation
+  - expiry
+  - partial-success cases
+- Add result and artifact affordances across product surfaces:
+  - async jobs UI
+  - usage investigation views
+  - SDK helpers
+  - devtools or local viewer where relevant
+- Normalize upstream failures into the public gateway error contract instead of proxying raw provider responses.
+- Expose the same core correlation metadata as normal requests where possible:
+  - routing or provider details
+  - pricing lines or settled billing summary
+  - content or cancel URLs
+  - request counts for aggregate jobs such as batches
+- Keep docs and generated surfaces aligned:
+  - OpenAPI endpoints and schemas
+  - REST docs
+  - SDK wrappers
+  - SDK docs
+- Add at least one local smoke flow for:
+  - successful end-to-end path
+  - failed end-to-end path
+
+### Required validation
+
+- targeted route tests for create, retrieve, and failure normalization
+- async reconciliation or polling tests if the endpoint is background-driven
+- ownership and artifact retrieval tests
+- `pnpm --filter @ai-stats/gateway-api typecheck`
+- relevant SDK package tests if helper methods changed
+- `pnpm run openapi:gen` if public contract changed
+- `pnpm --filter @ai-stats/sdk run build` if generated SDKs changed
+- `pnpm exec mintlify validate` in `apps/docs`
+
+## 3) Expose new metadata in logs, jobs, and devtools
+
+Use this checklist when adding request metadata such as provider attempts, billing details, session IDs, or async-job correlation fields.
+
+- Decide the canonical source of the field first:
+  - request record
+  - async job record
+  - public response payload
+  - webhook or websocket payload
+- Add the field consistently across every intended surface instead of only one:
+  - API response or error shape
+  - request persistence
+  - async job persistence
+  - logs or investigate tooling
+  - SDK devtools recorder output
+  - local viewer or devtools UI
+- For routed failures, make sure diagnostics survive normalization and are not dropped by intermediate helpers.
+- For async flows, verify the same generation can be correlated by:
+  - request ID
+  - session ID
+  - app ID
+  - async job ID
+- Update OpenAPI and generated models when the metadata is part of the public API contract.
+- Update docs examples if the new field is something users are expected to consume directly.
+- Add regression coverage so the field cannot disappear silently during refactors.
+
+### Required validation
+
+- targeted API tests for the payload or error surface
+- targeted web tests or `typecheck` for logs, jobs, or investigate UI updates
+- targeted SDK recorder tests where recorder output changed
+- `pnpm --filter @ai-stats/gateway-api typecheck`
+- `pnpm --filter @ai-stats/web typecheck`
+- relevant SDK package tests
+- `pnpm run openapi:gen` if public contract changed
+- `pnpm exec mintlify validate` in `apps/docs`
+
+## 4) Cleanup matrix after a large merge
+
+When a feature cuts across API, docs, SDKs, and UI, use this matrix to avoid partial cleanup.
+
+| If you changed... | Also check... |
+| --- | --- |
+| API response or error contract | OpenAPI, generated SDKs, SDK docs, examples, integration tests |
+| Async job metadata | jobs UI, investigate tooling, webhook payloads, devtools, ownership tests |
+| Billing fields | usage logs, async jobs UI, settlement tests, docs wording |
+| Model or provider activation state | `/v1/models`, admin audit UI, product quickstart, docs, error diagnostics |
+| File or artifact endpoints | ownership checks, content download tests, SDK file helpers, docs examples |
+| Viewer or devtools schema | devtools packages, viewer build output, schema tests, README snippets |
+
+## 5) Minimal validation bundles
+
+Pick the smallest bundle that still covers the actual changed surface.
+
+### Docs-only slice
+
+- `pnpm exec mintlify validate` in `apps/docs`
+
+### API contract slice
+
+- relevant route or unit tests
+- `pnpm --filter @ai-stats/gateway-api typecheck`
+- `pnpm run openapi:gen`
+- `pnpm exec mintlify validate` in `apps/docs`
+
+### SDK wrapper slice
+
+- relevant package tests
+- package build if applicable
+- regenerate clients first if the wrapper depends on changed OpenAPI output
+
+### Web usage or devtools slice
+
+- targeted Jest or Vitest coverage where available
+- `pnpm --filter @ai-stats/web typecheck`
+- `pnpm --filter @ai-stats/devtools-viewer run build` if viewer assets changed
+
+## 6) Changelog discipline
+
+Every mergeable slice should leave a short entry in the working changelog with:
+
+- what changed
+- why it changed
+- validation performed
+- residual risk or follow-up gap
+
+If you cannot write that entry clearly, the slice is probably too large or not yet well verified.

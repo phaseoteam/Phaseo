@@ -346,7 +346,7 @@ export const logoManifest = {
 	venice: {
 		color: "/logos/venice.svg",
 	},
-	"venice/e2ee": {
+	"venice-e2ee": {
 		color: "/logos/venice.svg",
 	},
 	vercel: {
@@ -440,6 +440,9 @@ export const logoManifest = {
 	},
 	instagram: {
 		color: "/social/instagram.svg",
+	},
+	linkedin: {
+		color: "/social/linkedin.svg",
 	},
 	reddit: {
 		color: "/social/reddit.svg",

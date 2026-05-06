@@ -7,7 +7,7 @@ pnpm add @ai-stats/sdk
 
 ## Setup
 ```ts
-import { AIStats } from "@ai-stats/sdk";
+import AIStats from "@ai-stats/sdk";
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY!,

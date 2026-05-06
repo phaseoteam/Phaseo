@@ -21,7 +21,10 @@ paths:
         - Gateway
       operationId: listModels
       summary: List gateway models
-      description: Returns shared non-hidden models currently servable through the gateway.
+      description: >-
+        Returns shared non-hidden gateway models. Defaults to currently publicly
+        routable models; use availability=all to include non-routable
+        availability records.
       parameters:
         - name: endpoints
           in: query
@@ -39,6 +42,62 @@ paths:
               - type: array
                 items:
                   $ref: '#/components/schemas/OrganisationId'
+        - name: provider
+          in: query
+          description: Filter by provider id
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_status
+          in: query
+          description: Filter by provider rollout status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_routing_status
+          in: query
+          description: Filter by provider routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: model_routing_status
+          in: query
+          description: Filter by model routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: capability_status
+          in: query
+          description: Filter by provider capability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_status
+          in: query
+          description: Filter by provider availability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_reason
+          in: query
+          description: Filter by provider availability reason
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: array
+            items:
+              type: string
         - name: input_types
           in: query
           description: Filter by input types
@@ -60,6 +119,17 @@ paths:
             type: array
             items:
               type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
         - name: limit
           in: query
           description: Limit the number of results
@@ -135,7 +205,10 @@ paths:
         - Gateway
       operationId: listTeamModels
       summary: List team-scoped gateway models
-      description: Returns team-scoped gateway model listings.
+      description: >-
+        Returns team-scoped gateway model listings. Defaults to currently
+        publicly routable models; use availability=all to include non-routable
+        availability records.
       parameters:
         - name: endpoints
           in: query
@@ -153,6 +226,62 @@ paths:
               - type: array
                 items:
                   $ref: '#/components/schemas/OrganisationId'
+        - name: provider
+          in: query
+          description: Filter by provider id
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_status
+          in: query
+          description: Filter by provider rollout status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_routing_status
+          in: query
+          description: Filter by provider routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: model_routing_status
+          in: query
+          description: Filter by model routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: capability_status
+          in: query
+          description: Filter by provider capability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_status
+          in: query
+          description: Filter by provider availability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_reason
+          in: query
+          description: Filter by provider availability reason
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: array
+            items:
+              type: string
         - name: input_types
           in: query
           description: Filter by input types
@@ -174,6 +303,17 @@ paths:
             type: array
             items:
               type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
         - name: limit
           in: query
           description: Limit the number of results
@@ -2584,6 +2724,8 @@ components:
         status:
           type: string
           nullable: true
+        availability:
+          $ref: '#/components/schemas/ModelAvailability'
         lifecycle:
           $ref: '#/components/schemas/ModelLifecycle'
         organisation_id:
@@ -2614,16 +2756,7 @@ components:
         providers:
           type: array
           items:
-            type: object
-            properties:
-              api_provider_id:
-                type: string
-              is_active_gateway:
-                type: boolean
-              params:
-                type: array
-                items:
-                  type: string
+            $ref: '#/components/schemas/ModelProviderAvailability'
         supported_params:
           type: array
           items:
@@ -2723,6 +2856,134 @@ components:
         message:
           type: string
           nullable: true
+    ModelAvailability:
+      type: object
+      required:
+        - status
+        - provider_count
+        - active_provider_count
+        - inactive_provider_count
+      properties:
+        status:
+          type: string
+          enum:
+            - active
+            - coming_soon
+            - inactive
+            - not_listed
+        provider_count:
+          type: integer
+          minimum: 0
+        active_provider_count:
+          type: integer
+          minimum: 0
+        inactive_provider_count:
+          type: integer
+          minimum: 0
+    ModelProviderAvailability:
+      type: object
+      required:
+        - api_provider_id
+        - is_active_gateway
+        - availability_status
+        - availability_reason
+        - provider_status
+        - provider_routing_status
+        - model_routing_status
+        - capability_status
+        - endpoints
+        - params
+      properties:
+        api_provider_id:
+          type: string
+        api_provider_name:
+          type: string
+          nullable: true
+        is_active_gateway:
+          type: boolean
+        availability_status:
+          type: string
+          enum:
+            - active
+            - coming_soon
+            - inactive
+        availability_reason:
+          type: string
+          enum:
+            - active
+            - preview_only
+            - gated
+            - access_limited
+            - region_limited
+            - project_limited
+            - paused
+            - soft_blocked
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - internal_testing
+            - scheduled
+            - coming_soon
+            - provider_disabled
+            - model_disabled
+            - capability_disabled
+            - provider_not_ready
+            - provider_inactive
+            - inactive
+            - retired
+        provider_status:
+          type: string
+          enum:
+            - active
+            - beta
+            - alpha
+            - not_ready
+            - gated
+            - access_limited
+            - region_limited
+            - project_limited
+            - paused
+            - soft_blocked
+        provider_routing_status:
+          type: string
+          enum:
+            - active
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - disabled
+        model_routing_status:
+          type: string
+          enum:
+            - active
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - disabled
+        capability_status:
+          type: string
+          enum:
+            - active
+            - coming_soon
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - disabled
+            - internal_testing
+        effective_from:
+          type: string
+          nullable: true
+        effective_to:
+          type: string
+          nullable: true
+        endpoints:
+          type: array
+          items:
+            type: string
+        params:
+          type: array
+          items:
+            type: string
     DataModelOrganisation:
       type: object
       nullable: true
@@ -5978,6 +6239,7 @@ components:
       required:
         - ok
         - privacy_scope
+        - availability_mode
         - limit
         - offset
         - total
@@ -5992,6 +6254,12 @@ components:
             - shared
             - team
           example: shared
+        availability_mode:
+          type: string
+          enum:
+            - active
+            - all
+          example: active
         limit:
           type: integer
           minimum: 1

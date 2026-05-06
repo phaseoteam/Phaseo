@@ -3,7 +3,7 @@
         "api_model_id":  "qwen/qvq-max",
         "provider_api_model_id":  "alibaba-cloud:qwen/qvq-max",
         "provider_model_slug":  "qvq-max-2025-03-25",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text,image,video",
@@ -624,7 +624,7 @@
         "api_model_id":  "qwen/qwen3-coder-flash",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3-coder-flash",
         "provider_model_slug":  "qwen3-coder-flash-2025-07-28",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text",
@@ -670,7 +670,7 @@
         "api_model_id":  "qwen/qwen3-coder-plus-2025-07-22",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3-coder-plus-2025-07-22",
         "provider_model_slug":  "qwen3-coder-plus-2025-07-22",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text",
@@ -693,7 +693,7 @@
         "api_model_id":  "qwen/qwen3-coder-plus-2025-09-23",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3-coder-plus-2025-09-23",
         "provider_model_slug":  "qwen3-coder-plus-2025-09-23",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text",
@@ -1071,7 +1071,13 @@
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.embed",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {
@@ -1088,14 +1094,20 @@
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.embed",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {
         "api_model_id":  "qwen/qwen-image-edit-2025-10-30",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen-image-edit-2025-10-30",
         "provider_model_slug":  "qwen-image-edit-plus-2025-10-30",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit",
         "is_active_gateway":  false,
         "quantization_scheme":  null,
         "input_modalities":  "image",
@@ -1112,7 +1124,7 @@
         "api_model_id":  "qwen/qwen-image-edit-2025-12-15",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen-image-edit-2025-12-15",
         "provider_model_slug":  "qwen-image-edit-plus-2025-12-15",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit",
         "is_active_gateway":  false,
         "quantization_scheme":  null,
         "input_modalities":  "image",
@@ -1129,7 +1141,7 @@
         "api_model_id":  "qwen/qwen-image-edit-max",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen-image-edit-max",
         "provider_model_slug":  "qwen-image-edit-max-2026-01-16",
-        "internal_model_id":  "",
+        "internal_model_id":  "qwen/qwen-image-edit-max",
         "is_active_gateway":  false,
         "quantization_scheme":  null,
         "input_modalities":  null,
@@ -1666,14 +1678,20 @@
         "internal_model_id":  "",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
-        "input_modalities":  null,
-        "output_modalities":  null,
+        "input_modalities":  "text",
+        "output_modalities":  "embeddings",
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.embed",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {
@@ -1683,14 +1701,20 @@
         "internal_model_id":  "",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
-        "input_modalities":  null,
-        "output_modalities":  null,
+        "input_modalities":  "text",
+        "output_modalities":  "embeddings",
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.embed",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {

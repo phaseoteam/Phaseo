@@ -1,6 +1,6 @@
 // src/components/gateway/Hero.tsx
 import Link from "next/link";
-import { CheckCircle2, CircleSlash } from "lucide-react";
+import { CheckCircle2, CircleSlash, Clock3 } from "lucide-react";
 import { DOCS_VERSION } from "./config";
 import {
 	Card,
@@ -11,28 +11,31 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import { groupProviders } from "./providerAvailability";
 
 interface HeroProps {
 	metadata: ModelGatewayMetadata;
 }
 
 export default function Hero({ metadata }: HeroProps) {
-	const activeProviderIds = new Set(
-		metadata.activeProviders.map((p) => p.api_provider_id)
-	);
-	const inactiveProviderIds = new Set(
-		metadata.inactiveProviders
-			.map((p) => p.api_provider_id)
-			.filter((id) => !activeProviderIds.has(id))
-	);
-	const activeCount = activeProviderIds.size;
-	const inactiveCount = inactiveProviderIds.size;
+	const groupedProviders = groupProviders(metadata);
+	const activeCount = groupedProviders.filter(
+		(provider) => provider.state.availability === "active"
+	).length;
+	const previewCount = groupedProviders.filter(
+		(provider) => provider.state.availability === "coming_soon"
+	).length;
+	const inactiveCount = groupedProviders.filter(
+		(provider) => provider.state.availability === "inactive"
+	).length;
 	const isAvailable = activeCount > 0;
 
 	const StatusIcon = isAvailable ? CheckCircle2 : CircleSlash;
 	const statusText = isAvailable
 		? `Available via ${activeCount} provider${activeCount === 1 ? "" : "s"}`
-		: "Currently unavailable in the gateway";
+		: previewCount > 0
+			? "Known in the catalog, but not publicly routable yet"
+			: "Currently unavailable in the gateway";
 
 	return (
 		<Card>
@@ -76,8 +79,16 @@ export default function Hero({ metadata }: HeroProps) {
 						<Badge variant="outline" className="bg-background">
 							Active: {activeCount}
 						</Badge>
+						{previewCount > 0 ? (
+							<Badge variant="outline" className="bg-background">
+								<span className="inline-flex items-center gap-1">
+									<Clock3 className="h-3 w-3" />
+									Preview: {previewCount}
+								</span>
+							</Badge>
+						) : null}
 						<Badge variant="outline" className="bg-background">
-							Inactive: {inactiveCount}
+							Unavailable: {inactiveCount}
 						</Badge>
 					</div>
 				</div>

@@ -548,7 +548,7 @@
   {
     "api_model_id": "z-ai/glm-5.1",
     "provider_api_model_id": "gmicloud:z-ai/glm-5.1",
-    "provider_model_slug": null,
+    "provider_model_slug": "zai-org/GLM-5.1",
     "internal_model_id": "z-ai/glm-5.1",
     "is_active_gateway": true,
     "quantization_scheme": null,
@@ -600,7 +600,13 @@
     "max_output_tokens": null,
     "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-4-26b-a4b",
@@ -615,6 +621,12 @@
     "max_output_tokens": null,
     "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

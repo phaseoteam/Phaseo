@@ -751,6 +751,8 @@ class GatewayDatetimeToolDefinition
 
 class GatewayModelsResponse
 {
+	/** @var string */
+	public $availability_mode;
 	/** @var int */
 	public $limit;
 	/** @var array */
@@ -1029,6 +1031,8 @@ class Model
 	public $aliases;
 	/** @var array<string, mixed>|null */
 	public $architecture;
+	/** @var array<string, mixed>|null */
+	public $availability;
 	/** @var string|null */
 	public $canonical_slug;
 	/** @var int|null */
@@ -1081,6 +1085,18 @@ class Model
 	public $top_provider_id;
 }
 
+class ModelAvailability
+{
+	/** @var int */
+	public $active_provider_count;
+	/** @var int */
+	public $inactive_provider_count;
+	/** @var int */
+	public $provider_count;
+	/** @var string */
+	public $status;
+}
+
 class ModelId { }
 
 class ModelLifecycle
@@ -1095,6 +1111,36 @@ class ModelLifecycle
 	public $retirement_date;
 	/** @var string|null */
 	public $status;
+}
+
+class ModelProviderAvailability
+{
+	/** @var string */
+	public $api_provider_id;
+	/** @var string|null */
+	public $api_provider_name;
+	/** @var string */
+	public $availability_reason;
+	/** @var string */
+	public $availability_status;
+	/** @var string */
+	public $capability_status;
+	/** @var string|null */
+	public $effective_from;
+	/** @var string|null */
+	public $effective_to;
+	/** @var array */
+	public $endpoints;
+	/** @var bool */
+	public $is_active_gateway;
+	/** @var string */
+	public $model_routing_status;
+	/** @var array */
+	public $params;
+	/** @var string */
+	public $provider_routing_status;
+	/** @var string */
+	public $provider_status;
 }
 
 class ModelsPrivacyScopeNotImplementedResponse
