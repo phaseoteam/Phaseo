@@ -13,6 +13,19 @@ export type ExecuteGuardOk<T> = { ok: true; value: T };
 export type ExecuteGuardErr = { ok: false; response: Response };
 export type ExecuteGuardResult<T> = ExecuteGuardOk<T> | ExecuteGuardErr;
 
+export type ProviderFailureDiagnostics = {
+    category:
+        | "credentials_not_configured"
+        | "credentials_invalid_or_forbidden"
+        | "provider_access_missing"
+        | "region_or_project_restriction"
+        | "model_unavailable_for_endpoint"
+        | "rate_limited"
+        | "server_error";
+    hint: string;
+    provider: string | null;
+};
+
 function normalizeText(value: unknown, max = 180): string | null {
     if (typeof value !== "string") return null;
     const compact = value.trim().replace(/\s+/g, " ");
@@ -45,6 +58,205 @@ function failureHintFromStatuses(statuses: number[]): string | null {
     if (statuses.some((status) => status === 400 || status === 422)) {
         return "The upstream provider rejected request parameters.";
     }
+    return null;
+}
+
+export function classifyProviderFailureDiagnostics(
+    attemptErrors: Array<Record<string, unknown>>
+): ProviderFailureDiagnostics | null {
+    const primary = attemptErrors[0] ?? null;
+    if (!primary) return null;
+
+    const provider = normalizeText(primary?.provider, 60);
+    const status = normalizeStatus(primary?.status);
+    const upstreamCode = normalizeText(primary?.upstream_error_code, 160)?.toLowerCase() ?? null;
+    const haystack = [
+        upstreamCode,
+        normalizeText(primary?.upstream_error_message, 240),
+        normalizeText(primary?.upstream_error_description, 320),
+        normalizeText(primary?.upstream_error_param, 240),
+        normalizeText(primary?.message, 240),
+    ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+    if (
+        upstreamCode === "google-vertex_project_missing" ||
+        upstreamCode === "google-vertex_access_token_missing" ||
+        upstreamCode === "google-vertex_oauth_access_token_missing"
+    ) {
+        return {
+            category: "credentials_not_configured",
+            hint: "Provider credentials are not configured for this route. Verify gateway keys or the selected BYOK configuration before retrying.",
+            provider,
+        };
+    }
+
+    if (upstreamCode?.endsWith("_key_missing")) {
+        return {
+            category: "credentials_not_configured",
+            hint: "Provider credentials are not configured for this route. Verify gateway keys or the selected BYOK configuration before retrying.",
+            provider,
+        };
+    }
+
+    if (upstreamCode?.endsWith("_base_url_missing")) {
+        return {
+            category: "credentials_not_configured",
+            hint: "Provider configuration is incomplete for this route. Verify the provider base URL and related gateway settings before retrying.",
+            provider,
+        };
+    }
+
+    if (
+        upstreamCode === "invalidsignatureexception" ||
+        upstreamCode === "incompletesignatureexception" ||
+        upstreamCode === "unrecognizedclientexception" ||
+        upstreamCode === "expiredtokenexception"
+    ) {
+        return {
+            category: "credentials_invalid_or_forbidden",
+            hint: "The provider rejected the supplied credentials or permissions. Verify the gateway key or BYOK secret and retry.",
+            provider,
+        };
+    }
+
+    if (upstreamCode === "accessdeniedexception") {
+        return {
+            category: "provider_access_missing",
+            hint: "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+            provider,
+        };
+    }
+
+    if (upstreamCode === "throttlingexception") {
+        return {
+            category: "rate_limited",
+            hint: "The provider is rate limiting this request. Retry with backoff or another provider.",
+            provider,
+        };
+    }
+
+    if (upstreamCode === "unauthenticated") {
+        return {
+            category: "credentials_invalid_or_forbidden",
+            hint: "The provider rejected the supplied credentials or permissions. Verify the gateway key or BYOK secret and retry.",
+            provider,
+        };
+    }
+
+    if (upstreamCode === "permission_denied") {
+        return {
+            category: "provider_access_missing",
+            hint: "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+            provider,
+        };
+    }
+
+    if (upstreamCode === "resource_exhausted") {
+        return {
+            category: "rate_limited",
+            hint: "The provider is rate limiting this request. Retry with backoff or another provider.",
+            provider,
+        };
+    }
+
+    if (upstreamCode?.startsWith("google-vertex_oauth_error_")) {
+        return {
+            category: "credentials_invalid_or_forbidden",
+            hint: "The provider rejected the supplied credentials or permissions. Verify the gateway key or BYOK secret and retry.",
+            provider,
+        };
+    }
+
+    if (
+        haystack.includes("missing byok key") ||
+        haystack.includes("missing credentials") ||
+        haystack.includes("api key not configured") ||
+        haystack.includes("google-vertex_project_missing") ||
+        haystack.includes("no api key") ||
+        haystack.includes("no credentials") ||
+        haystack.includes("requires access key")
+    ) {
+        return {
+            category: "credentials_not_configured",
+            hint: "Provider credentials are not configured for this route. Verify gateway keys or the selected BYOK configuration before retrying.",
+            provider,
+        };
+    }
+
+    if (
+        haystack.includes("not available in your region") ||
+        haystack.includes("unsupported region") ||
+        haystack.includes("region") ||
+        haystack.includes("location") ||
+        haystack.includes("project") ||
+        haystack.includes("publisher")
+    ) {
+        return {
+            category: "region_or_project_restriction",
+            hint: "The provider appears to be restricted by region, location, or project configuration. Verify the provider region and project access for this model.",
+            provider,
+        };
+    }
+
+    if (
+        haystack.includes("permission denied") ||
+        haystack.includes("access denied") ||
+        haystack.includes("not enabled") ||
+        haystack.includes("allowlist") ||
+        haystack.includes("allow list") ||
+        haystack.includes("not available to your account") ||
+        haystack.includes("account does not have access")
+    ) {
+        return {
+            category: "provider_access_missing",
+            hint: "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+            provider,
+        };
+    }
+
+    if (
+        status === 401 ||
+        (status === 403 &&
+            (haystack.includes("api key") ||
+                haystack.includes("unauthorized") ||
+                haystack.includes("forbidden") ||
+                haystack.includes("credential") ||
+                haystack.includes("auth")))
+    ) {
+        return {
+            category: "credentials_invalid_or_forbidden",
+            hint: "The provider rejected the supplied credentials or permissions. Verify the gateway key or BYOK secret and retry.",
+            provider,
+        };
+    }
+
+    if (status === 404 || haystack.includes("not available for endpoint")) {
+        return {
+            category: "model_unavailable_for_endpoint",
+            hint: "The provider does not appear to expose this model on the requested endpoint yet.",
+            provider,
+        };
+    }
+
+    if (status === 429) {
+        return {
+            category: "rate_limited",
+            hint: "The provider is rate limiting this request. Retry with backoff or another provider.",
+            provider,
+        };
+    }
+
+    if (status != null && status >= 500) {
+        return {
+            category: "server_error",
+            hint: "The provider returned a server-side failure. Retrying later may succeed.",
+            provider,
+        };
+    }
+
     return null;
 }
 
@@ -239,6 +451,7 @@ export async function guardAllFailed(
     const routingDiagnostics = (ctx as any)?.routingDiagnostics ?? null;
     const providerEnablement = (ctx as any)?.providerEnablementDiagnostics ?? null;
     const candidateBuild = (ctx as any)?.providerCandidateBuildDiagnostics ?? null;
+    const providerFailureDiagnostics = classifyProviderFailureDiagnostics(attemptErrors);
     const hasUpstreamPaymentRequired = failedStatuses.includes(402);
     const paymentRequiredProvider = hasUpstreamPaymentRequired
         ? (attemptErrors.find((entry) => Number(entry?.status ?? NaN) === 402)?.provider ?? null)
@@ -274,6 +487,7 @@ export async function guardAllFailed(
         routing_diagnostics: routingDiagnostics,
         provider_enablement: providerEnablement,
         provider_candidate_diagnostics: candidateBuild,
+        provider_failure_diagnostics: providerFailureDiagnostics,
     });
 
     return { ok: false, response: res };
