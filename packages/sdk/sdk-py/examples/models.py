@@ -19,16 +19,7 @@ def main():
             "limit": 5,
         }
     )
-    preview = [
-        {
-            "id": model.get("id"),
-            "provider": model.get("provider"),
-            "status": model.get("status"),
-        }
-        for model in models.get("models", [])[:5]
-        if isinstance(model, dict)
-    ]
-    print("model preview:", preview)
+    print("model count:", len(models.get("models", [])))
 
 
 if __name__ == "__main__":
