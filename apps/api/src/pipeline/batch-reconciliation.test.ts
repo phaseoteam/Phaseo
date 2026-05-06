@@ -208,5 +208,11 @@ describe("runBatchReconciliationJob", () => {
 		expect(summary.jobsFailed).toBe(0);
 		expect(summary.jobsCancelled).toBe(0);
 		expect(dispatchAsyncWebhookEventInBackgroundMock).not.toHaveBeenCalled();
+		expect(finalizeBatchJobMock).toHaveBeenCalledTimes(1);
+		expect(finalizeBatchJobMock).toHaveBeenCalledWith({
+			workspaceId: "ws_1",
+			batchId: "batch_same_123",
+			status: "completed",
+		});
 	});
 });

@@ -155,24 +155,24 @@ export async function runBatchReconciliationJob(args?: {
 			);
 			await persistBatchFileOwnership(job.workspaceId, payload);
 			counts.jobsUpdated += 1;
-			if (nextStatus !== previousStatus) {
-				const phase = mapTerminalPhase(nextStatus);
-				if (phase) {
+			const phase = mapTerminalPhase(nextStatus);
+			if (phase) {
+				if (nextStatus !== previousStatus) {
 					dispatchAsyncWebhookEventInBackground({
 						workspaceId: job.workspaceId,
 						kind: "batch",
 						internalId: job.batchId,
 						phase,
 					});
-					await finalizeBatchJob({
-						workspaceId: job.workspaceId,
-						batchId: job.batchId,
-						status: nextStatus,
-					});
 					if (phase === "completed") counts.jobsCompleted += 1;
 					if (phase === "failed") counts.jobsFailed += 1;
 					if (phase === "cancelled") counts.jobsCancelled += 1;
 				}
+				await finalizeBatchJob({
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					status: nextStatus,
+				});
 			}
 		} catch (error) {
 			counts.jobsErrored += 1;
