@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
@@ -11,6 +12,12 @@ import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
+import {
+	parseAsyncJobFailureDiagnostics,
+	type AsyncJobFailureSampleRow,
+	type AsyncJobProviderFailureDiagnosticsRow,
+	type AsyncJobUpstreamErrorRow,
+} from "@/lib/gateway/usage/asyncJobFailureDiagnostics";
 
 // Raw fallback can pull large request windows; keep it opt-in to protect DB egress.
 const ENABLE_GATEWAY_USAGE_RAW_FALLBACK =
@@ -32,6 +39,20 @@ async function requireAuthedTeamContext(
 	return { user, workspaceId };
 }
 
+function normalizeLookupIds(ids: string[]): string[] {
+	return Array.from(
+		new Set(
+			ids
+				.map((id) => (typeof id === "string" ? id.trim() : ""))
+				.filter((id) => id.length > 0),
+		),
+	).sort((a, b) => a.localeCompare(b));
+}
+
+function toLookupCacheKey(ids: string[]): string {
+	return normalizeLookupIds(ids).join("\n");
+}
+
 export interface PaginatedRequestsParams {
 	timeRange: { from: string; to: string };
 	modelFilter?: string | null;
@@ -48,9 +69,11 @@ export interface PaginatedRequestsParams {
 export interface RequestRow {
 	request_id: string;
 	created_at: string;
+	endpoint: string | null;
 	model_id: string | null;
 	provider: string | null;
 	native_response_id: string | null;
+	upstream_request_id: string | null;
 	stream: boolean;
 	session_id: string | null;
 	app_id: string | null;
@@ -68,7 +91,9 @@ export interface RequestRow {
 	status_code: number | null;
 	error_code: string | null;
 	error_message: string | null;
+	error_payload: Record<string, unknown> | null;
 	key_id: string | null;
+	pricing_lines: AsyncJobRequestPricingLine[];
 	provider_attempts: Array<{
 		attempt_number: number | null;
 		provider: string | null;
@@ -82,12 +107,125 @@ export interface RequestRow {
 	}>;
 }
 
+export type SerializableModelMetadataEntry = {
+	organisationId: string;
+	organisationName: string;
+	modelName?: string;
+};
+
+export interface InvestigateGenerationResult {
+	request: RequestRow;
+	appName: string | null;
+	modelMetadata: Array<[string, SerializableModelMetadataEntry]>;
+	providerNames: Array<[string, string]>;
+	providerMetadata: Array<[string, ProviderMetadataEntry]>;
+}
+
 export interface PaginatedRequestsResult {
 	data: RequestRow[];
 	total: number;
 	page: number;
 	pageSize: number;
 	totalPages: number;
+}
+
+function normalizeProviderAttempts(
+	value: unknown,
+): RequestRow["provider_attempts"] {
+	if (!Array.isArray(value)) return [];
+	return value.map((attempt: any) => ({
+		attempt_number:
+			typeof attempt?.attempt_number === "number"
+				? attempt.attempt_number
+				: typeof attempt?.attempt_number === "string"
+					? Number(attempt.attempt_number)
+					: null,
+		provider:
+			typeof attempt?.provider === "string" ? attempt.provider : null,
+		outcome:
+			typeof attempt?.outcome === "string" ? attempt.outcome : null,
+		status:
+			typeof attempt?.status === "number"
+				? attempt.status
+				: typeof attempt?.status === "string"
+					? Number(attempt.status)
+					: null,
+		status_text:
+			typeof attempt?.status_text === "string"
+				? attempt.status_text
+				: null,
+		duration_ms:
+			typeof attempt?.duration_ms === "number"
+				? attempt.duration_ms
+				: typeof attempt?.duration_ms === "string"
+					? Number(attempt.duration_ms)
+					: null,
+		upstream_error_code:
+			typeof attempt?.upstream_error_code === "string"
+				? attempt.upstream_error_code
+				: null,
+		upstream_error_message:
+			typeof attempt?.upstream_error_message === "string"
+				? attempt.upstream_error_message
+				: null,
+		upstream_error_description:
+			typeof attempt?.upstream_error_description === "string"
+				? attempt.upstream_error_description
+				: null,
+	}));
+}
+
+function normalizePlainObject(
+	value: unknown,
+): Record<string, unknown> | null {
+	return value && typeof value === "object" && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
+}
+
+function toRequestRow(row: any): RequestRow {
+	const appRow = Array.isArray(row?.app) ? row.app[0] : row?.app;
+	const appTitle =
+		typeof appRow?.title === "string" && appRow.title.trim().length > 0
+			? appRow.title.trim()
+			: null;
+	const appKey =
+		typeof appRow?.app_key === "string" && appRow.app_key.trim().length > 0
+			? appRow.app_key.trim()
+			: null;
+	const appImageUrl =
+		typeof appRow?.image_url === "string" && appRow.image_url.trim().length > 0
+			? appRow.image_url.trim()
+			: null;
+
+	return {
+		...row,
+		endpoint:
+			typeof row?.endpoint === "string" && row.endpoint.trim().length > 0
+				? row.endpoint.trim()
+				: null,
+		native_response_id:
+			typeof row?.native_response_id === "string" &&
+			row.native_response_id.trim().length > 0
+				? row.native_response_id.trim()
+				: null,
+		upstream_request_id:
+			typeof row?.upstream_request_id === "string" &&
+			row.upstream_request_id.trim().length > 0
+				? row.upstream_request_id.trim()
+				: null,
+		stream: row?.stream === true,
+		session_id:
+			typeof row?.session_id === "string" && row.session_id.trim().length > 0
+				? row.session_id.trim()
+				: null,
+		app_title: appTitle,
+		app_key: appKey,
+		app_image_url: appImageUrl,
+		pricing_lines: normalizePricingLines(row?.pricing_lines),
+		error_payload: normalizePlainObject(row?.error_payload),
+		provider_attempts: normalizeProviderAttempts(row?.provider_attempts),
+	} as RequestRow;
 }
 
 /**
@@ -117,14 +255,14 @@ export async function fetchPaginatedRequests(
 		.from("gateway_requests")
 		.select(
 			`
-			request_id,
-			created_at,
-			model_id,
-			provider,
-			native_response_id,
-			stream,
-			session_id,
-			app_id,
+                        request_id,
+                        created_at,
+                        endpoint,
+                        model_id,
+                        provider,
+                        stream,
+                        session_id,
+                        app_id,
 			app:api_apps!gateway_requests_app_id_fkey (
 				id,
 				app_key,
@@ -136,14 +274,13 @@ export async function fetchPaginatedRequests(
 			generation_ms,
 			latency_ms,
 			finish_reason,
-			success,
-			status_code,
-			error_code,
-			error_message,
-			key_id,
-			throughput,
-			provider_attempts
-		`,
+                        success,
+                        status_code,
+                        error_code,
+                        error_message,
+                        key_id,
+                        throughput
+                `,
 			{ count: "exact" }
 		)
 		.eq("workspace_id", workspaceId)
@@ -190,27 +327,26 @@ export async function fetchPaginatedRequests(
 			.from("gateway_requests")
 			.select(
 				`
-				request_id,
-				created_at,
-				model_id,
-				provider,
-				native_response_id,
-				stream,
-				session_id,
-				app_id,
+                                request_id,
+                                created_at,
+                                endpoint,
+                                model_id,
+                                provider,
+                                stream,
+                                session_id,
+                                app_id,
 				usage,
 				cost_nanos,
 				generation_ms,
 				latency_ms,
 				finish_reason,
-				success,
-				status_code,
-				error_code,
-				error_message,
-				key_id,
-				throughput,
-				provider_attempts
-			`,
+                                success,
+                                status_code,
+                                error_code,
+                                error_message,
+                                key_id,
+                                throughput
+                        `,
 				{ count: "exact" },
 			)
 			.eq("workspace_id", workspaceId)
@@ -242,25 +378,25 @@ export async function fetchPaginatedRequests(
 				.select(
 					`
 					request_id,
-					created_at,
-					model_id,
-					provider,
-					native_response_id,
-					stream,
-					session_id,
-					app_id,
+                                        created_at,
+                                        endpoint,
+                                        model_id,
+                                        provider,
+                                        stream,
+                                        session_id,
+                                        app_id,
 					usage,
 					cost_nanos,
 					generation_ms,
 					latency_ms,
 					finish_reason,
-					success,
-					status_code,
-					error_code,
-					error_message,
-					key_id,
-					throughput
-				`,
+                                        success,
+                                        status_code,
+                                        error_code,
+                                        error_message,
+                                        key_id,
+                                        throughput
+                                `,
 					{ count: "exact" },
 				)
 				.eq("workspace_id", workspaceId)
@@ -300,81 +436,7 @@ export async function fetchPaginatedRequests(
 	}
 
 	return {
-		data:
-			(rows ?? []).map((row) => {
-				const appRow = Array.isArray(row?.app) ? row.app[0] : row?.app;
-				const appTitle =
-					typeof appRow?.title === "string" && appRow.title.trim().length > 0
-						? appRow.title.trim()
-						: null;
-				const appKey =
-					typeof appRow?.app_key === "string" && appRow.app_key.trim().length > 0
-						? appRow.app_key.trim()
-						: null;
-				const appImageUrl =
-					typeof appRow?.image_url === "string" && appRow.image_url.trim().length > 0
-						? appRow.image_url.trim()
-						: null;
-				return {
-					...row,
-					native_response_id:
-						typeof row?.native_response_id === "string" &&
-						row.native_response_id.trim().length > 0
-							? row.native_response_id.trim()
-							: null,
-					stream: row?.stream === true,
-					session_id:
-						typeof row?.session_id === "string" &&
-						row.session_id.trim().length > 0
-							? row.session_id.trim()
-							: null,
-					app_title: appTitle,
-					app_key: appKey,
-					app_image_url: appImageUrl,
-					provider_attempts: Array.isArray(row?.provider_attempts)
-						? row.provider_attempts.map((attempt: any) => ({
-								attempt_number:
-									typeof attempt?.attempt_number === "number"
-										? attempt.attempt_number
-										: typeof attempt?.attempt_number === "string"
-											? Number(attempt.attempt_number)
-											: null,
-								provider:
-									typeof attempt?.provider === "string" ? attempt.provider : null,
-								outcome:
-									typeof attempt?.outcome === "string" ? attempt.outcome : null,
-								status:
-									typeof attempt?.status === "number"
-										? attempt.status
-										: typeof attempt?.status === "string"
-											? Number(attempt.status)
-											: null,
-								status_text:
-									typeof attempt?.status_text === "string"
-										? attempt.status_text
-										: null,
-								duration_ms:
-									typeof attempt?.duration_ms === "number"
-										? attempt.duration_ms
-										: typeof attempt?.duration_ms === "string"
-											? Number(attempt.duration_ms)
-											: null,
-								upstream_error_code:
-									typeof attempt?.upstream_error_code === "string"
-										? attempt.upstream_error_code
-										: null,
-								upstream_error_message:
-									typeof attempt?.upstream_error_message === "string"
-										? attempt.upstream_error_message
-										: null,
-								upstream_error_description:
-									typeof attempt?.upstream_error_description === "string"
-										? attempt.upstream_error_description
-										: null,
-						  }))
-						: [],
-				} as RequestRow;
-			}) ?? [],
+		data: (rows ?? []).map((row) => toRequestRow(row)) ?? [],
 		total: totalCount,
 		page: params.page,
 		pageSize,
@@ -389,13 +451,20 @@ export async function fetchPaginatedRequests(
 export async function fetchOrganizationColors(
 	modelIds: string[]
 ): Promise<Map<string, string>> {
+	return fetchOrganizationColorsCached(toLookupCacheKey(modelIds));
+}
+
+const fetchOrganizationColorsCached = cache(async (
+	modelIdsKey: string
+): Promise<Map<string, string>> => {
 	const { supabase } = await requireAuthenticatedUser();
+	const modelIds = modelIdsKey ? modelIdsKey.split("\n") : [];
 
 	if (modelIds.length === 0) {
 		return new Map();
 	}
 
-	const uniqueModelIds = Array.from(new Set(modelIds));
+	const uniqueModelIds = normalizeLookupIds(modelIds);
 	const colorMap = new Map<string, string>();
 	const normalizeApiId = (id: string) => {
 		const base = id.split(":")[0];
@@ -529,7 +598,7 @@ export async function fetchOrganizationColors(
 	void providerApiIds;
 
 	return colorMap;
-}
+});
 
 /**
  * Fetch model metadata for filters
@@ -547,6 +616,21 @@ export async function fetchModelMetadata(
 		}
 	>
 > {
+	return fetchModelMetadataCached(toLookupCacheKey(modelIds));
+}
+
+const fetchModelMetadataCached = cache(async (
+	modelIdsKey: string
+): Promise<
+	Map<
+		string,
+		{
+			organisationId: string;
+			organisationName: string;
+			modelName?: string;
+		}
+	>
+> => {
 	const { supabase } = await requireAuthenticatedUser();
 	const metadataDebugEnabled =
 		process.env.USAGE_MODEL_METADATA_DEBUG === "1" ||
@@ -559,11 +643,13 @@ export async function fetchModelMetadata(
 		}
 	};
 
+	const modelIds = modelIdsKey ? modelIdsKey.split("\n") : [];
+
 	if (modelIds.length === 0) {
 		return new Map();
 	}
 
-	const uniqueModelIds = Array.from(new Set(modelIds));
+	const uniqueModelIds = normalizeLookupIds(modelIds);
 	const metadataMap = new Map<
 		string,
 		{
@@ -1047,7 +1133,7 @@ export async function fetchModelMetadata(
 	}
 
 	return metadataMap;
-}
+});
 /**
  * Fetch provider names for display labels
  * Returns a map of provider_id -> provider name
@@ -1055,13 +1141,20 @@ export async function fetchModelMetadata(
 export async function fetchProviderNames(
 	providerIds: string[]
 ): Promise<Map<string, string>> {
+	return fetchProviderNamesCached(toLookupCacheKey(providerIds));
+}
+
+const fetchProviderNamesCached = cache(async (
+	providerIdsKey: string
+): Promise<Map<string, string>> => {
 	const { supabase } = await requireAuthenticatedUser();
+	const providerIds = providerIdsKey ? providerIdsKey.split("\n") : [];
 
 	if (providerIds.length === 0) {
 		return new Map();
 	}
 
-	const uniqueProviderIds = Array.from(new Set(providerIds.filter(Boolean)));
+	const uniqueProviderIds = normalizeLookupIds(providerIds);
 	const { data: providers } = await supabase
 		.from("data_api_providers")
 		.select("api_provider_id, api_provider_name")
@@ -1080,7 +1173,7 @@ export async function fetchProviderNames(
 	}
 
 	return providerNameMap;
-}
+});
 
 export type ProviderMetadataEntry = {
 	name: string;
@@ -1090,13 +1183,20 @@ export type ProviderMetadataEntry = {
 export async function fetchProviderMetadata(
 	providerIds: string[]
 ): Promise<Map<string, ProviderMetadataEntry>> {
+	return fetchProviderMetadataCached(toLookupCacheKey(providerIds));
+}
+
+const fetchProviderMetadataCached = cache(async (
+	providerIdsKey: string
+): Promise<Map<string, ProviderMetadataEntry>> => {
 	const { supabase } = await requireAuthenticatedUser();
+	const providerIds = providerIdsKey ? providerIdsKey.split("\n") : [];
 
 	if (providerIds.length === 0) {
 		return new Map();
 	}
 
-	const uniqueProviderIds = Array.from(new Set(providerIds.filter(Boolean)));
+	const uniqueProviderIds = normalizeLookupIds(providerIds);
 	const { data: providers } = await supabase
 		.from("data_api_providers")
 		.select("api_provider_id, api_provider_name, prompt_training_policy")
@@ -1118,7 +1218,7 @@ export async function fetchProviderMetadata(
 	}
 
 	return providerMetadataMap;
-}
+});
 
 /**
  * Fetch fun stats and insights
@@ -1235,18 +1335,26 @@ export async function fetchFunStats(
  * Returns a map of app_id -> app title
  */
 export async function fetchAppNames(appIds: string[]): Promise<Map<string, string>> {
+	return fetchAppNamesCached(toLookupCacheKey(appIds));
+}
+
+const fetchAppNamesCached = cache(async (
+	appIdsKey: string
+): Promise<Map<string, string>> => {
 	const supabase = await createClient();
 	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const appIds = appIdsKey ? appIdsKey.split("\n") : [];
 
 	if (!workspaceId || appIds.length === 0) {
 		return new Map();
 	}
 
+	const uniqueAppIds = normalizeLookupIds(appIds);
 	const { data: apps } = await supabase
 		.from("api_apps")
 		.select("id, title")
 		.eq("workspace_id", workspaceId)
-		.in("id", appIds);
+		.in("id", uniqueAppIds);
 
 	const appMap = new Map<string, string>();
 
@@ -1257,7 +1365,7 @@ export async function fetchAppNames(appIds: string[]): Promise<Map<string, strin
 	}
 
 	return appMap;
-}
+});
 
 /**
  * Investigate a generation by request_id
@@ -1265,7 +1373,11 @@ export async function fetchAppNames(appIds: string[]): Promise<Map<string, strin
  */
 export async function investigateGeneration(
 	requestId: string
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{
+	success: boolean;
+	data?: InvestigateGenerationResult;
+	error?: string;
+}> {
 	const supabase = await createClient();
 	const { workspaceId } = await requireAuthedTeamContext(supabase);
 
@@ -1283,29 +1395,190 @@ export async function investigateGeneration(
 		};
 	}
 
+	const trimmedRequestId = requestId.trim();
+	const requestSelect = `
+		request_id,
+		created_at,
+		endpoint,
+		model_id,
+		provider,
+		native_response_id,
+		upstream_request_id,
+		stream,
+		session_id,
+		app_id,
+		app:api_apps!gateway_requests_app_id_fkey (
+			id,
+			app_key,
+			title,
+			image_url
+		),
+		usage,
+		cost_nanos,
+		generation_ms,
+		latency_ms,
+		finish_reason,
+		success,
+		status_code,
+		error_code,
+		error_message,
+		error_payload,
+		key_id,
+		pricing_lines,
+		throughput,
+		provider_attempts
+	`;
+
 	const { data, error } = await supabase
 		.from("gateway_requests")
-		.select("*")
+		.select(requestSelect)
 		.eq("workspace_id", workspaceId)
-		.eq("request_id", requestId.trim())
-		.single();
+		.eq("request_id", trimmedRequestId)
+		.maybeSingle();
 
 	if (error) {
-		if (error.code === "PGRST116") {
+		console.error("Error fetching investigated request (with app join):", error);
+		const { data: fallbackData, error: fallbackError } = await supabase
+			.from("gateway_requests")
+			.select(
+				`
+				request_id,
+				created_at,
+				endpoint,
+				model_id,
+				provider,
+				native_response_id,
+				upstream_request_id,
+				stream,
+				session_id,
+				app_id,
+				usage,
+				cost_nanos,
+				generation_ms,
+				latency_ms,
+				finish_reason,
+				success,
+				status_code,
+				error_code,
+				error_message,
+				error_payload,
+				key_id,
+				pricing_lines,
+				throughput,
+				provider_attempts
+			`,
+			)
+			.eq("workspace_id", workspaceId)
+			.eq("request_id", trimmedRequestId)
+			.maybeSingle();
+
+		if (fallbackError) {
+			if (fallbackError.code === "PGRST116") {
+				return {
+					success: false,
+					error: "Request not found or not authorized",
+				};
+			}
+			return {
+				success: false,
+				error: fallbackError.message || "Failed to fetch request",
+			};
+		}
+
+		if (!fallbackData) {
 			return {
 				success: false,
 				error: "Request not found or not authorized",
 			};
 		}
+
+		const request = toRequestRow(fallbackData);
+		const providerIds = Array.from(
+			new Set(
+				[
+					request.provider,
+					...request.provider_attempts.map((attempt) => attempt.provider),
+				].filter(
+					(value): value is string =>
+					typeof value === "string" && value.trim().length > 0,
+				),
+			),
+		);
+		const [appMetadata, modelMetadata, providerNames, providerMetadata] =
+			await Promise.all([
+				request.app_id
+					? fetchAppMetadata([request.app_id])
+					: Promise.resolve(new Map<string, { title: string }>()),
+				request.model_id
+					? fetchModelMetadata([request.model_id])
+					: Promise.resolve(new Map<string, SerializableModelMetadataEntry>()),
+				fetchProviderNames(providerIds),
+				fetchProviderMetadata(providerIds),
+			]);
+		const appName = request.app_id
+			? appMetadata.get(request.app_id)?.title ?? null
+			: null;
+
 		return {
-			success: false,
-			error: error.message || "Failed to fetch request",
+			success: true,
+			data: {
+				request,
+				appName,
+				modelMetadata: Array.from(modelMetadata.entries()),
+				providerNames: Array.from(providerNames.entries()),
+				providerMetadata: Array.from(providerMetadata.entries()),
+			},
 		};
 	}
 
+	if (!data) {
+		return {
+			success: false,
+			error: "Request not found or not authorized",
+		};
+	}
+
+	const request = toRequestRow(data);
+	const providerIds = Array.from(
+		new Set(
+			[
+				request.provider,
+				...request.provider_attempts.map((attempt) => attempt.provider),
+			].filter(
+				(value): value is string =>
+				typeof value === "string" && value.trim().length > 0,
+			),
+		),
+	);
+	const [appMetadata, modelMetadata, providerNames, providerMetadata] =
+		await Promise.all([
+			typeof request.app_title === "string" && request.app_title.trim().length > 0
+				? Promise.resolve(new Map<string, { title: string }>())
+				: request.app_id
+					? fetchAppMetadata([request.app_id])
+					: Promise.resolve(new Map<string, { title: string }>()),
+			request.model_id
+				? fetchModelMetadata([request.model_id])
+				: Promise.resolve(new Map<string, SerializableModelMetadataEntry>()),
+			fetchProviderNames(providerIds),
+			fetchProviderMetadata(providerIds),
+		]);
+	const resolvedAppName =
+		typeof request.app_title === "string" && request.app_title.trim().length > 0
+			? request.app_title.trim()
+			: request.app_id
+				? appMetadata.get(request.app_id)?.title ?? null
+				: null;
+
 	return {
 		success: true,
-		data,
+		data: {
+			request,
+			appName: resolvedAppName,
+			modelMetadata: Array.from(modelMetadata.entries()),
+			providerNames: Array.from(providerNames.entries()),
+			providerMetadata: Array.from(providerMetadata.entries()),
+		},
 	};
 }
 
@@ -2082,18 +2355,26 @@ export interface AppMetadata {
 export async function fetchAppMetadata(
 	appIds: string[],
 ): Promise<Map<string, AppMetadata>> {
+	return fetchAppMetadataCached(toLookupCacheKey(appIds));
+}
+
+const fetchAppMetadataCached = cache(async (
+	appIdsKey: string,
+): Promise<Map<string, AppMetadata>> => {
 	const supabase = await createClient();
 	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const appIds = appIdsKey ? appIdsKey.split("\n") : [];
 
 	if (!workspaceId || appIds.length === 0) {
 		return new Map();
 	}
 
+	const uniqueAppIds = normalizeLookupIds(appIds);
 	const { data: apps } = await supabase
 		.from("api_apps")
 		.select("id, title, image_url")
 		.eq("workspace_id", workspaceId)
-		.in("id", appIds);
+		.in("id", uniqueAppIds);
 
 	const appMap = new Map<string, AppMetadata>();
 
@@ -2111,7 +2392,7 @@ export async function fetchAppMetadata(
 	}
 
 	return appMap;
-}
+});
 
 export interface SessionRequestRow extends RequestRow {
 	session_id: string | null;
@@ -2140,6 +2421,7 @@ export async function fetchSessionRequests(params: {
 			model_id,
 			provider,
 			native_response_id,
+			upstream_request_id,
 			stream,
 			session_id,
 			app_id,
@@ -2158,8 +2440,11 @@ export async function fetchSessionRequests(params: {
 			status_code,
 			error_code,
 			error_message,
+			error_payload,
 			key_id,
+			pricing_lines,
 			throughput,
+			provider_attempts,
 			session_id,
 			endpoint,
 			end_user_id
@@ -2185,24 +2470,8 @@ export async function fetchSessionRequests(params: {
 
 	return (
 		(data as any[] | null)?.map((row) => {
-			const appRow = Array.isArray(row?.app) ? row.app[0] : row?.app;
-			const appTitle =
-				typeof appRow?.title === "string" && appRow.title.trim().length > 0
-					? appRow.title.trim()
-					: null;
-			const appKey =
-				typeof appRow?.app_key === "string" && appRow.app_key.trim().length > 0
-					? appRow.app_key.trim()
-					: null;
-			const appImageUrl =
-				typeof appRow?.image_url === "string" && appRow.image_url.trim().length > 0
-					? appRow.image_url.trim()
-					: null;
 			return {
-				...row,
-				app_title: appTitle,
-				app_key: appKey,
-				app_image_url: appImageUrl,
+				...toRequestRow(row),
 			} as SessionRequestRow;
 		}) ?? []
 	);
@@ -2283,6 +2552,11 @@ function normalizeFiniteNumber(value: unknown): number | null {
 	return null;
 }
 
+function normalizeRecord(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	return value as Record<string, unknown>;
+}
+
 type AsyncWebhookAttemptStatus =
 	| "delivered"
 	| "scheduled_retry"
@@ -2306,6 +2580,7 @@ export interface AsyncJobWebhookAttemptRow {
 export interface AsyncJobWebhookSummaryRow {
 	configured: boolean;
 	url: string | null;
+	events: string[];
 	delivered_events: number;
 	attempt_count: number;
 	pending_retries: number;
@@ -2315,10 +2590,34 @@ export interface AsyncJobWebhookSummaryRow {
 	last_error_message: string | null;
 }
 
+export interface AsyncJobRequestCounts {
+	total: number | null;
+	completed: number | null;
+	failed: number | null;
+}
+
+export interface AsyncJobPricingBreakdown {
+	total_nanos: number | null;
+	total_usd_str: string | null;
+	total_cents: number | null;
+	completed_requests: number | null;
+	failed_requests: number | null;
+	total_requests: number | null;
+}
+
+export type AsyncJobRequestPricingLine =
+	| Record<string, unknown>
+	| string
+	| number
+	| boolean
+	| null;
+
 export interface AsyncJobRow {
 	kind: "video" | "batch";
 	internal_id: string;
 	request_id: string | null;
+	session_id: string | null;
+	app_id: string | null;
 	provider: string | null;
 	model: string | null;
 	status: string | null;
@@ -2327,21 +2626,138 @@ export interface AsyncJobRow {
 	updated_at: string;
 	request_created_at: string | null;
 	request_cost_nanos: number | null;
+	settled_cost_nanos: number | null;
+	settled_cost_usd: number | null;
+	charged: boolean | null;
+	billing_reason: string | null;
+	job_failure_category: string | null;
+	job_failure_provider: string | null;
+	job_failure_hint: string | null;
+	request_counts: AsyncJobRequestCounts | null;
 	webhook: AsyncJobWebhookSummaryRow;
 }
 
 export interface AsyncJobDetailRow extends AsyncJobRow {
+	native_id: string | null;
 	endpoint: string | null;
 	completion_window: string | null;
 	resolution: string | null;
 	duration_seconds: number | null;
+	output_access: string | null;
+	key_source: string | null;
+	byok_key_id: string | null;
+	reservation_id: string | null;
+	reservation_status: string | null;
+	next_webhook_retry_at: string | null;
+	last_webhook_progress: number | null;
+	last_webhook_progress_at: string | null;
+	last_webhook_dispatched_at: string | null;
+	finalized_at: string | null;
+	last_polled_at: string | null;
+	polled_status: string | null;
+	last_reconciled_at: string | null;
+	total_duration_ms: number | null;
+	latency_ms: number | null;
+	generation_ms: number | null;
+	request_native_response_id: string | null;
+	request_upstream_request_id: string | null;
+	request_endpoint: string | null;
+	request_model_id: string | null;
+	request_success: boolean | null;
+	request_status_code: number | null;
+	request_error_code: string | null;
+	request_error_message: string | null;
+	request_error_payload: Record<string, unknown> | null;
+	request_finish_reason: string | null;
+	request_latency_ms: number | null;
+	request_generation_ms: number | null;
+	request_provider_attempts: RequestRow["provider_attempts"];
+	request_pricing_lines: AsyncJobRequestPricingLine[];
+	job_upstream_error: AsyncJobUpstreamErrorRow | null;
+	job_provider_failure_diagnostics: AsyncJobProviderFailureDiagnosticsRow | null;
+	job_failure_sample: AsyncJobFailureSampleRow[];
+	job_routing_diagnostics: Record<string, unknown> | null;
+	job_provider_enablement: Record<string, unknown> | null;
+	job_provider_candidate_diagnostics: Record<string, unknown> | null;
 	content_url: string | null;
 	cancel_url: string | null;
 	output_file_id: string | null;
 	error_file_id: string | null;
 	request_created_at: string | null;
 	request_cost_nanos: number | null;
+	batch_pricing_lines: AsyncJobRequestPricingLine[];
+	pricing_breakdown: AsyncJobPricingBreakdown | null;
 	webhook_attempts: AsyncJobWebhookAttemptRow[];
+}
+
+function parseAsyncJobRequestCounts(meta: Record<string, unknown> | null | undefined): AsyncJobRequestCounts | null {
+	const counts =
+		meta?.requestCounts && typeof meta.requestCounts === "object" && !Array.isArray(meta.requestCounts)
+			? (meta.requestCounts as Record<string, unknown>)
+			: meta?.request_counts && typeof meta.request_counts === "object" && !Array.isArray(meta.request_counts)
+				? (meta.request_counts as Record<string, unknown>)
+				: null;
+	if (!counts) return null;
+	return {
+		total: normalizeFiniteNumber(counts.total),
+		completed: normalizeFiniteNumber(counts.completed),
+		failed: normalizeFiniteNumber(counts.failed),
+	};
+}
+
+function parseAsyncJobPricingBreakdown(meta: Record<string, unknown> | null | undefined): AsyncJobPricingBreakdown | null {
+	const pricing =
+		meta?.pricingBreakdown && typeof meta.pricingBreakdown === "object" && !Array.isArray(meta.pricingBreakdown)
+			? (meta.pricingBreakdown as Record<string, unknown>)
+			: meta?.pricing_breakdown && typeof meta.pricing_breakdown === "object" && !Array.isArray(meta.pricing_breakdown)
+				? (meta.pricing_breakdown as Record<string, unknown>)
+				: null;
+	if (!pricing) return null;
+	return {
+		total_nanos: normalizeFiniteNumber(pricing.total_nanos),
+		total_usd_str: normalizeText(pricing.total_usd_str),
+		total_cents: normalizeFiniteNumber(pricing.total_cents),
+		completed_requests: normalizeFiniteNumber(pricing.completed_requests),
+		failed_requests: normalizeFiniteNumber(pricing.failed_requests),
+		total_requests: normalizeFiniteNumber(pricing.total_requests),
+	};
+}
+
+function parseAsyncJobBatchPricingLines(
+	meta: Record<string, unknown> | null | undefined,
+): AsyncJobRequestPricingLine[] {
+	if (!meta) return [];
+	const directLines = normalizePricingLines(meta.pricingLines ?? meta.pricing_lines);
+	if (directLines.length > 0) return directLines;
+
+	const pricedUsage =
+		meta.pricedUsage && typeof meta.pricedUsage === "object" && !Array.isArray(meta.pricedUsage)
+			? (meta.pricedUsage as Record<string, unknown>)
+			: meta.priced_usage && typeof meta.priced_usage === "object" && !Array.isArray(meta.priced_usage)
+				? (meta.priced_usage as Record<string, unknown>)
+				: null;
+	const pricedUsagePricing =
+		pricedUsage?.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	const pricedUsageLines = normalizePricingLines(pricedUsagePricing?.lines);
+	if (pricedUsageLines.length > 0) return pricedUsageLines;
+
+	const totalNanos = normalizeFiniteNumber(meta.costNanos ?? meta.cost_nanos);
+	if (totalNanos == null) return [];
+	const counts = parseAsyncJobRequestCounts(meta);
+	const pricingBreakdown = parseAsyncJobPricingBreakdown(meta);
+	return [
+		{
+			dimension: "batch_requests",
+			pricing_plan: "batch",
+			service_tier: "batch",
+			endpoint: normalizeText(meta.endpoint),
+			units: counts?.completed ?? counts?.total ?? null,
+			total_nanos: totalNanos,
+			total_usd_str: pricingBreakdown?.total_usd_str ?? null,
+		},
+	];
 }
 
 function parseWebhookAttempts(value: unknown): AsyncJobWebhookAttemptRow[] {
@@ -2408,9 +2824,15 @@ function buildWebhookSummary(meta: Record<string, unknown> | null | undefined): 
 		.map((entry) => entry.next_retry_at)
 		.filter((entry): entry is string => Boolean(entry))
 		.sort((a, b) => a.localeCompare(b))[0] ?? null;
+	const events = Array.isArray(webhook?.events)
+		? webhook.events
+				.map((event) => normalizeText(event))
+				.filter((event): event is string => Boolean(event))
+		: [];
 	return {
 		configured: Boolean(webhook),
 		url: normalizeText(webhook?.url),
+		events,
 		delivered_events: deliveredEvents,
 		attempt_count: attempts.length,
 		pending_retries: retryQueue.length,
@@ -2434,6 +2856,7 @@ function toAsyncJobRow(
 		row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
 			? (row.meta as Record<string, unknown>)
 			: null;
+	const failureDiagnostics = parseAsyncJobFailureDiagnostics(meta);
 	const webhook = buildWebhookSummary(meta);
 	if (
 		!options?.includeWithoutWebhook &&
@@ -2447,6 +2870,8 @@ function toAsyncJobRow(
 		kind,
 		internal_id: internalId,
 		request_id: normalizeText(row.request_id),
+		session_id: normalizeText(row.session_id),
+		app_id: normalizeText(row.app_id),
 		provider: normalizeText(row.provider),
 		model: normalizeText(row.model),
 		status: normalizeText(row.status),
@@ -2455,8 +2880,42 @@ function toAsyncJobRow(
 		updated_at: updatedAt,
 		request_created_at: null,
 		request_cost_nanos: null,
+		settled_cost_nanos: normalizeFiniteNumber(meta?.costNanos ?? meta?.cost_nanos),
+		settled_cost_usd: normalizeFiniteNumber(meta?.costUsd ?? meta?.cost_usd),
+		charged:
+			typeof meta?.charged === "boolean"
+				? meta.charged
+				: typeof meta?.charged === "string"
+					? ["1", "true", "yes", "on"].includes(meta.charged.toLowerCase())
+					: null,
+		billing_reason: normalizeText(meta?.billingReason ?? meta?.billing_reason),
+		job_failure_category:
+			failureDiagnostics.job_provider_failure_diagnostics?.category ?? null,
+		job_failure_provider:
+			failureDiagnostics.job_provider_failure_diagnostics?.provider ?? null,
+		job_failure_hint:
+			failureDiagnostics.job_provider_failure_diagnostics?.hint ?? null,
+		request_counts: parseAsyncJobRequestCounts(meta),
 		webhook,
 	};
+}
+
+function normalizePricingLines(value: unknown): AsyncJobRequestPricingLine[] {
+	if (!Array.isArray(value)) return [];
+	return value.map((entry) => {
+		if (
+			entry == null ||
+			typeof entry === "string" ||
+			typeof entry === "number" ||
+			typeof entry === "boolean"
+		) {
+			return entry;
+		}
+		if (typeof entry === "object" && !Array.isArray(entry)) {
+			return entry as Record<string, unknown>;
+		}
+		return JSON.stringify(entry);
+	});
 }
 
 export async function fetchRecentAsyncJobs(params?: {
@@ -2476,7 +2935,7 @@ export async function fetchRecentAsyncJobs(params?: {
 
 	let query = admin
 		.from("gateway_async_operations")
-		.select("kind,internal_id,request_id,provider,model,status,billed_at,created_at,updated_at,meta")
+		.select("kind,internal_id,request_id,session_id,app_id,provider,model,status,billed_at,created_at,updated_at,meta")
 		.eq("workspace_id", workspaceId)
 		.in("kind", ["video", "batch"]);
 
@@ -2574,7 +3033,7 @@ export async function fetchAsyncJobDetail(input: {
 
 	const { data, error } = await admin
 		.from("gateway_async_operations")
-		.select("kind,internal_id,request_id,provider,model,status,billed_at,created_at,updated_at,meta")
+		.select("kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,billed_at,created_at,updated_at,meta")
 		.eq("workspace_id", workspaceId)
 		.eq("kind", input.kind)
 		.eq("internal_id", input.internalId)
@@ -2595,13 +3054,28 @@ export async function fetchAsyncJobDetail(input: {
 			? (data.meta as Record<string, unknown>)
 			: null;
 	const webhookAttempts = parseWebhookAttempts(meta?.webhookAttempts ?? meta?.webhook_attempts);
+	const failureDiagnostics = parseAsyncJobFailureDiagnostics(meta);
 
 	let requestCreatedAt: string | null = null;
 	let requestCostNanos: number | null = null;
+	let requestNativeResponseId: string | null = null;
+	let requestUpstreamRequestId: string | null = null;
+	let requestEndpoint: string | null = null;
+	let requestModelId: string | null = null;
+	let requestSuccess: boolean | null = null;
+	let requestStatusCode: number | null = null;
+	let requestErrorCode: string | null = null;
+	let requestErrorMessage: string | null = null;
+	let requestErrorPayload: Record<string, unknown> | null = null;
+	let requestFinishReason: string | null = null;
+	let requestLatencyMs: number | null = null;
+	let requestGenerationMs: number | null = null;
+	let requestProviderAttempts: RequestRow["provider_attempts"] = [];
+	let requestPricingLines: AsyncJobRequestPricingLine[] = [];
 	if (base.request_id) {
 		const { data: requestData } = await admin
 			.from("gateway_requests")
-			.select("created_at,cost_nanos")
+			.select("created_at,cost_nanos,native_response_id,upstream_request_id,endpoint,model_id,success,status_code,error_code,error_message,error_payload,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
 			.eq("workspace_id", workspaceId)
 			.eq("request_id", base.request_id)
 			.order("created_at", { ascending: false })
@@ -2609,14 +3083,45 @@ export async function fetchAsyncJobDetail(input: {
 			.maybeSingle();
 		requestCreatedAt = normalizeIsoDate(requestData?.created_at);
 		requestCostNanos = normalizeFiniteNumber(requestData?.cost_nanos);
+		requestNativeResponseId = normalizeText(requestData?.native_response_id);
+		requestUpstreamRequestId = normalizeText(requestData?.upstream_request_id);
+		requestEndpoint = normalizeText(requestData?.endpoint);
+		requestModelId = normalizeText(requestData?.model_id);
+		requestSuccess = typeof requestData?.success === "boolean" ? requestData.success : null;
+		requestStatusCode = normalizeFiniteNumber(requestData?.status_code);
+		requestErrorCode = normalizeText(requestData?.error_code);
+		requestErrorMessage = normalizeText(requestData?.error_message);
+		requestErrorPayload = normalizePlainObject(requestData?.error_payload);
+		requestFinishReason = normalizeText(requestData?.finish_reason);
+		requestLatencyMs = normalizeFiniteNumber(requestData?.latency_ms);
+		requestGenerationMs = normalizeFiniteNumber(requestData?.generation_ms);
+		requestProviderAttempts = normalizeProviderAttempts(requestData?.provider_attempts);
+		requestPricingLines = normalizePricingLines(requestData?.pricing_lines);
 	}
 
 	return {
 		...base,
+		native_id: normalizeText((data as Record<string, unknown>).native_id),
 		endpoint: normalizeText(meta?.endpoint),
 		completion_window: normalizeText(meta?.completionWindow ?? meta?.completion_window),
 		resolution: normalizeText(meta?.resolution),
 		duration_seconds: normalizeFiniteNumber(meta?.seconds),
+		output_access: normalizeText(meta?.outputAccess ?? meta?.output_access),
+		key_source: normalizeText(meta?.keySource ?? meta?.key_source),
+		byok_key_id: normalizeText(meta?.byokKeyId ?? meta?.byok_key_id),
+		reservation_id: normalizeText(meta?.reservationId ?? meta?.reservation_id),
+		reservation_status: normalizeText(meta?.reservationStatus ?? meta?.reservation_status),
+		next_webhook_retry_at: normalizeIsoDate(meta?.nextWebhookRetryAt ?? meta?.next_webhook_retry_at),
+		last_webhook_progress: normalizeFiniteNumber(meta?.lastWebhookProgress ?? meta?.last_webhook_progress),
+		last_webhook_progress_at: normalizeIsoDate(meta?.lastWebhookProgressAt ?? meta?.last_webhook_progress_at),
+		last_webhook_dispatched_at: normalizeIsoDate(meta?.lastWebhookDispatchedAt ?? meta?.last_webhook_dispatched_at),
+		finalized_at: normalizeIsoDate(meta?.finalizedAt ?? meta?.finalized_at),
+		last_polled_at: normalizeIsoDate(meta?.lastPolledAt ?? meta?.last_polled_at),
+		polled_status: normalizeText(meta?.polledStatus ?? meta?.polled_status),
+		last_reconciled_at: normalizeIsoDate(meta?.lastReconciledAt ?? meta?.last_reconciled_at),
+		total_duration_ms: normalizeFiniteNumber(meta?.totalDurationMs ?? meta?.total_duration_ms ?? meta?.durationMs ?? meta?.duration_ms),
+		latency_ms: normalizeFiniteNumber(meta?.latencyMs ?? meta?.latency_ms),
+		generation_ms: normalizeFiniteNumber(meta?.generationMs ?? meta?.generation_ms),
 		content_url: normalizeText(meta?.googleVideoUri ?? meta?.google_video_uri ?? meta?.downloadUrl ?? meta?.download_url),
 		cancel_url: input.kind === "batch" && ["pending", "in_progress"].includes((base.status ?? "").toLowerCase())
 			? `/v1/batches/${encodeURIComponent(base.internal_id)}/cancel`
@@ -2625,6 +3130,30 @@ export async function fetchAsyncJobDetail(input: {
 		error_file_id: normalizeText(meta?.errorFileId ?? meta?.error_file_id),
 		request_created_at: requestCreatedAt,
 		request_cost_nanos: requestCostNanos,
+		batch_pricing_lines: parseAsyncJobBatchPricingLines(meta),
+		request_native_response_id: requestNativeResponseId,
+		request_upstream_request_id: requestUpstreamRequestId,
+		request_endpoint: requestEndpoint,
+		request_model_id: requestModelId,
+		request_success: requestSuccess,
+		request_status_code: requestStatusCode,
+		request_error_code: requestErrorCode,
+		request_error_message: requestErrorMessage,
+		request_error_payload: requestErrorPayload,
+		request_finish_reason: requestFinishReason,
+		request_latency_ms: requestLatencyMs,
+		request_generation_ms: requestGenerationMs,
+		request_provider_attempts: requestProviderAttempts,
+		request_pricing_lines: requestPricingLines,
+		job_upstream_error: failureDiagnostics.job_upstream_error,
+		job_provider_failure_diagnostics:
+			failureDiagnostics.job_provider_failure_diagnostics,
+		job_failure_sample: failureDiagnostics.job_failure_sample,
+		job_routing_diagnostics: failureDiagnostics.job_routing_diagnostics,
+		job_provider_enablement: failureDiagnostics.job_provider_enablement,
+		job_provider_candidate_diagnostics:
+			failureDiagnostics.job_provider_candidate_diagnostics,
+		pricing_breakdown: parseAsyncJobPricingBreakdown(meta),
 		webhook_attempts: webhookAttempts,
 	};
 }

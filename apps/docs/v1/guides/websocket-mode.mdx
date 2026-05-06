@@ -21,6 +21,7 @@ This endpoint is still experimental on AI Stats Gateway and is currently not rec
 - Auth: `Authorization: Bearer YOUR_API_KEY`
 
 If you call this path as a normal HTTP GET without WebSocket upgrade headers, the gateway returns `426 websocket_upgrade_required`.
+If websocket mode is disabled for the current deployment, the handshake instead returns `501 responses_websocket_disabled` before upgrade or auth processing begins.
 
 ## How the gateway processes this endpoint
 

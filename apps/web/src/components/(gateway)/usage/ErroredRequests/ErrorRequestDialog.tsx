@@ -23,6 +23,7 @@ import {
 	Hash,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { formatRoomError } from "@/lib/chat/formatRoomError";
 
 export type ErrorDialogRow = {
 	request_id?: string | null;
@@ -32,6 +33,7 @@ export type ErrorDialogRow = {
 	status_code?: number | null;
 	error_code?: string | null;
 	error_message?: string | null;
+	error_payload?: Record<string, unknown> | null;
 	usage?: any;
 	cost_nanos?: number | null;
 };
@@ -96,6 +98,15 @@ function getFriendlyErrorCode(code: string | null | undefined): string {
 		bad_request: "Bad request",
 	};
 	return mapping[cleanCode] || cleanCode.replace(/_/g, " ");
+}
+
+function formatDiagnosticLabel(value: string | null | undefined): string {
+	if (!value) return "-";
+	return value
+		.split("_")
+		.filter(Boolean)
+		.map((part) => part[0].toUpperCase() + part.slice(1))
+		.join(" ");
 }
 
 function statusBadge(status?: number | null) {
@@ -200,6 +211,20 @@ export default function ErrorRequestDialog({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const selected = row;
+	const formattedGatewayError = React.useMemo(() => {
+		const raw = selected?.error_payload
+			? JSON.stringify(selected.error_payload)
+			: selected?.error_message?.trim();
+		if (!raw) return null;
+		return formatRoomError(raw);
+	}, [selected?.error_message, selected?.error_payload]);
+	const formattedFailureSample = formattedGatewayError?.failureSample ?? [];
+	const providerCandidateDiagnostics =
+		formattedGatewayError?.providerCandidateDiagnostics;
+	const providerEnablement = formattedGatewayError?.providerEnablement;
+	const routingDiagnostics = formattedGatewayError?.routingDiagnostics;
+	const failedProviders = formattedGatewayError?.failedProviders ?? [];
+	const failedStatuses = formattedGatewayError?.failedStatuses ?? [];
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-[900px] overflow-hidden p-0">
@@ -305,11 +330,330 @@ export default function ErrorRequestDialog({
 							{selected?.error_message ? (
 								<div className="rounded-2xl border bg-card p-4">
 									<div className="mb-2 text-sm font-medium">
-										Message
+										{formattedGatewayError?.title?.trim()
+											? formattedGatewayError.title
+											: "Message"}
 									</div>
 									<div className="whitespace-pre-wrap wrap-break-word text-sm">
-										{selected.error_message}
+										{formattedGatewayError?.message ?? selected.error_message}
 									</div>
+									{formattedGatewayError?.hint ? (
+										<div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+											<div className="mb-1 font-medium text-amber-900">
+												Hint
+											</div>
+											<div className="whitespace-pre-wrap wrap-break-word">
+												{formattedGatewayError.hint}
+											</div>
+										</div>
+									) : null}
+									{formattedGatewayError?.generationId ? (
+										<div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+											<span>Generation ID:</span>
+											<span className="font-mono break-all">
+												{formattedGatewayError.generationId}
+											</span>
+											<CopyButton
+												size="sm"
+												content={formattedGatewayError.generationId}
+												aria-label="Copy generation id"
+											/>
+										</div>
+									) : null}
+									{formattedGatewayError?.reason ||
+									formattedGatewayError?.attemptCount != null ||
+									failedProviders.length > 0 ||
+									failedStatuses.length > 0 ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-1 font-medium text-slate-900">
+												Routing failure summary
+											</div>
+											<div className="space-y-1 text-slate-800">
+												{formattedGatewayError?.reason ? (
+													<div>
+														<span className="font-medium">Reason:</span>{" "}
+														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
+															{formattedGatewayError.reason}
+														</code>
+														<span className="ml-2 text-slate-700">
+															{formatDiagnosticLabel(formattedGatewayError.reason)}
+														</span>
+													</div>
+												) : null}
+												{formattedGatewayError?.attemptCount != null ? (
+													<div>
+														<span className="font-medium">Attempts:</span>{" "}
+														{formattedGatewayError.attemptCount}
+													</div>
+												) : null}
+												{failedProviders.length > 0 ? (
+													<div>
+														<span className="font-medium">Failed providers:</span>{" "}
+														{failedProviders.join(", ")}
+													</div>
+												) : null}
+												{failedStatuses.length > 0 ? (
+													<div>
+														<span className="font-medium">Failed statuses:</span>{" "}
+														{failedStatuses.join(", ")}
+													</div>
+												) : null}
+											</div>
+										</div>
+									) : null}
+									{formattedGatewayError?.providerFailureCategory ||
+									formattedGatewayError?.providerFailureProvider ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-1 font-medium text-slate-900">
+												Provider diagnostics
+											</div>
+											<div className="space-y-1 text-slate-800">
+												{formattedGatewayError.providerFailureCategory ? (
+													<div>
+														<span className="font-medium">Category:</span>{" "}
+														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
+															{formattedGatewayError.providerFailureCategory}
+														</code>
+														<span className="ml-2 text-slate-700">
+															{formatDiagnosticLabel(
+																formattedGatewayError.providerFailureCategory
+															)}
+														</span>
+													</div>
+												) : null}
+												{formattedGatewayError.providerFailureProvider ? (
+													<div>
+														<span className="font-medium">Provider:</span>{" "}
+														{formattedGatewayError.providerFailureProvider}
+													</div>
+												) : null}
+											</div>
+										</div>
+									) : null}
+									{formattedGatewayError?.upstreamError ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-1 font-medium text-slate-900">
+												Upstream error
+											</div>
+											<div className="space-y-1 text-slate-800">
+												{formattedGatewayError.upstreamError.code ? (
+													<div>
+														<span className="font-medium">Code:</span>{" "}
+														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
+															{formattedGatewayError.upstreamError.code}
+														</code>
+													</div>
+												) : null}
+												{formattedGatewayError.upstreamError.message ? (
+													<div>
+														<span className="font-medium">Message:</span>{" "}
+														{formattedGatewayError.upstreamError.message}
+													</div>
+												) : null}
+												{formattedGatewayError.upstreamError.description ? (
+													<div>
+														<span className="font-medium">Detail:</span>{" "}
+														{formattedGatewayError.upstreamError.description}
+													</div>
+												) : null}
+												{formattedGatewayError.upstreamError.param ? (
+													<div>
+														<span className="font-medium">Param:</span>{" "}
+														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
+															{formattedGatewayError.upstreamError.param}
+														</code>
+													</div>
+												) : null}
+											</div>
+										</div>
+									) : null}
+									{formattedFailureSample.length > 0 ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-2 font-medium text-slate-900">
+												Failure sample
+											</div>
+											<div className="space-y-2">
+												{formattedFailureSample.map((sample, index) => (
+													<div
+														key={`${sample.provider ?? "unknown"}-${sample.status ?? "na"}-${index}`}
+														className="rounded-lg border border-slate-200 bg-white p-3"
+													>
+														<div className="flex flex-wrap items-center gap-2">
+															<span className="font-medium">
+																{sample.provider ?? "Unknown provider"}
+															</span>
+															{sample.status != null ? (
+																<code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+																	HTTP {sample.status}
+																</code>
+															) : null}
+															{sample.upstreamErrorCode ? (
+																<code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+																	{sample.upstreamErrorCode}
+																</code>
+															) : null}
+														</div>
+														{sample.upstreamErrorMessage ? (
+															<div className="mt-2">
+																<span className="font-medium">Message:</span>{" "}
+																{sample.upstreamErrorMessage}
+															</div>
+														) : null}
+														{sample.upstreamErrorDescription &&
+														sample.upstreamErrorDescription !==
+															sample.upstreamErrorMessage ? (
+															<div className="mt-1 text-slate-700">
+																<span className="font-medium">Detail:</span>{" "}
+																{sample.upstreamErrorDescription}
+															</div>
+														) : null}
+													</div>
+												))}
+											</div>
+										</div>
+									) : null}
+									{providerCandidateDiagnostics ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-2 font-medium text-slate-900">
+												Provider candidates
+											</div>
+											<div className="grid gap-2 sm:grid-cols-3">
+												<div>
+													<div className="text-xs font-medium uppercase tracking-wide text-slate-700">
+														Known
+													</div>
+													<div className="font-mono text-sm">
+														{providerCandidateDiagnostics.totalProviders ?? "-"}
+													</div>
+												</div>
+												<div>
+													<div className="text-xs font-medium uppercase tracking-wide text-slate-700">
+														Supports endpoint
+													</div>
+													<div className="font-mono text-sm">
+														{providerCandidateDiagnostics.supportsEndpointCount ?? "-"}
+													</div>
+												</div>
+												<div>
+													<div className="text-xs font-medium uppercase tracking-wide text-slate-700">
+														Candidates
+													</div>
+													<div className="font-mono text-sm">
+														{providerCandidateDiagnostics.candidateCount ?? "-"}
+													</div>
+												</div>
+											</div>
+											{providerCandidateDiagnostics.droppedUnsupportedEndpoint.length >
+											0 ? (
+												<div className="mt-3">
+													<div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-700">
+														Unsupported endpoints
+													</div>
+													<div className="flex flex-wrap gap-2">
+														{providerCandidateDiagnostics.droppedUnsupportedEndpoint.map(
+															(endpoint) => (
+																<code
+																	key={endpoint}
+																	className="rounded bg-slate-200 px-1.5 py-0.5 text-xs"
+																>
+																	{endpoint}
+																</code>
+															)
+														)}
+													</div>
+												</div>
+											) : null}
+										</div>
+									) : null}
+									{providerEnablement ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-2 font-medium text-slate-900">
+												Provider enablement
+											</div>
+											{providerEnablement.capability ? (
+												<div className="mb-2">
+													<span className="font-medium">Capability:</span>{" "}
+													<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
+														{providerEnablement.capability}
+													</code>
+												</div>
+											) : null}
+											<div className="grid gap-3 sm:grid-cols-2">
+												<div>
+													<div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-700">
+														Before
+													</div>
+													<div className="flex flex-wrap gap-2">
+														{providerEnablement.providersBefore.length > 0 ? (
+															providerEnablement.providersBefore.map((providerId) => (
+																<code
+																	key={providerId}
+																	className="rounded bg-slate-200 px-1.5 py-0.5 text-xs"
+																>
+																	{providerId}
+																</code>
+															))
+														) : (
+															<span className="text-slate-700">-</span>
+														)}
+													</div>
+												</div>
+												<div>
+													<div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-700">
+														After
+													</div>
+													<div className="flex flex-wrap gap-2">
+														{providerEnablement.providersAfter.length > 0 ? (
+															providerEnablement.providersAfter.map((providerId) => (
+																<code
+																	key={providerId}
+																	className="rounded bg-slate-200 px-1.5 py-0.5 text-xs"
+																>
+																	{providerId}
+																</code>
+															))
+														) : (
+															<span className="text-slate-700">-</span>
+														)}
+													</div>
+												</div>
+											</div>
+										</div>
+									) : null}
+									{routingDiagnostics &&
+									routingDiagnostics.filterStages.length > 0 ? (
+										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+											<div className="mb-2 font-medium text-slate-900">
+												Routing diagnostics
+											</div>
+											<div className="space-y-2">
+												{routingDiagnostics.filterStages.map((stage, index) => (
+													<div
+														key={`${stage.stage ?? "stage"}-${index}`}
+														className="rounded-lg border border-slate-200 bg-white p-3"
+													>
+														<div className="flex flex-wrap items-center gap-2">
+															<span className="font-medium">
+																{stage.stage
+																	? formatDiagnosticLabel(stage.stage)
+																	: `Stage ${index + 1}`}
+															</span>
+															{stage.beforeCount != null ? (
+																<code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+																	before {stage.beforeCount}
+																</code>
+															) : null}
+															{stage.afterCount != null ? (
+																<code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+																	after {stage.afterCount}
+																</code>
+															) : null}
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									) : null}
 								</div>
 							) : (
 								<div className="text-sm text-muted-foreground">

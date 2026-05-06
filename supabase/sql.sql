@@ -281,6 +281,7 @@ CREATE TABLE public.gateway_requests (
   success boolean NOT NULL DEFAULT false,
   error_code text,
   error_message text,
+  error_payload jsonb,
   latency_ms integer,
   generation_ms integer,
   usage jsonb NOT NULL DEFAULT '{}'::jsonb,

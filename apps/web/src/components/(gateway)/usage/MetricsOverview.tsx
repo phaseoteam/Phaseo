@@ -19,6 +19,7 @@ interface MetricsOverviewProps {
 	colorMap: Record<string, string>;
 	modelMetadata: ModelMetadataMap;
 	validKeyIds?: string[];
+	initialChartData?: ChartDataResult | null;
 }
 
 type MetricType = "requests" | "tokens" | "cost" | null;
@@ -34,6 +35,7 @@ export default function MetricsOverview({
 	colorMap,
 	modelMetadata,
 	validKeyIds = [],
+	initialChartData = null,
 }: MetricsOverviewProps) {
 	const [keyFilter] = useQueryState("key");
 	const [groupBy] = useQueryState<GroupBy>("group", {
@@ -41,50 +43,66 @@ export default function MetricsOverview({
 		parse: parseGroup,
 		serialize: (value) => value,
 	});
-	const [chartData, setChartData] = useState<ChartDataResult | null>(null);
+	const [chartData, setChartData] = useState<ChartDataResult | null>(initialChartData);
 	const [resolvedColorMap, setResolvedColorMap] = useState<Record<string, string>>(colorMap);
 	const [resolvedModelMetadata, setResolvedModelMetadata] =
 		useState<ModelMetadataMap>(new Map(modelMetadata));
-	const [loading, setLoading] = useState(true);
+	const resolvedColorMapRef = React.useRef<Record<string, string>>(colorMap);
+	const resolvedModelMetadataRef = React.useRef<ModelMetadataMap>(
+		new Map(modelMetadata),
+	);
+	const [loading, setLoading] = useState(initialChartData == null);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedMetric, setSelectedMetric] = useState<MetricType>(null);
 	const normalizedKeyFilter =
 		groupBy === "key" && keyFilter && validKeyIds.includes(keyFilter)
 			? keyFilter
 			: null;
+	const chartCacheRef = React.useRef(new Map<string, ChartDataResult>());
+	const chartCacheKey = `${timeRange.from}:${timeRange.to}:${range}:${normalizedKeyFilter ?? ""}`;
 
 	useEffect(() => {
-		const fetchData = async () => {
-			setLoading(true);
-			try {
-				const data = await fetchChartData({
-					timeRange,
-					range,
-					keyFilter: normalizedKeyFilter,
-				});
-				setChartData(data);
+		if (initialChartData) {
+			chartCacheRef.current.set(chartCacheKey, initialChartData);
+		}
+	}, [chartCacheKey, initialChartData]);
 
-				const modelIds = Array.from(
-					new Set(
-						[
-							...data.requestsChart,
-							...data.tokensChart,
-							...data.costChart,
-						].flatMap((row) =>
-							Object.keys(row).filter((key) => key !== "bucket"),
-						),
+	useEffect(() => {
+		const hydrateChartMetadata = async (data: ChartDataResult) => {
+			const modelIds = Array.from(
+				new Set(
+					[
+						...data.requestsChart,
+						...data.tokensChart,
+						...data.costChart,
+					].flatMap((row) =>
+						Object.keys(row).filter((key) => key !== "bucket"),
 					),
-				);
+				),
+			);
 
-				if (modelIds.length > 0) {
-					const [liveColors, liveMetadata] = await Promise.all([
-						fetchOrganizationColors(modelIds),
-						fetchModelMetadata(modelIds),
-					]);
+			if (modelIds.length > 0) {
+				const missingColorModelIds = modelIds.filter(
+					(modelId) => !(modelId in resolvedColorMapRef.current),
+				);
+				const missingMetadataModelIds = modelIds.filter(
+					(modelId) => !resolvedModelMetadataRef.current.has(modelId),
+				);
+				const [liveColors, liveMetadata] = await Promise.all([
+					missingColorModelIds.length > 0
+						? fetchOrganizationColors(missingColorModelIds)
+						: Promise.resolve(new Map<string, string>()),
+					missingMetadataModelIds.length > 0
+						? fetchModelMetadata(missingMetadataModelIds)
+						: Promise.resolve(new Map()),
+				]);
+				if (liveColors.size > 0) {
 					setResolvedColorMap((prev) => ({
 						...prev,
 						...Object.fromEntries(liveColors),
 					}));
+				}
+				if (liveMetadata.size > 0) {
 					setResolvedModelMetadata((prev) => {
 						const merged = new Map(prev);
 						for (const [key, value] of liveMetadata.entries()) {
@@ -93,6 +111,28 @@ export default function MetricsOverview({
 						return merged;
 					});
 				}
+			}
+		};
+
+		const fetchData = async () => {
+			const cached = chartCacheRef.current.get(chartCacheKey);
+			if (cached) {
+				setChartData(cached);
+				setLoading(false);
+				void hydrateChartMetadata(cached);
+				return;
+			}
+
+			setLoading(true);
+			try {
+				const data = await fetchChartData({
+					timeRange,
+					range,
+					keyFilter: normalizedKeyFilter,
+				});
+				chartCacheRef.current.set(chartCacheKey, data);
+				setChartData(data);
+				await hydrateChartMetadata(data);
 			} catch (error) {
 				console.error("Error fetching chart data:", error);
 				setChartData(null);
@@ -102,15 +142,28 @@ export default function MetricsOverview({
 		};
 
 		fetchData();
-	}, [timeRange, range, normalizedKeyFilter]);
+	}, [
+		chartCacheKey,
+		timeRange,
+		range,
+		normalizedKeyFilter,
+	]);
 
 	useEffect(() => {
 		setResolvedColorMap(colorMap);
 	}, [colorMap]);
 
 	useEffect(() => {
+		resolvedColorMapRef.current = resolvedColorMap;
+	}, [resolvedColorMap]);
+
+	useEffect(() => {
 		setResolvedModelMetadata(new Map(modelMetadata));
 	}, [modelMetadata]);
+
+	useEffect(() => {
+		resolvedModelMetadataRef.current = resolvedModelMetadata;
+	}, [resolvedModelMetadata]);
 
 	const handleCardClick = (metric: MetricType) => {
 		setSelectedMetric(metric);

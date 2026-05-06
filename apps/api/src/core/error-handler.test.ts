@@ -86,11 +86,28 @@ describe("extractUpstreamUnsupportedParamSignal", () => {
 
 describe("handleError", () => {
 	it("preserves execute upstream diagnostics for client debugging", async () => {
+		let capturedAuditArgs: any = null;
 		const upstream = new Response(
 			JSON.stringify({
 				error: "upstream_error",
 				reason: "all_candidates_failed",
 				description: "Provider failed.",
+				provider_failure_diagnostics: {
+					category: "credentials_not_configured",
+					hint: "Provider credentials are not configured for this route. Verify gateway keys or the selected BYOK configuration before retrying.",
+					provider: "xiaomi",
+				},
+				routing_diagnostics: {
+					filterStages: [{
+						stage: "capability_status_gate",
+						beforeCount: 1,
+						afterCount: 0,
+						droppedProviders: [{
+							providerId: "xiaomi",
+							reason: "capability_status_internal_testing_requires_testing_mode",
+						}],
+					}],
+				},
 				attempt_count: 1,
 				failed_providers: ["xiaomi"],
 				failed_statuses: [400],
@@ -116,7 +133,9 @@ describe("handleError", () => {
 				requestId: "G-TEST-1",
 				model: "xiaomi/mimo-v2-tts:free",
 			} as any,
-			auditFailure: async () => { },
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
 		});
 			const payload = await res.json();
 			expect(payload.error).toBe("upstream_error");
@@ -125,6 +144,22 @@ describe("handleError", () => {
 			expect(payload.attempt_count).toBe(1);
 			expect(payload.failed_providers).toEqual(["xiaomi"]);
 			expect(payload.failed_statuses).toEqual([400]);
+		expect(payload.routing_diagnostics).toEqual({
+			filterStages: [{
+				stage: "capability_status_gate",
+				beforeCount: 1,
+				afterCount: 0,
+				droppedProviders: [{
+					providerId: "xiaomi",
+					reason: "capability_status_internal_testing_requires_testing_mode",
+				}],
+			}],
+		});
+		expect(payload.provider_failure_diagnostics).toEqual({
+			category: "credentials_not_configured",
+			hint: "Provider credentials are not configured for this route. Verify gateway keys or the selected BYOK configuration before retrying.",
+			provider: "xiaomi",
+		});
 		expect(payload.upstream_error).toEqual({
 			code: "400",
 			message: "Param Incorrect",
@@ -142,9 +177,38 @@ describe("handleError", () => {
 			upstream_payload_preview: "{\"error\":{\"message\":\"Param Incorrect\"}}",
 			retryable: false,
 		}]);
+		expect(capturedAuditArgs?.errorPayload).toMatchObject({
+			error: "upstream_error",
+			reason: "all_candidates_failed",
+			provider_failure_diagnostics: {
+				category: "credentials_not_configured",
+				provider: "xiaomi",
+			},
+			routing_diagnostics: {
+				filterStages: [
+					{
+						stage: "capability_status_gate",
+						beforeCount: 1,
+						afterCount: 0,
+					},
+				],
+			},
+			upstream_error: {
+				code: "400",
+				message: "Param Incorrect",
+				param: "voice",
+			},
+			failure_sample: [
+				expect.objectContaining({
+					provider: "xiaomi",
+					upstream_error_code: "400",
+				}),
+			],
+		});
 	});
 
 	it("surfaces unsupported model diagnostics from before-stage guards", async () => {
+		let capturedAuditArgs: any = null;
 		const upstream = new Response(
 			JSON.stringify({
 				error: "unsupported_model_or_endpoint",
@@ -154,6 +218,13 @@ describe("handleError", () => {
 					totalProviders: 1,
 					supportsEndpointCount: 1,
 					candidateCount: 1,
+					droppedUnsupportedEndpoint: ["anthropic"],
+					droppedMissingAdapter: [
+						{
+							providerId: "openai",
+							endpoint: "moderations",
+						},
+					],
 				},
 				provider_enablement: {
 					capability: "moderations",
@@ -174,7 +245,9 @@ describe("handleError", () => {
 				requestId: "G-TEST-2",
 				model: "openai/omni-moderation",
 			} as any,
-			auditFailure: async () => { },
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
 		});
 			const payload = await res.json();
 			expect(payload.error).toBe("unsupported_model_or_endpoint");
@@ -184,6 +257,13 @@ describe("handleError", () => {
 				totalProviders: 1,
 				supportsEndpointCount: 1,
 				candidateCount: 1,
+				droppedUnsupportedEndpoint: ["anthropic"],
+				droppedMissingAdapter: [
+					{
+						providerId: "openai",
+						endpoint: "moderations",
+					},
+				],
 			});
 		expect(payload.provider_enablement).toEqual({
 			capability: "moderations",
@@ -192,6 +272,21 @@ describe("handleError", () => {
 			dropped: [{ providerId: "openai", reason: "pricing_missing" }],
 		});
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
+		expect(capturedAuditArgs?.errorPayload).toMatchObject({
+			error: "unsupported_model_or_endpoint",
+			reason: "pricing_not_configured",
+			provider_candidate_diagnostics: {
+				totalProviders: 1,
+				supportsEndpointCount: 1,
+				candidateCount: 1,
+			},
+			provider_enablement: {
+				capability: "moderations",
+				providersBefore: ["openai"],
+				providersAfter: [],
+			},
+			missing_pricing_providers: ["openai"],
+		});
 	});
 
 	it("marks pipeline execution failures as gateway-origin errors", async () => {

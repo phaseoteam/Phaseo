@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
 import Link from "next/link";
 import {
@@ -37,13 +38,14 @@ import {
 	AppWindow,
 } from "lucide-react";
 import {
-	fetchPaginatedRequests,
-	fetchModelMetadata,
-	PaginatedRequestsParams,
-	type ProviderMetadataEntry,
-	RequestRow,
+        fetchPaginatedRequests,
+        investigateGeneration,
+        fetchModelMetadata,
+        PaginatedRequestsParams,
+        type InvestigateGenerationResult,
+        type ProviderMetadataEntry,
+        RequestRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
-import RequestDetailDialog from "./RequestDetailDialog";
 import { exportToCSV, exportToPDF } from "./export-utils";
 import ExportDropdown from "./ExportDropdown";
 import { cn } from "@/lib/utils";
@@ -53,9 +55,13 @@ import {
 	formatDateTime,
 	formatWordyDateTime,
 } from "@/lib/gateway/usage/timeFormatting";
+import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { buildUsageDisplay, extractUsageMeters, formatUsageNumber } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import { toast } from "sonner";
+
+const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
 interface UnifiedRequestsTableProps {
 	timeRange: { from: string; to: string };
@@ -63,6 +69,10 @@ interface UnifiedRequestsTableProps {
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
 	providerMetadata: Map<string, ProviderMetadataEntry>;
+	initialPage: number;
+	initialRows: RequestRow[];
+	initialTotal: number;
+	initialTotalPages: number;
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
 	>;
@@ -106,6 +116,10 @@ export default function UnifiedRequestsTable({
 	modelMetadata,
 	providerNames,
 	providerMetadata,
+	initialPage,
+	initialRows,
+	initialTotal,
+	initialTotalPages,
 	onExportRef,
 }: UnifiedRequestsTableProps) {
 	const userTimeZone =
@@ -146,18 +160,30 @@ export default function UnifiedRequestsTable({
 
 	// Local state
 	const [pageCache, setPageCache] = useState<Map<number, RequestRow[]>>(
-		new Map(),
+		() => new Map([[initialPage, initialRows]]),
 	);
-	const [total, setTotal] = useState(0);
-	const [totalPages, setTotalPages] = useState(0);
-	const [loading, setLoading] = useState(true);
+	const [total, setTotal] = useState(initialTotal);
+	const [totalPages, setTotalPages] = useState(initialTotalPages);
+	const [loading, setLoading] = useState(false);
 	const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
-	const [selectedRequest, setSelectedRequest] = useState<RequestRow | null>(
-		null,
-	);
-	const [resolvedModelMetadata, setResolvedModelMetadata] =
-		useState<ModelMetadataMap>(new Map(modelMetadata));
-	const [dialogOpen, setDialogOpen] = useState(false);
+        const [selectedRequest, setSelectedRequest] = useState<RequestRow | null>(
+                null,
+        );
+        const [selectedAppName, setSelectedAppName] = useState<string | null>(
+                null,
+        );
+        const [resolvedModelMetadata, setResolvedModelMetadata] =
+                useState<ModelMetadataMap>(new Map(modelMetadata));
+        const [resolvedProviderNames, setResolvedProviderNames] = useState<
+                Map<string, string>
+        >(new Map(providerNames));
+        const [resolvedProviderMetadata, setResolvedProviderMetadata] = useState<
+                Map<string, ProviderMetadataEntry>
+        >(new Map(providerMetadata));
+        const [dialogOpen, setDialogOpen] = useState(false);
+        const detailCacheRef = React.useRef(
+                new Map<string, InvestigateGenerationResult>(),
+        );
 
 	// Build cache key from filters
 	const getCacheKey = useCallback(() => {
@@ -210,8 +236,11 @@ export default function UnifiedRequestsTable({
 							),
 					),
 				);
-				if (pageModelIds.length > 0) {
-					const liveMetadata = await fetchModelMetadata(pageModelIds);
+				const missingModelIds = pageModelIds.filter(
+					(modelId) => !resolvedModelMetadata.has(modelId),
+				);
+				if (missingModelIds.length > 0) {
+					const liveMetadata = await fetchModelMetadata(missingModelIds);
 					setResolvedModelMetadata((prev) => {
 						const merged = new Map(prev);
 						for (const [key, value] of liveMetadata.entries()) {
@@ -259,6 +288,7 @@ export default function UnifiedRequestsTable({
 			sessionFilter,
 			sortField,
 			sortDir,
+			resolvedModelMetadata,
 		],
 	);
 
@@ -277,9 +307,24 @@ export default function UnifiedRequestsTable({
 		}
 	}, [getCacheKey, currentCacheKey, setPage]);
 
+        useEffect(() => {
+                setResolvedModelMetadata(new Map(modelMetadata));
+        }, [modelMetadata]);
+
+        useEffect(() => {
+                setResolvedProviderNames(new Map(providerNames));
+        }, [providerNames]);
+
+        useEffect(() => {
+                setResolvedProviderMetadata(new Map(providerMetadata));
+        }, [providerMetadata]);
+
 	useEffect(() => {
-		setResolvedModelMetadata(new Map(modelMetadata));
-	}, [modelMetadata]);
+		setPageCache(new Map([[initialPage, initialRows]]));
+		setTotal(initialTotal);
+		setTotalPages(initialTotalPages);
+		setLoading(false);
+	}, [initialPage, initialRows, initialTotal, initialTotalPages]);
 
 	useEffect(() => registerUsageViewRefresher("logs", refreshCurrentView), [refreshCurrentView]);
 
@@ -321,10 +366,70 @@ export default function UnifiedRequestsTable({
 		setPage(1);
 	};
 
-	const handleRowClick = (request: RequestRow) => {
-		setSelectedRequest(request);
-		setDialogOpen(true);
-	};
+        const applyInvestigatedResult = useCallback(
+                (result: InvestigateGenerationResult) => {
+                        setSelectedRequest(result.request);
+                        setSelectedAppName(result.appName ?? null);
+                        setResolvedModelMetadata((prev) => {
+                                const merged = new Map(prev);
+                                for (const [key, value] of result.modelMetadata ?? []) {
+                                        merged.set(key, value);
+                                }
+                                return merged;
+                        });
+                        setResolvedProviderNames((prev) => {
+                                const merged = new Map(prev);
+                                for (const [key, value] of result.providerNames ?? []) {
+                                        merged.set(key, value);
+                                }
+                                return merged;
+                        });
+                        setResolvedProviderMetadata((prev) => {
+                                const merged = new Map(prev);
+                                for (const [key, value] of result.providerMetadata ?? []) {
+                                        merged.set(key, value);
+                                }
+                                return merged;
+                        });
+                        setDialogOpen(true);
+                },
+                [],
+        );
+
+        const handleRowClick = useCallback(
+                async (request: RequestRow) => {
+                        const requestId =
+                                typeof request.request_id === "string"
+                                        ? request.request_id.trim()
+                                        : "";
+                        if (!requestId) {
+                                setSelectedRequest(request);
+                                setSelectedAppName(request.app_title ?? null);
+                                setDialogOpen(true);
+                                return;
+                        }
+
+                        const cached = detailCacheRef.current.get(requestId);
+                        if (cached) {
+                                applyInvestigatedResult(cached);
+                                return;
+                        }
+
+                        const response = await investigateGeneration(requestId);
+                        if (!response.success || !response.data) {
+                                setSelectedRequest(request);
+                                setSelectedAppName(request.app_title ?? null);
+                                setDialogOpen(true);
+                                if (response.error) toast.error(response.error);
+                                return;
+                        }
+
+                        const result = response.data as InvestigateGenerationResult;
+                        detailCacheRef.current.set(requestId, result);
+                        applyInvestigatedResult(result);
+                },
+                [applyInvestigatedResult],
+        );
 
 	const handleExport = React.useCallback(
 		(format: "csv" | "pdf") => {
@@ -353,7 +458,7 @@ export default function UnifiedRequestsTable({
 					"Input Tokens": formatUsageNumber(inputTokens),
 					"Output Tokens": formatUsageNumber(outputTokens),
 					Cost: formatCost(row.cost_nanos),
-					"Speed (ms)": row.generation_ms || row.latency_ms || "-",
+					"Generation (ms)": row.generation_ms || row.latency_ms || "-",
 					"Finish Reason": row.finish_reason || "-",
 					Status: row.success ? "Success" : "Error",
 				};
@@ -420,6 +525,7 @@ export default function UnifiedRequestsTable({
 				<div className="space-y-3 md:hidden">
 					{data.map((row, index) => {
 						const usageDisplay = buildUsageDisplay(row.usage);
+						const errorSummary = row.success ? null : formatErrorListSummary(row);
 						const rowKey = `mobile-${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
 						const modelHref = getModelDetailsHref(row.model_id);
 						const modelMeta = row.model_id
@@ -451,7 +557,7 @@ export default function UnifiedRequestsTable({
 									"w-full rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40",
 									loading && "opacity-50",
 								)}
-								onClick={() => handleRowClick(row)}
+                                                                onClick={() => void handleRowClick(row)}
 							>
 								<div className="flex items-start justify-between gap-3">
 									<div className="min-w-0">
@@ -509,6 +615,11 @@ export default function UnifiedRequestsTable({
 										</div>
 									</div>
 								</div>
+								{errorSummary ? (
+									<div className="mt-2 text-xs text-rose-700 line-clamp-2">
+										{errorSummary}
+									</div>
+								) : null}
 
 								<div className="mt-3 flex flex-wrap items-center gap-2">
 									{row.provider ? (
@@ -709,6 +820,7 @@ export default function UnifiedRequestsTable({
 								{/* Show cached data with optional loading overlay */}
 								{data.map((row, index) => {
 									const usageDisplay = buildUsageDisplay(row.usage);
+									const errorSummary = row.success ? null : formatErrorListSummary(row);
 									const rowKey = `${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
 									const modelHref = getModelDetailsHref(row.model_id);
 									const modelMeta = row.model_id
@@ -739,7 +851,7 @@ export default function UnifiedRequestsTable({
 												loading && "opacity-50",
 												"cursor-pointer hover:bg-muted/40",
 											)}
-											onClick={() => handleRowClick(row)}
+                                                                                onClick={() => void handleRowClick(row)}
 										>
 											<TableCell className="py-2 font-mono text-xs">
 												<HoverCard>
@@ -936,23 +1048,30 @@ export default function UnifiedRequestsTable({
 												{row.finish_reason || "-"}
 											</TableCell>
 											<TableCell className="py-2">
-												{row.success ? (
-													<Badge
-														variant="outline"
-														className="bg-green-50 text-green-700 border-green-200"
-													>
-														<CheckCircle2 className="mr-1 h-3 w-3" />
-														Success
-													</Badge>
-												) : (
-													<Badge
-														variant="outline"
-														className="bg-red-50 text-red-700 border-red-200"
-													>
-														<XCircle className="mr-1 h-3 w-3" />
-														Error
-													</Badge>
-												)}
+												<div className="space-y-1">
+													{row.success ? (
+														<Badge
+															variant="outline"
+															className="bg-green-50 text-green-700 border-green-200"
+														>
+															<CheckCircle2 className="mr-1 h-3 w-3" />
+															Success
+														</Badge>
+													) : (
+														<Badge
+															variant="outline"
+															className="bg-red-50 text-red-700 border-red-200"
+														>
+															<XCircle className="mr-1 h-3 w-3" />
+															Error
+														</Badge>
+													)}
+													{errorSummary ? (
+														<div className="max-w-[220px] text-xs text-rose-700 line-clamp-2">
+															{errorSummary}
+														</div>
+													) : null}
+												</div>
 											</TableCell>
 										</TableRow>
 									);
@@ -1019,26 +1138,22 @@ export default function UnifiedRequestsTable({
 			</div>
 
 			{/* Detail Dialog */}
-			<RequestDetailDialog
-				open={dialogOpen}
-				onOpenChange={setDialogOpen}
-				request={selectedRequest}
-				modelMetadata={resolvedModelMetadata}
-				providerNames={providerNames}
-				providerMetadata={providerMetadata}
-				providerName={
-					selectedRequest?.provider
-						? providerNames.get(selectedRequest.provider) || selectedRequest.provider
-						: null
-				}
-				appName={
-					selectedRequest?.app_id
-						? normalizeNonEmpty(selectedRequest.app_title) ??
-							normalizeNonEmpty(appNames.get(selectedRequest.app_id)) ??
-							"Unknown app"
-						: null
-				}
-			/>
+                        <RequestDetailDialog
+                                open={dialogOpen}
+                                onOpenChange={setDialogOpen}
+                                request={selectedRequest}
+                                modelMetadata={resolvedModelMetadata}
+                                providerNames={resolvedProviderNames}
+                                providerMetadata={resolvedProviderMetadata}
+                                providerName={
+                                        selectedRequest?.provider
+                                                ? resolvedProviderNames.get(
+                                                          selectedRequest.provider,
+                                                  ) || selectedRequest.provider
+                                                : null
+                                }
+                                appName={selectedAppName}
+                        />
 		</div>
 	);
 }

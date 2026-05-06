@@ -51,6 +51,45 @@ async function insertGatewayRequest(row: any) {
     return data as { id: string; created_at: string; workspace_id: string };
 }
 
+function normalizeJsonValue(value: unknown): unknown {
+    if (value === undefined) return null;
+    if (value === null) return null;
+    if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+    ) {
+        return value;
+    }
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return null;
+    }
+}
+
+function extractReplayContent(value: unknown): unknown {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const payload = value as Record<string, unknown>;
+    if (Array.isArray(payload.messages)) return payload.messages;
+    if (Array.isArray(payload.input)) return payload.input;
+    if (Array.isArray(payload.input_items)) return payload.input_items;
+    if (Array.isArray(payload.contents)) return payload.contents;
+    return null;
+}
+
+async function insertGatewayRequestDetails(row: any) {
+    const client = supaAdmin();
+    const { error } = await client
+        .from("gateway_request_details")
+        .insert(row);
+    if (error) {
+        const err = new Error(`[audit] insert gateway_request_details error: ${error?.message ?? "unknown"}`);
+        (err as any).cause = error;
+        throw err;
+    }
+}
+
 async function syncInsertedRequestRollup(
     insertedRow: { id: string; created_at: string; workspace_id: string } | null | undefined,
     context: string,
@@ -89,6 +128,7 @@ function buildSupaRow(args: {
     providerAttempts?: Array<Record<string, unknown>> | null;
     statusCode?: number | null; success: boolean;
     errorCode?: string | null; errorMessage?: string | null;
+    errorPayload?: Record<string, unknown> | null;
     appId?: string | null; keyId?: string | null;
     latencyMs?: number | null; generationMs?: number | null;
     usage?: any | null; costNanos?: number | null; currency?: string | null;
@@ -122,6 +162,10 @@ function buildSupaRow(args: {
         success: !!args.success,
         error_code: args.errorCode ?? null,
         error_message: args.errorMessage ?? null,
+        error_payload:
+            args.errorPayload && typeof args.errorPayload === "object"
+                ? args.errorPayload
+                : null,
         latency_ms: args.latencyMs ?? null,
         generation_ms: args.generationMs ?? null,
         usage: args.usage ?? {},
@@ -174,6 +218,12 @@ export async function auditSuccess(args: {
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
     extraJson?: string | null;
+    errorPayload?: Record<string, unknown> | null;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
+    providerRequest?: unknown;
+    providerResponse?: unknown;
+    detailMetadata?: Record<string, unknown> | null;
     // Wide event enrichment
     teamEnrichment?: any | null;
     keyEnrichment?: any | null;
@@ -222,6 +272,7 @@ export async function auditSuccess(args: {
             success: true,
             errorCode: null,
             errorMessage: null,
+            errorPayload: null,
             appId,
             keyId: args.keyId ?? null,
             latencyMs: args.latencyMs ?? null,
@@ -244,6 +295,30 @@ export async function auditSuccess(args: {
             const insertedRow = await retryWithBackoff(
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
+            );
+            await retryWithBackoff(
+                () =>
+                    insertGatewayRequestDetails({
+                        gateway_request_id: insertedRow.id,
+                        gateway_request_created_at: insertedRow.created_at,
+                        request_id: args.requestId,
+                        workspace_id: args.workspaceId,
+                        app_id: appId ?? null,
+                        key_id: args.keyId ?? null,
+                        endpoint: args.endpoint,
+                        model_id: args.model,
+                        provider: args.provider ?? null,
+                        status_code: args.statusCode,
+                        success: true,
+                        request_payload: normalizeJsonValue(args.requestPayload) ?? {},
+                        request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
+                        gateway_response: normalizeJsonValue(args.gatewayResponse),
+                        response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
+                        provider_request: normalizeJsonValue(args.providerRequest),
+                        provider_response: normalizeJsonValue(args.providerResponse),
+                        metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                    }),
+                "supabase_audit_success_details_insert",
             );
             await syncInsertedRequestRollup(insertedRow, "audit_success");
         } catch (err) {
@@ -283,6 +358,7 @@ type AuditFailureBefore = {
     sessionId?: string | null;
     traceData?: Record<string, unknown> | null;
     providerAttempts?: Array<Record<string, unknown>> | null;
+    errorPayload?: Record<string, unknown> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -292,6 +368,10 @@ type AuditFailureBefore = {
     edgeContinent?: string | null;
     edgeAsn?: number | null;
     extraJson?: string | null;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
+    providerResponse?: unknown;
+    detailMetadata?: Record<string, unknown> | null;
 };
 type AuditFailureExecute = {
     stage: "execute";
@@ -323,6 +403,7 @@ type AuditFailureExecute = {
     sessionId?: string | null;
     traceData?: Record<string, unknown> | null;
     providerAttempts?: Array<Record<string, unknown>> | null;
+    errorPayload?: Record<string, unknown> | null;
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
@@ -332,6 +413,11 @@ type AuditFailureExecute = {
     edgeContinent?: string | null;
     edgeAsn?: number | null;
     extraJson?: string | null;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
+    providerRequest?: unknown;
+    providerResponse?: unknown;
+    detailMetadata?: Record<string, unknown> | null;
 };
 
 export async function auditFailure(args: AuditFailureBefore | AuditFailureExecute) {
@@ -367,20 +453,21 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 statusCode: args.statusCode,
                 success: false,
                 errorCode: args.errorCode,
-            errorMessage: args.errorMessage ?? null,
-            appId: resolvedAppId,
-            latencyMs: args.latencyMs ?? null,
-            generationMs: null,
-            usage: {},
-            currency: null,
-            pricingLines: [],
-            keyId: args.keyId ?? null,
-            edgeColo: args.edgeColo ?? null,
-            edgeCity: args.edgeCity ?? null,
-            edgeCountry: args.edgeCountry ?? null,
-            edgeContinent: args.edgeContinent ?? null,
-            edgeAsn: args.edgeAsn ?? null,
-        });
+                errorMessage: args.errorMessage ?? null,
+                errorPayload: args.errorPayload ?? null,
+                appId: resolvedAppId,
+                latencyMs: args.latencyMs ?? null,
+                generationMs: null,
+                usage: {},
+                currency: null,
+                pricingLines: [],
+                keyId: args.keyId ?? null,
+                edgeColo: args.edgeColo ?? null,
+                edgeCity: args.edgeCity ?? null,
+                edgeCountry: args.edgeCountry ?? null,
+                edgeContinent: args.edgeContinent ?? null,
+                edgeAsn: args.edgeAsn ?? null,
+            });
 
             let supabaseError: Error | null = null;
             if (args.workspaceId) {
@@ -388,6 +475,30 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     const insertedRow = await retryWithBackoff(
                         () => insertGatewayRequest(row),
                         "supabase_audit_failure_before_insert",
+                    );
+                    await retryWithBackoff(
+                        () =>
+                            insertGatewayRequestDetails({
+                                gateway_request_id: insertedRow.id,
+                                gateway_request_created_at: insertedRow.created_at,
+                                request_id: args.requestId,
+                                workspace_id: args.workspaceId,
+                                app_id: resolvedAppId ?? null,
+                                key_id: args.keyId ?? null,
+                                endpoint: args.endpoint,
+                                model_id: args.model ?? "unknown",
+                                provider: null,
+                                status_code: args.statusCode,
+                                success: false,
+                                request_payload: normalizeJsonValue(args.requestPayload) ?? {},
+                                request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
+                                gateway_response: normalizeJsonValue(args.gatewayResponse),
+                                response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
+                                provider_request: null,
+                                provider_response: normalizeJsonValue(args.providerResponse),
+                                metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                            }),
+                        "supabase_audit_failure_before_details_insert",
                     );
                     await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
                 } catch (err) {
@@ -428,6 +539,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             success: false,
             errorCode: args.errorCode,
             errorMessage: args.errorMessage ?? null,
+            errorPayload: args.errorPayload ?? null,
             appId: resolvedAppId,
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
@@ -448,6 +560,30 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 const insertedRow = await retryWithBackoff(
                     () => insertGatewayRequest(row),
                     "supabase_audit_failure_execute_insert",
+                );
+                await retryWithBackoff(
+                    () =>
+                        insertGatewayRequestDetails({
+                            gateway_request_id: insertedRow.id,
+                            gateway_request_created_at: insertedRow.created_at,
+                            request_id: args.requestId,
+                            workspace_id: args.workspaceId,
+                            app_id: resolvedAppId ?? null,
+                            key_id: args.keyId ?? null,
+                            endpoint: args.endpoint,
+                            model_id: args.model,
+                            provider: args.provider ?? null,
+                            status_code: args.statusCode,
+                            success: false,
+                            request_payload: normalizeJsonValue(args.requestPayload) ?? {},
+                            request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
+                            gateway_response: normalizeJsonValue(args.gatewayResponse),
+                            response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
+                            provider_request: normalizeJsonValue(args.providerRequest),
+                            provider_response: normalizeJsonValue(args.providerResponse),
+                            metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                        }),
+                    "supabase_audit_failure_execute_details_insert",
                 );
                 await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
             } catch (err) {

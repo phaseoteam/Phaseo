@@ -14,7 +14,12 @@ import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { investigateGeneration } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "../RequestDetailDialog";
-import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type {
+	InvestigateGenerationResult,
+	ProviderMetadataEntry,
+	RequestRow,
+} from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { ModelMetadataMap } from "../model-display";
 
 interface InvestigateGenerationProps {
 	iconOnly?: boolean;
@@ -27,27 +32,63 @@ export default function InvestigateGeneration({
 	const [id, setId] = React.useState("");
 	const [loading, setLoading] = React.useState(false);
 	const [request, setRequest] = React.useState<RequestRow | null>(null);
+	const [appName, setAppName] = React.useState<string | null>(null);
+	const [modelMetadata, setModelMetadata] = React.useState<ModelMetadataMap>(
+		new Map(),
+	);
+	const [providerNames, setProviderNames] = React.useState<Map<string, string>>(
+		new Map(),
+	);
+	const [providerMetadata, setProviderMetadata] = React.useState<
+		Map<string, ProviderMetadataEntry>
+	>(new Map());
 	const [detailOpen, setDetailOpen] = React.useState(false);
+	const lookupCacheRef = React.useRef(
+		new Map<string, InvestigateGenerationResult>(),
+	);
 
 	async function onSubmit(e: React.FormEvent) {
 		e.preventDefault();
-		if (!id.trim()) {
+		const trimmedId = id.trim();
+		if (!trimmedId) {
 			toast.error("Please enter a request ID");
 			return;
 		}
 
 		try {
+			const cached = lookupCacheRef.current.get(trimmedId);
+			if (cached) {
+				setRequest(cached.request);
+				setAppName(cached.appName ?? null);
+				setModelMetadata(new Map(cached.modelMetadata ?? []));
+				setProviderNames(new Map(cached.providerNames ?? []));
+				setProviderMetadata(new Map(cached.providerMetadata ?? []));
+				setOpen(false);
+				setDetailOpen(true);
+				return;
+			}
+
 			setLoading(true);
 			setRequest(null);
+			setAppName(null);
+			setModelMetadata(new Map());
+			setProviderNames(new Map());
+			setProviderMetadata(new Map());
 
-			const response = await investigateGeneration(id.trim());
+			const response = await investigateGeneration(trimmedId);
 
 			if (!response.success) {
 				toast.error(response.error || "Failed to fetch request");
 				return;
 			}
 
-			setRequest(response.data as RequestRow);
+			const result = response.data as InvestigateGenerationResult;
+			lookupCacheRef.current.set(trimmedId, result);
+			setRequest(result.request as RequestRow);
+			setAppName(result.appName ?? null);
+			setModelMetadata(new Map(result.modelMetadata ?? []));
+			setProviderNames(new Map(result.providerNames ?? []));
+			setProviderMetadata(new Map(result.providerMetadata ?? []));
 			setOpen(false);
 			setDetailOpen(true);
 		} catch (error) {
@@ -95,7 +136,15 @@ export default function InvestigateGeneration({
 				open={detailOpen}
 				onOpenChange={setDetailOpen}
 				request={request}
-				appName={null}
+				appName={appName}
+				modelMetadata={modelMetadata}
+				providerNames={providerNames}
+				providerMetadata={providerMetadata}
+				providerName={
+					request?.provider
+						? providerNames.get(request.provider) || request.provider
+						: null
+				}
 			/>
 		</>
 	);
