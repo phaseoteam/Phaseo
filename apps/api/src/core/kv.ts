@@ -21,9 +21,27 @@ type KeyVersionL1Entry = {
     expiresAt: number;
 };
 const keyVersionL1Cache = new Map<string, KeyVersionL1Entry>();
+const keyVersionInflight = new Map<string, Promise<number>>();
+const keyVersionEpochs = new Map<string, number>();
+
+export function __resetKeyVersionL1ForTests(): void {
+	keyVersionL1Cache.clear();
+	keyVersionInflight.clear();
+	keyVersionEpochs.clear();
+}
 
 function keyVersionKey(scope: "kid" | "id", value: string): string {
     return `${KEY_VERSION_PREFIX}:${scope}:${value}`;
+}
+
+function readKeyVersionEpoch(key: string): number {
+	return keyVersionEpochs.get(key) ?? 0;
+}
+
+function bumpKeyVersionEpoch(key: string): number {
+	const next = readKeyVersionEpoch(key) + 1;
+	keyVersionEpochs.set(key, next);
+	return next;
 }
 
 function readKeyVersionL1(scope: "kid" | "id", value: string): number | null {
@@ -84,6 +102,7 @@ export async function getKeyVersion(
         l1TtlMs?: number;
     }
 ): Promise<number> {
+    const key = keyVersionKey(scope, value);
     const useL1Cache = options?.useL1Cache ?? false;
     const l1TtlMs = options?.l1TtlMs ?? KEY_VERSION_L1_CACHE_TTL_MS;
     if (useL1Cache) {
@@ -91,24 +110,40 @@ export async function getKeyVersion(
         if (cached !== null) {
             return cached;
         }
+        const inflight = keyVersionInflight.get(key);
+        if (inflight) return inflight;
     }
-    try {
-        const raw = await getCache().get(keyVersionKey(scope, value), "text");
-        const parsed = raw ? Number(raw) : 0;
-        const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-        if (useL1Cache) {
-            writeKeyVersionL1(scope, value, normalized, l1TtlMs);
+    const epochAtStart = readKeyVersionEpoch(key);
+    const loader = (async () => {
+        try {
+            const raw = await getCache().get(key, "text");
+            const parsed = raw ? Number(raw) : 0;
+            const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+            if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart) {
+                writeKeyVersionL1(scope, value, normalized, l1TtlMs);
+            }
+            return normalized;
+        } catch {
+            // Fail open: if KV is unavailable, use version 0 to keep requests serving.
+            return 0;
+        } finally {
+            if (useL1Cache && keyVersionInflight.get(key) === loader) {
+                keyVersionInflight.delete(key);
+            }
         }
-        return normalized;
-    } catch {
-        // Fail open: if KV is unavailable, use version 0 to keep requests serving.
-        return 0;
+    })();
+    if (useL1Cache) {
+        keyVersionInflight.set(key, loader);
     }
+    return loader;
 }
 
 export async function setKeyVersion(scope: "kid" | "id", value: string, version: number): Promise<number> {
     const next = Number.isFinite(version) ? Math.max(0, Math.floor(version)) : Date.now();
-    await getCache().put(keyVersionKey(scope, value), String(next));
+    const key = keyVersionKey(scope, value);
+    bumpKeyVersionEpoch(key);
+    keyVersionInflight.delete(key);
+    await getCache().put(key, String(next));
     writeKeyVersionL1(scope, value, next, KEY_VERSION_L1_CACHE_TTL_MS);
     return next;
 }

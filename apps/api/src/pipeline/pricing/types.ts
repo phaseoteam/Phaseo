@@ -23,10 +23,13 @@ export type PricingDimensionKey =
     | "input_video_tokens"
     | "output_tokens"
     | "output_text_tokens"
+    | "output_reasoning_tokens"
     | "output_image_tokens"
     | "output_audio_tokens"
     | "output_video_tokens"
     | "output_image"
+    | "output_video"
+    | "output_video_seconds"
     | "cached_write_text_tokens"
     | "cached_write_image_tokens"
     | "cached_write_audio_tokens"
@@ -36,6 +39,7 @@ export type PricingDimensionKey =
     | "cached_read_video_tokens"
     | "cached_read_audio_tokens"
     | "embedding_tokens"
+    | "bfl_credits"
     | "requests";
 
 export type ConditionOp =

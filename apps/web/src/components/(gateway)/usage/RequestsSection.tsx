@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import UnifiedRequestsTable from "./UnifiedRequestsTable";
@@ -10,11 +9,12 @@ import InvestigateGeneration from "./UsageHeader/InvestigateGeneration";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
-import {
-	type ModelMetadataMap,
-} from "./model-display";
-import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";
-import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import { runUsageViewRefresh } from "@/lib/gateway/usage/refreshBus";
+import type {
+	ProviderMetadataEntry,
+	RequestRow,
+} from "@/app/(dashboard)/gateway/usage/server-actions";
+import { type ModelMetadataMap } from "./model-display";
 
 interface RequestsSectionProps {
 	title?: string;
@@ -41,7 +41,6 @@ export default function RequestsSection({
 	initialTotal,
 	initialTotalPages,
 }: RequestsSectionProps) {
-	const router = useRouter();
 	const exportRef = useRef<((format: "csv" | "pdf") => void) | null>(null);
 	const [refreshing, setRefreshing] = React.useState(false);
 
@@ -54,8 +53,10 @@ export default function RequestsSection({
 	async function onRefresh() {
 		try {
 			setRefreshing(true);
-			const res = await revalidateUsage();
-			router.refresh();
+			const res = await revalidateUsage("logs");
+			if (res?.ok) {
+				await runUsageViewRefresh("logs");
+			}
 			if (res?.ok) toast.success("Refresh Successful");
 			else toast.error("Refresh Failed");
 		} catch {

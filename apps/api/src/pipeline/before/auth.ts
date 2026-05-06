@@ -198,6 +198,10 @@ type KeyLookupL1Entry = {
 };
 const keyLookupL1Cache = new Map<string, KeyLookupL1Entry>();
 
+export function __resetAuthCachesForTests(): void {
+	keyLookupL1Cache.clear();
+}
+
 function keyLookupL1Key(kid: string, versionToken: string): string {
     return `${kid}:${versionToken}`;
 }

@@ -11,6 +11,12 @@ export type ResolvedKey = {
     byokId: string | null;
 };
 
+function providerKeyError(code: string): Error & { code: string } {
+    const error = new Error(code) as Error & { code: string };
+    error.code = code;
+    return error;
+}
+
 function orderedMetas(metaList: ByokKeyMeta[]): ByokKeyMeta[] {
     return [...metaList].sort((a, b) => {
         if (a.alwaysUse === b.alwaysUse) return 0;
@@ -49,6 +55,6 @@ export function resolveProviderKey(
         return { key: "", source: "gateway", byokId: null };
     }
 
-    throw new Error(`${args.providerId}_key_missing`);
+    throw providerKeyError(`${args.providerId}_key_missing`);
 }
 

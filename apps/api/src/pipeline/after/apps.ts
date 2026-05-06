@@ -4,6 +4,42 @@
 // How: Resolves app attribution and persists app metadata.
 
 import { getSupabaseAdmin } from "@/runtime/env";
+const ENSURE_APP_ID_L1_TTL_MS = 5_000;
+
+type EnsureAppIdCacheEntry = {
+	id: string;
+	expiresAtMs: number;
+};
+
+const ensureAppIdL1 = new Map<string, EnsureAppIdCacheEntry>();
+const ensureAppIdInflight = new Map<string, Promise<string | null>>();
+
+function ensureAppIdCacheKey(workspaceId: string, appKey: string): string {
+	return `${workspaceId}:${appKey}`;
+}
+
+function readEnsureAppIdL1(cacheKey: string): string | null | undefined {
+	const entry = ensureAppIdL1.get(cacheKey);
+	if (!entry) return undefined;
+	if (entry.expiresAtMs <= Date.now()) {
+		ensureAppIdL1.delete(cacheKey);
+		return undefined;
+	}
+	return entry.id;
+}
+
+function writeEnsureAppIdL1(cacheKey: string, id: string, ttlMs = ENSURE_APP_ID_L1_TTL_MS): void {
+	if (!Number.isFinite(ttlMs) || ttlMs <= 0) return;
+	ensureAppIdL1.set(cacheKey, {
+		id,
+		expiresAtMs: Date.now() + ttlMs,
+	});
+}
+
+export function __resetEnsureAppIdCacheForTests(): void {
+	ensureAppIdL1.clear();
+	ensureAppIdInflight.clear();
+}
 
 function normalizeUrl(input?: string | null): string | null {
     if (!input) return null;
@@ -139,87 +175,109 @@ export async function ensureAppId(params: {
     const normalizedAppId = normalizeAppId(appId);
     const identityUrl = deriveIdentityUrl({ referer, appId, appTitle, appName });
     const app_key = deriveAppKey(identityUrl);
+    const cacheKey = ensureAppIdCacheKey(workspaceId, app_key);
+    const cachedId = readEnsureAppIdL1(cacheKey);
+    if (cachedId !== undefined) return cachedId;
 
-    const supabase = getSupabaseAdmin();
-    const nowIso = new Date().toISOString();
-    const inferredTitle = deriveInferredTitle({
-        appName,
-        appTitle,
-        identityUrl,
-        normalizedAppId,
-    });
-    const payload = {
-        workspace_id: workspaceId,
-        app_key,
-        title: inferredTitle,
-        url: identityUrl,
-        is_active: true,
-        last_seen: nowIso,
-        updated_at: nowIso,
-        meta: {
-            referer: referer ?? null,
-            appTitle: appTitle ?? null,
-            appId: normalizedAppId ?? null,
-            appName: appName ?? null,
+    const inflight = ensureAppIdInflight.get(cacheKey);
+    if (inflight) return inflight;
+
+    const loader = (async (): Promise<string | null> => {
+        const supabase = getSupabaseAdmin();
+        const nowIso = new Date().toISOString();
+        const inferredTitle = deriveInferredTitle({
+            appName,
+            appTitle,
             identityUrl,
-        },
-    };
+            normalizedAppId,
+        });
+        const payload = {
+            workspace_id: workspaceId,
+            app_key,
+            title: inferredTitle,
+            url: identityUrl,
+            is_active: true,
+            last_seen: nowIso,
+            updated_at: nowIso,
+            meta: {
+                referer: referer ?? null,
+                appTitle: appTitle ?? null,
+                appId: normalizedAppId ?? null,
+                appName: appName ?? null,
+                identityUrl,
+            },
+        };
 
-    const findExistingId = async (): Promise<string | null> => {
-        const { data, error } = await supabase
+        const findExistingId = async (): Promise<string | null> => {
+            const { data, error } = await supabase
+                .from("api_apps")
+                .select("id")
+                .eq("workspace_id", workspaceId)
+                .eq("app_key", app_key)
+                .order("last_seen", { ascending: false })
+                .limit(1);
+            if (error) {
+                console.error("ensureAppId lookup error:", error);
+                return null;
+            }
+            const first = Array.isArray(data) ? data[0] : null;
+            return typeof first?.id === "string" ? first.id : null;
+        };
+
+        const existingId = await findExistingId();
+        if (existingId) {
+            const { error: updateError } = await supabase
+                .from("api_apps")
+                .update({
+                    title: payload.title,
+                    url: payload.url,
+                    is_active: true,
+                    last_seen: nowIso,
+                    updated_at: nowIso,
+                    meta: payload.meta,
+                })
+                .eq("id", existingId)
+                .eq("workspace_id", workspaceId);
+            if (updateError) {
+                console.error("ensureAppId update error:", updateError);
+            }
+            writeEnsureAppIdL1(cacheKey, existingId);
+            return existingId;
+        }
+
+        const { data: inserted, error: insertError } = await supabase
             .from("api_apps")
+            .insert(payload)
             .select("id")
-            .eq("workspace_id", workspaceId)
-            .eq("app_key", app_key)
-            .order("last_seen", { ascending: false })
-            .limit(1);
-        if (error) {
-            console.error("ensureAppId lookup error:", error);
-            return null;
+            .single();
+
+        if (!insertError && inserted?.id) {
+            writeEnsureAppIdL1(cacheKey, inserted.id);
+            return inserted.id;
         }
-        const first = Array.isArray(data) ? data[0] : null;
-        return typeof first?.id === "string" ? first.id : null;
-    };
 
-    const existingId = await findExistingId();
-    if (existingId) {
-        const { error: updateError } = await supabase
-            .from("api_apps")
-            .update({
-                title: payload.title,
-                url: payload.url,
-                is_active: true,
-                last_seen: nowIso,
-                updated_at: nowIso,
-                meta: payload.meta,
-            })
-            .eq("id", existingId)
-            .eq("workspace_id", workspaceId);
-        if (updateError) {
-            console.error("ensureAppId update error:", updateError);
+        if (insertError) {
+            const code = String((insertError as { code?: unknown } | null)?.code ?? "");
+            if (code === "23505") {
+                const racedId = await findExistingId();
+                if (racedId) {
+                    writeEnsureAppIdL1(cacheKey, racedId);
+                    return racedId;
+                }
+            }
+            console.error("ensureAppId insert error:", insertError);
         }
-        return existingId;
-    }
+        return null;
+    })();
 
-    const { data: inserted, error: insertError } = await supabase
-        .from("api_apps")
-        .insert(payload)
-        .select("id")
-        .single();
-
-    if (!insertError && inserted?.id) {
-        return inserted.id;
-    }
-
-    if (insertError) {
-        const code = String((insertError as { code?: unknown } | null)?.code ?? "");
-        if (code === "23505") {
-            const racedId = await findExistingId();
-            if (racedId) return racedId;
+    ensureAppIdInflight.set(cacheKey, loader);
+    try {
+        return await loader;
+    } finally {
+        if (ensureAppIdInflight.get(cacheKey) === loader) {
+            ensureAppIdInflight.delete(cacheKey);
         }
-        console.error("ensureAppId insert error:", insertError);
     }
-    return null;
 }
 
 

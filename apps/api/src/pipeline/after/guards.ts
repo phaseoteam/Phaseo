@@ -27,12 +27,29 @@ export async function guardUpstreamStatus(
 
     if (!statusOk) {
         // Import error helpers dynamically to avoid circular deps
-        const { safeJson, extractErrorCode, extractErrorDescription, classifyAttribution } = await import("@core/error-handler");
+        const {
+            safeJson,
+            extractErrorCode,
+            extractErrorDescription,
+            classifyAttribution,
+            classifyErrorType,
+            extractUpstreamUnsupportedParamSignal,
+        } = await import("@core/error-handler");
+        const { classifyProviderFailureDiagnostics } = await import("../execute/guards");
 
         const body = await safeJson(result.upstream);
-        let errCode = extractErrorCode(body, "upstream_non_2xx");
+        const upstreamErrorCode = extractErrorCode(body, "upstream_non_2xx");
+        const upstreamMessage =
+            (typeof body?.error?.message === "string" && body.error.message.trim()) ||
+            (typeof body?.message === "string" && body.message.trim()) ||
+            null;
+        let errCode = upstreamErrorCode;
         let description = extractErrorDescription(body) ?? `Upstream returned status ${upstreamStatus}`;
         let details: Array<Record<string, unknown>> | undefined;
+        const unsupportedParamSignal = extractUpstreamUnsupportedParamSignal({
+            stage: "execute",
+            body,
+        });
 
         if (ctx.providerCapabilitiesBeta && upstreamStatus === 400) {
             const requested = ctx.requestedParams ?? extractRequestedParams(ctx.endpoint, ctx.rawBody);
@@ -63,9 +80,71 @@ export async function guardUpstreamStatus(
             errorCode: errCode,
             body
         });
+        let errorType = classifyErrorType({
+            stage: "execute",
+            status: upstreamStatus,
+            errorCode: errCode,
+            body,
+        });
+        const errorOrigin: "upstream" = "upstream";
+        if (unsupportedParamSignal) {
+            errorType = "system";
+        }
+        const failureSample = [{
+            provider: result.provider ?? null,
+            type: "upstream_non_2xx",
+            status: upstreamStatus,
+            upstream_error_code: upstreamErrorCode,
+            upstream_error_message: upstreamMessage,
+            upstream_error_description: description,
+            upstream_error_param: unsupportedParamSignal?.param ?? null,
+            upstream_payload_preview: result.rawResponse
+                ? (() => {
+                    try {
+                        return JSON.stringify(result.rawResponse).slice(0, 320);
+                    } catch {
+                        return String(result.rawResponse).slice(0, 320);
+                    }
+                })()
+                : null,
+            retryable: upstreamStatus === 408 || upstreamStatus === 429 || upstreamStatus >= 500,
+        }];
+        const providerFailureDiagnostics = classifyProviderFailureDiagnostics(failureSample);
 
         const headers = makeHeaders(timingHeader);
         headers.set("X-Gateway-Error-Attribution", attribution);
+        headers.set("X-Gateway-Error-Origin", errorOrigin);
+
+        const generationId = ctx.requestId ?? body?.generation_id ?? body?.request_id ?? body?.requestId ?? "unknown";
+        const responseBody: Record<string, unknown> = {
+            generation_id: generationId,
+            status_code: upstreamStatus,
+            error: errCode,
+            error_type: errorType,
+            error_origin: errorOrigin,
+            description,
+        };
+        if (details?.length) {
+            responseBody.details = details;
+        }
+        if (upstreamErrorCode || upstreamMessage || description || unsupportedParamSignal?.param) {
+            responseBody.upstream_error = {
+                code: upstreamErrorCode,
+                message: upstreamMessage,
+                description,
+                param: unsupportedParamSignal?.param ?? null,
+            };
+            responseBody.failure_sample = failureSample;
+        }
+        if (providerFailureDiagnostics) {
+            responseBody.provider_failure_diagnostics = providerFailureDiagnostics;
+        }
+        if (ctx.meta?.debug?.return_upstream_request && result.mappedRequest) {
+            responseBody.upstream_request = parseJsonLoose(result.mappedRequest);
+        }
+        if (ctx.meta?.debug?.return_upstream_response && result.rawResponse) {
+            responseBody.upstream_response = result.rawResponse;
+        }
 
         await handleFailureAudit(
             ctx,
@@ -74,25 +153,9 @@ export async function guardUpstreamStatus(
             attribution,
             errCode,
             description,
-            body
+            body,
+            responseBody,
         );
-
-        const generationId = ctx.requestId ?? body?.generation_id ?? body?.request_id ?? body?.requestId ?? "unknown";
-        const responseBody: Record<string, unknown> = {
-            generation_id: generationId,
-            status_code: upstreamStatus,
-            error: errCode,
-            description,
-        };
-        if (details?.length) {
-            responseBody.details = details;
-        }
-        if (ctx.meta?.debug?.return_upstream_request && result.mappedRequest) {
-            responseBody.upstream_request = parseJsonLoose(result.mappedRequest);
-        }
-        if (ctx.meta?.debug?.return_upstream_response && result.rawResponse) {
-            responseBody.upstream_response = result.rawResponse;
-        }
 
         return {
             ok: false,

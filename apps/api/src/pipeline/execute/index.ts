@@ -117,7 +117,21 @@ function redactSensitiveUrl(url: string | null | undefined): string | null {
 	}
 }
 
-function extractUpstreamErrorSummary(payload: unknown): {
+function normalizeUpstreamErrorCode(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	const withoutNamespace = trimmed.includes("#") ? trimmed.slice(trimmed.lastIndexOf("#") + 1) : trimmed;
+	const withoutSuffix = withoutNamespace.includes(":")
+		? withoutNamespace.slice(0, withoutNamespace.indexOf(":"))
+		: withoutNamespace;
+	return truncateAttemptText(withoutSuffix, 120);
+}
+
+function extractUpstreamErrorSummary(
+	payload: unknown,
+	upstreamHeaders?: Headers | null,
+): {
 	upstream_error_code: string | null;
 	upstream_error_type: string | null;
 	upstream_error_message: string | null;
@@ -137,25 +151,45 @@ function extractUpstreamErrorSummary(payload: unknown): {
 	const obj = payload as Record<string, unknown>;
 	const innerError =
 		obj.error && typeof obj.error === "object" ? (obj.error as Record<string, unknown>) : null;
+	const awsHeaderErrorType = normalizeUpstreamErrorCode(
+		upstreamHeaders?.get("x-amzn-errortype"),
+	);
+	const namedExceptionEntry = Object.entries(obj).find(([key, value]) =>
+		/exception$/i.test(key) && Boolean(value) && typeof value === "object",
+	);
+	const namedExceptionBody =
+		namedExceptionEntry && typeof namedExceptionEntry[1] === "object"
+			? (namedExceptionEntry[1] as Record<string, unknown>)
+			: null;
 	const fallbackCode =
-		typeof obj.error === "string"
+		awsHeaderErrorType ??
+		normalizeUpstreamErrorCode(obj.__type) ??
+		(namedExceptionEntry ? normalizeUpstreamErrorCode(namedExceptionEntry[0]) : null) ??
+		normalizeUpstreamErrorCode(obj.status) ??
+		(typeof obj.error === "string"
 			? obj.error
 			: typeof obj.code === "string"
 				? obj.code
 				: typeof obj.error_code === "string"
 					? obj.error_code
-					: null;
+					: null);
 	const fallbackType =
+		awsHeaderErrorType ??
+		normalizeUpstreamErrorCode(obj.__type) ??
 		typeof obj.error_type === "string"
 			? obj.error_type
 			: typeof obj.type === "string"
 				? obj.type
 				: null;
 	const fallbackMessage = truncateAttemptText(
-		typeof obj.message === "string" ? obj.message : null,
+		typeof namedExceptionBody?.message === "string"
+			? namedExceptionBody.message
+			: (typeof obj.message === "string" ? obj.message : null),
 	);
 	const fallbackDescription = truncateAttemptText(
-		typeof obj.description === "string" ? obj.description : null,
+		typeof namedExceptionBody?.description === "string"
+			? namedExceptionBody.description
+			: (typeof obj.description === "string" ? obj.description : null),
 	);
 	const rawParam = truncateAttemptText(
 		typeof innerError?.param === "string"
@@ -173,13 +207,14 @@ function extractUpstreamErrorSummary(payload: unknown): {
 
 	return {
 		upstream_error_code:
-			typeof innerError?.code === "string"
-				? innerError.code
-				: typeof innerError?.type === "string"
-					? innerError.type
-					: fallbackCode,
+			normalizeUpstreamErrorCode(innerError?.code) ??
+			normalizeUpstreamErrorCode(innerError?.status) ??
+			normalizeUpstreamErrorCode(innerError?.type) ??
+			normalizeUpstreamErrorCode(fallbackCode),
 		upstream_error_type:
-			typeof innerError?.type === "string" ? innerError.type : fallbackType,
+			normalizeUpstreamErrorCode(innerError?.status) ??
+			normalizeUpstreamErrorCode(innerError?.type) ??
+			normalizeUpstreamErrorCode(fallbackType),
 		upstream_error_message: normalizedMessage,
 		upstream_error_description:
 			truncateAttemptText(
@@ -697,7 +732,10 @@ async function attemptProviderWithIR(
 		}
 		if (!executorResult.upstream.ok) {
 			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
-			const upstreamSummary = extractUpstreamErrorSummary(upstreamFailure.payload);
+			const upstreamSummary = extractUpstreamErrorSummary(
+				upstreamFailure.payload,
+				executorResult.upstream.headers,
+			);
 			const durationMs = Math.round(performance.now() - attemptStartedAt);
 			attemptErrors.push({
 				provider: candidate.providerId,

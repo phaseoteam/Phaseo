@@ -124,3 +124,8 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
     }
 }
 
+export function __resetPricingLoaderCachesForTests(): void {
+    pricingL1.clear();
+    pricingInflight.clear();
+}
+

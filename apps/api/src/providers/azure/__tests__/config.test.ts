@@ -56,6 +56,21 @@ describe("azure config", () => {
 		expect(resolveAzureConfig().apiVersion).toBe("2024-10-21");
 	});
 
+	it("throws a coded error when base URL is missing", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			AZURE_OPENAI_API_KEY: "test-azure-key",
+			AZURE_OPENAI_BASE_URL: "",
+		} as any);
+
+		expect(() => resolveAzureConfig()).toThrowError("azure_base_url_missing");
+		try {
+			resolveAzureConfig();
+		} catch (error) {
+			expect((error as any)?.code).toBe("azure_base_url_missing");
+		}
+	});
+
 	it("uses provider_model_slug before model id for deployment name", () => {
 		const deployment = azureDeployment({
 			providerModelSlug: "my-deployment",

@@ -85,6 +85,7 @@ type L1StateEntry = {
 };
 
 const l1State = new Map<string, L1StateEntry>();
+const l1StateInflight = new Map<string, Promise<Record<string, string>>>();
 const pendingBackgroundSaves = new Map<string, { map: Record<string, string>; ttlSeconds: number }>();
 const activeBackgroundSave = new Set<string>();
 const keyUpdateQueues = new Map<string, Array<() => void>>();
@@ -309,27 +310,45 @@ async function loadMapByKey(key: string): Promise<Record<string, string>> {
     if (l1 && l1.expiresAtMs <= now) {
         l1State.delete(key);
     }
-    try {
-        const raw = await getCache().get(key, "text");
-        if (!raw) {
-            const empty: Record<string, string> = {};
-            l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
-            return { ...empty };
-        }
+
+    const inflight = l1StateInflight.get(key);
+    if (inflight) {
+        return { ...(await inflight) };
+    }
+
+    const loader = (async () => {
         try {
-            const normalized = normalizeMap(JSON.parse(raw));
-            l1State.set(key, { map: { ...normalized }, expiresAtMs: now + HEALTH_L1_TTL_MS });
-            return { ...normalized };
+            const raw = await getCache().get(key, "text");
+            if (!raw) {
+                const empty: Record<string, string> = {};
+                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                return empty;
+            }
+            try {
+                const normalized = normalizeMap(JSON.parse(raw));
+                l1State.set(key, { map: { ...normalized }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                return normalized;
+            } catch {
+                const empty: Record<string, string> = {};
+                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                return empty;
+            }
         } catch {
+            // Fail open to in-memory defaults when KV is unavailable.
             const empty: Record<string, string> = {};
             l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
-            return { ...empty };
+            return empty;
         }
-    } catch {
-        // Fail open to in-memory defaults when KV is unavailable.
-        const empty: Record<string, string> = {};
-        l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
-        return { ...empty };
+    })();
+
+    l1StateInflight.set(key, loader);
+
+    try {
+        return { ...(await loader) };
+    } finally {
+        if (l1StateInflight.get(key) === loader) {
+            l1StateInflight.delete(key);
+        }
     }
 }
 
@@ -711,6 +730,7 @@ export async function maybeOpenOnRecentErrors(
 export function resetHealthStateForTests(): void {
     healthStateEpoch += 1;
     l1State.clear();
+    l1StateInflight.clear();
     pendingBackgroundSaves.clear();
     activeBackgroundSave.clear();
     keyUpdateQueues.clear();

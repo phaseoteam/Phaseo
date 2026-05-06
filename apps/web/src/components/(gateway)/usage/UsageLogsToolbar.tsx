@@ -188,18 +188,23 @@ export default function UsageLogsToolbar({
 		setPopoverOpen(false);
 	}, [applyParams, draftRange]);
 
-	const runRefresh = React.useCallback(async (showToast: boolean) => {
-		if (isRefreshing || isRevalidating) return;
-		setIsRevalidating(true);
-		try {
-			const refreshPromise = (async () => {
-				const result = await revalidateUsage();
-				if (!result.ok) {
-					throw new Error(result.message || "Failed to revalidate usage data.");
-				}
-				await runUsageViewRefresh(view);
-				setSecondsUntilRefresh(15);
-			})();
+        const runRefresh = React.useCallback(async (showToast: boolean) => {
+                if (isRefreshing || isRevalidating) return;
+                setIsRevalidating(true);
+                try {
+                        const refreshPromise = (async () => {
+                                if (showToast) {
+                                        const result = await revalidateUsage("logs");
+                                        if (!result.ok) {
+                                                throw new Error(
+                                                        result.message ||
+                                                                "Failed to revalidate usage data.",
+                                                );
+                                        }
+                                }
+                                await runUsageViewRefresh(view);
+                                setSecondsUntilRefresh(15);
+                        })();
 			if (showToast) {
 				await toast.promise(refreshPromise, {
 					loading: "Refreshing usage data...",
