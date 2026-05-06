@@ -132,6 +132,10 @@ describe("handleError", () => {
 			ctx: {
 				requestId: "G-TEST-1",
 				model: "xiaomi/mimo-v2-tts:free",
+				rawBody: {
+					model: "xiaomi/mimo-v2-tts:free",
+					input: [{ role: "user", content: "say hello" }],
+				},
 			} as any,
 			auditFailure: async (args) => {
 				capturedAuditArgs = args;
@@ -204,6 +208,10 @@ describe("handleError", () => {
 					upstream_error_code: "400",
 				}),
 			],
+		});
+		expect(capturedAuditArgs?.requestPayload).toEqual({
+			model: "xiaomi/mimo-v2-tts:free",
+			input: [{ role: "user", content: "say hello" }],
 		});
 	});
 

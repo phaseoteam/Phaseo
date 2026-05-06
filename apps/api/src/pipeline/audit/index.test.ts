@@ -181,4 +181,69 @@ describe("audit request detail persistence", () => {
 			}),
 		);
 	});
+
+	it("syncs the request rollup before detail persistence failures surface", async () => {
+		getSupabaseAdminMock.mockReturnValue({
+			from: vi.fn((table: string) => {
+				if (table === "gateway_requests") {
+					return {
+						insert: vi.fn(() => ({
+							select: vi.fn(() => ({
+								single: vi.fn(async () => ({
+									data: {
+										id: "row_3",
+										created_at: "2026-05-05T12:10:00.000Z",
+										workspace_id: "ws_3",
+									},
+									error: null,
+								})),
+							})),
+						})),
+					};
+				}
+
+				if (table === "gateway_request_details") {
+					return {
+						insert: vi.fn(async () => ({
+							error: { message: "details insert failed" },
+						})),
+					};
+				}
+
+				throw new Error(`unexpected table ${table}`);
+			}),
+		});
+
+		await expect(
+			auditSuccess({
+				requestId: "req_success_2",
+				workspaceId: "ws_3",
+				provider: "openai",
+				model: "openai/gpt-5-nano",
+				endpoint: "chat.completions",
+				stream: false,
+				byok: false,
+				usagePriced: { prompt_tokens: 2, completion_tokens: 1, pricing: { lines: [] } },
+				totalCents: 0.001,
+				totalNanos: 1000000,
+				currency: "USD",
+				statusCode: 200,
+				requestPayload: {
+					model: "openai/gpt-5-nano",
+					messages: [{ role: "user", content: "hello" }],
+				},
+				gatewayResponse: { id: "resp_2", output_text: "hi" },
+				providerRequest: { model: "openai/gpt-5-nano" },
+				providerResponse: { id: "chatcmpl_2" },
+				detailMetadata: { replay_supported: true },
+			}),
+		).rejects.toThrow("details insert failed");
+
+		expect(syncWorkspaceUsageRollupForRequestMock).toHaveBeenCalledWith({
+			requestRowId: "row_3",
+			requestCreatedAt: "2026-05-05T12:10:00.000Z",
+			workspaceId: "ws_3",
+			context: "audit_success",
+		});
+	});
 });

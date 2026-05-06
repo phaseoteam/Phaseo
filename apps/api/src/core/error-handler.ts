@@ -910,12 +910,15 @@ export async function handleError({
         extraJson: auditExtraJson,
         errorDetailsJson,
         errorPayload: gatewayErrorPayload,
-        requestPayload: body ?? null,
+        requestPayload: ctx?.rawBody ?? ctx?.body ?? body ?? null,
         gatewayResponse: errorPayload,
         providerResponse: body ?? null,
         detailMetadata: {
             stage,
-            replay_supported: Boolean(body && typeof body === "object"),
+            replay_supported: Boolean(
+                (ctx?.rawBody ?? ctx?.body ?? body) &&
+                    typeof (ctx?.rawBody ?? ctx?.body ?? body) === "object"
+            ),
         },
     };
     if (stage === "execute") {

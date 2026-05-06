@@ -296,6 +296,7 @@ export async function auditSuccess(args: {
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
             );
+            await syncInsertedRequestRollup(insertedRow, "audit_success");
             await retryWithBackoff(
                 () =>
                     insertGatewayRequestDetails({
@@ -320,7 +321,6 @@ export async function auditSuccess(args: {
                     }),
                 "supabase_audit_success_details_insert",
             );
-            await syncInsertedRequestRollup(insertedRow, "audit_success");
         } catch (err) {
             supabaseError = err instanceof Error ? err : new Error(String(err));
         }
@@ -476,6 +476,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         () => insertGatewayRequest(row),
                         "supabase_audit_failure_before_insert",
                     );
+                    await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
                     await retryWithBackoff(
                         () =>
                             insertGatewayRequestDetails({
@@ -500,7 +501,6 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                             }),
                         "supabase_audit_failure_before_details_insert",
                     );
-                    await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
                 } catch (err) {
                     supabaseError = err instanceof Error ? err : new Error(String(err));
                 }
@@ -561,6 +561,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     () => insertGatewayRequest(row),
                     "supabase_audit_failure_execute_insert",
                 );
+                await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
                 await retryWithBackoff(
                     () =>
                         insertGatewayRequestDetails({
@@ -585,7 +586,6 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         }),
                     "supabase_audit_failure_execute_details_insert",
                 );
-                await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
             } catch (err) {
                 supabaseError = err instanceof Error ? err : new Error(String(err));
             }
