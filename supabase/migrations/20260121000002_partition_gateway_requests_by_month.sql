@@ -23,6 +23,7 @@ create table public.gateway_requests (
   success boolean not null default false,
   error_code text null,
   error_message text null,
+  error_payload jsonb null,
   latency_ms integer null,
   generation_ms integer null,
   usage jsonb not null default '{}'::jsonb,

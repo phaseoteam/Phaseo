@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - Monorepo managed by pnpm + turbo: `apps/web` (Next.js 15 App Router, Tailwind UI in `src/components` and `components/ui`), `apps/api` (Cloudflare Workers + Hono), `apps/docs` (Mintlify site).
-- SDKs: `packages/sdk-ts` TypeScript client (`src`, generated `src/gen`, builds to `dist`); `packages/sdk-py` Python client (`src`, tests in `packages/sdk-py/tests`).
+- SDKs: `packages/sdk/sdk-ts` TypeScript client (`src`, generated `src/oapi-gen`, builds to `dist`); `packages/sdk/sdk-py` Python client (`src`, tests in `packages/sdk/sdk-py/tests`).
 - Shared tooling lives in `scripts/`, release metadata in `.changeset/`; canonical data/benchmarks sit under `packages/data/catalog/src/data` with Jest cases nearby.
 
 ## Build, Test, and Development Commands
@@ -10,7 +10,7 @@
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @ai-stats/web dev`, `pnpm --filter @ai-stats/gateway-api dev`, `pnpm --filter @ai-stats/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
 - Data/doc checks: `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`; docs via `pnpm docs:links` then `pnpm docs:build`.
-- Tests: `pnpm --filter @ai-stats/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk-py/tests`); TS SDK smoke check `pnpm --filter @ai-stats/ts-sdk test:smoke` (full `pnpm test` runs SDK placeholders plus pytest).
+- Tests: `pnpm --filter @ai-stats/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @ai-stats/sdk test` and optional live smoke checks via `pnpm --filter @ai-stats/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
 ## Safety Notes
 - Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only.
@@ -23,7 +23,7 @@
 ## Testing Guidelines
 - Jest for `apps/web` with `*.test.ts(x)` or nearby `__tests__`; cover new logic and data validations with deterministic fixtures.
 - Python SDK tests rely on pytest and `httpx.MockTransport`; keep async cases isolated.
-- TS SDK lacks full coverage—add targeted unit or smoke tests when changing behavior.
+- TS SDK has local `vitest` compatibility coverage plus optional smoke checks; add targeted unit or smoke tests when changing behavior.
 
 ## Commit & Pull Request Guidelines
 - Commit subjects in history are short, descriptive, and scoped. Add a `.changeset` entry when shipping SDK/API/web changes that should version.
@@ -35,4 +35,4 @@
 
 ## Security & Configuration Tips
 - Never commit secrets; use `.env.local` per app. Required runtime keys are called out in `turbo.json` `globalEnv` and app READMEs.
-- After OpenAPI edits, regenerate clients with `pnpm openapi:gen` so `src/gen` stays in sync before release.
+- After OpenAPI edits, regenerate clients with `pnpm openapi:gen` so generated SDK surfaces such as `src/oapi-gen` and `src/gen` stay in sync before release.

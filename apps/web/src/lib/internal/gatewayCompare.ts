@@ -693,10 +693,12 @@ export async function runGatewayCompare(args: CompareArgs) {
 		"";
 	const llmGatewayApiKey =
 		process.env.PERFORMANCE_KEY_LLMGATEWAY ??
+		process.env.LLM_GATEWAY_API_KEY ??
 		process.env.LLMGATEWAY_API_KEY ??
 		"";
 	const vercelAiGatewayApiKey =
 		process.env.PERFORMANCE_KEY_VERCEL_AI_GATEWAY ??
+		process.env.AI_GATEWAY_API_KEY ??
 		process.env.VERCEL_AI_GATEWAY_API_KEY ??
 		"";
 	if (!gatewayApiKey || !openRouterApiKey) {
