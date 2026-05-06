@@ -173,6 +173,14 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
 
 const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
 
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+  return end === value.length ? value : value.slice(0, end);
+}
+
 export type {
   AudioSpeechRequest,
   AudioTranscriptionRequest,
@@ -280,7 +288,7 @@ export class AIStats {
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
-    this.basePath = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    this.basePath = trimTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
     this.headers = { Authorization: `Bearer ${apiKey}` };
     this.client = new Client({
       baseUrl: this.basePath,

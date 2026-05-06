@@ -45,7 +45,7 @@ export class Client {
 	private readonly timeoutMs: number;
 
 	constructor(options: ClientOptions) {
-		this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+		this.baseUrl = trimTrailingSlashes(options.baseUrl);
 		this.headers = options.headers ?? {};
 		this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
 		if (!this.fetchImpl) {
@@ -99,6 +99,14 @@ export class Client {
 			clearTimeout(timeout);
 		}
 	}
+}
+
+function trimTrailingSlashes(value: string): string {
+	let end = value.length;
+	while (end > 0 && value.charCodeAt(end - 1) === 47) {
+		end -= 1;
+	}
+	return end === value.length ? value : value.slice(0, end);
 }
 
 function parseResponseText(text: string): unknown {
