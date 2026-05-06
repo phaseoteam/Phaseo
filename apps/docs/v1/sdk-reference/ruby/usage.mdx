@@ -6,9 +6,9 @@ description: "Current wrapper methods supported by the preview Ruby SDK."
 ## Setup
 
 ```ruby
-require_relative '../ai-stats-public/packages/sdk/sdk-ruby/lib/index'
+require 'ai_stats_sdk'
 
-client = AIStatsSdk::Client.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
 ```
 
 ## Chat completions

@@ -15,11 +15,14 @@ const result = await generateImage({
   size: "1024x1024",
 });
 
-console.log(result.images[0]);
+console.log(result.images[0].mediaType);
+console.log(result.images[0].uint8Array.length);
+console.log(result.providerMetadata);
 ```
 
 ## Notes
 
 - Available `size` values depend on the selected model.
+- URL-backed gateway image responses are normalized into the AI SDK file output shape, so `uint8Array` and `mediaType` are the stable fields to read first.
 - For deterministic workflows, persist prompt + model + params together.
 - Prefer storing returned image metadata with asset references.

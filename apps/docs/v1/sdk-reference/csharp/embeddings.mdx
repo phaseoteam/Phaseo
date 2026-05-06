@@ -3,16 +3,19 @@ title: "Embeddings"
 description: "Call /embeddings with the C# SDK."
 ---
 
-**Method**: Direct HTTP POST /embeddings
+**Method**: `client.CreateEmbedding(...)`
 
 ### Example
 
 ```csharp
-var client = new HttpClient();
-client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+using AiStatsSdk;
 
-var request = new { model = "openai/text-embedding-3-large", input = "Sample text" };
-var response = await client.PostAsJsonAsync("https://api.phaseo.app/v1/embeddings", request);
+var client = new AIStats(apiKey);
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text"
+});
 ```
 
 ### Key parameters

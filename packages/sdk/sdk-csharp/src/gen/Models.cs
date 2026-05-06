@@ -144,6 +144,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("reasoning")]
 	public Dictionary<string, object>? Reasoning { get; set; }
 
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
 	[JsonPropertyName("stop_sequences")]
 	public List<string>? StopSequences { get; set; }
 
@@ -497,6 +500,31 @@ public sealed class AudioTranslationResponse
 
 }
 
+public sealed class BatchBillingSummary
+{
+	[JsonPropertyName("billed")]
+	public bool? Billed { get; set; }
+
+	[JsonPropertyName("charged")]
+	public bool? Charged { get; set; }
+
+	[JsonPropertyName("cost_nanos")]
+	public int? CostNanos { get; set; }
+
+	[JsonPropertyName("cost_usd")]
+	public double? CostUsd { get; set; }
+
+	[JsonPropertyName("finalized_at")]
+	public string? FinalizedAt { get; set; }
+
+	[JsonPropertyName("pricing_breakdown")]
+	public Dictionary<string, object>? PricingBreakdown { get; set; }
+
+	[JsonPropertyName("reason")]
+	public string? Reason { get; set; }
+
+}
+
 public sealed class BatchRequest
 {
 	[JsonPropertyName("completion_window")]
@@ -517,6 +545,12 @@ public sealed class BatchRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
+	[JsonPropertyName("webhook")]
+	public Dictionary<string, object>? Webhook { get; set; }
+
 }
 
 public sealed class BatchRequestCounts
@@ -534,6 +568,9 @@ public sealed class BatchRequestCounts
 
 public sealed class BatchResponse
 {
+	[JsonPropertyName("billing")]
+	public Dictionary<string, object>? Billing { get; set; }
+
 	[JsonPropertyName("cancelled_at")]
 	public int? CancelledAt { get; set; }
 
@@ -588,11 +625,26 @@ public sealed class BatchResponse
 	[JsonPropertyName("output_file_id")]
 	public string? OutputFileId { get; set; }
 
+	[JsonPropertyName("pricing_lines")]
+	public List<Dictionary<string, object>>? PricingLines { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
+
 	[JsonPropertyName("request_counts")]
 	public Dictionary<string, object>? RequestCounts { get; set; }
 
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
+
+	[JsonPropertyName("webhook")]
+	public Dictionary<string, object>? Webhook { get; set; }
 
 }
 
@@ -714,6 +766,9 @@ public sealed class ChatCompletionsRequest
 	[JsonPropertyName("service_tier")]
 	public string? ServiceTier { get; set; }
 
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
 	[JsonPropertyName("stop")]
 	public object? Stop { get; set; }
 
@@ -766,8 +821,14 @@ public sealed class ChatCompletionsResponse
 	[JsonPropertyName("model")]
 	public string? Model { get; set; }
 
+	[JsonPropertyName("nativeResponseId")]
+	public string? NativeResponseId { get; set; }
+
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
@@ -951,19 +1012,175 @@ public sealed class EmbeddingsResponse
 
 }
 
+public sealed class ErrorFailureSampleItem
+{
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
+
+	[JsonPropertyName("retryable")]
+	public bool? Retryable { get; set; }
+
+	[JsonPropertyName("status")]
+	public int? Status { get; set; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
+
+	[JsonPropertyName("upstream_error_code")]
+	public string? UpstreamErrorCode { get; set; }
+
+	[JsonPropertyName("upstream_error_description")]
+	public string? UpstreamErrorDescription { get; set; }
+
+	[JsonPropertyName("upstream_error_message")]
+	public string? UpstreamErrorMessage { get; set; }
+
+	[JsonPropertyName("upstream_error_param")]
+	public string? UpstreamErrorParam { get; set; }
+
+	[JsonPropertyName("upstream_payload_preview")]
+	public string? UpstreamPayloadPreview { get; set; }
+
+}
+
+public sealed class ErrorProviderCandidateDiagnostics
+{
+	[JsonPropertyName("candidateCount")]
+	public int? CandidateCount { get; set; }
+
+	[JsonPropertyName("droppedMissingAdapter")]
+	public List<Dictionary<string, object>>? DroppedMissingAdapter { get; set; }
+
+	[JsonPropertyName("droppedUnsupportedEndpoint")]
+	public List<string>? DroppedUnsupportedEndpoint { get; set; }
+
+	[JsonPropertyName("supportsEndpointCount")]
+	public int? SupportsEndpointCount { get; set; }
+
+	[JsonPropertyName("totalProviders")]
+	public int? TotalProviders { get; set; }
+
+}
+
+public sealed class ErrorProviderEnablementDiagnostics
+{
+	[JsonPropertyName("capability")]
+	public string? Capability { get; set; }
+
+	[JsonPropertyName("dropped")]
+	public List<Dictionary<string, object>>? Dropped { get; set; }
+
+	[JsonPropertyName("providersAfter")]
+	public List<string>? ProvidersAfter { get; set; }
+
+	[JsonPropertyName("providersBefore")]
+	public List<string>? ProvidersBefore { get; set; }
+
+}
+
+public sealed class ErrorProviderFailureDiagnostics
+{
+	[JsonPropertyName("category")]
+	public string? Category { get; set; }
+
+	[JsonPropertyName("hint")]
+	public string? Hint { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
+
+}
+
 public sealed class ErrorResponse
 {
+	[JsonPropertyName("attempt_count")]
+	public int? AttemptCount { get; set; }
+
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
+
+	[JsonPropertyName("details")]
+	public List<Dictionary<string, object>>? Details { get; set; }
 
 	[JsonPropertyName("error")]
 	public object Error { get; set; }
 
+	[JsonPropertyName("error_origin")]
+	public string? ErrorOrigin { get; set; }
+
+	[JsonPropertyName("error_type")]
+	public string? ErrorType { get; set; }
+
+	[JsonPropertyName("failed_providers")]
+	public List<string>? FailedProviders { get; set; }
+
+	[JsonPropertyName("failed_statuses")]
+	public List<int>? FailedStatuses { get; set; }
+
+	[JsonPropertyName("failure_sample")]
+	public List<Dictionary<string, object>>? FailureSample { get; set; }
+
+	[JsonPropertyName("generation_id")]
+	public string? GenerationId { get; set; }
+
 	[JsonPropertyName("message")]
 	public string? Message { get; set; }
 
+	[JsonPropertyName("missing_pricing_providers")]
+	public List<string>? MissingPricingProviders { get; set; }
+
 	[JsonPropertyName("ok")]
 	public bool? Ok { get; set; }
+
+	[JsonPropertyName("provider_candidate_diagnostics")]
+	public Dictionary<string, object>? ProviderCandidateDiagnostics { get; set; }
+
+	[JsonPropertyName("provider_enablement")]
+	public Dictionary<string, object>? ProviderEnablement { get; set; }
+
+	[JsonPropertyName("provider_failure_diagnostics")]
+	public Dictionary<string, object>? ProviderFailureDiagnostics { get; set; }
+
+	[JsonPropertyName("provider_payment_required_provider")]
+	public string? ProviderPaymentRequiredProvider { get; set; }
+
+	[JsonPropertyName("provider_payment_required_support_notice")]
+	public string? ProviderPaymentRequiredSupportNotice { get; set; }
+
+	[JsonPropertyName("reason")]
+	public string? Reason { get; set; }
+
+	[JsonPropertyName("routing_diagnostics")]
+	public Dictionary<string, object>? RoutingDiagnostics { get; set; }
+
+	[JsonPropertyName("status_code")]
+	public int? StatusCode { get; set; }
+
+	[JsonPropertyName("upstream_error")]
+	public Dictionary<string, object>? UpstreamError { get; set; }
+
+}
+
+public sealed class ErrorRoutingDiagnostics
+{
+	[JsonPropertyName("filterStages")]
+	public List<Dictionary<string, object>>? FilterStages { get; set; }
+
+}
+
+public sealed class ErrorUpstreamError
+{
+	[JsonPropertyName("code")]
+	public string? Code { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("param")]
+	public string? Param { get; set; }
 
 }
 
@@ -1064,6 +1281,9 @@ public sealed class GenerationResponse
 	[JsonPropertyName("cost_nanos")]
 	public double? CostNanos { get; set; }
 
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
 	[JsonPropertyName("currency")]
 	public string? Currency { get; set; }
 
@@ -1096,6 +1316,12 @@ public sealed class GenerationResponse
 
 	[JsonPropertyName("provider")]
 	public string? Provider { get; set; }
+
+	[JsonPropertyName("replay_request")]
+	public Dictionary<string, object>? ReplayRequest { get; set; }
+
+	[JsonPropertyName("replay_supported")]
+	public bool? ReplaySupported { get; set; }
 
 	[JsonPropertyName("request_id")]
 	public string? RequestId { get; set; }
@@ -2166,6 +2392,9 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("service_tier")]
 	public string? ServiceTier { get; set; }
 
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
 	[JsonPropertyName("store")]
 	public bool? Store { get; set; }
 
@@ -2502,8 +2731,14 @@ public sealed class VideoGenerationResponse
 	[JsonPropertyName("provider")]
 	public string? Provider { get; set; }
 
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
 	[JsonPropertyName("seconds")]
 	public double? Seconds { get; set; }
+
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
 
 	[JsonPropertyName("size")]
 	public string? Size { get; set; }

@@ -2,6 +2,7 @@ package aistats
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
 )
 
 const goSDKVersion = "2.0.3"
@@ -136,7 +139,7 @@ func (t *telemetryRecorder) captureSuccess(endpoint string, request any, respons
 			"stream":      false,
 		},
 	}
-	t.enrichMetadata(entry, request, response)
+	t.enrichMetadata(entry, request, response, nil)
 	t.appendEntry(entry)
 }
 
@@ -145,13 +148,14 @@ func (t *telemetryRecorder) captureError(endpoint string, request any, err error
 		return
 	}
 
+	errorResponse := extractErrorResponse(err)
 	entry := map[string]any{
 		"id":          newEntryID(),
 		"type":        strings.TrimSpace(endpoint),
 		"timestamp":   time.Now().UTC().UnixMilli(),
 		"duration_ms": duration.Milliseconds(),
 		"request":     normalizeForJSON(request),
-		"response":    nil,
+		"response":    normalizeForJSON(errorResponse),
 		"error": map[string]any{
 			"message": err.Error(),
 		},
@@ -161,24 +165,70 @@ func (t *telemetryRecorder) captureError(endpoint string, request any, err error
 			"stream":      false,
 		},
 	}
-	t.enrichMetadata(entry, request, nil)
+	if statusCode := extractErrorStatusCode(err); statusCode != nil {
+		entry["error"].(map[string]any)["status_code"] = statusCode
+	}
+	t.enrichMetadata(entry, request, nil, errorResponse)
 	t.appendEntry(entry)
 }
 
-func (t *telemetryRecorder) enrichMetadata(entry map[string]any, request any, response any) {
+func (t *telemetryRecorder) enrichMetadata(entry map[string]any, request any, response any, errorResponse map[string]any) {
 	metadata, ok := entry["metadata"].(map[string]any)
 	if !ok {
 		return
 	}
-	if usage := extractUsage(normalizeToMap(response)); len(usage) > 0 {
+	responseMap := normalizeToMap(response)
+	if len(responseMap) == 0 {
+		responseMap = errorResponse
+	}
+	if usage := extractUsage(responseMap); len(usage) > 0 {
 		metadata["usage"] = usage
 	}
-	model, provider := extractModelProvider(normalizeToMap(response), normalizeToMap(request))
+	model, provider := extractModelProvider(responseMap, normalizeToMap(request))
 	if model != "" {
 		metadata["model"] = model
 	}
 	if provider != "" {
 		metadata["provider"] = provider
+	}
+	if value := numberOrNil(responseMap["status_code"]); value != nil {
+		metadata["status_code"] = value
+	}
+	if value := numberOrNil(responseMap["latency_ms"]); value != nil {
+		metadata["latency_ms"] = value
+	}
+	if value := numberOrNil(responseMap["generation_ms"]); value != nil {
+		metadata["generation_ms"] = value
+	}
+	if value := numberOrNil(responseMap["throughput"]); value != nil {
+		metadata["throughput"] = value
+	}
+	if requestID := firstNonEmptyString(toString(responseMap["request_id"])); requestID != "" {
+		metadata["request_id"] = requestID
+	}
+	if sessionID := firstNonEmptyString(toString(responseMap["session_id"])); sessionID != "" {
+		metadata["session_id"] = sessionID
+	}
+	if upstreamRequestID := firstNonEmptyString(toString(responseMap["upstream_request_id"])); upstreamRequestID != "" {
+		metadata["upstream_request_id"] = upstreamRequestID
+	}
+	if nativeResponseID := firstNonEmptyString(toString(responseMap["native_response_id"])); nativeResponseID != "" {
+		metadata["native_response_id"] = nativeResponseID
+	}
+	if finishReason := firstNonEmptyString(toString(responseMap["finish_reason"]), toString(responseMap["stop_reason"])); finishReason != "" {
+		metadata["finish_reason"] = finishReason
+	}
+	if pricingLines := normalizeSlice(responseMap["pricing_lines"]); len(pricingLines) > 0 {
+		metadata["pricing_lines"] = pricingLines
+	}
+	if providerAttempts := normalizeSlice(responseMap["provider_attempts"]); len(providerAttempts) > 0 {
+		metadata["provider_attempts"] = providerAttempts
+	}
+	if requestCounts := normalizeToMap(responseMap["request_counts"]); len(requestCounts) > 0 {
+		metadata["request_counts"] = requestCounts
+	}
+	if billing := normalizeToMap(responseMap["billing"]); len(billing) > 0 {
+		metadata["billing"] = billing
 	}
 	if !t.captureHeaders {
 		delete(metadata, "headers")
@@ -258,6 +308,15 @@ func normalizeToMap(value any) map[string]any {
 	}
 }
 
+func normalizeSlice(value any) []any {
+	switch typed := normalizeForJSON(value).(type) {
+	case []any:
+		return typed
+	default:
+		return []any{}
+	}
+}
+
 func extractUsage(response map[string]any) map[string]any {
 	usageValue, ok := response["usage"]
 	if !ok {
@@ -288,6 +347,29 @@ func extractModelProvider(response map[string]any, request map[string]any) (stri
 	}
 	provider := strings.TrimSpace(toString(response["provider"]))
 	return model, provider
+}
+
+func extractErrorResponse(err error) map[string]any {
+	var httpErr *gen.HTTPError
+	if !errors.As(err, &httpErr) || httpErr == nil || len(httpErr.Body) == 0 {
+		return map[string]any{}
+	}
+	var payload map[string]any
+	if jsonErr := json.Unmarshal(httpErr.Body, &payload); jsonErr == nil {
+		return payload
+	}
+	return map[string]any{
+		"status_code": httpErr.StatusCode,
+		"error":       strings.TrimSpace(string(httpErr.Body)),
+	}
+}
+
+func extractErrorStatusCode(err error) any {
+	var httpErr *gen.HTTPError
+	if !errors.As(err, &httpErr) || httpErr == nil {
+		return nil
+	}
+	return httpErr.StatusCode
 }
 
 func numberOrNil(values ...any) any {
@@ -342,6 +424,16 @@ func toString(value any) string {
 	default:
 		return fmt.Sprintf("%v", typed)
 	}
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func parseEnvBool(raw string, fallback bool) bool {

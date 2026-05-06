@@ -3,6 +3,30 @@ declare(strict_types=1);
 
 namespace AIStats\Gen;
 
+class RequestException extends \RuntimeException
+{
+	private int $statusCode;
+	private string $responseBody;
+
+	public function __construct(int $statusCode, string $responseBody, ?string $message = null)
+	{
+		$this->statusCode = $statusCode;
+		$this->responseBody = $responseBody;
+		$trimmed = trim($responseBody);
+		parent::__construct($message ?? ($trimmed === "" ? "Request failed: {$statusCode}" : "Request failed: {$statusCode} {$trimmed}"));
+	}
+
+	public function getStatusCode(): int
+	{
+		return $this->statusCode;
+	}
+
+	public function getResponseBody(): string
+	{
+		return $this->responseBody;
+	}
+}
+
 class Client
 {
 	private string $baseUrl;
@@ -23,7 +47,7 @@ class Client
 		$this->caBundlePath = $this->resolveCaBundlePath($caBundlePath);
 	}
 
-	public function request(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null)
+	public function requestRaw(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null): string
 	{
 		$url = $this->baseUrl . $path;
 		if (!empty($query)) {
@@ -62,9 +86,15 @@ class Client
 			throw new \RuntimeException("Request transport failed (cURL errno {$errno}): {$error}.{$hint}");
 		}
 		if ($status >= 400) {
-			throw new \RuntimeException("Request failed: {$status}");
+			throw new RequestException($status, (string) $response);
 		}
-		if ($response === null || $response === "") {
+		return (string) $response;
+	}
+
+	public function request(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null)
+	{
+		$response = $this->requestRaw($method, $path, $query, $headers, $body);
+		if ($response === "") {
 			return null;
 		}
 		$decoded = json_decode($response, true);

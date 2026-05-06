@@ -3,7 +3,7 @@ title: "Image edits"
 description: "Call /images/edits with the PHP SDK."
 ---
 
-**Method**: ImagesApi#imagesEditsPost
+**Method**: `$client->generateImageEdit(...)` or `$client->createImageEdit(...)`
 
 ### Example
 
@@ -12,26 +12,16 @@ description: "Call /images/edits with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\ImagesApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\ImagesEditRequest;
+use AIStats\Sdk\AIStats;
 
-$apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
-
-$imagesApi = new ImagesApi(null, $config);
-
-$request = new ImagesEditRequest([
+$client = new AIStats(getenv('AI_STATS_API_KEY'));
+$response = $client->generateImageEdit([
     'model' => 'openai/gpt-image-1',
     'prompt' => 'Make it sunset',
     'image' => 'data:image/png;base64,...',
     'mask' => 'data:image/png;base64,...'
 ]);
-
-$response = $imagesApi->imagesEditsPost($request);
-echo $response->getData()[0]->getUrl();
+echo $response['data'][0]['url'] ?? '';
 ```
 
 ### Key parameters

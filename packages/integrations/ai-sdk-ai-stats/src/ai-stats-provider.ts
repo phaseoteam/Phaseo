@@ -46,17 +46,24 @@ export type AIStatsProvider = ProviderV3 & ((
  */
 export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
   // Resolve API key from settings or environment variable
-  const apiKey = settings.apiKey ?? process.env.AI_STATS_API_KEY;
+  const apiKey =
+    settings.apiKey ??
+    process.env.AI_STATS_API_KEY ??
+    process.env.OPENAI_GATEWAY_API_KEY;
 
   if (!apiKey) {
     throw new Error(
       'AI Stats API key is required. ' +
-      'Provide it via the apiKey option or set the AI_STATS_API_KEY environment variable.'
+      'Provide it via the apiKey option or set the AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY environment variable.'
     );
   }
 
   // Resolve base URL with default
-  const baseURL = settings.baseURL ?? DEFAULT_BASE_URL;
+  const baseURL =
+    settings.baseURL ??
+    process.env.AI_STATS_BASE_URL ??
+    process.env.OPENAI_GATEWAY_URL ??
+    DEFAULT_BASE_URL;
 
   // Create the provider function that returns language model instances
   const provider = (

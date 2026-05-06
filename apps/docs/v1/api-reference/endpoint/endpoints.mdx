@@ -1,0 +1,13 @@
+---
+title: "List Endpoints"
+badge: "Beta"
+openapi: "GET /endpoints"
+description: "List the currently exposed gateway endpoint IDs and a small sample of recent public model IDs."
+---
+
+Returns a lightweight discovery payload for tooling or operator workflows that need to know which public endpoint families are currently exposed.
+
+The response includes:
+
+- `endpoints`: the canonical gateway endpoint IDs currently surfaced by the API
+- `sample_models`: up to 10 recent visible model IDs from the public catalogue

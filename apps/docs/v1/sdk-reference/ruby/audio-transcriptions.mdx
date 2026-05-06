@@ -3,24 +3,18 @@ title: "STT (Speech to Text)"
 description: "Call /audio/transcriptions with the Ruby SDK."
 ---
 
-**Method**: `AudioApi#audio_transcriptions_post`.
+**Method**: `client.generate_transcription(...)` or `client.create_transcription(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-audio_api = AIStatsSdk::AudioApi.new(api_client)
-
-request = AIStatsSdk::AudioTranscriptionRequest.new(
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+transcript = client.generate_transcription(
   model: 'openai/gpt-4o-transcribe',
   audio_b64: 'base64_audio_data',
   language: 'en'
 )
-
-transcript = audio_api.audio_transcriptions_post(request)
 ```
 
 ### Key parameters

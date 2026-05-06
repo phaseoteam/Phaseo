@@ -3,7 +3,7 @@ title: "Moderations"
 description: "Call /moderations with the PHP SDK."
 ---
 
-**Method**: ModerationsApi#moderationsPost
+**Methods**: `generateModeration()`, `createModeration()`
 
 ### Example
 
@@ -12,26 +12,16 @@ description: "Call /moderations with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\ModerationsApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\ModerationRequest;
-use AIStats\Sdk\Model\ModerationRequestInput;
+use AIStats\Sdk\AIStats;
 
 $apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new AIStats(apiKey: $apiKey);
 
-$moderationsApi = new ModerationsApi(null, $config);
-
-$input = new ModerationRequestInput(['text' => 'Text to classify']);
-$request = new ModerationRequest([
+$response = $client->createModeration([
     'model' => 'openai/omni-moderation-latest',
-    'input' => $input
+    'input' => 'Text to classify'
 ]);
-
-$response = $moderationsApi->moderationsPost($request);
-echo $response->getResults()[0]->getFlagged() ? 'Flagged' : 'Not flagged';
+echo $response['results'][0]['flagged'] ? 'Flagged' : 'Not flagged';
 ```
 
 ### Key parameters

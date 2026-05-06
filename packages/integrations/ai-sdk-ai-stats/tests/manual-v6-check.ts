@@ -11,7 +11,7 @@ if (!apiKey) {
 
 const aiStats = createAIStats({
 	apiKey,
-	baseURL: process.env.AI_STATS_BASE_URL,
+	baseURL: process.env.AI_STATS_BASE_URL || process.env.OPENAI_GATEWAY_URL,
 });
 
 async function run() {

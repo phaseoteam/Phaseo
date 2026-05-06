@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -14,6 +15,9 @@ import (
 )
 
 const defaultBaseURL = "https://api.phaseo.app/v1"
+
+type ChatCompletionsRequest = gen.ChatCompletionsRequest
+type ResponsesRequest = gen.ResponsesRequest
 
 type AIStatsLogLevel string
 
@@ -41,6 +45,19 @@ type ModelValidationResult struct {
 	OK     bool
 	Info   *ModelLifecycleInfo
 	Reason string
+}
+
+type AsyncJobWebSocketOptions struct {
+	IntervalMS      int
+	CloseOnTerminal *bool
+}
+
+type AsyncJobsResource struct {
+	parent *AIStats
+}
+
+func (r *AsyncJobsResource) WebSocketURL(kind string, jobID string, options *AsyncJobWebSocketOptions) (string, error) {
+	return r.parent.GetAsyncJobWebSocketURL(kind, jobID, options)
 }
 
 var activeModelSourceStatuses = map[string]struct{}{
@@ -73,6 +90,7 @@ type AIStats struct {
 	warningsAsErrors          bool
 	logger                    AIStatsLogger
 	telemetry                 *telemetryRecorder
+	AsyncJobs                 *AsyncJobsResource
 	warnedModels              map[string]struct{}
 	modelLifecycleCache       map[string]*ModelLifecycleInfo
 	lifecycleResolver         func(ctx context.Context, modelID string) (*ModelLifecycleInfo, error)
@@ -127,6 +145,7 @@ func New(apiKey string, baseURL string, opts ...Option) *AIStats {
 	if client.lifecycleResolver == nil {
 		client.lifecycleResolver = client.fetchModelLifecycle
 	}
+	client.AsyncJobs = &AsyncJobsResource{parent: client}
 	return client
 }
 
@@ -365,6 +384,13 @@ func (c *AIStats) GetModels(_ context.Context, query map[string]string) (map[str
 	})
 }
 
+// ListTeamModels calls /gateway/models/me.
+func (c *AIStats) ListTeamModels(_ context.Context, query map[string]string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "models.team", query, false, func() (interface{}, error) {
+		return gen.ListTeamModels(c.raw, nil, query, nil, nil)
+	})
+}
+
 // ListProviders calls /providers.
 func (c *AIStats) ListProviders(_ context.Context, query map[string]string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "providers", query, false, func() (map[string]interface{}, error) {
@@ -375,7 +401,7 @@ func (c *AIStats) ListProviders(_ context.Context, query map[string]string) (map
 // GetAnalytics calls /analytics.
 func (c *AIStats) GetAnalytics(_ context.Context, query map[string]string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "analytics", query, false, func() (map[string]interface{}, error) {
-		return gen.GetActivity(c.raw, nil, query, nil, nil)
+		return gen.GetActivityAlias(c.raw, nil, query, nil, nil)
 	})
 }
 
@@ -390,6 +416,13 @@ func (c *AIStats) GetCredits(_ context.Context, query map[string]string) (map[st
 func (c *AIStats) GetActivity(_ context.Context, query map[string]string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "activity", query, false, func() (map[string]interface{}, error) {
 		return gen.GetActivity(c.raw, nil, query, nil, nil)
+	})
+}
+
+// GetGeneration calls /generation?id=...
+func (c *AIStats) GetGeneration(_ context.Context, generationID string) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "generations.retrieve", map[string]any{"id": generationID}, false, func() (map[string]interface{}, error) {
+		return gen.GetGeneration(c.raw, nil, map[string]string{"id": generationID}, nil, nil)
 	})
 }
 
@@ -453,14 +486,29 @@ func (c *AIStats) CreateChatCompletion(ctx context.Context, req gen.ChatCompleti
 
 // GenerateResponse calls /responses.
 func (c *AIStats) GenerateResponse(ctx context.Context, req gen.ResponsesRequest) (gen.ResponsesResponse, error) {
-	return withLifecycleAndTelemetry(c, ctx, "responses", req, true, func() (gen.ResponsesResponse, error) {
-		raw, err := gen.CreateResponse(c.raw, nil, nil, nil, req)
-		if err != nil {
-			var zero gen.ResponsesResponse
-			return zero, err
-		}
-		return decodeTo[gen.ResponsesResponse](raw)
-	})
+	started := time.Now()
+	if err := c.maybeWarnForPayload(ctx, req); err != nil {
+		c.telemetry.captureError("responses", req, err, time.Since(started))
+		var zero gen.ResponsesResponse
+		return zero, err
+	}
+
+	raw, err := gen.CreateResponse(c.raw, nil, nil, nil, req)
+	if err != nil {
+		c.telemetry.captureError("responses", req, err, time.Since(started))
+		var zero gen.ResponsesResponse
+		return zero, err
+	}
+
+	response, err := decodeTo[gen.ResponsesResponse](raw)
+	if err != nil {
+		c.telemetry.captureError("responses", req, err, time.Since(started))
+		var zero gen.ResponsesResponse
+		return zero, err
+	}
+
+	c.telemetry.captureSuccess("responses", req, raw, time.Since(started))
+	return response, nil
 }
 
 // CreateResponse calls /responses.
@@ -513,6 +561,59 @@ func (c *AIStats) CreateImageEdit(ctx context.Context, req any) (map[string]inte
 	})
 }
 
+// CreateVideo calls /videos.
+func (c *AIStats) CreateVideo(ctx context.Context, req any) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, ctx, "video.generations", req, true, func() (map[string]interface{}, error) {
+		return gen.CreateVideo(c.raw, nil, nil, nil, req)
+	})
+}
+
+// GetVideo calls /videos/{video_id}.
+func (c *AIStats) GetVideo(_ context.Context, videoID string) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "video.retrieve", map[string]any{"video_id": videoID}, false, func() (map[string]interface{}, error) {
+		return gen.GetVideo(c.raw, map[string]string{"video_id": videoID}, nil, nil, nil)
+	})
+}
+
+// CancelVideo calls /videos/{video_id}/cancel.
+func (c *AIStats) CancelVideo(_ context.Context, videoID string) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "video.cancel", map[string]any{"video_id": videoID}, false, func() (map[string]interface{}, error) {
+		raw, err := c.raw.Request("POST", "/videos/"+url.PathEscape(videoID)+"/cancel", nil, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		if len(raw) == 0 {
+			return map[string]interface{}{}, nil
+		}
+		var decoded map[string]interface{}
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			return nil, fmt.Errorf("decode response: %w", err)
+		}
+		return decoded, nil
+	})
+}
+
+// DeleteVideo calls /videos/{video_id}.
+func (c *AIStats) DeleteVideo(_ context.Context, videoID string) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "video.delete", map[string]any{"video_id": videoID}, false, func() (map[string]interface{}, error) {
+		return gen.DeleteVideo(c.raw, map[string]string{"video_id": videoID}, nil, nil, nil)
+	})
+}
+
+// ListVideoModels calls /videos/models.
+func (c *AIStats) ListVideoModels(_ context.Context) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "video.models", nil, false, func() (map[string]interface{}, error) {
+		return gen.ListVideoModels(c.raw, nil, nil, nil, nil)
+	})
+}
+
+// ListVideos calls /videos.
+func (c *AIStats) ListVideos(_ context.Context, query map[string]string) (map[string]interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "video.list", query, false, func() (map[string]interface{}, error) {
+		return gen.ListVideos(c.raw, nil, query, nil, nil)
+	})
+}
+
 // CreateSpeech calls /audio/speech.
 func (c *AIStats) CreateSpeech(ctx context.Context, req any) (interface{}, error) {
 	return withLifecycleAndTelemetry(c, ctx, "audio.speech", req, true, func() (interface{}, error) {
@@ -548,6 +649,54 @@ func (c *AIStats) RetrieveBatch(_ context.Context, batchID string) (interface{},
 	})
 }
 
+// CancelBatch calls /batches/{batch_id}/cancel.
+func (c *AIStats) CancelBatch(_ context.Context, batchID string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "batches.cancel", map[string]any{"batch_id": batchID}, false, func() (interface{}, error) {
+		return gen.CancelBatch(c.raw, map[string]string{"batch_id": batchID}, nil, nil, nil)
+	})
+}
+
+func (c *AIStats) GetAsyncJobWebSocketURL(kind string, jobID string, options *AsyncJobWebSocketOptions) (string, error) {
+	normalizedKind := strings.TrimSpace(kind)
+	normalizedID := strings.TrimSpace(jobID)
+	if normalizedKind == "" {
+		return "", errors.New("kind is required")
+	}
+	if normalizedID == "" {
+		return "", errors.New("jobID is required")
+	}
+
+	baseURL, err := url.Parse(strings.TrimRight(c.raw.BaseURL, "/") + "/")
+	if err != nil {
+		return "", fmt.Errorf("parse base URL: %w", err)
+	}
+	baseURL.Path = strings.TrimSuffix(baseURL.Path, "/") + "/async/" + normalizedKind + "/" + normalizedID + "/ws"
+	baseURL.RawPath = strings.TrimSuffix(baseURL.EscapedPath(), "/") + "/async/" + url.PathEscape(normalizedKind) + "/" + url.PathEscape(normalizedID) + "/ws"
+	query := baseURL.Query()
+	if options != nil && options.IntervalMS > 0 {
+		query.Set("interval_ms", fmt.Sprintf("%d", options.IntervalMS))
+	}
+	if options != nil && options.CloseOnTerminal != nil {
+		query.Set("close_on_terminal", fmt.Sprintf("%t", *options.CloseOnTerminal))
+	}
+	baseURL.RawQuery = query.Encode()
+	switch baseURL.Scheme {
+	case "https":
+		baseURL.Scheme = "wss"
+	case "http":
+		baseURL.Scheme = "ws"
+	}
+	return baseURL.String(), nil
+}
+
+func (c *AIStats) GetBatchWebSocketURL(batchID string, options *AsyncJobWebSocketOptions) (string, error) {
+	return c.GetAsyncJobWebSocketURL("batch", batchID, options)
+}
+
+func (c *AIStats) GetVideoWebSocketURL(videoID string, options *AsyncJobWebSocketOptions) (string, error) {
+	return c.GetAsyncJobWebSocketURL("video", videoID, options)
+}
+
 // ListFiles calls /files.
 func (c *AIStats) ListFiles(_ context.Context, query map[string]string) (interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "files.list", query, false, func() (interface{}, error) {
@@ -555,10 +704,157 @@ func (c *AIStats) ListFiles(_ context.Context, query map[string]string) (interfa
 	})
 }
 
+// ListEndpoints calls /endpoints.
+func (c *AIStats) ListEndpoints(_ context.Context) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "endpoints.list", nil, false, func() (interface{}, error) {
+		return gen.ListEndpoints(c.raw, nil, nil, nil, nil)
+	})
+}
+
+// ListOrganisations calls /organisations.
+func (c *AIStats) ListOrganisations(_ context.Context, query map[string]string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "organisations.list", query, false, func() (interface{}, error) {
+		return gen.ListOrganisations(c.raw, nil, query, nil, nil)
+	})
+}
+
+// ListPricingModels calls /pricing/models.
+func (c *AIStats) ListPricingModels(_ context.Context, query map[string]string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "pricing.models", query, false, func() (interface{}, error) {
+		return gen.ListPricingModels(c.raw, nil, query, nil, nil)
+	})
+}
+
+// CalculatePricing calls /pricing/calculate.
+func (c *AIStats) CalculatePricing(_ context.Context, payload map[string]interface{}) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "pricing.calculate", payload, false, func() (interface{}, error) {
+		return gen.CalculatePricing(c.raw, nil, nil, nil, payload)
+	})
+}
+
+// ListApiKeys calls /keys.
+func (c *AIStats) ListApiKeys(_ context.Context, query map[string]string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.keys.list", query, false, func() (interface{}, error) {
+		return gen.ListApiKeys(c.raw, nil, query, nil, nil)
+	})
+}
+
+// CreateApiKey calls /keys.
+func (c *AIStats) CreateApiKey(_ context.Context, payload map[string]interface{}) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.keys.create", payload, false, func() (interface{}, error) {
+		return gen.CreateApiKey(c.raw, nil, nil, nil, payload)
+	})
+}
+
+// GetApiKey calls /keys/{id}.
+func (c *AIStats) GetApiKey(_ context.Context, keyID string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.keys.get", map[string]any{"id": keyID}, false, func() (interface{}, error) {
+		return gen.GetApiKey(c.raw, map[string]string{"id": keyID}, nil, nil, nil)
+	})
+}
+
+// UpdateApiKey calls /keys/{id}.
+func (c *AIStats) UpdateApiKey(_ context.Context, keyID string, payload map[string]interface{}) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.keys.update", map[string]any{"id": keyID, "body": payload}, false, func() (interface{}, error) {
+		return gen.UpdateApiKey(c.raw, map[string]string{"id": keyID}, nil, nil, payload)
+	})
+}
+
+// DeleteApiKey calls /keys/{id}.
+func (c *AIStats) DeleteApiKey(_ context.Context, keyID string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.keys.delete", map[string]any{"id": keyID}, false, func() (interface{}, error) {
+		return gen.DeleteApiKey(c.raw, map[string]string{"id": keyID}, nil, nil, nil)
+	})
+}
+
+// ListWorkspaces calls /workspaces.
+func (c *AIStats) ListWorkspaces(_ context.Context, query map[string]string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.workspaces.list", query, false, func() (interface{}, error) {
+		return gen.ListWorkspaces(c.raw, nil, query, nil, nil)
+	})
+}
+
+// GetWorkspace calls /workspaces/{id}.
+func (c *AIStats) GetWorkspace(_ context.Context, id string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.workspaces.get", map[string]any{"id": id}, false, func() (interface{}, error) {
+		return gen.GetWorkspace(c.raw, map[string]string{"id": id}, nil, nil, nil)
+	})
+}
+
+// CreateWorkspace calls /workspaces.
+func (c *AIStats) CreateWorkspace(_ context.Context, body map[string]interface{}) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.workspaces.create", body, false, func() (interface{}, error) {
+		return gen.CreateWorkspace(c.raw, nil, nil, nil, body)
+	})
+}
+
+// UpdateWorkspace calls /workspaces/{id}.
+func (c *AIStats) UpdateWorkspace(_ context.Context, id string, body map[string]interface{}) (interface{}, error) {
+	payload := map[string]any{"id": id}
+	for key, value := range body {
+		payload[key] = value
+	}
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.workspaces.update", payload, false, func() (interface{}, error) {
+		return gen.UpdateWorkspace(c.raw, map[string]string{"id": id}, nil, nil, body)
+	})
+}
+
+// DeleteWorkspace calls /workspaces/{id}.
+func (c *AIStats) DeleteWorkspace(_ context.Context, id string) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "provisioning.workspaces.delete", map[string]any{"id": id}, false, func() (interface{}, error) {
+		return gen.DeleteWorkspace(c.raw, map[string]string{"id": id}, nil, nil, nil)
+	})
+}
+
+// GetCurrentApiKey calls /key.
+func (c *AIStats) GetCurrentApiKey(_ context.Context) (interface{}, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "key.current", nil, false, func() (interface{}, error) {
+		return gen.GetCurrentApiKey(c.raw, nil, nil, nil, nil)
+	})
+}
+
 // RetrieveFile calls /files/{file_id}.
 func (c *AIStats) RetrieveFile(_ context.Context, fileID string) (interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "files.retrieve", map[string]any{"file_id": fileID}, false, func() (interface{}, error) {
 		return gen.RetrieveFile(c.raw, map[string]string{"file_id": fileID}, nil, nil, nil)
+	})
+}
+
+// RetrieveFileContent calls /files/{file_id}/content.
+func (c *AIStats) RetrieveFileContent(_ context.Context, fileID string) ([]byte, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "files.content", map[string]any{"file_id": fileID}, false, func() ([]byte, error) {
+		return c.raw.Request("GET", "/files/"+url.PathEscape(fileID)+"/content", nil, nil, nil)
+	})
+}
+
+// RetrieveVideoContent calls /videos/{video_id}/content.
+func (c *AIStats) RetrieveVideoContent(_ context.Context, videoID string) ([]byte, error) {
+	return withLifecycleAndTelemetry(c, context.Background(), "video.content", map[string]any{"video_id": videoID}, false, func() ([]byte, error) {
+		return c.raw.Request("GET", "/videos/"+url.PathEscape(videoID)+"/content", nil, nil, nil)
+	})
+}
+
+// GetVideoDownloadURL calls /videos/{video_id}/download_url.
+func (c *AIStats) GetVideoDownloadURL(_ context.Context, videoID string, params map[string]any) (map[string]any, error) {
+	if params == nil {
+		params = map[string]any{}
+	}
+	return withLifecycleAndTelemetry(c, context.Background(), "video.download_url", map[string]any{
+		"video_id": videoID,
+		"body":     params,
+	}, false, func() (map[string]any, error) {
+		raw, err := c.raw.Request("POST", "/videos/"+url.PathEscape(videoID)+"/download_url", nil, nil, params)
+		if err != nil {
+			return nil, err
+		}
+		if len(raw) == 0 {
+			return map[string]any{}, nil
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			return nil, fmt.Errorf("decode response: %w", err)
+		}
+		return decoded, nil
 	})
 }
 

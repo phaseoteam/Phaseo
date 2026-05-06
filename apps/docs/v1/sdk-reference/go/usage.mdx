@@ -8,8 +8,7 @@ description: "Current wrapper methods supported by the preview Go SDK."
 ```go
 import (
   "context"
-  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
 client := aistats.New("<API_KEY>", "https://api.phaseo.app/v1")
@@ -19,7 +18,7 @@ ctx := context.Background()
 ## Chat completions
 
 ```go
-chatReq := gen.ChatCompletionsRequest{
+chatReq := aistats.ChatCompletionsRequest{
   Model: "openai/gpt-5-nano",
   Messages: []map[string]interface{}{
     {"role": "user", "content": "Hello"},
@@ -37,7 +36,7 @@ input := map[string]interface{}{
     {"type": "input_text", "text": "Reply with: go sdk works"},
   },
 }
-resp, err := client.GenerateResponse(ctx, gen.ResponsesRequest{
+resp, err := client.GenerateResponse(ctx, aistats.ResponsesRequest{
   Model: "openai/gpt-5-nano",
   Input: &input,
 })
@@ -61,6 +60,20 @@ moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
 })
 ```
 
+## Images and audio
+
+```go
+image, err := client.CreateImage(ctx, map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+})
+
+speech, err := client.CreateSpeech(ctx, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Go",
+})
+```
+
 ## Models
 
 ```go
@@ -69,4 +82,4 @@ models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
 
 ## Current limits
 
-The preview Go wrapper does not yet expose dedicated helpers for images, audio, video, files, batches, generation lookup, or health. Use generated operations in `src/gen` for those endpoints.
+The Go wrapper now covers chat, responses, images, audio, embeddings, moderations, models, providers, batches, files, generation lookup, health, and video helpers. Lower-level generated operations remain available for endpoints that have not been promoted to the handwritten wrapper yet, but common request types are re-exported from the wrapper package.

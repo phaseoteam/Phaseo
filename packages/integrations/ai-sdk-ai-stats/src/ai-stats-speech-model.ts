@@ -1,5 +1,6 @@
 import type { SpeechModelV3, SpeechModelV3CallOptions } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
+import { mapAIStatsProviderMetadata } from './map-ai-stats-provider-metadata.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
 /**
@@ -85,14 +86,18 @@ export class AIStatsSpeechModel implements SpeechModelV3 {
 
     // Get audio data as ArrayBuffer
     const audioData = await response.arrayBuffer();
+    const responseHeaders = Object.fromEntries(
+      Array.from(response.headers as any) as [string, string][]
+    );
 
     return {
       audio: new Uint8Array(audioData),
       warnings: [],
+      providerMetadata: mapAIStatsProviderMetadata(undefined, responseHeaders),
       response: {
         timestamp: new Date(),
         modelId: this.modelId,
-        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
+        headers: responseHeaders,
       },
     };
   }

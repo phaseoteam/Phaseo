@@ -3,21 +3,21 @@ title: "Image generations"
 description: "Call /images/generations with the C# SDK."
 ---
 
-**Method**: `client.ImagesApi.ImagesGenerationsPostAsync()`
+**Method**: `client.GenerateImage(...)` or `client.CreateImage(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new ImageGenerationRequest(
-    model: "openai/gpt-image-1",
-    prompt: "A lighthouse at golden hour",
-    size: "1024x1024",
-    n: 1,
-    response_format: ImageGenerationRequest.ResponseFormatEnum.Url
-);
-
-var response = client.ImagesApi.ImagesGenerationsPostAsync(request).Result;
+var client = new AIStats(apiKey);
+var response = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+    ["size"] = "1024x1024",
+    ["n"] = 1,
+    ["response_format"] = "url"
+});
 ```
 
 ### Key parameters

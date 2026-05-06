@@ -82,6 +82,8 @@ module AiStats
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reasoning
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
     # @!attribute [rw] stop_sequences
     #   @return [Array<String>, nil]
     # @!attribute [rw] stream
@@ -100,7 +102,7 @@ module AiStats
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] id
@@ -290,6 +292,21 @@ module AiStats
     # @!attribute [rw] text
     #   @return [String, nil]
     AudioTranslationResponse = Struct.new(:text, keyword_init: true)
+    # @!attribute [rw] billed
+    #   @return [Boolean, nil]
+    # @!attribute [rw] charged
+    #   @return [Boolean, nil]
+    # @!attribute [rw] cost_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] cost_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] finalized_at
+    #   @return [String, nil]
+    # @!attribute [rw] pricing_breakdown
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] reason
+    #   @return [String, nil]
+    BatchBillingSummary = Struct.new(:billed, :charged, :cost_nanos, :cost_usd, :finalized_at, :pricing_breakdown, :reason, keyword_init: true)
     # @!attribute [rw] completion_window
     #   @return [String, nil]
     # @!attribute [rw] debug
@@ -302,7 +319,11 @@ module AiStats
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
-    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :metadata, :provider, keyword_init: true)
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
+    # @!attribute [rw] webhook
+    #   @return [Hash{String => Object}, nil]
+    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :metadata, :provider, :session_id, :webhook, keyword_init: true)
     # @!attribute [rw] completed
     #   @return [Integer, nil]
     # @!attribute [rw] failed
@@ -310,6 +331,8 @@ module AiStats
     # @!attribute [rw] total
     #   @return [Integer, nil]
     BatchRequestCounts = Struct.new(:completed, :failed, :total, keyword_init: true)
+    # @!attribute [rw] billing
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] cancelled_at
     #   @return [Integer, nil]
     # @!attribute [rw] cancelling_at
@@ -346,11 +369,21 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] output_file_id
     #   @return [String, nil]
+    # @!attribute [rw] pricing_lines
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] provider
+    #   @return [String, nil]
     # @!attribute [rw] request_counts
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
     # @!attribute [rw] status
     #   @return [String, nil]
-    BatchResponse = Struct.new(:cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :metadata, :object, :output_file_id, :request_counts, :status, keyword_init: true)
+    # @!attribute [rw] webhook
+    #   @return [Hash{String => Object}, nil]
+    BatchResponse = Struct.new(:billing, :cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :metadata, :object, :output_file_id, :pricing_lines, :provider, :request_counts, :request_id, :session_id, :status, :webhook, keyword_init: true)
     BenchmarkId = Object
     # @!attribute [rw] scope
     #   @return [String, nil]
@@ -423,6 +456,8 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] service_tier
     #   @return [String, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
     # @!attribute [rw] stop
     #   @return [String, Array<String>, nil]
     # @!attribute [rw] store
@@ -447,7 +482,7 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :provider, :provider_options, :reasoning, :response_format, :safety_identifier, :seed, :service_tier, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :provider, :provider_options, :reasoning, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -456,11 +491,15 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String, nil]
+    # @!attribute [rw] nativeResponseId
+    #   @return [String, nil]
     # @!attribute [rw] object
+    #   @return [String, nil]
+    # @!attribute [rw] provider
     #   @return [String, nil]
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
-    ChatCompletionsResponse = Struct.new(:choices, :created, :id, :model, :object, :usage, keyword_init: true)
+    ChatCompletionsResponse = Struct.new(:choices, :created, :id, :model, :nativeResponseId, :object, :provider, :usage, keyword_init: true)
     # @!attribute [rw] image_url
     #   @return [Hash{String => Object}]
     # @!attribute [rw] mime_type
@@ -562,15 +601,109 @@ module AiStats
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     EmbeddingsResponse = Struct.new(:data, :model, :object, :usage, keyword_init: true)
+    # @!attribute [rw] provider
+    #   @return [String, nil]
+    # @!attribute [rw] retryable
+    #   @return [Boolean, nil]
+    # @!attribute [rw] status
+    #   @return [Integer, nil]
+    # @!attribute [rw] type
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_error_code
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_error_description
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_error_message
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_error_param
+    #   @return [String, nil]
+    # @!attribute [rw] upstream_payload_preview
+    #   @return [String, nil]
+    ErrorFailureSampleItem = Struct.new(:provider, :retryable, :status, :type, :upstream_error_code, :upstream_error_description, :upstream_error_message, :upstream_error_param, :upstream_payload_preview, keyword_init: true)
+    # @!attribute [rw] candidateCount
+    #   @return [Integer, nil]
+    # @!attribute [rw] droppedMissingAdapter
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] droppedUnsupportedEndpoint
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supportsEndpointCount
+    #   @return [Integer, nil]
+    # @!attribute [rw] totalProviders
+    #   @return [Integer, nil]
+    ErrorProviderCandidateDiagnostics = Struct.new(:candidateCount, :droppedMissingAdapter, :droppedUnsupportedEndpoint, :supportsEndpointCount, :totalProviders, keyword_init: true)
+    # @!attribute [rw] capability
+    #   @return [String, nil]
+    # @!attribute [rw] dropped
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] providersAfter
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] providersBefore
+    #   @return [Array<String>, nil]
+    ErrorProviderEnablementDiagnostics = Struct.new(:capability, :dropped, :providersAfter, :providersBefore, keyword_init: true)
+    # @!attribute [rw] category
+    #   @return [String, nil]
+    # @!attribute [rw] hint
+    #   @return [String, nil]
+    # @!attribute [rw] provider
+    #   @return [String, nil]
+    ErrorProviderFailureDiagnostics = Struct.new(:category, :hint, :provider, keyword_init: true)
+    # @!attribute [rw] attempt_count
+    #   @return [Integer, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
+    # @!attribute [rw] details
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] error
     #   @return [String, Hash{String => Object}]
+    # @!attribute [rw] error_origin
+    #   @return [String, nil]
+    # @!attribute [rw] error_type
+    #   @return [String, nil]
+    # @!attribute [rw] failed_providers
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] failed_statuses
+    #   @return [Array<Integer>, nil]
+    # @!attribute [rw] failure_sample
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] generation_id
+    #   @return [String, nil]
     # @!attribute [rw] message
     #   @return [String, nil]
+    # @!attribute [rw] missing_pricing_providers
+    #   @return [Array<String>, nil]
     # @!attribute [rw] ok
     #   @return [Boolean, nil]
-    ErrorResponse = Struct.new(:description, :error, :message, :ok, keyword_init: true)
+    # @!attribute [rw] provider_candidate_diagnostics
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_enablement
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_failure_diagnostics
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_payment_required_provider
+    #   @return [String, nil]
+    # @!attribute [rw] provider_payment_required_support_notice
+    #   @return [String, nil]
+    # @!attribute [rw] reason
+    #   @return [String, nil]
+    # @!attribute [rw] routing_diagnostics
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] status_code
+    #   @return [Integer, nil]
+    # @!attribute [rw] upstream_error
+    #   @return [Hash{String => Object}, nil]
+    ErrorResponse = Struct.new(:attempt_count, :description, :details, :error, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :routing_diagnostics, :status_code, :upstream_error, keyword_init: true)
+    # @!attribute [rw] filterStages
+    #   @return [Array<Hash{String => Object}>, nil]
+    ErrorRoutingDiagnostics = Struct.new(:filterStages, keyword_init: true)
+    # @!attribute [rw] code
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] message
+    #   @return [String, nil]
+    # @!attribute [rw] param
+    #   @return [String, nil]
+    ErrorUpstreamError = Struct.new(:code, :description, :message, :param, keyword_init: true)
     # @!attribute [rw] bytes
     #   @return [Integer, nil]
     # @!attribute [rw] created_at
@@ -626,6 +759,8 @@ module AiStats
     #   @return [Boolean, nil]
     # @!attribute [rw] cost_nanos
     #   @return [Float, nil]
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
     # @!attribute [rw] currency
     #   @return [String, nil]
     # @!attribute [rw] endpoint
@@ -648,6 +783,10 @@ module AiStats
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] provider
     #   @return [String, nil]
+    # @!attribute [rw] replay_request
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] replay_supported
+    #   @return [Boolean, nil]
     # @!attribute [rw] request_id
     #   @return [String, nil]
     # @!attribute [rw] status_code
@@ -662,7 +801,7 @@ module AiStats
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
-    GenerationResponse = Struct.new(:app_id, :byok, :cost_nanos, :currency, :endpoint, :error_code, :error_message, :generation_ms, :key_id, :latency_ms, :model_id, :native_response_id, :pricing_lines, :provider, :request_id, :status_code, :stream, :success, :team_id, :throughput, :usage, keyword_init: true)
+    GenerationResponse = Struct.new(:app_id, :byok, :cost_nanos, :created_at, :currency, :endpoint, :error_code, :error_message, :generation_ms, :key_id, :latency_ms, :model_id, :native_response_id, :pricing_lines, :provider, :replay_request, :replay_supported, :request_id, :status_code, :stream, :success, :team_id, :throughput, :usage, keyword_init: true)
     # @!attribute [rw] b64_json
     #   @return [String, nil]
     # @!attribute [rw] revised_prompt
@@ -1275,6 +1414,8 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] service_tier
     #   @return [String, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
     # @!attribute [rw] store
     #   @return [Boolean, nil]
     # @!attribute [rw] stream
@@ -1295,7 +1436,7 @@ module AiStats
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -1475,8 +1616,12 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
     # @!attribute [rw] seconds
     #   @return [Float, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
     # @!attribute [rw] size
     #   @return [String, nil]
     # @!attribute [rw] started_at
@@ -1485,7 +1630,7 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
-    VideoGenerationResponse = Struct.new(:asset, :audio, :billing, :completed_at, :content_url, :created_at, :download_url, :error, :expires_at, :generation_id, :id, :model, :object, :output_access, :outputs, :poll_after_seconds, :polling_url, :progress, :progress_source, :provider, :seconds, :size, :started_at, :status, :usage, keyword_init: true)
+    VideoGenerationResponse = Struct.new(:asset, :audio, :billing, :completed_at, :content_url, :created_at, :download_url, :error, :expires_at, :generation_id, :id, :model, :object, :output_access, :outputs, :poll_after_seconds, :polling_url, :progress, :progress_source, :provider, :request_id, :seconds, :session_id, :size, :started_at, :status, :usage, keyword_init: true)
     # @!attribute [rw] image_url
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reference_type

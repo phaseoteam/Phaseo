@@ -3,20 +3,20 @@ title: "Image edits"
 description: "Call /images/edits with the C# SDK."
 ---
 
-**Method**: `client.ImagesApi.ImagesEditsPostAsync()`
+**Method**: `client.CreateImageEdit(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new ImagesEditRequest(
-    model: "openai/gpt-image-1",
-    prompt: "Make it sunset",
-    image: new FileParameter(new MemoryStream(imageBytes), "image.png"),
-    mask: new FileParameter(new MemoryStream(maskBytes), "mask.png")
-);
-
-var response = client.ImagesApi.ImagesEditsPostAsync(request).Result;
+var client = new AIStats(apiKey);
+var response = await client.CreateImageEdit(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "Make it sunset",
+    ["image"] = "data:image/png;base64,...",
+    ["mask"] = "data:image/png;base64,..."
+});
 ```
 
 ### Key parameters

@@ -1,28 +1,25 @@
 ---
 title: "Files"
-description: "Call /files with the C# SDK."
+description: "Use the C# SDK for file upload, metadata, and file-content retrieval."
 ---
 
-**Methods**: `client.FilesApi.FilesPost()` (upload), `client.ListFiles()`, `client.GetFile()`.
+**Methods**: `client.UploadFile()`, `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+var client = new AIStats(apiKey: apiKey);
 
-// Upload
-var uploaded = client.FilesApi.FilesPost(new FilesPostRequest(purpose: "batch", file: new FileParameter(new MemoryStream(Encoding.UTF8.GetBytes("{}")), "file.json"))).Result;
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
 
-// List
-var files = client.ListFiles();
-
-// Get
-var file = client.GetFile(uploaded.Id);
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
 ```
 
-### Key parameters
-- `file` (required for upload): Stream or file.
-- `purpose` (required for upload): e.g., `batch`.
-
-### Returns
-`FileObject` (upload/get) or `FileListResponse` (list)
-
+<Note>
+`ListFiles()` is wired through the SDK, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+on the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
+</Note>

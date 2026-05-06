@@ -13,6 +13,31 @@ export type ClientOptions = {
 	timeoutMs?: number;
 };
 
+export class AIStatsHttpError extends Error {
+	readonly status: number;
+	readonly statusText: string;
+	readonly body: unknown;
+	readonly headers: Record<string, string>;
+
+	constructor(args: {
+		status: number;
+		statusText: string;
+		body: unknown;
+		headers?: Record<string, string>;
+		message?: string;
+	}) {
+		super(
+			args.message ??
+			`Request failed: ${args.status} ${args.statusText}${formatErrorBodySuffix(args.body)}`
+		);
+		this.name = "AIStatsHttpError";
+		this.status = args.status;
+		this.statusText = args.statusText;
+		this.body = args.body;
+		this.headers = args.headers ?? {};
+	}
+}
+
 export class Client {
 	private readonly baseUrl: string;
 	private readonly headers: Record<string, string>;
@@ -57,16 +82,47 @@ export class Client {
 				signal: controller.signal
 			});
 			const text = await response.text();
+			const parsedBody = parseResponseText(text);
 			if (!response.ok) {
-				throw new Error(`Request failed: ${response.status} ${response.statusText} - ${text}`);
+				throw new AIStatsHttpError({
+					status: response.status,
+					statusText: response.statusText,
+					body: parsedBody,
+					headers: Object.fromEntries(response.headers.entries())
+				});
 			}
 			if (!text) {
 				return undefined as T;
 			}
-			return JSON.parse(text) as T;
+			return parsedBody as T;
 		} finally {
 			clearTimeout(timeout);
 		}
+	}
+}
+
+function parseResponseText(text: string): unknown {
+	if (!text) {
+		return undefined;
+	}
+	try {
+		return JSON.parse(text);
+	} catch {
+		return text;
+	}
+}
+
+function formatErrorBodySuffix(body: unknown): string {
+	if (body === undefined || body === null || body === "") {
+		return "";
+	}
+	if (typeof body === "string") {
+		return ` - ${body}`;
+	}
+	try {
+		return ` - ${JSON.stringify(body)}`;
+	} catch {
+		return "";
 	}
 }
 

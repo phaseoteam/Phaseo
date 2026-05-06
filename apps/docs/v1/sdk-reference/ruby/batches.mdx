@@ -3,33 +3,40 @@ title: "Batches"
 description: "Call /batches with the Ruby SDK."
 ---
 
-**Methods**: `BetaApi#batches_post`, `BetaApi#batches_batch_id_get`.
+**Methods**: `create_batch`, `retrieve_batch`, `cancel_batch`, `get_async_job_websocket_url`, `batch_websocket_url`, `async_jobs.websocket_url`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-beta_api = AIStatsSdk::BetaApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
 
-request = AIStatsSdk::BatchRequest.new(
+batch = client.create_batch(
   endpoint: 'responses',
   input_file_id: 'file_123',
-  completion_window: '24h'
+  completion_window: '24h',
+  session_id: 'agent-run-42'
 )
 
-batch = beta_api.batches_post(request)
-status = beta_api.batches_batch_id_get(batch.id)
+status = client.retrieve_batch(batch["id"])
+cancelling = client.cancel_batch(batch["id"])
+websocket_url = client.batch_websocket_url(batch["id"], interval_ms: 1500)
 ```
 
 ### Key parameters
 - `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
 - `input_file_id` (required): File id uploaded via `/files`.
 - `completion_window`: e.g., `24h`.
+- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 
 ### Returns
 `BatchResponse`
+
+Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
+
+Use `client.batch_websocket_url(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `client.async_jobs.websocket_url("batch", batch["id"], ...)` when you want the generic async-jobs resource helper.
+Use `client.get_async_job_websocket_url("batch", batch["id"], ...)` when you want the same generic helper without going through the resource object.
 

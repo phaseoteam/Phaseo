@@ -3,20 +3,25 @@ title: "Chat completions"
 description: "Call /chat/completions with the C# SDK."
 ---
 
-**Method**: `client.GenerateText()`
+**Method**: `client.GenerateText(...)` or `client.CreateChatCompletion(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new ChatCompletionsRequest(
-    model: "openai/gpt-4o-mini",
-    messages: new List<ChatMessage> {
-        new ChatMessage(new ChatMessageUser(ChatMessageUser.RoleEnum.User, new MessageContentText(MessageContentText.TypeEnum.Text, "Write a limerick about lighthouses.")))
+var client = new AIStats(apiKey);
+var response = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object>
+        {
+            ["role"] = "user",
+            ["content"] = "Write a limerick about lighthouses."
+        }
     }
-);
-
-var response = client.GenerateText(request);
+});
 ```
 
 ### Key parameters

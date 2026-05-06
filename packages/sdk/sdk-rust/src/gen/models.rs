@@ -59,6 +59,7 @@ pub struct AnthropicMessagesRequest {
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
+	pub session_id: Option<String>,
 	pub stop_sequences: Option<Vec<String>>,
 	pub stream: Option<bool>,
 	pub system: Option<String>,
@@ -206,6 +207,16 @@ pub struct AudioTranslationResponse {
 	pub text: Option<String>,
 }
 
+pub struct BatchBillingSummary {
+	pub billed: Option<bool>,
+	pub charged: Option<bool>,
+	pub cost_nanos: Option<i64>,
+	pub cost_usd: Option<f64>,
+	pub finalized_at: Option<String>,
+	pub pricing_breakdown: Option<HashMap<String, String>>,
+	pub reason: Option<String>,
+}
+
 pub struct BatchRequest {
 	pub completion_window: Option<String>,
 	pub debug: Option<HashMap<String, String>>,
@@ -213,6 +224,8 @@ pub struct BatchRequest {
 	pub input_file_id: String,
 	pub metadata: Option<HashMap<String, String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub session_id: Option<String>,
+	pub webhook: Option<HashMap<String, String>>,
 }
 
 pub struct BatchRequestCounts {
@@ -222,6 +235,7 @@ pub struct BatchRequestCounts {
 }
 
 pub struct BatchResponse {
+	pub billing: Option<HashMap<String, String>>,
 	pub cancelled_at: Option<i64>,
 	pub cancelling_at: Option<i64>,
 	pub completed_at: Option<i64>,
@@ -240,8 +254,13 @@ pub struct BatchResponse {
 	pub metadata: Option<HashMap<String, String>>,
 	pub object: Option<String>,
 	pub output_file_id: Option<String>,
+	pub pricing_lines: Option<Vec<HashMap<String, String>>>,
+	pub provider: Option<String>,
 	pub request_counts: Option<HashMap<String, String>>,
+	pub request_id: Option<String>,
+	pub session_id: Option<String>,
 	pub status: Option<String>,
+	pub webhook: Option<HashMap<String, String>>,
 }
 
 pub type BenchmarkId = JsonValue;
@@ -290,6 +309,7 @@ pub struct ChatCompletionsRequest {
 	pub safety_identifier: Option<Option<String>>,
 	pub seed: Option<i64>,
 	pub service_tier: Option<String>,
+	pub session_id: Option<String>,
 	pub stop: Option<String>,
 	pub store: Option<bool>,
 	pub stream: Option<bool>,
@@ -309,7 +329,9 @@ pub struct ChatCompletionsResponse {
 	pub created: Option<i64>,
 	pub id: Option<String>,
 	pub model: Option<String>,
+	pub nativeResponseId: Option<Option<String>>,
 	pub object: Option<String>,
+	pub provider: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
 }
 
@@ -390,11 +412,73 @@ pub struct EmbeddingsResponse {
 	pub usage: Option<HashMap<String, String>>,
 }
 
+pub struct ErrorFailureSampleItem {
+	pub provider: Option<Option<String>>,
+	pub retryable: Option<Option<bool>>,
+	pub status: Option<Option<i64>>,
+	pub r#type: Option<Option<String>>,
+	pub upstream_error_code: Option<Option<String>>,
+	pub upstream_error_description: Option<Option<String>>,
+	pub upstream_error_message: Option<Option<String>>,
+	pub upstream_error_param: Option<Option<String>>,
+	pub upstream_payload_preview: Option<Option<String>>,
+}
+
+pub struct ErrorProviderCandidateDiagnostics {
+	pub candidateCount: Option<i64>,
+	pub droppedMissingAdapter: Option<Vec<HashMap<String, String>>>,
+	pub droppedUnsupportedEndpoint: Option<Vec<String>>,
+	pub supportsEndpointCount: Option<i64>,
+	pub totalProviders: Option<i64>,
+}
+
+pub struct ErrorProviderEnablementDiagnostics {
+	pub capability: Option<String>,
+	pub dropped: Option<Vec<HashMap<String, String>>>,
+	pub providersAfter: Option<Vec<String>>,
+	pub providersBefore: Option<Vec<String>>,
+}
+
+pub struct ErrorProviderFailureDiagnostics {
+	pub category: Option<String>,
+	pub hint: Option<String>,
+	pub provider: Option<Option<String>>,
+}
+
 pub struct ErrorResponse {
+	pub attempt_count: Option<i64>,
 	pub description: Option<String>,
+	pub details: Option<Vec<HashMap<String, String>>>,
 	pub error: String,
+	pub error_origin: Option<String>,
+	pub error_type: Option<String>,
+	pub failed_providers: Option<Vec<String>>,
+	pub failed_statuses: Option<Vec<i64>>,
+	pub failure_sample: Option<Vec<HashMap<String, String>>>,
+	pub generation_id: Option<String>,
 	pub message: Option<String>,
+	pub missing_pricing_providers: Option<Vec<String>>,
 	pub ok: Option<bool>,
+	pub provider_candidate_diagnostics: Option<HashMap<String, String>>,
+	pub provider_enablement: Option<HashMap<String, String>>,
+	pub provider_failure_diagnostics: Option<HashMap<String, String>>,
+	pub provider_payment_required_provider: Option<String>,
+	pub provider_payment_required_support_notice: Option<String>,
+	pub reason: Option<String>,
+	pub routing_diagnostics: Option<HashMap<String, String>>,
+	pub status_code: Option<i64>,
+	pub upstream_error: Option<HashMap<String, String>>,
+}
+
+pub struct ErrorRoutingDiagnostics {
+	pub filterStages: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct ErrorUpstreamError {
+	pub code: Option<Option<String>>,
+	pub description: Option<Option<String>>,
+	pub message: Option<Option<String>>,
+	pub param: Option<Option<String>>,
 }
 
 pub struct FileResponse {
@@ -425,6 +509,7 @@ pub struct GatewayDatetimeToolDefinition {
 }
 
 pub struct GatewayModelsResponse {
+	pub availability_mode: String,
 	pub limit: i64,
 	pub models: Vec<HashMap<String, String>>,
 	pub offset: i64,
@@ -437,6 +522,7 @@ pub struct GenerationResponse {
 	pub app_id: Option<Option<String>>,
 	pub byok: Option<bool>,
 	pub cost_nanos: Option<f64>,
+	pub created_at: Option<String>,
 	pub currency: Option<String>,
 	pub endpoint: Option<String>,
 	pub error_code: Option<Option<String>>,
@@ -448,6 +534,8 @@ pub struct GenerationResponse {
 	pub native_response_id: Option<Option<String>>,
 	pub pricing_lines: Option<Vec<HashMap<String, String>>>,
 	pub provider: Option<String>,
+	pub replay_request: Option<Option<HashMap<String, String>>>,
+	pub replay_supported: Option<bool>,
 	pub request_id: Option<String>,
 	pub status_code: Option<f64>,
 	pub stream: Option<bool>,
@@ -586,6 +674,7 @@ pub type MessageContentPart = JsonValue;
 pub struct Model {
 	pub aliases: Option<Vec<String>>,
 	pub architecture: Option<HashMap<String, String>>,
+	pub availability: Option<HashMap<String, String>>,
 	pub canonical_slug: Option<String>,
 	pub created: Option<Option<i64>>,
 	pub deprecation_date: Option<Option<String>>,
@@ -613,6 +702,13 @@ pub struct Model {
 	pub top_provider_id: Option<Option<String>>,
 }
 
+pub struct ModelAvailability {
+	pub active_provider_count: i64,
+	pub inactive_provider_count: i64,
+	pub provider_count: i64,
+	pub status: String,
+}
+
 pub type ModelId = JsonValue;
 
 pub struct ModelLifecycle {
@@ -621,6 +717,22 @@ pub struct ModelLifecycle {
 	pub replacement_model_id: Option<Option<String>>,
 	pub retirement_date: Option<Option<String>>,
 	pub status: Option<Option<String>>,
+}
+
+pub struct ModelProviderAvailability {
+	pub api_provider_id: String,
+	pub api_provider_name: Option<Option<String>>,
+	pub availability_reason: String,
+	pub availability_status: String,
+	pub capability_status: String,
+	pub effective_from: Option<Option<String>>,
+	pub effective_to: Option<Option<String>>,
+	pub endpoints: Vec<String>,
+	pub is_active_gateway: bool,
+	pub model_routing_status: String,
+	pub params: Vec<String>,
+	pub provider_routing_status: String,
+	pub provider_status: String,
 }
 
 pub struct ModelsPrivacyScopeNotImplementedResponse {
@@ -873,6 +985,7 @@ pub struct ResponsesRequest {
 	pub reasoning: Option<HashMap<String, String>>,
 	pub safety_identifier: Option<Option<String>>,
 	pub service_tier: Option<String>,
+	pub session_id: Option<String>,
 	pub store: Option<bool>,
 	pub stream: Option<bool>,
 	pub temperature: Option<f64>,
@@ -1011,7 +1124,9 @@ pub struct VideoGenerationResponse {
 	pub progress: Option<Option<i64>>,
 	pub progress_source: Option<String>,
 	pub provider: Option<String>,
+	pub request_id: Option<String>,
 	pub seconds: Option<f64>,
+	pub session_id: Option<String>,
 	pub size: Option<String>,
 	pub started_at: Option<Option<String>>,
 	pub status: Option<String>,

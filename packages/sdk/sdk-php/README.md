@@ -39,8 +39,48 @@ echo json_encode($response, JSON_PRETTY_PRINT) . PHP_EOL;
 - `createResponse(array $payload)`
 - `createChatCompletion(array $payload)`
 - `listModels(array $params = [])`
+- `listOrganisations(array $params = [])` for paginated `/organisations` discovery
+- `listPricingModels(array $params = [])` for `/pricing/models` catalogue pricing discovery
+- `calculatePricing(array $payload)` for `/pricing/calculate` usage estimation
+- `listProviders(array $params = [])`, `getCredits(array $params = [])`, `getActivity(array $params = [])`, and `getAnalytics(array $params = [])` for provider discovery and management-key usage surfaces
+- `listApiKeys(array $params = [])` for management-key `/keys` discovery
+- `createApiKey(array $payload)`, `updateApiKey(string $id, array $payload)`, and `deleteApiKey(string $id)` for management-key API-key lifecycle changes
+- `getApiKey(string $id)` for management-key `/keys/{id}` lookup
+- `listWorkspaces(array $params = [])`, `getWorkspace(string $id)`, `createWorkspace(array $body)`, `updateWorkspace(string $id, array $body)`, and `deleteWorkspace(string $id)` for management-key workspace lifecycle management
+- `getCurrentApiKey()`
+- `health()`
 - `getModelDeprecationInfo(string $modelId)`
 - `validateModel(string $modelId)`
+
+Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
+
+Use `provider_availability_reason` with `availability=all` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability=all` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
+
+```php
+$models = $client->listModels([
+    'provider' => 'anthropic',
+    'provider_status' => 'beta,not_ready',
+    'provider_availability_reason' => 'preview_only,provider_not_ready',
+    'capability_status' => 'coming_soon,internal_testing',
+    'availability' => 'all',
+]);
+```
+
+## Async job websocket helpers
+
+Batch and video operations can expose a websocket lifecycle stream at `/v1/async/{kind}/{id}/ws`.
+
+```php
+$batchSocketUrl = $client->getBatchWebSocketUrl('batch_123', 1500);
+$videoSocketUrl = $client->getVideoWebSocketUrl('video_123', null, true);
+$genericSocketUrl = $client->getAsyncJobWebSocketUrl('video', 'video_123');
+$resourceSocketUrl = $client->asyncJobs()->websocketUrl('video', 'video_123');
+
+echo $batchSocketUrl . PHP_EOL;
+echo $videoSocketUrl . PHP_EOL;
+echo $genericSocketUrl . PHP_EOL;
+echo $resourceSocketUrl . PHP_EOL;
+```
 
 ## TLS and SSL behavior
 

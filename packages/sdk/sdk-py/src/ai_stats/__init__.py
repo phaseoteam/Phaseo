@@ -8,6 +8,7 @@ import httpx
 import os
 import time
 import warnings
+from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 from gen.client import Client
 from gen import models
@@ -114,6 +115,23 @@ class _BatchesResource:
     def retrieve(self, batch_id: str) -> dict[str, Any]:
         return self._parent.get_batch(batch_id)
 
+    def cancel(self, batch_id: str) -> dict[str, Any]:
+        return self._parent.cancel_batch(batch_id)
+
+    def websocket_url(
+        self,
+        batch_id: str,
+        *,
+        interval_ms: Optional[int] = None,
+        close_on_terminal: Optional[bool] = None,
+    ) -> str:
+        return self._parent.get_async_job_websocket_url(
+            "batch",
+            batch_id,
+            interval_ms=interval_ms,
+            close_on_terminal=close_on_terminal,
+        )
+
 
 class _FilesResource:
     def __init__(self, parent: "AIStats"):
@@ -127,6 +145,9 @@ class _FilesResource:
 
     def retrieve(self, file_id: str) -> dict[str, Any]:
         return self._parent.get_file(file_id)
+
+    def content(self, file_id: str) -> bytes:
+        return self._parent.get_file_content(file_id)
 
 
 class _ModelsResource:
@@ -150,6 +171,9 @@ class _VideosResource:
     def create(self, params: dict[str, Any]) -> dict[str, Any]:
         return self._parent.generate_video(params)
 
+    def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._parent.list_videos(params)
+
     def retrieve(self, video_id: str) -> dict[str, Any]:
         return self._parent.get_video(video_id)
 
@@ -167,6 +191,40 @@ class _VideosResource:
 
     def list_models(self) -> dict[str, Any]:
         return self._parent.list_video_models()
+
+    def websocket_url(
+        self,
+        video_id: str,
+        *,
+        interval_ms: Optional[int] = None,
+        close_on_terminal: Optional[bool] = None,
+    ) -> str:
+        return self._parent.get_async_job_websocket_url(
+            "video",
+            video_id,
+            interval_ms=interval_ms,
+            close_on_terminal=close_on_terminal,
+        )
+
+
+class _AsyncJobsResource:
+    def __init__(self, parent: "AIStats"):
+        self._parent = parent
+
+    def websocket_url(
+        self,
+        kind: Literal["batch", "video"],
+        job_id: str,
+        *,
+        interval_ms: Optional[int] = None,
+        close_on_terminal: Optional[bool] = None,
+    ) -> str:
+        return self._parent.get_async_job_websocket_url(
+            kind,
+            job_id,
+            interval_ms=interval_ms,
+            close_on_terminal=close_on_terminal,
+        )
 
 
 KnownModelId: TypeAlias = models.KnownModelId
@@ -273,6 +331,7 @@ class AIStats:
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
         self.videos = _VideosResource(self)
+        self.async_jobs = _AsyncJobsResource(self)
         self._coming_soon_message = "This endpoint is not yet supported in the SDK."
         self._devtools = TelemetryRecorder(devtools)
         self._enable_deprecation_warnings = enable_deprecation_warnings
@@ -438,6 +497,32 @@ class AIStats:
             status_code=status_code,
         )
 
+    def _run_traced(
+        self,
+        *,
+        endpoint: str,
+        request: dict[str, Any],
+        call: Callable[[], dict[str, Any]],
+    ) -> dict[str, Any]:
+        started = time.time()
+        try:
+            response = call()
+            self._capture_success(
+                endpoint=endpoint,
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint=endpoint,
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
     def _coming_soon(self, endpoint: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         return {
             "status": "coming_soon",
@@ -570,10 +655,66 @@ class AIStats:
     def generate_video(self, request: VideoCreateRequest | dict[str, Any]) -> dict[str, Any]:
         payload = dict(request)
         self._maybe_warn_for_payload(payload)
-        return ops.createVideo(self._client, body=payload)
+        started = time.time()
+        try:
+            response = ops.createVideo(self._client, body=payload)
+            self._capture_success(
+                endpoint="video.generations",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="video.generations",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
+    def list_videos(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        query = dict(params or {})
+        started = time.time()
+        try:
+            response = ops.listVideos(self._client, query=query or None)
+            self._capture_success(
+                endpoint="video.list",
+                request=query,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="video.list",
+                request=query,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def get_video(self, video_id: str) -> dict[str, Any]:
-        return ops.getVideo(self._client, path={"video_id": video_id})
+        request = {"video_id": video_id}
+        started = time.time()
+        try:
+            response = ops.getVideo(self._client, path={"video_id": video_id})
+            self._capture_success(
+                endpoint="video.retrieve",
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="video.retrieve",
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def get_video_content(self, video_id: str) -> bytes:
         url = f"{self._base_url}/videos/{video_id}/content"
@@ -585,7 +726,25 @@ class AIStats:
         return self.request("POST", f"/videos/{video_id}/download_url", body=params or {})
 
     def cancel_video(self, video_id: str) -> dict[str, Any]:
-        return self.request("POST", f"/videos/{video_id}/cancel")
+        request = {"video_id": video_id}
+        started = time.time()
+        try:
+            response = self.request("POST", f"/videos/{video_id}/cancel")
+            self._capture_success(
+                endpoint="video.cancel",
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="video.cancel",
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def delete_video(self, video_id: str) -> dict[str, Any]:
         return ops.deleteVideo(self._client, path={"video_id": video_id})
@@ -740,16 +899,79 @@ class AIStats:
 
     def create_batch(self, request: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         payload = request if isinstance(request, dict) else dict(request)
-        return ops.createBatch(self._client, body=payload)
+        self._maybe_warn_for_payload(payload)
+        started = time.time()
+        try:
+            response = ops.createBatch(self._client, body=payload)
+            self._capture_success(
+                endpoint="batches.create",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="batches.create",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def get_batch(self, batch_id: str) -> dict[str, Any]:
-        return ops.retrieveBatch(self._client, path={"batch_id": batch_id})
+        request = {"batch_id": batch_id}
+        started = time.time()
+        try:
+            response = ops.retrieveBatch(self._client, path={"batch_id": batch_id})
+            self._capture_success(
+                endpoint="batches.retrieve",
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="batches.retrieve",
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
+    def cancel_batch(self, batch_id: str) -> dict[str, Any]:
+        request = {"batch_id": batch_id}
+        started = time.time()
+        try:
+            response = ops.cancelBatch(self._client, path={"batch_id": batch_id})
+            self._capture_success(
+                endpoint="batches.cancel",
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="batches.cancel",
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def list_files(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return ops.listFiles(self._client, query=params or {})
 
     def get_file(self, file_id: str) -> dict[str, Any]:
         return ops.retrieveFile(self._client, path={"file_id": file_id})
+
+    def get_file_content(self, file_id: str) -> bytes:
+        url = f"{self._base_url}/files/{file_id}/content"
+        response = httpx.get(url, headers=self._headers, timeout=self._timeout)
+        response.raise_for_status()
+        return response.content
 
     def upload_file(self, *, purpose: Optional[str] = None, file: Any = None) -> dict[str, Any]:
         payload: dict[str, Any] = {"file": file}
@@ -758,25 +980,231 @@ class AIStats:
         return ops.uploadFile(self._client, body=payload)
 
     def get_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.listModels(self._client, query=params or {})
+        request = params or {}
+        return self._run_traced(
+            endpoint="models.list",
+            request=request,
+            call=lambda: ops.listModels(self._client, query=request),
+        )
+
+    def list_team_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = params or {}
+        return self._run_traced(
+            endpoint="models.team",
+            request=request,
+            call=lambda: ops.listTeamModels(self._client, query=request),
+        )
+
+    def list_endpoints(self) -> dict[str, Any]:
+        return self._run_traced(
+            endpoint="endpoints.list",
+            request={},
+            call=lambda: ops.listEndpoints(self._client),
+        )
+
+    def list_organisations(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = params or {}
+        return self._run_traced(
+            endpoint="organisations.list",
+            request=request,
+            call=lambda: ops.listOrganisations(self._client, query=request),
+        )
+
+    def list_pricing_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = params or {}
+        return self._run_traced(
+            endpoint="pricing.models",
+            request=request,
+            call=lambda: ops.listPricingModels(self._client, query=request),
+        )
+
+    def calculate_pricing(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._run_traced(
+            endpoint="pricing.calculate",
+            request=payload,
+            call=lambda: ops.calculatePricing(self._client, body=payload),
+        )
+
+    def list_api_keys(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = params or {}
+        return self._run_traced(
+            endpoint="provisioning.keys.list",
+            request=request,
+            call=lambda: ops.listApiKeys(self._client, query=request),
+        )
+
+    def create_api_key(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._run_traced(
+            endpoint="provisioning.keys.create",
+            request=payload,
+            call=lambda: ops.createApiKey(self._client, body=payload),
+        )
+
+    def get_api_key(self, key_id: str) -> dict[str, Any]:
+        request = {"id": key_id}
+        return self._run_traced(
+            endpoint="provisioning.keys.get",
+            request=request,
+            call=lambda: ops.getApiKey(self._client, path={"id": key_id}),
+        )
+
+    def update_api_key(self, key_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        request = {"id": key_id, "body": payload}
+        return self._run_traced(
+            endpoint="provisioning.keys.update",
+            request=request,
+            call=lambda: ops.updateApiKey(self._client, path={"id": key_id}, body=payload),
+        )
+
+    def delete_api_key(self, key_id: str) -> dict[str, Any]:
+        request = {"id": key_id}
+        return self._run_traced(
+            endpoint="provisioning.keys.delete",
+            request=request,
+            call=lambda: ops.deleteApiKey(self._client, path={"id": key_id}),
+        )
+
+    def list_workspaces(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = params or {}
+        return self._run_traced(
+            endpoint="provisioning.workspaces.list",
+            request=request,
+            call=lambda: ops.listWorkspaces(self._client, query=request),
+        )
+
+    def get_workspace(self, workspace_id: str) -> dict[str, Any]:
+        request = {"id": workspace_id}
+        return self._run_traced(
+            endpoint="provisioning.workspaces.get",
+            request=request,
+            call=lambda: ops.getWorkspace(self._client, path={"id": workspace_id}),
+        )
+
+    def create_workspace(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._run_traced(
+            endpoint="provisioning.workspaces.create",
+            request=payload,
+            call=lambda: ops.createWorkspace(self._client, body=payload),
+        )
+
+    def update_workspace(self, workspace_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        request = {"id": workspace_id, "body": payload}
+        return self._run_traced(
+            endpoint="provisioning.workspaces.update",
+            request=request,
+            call=lambda: ops.updateWorkspace(self._client, path={"id": workspace_id}, body=payload),
+        )
+
+    def delete_workspace(self, workspace_id: str) -> dict[str, Any]:
+        request = {"id": workspace_id}
+        return self._run_traced(
+            endpoint="provisioning.workspaces.delete",
+            request=request,
+            call=lambda: ops.deleteWorkspace(self._client, path={"id": workspace_id}),
+        )
+
+    def get_current_api_key(self) -> dict[str, Any]:
+        return self._run_traced(
+            endpoint="key.current",
+            request={},
+            call=lambda: ops.getCurrentApiKey(self._client),
+        )
 
     def get_health(self) -> dict[str, Any]:
-        return ops.healthz(self._client)
+        request: dict[str, Any] = {}
+        started = time.time()
+        try:
+            response = self.request("GET", "/health")
+            self._capture_success(
+                endpoint="health",
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="health",
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def get_generation(self, generation_id: str) -> dict[str, Any]:
-        return self._coming_soon("generation", {"id": generation_id})
+        request = {"id": generation_id}
+        started = time.time()
+        try:
+            response = ops.getGeneration(self._client, query={"id": generation_id})
+            self._capture_success(
+                endpoint="generations.retrieve",
+                request=request,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="generations.retrieve",
+                request=request,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
+    def get_async_job_websocket_url(
+        self,
+        kind: Literal["batch", "video"],
+        job_id: str,
+        *,
+        interval_ms: Optional[int] = None,
+        close_on_terminal: Optional[bool] = None,
+    ) -> str:
+        normalized_job_id = str(job_id or "").strip()
+        if not normalized_job_id:
+            raise ValueError("job_id is required")
+
+        parsed = urlparse(self._base_url)
+        scheme = "wss" if parsed.scheme == "https" else "ws"
+        query: dict[str, str] = {}
+        if interval_ms is not None:
+            query["interval_ms"] = str(interval_ms)
+        if close_on_terminal is not None:
+            query["close_on_terminal"] = "true" if close_on_terminal else "false"
+        path = f"{parsed.path.rstrip('/')}/async/{quote(kind)}/{quote(normalized_job_id)}/ws"
+        return urlunparse((scheme, parsed.netloc, path, "", urlencode(query), ""))
 
     def list_providers(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.listProviders(self._client, query=params or {})
+        request = params or {}
+        return self._run_traced(
+            endpoint="providers",
+            request=request,
+            call=lambda: ops.listProviders(self._client, query=request),
+        )
 
     def get_credits(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.getCredits(self._client, query=params or {})
+        request = params or {}
+        return self._run_traced(
+            endpoint="credits",
+            request=request,
+            call=lambda: ops.getCredits(self._client, query=request),
+        )
 
     def get_activity(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.getActivity(self._client, query=params or {})
+        request = params or {}
+        return self._run_traced(
+            endpoint="activity",
+            request=request,
+            call=lambda: ops.getActivity(self._client, query=request),
+        )
 
     def get_analytics(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.getAnalytics(self._client, query=params or {})
+        request = params or {}
+        return self._run_traced(
+            endpoint="analytics",
+            request=request,
+            call=lambda: ops.getActivityAlias(self._client, query=request),
+        )
 
     def list_provisioning_keys(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return ops.listProvisioningKeys(self._client, query=params or {})

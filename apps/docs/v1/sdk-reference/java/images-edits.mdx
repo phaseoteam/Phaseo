@@ -3,10 +3,12 @@ title: "Image edits"
 description: "Call /images/edits with the Java SDK."
 ---
 
-**Method**: `Operations.createImageEdit(...)`
+**Method**: `client.createImageEdit(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
+
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
 
 String body = """
 {
@@ -16,7 +18,7 @@ String body = """
 }
 """;
 
-Object response = Operations.createImageEdit(client, null, null, null, body);
+Object response = client.createImageEdit(body);
 System.out.println(String.valueOf(response));
 ```
 

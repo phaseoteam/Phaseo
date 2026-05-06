@@ -1,35 +1,55 @@
 ---
 title: "Batches"
-description: "Use the generated Go client for /batches."
+description: "Create and retrieve batch jobs with the Go SDK wrapper."
 ---
 
-The preview Go wrapper does not yet expose batch helpers. Use the generated
-client in `src/gen`.
+**Methods**: `client.CreateBatch(...)`, `client.RetrieveBatch(...)`, `client.CancelBatch(...)`, `client.GetAsyncJobWebSocketURL(...)`, `client.GetBatchWebSocketURL(...)`, `client.AsyncJobs.WebSocketURL(...)`.
 
 ```go
 import (
+  "context"
   "fmt"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
-client := gen.NewClient("https://api.phaseo.app/v1")
-client.Headers["Authorization"] = "Bearer " + apiKey
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+ctx := context.Background()
 
-created, err := gen.CreateBatch(client, nil, nil, nil, map[string]interface{}{
+created, err := client.CreateBatch(ctx, map[string]interface{}{
   "endpoint": "responses",
   "input_file_id": "file_123",
+  "session_id": "agent-run-42",
 })
 if err != nil {
   panic(err)
 }
 
-status, err := gen.RetrieveBatch(client, map[string]string{
-  "batch_id": fmt.Sprint(created["id"]),
-}, nil, nil, nil)
+status, err := client.RetrieveBatch(ctx, fmt.Sprint(created.(map[string]interface{})["id"]))
+if err != nil {
+  panic(err)
+}
+
+cancelling, err := client.CancelBatch(ctx, fmt.Sprint(created.(map[string]interface{})["id"]))
+if err != nil {
+  panic(err)
+}
+
+websocketURL, err := client.GetBatchWebSocketURL(
+  fmt.Sprint(created.(map[string]interface{})["id"]),
+  &aistats.AsyncJobWebSocketOptions{IntervalMS: 1500},
+)
 if err != nil {
   panic(err)
 }
 
 fmt.Println(status)
+fmt.Println(cancelling)
+fmt.Println(websocketURL)
 ```
+
+Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
+
+Use `client.GetBatchWebSocketURL(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `client.AsyncJobs.WebSocketURL("batch", batchID, options)` when you want the generic async-jobs resource helper.
+Use `client.GetAsyncJobWebSocketURL("batch", batchID, options)` when you want the same generic helper without going through the resource object.
 

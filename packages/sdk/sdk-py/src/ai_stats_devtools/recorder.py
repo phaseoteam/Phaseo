@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import httpx
 import os
 import platform
 import sys
 import time
+import urllib.error
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Mapping, MutableMapping, Optional
@@ -103,11 +105,14 @@ class TelemetryRecorder:
             chunk_count=chunk_count,
             status_code=status_code,
         )
-        entry["response"] = None
+        error_response = self._extract_error_response(error)
+        entry["response"] = error_response
         entry["error"] = {
             "message": str(error),
             "type": error.__class__.__name__,
         }
+        if status_code is None:
+            entry["metadata"]["status_code"] = self._extract_error_status_code(error)
         self._append_entry(entry)
 
     def _base_entry(
@@ -144,6 +149,28 @@ class TelemetryRecorder:
             entry["metadata"]["model"] = model
         if provider:
             entry["metadata"]["provider"] = provider
+        response = entry.get("response")
+        if isinstance(response, Mapping):
+            for key in (
+                "request_id",
+                "session_id",
+                "upstream_request_id",
+                "native_response_id",
+                "status_code",
+                "latency_ms",
+                "generation_ms",
+                "throughput",
+                "provider_attempts",
+                "pricing_lines",
+                "request_counts",
+                "billing",
+            ):
+                value = response.get(key)
+                if value is not None:
+                    entry["metadata"][key] = value
+            finish_reason = response.get("finish_reason") or response.get("stop_reason")
+            if finish_reason is not None:
+                entry["metadata"]["finish_reason"] = finish_reason
 
         if not self._capture_headers and isinstance(entry.get("metadata"), dict):
             entry["metadata"].pop("headers", None)
@@ -201,3 +228,43 @@ class TelemetryRecorder:
         if not model and isinstance(request, Mapping):
             model = request.get("model") if isinstance(request.get("model"), str) else None
         return model, provider
+
+    def _extract_error_response(self, error: Exception) -> Optional[Dict[str, Any]]:
+        if isinstance(error, httpx.HTTPStatusError):
+            return self._parse_response_text(error.response.text)
+        if isinstance(error, urllib.error.HTTPError):
+            try:
+                raw = error.read().decode("utf-8")
+            except Exception:
+                raw = ""
+            return self._parse_response_text(raw) or {
+                "status_code": error.code,
+                "error": raw.strip() or str(error),
+            }
+        response = getattr(error, "response", None)
+        if isinstance(response, Mapping):
+            return dict(response)
+        body = getattr(error, "body", None)
+        if isinstance(body, Mapping):
+            return dict(body)
+        if isinstance(body, str):
+            return self._parse_response_text(body)
+        return None
+
+    def _extract_error_status_code(self, error: Exception) -> Optional[int]:
+        if isinstance(error, httpx.HTTPStatusError):
+            return error.response.status_code
+        if isinstance(error, urllib.error.HTTPError):
+            return error.code
+        status_code = getattr(error, "status_code", None)
+        return int(status_code) if isinstance(status_code, (int, float)) else None
+
+    def _parse_response_text(self, raw: str) -> Optional[Dict[str, Any]]:
+        text = raw.strip()
+        if not text:
+            return None
+        try:
+            decoded = json.loads(text)
+        except json.JSONDecodeError:
+            return None
+        return decoded if isinstance(decoded, dict) else None

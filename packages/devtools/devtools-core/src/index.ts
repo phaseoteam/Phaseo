@@ -13,6 +13,7 @@ export type {
   ErrorInfo,
   UsageInfo,
   CostInfo,
+  ProviderAttempt,
   Metadata,
   SessionMetadata,
   Stats

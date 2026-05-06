@@ -3,18 +3,18 @@ title: "Moderations"
 description: "Call /moderations with the C# SDK."
 ---
 
-**Method**: `client.ModerationsApi.ModerationsPostAsync()`
+**Method**: `client.GenerateModeration(...)` or `client.CreateModeration(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new ModerationRequest(
-    model: "openai/omni-moderation-latest",
-    input: new ModerationRequestInput("Text to classify")
-);
-
-var response = client.ModerationsApi.ModerationsPostAsync(request).Result;
+var client = new AIStats(apiKey);
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation-latest",
+    ["input"] = "Text to classify"
+});
 ```
 
 ### Key parameters

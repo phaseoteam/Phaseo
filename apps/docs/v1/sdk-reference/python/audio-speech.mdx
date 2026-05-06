@@ -1,11 +1,7 @@
 ---
 title: "TTS (Text to Speech)"
-description: "Python SDK placeholder for /audio/speech."
+description: "Call /audio/speech with the Python SDK."
 ---
-
-<Note type="warning">
-  This helper currently returns a `coming_soon` placeholder in the Python SDK.
-</Note>
 
 **Method**: `client.generate_speech()`
 
@@ -13,13 +9,9 @@ description: "Python SDK placeholder for /audio/speech."
 result = client.generate_speech({
     "model": "openai/gpt-4o-mini-tts",
     "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
 })
 
 print(result)
-# {
-#   "status": "coming_soon",
-#   "endpoint": "audio/speech",
-#   "message": "This endpoint is not yet supported in the SDK.",
-#   "payload": {...}
-# }
 ```

@@ -63,7 +63,19 @@ export function createAIStatsDevtools(options?: {
 }
 
 // Re-export devtools types for convenience
-export type { DevToolsConfig, DevToolsEntry, SessionMetadata, Stats } from "./core.js";
+export type {
+  DevToolsConfig,
+  DevToolsEntry,
+  SessionMetadata,
+  Stats,
+  ProviderAttempt,
+  Metadata,
+  UsageInfo,
+  CostInfo,
+  ErrorInfo,
+  EndpointType,
+  SdkIdentifier,
+} from "./core.js";
 
 /**
  * Re-export the devtools viewer CLI

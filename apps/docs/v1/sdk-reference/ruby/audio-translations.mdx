@@ -3,23 +3,17 @@ title: "Translations"
 description: "Call /audio/translations with the Ruby SDK."
 ---
 
-**Method**: `AudioApi#audio_translations_post`.
+**Method**: `client.generate_translation(...)` or `client.create_translation(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-audio_api = AIStatsSdk::AudioApi.new(api_client)
-
-request = AIStatsSdk::AudioTranslationRequest.new(
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+translated = client.generate_translation(
   model: 'openai/gpt-4o-translate',
   audio_b64: 'base64_audio_data'
 )
-
-translated = audio_api.audio_translations_post(request)
 ```
 
 ### Key parameters

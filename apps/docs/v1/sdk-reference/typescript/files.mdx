@@ -3,14 +3,19 @@ title: "Files"
 description: "Call /files with the TypeScript SDK."
 ---
 
-**Methods**: `client.uploadFile()`, `client.listFiles()`, `client.getFile()`.
+**Methods**: `client.uploadFile()`, `client.listFiles()`, `client.getFile()`, `client.getFileContent()`.
 
 ### Example
 ```typescript
 const uploaded = await client.uploadFile({ purpose: "batch", file: new Blob(["{}"]) });
-const files = await client.listFiles();
 const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id);
 ```
+
+<Note>
+`client.listFiles()` exists, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+when you use the shared gateway key. Persist the `uploaded.id` value and retrieve files directly.
+</Note>
 
 ### Key parameters
 - `file` (required for upload): Blob/File/base64/string.
@@ -31,7 +36,7 @@ const file = await client.getFile(uploaded.id);
 }
 ```
 
-Or `FileListResponse` (list)
+Or `FileListResponse` (list when the underlying provider key supports file enumeration)
 
 ```json
 {

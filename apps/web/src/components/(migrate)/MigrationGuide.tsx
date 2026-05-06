@@ -127,10 +127,10 @@ const AFTER_API_SURFACE_OPTIONS: Array<{
 ];
 
 const DOC_LINKS = [
-	{
-		label: "API Reference",
-		description: "Endpoints, auth, and error formats.",
-		href: "https://docs.ai-stats.phaseo.app/v1/api-reference/introduction",
+        {
+                label: "API Reference",
+                description: "Endpoints, auth, and error formats.",
+                href: "https://docs.ai-stats.phaseo.app/v1/api-reference/introduction",
 	},
 	{
 		label: "Quickstart",
@@ -142,11 +142,21 @@ const DOC_LINKS = [
 		description: "Tools, tool_choice, and function routing.",
 		href: "https://docs.ai-stats.phaseo.app/v1/guides/tool-calling",
 	},
-	{
-		label: "Structured Outputs",
-		description: "Schema-locked responses with constraints.",
-		href: "https://docs.ai-stats.phaseo.app/v1/guides/structured-outputs",
-	},
+        {
+                label: "Structured Outputs",
+                description: "Schema-locked responses with constraints.",
+                href: "https://docs.ai-stats.phaseo.app/v1/guides/structured-outputs",
+        },
+        {
+                label: "Feature Parity Matrix",
+                description: "Gateway migration parity by surface and competitor.",
+                href: "https://docs.ai-stats.phaseo.app/v1/migration-guides/feature-parity-matrix",
+        },
+        {
+                label: "Gateway Parity Review",
+                description: "Repo-grounded review of proven and still-open parity areas.",
+                href: "https://docs.ai-stats.phaseo.app/v1/migration-guides/gateway-parity-review",
+        },
 ] as const;
 
 const SHARED_STEPS = {
@@ -259,13 +269,13 @@ print(response)`,
 	"ts-sdk": {
 		label: "AI Stats SDK (TypeScript)",
 		lang: "ts",
-		code: `import { AIStats } from "@ai-stats/ts-sdk";
+		code: `import AIStats from "@ai-stats/sdk";
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
 });
 
-const response = await client.chatCompletions({
+const response = await client.generateText({
   model: "openai/gpt-4.1-mini",
   messages: [{ role: "user", content: "Ship a migration checklist." }],
 });
@@ -280,7 +290,7 @@ import asyncio
 
 async def main():
     async with AIStats(api_key="YOUR_API_KEY") as client:
-        response = await client.chat_completions(
+        response = await client.generate_text(
             model="openai/gpt-4.1-mini",
             messages=[{"role": "user", "content": "Ship a migration checklist."}],
         )
@@ -292,15 +302,15 @@ asyncio.run(main())`,
 		label: "Vercel AI SDK",
 		lang: "ts",
 		code: `import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createAIStats } from "@ai-stats/ai-sdk-provider";
 
-const openai = createOpenAI({
+const aiStats = createAIStats({
   apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
   baseURL: "${BASE_URL}",
 });
 
 const { text } = await generateText({
-  model: openai("openai/gpt-4.1-mini"),
+  model: aiStats("openai/gpt-4.1-mini"),
   prompt: "Ship a migration checklist.",
 });
 
@@ -619,13 +629,13 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 		label: "Diff",
 		lang: "diff",
 		code: `-// No AI Stats client configured yet.
-+import { AIStats } from "@ai-stats/ts-sdk";
++import AIStats from "@ai-stats/sdk";
 +
 +const client = new AIStats({
 +  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
 +});
 +
-+const response = await client.chatCompletions({
++const response = await client.generateText({
 +  model: "openai/gpt-4.1-mini",
 +  messages: [{ role: "user", content: "Ship a migration checklist." }],
 +});
@@ -641,7 +651,7 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 +
 +async def main():
 +    async with AIStats(api_key="YOUR_API_KEY") as client:
-+        response = await client.chat_completions(
++        response = await client.generate_text(
 +            model="openai/gpt-4.1-mini",
 +            messages=[{"role": "user", "content": "Ship a migration checklist."}],
 +        )
@@ -653,9 +663,9 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 		label: "Diff",
 		lang: "diff",
 		code: ` import { generateText } from "ai";
- import { createOpenAI } from "@ai-sdk/openai";
+ import { createAIStats } from "@ai-stats/ai-sdk-provider";
 
- const openai = createOpenAI({
+ const aiStats = createAIStats({
 -  apiKey: process.env.OPENAI_API_KEY ?? "YOUR_OPENAI_KEY",
 +  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
@@ -663,7 +673,7 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 
  const { text } = await generateText({
 -  model: openai("gpt-4.1-mini"),
-+  model: openai("openai/gpt-4.1-mini"),
++  model: aiStats("openai/gpt-4.1-mini"),
    prompt: "Ship a migration checklist.",
  });
 `,
@@ -939,8 +949,9 @@ const CHANGE_NOTES: Record<PathId, ChangeNote[]> = {
 				"Replace OPENAI_API_KEY with AI_STATS_API_KEY from the AI Stats dashboard.",
 		},
 		{
-			title: "Route requests through AI Stats",
-			description: `Set baseURL to ${BASE_URL} so traffic goes through the Gateway.`,
+			title: "Switch to the AI Stats AI SDK provider",
+			description:
+				"Replace the Vercel OpenAI provider factory with createAIStats(...) from @ai-stats/ai-sdk-provider.",
 		},
 		{
 			title: "Update model ids",
@@ -1028,7 +1039,7 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "vercel-ai-sdk",
 				label: "Vercel AI SDK",
-				description: "Swap the OpenAI provider base URL.",
+				description: "Replace the Vercel/OpenAI provider factory with the official AI Stats provider.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["vercel-ai-sdk"],
 			},

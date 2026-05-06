@@ -17,6 +17,11 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import {
+  getEntrySearchTerms,
+  getGenerationCorrelationMetadata,
+  getGenerationLookupId
+} from "@/utils/generationMetadata";
 
 interface GenerationsListProps {
   selectedId: string | null;
@@ -97,8 +102,10 @@ export function GenerationsList({ selectedId, onSelect }: GenerationsListProps) 
       if (selectedSdks !== null && !selectedSdks.includes(entry.metadata.sdk)) return false;
       if (!search) return true;
       const lookupId = getGenerationLookupId(entry);
-      const haystack = `${entry.type} ${entry.metadata.model ?? ""} ${entry.metadata.provider ?? ""} ${entry.metadata.sdk ?? ""} ${entry.id} ${lookupId}`.toLowerCase();
-      return haystack.includes(search);
+      const correlation = getGenerationCorrelationMetadata(entry);
+      const haystack = `${entry.type} ${entry.metadata.model ?? ""} ${entry.metadata.provider ?? ""} ${entry.metadata.sdk ?? ""} ${entry.id} ${lookupId} ${getEntrySearchTerms(entry)}`.toLowerCase();
+      const correlationHaystack = `${correlation.upstreamRequestId ?? ""} ${correlation.nativeResponseId ?? ""} ${correlation.sessionId ?? ""}`.toLowerCase();
+      return `${haystack} ${correlationHaystack}`.includes(search);
     });
   }, [data?.generations, endpoint, query, selectedSdks]);
 
@@ -315,13 +322,18 @@ export function GenerationsList({ selectedId, onSelect }: GenerationsListProps) 
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold truncate">
-                            {entry.metadata.model || "Unknown model"}
+                            {getEntryPrimaryLabel(entry)}
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <span className="rounded-full border border-border/60 bg-muted/50 px-2 py-0.5">
                               {formatEndpointLabel(entry.type)}
                             </span>
                             <SdkBadge sdk={entry.metadata.sdk} />
+                            {getEntryStatusHint(entry) ? (
+                              <span className="rounded-full border border-border/60 bg-card/70 px-2 py-0.5">
+                                {getEntryStatusHint(entry)}
+                              </span>
+                            ) : null}
                             {entry.error && (
                               <span className="inline-flex items-center gap-1 text-amber-600">
                                 <AlertTriangle className="h-3 w-3" />
@@ -496,30 +508,53 @@ function formatTimeOnly(timestampMs: number): string {
   });
 }
 
-function getGenerationLookupId(entry: DevToolsEntry): string {
-  return getGatewayRequestId(entry) ?? entry.id;
+function getEntryPrimaryLabel(entry: DevToolsEntry): string {
+  if (typeof entry.metadata?.model === "string" && entry.metadata.model.trim().length > 0) {
+    return entry.metadata.model;
+  }
+
+  const request = asRecord(entry.request);
+  const response = asRecord(entry.response);
+
+  if (entry.type.startsWith("batches.")) {
+    return (
+      firstNonEmpty(
+        response.id,
+        request.batch_id,
+        response.input_file_id,
+        request.input_file_id
+      ) ?? "Batch job"
+    );
+  }
+
+  if (entry.type.startsWith("files.")) {
+    return firstNonEmpty(response.id, request.file_id, response.filename, request.filename) ?? "File request";
+  }
+
+  return "Unknown model";
 }
 
-function getGatewayRequestId(entry: DevToolsEntry): string | undefined {
-  const response = entry.response;
-  if (!response || typeof response !== "object") {
-    return undefined;
+function getEntryStatusHint(entry: DevToolsEntry): string | undefined {
+  const response = asRecord(entry.response);
+  if (entry.type.startsWith("batches.")) {
+    return firstNonEmpty(response.status);
   }
-
-  const responseRecord = response as Record<string, unknown>;
-  const metadata = responseRecord.metadata;
-  if (metadata && typeof metadata === "object") {
-    const gatewayId = (metadata as Record<string, unknown>).aistats_request_id;
-    if (typeof gatewayId === "string" && gatewayId.trim().length > 0) {
-      return gatewayId;
-    }
+  if (entry.type.startsWith("files.")) {
+    return firstNonEmpty(response.status, response.purpose);
   }
+  return undefined;
+}
 
-  const requestId = responseRecord.request_id;
-  if (typeof requestId === "string" && requestId.trim().length > 0) {
-    return requestId;
+function asRecord(value: unknown): Record<string, any> {
+  return value && typeof value === "object" ? (value as Record<string, any>) : {};
+}
+
+function firstNonEmpty(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
   }
-
   return undefined;
 }
 

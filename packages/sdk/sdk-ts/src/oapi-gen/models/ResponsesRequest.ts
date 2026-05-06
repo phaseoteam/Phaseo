@@ -83,6 +83,7 @@ export interface ResponsesRequest {
   };
   safety_identifier?: string | null;
   service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+  session_id?: string;
   store?: boolean;
   stream?: boolean;
   temperature?: number;

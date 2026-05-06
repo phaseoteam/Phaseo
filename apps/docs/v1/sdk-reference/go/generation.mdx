@@ -1,27 +1,27 @@
 ---
 title: "Generation lookup"
-description: "Use the generated Go client for /generations."
+description: "Look up saved generations with the Go SDK."
 ---
 
-The preview Go wrapper does not yet expose generation-lookup helpers. Use the
-generated client in `src/gen`.
+Use the wrapper method:
+
+- `client.GetGeneration(ctx, generationID)`
 
 ```go
 import (
+  "context"
   "fmt"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
-client := gen.NewClient("https://api.phaseo.app/v1")
-client.Headers["Authorization"] = "Bearer " + apiKey
-
-record, err := gen.GetGeneration(client, nil, map[string]string{
-  "id": "G-01ABC...",
-}, nil, nil)
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
 if err != nil {
   panic(err)
 }
 
 fmt.Println(record)
 ```
+
+When request details were stored, the returned record also includes `replay_supported` and `replay_request` so you can resubmit the captured payload to the original endpoint.
 

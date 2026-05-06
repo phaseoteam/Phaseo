@@ -63,6 +63,7 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
+	std::string session_id;
 	std::vector<std::string> stop_sequences;
 	std::optional<bool> stream;
 	std::any system;
@@ -210,6 +211,16 @@ struct AudioTranslationResponse {
 	std::string text;
 };
 
+struct BatchBillingSummary {
+	std::optional<bool> billed;
+	std::optional<bool> charged;
+	std::optional<int> cost_nanos;
+	std::optional<double> cost_usd;
+	std::string finalized_at;
+	std::map<std::string, std::any> pricing_breakdown;
+	std::string reason;
+};
+
 struct BatchRequest {
 	std::string completion_window;
 	std::map<std::string, std::any> debug;
@@ -217,6 +228,8 @@ struct BatchRequest {
 	std::string input_file_id;
 	std::map<std::string, std::any> metadata;
 	std::map<std::string, std::any> provider;
+	std::string session_id;
+	std::map<std::string, std::any> webhook;
 };
 
 struct BatchRequestCounts {
@@ -226,6 +239,7 @@ struct BatchRequestCounts {
 };
 
 struct BatchResponse {
+	std::map<std::string, std::any> billing;
 	std::optional<int> cancelled_at;
 	std::optional<int> cancelling_at;
 	std::optional<int> completed_at;
@@ -244,8 +258,13 @@ struct BatchResponse {
 	std::map<std::string, std::any> metadata;
 	std::string object;
 	std::string output_file_id;
+	std::vector<std::map<std::string, std::any>> pricing_lines;
+	std::string provider;
 	std::map<std::string, std::any> request_counts;
+	std::string request_id;
+	std::string session_id;
 	std::string status;
+	std::map<std::string, std::any> webhook;
 };
 
 using BenchmarkId = std::any;
@@ -294,6 +313,7 @@ struct ChatCompletionsRequest {
 	std::optional<std::string> safety_identifier;
 	std::optional<int> seed;
 	std::any service_tier;
+	std::string session_id;
 	std::any stop;
 	std::optional<bool> store;
 	std::optional<bool> stream;
@@ -313,7 +333,9 @@ struct ChatCompletionsResponse {
 	std::optional<int> created;
 	std::string id;
 	std::string model;
+	std::optional<std::string> nativeResponseId;
 	std::string object;
+	std::string provider;
 	std::map<std::string, std::any> usage;
 };
 
@@ -394,11 +416,73 @@ struct EmbeddingsResponse {
 	std::map<std::string, std::any> usage;
 };
 
+struct ErrorFailureSampleItem {
+	std::optional<std::string> provider;
+	std::optional<bool> retryable;
+	std::optional<int> status;
+	std::optional<std::string> type;
+	std::optional<std::string> upstream_error_code;
+	std::optional<std::string> upstream_error_description;
+	std::optional<std::string> upstream_error_message;
+	std::optional<std::string> upstream_error_param;
+	std::optional<std::string> upstream_payload_preview;
+};
+
+struct ErrorProviderCandidateDiagnostics {
+	std::optional<int> candidateCount;
+	std::vector<std::map<std::string, std::any>> droppedMissingAdapter;
+	std::vector<std::string> droppedUnsupportedEndpoint;
+	std::optional<int> supportsEndpointCount;
+	std::optional<int> totalProviders;
+};
+
+struct ErrorProviderEnablementDiagnostics {
+	std::string capability;
+	std::vector<std::map<std::string, std::any>> dropped;
+	std::vector<std::string> providersAfter;
+	std::vector<std::string> providersBefore;
+};
+
+struct ErrorProviderFailureDiagnostics {
+	std::any category;
+	std::string hint;
+	std::optional<std::string> provider;
+};
+
 struct ErrorResponse {
+	std::optional<int> attempt_count;
 	std::string description;
+	std::vector<std::map<std::string, std::any>> details;
 	std::any error;
+	std::any error_origin;
+	std::any error_type;
+	std::vector<std::string> failed_providers;
+	std::vector<int> failed_statuses;
+	std::vector<std::map<std::string, std::any>> failure_sample;
+	std::string generation_id;
 	std::string message;
+	std::vector<std::string> missing_pricing_providers;
 	std::optional<bool> ok;
+	std::map<std::string, std::any> provider_candidate_diagnostics;
+	std::map<std::string, std::any> provider_enablement;
+	std::map<std::string, std::any> provider_failure_diagnostics;
+	std::string provider_payment_required_provider;
+	std::string provider_payment_required_support_notice;
+	std::string reason;
+	std::map<std::string, std::any> routing_diagnostics;
+	std::optional<int> status_code;
+	std::map<std::string, std::any> upstream_error;
+};
+
+struct ErrorRoutingDiagnostics {
+	std::vector<std::map<std::string, std::any>> filterStages;
+};
+
+struct ErrorUpstreamError {
+	std::optional<std::string> code;
+	std::optional<std::string> description;
+	std::optional<std::string> message;
+	std::optional<std::string> param;
 };
 
 struct FileResponse {
@@ -429,6 +513,7 @@ struct GatewayDatetimeToolDefinition {
 };
 
 struct GatewayModelsResponse {
+	std::any availability_mode;
 	int limit;
 	std::vector<std::map<std::string, std::any>> models;
 	int offset;
@@ -441,6 +526,7 @@ struct GenerationResponse {
 	std::optional<std::string> app_id;
 	std::optional<bool> byok;
 	std::optional<double> cost_nanos;
+	std::string created_at;
 	std::string currency;
 	std::string endpoint;
 	std::optional<std::string> error_code;
@@ -452,6 +538,8 @@ struct GenerationResponse {
 	std::optional<std::string> native_response_id;
 	std::vector<std::map<std::string, std::any>> pricing_lines;
 	std::string provider;
+	std::optional<std::map<std::string, std::any>> replay_request;
+	std::optional<bool> replay_supported;
 	std::string request_id;
 	std::optional<double> status_code;
 	std::optional<bool> stream;
@@ -590,6 +678,7 @@ using MessageContentPart = std::any;
 struct Model {
 	std::vector<std::string> aliases;
 	std::map<std::string, std::any> architecture;
+	std::map<std::string, std::any> availability;
 	std::string canonical_slug;
 	std::optional<int> created;
 	std::optional<std::string> deprecation_date;
@@ -617,6 +706,13 @@ struct Model {
 	std::optional<std::string> top_provider_id;
 };
 
+struct ModelAvailability {
+	int active_provider_count;
+	int inactive_provider_count;
+	int provider_count;
+	std::any status;
+};
+
 using ModelId = std::any;
 
 struct ModelLifecycle {
@@ -625,6 +721,22 @@ struct ModelLifecycle {
 	std::optional<std::string> replacement_model_id;
 	std::optional<std::string> retirement_date;
 	std::optional<std::any> status;
+};
+
+struct ModelProviderAvailability {
+	std::string api_provider_id;
+	std::optional<std::string> api_provider_name;
+	std::any availability_reason;
+	std::any availability_status;
+	std::any capability_status;
+	std::optional<std::string> effective_from;
+	std::optional<std::string> effective_to;
+	std::vector<std::string> endpoints;
+	bool is_active_gateway;
+	std::any model_routing_status;
+	std::vector<std::string> params;
+	std::any provider_routing_status;
+	std::any provider_status;
 };
 
 struct ModelsPrivacyScopeNotImplementedResponse {
@@ -877,6 +989,7 @@ struct ResponsesRequest {
 	std::map<std::string, std::any> reasoning;
 	std::optional<std::string> safety_identifier;
 	std::any service_tier;
+	std::string session_id;
 	std::optional<bool> store;
 	std::optional<bool> stream;
 	std::optional<double> temperature;
@@ -1015,7 +1128,9 @@ struct VideoGenerationResponse {
 	std::optional<int> progress;
 	std::string progress_source;
 	std::string provider;
+	std::string request_id;
 	std::optional<double> seconds;
+	std::string session_id;
 	std::string size;
 	std::optional<std::any> started_at;
 	std::any status;

@@ -1,5 +1,6 @@
 import type { ImageModelV3, ImageModelV3CallOptions } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
+import { mapAIStatsProviderMetadata } from './map-ai-stats-provider-metadata.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
 /**
@@ -90,27 +91,49 @@ export class AIStatsImageModel implements ImageModelV3 {
 
     // Parse response
     const data = await response.json();
+    const responseHeaders = Object.fromEntries(
+      Array.from(response.headers as any) as [string, string][]
+    );
+    const aiStatsMetadata = mapAIStatsProviderMetadata(data, responseHeaders)?.['ai-stats'];
 
-    // Extract images - return as base64 strings or keep as is
-    const images: Array<string> = data.data.map((item: any) => {
-      // If b64_json is present, return it directly
-      if (item.b64_json) {
-        return item.b64_json;
-      }
-      // If URL is present, return it (though this isn't typical for the interface)
-      if (item.url) {
-        return item.url;
-      }
-      throw new Error('Image response missing url or b64_json');
-    });
+    const images = await Promise.all(
+      data.data.map(async (item: any): Promise<string | Uint8Array> => {
+        if (item.b64_json) {
+          return item.b64_json;
+        }
+
+        if (item.url) {
+          const imageResponse = await fetchImpl(item.url, {
+            method: 'GET',
+            signal: abortSignal,
+          });
+
+          if (!imageResponse.ok) {
+            throw new Error(`Image download failed with status ${imageResponse.status}`);
+          }
+
+          return new Uint8Array(await imageResponse.arrayBuffer());
+        }
+
+        throw new Error('Image response missing url or b64_json');
+      })
+    );
 
     return {
       images,
       warnings: [],
+      providerMetadata: aiStatsMetadata
+        ? {
+            gateway: {
+              images: [],
+              ...aiStatsMetadata,
+            },
+          }
+        : undefined,
       response: {
         timestamp: new Date(),
         modelId: this.modelId,
-        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
+        headers: responseHeaders,
       },
     };
   }

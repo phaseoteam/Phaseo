@@ -57,6 +57,7 @@ type AnthropicMessagesRequest struct {
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
 	StopSequences *[]string `json:"stop_sequences,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	System interface{} `json:"system,omitempty"`
@@ -204,6 +205,16 @@ type AudioTranslationResponse struct {
 	Text *string `json:"text,omitempty"`
 }
 
+type BatchBillingSummary struct {
+	Billed *bool `json:"billed,omitempty"`
+	Charged *bool `json:"charged,omitempty"`
+	CostNanos *int `json:"cost_nanos,omitempty"`
+	CostUsd *float64 `json:"cost_usd,omitempty"`
+	FinalizedAt *string `json:"finalized_at,omitempty"`
+	PricingBreakdown *map[string]interface{} `json:"pricing_breakdown,omitempty"`
+	Reason *string `json:"reason,omitempty"`
+}
+
 type BatchRequest struct {
 	CompletionWindow *string `json:"completion_window,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
@@ -211,6 +222,8 @@ type BatchRequest struct {
 	InputFileId string `json:"input_file_id"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
+	Webhook *map[string]interface{} `json:"webhook,omitempty"`
 }
 
 type BatchRequestCounts struct {
@@ -220,6 +233,7 @@ type BatchRequestCounts struct {
 }
 
 type BatchResponse struct {
+	Billing *map[string]interface{} `json:"billing,omitempty"`
 	CancelledAt *int `json:"cancelled_at,omitempty"`
 	CancellingAt *int `json:"cancelling_at,omitempty"`
 	CompletedAt *int `json:"completed_at,omitempty"`
@@ -238,8 +252,13 @@ type BatchResponse struct {
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Object *string `json:"object,omitempty"`
 	OutputFileId *string `json:"output_file_id,omitempty"`
+	PricingLines *[]map[string]interface{} `json:"pricing_lines,omitempty"`
+	Provider *string `json:"provider,omitempty"`
 	RequestCounts *map[string]interface{} `json:"request_counts,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
 	Status *string `json:"status,omitempty"`
+	Webhook *map[string]interface{} `json:"webhook,omitempty"`
 }
 
 type BenchmarkId string
@@ -904,6 +923,7 @@ type ChatCompletionsRequest struct {
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
 	Seed *int `json:"seed,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
 	Stop interface{} `json:"stop,omitempty"`
 	Store *bool `json:"store,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
@@ -923,7 +943,9 @@ type ChatCompletionsResponse struct {
 	Created *int `json:"created,omitempty"`
 	Id *string `json:"id,omitempty"`
 	Model *string `json:"model,omitempty"`
+	NativeResponseId *string `json:"nativeResponseId,omitempty"`
 	Object *string `json:"object,omitempty"`
+	Provider *string `json:"provider,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
 }
 
@@ -1004,11 +1026,73 @@ type EmbeddingsResponse struct {
 	Usage *map[string]interface{} `json:"usage,omitempty"`
 }
 
+type ErrorFailureSampleItem struct {
+	Provider *string `json:"provider,omitempty"`
+	Retryable *bool `json:"retryable,omitempty"`
+	Status *int `json:"status,omitempty"`
+	Type *string `json:"type,omitempty"`
+	UpstreamErrorCode *string `json:"upstream_error_code,omitempty"`
+	UpstreamErrorDescription *string `json:"upstream_error_description,omitempty"`
+	UpstreamErrorMessage *string `json:"upstream_error_message,omitempty"`
+	UpstreamErrorParam *string `json:"upstream_error_param,omitempty"`
+	UpstreamPayloadPreview *string `json:"upstream_payload_preview,omitempty"`
+}
+
+type ErrorProviderCandidateDiagnostics struct {
+	CandidateCount *int `json:"candidateCount,omitempty"`
+	DroppedMissingAdapter *[]map[string]interface{} `json:"droppedMissingAdapter,omitempty"`
+	DroppedUnsupportedEndpoint *[]string `json:"droppedUnsupportedEndpoint,omitempty"`
+	SupportsEndpointCount *int `json:"supportsEndpointCount,omitempty"`
+	TotalProviders *int `json:"totalProviders,omitempty"`
+}
+
+type ErrorProviderEnablementDiagnostics struct {
+	Capability *string `json:"capability,omitempty"`
+	Dropped *[]map[string]interface{} `json:"dropped,omitempty"`
+	ProvidersAfter *[]string `json:"providersAfter,omitempty"`
+	ProvidersBefore *[]string `json:"providersBefore,omitempty"`
+}
+
+type ErrorProviderFailureDiagnostics struct {
+	Category *string `json:"category,omitempty"`
+	Hint *string `json:"hint,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+}
+
 type ErrorResponse struct {
+	AttemptCount *int `json:"attempt_count,omitempty"`
 	Description *string `json:"description,omitempty"`
+	Details *[]map[string]interface{} `json:"details,omitempty"`
 	Error interface{} `json:"error"`
+	ErrorOrigin *string `json:"error_origin,omitempty"`
+	ErrorType *string `json:"error_type,omitempty"`
+	FailedProviders *[]string `json:"failed_providers,omitempty"`
+	FailedStatuses *[]int `json:"failed_statuses,omitempty"`
+	FailureSample *[]map[string]interface{} `json:"failure_sample,omitempty"`
+	GenerationId *string `json:"generation_id,omitempty"`
 	Message *string `json:"message,omitempty"`
+	MissingPricingProviders *[]string `json:"missing_pricing_providers,omitempty"`
 	Ok *bool `json:"ok,omitempty"`
+	ProviderCandidateDiagnostics *map[string]interface{} `json:"provider_candidate_diagnostics,omitempty"`
+	ProviderEnablement *map[string]interface{} `json:"provider_enablement,omitempty"`
+	ProviderFailureDiagnostics *map[string]interface{} `json:"provider_failure_diagnostics,omitempty"`
+	ProviderPaymentRequiredProvider *string `json:"provider_payment_required_provider,omitempty"`
+	ProviderPaymentRequiredSupportNotice *string `json:"provider_payment_required_support_notice,omitempty"`
+	Reason *string `json:"reason,omitempty"`
+	RoutingDiagnostics *map[string]interface{} `json:"routing_diagnostics,omitempty"`
+	StatusCode *int `json:"status_code,omitempty"`
+	UpstreamError *map[string]interface{} `json:"upstream_error,omitempty"`
+}
+
+type ErrorRoutingDiagnostics struct {
+	FilterStages *[]map[string]interface{} `json:"filterStages,omitempty"`
+}
+
+type ErrorUpstreamError struct {
+	Code *string `json:"code,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Message *string `json:"message,omitempty"`
+	Param *string `json:"param,omitempty"`
 }
 
 type FileResponse struct {
@@ -1052,6 +1136,7 @@ type GenerationResponse struct {
 	AppId *string `json:"app_id,omitempty"`
 	Byok *bool `json:"byok,omitempty"`
 	CostNanos *float64 `json:"cost_nanos,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
 	Currency *string `json:"currency,omitempty"`
 	Endpoint *string `json:"endpoint,omitempty"`
 	ErrorCode *string `json:"error_code,omitempty"`
@@ -1063,6 +1148,8 @@ type GenerationResponse struct {
 	NativeResponseId *string `json:"native_response_id,omitempty"`
 	PricingLines *[]map[string]interface{} `json:"pricing_lines,omitempty"`
 	Provider *string `json:"provider,omitempty"`
+	ReplayRequest *map[string]interface{} `json:"replay_request,omitempty"`
+	ReplaySupported *bool `json:"replay_supported,omitempty"`
 	RequestId *string `json:"request_id,omitempty"`
 	StatusCode *float64 `json:"status_code,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
@@ -1971,6 +2058,7 @@ type ResponsesRequest struct {
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
 	Store *bool `json:"store,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
@@ -2109,7 +2197,9 @@ type VideoGenerationResponse struct {
 	Progress *int `json:"progress,omitempty"`
 	ProgressSource *string `json:"progress_source,omitempty"`
 	Provider *string `json:"provider,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
 	Seconds *float64 `json:"seconds,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
 	Size *string `json:"size,omitempty"`
 	StartedAt *interface{} `json:"started_at,omitempty"`
 	Status *string `json:"status,omitempty"`

@@ -74,7 +74,9 @@ export interface ChatCompletionsResponse {
   created?: number;
   id?: string;
   model?: string;
+  nativeResponseId?: string | null;
   object?: string;
+  provider?: string;
   usage?: {
     completion_tokens?: number;
     prompt_tokens?: number;

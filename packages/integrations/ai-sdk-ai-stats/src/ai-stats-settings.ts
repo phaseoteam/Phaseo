@@ -4,12 +4,13 @@
 export interface AIStatsSettings {
   /**
    * API key for authentication with the AI Stats Gateway.
-   * If not provided, will use AI_STATS_API_KEY environment variable.
+   * If not provided, will use the AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY environment variable.
    */
   apiKey?: string;
 
   /**
    * Base URL for the AI Stats Gateway API.
+   * If not provided, will use the AI_STATS_BASE_URL or OPENAI_GATEWAY_URL environment variable.
    * @default "https://api.phaseo.app/v1"
    */
   baseURL?: string;

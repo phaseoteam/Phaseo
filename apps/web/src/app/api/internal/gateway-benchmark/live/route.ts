@@ -19,14 +19,16 @@ const trustedBaseUrlSchema = z.string().url().refine(
 	"Base URL host is not allowed",
 );
 
-const liveCompareRequestSchema = z.object({
-	model: z.string().min(1).max(200),
-	prompt: z.string().min(1).max(8_000),
-	maxCompletionTokens: z.number().int().min(1).max(512),
-	endpoint: z.enum(["chat_completions", "responses"]),
-	gatewayBaseUrl: trustedBaseUrlSchema.optional(),
-	openRouterBaseUrl: trustedBaseUrlSchema.optional(),
-});
+      const liveCompareRequestSchema = z.object({
+              model: z.string().min(1).max(200),
+              prompt: z.string().min(1).max(8_000),
+              maxCompletionTokens: z.number().int().min(1).max(512),
+              endpoint: z.enum(["chat_completions", "responses"]),
+              gatewayBaseUrl: trustedBaseUrlSchema.optional(),
+              openRouterBaseUrl: trustedBaseUrlSchema.optional(),
+              llmGatewayBaseUrl: trustedBaseUrlSchema.optional(),
+              vercelAiGatewayBaseUrl: trustedBaseUrlSchema.optional(),
+      });
 
 type LiveCompareEvent =
 	| {
@@ -71,8 +73,10 @@ type LiveCompareEvent =
 			message: string;
 	  };
 
-const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
-const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+      const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+      const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+      const DEFAULT_LLMGATEWAY_BASE_URL = "https://api.llmgateway.io/v1";
+      const DEFAULT_VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
 
 function round1(value: number) {
 	return Math.round(value * 10) / 10;
@@ -139,17 +143,34 @@ async function ensureAdmin() {
 }
 
 async function streamTarget(
-	target: CompareTarget,
-	args: Omit<CompareArgs, "runs">,
-	keys: { gatewayApiKey: string; openRouterApiKey: string },
-	send: (event: LiveCompareEvent) => void,
+        target: CompareTarget,
+        args: Omit<CompareArgs, "runs">,
+             keys: {
+                     gatewayApiKey: string;
+                     openRouterApiKey: string;
+                     llmGatewayApiKey: string;
+                     vercelAiGatewayApiKey: string;
+             },
+        send: (event: LiveCompareEvent) => void,
 ) {
-	const apiKey = target === "ai-stats" ? keys.gatewayApiKey : keys.openRouterApiKey;
-	const baseUrl = normalizeCompareBaseUrl(
-		target === "ai-stats"
-			? args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL
-			: args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL,
-	);
+        const apiKey =
+                     target === "ai-stats"
+                             ? keys.gatewayApiKey
+                             : target === "openrouter"
+                                     ? keys.openRouterApiKey
+                                     : target === "llmgateway"
+                                             ? keys.llmGatewayApiKey
+                                             : keys.vercelAiGatewayApiKey;
+             const baseUrl = normalizeCompareBaseUrl(
+                     target === "ai-stats"
+                             ? args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL
+                             : target === "openrouter"
+                                     ? args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL
+                                     : target === "llmgateway"
+                                             ? args.llmGatewayBaseUrl || DEFAULT_LLMGATEWAY_BASE_URL
+                                             : args.vercelAiGatewayBaseUrl ||
+                                                     DEFAULT_VERCEL_AI_GATEWAY_BASE_URL,
+             );
 	const start = performance.now();
 	let headersMs = 0;
 	let firstContentMs: number | null = null;
@@ -290,10 +311,18 @@ export async function POST(req: Request) {
 	}
 
 	const gatewayApiKey = process.env.AI_STATS_PERFORMANCE_TEST_KEY ?? "";
-	const openRouterApiKey =
-		process.env.PERFORMANCE_KEY_OPENROUTER ??
-		process.env.OPENROUTER_API_KEY ??
-		"";
+        const openRouterApiKey =
+                process.env.PERFORMANCE_KEY_OPENROUTER ??
+                process.env.OPENROUTER_API_KEY ??
+                "";
+             const llmGatewayApiKey =
+                     process.env.PERFORMANCE_KEY_LLMGATEWAY ??
+                     process.env.LLM_GATEWAY_API_KEY ??
+                     "";
+             const vercelAiGatewayApiKey =
+                     process.env.PERFORMANCE_KEY_VERCEL_AI_GATEWAY ??
+                     process.env.VERCEL_AI_GATEWAY_API_KEY ??
+                     "";
 
 	if (!gatewayApiKey || !openRouterApiKey) {
 		return NextResponse.json(
@@ -305,21 +334,39 @@ export async function POST(req: Request) {
 	}
 
 	const stream = new ReadableStream<Uint8Array>({
-		start(controller) {
-			const encoder = new TextEncoder();
-			let closed = false;
-			const send = (event: LiveCompareEvent) => {
-				if (closed) return;
-				controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
-			};
+                start(controller) {
+                        const encoder = new TextEncoder();
+                        let closed = false;
+                            const targets: CompareTarget[] = ["ai-stats", "openrouter"];
+                            if (llmGatewayApiKey) {
+                                    targets.push("llmgateway");
+                            }
+                            if (vercelAiGatewayApiKey) {
+                                    targets.push("vercel-ai-gateway");
+                            }
+                        const send = (event: LiveCompareEvent) => {
+                                if (closed) return;
+                                controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+                        };
 
-			void Promise.all([
-				streamTarget("ai-stats", parsed.data, { gatewayApiKey, openRouterApiKey }, send),
-				streamTarget("openrouter", parsed.data, { gatewayApiKey, openRouterApiKey }, send),
-			])
-				.catch((error) => {
-					send({
-						type: "fatal",
+                        void Promise.all(
+                                targets.map((target) =>
+                                        streamTarget(
+                                                target,
+                                                parsed.data,
+                                                    {
+                                                            gatewayApiKey,
+                                                            openRouterApiKey,
+                                                            llmGatewayApiKey,
+                                                            vercelAiGatewayApiKey,
+                                                    },
+                                                    send,
+                                            ),
+                                    ),
+                        )
+                                .catch((error) => {
+                                        send({
+                                                type: "fatal",
 						message: error instanceof Error ? error.message : String(error),
 					});
 				})

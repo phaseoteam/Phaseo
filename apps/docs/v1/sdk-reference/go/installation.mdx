@@ -25,13 +25,13 @@ pnpm openapi:gen:go
 ```go
 go 1.23
 
-require github.com/AI-Stats/ai-stats-go-sdk-wrapper v0.0.0
+require github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go v0.0.0
 
-replace github.com/AI-Stats/ai-stats-go-sdk-wrapper => ../ai-stats-public/packages/sdk/sdk-go
+replace github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go => ../ai-stats-public/packages/sdk/sdk-go
 ```
 
 3. Import the wrapper:
 
 ```go
-import aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+import aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 ```

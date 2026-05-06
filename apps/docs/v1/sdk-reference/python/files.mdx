@@ -1,24 +1,24 @@
 ---
 title: "Files"
-description: "Python SDK placeholder for /files."
+description: "Call /files with the Python SDK."
 ---
 
-<Note type="warning">
-  `upload_file`, `list_files`, and `get_file` currently return `coming_soon` placeholders.
-</Note>
+**Methods**: `client.upload_file()`, `client.list_files()`, `client.get_file()`, `client.get_file_content()`.
 
 ```python
-uploaded = client.upload_file(purpose="batch", file="...")
-files = client.list_files()
-file_obj = client.get_file("file_123")
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])
 
 print(uploaded)
-print(files)
 print(file_obj)
-# {
-#   "status": "coming_soon",
-#   "endpoint": "files",
-#   "message": "This endpoint is not yet supported in the SDK.",
-#   ...
-# }
+print(file_bytes[:20])
 ```
+
+<Note>
+  `list_files()` is wired through the SDK, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+  on the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
+</Note>

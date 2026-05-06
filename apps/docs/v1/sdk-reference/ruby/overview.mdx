@@ -11,19 +11,34 @@ The local wrapper at `packages/sdk/sdk-ruby/lib/index.rb` currently exposes thes
 
 - `generate_text(...)`
 - `generate_response(...)`
+- `create_anthropic_message(...)`
 - `generate_image(...)`
 - `generate_image_edit(...)`
+- `generate_video(...)`, `get_video(...)`, `cancel_video(...)`, `delete_video(...)`, `list_video_models`, `list_videos(...)`
 - `generate_embedding(...)`
 - `generate_moderation(...)`
 - `generate_speech(...)`
 - `generate_transcription(...)`
 - `generate_translation(...)`
+- `create_batch(...)`, `retrieve_batch(...)`, `cancel_batch(...)`
+- `get_async_job_websocket_url(...)`, `batch_websocket_url(...)`, `video_websocket_url(...)`, `async_jobs.websocket_url(...)`
+- `list_files(...)`, `retrieve_file(...)`, `retrieve_file_content(...)`, `retrieve_video_content(...)`, `get_video_download_url(...)`, `upload_file(...)`
 - `list_models(...)`
-- `health`
+- `list_api_keys(...)`, `create_api_key(...)`, `update_api_key(...)`, `delete_api_key(...)`
+- `get_api_key(...)`
+- `list_workspaces(...)`, `get_workspace(...)`, `create_workspace(...)`, `update_workspace(...)`, `delete_workspace(...)`
+- `list_endpoints`
+- `list_organisations(...)`
+- `list_pricing_models(...)`
+- `calculate_pricing(...)`
+- `get_current_api_key`
+- `list_providers(...)`, `get_analytics(...)`, `get_credits(...)`, `get_activity(...)`
+- `get_generation(...)`
+- `health`, `healthz`
 
 ```ruby
-require_relative '../ai-stats-public/packages/sdk/sdk-ruby/lib/index'
+require 'ai_stats_sdk'
 
-client = AIStatsSdk::Client.new(api_key: 'YOUR_KEY')
+client = AIStatsSdk::AIStats.new(api_key: 'YOUR_KEY')
 models = client.list_models(limit: 5)
 ```

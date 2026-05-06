@@ -24,16 +24,17 @@ async function main() {
 
   console.log('\n🖼️  Image Generated:');
   console.log(`- Number of images: ${result.images.length}`);
-
-  if (result.images[0].url) {
-    console.log(`- Image URL: ${result.images[0].url}`);
-  } else if (result.images[0].base64) {
+  console.log(`- Image media type: ${result.images[0].mediaType}`);
+  console.log(`- Image bytes: ${result.images[0].uint8Array.length}`);
+  if (result.images[0].base64) {
     console.log(`- Base64 image: ${result.images[0].base64.substring(0, 50)}...`);
   }
 
   if (result.warnings && result.warnings.length > 0) {
     console.log(`- Warnings: ${result.warnings.join(', ')}`);
   }
+  console.log('- Provider metadata:');
+  console.log(JSON.stringify(result.providerMetadata ?? {}, null, 2));
 
   // Generate multiple images (if model supports it)
   console.log('\n\nGenerating multiple images with DALL-E 2...');
@@ -47,10 +48,10 @@ async function main() {
   console.log('\n🖼️  Multiple Images Generated:');
   console.log(`- Number of images: ${multiResult.images.length}`);
   multiResult.images.forEach((img, i) => {
-    if (img.url) {
-      console.log(`  ${i + 1}. ${img.url}`);
-    }
+    console.log(`  ${i + 1}. ${img.mediaType} (${img.uint8Array.length} bytes)`);
   });
+  console.log('- Provider metadata:');
+  console.log(JSON.stringify(multiResult.providerMetadata ?? {}, null, 2));
 
   console.log('\n✅ Image generation example complete!');
 }

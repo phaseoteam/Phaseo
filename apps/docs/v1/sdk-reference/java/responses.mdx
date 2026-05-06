@@ -3,10 +3,12 @@ title: "Responses"
 description: "Call /responses with the Java SDK."
 ---
 
-**Method**: `Operations.createResponse(...)`
+**Method**: `client.createResponse(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
+
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
 
 String body = """
 {
@@ -22,6 +24,6 @@ String body = """
 }
 """;
 
-Object response = Operations.createResponse(client, null, null, null, body);
+Object response = client.createResponse(body);
 System.out.println(String.valueOf(response));
 ```

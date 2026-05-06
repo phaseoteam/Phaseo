@@ -44,22 +44,38 @@ This package provides a Vercel AI SDK v6 compatible provider for the AI Stats Ga
 - Returns normalized embeddings array
 - Preserves input order
 
+### ✅ Image Models (ImageModelV3)
+
+**Supported Operations:**
+- `generateImage()` - Image generation through the public AI SDK helper
+
+**Features:**
+- ✅ Passes through provider-specific image options
+- ✅ Supports `size` and `aspectRatio`
+- ✅ Accepts both `b64_json` gateway responses and URL-backed gateway responses
+- ✅ Normalizes URL-backed images into binary AI SDK files
+
+**Gateway Integration:**
+- Uses `/v1/images/generations`
+- Downloads URL-backed image responses so they work with AI SDK `GeneratedFile` results
+
+### ✅ Audio Models
+
+**Supported Operations:**
+- `experimental_generateSpeech()` - Text-to-speech through `SpeechModelV3`
+- `experimental_transcribe()` - Speech-to-text through `TranscriptionModelV3`
+
+**Features:**
+- ✅ Binary audio output normalized to AI SDK `GeneratedAudioFile`
+- ✅ Multipart transcription uploads
+- ✅ Provider option passthrough for speech/transcription parameters
+- ✅ Local compatibility coverage for both experimental AI SDK audio helpers
+
+**Gateway Integration:**
+- Uses `/v1/audio/speech`
+- Uses `/v1/audio/transcriptions`
+
 ## Not Yet Implemented
-
-### ⚠️ Image Generation
-- **Reason**: AI SDK v3 doesn't have a standardized image model specification yet
-- **Gateway Support**: Available via `/v1/images/generations` and `/v1/images/edits`
-- **Future**: Can be added as custom implementation or when AI SDK adds support
-
-### ⚠️ Audio Models (TTS/STT)
-- **Reason**: AI SDK v3 doesn't have standardized audio model specifications
-- **Gateway Support**: Available via `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations`
-- **Future**: Can be added as custom implementation
-
-### ⚠️ Video Generation
-- **Reason**: AI SDK v3 doesn't have standardized video model specification
-- **Gateway Support**: Available via `/v1/video/generations`
-- **Future**: Can be added as custom implementation
 
 ### ⚠️ Moderation Models
 - **Reason**: AI SDK v3 doesn't have standardized moderation model specification
@@ -93,24 +109,38 @@ Actual AI Providers (OpenAI, Anthropic, etc.)
 
 ## Testing Strategy
 
-### Mock Tests (Cost-Free)
+### Local Compatibility Tests (Cost-Free)
 
 **Uses:**
-- `MockLanguageModelV3` from `ai/test`
-- `MockEmbeddingModelV3` from `ai/test`
-- `simulateReadableStream` for streaming tests
+- mocked gateway `fetch` responses
+- real `generateText`, `streamText`, `embed`, `embedMany`, `generateImage`, `experimental_generateSpeech`, and `experimental_transcribe` AI SDK entry points
+- synthetic SSE payloads for streaming coverage
 
 **Coverage:**
-- Text generation (single-turn and multi-turn)
-- Streaming (text deltas, tool calls)
-- Tool calling (single and parallel)
-- Structured output (JSON mode, JSON schema)
+- Text generation request/response mapping
+- Non-stream response metadata propagation, including gateway headers
+- Streaming text over SSE with usage-inclusive request settings
+- Streaming finish reason, usage, and response metadata resolution
+- AI Stats-specific `providerMetadata` passthrough for request/routing fields
+- Default `aiStats` export environment-resolution behavior at module load time
+- `AI_STATS_*` env precedence over `OPENAI_GATEWAY_*` envs for both the factory and default export
+- Non-stream tool-call parsing into final AI SDK `toolCalls`
+- `generateObject()` JSON-mode request mapping through AI SDK `responseFormat`
+- `streamObject()` structured-output streaming over JSON text deltas
+- Streaming tool-call assembly and final `toolCalls` / `steps` resolution
 - Embeddings (single and batch)
-- Error scenarios
+- Embedding order preservation
+- Base64 image generation responses
+- URL-backed image generation responses
+- Experimental speech generation
+- Experimental transcription uploads and response mapping
 
 **Files:**
-- `tests/language-model.test.ts` - 9 test cases
-- `tests/embedding-model.test.ts` - 7 test cases
+- `tests/language-model.test.ts`
+- `tests/embedding-model.test.ts`
+- `tests/image-model.test.ts`
+- `tests/audio-model.test.ts`
+- `tests/gateway-test-config.test.ts`
 
 ### Integration Tests (Requires API Key)
 
@@ -121,13 +151,17 @@ Actual AI Providers (OpenAI, Anthropic, etc.)
 - Check error handling
 
 **Features:**
-- Automatically skipped if no `AI_STATS_API_KEY`
+- Requires explicit `AI_STATS_RUN_GATEWAY_TESTS=1` opt-in for paid/live requests
+- Ships a dedicated `pnpm test:gateway` helper that opts into live tests and runs only the gateway integration suite
 - Uses actual gateway endpoints
 - Tests multiple providers (OpenAI, Anthropic)
 - Validates usage tracking
+- Verifies gateway request metadata propagation on text, embeddings, image, and speech flows
+- Accepts both `AI_STATS_*` and `OPENAI_GATEWAY_*` environment-variable conventions for API key/base URL resolution
+- Includes local regression coverage for the live-test gating and env-resolution rules
 
 **Files:**
-- `tests/gateway-integration.test.ts` - 6 integration test cases
+- `tests/gateway-integration.test.ts` - optional real gateway integration coverage
 
 ## Examples
 
@@ -138,7 +172,10 @@ Actual AI Providers (OpenAI, Anthropic, etc.)
 3. **tools.ts** - Function/tool calling
 4. **structured-output.ts** - JSON schema output
 5. **embeddings.ts** - Vector embeddings and similarity
-6. **multi-provider.ts** - Provider comparison
+6. **image-generation.ts** - Image generation
+7. **audio-transcription.ts** - Experimental speech-to-text
+8. **text-to-speech.ts** - Experimental text-to-speech
+9. **multi-provider.ts** - Provider comparison
 
 ### Usage Patterns
 
@@ -270,17 +307,14 @@ The provider works with existing gateway endpoints as-is:
 
 ### Potential Additions
 
-1. **Image Models** (when AI SDK adds support)
-   - Image generation via `/v1/images/generations`
+1. **Image editing / variations**
    - Image editing via `/v1/images/edits`
 
-2. **Audio Models** (custom implementation)
-   - Text-to-speech via `/v1/audio/speech`
-   - Speech-to-text via `/v1/audio/transcriptions`
+2. **Additional audio routes**
    - Audio translation via `/v1/audio/translations`
 
 3. **Video Models** (custom implementation)
-   - Video generation via `/v1/video/generations`
+   - Video generation via `/v1/videos`
 
 4. **Moderation Models** (custom implementation)
    - Content moderation via `/v1/moderations`
@@ -296,8 +330,7 @@ The provider works with existing gateway endpoints as-is:
 
 - **Total Files**: 20+
 - **Source Lines**: ~2000
-- **Test Cases**: 22+ (16 mock, 6 integration)
-- **Examples**: 6
+- **Examples**: 9
 - **Dependencies**: 2 (production), 5 (dev)
 - **TypeScript Coverage**: 100%
 
@@ -305,7 +338,7 @@ The provider works with existing gateway endpoints as-is:
 
 ### Version Compatibility
 
-- AI SDK: v4.x, v5.x, v6.x (peer dependency)
+- AI SDK: v6.x (peer dependency)
 - Node.js: >=18.0.0
 - TypeScript: >=5.0.0
 

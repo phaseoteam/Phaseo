@@ -1,0 +1,16 @@
+---
+title: "List Pricing Models"
+badge: "Beta"
+openapi: "GET /pricing/models"
+description: "List the currently active catalogue pricing cards exposed through the gateway."
+---
+
+Returns visible provider-model-endpoint pricing metadata for models currently routable through the gateway.
+
+The response includes:
+
+- `models`: one entry per visible provider/model/endpoint pricing surface
+- `meters`: the active meter lines for that pricing surface, including unit, unit size, currency, and price per unit
+- `display_name`: the visible public model name when the pricing rule maps to a canonical public model
+
+This route is useful for admin tooling, pricing inspections, or SDK consumers that want to understand the current public catalogue pricing surface without calculating a specific request bill.

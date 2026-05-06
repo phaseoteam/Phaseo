@@ -10,26 +10,41 @@ Use one of these patterns to keep model IDs current.
 
 ```ts
 const response = await fetch("https://api.phaseo.app/v1/gateway/models", {
+  method: "GET",
   headers: {
     Authorization: `Bearer ${process.env.AI_STATS_API_KEY}`,
   },
 });
 
-if (!response.ok) {
-  throw new Error(`Failed to load models: ${response.status}`);
+const filteredResponse = await fetch(
+  "https://api.phaseo.app/v1/gateway/models?provider=anthropic&status=active,deprecated&availability=all",
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.AI_STATS_API_KEY}`,
+    },
+  },
+);
+
+if (!response.ok || !filteredResponse.ok) {
+  throw new Error("Failed to load models");
 }
 
 const models = await response.json();
-console.log(models);
+const filteredModels = await filteredResponse.json();
+console.log(models, filteredModels);
 ```
 
 ## Option 2: Use the official TypeScript SDK
 
 ```ts
-import { AIStats } from "@ai-stats/sdk";
+import AIStats from "@ai-stats/sdk";
 
 const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
-const models = await client.getModels();
+const models = await client.getModels({
+  provider: ["anthropic"],
+  status: ["active", "deprecated"],
+  availability: "all",
+});
 
 console.log(models);
 ```
@@ -51,5 +66,6 @@ console.log(result.text);
 ## Notes
 
 - Model IDs use `provider/model` format.
+- `/v1/gateway/models` supports filters such as `provider`, `status`, `organisation`, `endpoints`, and `availability`.
 - Re-check model availability periodically for routing and deprecations.
 - Prefer selecting IDs from `/v1/gateway/models` over hard-coding long-term.

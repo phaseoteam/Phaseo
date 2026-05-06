@@ -3,26 +3,42 @@ title: "Batches"
 description: "Call /batches with the Java SDK."
 ---
 
-**Methods**: `Operations.createBatch(...)`, `Operations.retrieveBatch(...)`
+**Methods**: `AIStats#createBatch(...)`, `AIStats#retrieveBatch(...)`, `AIStats#cancelBatch(...)`, `AIStats#getAsyncJobWebSocketUrl(...)`, `AIStats#getBatchWebSocketUrl(...)`, `client.asyncJobs.websocketUrl(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
 import java.util.HashMap;
 import java.util.Map;
 
-String createBody = """
-{
-  "endpoint": "responses",
-  "input_file_id": "file_123",
-  "completion_window": "24h"
-}
-""";
+AIStats client = new AIStats(apiKey, "https://api.phaseo.app/v1");
 
-Object created = Operations.createBatch(client, null, null, null, createBody);
+Map<String, Object> request = new HashMap<>();
+request.put("endpoint", "responses");
+request.put("input_file_id", "file_123");
+request.put("completion_window", "24h");
+request.put("session_id", "agent-run-42");
+
+Object created = client.createBatch(request);
+Object retrieved = client.retrieveBatch("batch_123");
+Object cancelling = client.cancelBatch("batch_123");
+String websocketUrl = client.getBatchWebSocketUrl("batch_123", 1500, null);
+
 System.out.println(String.valueOf(created));
-
-Map<String, String> path = new HashMap<>();
-path.put("batch_id", "batch_123");
-Object retrieved = Operations.retrieveBatch(client, path, null, null, null);
 System.out.println(String.valueOf(retrieved));
+System.out.println(String.valueOf(cancelling));
+System.out.println(websocketUrl);
 ```
+
+### Key parameters
+- `endpoint` (required): Target endpoint for batch items such as `responses`.
+- `input_file_id` (required): File id uploaded through the files API.
+- `completion_window`: Upstream batch completion window such as `24h`.
+- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `webhook`: Optional webhook configuration for async lifecycle notifications.
+- `metadata`: Optional object persisted with the batch.
+
+Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
+
+Use `client.getBatchWebSocketUrl(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `client.asyncJobs.websocketUrl("batch", batchId, ...)` when you want the generic async-jobs resource helper.
+Use `client.getAsyncJobWebSocketUrl("batch", batchId, ...)` when you want the same generic helper without going through the resource object.

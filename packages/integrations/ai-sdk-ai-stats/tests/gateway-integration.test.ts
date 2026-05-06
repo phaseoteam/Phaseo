@@ -4,26 +4,27 @@
  * These tests make actual calls to the AI Stats Gateway.
  * They are skipped by default to avoid costs.
  *
- * To run these tests, set the AI_STATS_API_KEY environment variable:
- *   AI_STATS_API_KEY=your_key pnpm test
+ * To run these tests, set AI_STATS_RUN_GATEWAY_TESTS=1 and provide
+ * AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY:
+ *   AI_STATS_RUN_GATEWAY_TESTS=1 AI_STATS_API_KEY=your_key pnpm test
  */
 
 import { describe, it, expect } from 'vitest';
 import { generateText, streamText, embed } from 'ai';
 import { createAIStats } from '../src/index.js';
+import { resolveGatewayTestConfig } from './gateway-test-config.js';
 
-const resolvedApiKey = process.env.AI_STATS_API_KEY || process.env.OPENAI_GATEWAY_API_KEY;
-const resolvedBaseUrl = process.env.AI_STATS_BASE_URL;
-const hasApiKey = !!resolvedApiKey;
+const { resolvedApiKey, resolvedBaseUrl, shouldRunGatewayTests, hasLiveGatewayAccess } =
+  resolveGatewayTestConfig();
 const testIf = (condition: boolean) => (condition ? it : it.skip);
 
 // Only create provider instance if API key is present
-const aiStats = hasApiKey
+const aiStats = hasLiveGatewayAccess
   ? createAIStats({ apiKey: resolvedApiKey, baseURL: resolvedBaseUrl })
   : null as any;
 
 describe('Gateway Integration - Language Models', () => {
-  testIf(hasApiKey)('should generate text with OpenAI GPT-4o', async () => {
+  testIf(hasLiveGatewayAccess)('should generate text with OpenAI GPT-4o', async () => {
     const result = await generateText({
       model: aiStats('openai/gpt-4o-mini'),
       prompt: 'Say "Hello from AI Stats Gateway" and nothing else.',
@@ -31,11 +32,12 @@ describe('Gateway Integration - Language Models', () => {
     });
 
     expect(result.text).toContain('Hello');
-    expect(result.usage.promptTokens).toBeGreaterThan(0);
-    expect(result.usage.completionTokens).toBeGreaterThan(0);
+    expect(result.usage.inputTokens).toBeGreaterThan(0);
+    expect(result.usage.outputTokens).toBeGreaterThan(0);
+    expect(result.providerMetadata?.['ai-stats']?.requestId).toBeTruthy();
   }, 30000);
 
-  testIf(hasApiKey)('should stream text with Anthropic Claude', async () => {
+  testIf(hasLiveGatewayAccess)('should stream text with Anthropic Claude', async () => {
     const result = streamText({
       model: aiStats('anthropic/claude-3-5-haiku-20241022'),
       prompt: 'Count from 1 to 5 with just numbers.',
@@ -50,9 +52,10 @@ describe('Gateway Integration - Language Models', () => {
     const fullText = chunks.join('');
     expect(fullText.length).toBeGreaterThan(0);
     expect(chunks.length).toBeGreaterThan(1); // Verify streaming
+    expect((await result.providerMetadata)?.['ai-stats']?.requestId).toBeTruthy();
   }, 30000);
 
-  testIf(hasApiKey)('should handle tool calls', async () => {
+  testIf(hasLiveGatewayAccess)('should handle tool calls', async () => {
     const result = await generateText({
       model: aiStats('openai/gpt-4o-mini'),
       prompt: 'What is 25 + 17? Use the calculator tool.',
@@ -88,7 +91,7 @@ describe('Gateway Integration - Language Models', () => {
 });
 
 describe('Gateway Integration - Embeddings', () => {
-  testIf(hasApiKey)('should generate embeddings with OpenAI', async () => {
+  testIf(hasLiveGatewayAccess)('should generate embeddings with OpenAI', async () => {
     const result = await embed({
       model: aiStats.textEmbeddingModel('openai/text-embedding-3-small'),
       value: 'Hello, world!',
@@ -97,9 +100,10 @@ describe('Gateway Integration - Embeddings', () => {
     expect(result.embedding).toBeDefined();
     expect(result.embedding.length).toBeGreaterThan(0);
     expect(result.usage?.tokens).toBeGreaterThan(0);
+    expect(result.providerMetadata?.['ai-stats']?.requestId).toBeTruthy();
   }, 30000);
 
-  testIf(hasApiKey)('should handle batch embeddings', async () => {
+  testIf(hasLiveGatewayAccess)('should handle batch embeddings', async () => {
     const { embedMany } = await import('ai');
 
     const result = await embedMany({
@@ -111,11 +115,12 @@ describe('Gateway Integration - Embeddings', () => {
     result.embeddings.forEach((embedding: number[]) => {
       expect(embedding.length).toBeGreaterThan(0);
     });
+    expect(result.providerMetadata?.['ai-stats']?.requestId).toBeTruthy();
   }, 30000);
 });
 
 describe('Gateway Integration - Image Generation', () => {
-  testIf(hasApiKey)('should generate image with DALL-E', async () => {
+  testIf(hasLiveGatewayAccess)('should generate image with DALL-E', async () => {
     const { generateImage } = await import('ai');
 
     const result = await generateImage({
@@ -127,19 +132,16 @@ describe('Gateway Integration - Image Generation', () => {
 
     expect(result.images).toBeDefined();
     expect(result.images.length).toBe(1);
-    expect(result.images[0].url || result.images[0].base64).toBeDefined();
+    expect(result.images[0].mediaType).toMatch(/^image\//);
+    expect(result.images[0].uint8Array.length).toBeGreaterThan(0);
+    expect(result.providerMetadata?.gateway?.requestId).toBeTruthy();
   }, 60000); // Image generation takes longer
 });
 
 describe('Gateway Integration - Audio Models', () => {
-  testIf(hasApiKey)('should generate speech from text', async () => {
-    const aiModule = await import('ai');
-    if (!('speak' in aiModule)) {
-      return;
-    }
-
-    const { speak } = aiModule as typeof import('ai');
-    const result = await speak({
+  testIf(hasLiveGatewayAccess)('should generate speech from text', async () => {
+    const { experimental_generateSpeech } = await import('ai');
+    const result = await experimental_generateSpeech({
       model: aiStats.speechModel('openai/tts-1'),
       text: 'Hello world',
       voice: 'alloy',
@@ -147,19 +149,20 @@ describe('Gateway Integration - Audio Models', () => {
     });
 
     expect(result.audio).toBeDefined();
-    expect(result.audio.length).toBeGreaterThan(0);
-    expect(result.format).toBe('mp3');
+    expect(result.audio.uint8Array.length).toBeGreaterThan(0);
+    expect(result.audio.format).toBe('mp3');
+    expect(result.providerMetadata?.['ai-stats']?.requestId).toBeTruthy();
   }, 30000);
 
   // Transcription test requires actual audio file, so skipped by default
-  it.skip('should transcribe audio to text', async () => {
+  it.skip('should transcribe audio to text with experimental_transcribe', async () => {
     // This test requires an actual audio file
     // Uncomment and provide audio file to test
   });
 });
 
 describe('Gateway Integration - Error Handling', () => {
-  testIf(hasApiKey)('should handle invalid model gracefully', async () => {
+  testIf(hasLiveGatewayAccess)('should handle invalid model gracefully', async () => {
     await expect(
       generateText({
         model: aiStats('invalid/model-that-does-not-exist'),
@@ -168,7 +171,7 @@ describe('Gateway Integration - Error Handling', () => {
     ).rejects.toThrow();
   }, 30000);
 
-  testIf(hasApiKey)('should handle rate limits', async () => {
+  testIf(hasLiveGatewayAccess)('should handle rate limits', async () => {
     // This test would need to trigger rate limits
     // Skipped to avoid hitting actual rate limits in tests
     expect(true).toBe(true);
@@ -176,7 +179,12 @@ describe('Gateway Integration - Error Handling', () => {
 });
 
 // Add note if tests are skipped
-if (!hasApiKey) {
-  console.log('\n⚠️  Gateway integration tests skipped (no API key found)');
-  console.log('   Set AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY to run integration tests\n');
+if (!hasLiveGatewayAccess) {
+  if (!resolvedApiKey) {
+    console.log('\n⚠️  Gateway integration tests skipped (no API key found)');
+    console.log('   Set AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY and AI_STATS_RUN_GATEWAY_TESTS=1 to run integration tests\n');
+  } else if (!shouldRunGatewayTests) {
+    console.log('\n⚠️  Gateway integration tests skipped (AI_STATS_RUN_GATEWAY_TESTS is not set)');
+    console.log('   Set AI_STATS_RUN_GATEWAY_TESTS=1 to opt into paid/live gateway tests\n');
+  }
 }

@@ -10,7 +10,12 @@ import { mapGatewayResponse } from './map-gateway-response.js';
 import { parseSSEStream } from './utils/parse-sse-stream.js';
 import { mapGatewayFinishReason } from './map-gateway-finish-reason.js';
 import { mapGatewayUsage } from './map-gateway-usage.js';
+import {
+  mapAIStatsProviderMetadata,
+  mergeAIStatsProviderMetadata,
+} from './map-ai-stats-provider-metadata.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
+import { headersToRecord } from './utils/headers.js';
 
 /**
  * AI Stats Language Model implementation for Vercel AI SDK v6
@@ -75,7 +80,12 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
 
     // Parse and map response
     const data = await response.json();
-    const mapped = mapGatewayResponse(data, options, gatewayRequest);
+    const mapped = mapGatewayResponse(
+      data,
+      options,
+      gatewayRequest,
+      headersToRecord(response.headers)
+    );
 
     return mapped;
   }
@@ -123,6 +133,9 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
     let usage = mapGatewayUsage({});
     const textPartId = 'text-0';
     let textPartStarted = false;
+    let responseMetadataEmitted = false;
+    const responseHeaders = headersToRecord(response.headers);
+    let providerMetadata = mapAIStatsProviderMetadata(undefined, responseHeaders);
 
     const toolCalls: Array<{
       id: string;
@@ -150,6 +163,29 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
             }
 
             if (chunk?.object === 'chat.completion.chunk') {
+              providerMetadata = mergeAIStatsProviderMetadata(
+                providerMetadata,
+                mapAIStatsProviderMetadata(chunk, responseHeaders)
+              );
+
+              if (
+                !responseMetadataEmitted &&
+                (typeof chunk.id === 'string' ||
+                  typeof chunk.model === 'string' ||
+                  typeof chunk.created === 'number')
+              ) {
+                responseMetadataEmitted = true;
+                controller.enqueue({
+                  type: 'response-metadata',
+                  id: typeof chunk.id === 'string' ? chunk.id : undefined,
+                  modelId: typeof chunk.model === 'string' ? chunk.model : undefined,
+                  timestamp:
+                    typeof chunk.created === 'number'
+                      ? new Date(chunk.created * 1000)
+                      : undefined,
+                });
+              }
+
               controller.enqueue({
                 type: 'raw',
                 rawValue: chunk,
@@ -265,12 +301,13 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
               type: 'finish',
               finishReason,
               usage,
+              providerMetadata,
             });
           },
         })
       ),
       response: {
-        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
+        headers: responseHeaders,
       },
       request: {
         body: requestBodyJson,

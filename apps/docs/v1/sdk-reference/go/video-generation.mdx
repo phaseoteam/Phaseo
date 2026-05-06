@@ -1,21 +1,32 @@
 ---
 title: "Video generation"
-description: "Use the generated Go client for /videos."
+description: "Create and manage async video jobs with the Go SDK."
 ---
 
-The preview Go wrapper does not yet expose video helpers. Use the generated
-client in `src/gen`.
+**Methods**:
+
+- `client.CreateVideo(...)`
+- `client.ListVideos(...)`
+- `client.GetVideo(...)`
+- `client.RetrieveVideoContent(...)`
+- `client.GetVideoDownloadURL(...)`
+- `client.CancelVideo(...)`
+- `client.DeleteVideo(...)`
+- `client.ListVideoModels(...)`
+- `client.GetAsyncJobWebSocketURL(...)`
+- `client.GetVideoWebSocketURL(...)`
+- `client.AsyncJobs.WebSocketURL(...)`
 
 ```go
 import (
+  "context"
   "fmt"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
-client := gen.NewClient("https://api.phaseo.app/v1")
-client.Headers["Authorization"] = "Bearer " + apiKey
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
 
-job, err := gen.CreateVideo(client, nil, nil, nil, map[string]interface{}{
+job, err := client.CreateVideo(context.Background(), map[string]interface{}{
   "model": "openai/sora-2",
   "prompt": "A cinematic sunrise over a mountain lake",
 })
@@ -24,5 +35,31 @@ if err != nil {
 }
 
 fmt.Println(job)
+
+jobs, err := client.ListVideos(context.Background(), map[string]string{
+  "status": "queued,completed",
+  "limit": "2",
+})
+if err != nil {
+  panic(err)
+}
+
+websocketURL, err := client.GetVideoWebSocketURL(
+  fmt.Sprint(job["id"]),
+  &aistats.AsyncJobWebSocketOptions{IntervalMS: 1500},
+)
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(jobs)
+fmt.Println(websocketURL)
 ```
 
+The create response is an async job record. Poll status before attempting content or signed download retrieval.
+
+Use `client.GetVideoWebSocketURL(...)` when you want to subscribe to the documented `/v1/async/video/{id}/ws` lifecycle stream instead of polling only.
+Use `client.AsyncJobs.WebSocketURL("video", videoID, options)` when you want the generic async-jobs resource helper.
+Use `client.GetAsyncJobWebSocketURL("video", videoID, options)` when you want the same generic helper without going through the resource object.
+
+`CancelVideo(...)` is exposed, but the public video cancel route currently returns a structured `501 not_implemented_yet` error while provider-level cancellation is standardized.

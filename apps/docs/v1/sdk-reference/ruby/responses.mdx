@@ -3,24 +3,19 @@ title: "Responses"
 description: "Call the Responses API with the Ruby SDK."
 ---
 
-**Method**: `ResponsesApi#create_response`.
+**Methods**: `client.generate_response(...)`, `client.create_response(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-responses_api = AIStatsSdk::ResponsesApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
 
-request = AIStatsSdk::ResponsesRequest.new(
-  model: 'openai/gpt-4.1',
-  input: [{ role: 'user', content: [{ type: 'output_text', text: 'Summarise this text' }] }],
-  temperature: 0.7
+resp = client.create_response(
+  "model" => "openai/gpt-4.1",
+  "input" => [{ "role" => "user", "content" => [{ "type" => "output_text", "text" => "Summarise this text" }] }],
+  "temperature" => 0.7
 )
-
-resp = responses_api.create_response(request)
 ```
 
 ### Key parameters

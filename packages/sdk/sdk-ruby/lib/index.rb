@@ -2,12 +2,29 @@ require "json"
 require "time"
 require "fileutils"
 require "securerandom"
+require "cgi"
+require "uri"
 require_relative "ai_stats_sdk/model_ids"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
 
 module AIStatsSdk
+  class AsyncJobsResource
+    def initialize(parent)
+      @parent = parent
+    end
+
+    def websocket_url(kind, job_id, interval_ms: nil, close_on_terminal: nil)
+      @parent.get_async_job_websocket_url(
+        kind,
+        job_id,
+        interval_ms: interval_ms,
+        close_on_terminal: close_on_terminal
+      )
+    end
+  end
+
   # Thin wrapper around the in-house generated Ruby SDK.
   # Regenerate with: `pnpm openapi:gen:ruby`
   class AIStats
@@ -30,7 +47,7 @@ module AIStatsSdk
       end-of-life
     ].freeze
 
-    attr_reader :raw_client
+    attr_reader :raw_client, :async_jobs
 
     def initialize(
       api_key: nil,
@@ -48,6 +65,7 @@ module AIStatsSdk
         base_url: base_path,
         headers: { "Authorization" => "Bearer #{api_key}" }
       )
+      @base_path = base_path.sub(%r{/+\z}, "")
       @enable_deprecation_warnings = enable_deprecation_warnings
       @warnings_as_errors = warnings_as_errors
       @logger = logger
@@ -55,6 +73,7 @@ module AIStatsSdk
       @warned_models = {}
       @model_lifecycle_cache = {}
       @telemetry_recorder = TelemetryRecorder.new(devtools, "2.0.3")
+      @async_jobs = AsyncJobsResource.new(self)
     end
 
     def get_model_deprecation_info(model_id)
@@ -111,6 +130,46 @@ module AIStatsSdk
 
     def create_image(payload)
       generate_image(payload)
+    end
+
+    def generate_video(payload)
+      with_lifecycle_and_telemetry(endpoint: "video.generations", payload: payload, check_lifecycle: true) do
+        AiStats::Gen::Operations.createVideo(@raw_client, body: payload)
+      end
+    end
+
+    def create_video(payload)
+      generate_video(payload)
+    end
+
+    def get_video(video_id)
+      with_lifecycle_and_telemetry(endpoint: "video.retrieve", payload: { "video_id" => video_id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.getVideo(@raw_client, path: { "video_id" => video_id })
+      end
+    end
+
+    def cancel_video(video_id)
+      with_lifecycle_and_telemetry(endpoint: "video.cancel", payload: { "video_id" => video_id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.cancelVideo(@raw_client, path: { "video_id" => video_id })
+      end
+    end
+
+    def delete_video(video_id)
+      with_lifecycle_and_telemetry(endpoint: "video.delete", payload: { "video_id" => video_id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.deleteVideo(@raw_client, path: { "video_id" => video_id })
+      end
+    end
+
+    def list_video_models
+      with_lifecycle_and_telemetry(endpoint: "video.models", payload: nil, check_lifecycle: false) do
+        AiStats::Gen::Operations.listVideoModels(@raw_client)
+      end
+    end
+
+    def list_videos(options = {})
+      with_lifecycle_and_telemetry(endpoint: "video.list", payload: options, check_lifecycle: false) do
+        AiStats::Gen::Operations.listVideos(@raw_client, query: options)
+      end
     end
 
     def generate_image_edit(payload)
@@ -185,6 +244,42 @@ module AIStatsSdk
       end
     end
 
+    def cancel_batch(batch_id)
+      with_lifecycle_and_telemetry(endpoint: "batches.cancel", payload: { "batch_id" => batch_id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.cancelBatch(@raw_client, path: { "batch_id" => batch_id })
+      end
+    end
+
+    def get_async_job_websocket_url(kind, job_id, interval_ms: nil, close_on_terminal: nil)
+      normalized_kind = kind.to_s.strip
+      normalized_job_id = job_id.to_s.strip
+      raise ArgumentError, "kind is required" if normalized_kind.empty?
+      raise ArgumentError, "job_id is required" if normalized_job_id.empty?
+
+      uri = URI.parse(@base_path)
+      uri.scheme = uri.scheme == "https" ? "wss" : "ws"
+      uri.path = "#{uri.path.sub(%r{/+\z}, "")}/async/#{escape_path_segment(normalized_kind)}/#{escape_path_segment(normalized_job_id)}/ws"
+      query = {}
+      query["interval_ms"] = interval_ms.to_s unless interval_ms.nil?
+      query["close_on_terminal"] = close_on_terminal ? "true" : "false" unless close_on_terminal.nil?
+      uri.query = query.empty? ? nil : URI.encode_www_form(query)
+      uri.to_s
+    end
+
+    def batch_websocket_url(batch_id, interval_ms: nil, close_on_terminal: nil)
+      get_async_job_websocket_url("batch", batch_id, interval_ms: interval_ms, close_on_terminal: close_on_terminal)
+    end
+
+    def video_websocket_url(video_id, interval_ms: nil, close_on_terminal: nil)
+      get_async_job_websocket_url("video", video_id, interval_ms: interval_ms, close_on_terminal: close_on_terminal)
+    end
+
+    def escape_path_segment(value)
+      CGI.escape(value).gsub("+", "%20")
+    end
+
+    private :escape_path_segment
+
     def list_files(options = {})
       with_lifecycle_and_telemetry(endpoint: "files.list", payload: options, check_lifecycle: false) do
         AiStats::Gen::Operations.listFiles(@raw_client, query: options)
@@ -194,6 +289,28 @@ module AIStatsSdk
     def retrieve_file(file_id)
       with_lifecycle_and_telemetry(endpoint: "files.retrieve", payload: { "file_id" => file_id }, check_lifecycle: false) do
         AiStats::Gen::Operations.retrieveFile(@raw_client, path: { "file_id" => file_id })
+      end
+    end
+
+    def retrieve_file_content(file_id)
+      with_lifecycle_and_telemetry(endpoint: "files.content", payload: { "file_id" => file_id }, check_lifecycle: false) do
+        @raw_client.request_bytes(method: "get", path: "/files/#{file_id}/content")
+      end
+    end
+
+    def retrieve_video_content(video_id)
+      with_lifecycle_and_telemetry(endpoint: "video.content", payload: { "video_id" => video_id }, check_lifecycle: false) do
+        @raw_client.request_bytes(method: "get", path: "/videos/#{video_id}/content")
+      end
+    end
+
+    def get_video_download_url(video_id, params = {})
+      with_lifecycle_and_telemetry(
+        endpoint: "video.download_url",
+        payload: { "video_id" => video_id, "body" => params },
+        check_lifecycle: false
+      ) do
+        @raw_client.request(method: "POST", path: "/videos/#{video_id}/download_url", body: params)
       end
     end
 
@@ -209,6 +326,12 @@ module AIStatsSdk
       end
     end
 
+    def list_team_models(options = {})
+      with_lifecycle_and_telemetry(endpoint: "models.team", payload: options, check_lifecycle: false) do
+        AiStats::Gen::Operations.listTeamModels(@raw_client, query: options)
+      end
+    end
+
     def list_providers(options = {})
       with_lifecycle_and_telemetry(endpoint: "providers", payload: options, check_lifecycle: false) do
         AiStats::Gen::Operations.listProviders(@raw_client, query: options)
@@ -217,7 +340,7 @@ module AIStatsSdk
 
     def get_analytics(options = {})
       with_lifecycle_and_telemetry(endpoint: "analytics", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.getAnalytics(@raw_client, query: options)
+        AiStats::Gen::Operations.getActivityAlias(@raw_client, query: options)
       end
     end
 
@@ -233,9 +356,109 @@ module AIStatsSdk
       end
     end
 
+    def get_generation(generation_id)
+      with_lifecycle_and_telemetry(endpoint: "generations.retrieve", payload: { "id" => generation_id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.getGeneration(@raw_client, query: { "id" => generation_id })
+      end
+    end
+
+    def list_endpoints
+      with_lifecycle_and_telemetry(endpoint: "endpoints.list", payload: {}, check_lifecycle: false) do
+        AiStats::Gen::Operations.listEndpoints(@raw_client)
+      end
+    end
+
+    def list_organisations(options = {})
+      with_lifecycle_and_telemetry(endpoint: "organisations.list", payload: options, check_lifecycle: false) do
+        AiStats::Gen::Operations.listOrganisations(@raw_client, query: options)
+      end
+    end
+
+    def list_pricing_models(options = {})
+      with_lifecycle_and_telemetry(endpoint: "pricing.models", payload: options, check_lifecycle: false) do
+        AiStats::Gen::Operations.listPricingModels(@raw_client, query: options)
+      end
+    end
+
+    def calculate_pricing(payload)
+      with_lifecycle_and_telemetry(endpoint: "pricing.calculate", payload: payload, check_lifecycle: false) do
+        AiStats::Gen::Operations.calculatePricing(@raw_client, body: payload)
+      end
+    end
+
+    def list_api_keys(options = {})
+      with_lifecycle_and_telemetry(endpoint: "provisioning.keys.list", payload: options, check_lifecycle: false) do
+        AiStats::Gen::Operations.listApiKeys(@raw_client, query: options)
+      end
+    end
+
+    def create_api_key(payload)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.keys.create", payload: payload, check_lifecycle: false) do
+        AiStats::Gen::Operations.createApiKey(@raw_client, body: payload)
+      end
+    end
+
+    def get_api_key(id)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.keys.get", payload: { "id" => id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.getApiKey(@raw_client, path: { "id" => id })
+      end
+    end
+
+    def update_api_key(id, payload)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.keys.update", payload: { "id" => id, "body" => payload }, check_lifecycle: false) do
+        AiStats::Gen::Operations.updateApiKey(@raw_client, path: { "id" => id }, body: payload)
+      end
+    end
+
+    def delete_api_key(id)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.keys.delete", payload: { "id" => id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.deleteApiKey(@raw_client, path: { "id" => id })
+      end
+    end
+
+    def list_workspaces(options = {})
+      with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.list", payload: options, check_lifecycle: false) do
+        AiStats::Gen::Operations.listWorkspaces(@raw_client, query: options)
+      end
+    end
+
+    def get_workspace(id)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.get", payload: { "id" => id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.getWorkspace(@raw_client, path: { "id" => id })
+      end
+    end
+
+    def create_workspace(payload)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.create", payload: payload, check_lifecycle: false) do
+        AiStats::Gen::Operations.createWorkspace(@raw_client, body: payload)
+      end
+    end
+
+    def update_workspace(id, payload)
+      with_lifecycle_and_telemetry(
+        endpoint: "provisioning.workspaces.update",
+        payload: { "id" => id, **payload },
+        check_lifecycle: false
+      ) do
+        AiStats::Gen::Operations.updateWorkspace(@raw_client, path: { "id" => id }, body: payload)
+      end
+    end
+
+    def delete_workspace(id)
+      with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.delete", payload: { "id" => id }, check_lifecycle: false) do
+        AiStats::Gen::Operations.deleteWorkspace(@raw_client, path: { "id" => id })
+      end
+    end
+
+    def get_current_api_key
+      with_lifecycle_and_telemetry(endpoint: "key.current", payload: {}, check_lifecycle: false) do
+        AiStats::Gen::Operations.getCurrentApiKey(@raw_client)
+      end
+    end
+
     def health
       with_lifecycle_and_telemetry(endpoint: "health", payload: nil, check_lifecycle: false) do
-        AiStats::Gen::Operations.healthz(@raw_client)
+        @raw_client.request(method: "GET", path: "/health")
       end
     end
 
@@ -548,6 +771,7 @@ module AIStatsSdk
       model, provider = extract_model_provider(response, request)
       metadata[:model] = model if model
       metadata[:provider] = provider if provider
+      enrich_metadata_from_response!(metadata, normalize_hash(response))
       metadata.delete(:headers) unless @capture_headers
 
       entry = {
@@ -566,6 +790,7 @@ module AIStatsSdk
     def capture_error(endpoint:, request:, error:, duration_ms:)
       return unless @enabled
 
+      error_response = extract_error_response(error)
       model, provider = extract_model_provider(nil, request)
       metadata = {
         sdk: "ruby",
@@ -574,6 +799,7 @@ module AIStatsSdk
       }
       metadata[:model] = model if model
       metadata[:provider] = provider if provider
+      enrich_metadata_from_response!(metadata, error_response)
 
       entry = {
         id: new_entry_id,
@@ -581,8 +807,11 @@ module AIStatsSdk
         timestamp: (Time.now.to_f * 1000).to_i,
         duration_ms: duration_ms,
         request: normalize_json_value(request),
-        response: nil,
-        error: { message: error.message },
+        response: normalize_json_value(error_response),
+        error: {
+          message: error.message,
+          status_code: extract_error_status_code(error)
+        }.compact,
         metadata: metadata
       }
       append_entry(entry)
@@ -648,6 +877,53 @@ module AIStatsSdk
       model = as_trimmed_string(response_payload[:model]) || as_trimmed_string(request_payload[:model])
       provider = as_trimmed_string(response_payload[:provider])
       [model, provider]
+    end
+
+    def extract_error_response(error)
+      if error.is_a?(AiStats::Gen::RequestError)
+        parsed = normalize_hash(error.response_body)
+        return parsed if parsed
+        return {
+          status_code: error.status_code,
+          error: as_trimmed_string(error.response_body)
+        }.compact
+      end
+
+      response = error.respond_to?(:response) ? error.response : nil
+      return symbolize_keys(response) if response.is_a?(Hash)
+
+      body = error.respond_to?(:body) ? error.body : nil
+      normalize_hash(body)
+    end
+
+    def extract_error_status_code(error)
+      return error.status_code if error.is_a?(AiStats::Gen::RequestError)
+      return error.status_code if error.respond_to?(:status_code)
+      nil
+    end
+
+    def enrich_metadata_from_response!(metadata, payload)
+      return unless payload.is_a?(Hash)
+
+      %i[
+        request_id
+        session_id
+        upstream_request_id
+        native_response_id
+        status_code
+        latency_ms
+        generation_ms
+        throughput
+        provider_attempts
+        pricing_lines
+        request_counts
+        billing
+      ].each do |key|
+        metadata[key] = payload[key] if payload.key?(key) && !payload[key].nil?
+      end
+
+      finish_reason = payload[:finish_reason] || payload[:stop_reason]
+      metadata[:finish_reason] = finish_reason if finish_reason
     end
 
     def normalize_json_value(value)

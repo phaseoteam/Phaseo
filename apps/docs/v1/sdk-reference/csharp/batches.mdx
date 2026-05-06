@@ -3,27 +3,39 @@ title: "Batches"
 description: "Call /batches with the C# SDK."
 ---
 
-**Methods**: `client.CreateBatch()`, `client.GetBatch()`.
+**Methods**: `client.CreateBatch()`, `client.RetrieveBatch()`, `client.CancelBatch()`, `client.GetAsyncJobWebSocketUrl()`, `client.GetBatchWebSocketUrl()`, `client.AsyncJobs.WebSocketUrl()`.
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+var client = new AIStats(apiKey: apiKey);
 
-var batch = client.CreateBatch(new BatchRequest(
-    endpoint: "responses",
-    input_file_id: "file_123",
-    completion_window: "24h"
-));
+var batch = await client.CreateBatch(new Dictionary<string, object>
+{
+    ["endpoint"] = "responses",
+    ["input_file_id"] = "file_123",
+    ["completion_window"] = "24h",
+    ["session_id"] = "agent-run-42"
+});
 
-var status = client.GetBatch(batch.Id);
+var status = await client.RetrieveBatch((string)batch!["id"]);
+var cancelling = await client.CancelBatch((string)batch["id"]);
+var websocketUrl = client.GetBatchWebSocketUrl((string)batch["id"], intervalMs: 1500);
 ```
 
 ### Key parameters
 - `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
 - `input_file_id` (required): File id uploaded via `/files`.
 - `completion_window`: e.g., `24h`.
+- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 
 ### Returns
 `BatchResponse`
+
+Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
+
+Use `client.GetBatchWebSocketUrl(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `client.AsyncJobs.WebSocketUrl("batch", batchId, ...)` when you want the generic async-jobs resource helper.
+Use `client.GetAsyncJobWebSocketUrl("batch", batchId, ...)` when you want the same generic helper without going through the resource object.
 

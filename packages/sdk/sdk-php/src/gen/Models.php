@@ -105,6 +105,8 @@ class AnthropicMessagesRequest
 	public $provider_options;
 	/** @var array<string, mixed>|null */
 	public $reasoning;
+	/** @var string|null */
+	public $session_id;
 	/** @var array|null */
 	public $stop_sequences;
 	/** @var bool|null */
@@ -363,6 +365,24 @@ class AudioTranslationResponse
 	public $text;
 }
 
+class BatchBillingSummary
+{
+	/** @var bool|null */
+	public $billed;
+	/** @var bool|null */
+	public $charged;
+	/** @var int|null */
+	public $cost_nanos;
+	/** @var float|null */
+	public $cost_usd;
+	/** @var string|null */
+	public $finalized_at;
+	/** @var array<string, mixed>|null */
+	public $pricing_breakdown;
+	/** @var string|null */
+	public $reason;
+}
+
 class BatchRequest
 {
 	/** @var string|null */
@@ -377,6 +397,10 @@ class BatchRequest
 	public $metadata;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var string|null */
+	public $session_id;
+	/** @var array<string, mixed>|null */
+	public $webhook;
 }
 
 class BatchRequestCounts
@@ -391,6 +415,8 @@ class BatchRequestCounts
 
 class BatchResponse
 {
+	/** @var array<string, mixed>|null */
+	public $billing;
 	/** @var int|null */
 	public $cancelled_at;
 	/** @var int|null */
@@ -427,10 +453,20 @@ class BatchResponse
 	public $object;
 	/** @var string|null */
 	public $output_file_id;
+	/** @var array|null */
+	public $pricing_lines;
+	/** @var string|null */
+	public $provider;
 	/** @var array<string, mixed>|null */
 	public $request_counts;
 	/** @var string|null */
+	public $request_id;
+	/** @var string|null */
+	public $session_id;
+	/** @var string|null */
 	public $status;
+	/** @var array<string, mixed>|null */
+	public $webhook;
 }
 
 class BenchmarkId { }
@@ -517,6 +553,8 @@ class ChatCompletionsRequest
 	public $seed;
 	/** @var string|null */
 	public $service_tier;
+	/** @var string|null */
+	public $session_id;
 	/** @var string|array|null */
 	public $stop;
 	/** @var bool|null */
@@ -554,7 +592,11 @@ class ChatCompletionsResponse
 	/** @var string|null */
 	public $model;
 	/** @var string|null */
+	public $nativeResponseId;
+	/** @var string|null */
 	public $object;
+	/** @var string|null */
+	public $provider;
 	/** @var array<string, mixed>|null */
 	public $usage;
 }
@@ -691,16 +733,128 @@ class EmbeddingsResponse
 	public $usage;
 }
 
-class ErrorResponse
+class ErrorFailureSampleItem
 {
 	/** @var string|null */
+	public $provider;
+	/** @var bool|null */
+	public $retryable;
+	/** @var int|null */
+	public $status;
+	/** @var string|null */
+	public $type;
+	/** @var string|null */
+	public $upstream_error_code;
+	/** @var string|null */
+	public $upstream_error_description;
+	/** @var string|null */
+	public $upstream_error_message;
+	/** @var string|null */
+	public $upstream_error_param;
+	/** @var string|null */
+	public $upstream_payload_preview;
+}
+
+class ErrorProviderCandidateDiagnostics
+{
+	/** @var int|null */
+	public $candidateCount;
+	/** @var array|null */
+	public $droppedMissingAdapter;
+	/** @var array|null */
+	public $droppedUnsupportedEndpoint;
+	/** @var int|null */
+	public $supportsEndpointCount;
+	/** @var int|null */
+	public $totalProviders;
+}
+
+class ErrorProviderEnablementDiagnostics
+{
+	/** @var string|null */
+	public $capability;
+	/** @var array|null */
+	public $dropped;
+	/** @var array|null */
+	public $providersAfter;
+	/** @var array|null */
+	public $providersBefore;
+}
+
+class ErrorProviderFailureDiagnostics
+{
+	/** @var string|null */
+	public $category;
+	/** @var string|null */
+	public $hint;
+	/** @var string|null */
+	public $provider;
+}
+
+class ErrorResponse
+{
+	/** @var int|null */
+	public $attempt_count;
+	/** @var string|null */
 	public $description;
+	/** @var array|null */
+	public $details;
 	/** @var string|array<string, mixed> */
 	public $error;
 	/** @var string|null */
+	public $error_origin;
+	/** @var string|null */
+	public $error_type;
+	/** @var array|null */
+	public $failed_providers;
+	/** @var array|null */
+	public $failed_statuses;
+	/** @var array|null */
+	public $failure_sample;
+	/** @var string|null */
+	public $generation_id;
+	/** @var string|null */
 	public $message;
+	/** @var array|null */
+	public $missing_pricing_providers;
 	/** @var bool|null */
 	public $ok;
+	/** @var array<string, mixed>|null */
+	public $provider_candidate_diagnostics;
+	/** @var array<string, mixed>|null */
+	public $provider_enablement;
+	/** @var array<string, mixed>|null */
+	public $provider_failure_diagnostics;
+	/** @var string|null */
+	public $provider_payment_required_provider;
+	/** @var string|null */
+	public $provider_payment_required_support_notice;
+	/** @var string|null */
+	public $reason;
+	/** @var array<string, mixed>|null */
+	public $routing_diagnostics;
+	/** @var int|null */
+	public $status_code;
+	/** @var array<string, mixed>|null */
+	public $upstream_error;
+}
+
+class ErrorRoutingDiagnostics
+{
+	/** @var array|null */
+	public $filterStages;
+}
+
+class ErrorUpstreamError
+{
+	/** @var string|null */
+	public $code;
+	/** @var string|null */
+	public $description;
+	/** @var string|null */
+	public $message;
+	/** @var string|null */
+	public $param;
 }
 
 class FileResponse
@@ -776,6 +930,8 @@ class GenerationResponse
 	/** @var float|null */
 	public $cost_nanos;
 	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
 	public $currency;
 	/** @var string|null */
 	public $endpoint;
@@ -797,6 +953,10 @@ class GenerationResponse
 	public $pricing_lines;
 	/** @var string|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $replay_request;
+	/** @var bool|null */
+	public $replay_supported;
 	/** @var string|null */
 	public $request_id;
 	/** @var float|null */
@@ -1581,6 +1741,8 @@ class ResponsesRequest
 	public $safety_identifier;
 	/** @var string|null */
 	public $service_tier;
+	/** @var string|null */
+	public $session_id;
 	/** @var bool|null */
 	public $store;
 	/** @var bool|null */
@@ -1825,8 +1987,12 @@ class VideoGenerationResponse
 	public $progress_source;
 	/** @var string|null */
 	public $provider;
+	/** @var string|null */
+	public $request_id;
 	/** @var float|null */
 	public $seconds;
+	/** @var string|null */
+	public $session_id;
 	/** @var string|null */
 	public $size;
 	/** @var int|string|null */

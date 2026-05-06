@@ -6,7 +6,7 @@ description: "Endpoint-by-endpoint examples using the TypeScript SDK."
 ## Setup
 
 ```typescript
-import { AIStats } from "@ai-stats/sdk";
+import AIStats from "@ai-stats/sdk";
 
 const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
 ```
@@ -120,6 +120,17 @@ const batch = await client.createBatch({
 });
 const batchStatus = await client.getBatch(batch.id);
 const files = await client.listFiles();
+```
+
+## Async job websocket URLs
+
+```typescript
+const batchSocketUrl = client.batches.websocketUrl(batch.id, {
+  intervalMs: 1500,
+  closeOnTerminal: false,
+});
+
+const videoSocketUrl = client.videos.websocketUrl("vid_123");
 ```
 
 ## Models & health

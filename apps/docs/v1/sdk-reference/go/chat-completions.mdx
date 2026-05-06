@@ -11,12 +11,11 @@ Use the wrapper method:
 import (
   "context"
   "fmt"
-  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
 client := aistats.New(apiKey, "https://api.phaseo.app/v1")
-resp, err := client.GenerateText(context.Background(), gen.ChatCompletionsRequest{
+resp, err := client.GenerateText(context.Background(), aistats.ChatCompletionsRequest{
   Model: "openai/gpt-5-nano",
   Messages: []map[string]interface{}{
     {

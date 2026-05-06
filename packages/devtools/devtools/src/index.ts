@@ -89,6 +89,7 @@ export type {
   ErrorInfo,
   UsageInfo,
   CostInfo,
+  ProviderAttempt,
   Metadata
 } from "@ai-stats/devtools-core";
 

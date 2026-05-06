@@ -1,28 +1,26 @@
 ---
 title: "Files"
-description: "Call /files with the Ruby SDK."
+description: "Use the Ruby SDK for file upload, metadata, and file-content retrieval."
 ---
 
-**Methods**: `FilesApi#files_post`, `FilesApi#files_get`, `FilesApi#files_file_id_get`.
+**Methods**: `upload_file`, `list_files`, `retrieve_file`, `retrieve_file_content`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-files_api = AIStatsSdk::FilesApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
 
-uploaded = files_api.files_post(purpose: 'batch', file: file_data)
-files = files_api.files_get
-file = files_api.files_file_id_get(uploaded.id)
+uploaded = client.upload_file(
+  'purpose' => 'batch',
+  'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=='
+)
+
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
 ```
 
-### Key parameters
-- `file` (required for upload): File data.
-- `purpose` (required for upload): e.g., `batch`.
-
-### Returns
-`FileObject` (upload/get) or `FileListResponse` (list)
-
+<Note>
+`list_files` is wired through the SDK, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+on the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
+</Note>

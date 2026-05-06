@@ -11,6 +11,21 @@ namespace AiStatsSdk
 {
     public delegate void AIStatsLogger(string level, string message, Dictionary<string, object?> meta);
 
+    public sealed class AsyncJobsResource
+    {
+        private readonly AIStats _client;
+
+        internal AsyncJobsResource(AIStats client)
+        {
+            _client = client;
+        }
+
+        public string WebSocketUrl(string kind, string jobId, int? intervalMs = null, bool? closeOnTerminal = null)
+        {
+            return _client.GetAsyncJobWebSocketUrl(kind, jobId, intervalMs, closeOnTerminal);
+        }
+    }
+
     public sealed class ModelLifecycleInfo
     {
         public required string ModelId { get; init; }
@@ -32,8 +47,10 @@ namespace AiStatsSdk
         private readonly AIStatsLogger? _logger;
         private readonly TelemetryRecorder _telemetry;
         private readonly Func<string, Task<ModelLifecycleInfo?>> _lifecycleResolver;
+        private readonly string _basePath;
         private readonly HashSet<string> _warnedModels = new(StringComparer.Ordinal);
         private readonly Dictionary<string, ModelLifecycleInfo?> _lifecycleCache = new(StringComparer.Ordinal);
+        public AsyncJobsResource AsyncJobs { get; }
         private static readonly HashSet<string> ActiveModelSourceStatuses = new(StringComparer.Ordinal)
         {
             "active",
@@ -77,12 +94,14 @@ namespace AiStatsSdk
             }
 
             var headers = new Dictionary<string, string> { { "Authorization", $"Bearer {apiKey}" } };
-            _client = new AiStats.Gen.Client(basePath, httpClient, headers: headers);
+            _basePath = string.IsNullOrWhiteSpace(basePath) ? "https://api.phaseo.app/v1" : basePath.TrimEnd('/');
+            _client = new AiStats.Gen.Client(_basePath, httpClient, headers: headers);
             _enableDeprecationWarnings = enableDeprecationWarnings;
             _warningsAsErrors = warningsAsErrors;
             _logger = logger;
             _telemetry = new TelemetryRecorder(devtools, "2.0.3");
             _lifecycleResolver = lifecycleResolver ?? FetchModelLifecycleAsync;
+            AsyncJobs = new AsyncJobsResource(this);
         }
 
         public async Task<ModelLifecycleInfo?> GetModelDeprecationInfo(string modelId)
@@ -338,6 +357,65 @@ namespace AiStatsSdk
             return GenerateModeration(request);
         }
 
+        public Task<Dictionary<string, object>?> GenerateVideo(Dictionary<string, object> request)
+        {
+            return WithLifecycleAndTelemetry(
+                "video.generations",
+                request,
+                true,
+                () => Operations.CreateVideoAsync(_client, body: request));
+        }
+
+        public Task<Dictionary<string, object>?> CreateVideo(Dictionary<string, object> request)
+        {
+            return GenerateVideo(request);
+        }
+
+        public Task<Dictionary<string, object>?> GetVideo(string videoId)
+        {
+            return WithLifecycleAndTelemetry(
+                "video.retrieve",
+                new Dictionary<string, object> { ["video_id"] = videoId },
+                false,
+                () => Operations.GetVideoAsync(_client, path: new Dictionary<string, string> { { "video_id", videoId } }));
+        }
+
+        public Task<Dictionary<string, object>?> CancelVideo(string videoId)
+        {
+            return WithLifecycleAndTelemetry(
+                "video.cancel",
+                new Dictionary<string, object> { ["video_id"] = videoId },
+                false,
+                () => _client.SendAsync<Dictionary<string, object>?>("POST", $"/videos/{Uri.EscapeDataString(videoId)}/cancel"));
+        }
+
+        public Task<Dictionary<string, object>?> DeleteVideo(string videoId)
+        {
+            return WithLifecycleAndTelemetry(
+                "video.delete",
+                new Dictionary<string, object> { ["video_id"] = videoId },
+                false,
+                () => Operations.DeleteVideoAsync(_client, path: new Dictionary<string, string> { { "video_id", videoId } }));
+        }
+
+        public Task<Dictionary<string, object>?> ListVideoModels()
+        {
+            return WithLifecycleAndTelemetry(
+                "video.models",
+                null,
+                false,
+                () => Operations.ListVideoModelsAsync(_client));
+        }
+
+        public Task<Dictionary<string, object>?> ListVideos(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry(
+                "video.list",
+                query,
+                false,
+                () => Operations.ListVideosAsync(_client, query: query));
+        }
+
         public Task<object?> CreateSpeech(Dictionary<string, object> request)
         {
             return WithLifecycleAndTelemetry(
@@ -365,7 +443,7 @@ namespace AiStatsSdk
                 () => Operations.CreateTranslationAsync(_client, body: request));
         }
 
-        public Task<object?> CreateBatch(Dictionary<string, object> request)
+        public Task<Dictionary<string, object>?> CreateBatch(Dictionary<string, object> request)
         {
             return WithLifecycleAndTelemetry(
                 "batches.create",
@@ -374,7 +452,7 @@ namespace AiStatsSdk
                 () => Operations.CreateBatchAsync(_client, body: request));
         }
 
-        public Task<object?> RetrieveBatch(string batchId)
+        public Task<Dictionary<string, object>?> RetrieveBatch(string batchId)
         {
             return WithLifecycleAndTelemetry(
                 "batches.retrieve",
@@ -383,9 +461,67 @@ namespace AiStatsSdk
                 () => Operations.RetrieveBatchAsync(_client, path: new Dictionary<string, string> { { "batch_id", batchId } }));
         }
 
+        public Task<Dictionary<string, object>?> CancelBatch(string batchId)
+        {
+            return WithLifecycleAndTelemetry(
+                "batches.cancel",
+                new Dictionary<string, object> { ["batch_id"] = batchId },
+                false,
+                () => Operations.CancelBatchAsync(_client, path: new Dictionary<string, string> { { "batch_id", batchId } }));
+        }
+
+        public string GetAsyncJobWebSocketUrl(string kind, string jobId, int? intervalMs = null, bool? closeOnTerminal = null)
+        {
+            if (string.IsNullOrWhiteSpace(kind))
+            {
+                throw new ArgumentException("kind is required", nameof(kind));
+            }
+
+            if (string.IsNullOrWhiteSpace(jobId))
+            {
+                throw new ArgumentException("jobId is required", nameof(jobId));
+            }
+
+            var wsBasePath = _basePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                ? "wss://" + _basePath["https://".Length..]
+                : _basePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                    ? "ws://" + _basePath["http://".Length..]
+                    : _basePath;
+            var url = $"{wsBasePath}/async/{Uri.EscapeDataString(kind.Trim())}/{Uri.EscapeDataString(jobId.Trim())}/ws";
+            var query = new List<string>();
+            if (intervalMs.HasValue)
+            {
+                query.Add($"interval_ms={intervalMs.Value.ToString(CultureInfo.InvariantCulture)}");
+            }
+            if (closeOnTerminal.HasValue)
+            {
+                query.Add($"close_on_terminal={closeOnTerminal.Value.ToString().ToLowerInvariant()}");
+            }
+            if (query.Count > 0)
+            {
+                url += "?" + string.Join("&", query);
+            }
+            return url;
+        }
+
+        public string GetBatchWebSocketUrl(string batchId, int? intervalMs = null, bool? closeOnTerminal = null)
+        {
+            return GetAsyncJobWebSocketUrl("batch", batchId, intervalMs, closeOnTerminal);
+        }
+
+        public string GetVideoWebSocketUrl(string videoId, int? intervalMs = null, bool? closeOnTerminal = null)
+        {
+            return GetAsyncJobWebSocketUrl("video", videoId, intervalMs, closeOnTerminal);
+        }
+
         public Task<Dictionary<string, object>?> ListModels(Dictionary<string, string>? query = null)
         {
             return WithLifecycleAndTelemetry("models.list", query, false, () => Operations.ListModelsAsync(_client, query: query));
+        }
+
+        public Task<Dictionary<string, object>?> ListTeamModels(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry("models.team", query, false, () => Operations.ListTeamModelsAsync(_client, query: query));
         }
 
         public Task<Dictionary<string, object>?> ListProviders(Dictionary<string, string>? query = null)
@@ -395,7 +531,7 @@ namespace AiStatsSdk
 
         public Task<Dictionary<string, object>?> GetAnalytics(Dictionary<string, string>? query = null)
         {
-            return WithLifecycleAndTelemetry("analytics", query, false, () => Operations.GetActivityAsync(_client, query: query));
+            return WithLifecycleAndTelemetry("analytics", query, false, () => Operations.GetActivityAliasAsync(_client, query: query));
         }
 
         public Task<Dictionary<string, object>?> GetCredits(Dictionary<string, string>? query = null)
@@ -408,12 +544,128 @@ namespace AiStatsSdk
             return WithLifecycleAndTelemetry("activity", query, false, () => Operations.GetActivityAsync(_client, query: query));
         }
 
-        public Task<object?> ListFiles(Dictionary<string, string>? query = null)
+        public Task<Dictionary<string, object>?> GetGeneration(string generationId)
         {
-            return WithLifecycleAndTelemetry("files.list", query, false, () => Operations.ListFilesAsync(_client, query: query));
+            return WithLifecycleAndTelemetry(
+                "generations.retrieve",
+                new Dictionary<string, object> { ["id"] = generationId },
+                false,
+                () => Operations.GetGenerationAsync(_client, query: new Dictionary<string, string> { { "id", generationId } }));
         }
 
-        public Task<object?> RetrieveFile(string fileId)
+        public Task<Dictionary<string, object>?> ListFiles(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry("files.list", query, false, async () => NormalizeDictionary(await Operations.ListFilesAsync(_client, query: query).ConfigureAwait(false)));
+        }
+
+        public Task<Dictionary<string, object>?> ListEndpoints()
+        {
+            return WithLifecycleAndTelemetry("endpoints.list", null, false, () => Operations.ListEndpointsAsync(_client));
+        }
+
+        public Task<Dictionary<string, object>?> ListOrganisations(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry("organisations.list", query, false, () => Operations.ListOrganisationsAsync(_client, query: query));
+        }
+
+        public Task<Dictionary<string, object>?> ListPricingModels(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry("pricing.models", query, false, () => Operations.ListPricingModelsAsync(_client, query: query));
+        }
+
+        public Task<Dictionary<string, object>?> CalculatePricing(Dictionary<string, object> request)
+        {
+            return WithLifecycleAndTelemetry("pricing.calculate", request, false, () => Operations.CalculatePricingAsync(_client, body: request));
+        }
+
+        public Task<Dictionary<string, object>?> ListApiKeys(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry("provisioning.keys.list", query, false, () => Operations.ListApiKeysAsync(_client, query: query));
+        }
+
+        public Task<Dictionary<string, object>?> CreateApiKey(Dictionary<string, object> request)
+        {
+            return WithLifecycleAndTelemetry("provisioning.keys.create", request, false, () => Operations.CreateApiKeyAsync(_client, body: request));
+        }
+
+        public Task<Dictionary<string, object>?> GetApiKey(string id)
+        {
+            return WithLifecycleAndTelemetry(
+                "provisioning.keys.get",
+                new Dictionary<string, object> { ["id"] = id },
+                false,
+                () => Operations.GetApiKeyAsync(_client, path: new Dictionary<string, string> { { "id", id } }));
+        }
+
+        public Task<Dictionary<string, object>?> UpdateApiKey(string id, Dictionary<string, object> request)
+        {
+            return WithLifecycleAndTelemetry(
+                "provisioning.keys.update",
+                new Dictionary<string, object> { ["id"] = id, ["body"] = request },
+                false,
+                () => Operations.UpdateApiKeyAsync(_client, path: new Dictionary<string, string> { { "id", id } }, body: request));
+        }
+
+        public Task<Dictionary<string, object>?> DeleteApiKey(string id)
+        {
+            return WithLifecycleAndTelemetry(
+                "provisioning.keys.delete",
+                new Dictionary<string, object> { ["id"] = id },
+                false,
+                () => Operations.DeleteApiKeyAsync(_client, path: new Dictionary<string, string> { { "id", id } }));
+        }
+
+        public Task<Dictionary<string, object>?> ListWorkspaces(Dictionary<string, string>? query = null)
+        {
+            return WithLifecycleAndTelemetry("provisioning.workspaces.list", query, false, () => Operations.ListWorkspacesAsync(_client, query: query));
+        }
+
+        public Task<Dictionary<string, object>?> GetWorkspace(string id)
+        {
+            return WithLifecycleAndTelemetry(
+                "provisioning.workspaces.get",
+                new Dictionary<string, object> { ["id"] = id },
+                false,
+                () => Operations.GetWorkspaceAsync(_client, path: new Dictionary<string, string> { { "id", id } }));
+        }
+
+        public Task<Dictionary<string, object>?> CreateWorkspace(Dictionary<string, object> body)
+        {
+            return WithLifecycleAndTelemetry(
+                "provisioning.workspaces.create",
+                body,
+                false,
+                () => Operations.CreateWorkspaceAsync(_client, body: body));
+        }
+
+        public Task<Dictionary<string, object>?> UpdateWorkspace(string id, Dictionary<string, object> body)
+        {
+            var payload = new Dictionary<string, object>(body)
+            {
+                ["id"] = id
+            };
+            return WithLifecycleAndTelemetry(
+                "provisioning.workspaces.update",
+                payload,
+                false,
+                () => Operations.UpdateWorkspaceAsync(_client, path: new Dictionary<string, string> { { "id", id } }, body: body));
+        }
+
+        public Task<Dictionary<string, object>?> DeleteWorkspace(string id)
+        {
+            return WithLifecycleAndTelemetry(
+                "provisioning.workspaces.delete",
+                new Dictionary<string, object> { ["id"] = id },
+                false,
+                () => Operations.DeleteWorkspaceAsync(_client, path: new Dictionary<string, string> { { "id", id } }));
+        }
+
+        public Task<Dictionary<string, object>?> GetCurrentApiKey()
+        {
+            return WithLifecycleAndTelemetry("key.current", null, false, () => Operations.GetCurrentApiKeyAsync(_client));
+        }
+
+        public Task<Dictionary<string, object>?> RetrieveFile(string fileId)
         {
             return WithLifecycleAndTelemetry(
                 "files.retrieve",
@@ -422,7 +674,35 @@ namespace AiStatsSdk
                 () => Operations.RetrieveFileAsync(_client, path: new Dictionary<string, string> { { "file_id", fileId } }));
         }
 
-        public Task<object?> UploadFile(Dictionary<string, object> request)
+        public Task<byte[]> RetrieveFileContent(string fileId)
+        {
+            return WithLifecycleAndTelemetry(
+                "files.content",
+                new Dictionary<string, object> { ["file_id"] = fileId },
+                false,
+                () => _client.SendBytesAsync("GET", $"/files/{Uri.EscapeDataString(fileId)}/content"));
+        }
+
+        public Task<byte[]> RetrieveVideoContent(string videoId)
+        {
+            return WithLifecycleAndTelemetry(
+                "video.content",
+                new Dictionary<string, object> { ["video_id"] = videoId },
+                false,
+                () => _client.SendBytesAsync("GET", $"/videos/{Uri.EscapeDataString(videoId)}/content"));
+        }
+
+        public Task<Dictionary<string, object>?> GetVideoDownloadUrl(string videoId, Dictionary<string, object>? request = null)
+        {
+            request ??= new Dictionary<string, object>();
+            return WithLifecycleAndTelemetry(
+                "video.download_url",
+                new Dictionary<string, object> { ["video_id"] = videoId, ["body"] = request },
+                false,
+                () => _client.SendAsync<Dictionary<string, object>?>("POST", $"/videos/{Uri.EscapeDataString(videoId)}/download_url", body: request));
+        }
+
+        public Task<Dictionary<string, object>?> UploadFile(Dictionary<string, object> request)
         {
             return WithLifecycleAndTelemetry("files.upload", request, false, () => Operations.UploadFileAsync(_client, body: request));
         }
@@ -672,6 +952,26 @@ namespace AiStatsSdk
                 _telemetry.CaptureError(endpoint, payload, ex, stopwatch.ElapsedMilliseconds);
                 throw;
             }
+        }
+
+        private static Dictionary<string, object>? NormalizeDictionary(object? payload)
+        {
+            if (payload is null)
+            {
+                return null;
+            }
+
+            if (payload is Dictionary<string, object> dict)
+            {
+                return dict;
+            }
+
+            if (payload is JsonElement json)
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, object>>(json.GetRawText());
+            }
+
+            return JsonSerializer.Deserialize<Dictionary<string, object>>(JsonSerializer.Serialize(payload));
         }
     }
 }

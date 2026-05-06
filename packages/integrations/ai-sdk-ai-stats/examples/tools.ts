@@ -57,8 +57,11 @@ async function main() {
   console.log(result.text);
 
   console.log('\n📊 Usage:');
-  console.log(`- Prompt tokens: ${result.usage.promptTokens}`);
-  console.log(`- Completion tokens: ${result.usage.completionTokens}`);
+  console.log(`- Input tokens: ${result.usage.inputTokens}`);
+  console.log(`- Output tokens: ${result.usage.outputTokens}`);
+
+  console.log('\n🧭 Provider Metadata:');
+  console.log(JSON.stringify(result.providerMetadata ?? {}, null, 2));
 
   if (result.toolCalls && result.toolCalls.length > 0) {
     console.log('\n🔧 Tool Calls:');

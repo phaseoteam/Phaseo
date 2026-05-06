@@ -1,21 +1,22 @@
 ---
 title: "Image edits"
-description: "Use the generated Go client for /images/edits."
+description: "Edit images with the Go SDK."
 ---
 
-The preview Go wrapper does not yet expose image-edit helpers. Use the
-generated client in `src/gen`.
+Use the wrapper method:
+
+- `client.CreateImageEdit(ctx, req)`
 
 ```go
 import (
+  "context"
   "fmt"
-  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
-client := gen.NewClient("https://api.phaseo.app/v1")
-client.Headers["Authorization"] = "Bearer " + apiKey
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
 
-resp, err := gen.CreateImageEdit(client, nil, nil, nil, map[string]interface{}{
+resp, err := client.CreateImageEdit(context.Background(), map[string]interface{}{
   "model": "openai/gpt-image-1",
   "prompt": "Turn this into a watercolor style",
   "image": "data:image/png;base64,...",

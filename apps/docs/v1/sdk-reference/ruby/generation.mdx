@@ -1,20 +1,17 @@
 ---
 title: "Generation lookup"
-description: "Call /generation to retrieve a past generation."
+description: "Call /generations to retrieve a past generation."
 ---
 
-**Method**: `GenerationsApi#generation_get`.
+**Method**: `client.get_generation(...)`.
 
 ### Example
 ```ruby
 require 'ai_stats_sdk'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
-generations_api = AIStatsSdk::GenerationsApi.new(api_client)
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
 
-record = generations_api.generation_get('G-01ABC...')
+record = client.get_generation('G-01ABC...')
 ```
 
 ### Parameters
@@ -23,8 +20,16 @@ record = generations_api.generation_get('G-01ABC...')
 ### Returns
 Generation record (JSON)
 
+If the gateway stored full request details, the returned record includes `replay_supported` plus `replay_request`, which can be sent back to the original endpoint for a controlled rerun.
+
+Timing fields follow the shared gateway semantics:
+
+- `latency_ms`: time to first token or first output byte/frame when tracked
+- `generation_ms`: post-latency generation time when tracked
+
 ```json
 {
+  "created_at": "2026-05-05T12:00:00.000Z",
   "request_id": "G-01ABC123",
   "team_id": "team-123",
   "app_id": "app-123",
@@ -49,7 +54,14 @@ Generation record (JSON)
   "currency": "USD",
   "pricing_lines": [],
   "key_id": "key-123",
-  "throughput": null
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
 }
 ```
 

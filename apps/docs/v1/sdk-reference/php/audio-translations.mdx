@@ -3,7 +3,7 @@ title: "Translations"
 description: "Call /audio/translations with the PHP SDK."
 ---
 
-**Method**: AudioApi#audioTranslationsPost
+**Method**: `$client->generateTranslation(...)` or `$client->createTranslation(...)`
 
 ### Example
 
@@ -12,24 +12,14 @@ description: "Call /audio/translations with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\AudioApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\AudioTranslationRequest;
+use AIStats\Sdk\AIStats;
 
-$apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
-
-$audioApi = new AudioApi(null, $config);
-
-$request = new AudioTranslationRequest([
+$client = new AIStats(getenv('AI_STATS_API_KEY'));
+$response = $client->generateTranslation([
     'model' => 'openai/gpt-4o-translate',
     'audio_url' => 'https://example.com/audio.mp3' // or 'audio_b64' for base64 data
 ]);
-
-$response = $audioApi->audioTranslationsPost($request);
-echo $response->getText();
+echo $response['text'] ?? '';
 ```
 
 ### Key parameters

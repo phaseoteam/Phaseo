@@ -1,0 +1,55 @@
+---
+title: "Feature Parity Matrix"
+description: "Repo-grounded matrix for migration and compatibility parity across OpenRouter, Vercel AI Gateway, and LLMGateway."
+---
+
+# Feature Parity Matrix
+
+This matrix summarizes the migration surfaces that the current repository already proves, and the narrower areas that still need more polish beyond the current public surface.
+
+It is intentionally based on code, tests, SDKs, and docs already in this repo rather than live competitor traffic.
+
+## Platform migration matrix
+
+| Surface | OpenRouter | Vercel AI Gateway | LLMGateway | Current AI Stats position |
+| --- | --- | --- | --- | --- |
+| Public migration guide | Yes | Yes | Yes | Public docs cover all three migration paths |
+| Base URL + API key swap | Yes | Yes | Yes | Covered in migration guides and SDK examples |
+| Model-ID validation guidance | Yes | Yes | Yes | Covered via `/v1/models` verification guidance |
+| Batch and file migration path | Partial | Partial | Partial | API, docs, and maintained SDKs cover batch create/retrieve/cancel, owned files, and result download |
+| Async jobs and webhook visibility | Partial | Partial | Partial | Usage UI, websocket docs, and SDK helpers now cover batch/video async status and websocket URLs |
+| Routing and pricing metadata | Strong | Medium | Medium | Usage UI, devtools, async jobs, and request detail views expose request IDs, provider attempts, and pricing lines |
+| Vercel AI SDK compatibility proof | N/A | Strong | N/A | Local compatibility tests cover language, streaming, embeddings, image, speech, and transcription flows |
+| Side-by-side benchmark tooling | Strong | Medium | Medium | Internal compare tooling now covers AI Stats vs OpenRouter, LLMGateway, and Vercel AI Gateway, with aggregate and live compare support when configured |
+
+## Product-surface matrix
+
+| Capability | Current public evidence | Status |
+| --- | --- | --- |
+| Routing transparency | Usage UI, request detail views, async job diagnostics, devtools, and gateway error docs | Strong |
+| Pricing transparency | Request pricing lines, batch settlement lines, async-job pricing metadata, pricing calculation endpoint, SDK helpers | Strong |
+| Async and batch ergonomics | Batch create/retrieve/cancel, async websocket helpers, webhook-aware usage views, batch/video job docs | Strong |
+| Provider/model filtering depth | `/gateway/models` now supports provider, status, rollout, availability, routing, and capability filters | Strong |
+| Fallback controls as a public migration surface | Public docs now point to preset constraints, routing mode, preview-channel toggles, and BYOK fallback controls as the supported migration knobs | Strong |
+| Replay / retry ergonomics | `GET /v1/generations?id=<request_id>` now returns `replay_supported` plus a `replay_request` payload that can be resent to the original endpoint | Strong |
+| Request transforms and defaults | Presets guide now defines the supported public surface for prompt injection, parameter defaults, reasoning defaults, and provider constraints | Strong |
+| Broader competitor benchmarking | Operational compare flow now covers OpenRouter, LLMGateway, and Vercel AI Gateway; the remaining work is keeping that evidence aligned as contracts evolve | Strong |
+
+## What is already strong
+
+- Migration guides now cover OpenRouter, Vercel AI Gateway, and LLMGateway.
+- Maintained SDKs and docs cover batch, file, async-job, and gateway discovery helpers much more evenly than before.
+- The request/job/session/devtools investigation path now preserves far richer routing, provider-attempt, and pricing context.
+- Vercel AI SDK compatibility is now proven across the shipped text, embedding, image, and audio surfaces.
+
+## What still remains
+
+1. Keep the benchmark and migration docs aligned as compare tooling and public request contracts evolve.
+
+## Related guides
+
+- [Migration Guides Index](./index.mdx)
+- [Gateway Parity Review](./gateway-parity-review.mdx)
+- [Migration from OpenRouter](./from-openrouter.mdx)
+- [Migrating from Vercel AI Gateway](./from-vercel.mdx)
+- [Migrating from LLM Gateway](./from-llmgateway.mdx)

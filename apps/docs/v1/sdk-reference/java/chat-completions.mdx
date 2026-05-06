@@ -3,10 +3,12 @@ title: "Chat completions"
 description: "Call /chat/completions with the Java SDK."
 ---
 
-**Method**: `Operations.createChatCompletion(...)`
+**Method**: `client.createChatCompletion(...)`
 
 ```java
-import ai.stats.gen.Operations;
+import ai.stats.sdk.AIStats;
+
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
 
 String body = """
 {
@@ -17,6 +19,6 @@ String body = """
 }
 """;
 
-Object response = Operations.createChatCompletion(client, null, null, null, body);
+Object response = client.createChatCompletion(body);
 System.out.println(String.valueOf(response));
 ```

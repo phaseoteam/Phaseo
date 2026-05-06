@@ -10,7 +10,7 @@ Official [Vercel AI SDK](https://sdk.vercel.ai/docs) provider for [AI Stats Gate
 -   Text: `generateText`, `streamText`, `generateObject`, `streamObject`
 -   Embeddings: `embed`, `embedMany`
 -   Images: `generateImage`
--   Audio: `transcribe` (STT), `speak` (TTS)
+-   Audio: `experimental_transcribe` (STT), `experimental_generateSpeech` (TTS)
     🛠️ **Tool Calling** - Complete support for function/tool calling with parallel execution
     📦 **Structured Output** - Generate typed objects with JSON schemas
     🔢 **Embeddings** - Generate vector embeddings for semantic search and similarity
@@ -48,7 +48,7 @@ console.log(result.text);
 import { aiStats } from "@ai-stats/ai-sdk-provider";
 import { streamText } from "ai";
 
-const { textStream } = await streamText({
+const { textStream } = streamText({
 	model: aiStats("anthropic/claude-3-5-sonnet"),
 	prompt: "Write a poem about TypeScript",
 });
@@ -56,6 +56,34 @@ const { textStream } = await streamText({
 for await (const chunk of textStream) {
 	process.stdout.write(chunk);
 }
+```
+
+### Response Metadata
+
+```typescript
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { generateText, streamText } from "ai";
+
+const textResult = await generateText({
+	model: aiStats("openai/gpt-4o"),
+	prompt: "Say hello",
+});
+
+console.log(textResult.response.headers["x-request-id"]);
+
+const streamResult = streamText({
+	model: aiStats("anthropic/claude-3-5-sonnet"),
+	prompt: "Stream a short greeting",
+});
+
+for await (const chunk of streamResult.textStream) {
+	process.stdout.write(chunk);
+}
+
+console.log(await streamResult.finishReason);
+console.log(await streamResult.usage);
+console.log(await streamResult.response);
+console.log(await streamResult.providerMetadata);
 ```
 
 ### Tool Calling
@@ -108,16 +136,20 @@ import { aiStats } from "@ai-stats/ai-sdk-provider";
 import { embed, embedMany } from "ai";
 
 // Single embedding
-const { embedding } = await embed({
+const singleResult = await embed({
 	model: aiStats.textEmbeddingModel("openai/text-embedding-3-small"),
 	value: "Hello, world!",
 });
+console.log(singleResult.embedding);
+console.log(singleResult.providerMetadata); // AI Stats request/routing metadata
 
 // Batch embeddings
-const { embeddings } = await embedMany({
+const batchResult = await embedMany({
 	model: aiStats.textEmbeddingModel("openai/text-embedding-3-small"),
 	values: ["First text", "Second text", "Third text"],
 });
+console.log(batchResult.embeddings);
+console.log(batchResult.providerMetadata); // AI Stats request/routing metadata
 ```
 
 ### Image Generation
@@ -126,49 +158,60 @@ const { embeddings } = await embedMany({
 import { aiStats } from "@ai-stats/ai-sdk-provider";
 import { generateImage } from "ai";
 
-const { images } = await generateImage({
+const result = await generateImage({
 	model: aiStats.imageModel("openai/dall-e-3"),
 	prompt: "A serene landscape with mountains at sunset",
 	size: "1024x1024",
 });
 
-console.log(images[0].url); // Image URL or base64
+console.log(result.images[0].mediaType); // e.g. image/png
+console.log(result.images[0].uint8Array.length); // Binary image bytes
+if (result.images[0].base64) {
+	console.log(result.images[0].base64); // Present for base64-backed gateway responses
+}
+console.log(result.providerMetadata); // Gateway request/routing metadata (under the gateway key for image calls)
 ```
 
 ### Audio Transcription (Speech-to-Text)
 
 ```typescript
 import { aiStats } from "@ai-stats/ai-sdk-provider";
-import { transcribe } from "ai";
+import { experimental_transcribe } from "ai";
 import { readFileSync } from "fs";
 
 const audioData = readFileSync("./audio.mp3");
 
-const { text, segments } = await transcribe({
+const result = await experimental_transcribe({
 	model: aiStats.transcriptionModel("openai/whisper-1"),
-	audioData: new Blob([audioData], { type: "audio/mp3" }),
-	language: "en", // optional
+	audio: audioData,
+	providerOptions: {
+		openai: { language: "en" }, // optional
+	},
 });
 
-console.log(text); // Transcribed text
+console.log(result.text); // Transcribed text
+console.log(result.providerMetadata); // AI Stats request/routing metadata
 ```
 
 ### Text-to-Speech
 
 ```typescript
 import { aiStats } from "@ai-stats/ai-sdk-provider";
-import { speak } from "ai";
+import { experimental_generateSpeech } from "ai";
 import { writeFileSync } from "fs";
 
-const { audio } = await speak({
+const result = await experimental_generateSpeech({
 	model: aiStats.speechModel("openai/tts-1"),
 	text: "Hello, this is text to speech!",
 	voice: "alloy", // alloy, echo, fable, onyx, nova, shimmer
 	outputFormat: "mp3",
 });
 
-writeFileSync("./speech.mp3", audio);
+writeFileSync("./speech.mp3", result.audio.uint8Array);
+console.log(result.providerMetadata); // Includes gateway request metadata such as requestId
 ```
+
+Audio support in `ai@6.0.168` is currently exposed via the experimental helper names above.
 
 ## Configuration
 
@@ -179,6 +222,8 @@ Set your API key as an environment variable:
 ```bash
 export AI_STATS_API_KEY=your_api_key_here
 ```
+
+The provider also accepts `OPENAI_GATEWAY_API_KEY` for compatibility with existing gateway-style environments.
 
 Then use the default instance:
 
@@ -204,6 +249,8 @@ const aiStats = createAIStats({
 	},
 });
 ```
+
+If `apiKey` is omitted, `createAIStats()` falls back to `AI_STATS_API_KEY` and `OPENAI_GATEWAY_API_KEY`. If `baseURL` is omitted, it falls back to `AI_STATS_BASE_URL`, then `OPENAI_GATEWAY_URL`, then the default public gateway URL.
 
 ### Model Settings
 
@@ -277,8 +324,8 @@ Creates a new AI Stats provider instance.
 
 **Parameters:**
 
--   `settings.apiKey` (string, optional) - API key for authentication. Defaults to `AI_STATS_API_KEY` env var.
--   `settings.baseURL` (string, optional) - Gateway base URL. Default: `https://api.phaseo.app/v1`
+-   `settings.apiKey` (string, optional) - API key for authentication. Defaults to `AI_STATS_API_KEY`, then `OPENAI_GATEWAY_API_KEY`.
+-   `settings.baseURL` (string, optional) - Gateway base URL. Defaults to `AI_STATS_BASE_URL`, then `OPENAI_GATEWAY_URL`, then `https://api.phaseo.app/v1`
 -   `settings.headers` (object, optional) - Additional headers to include in requests
 -   `settings.fetch` (function, optional) - Custom fetch implementation
 
@@ -286,7 +333,7 @@ Creates a new AI Stats provider instance.
 
 ### `aiStats(modelId, settings?)`
 
-Default provider instance using `AI_STATS_API_KEY` environment variable.
+Default provider instance using `AI_STATS_API_KEY` or `OPENAI_GATEWAY_API_KEY`.
 
 **Parameters:**
 
@@ -334,24 +381,24 @@ See the [`examples/`](./examples) directory for complete working examples:
 
 ## Testing
 
-The package includes comprehensive test coverage using Vitest and AI SDK mock models:
+The package includes comprehensive test coverage using Vitest and mocked gateway responses:
 
-### Run Mock Tests (Free - No API Calls)
+### Run Local Compatibility Tests (Free - No API Calls)
 
 ```bash
 cd packages/integrations/ai-sdk-ai-stats
 pnpm test
 ```
 
-Mock tests use `MockLanguageModelV3` and `MockEmbeddingModelV3` from `ai/test` to validate functionality without making actual API calls.
+These tests use mocked gateway `fetch` responses to validate the provider's AI SDK compatibility without making actual API calls.
 
-### Run Integration Tests (Requires API Key)
+### Run Integration Tests (Explicit Opt-In, Requires API Key)
 
 ```bash
-AI_STATS_API_KEY=your_key pnpm test
+AI_STATS_API_KEY=your_key pnpm test:gateway
 ```
 
-Integration tests make real calls to the AI Stats Gateway and are automatically enabled when an API key is present.
+Integration tests make real calls to the AI Stats Gateway and are only enabled when `AI_STATS_RUN_GATEWAY_TESTS=1` is set. `pnpm test:gateway` sets that opt-in flag for you and runs only the real gateway suite. This keeps the default `pnpm test` path cost-free even if `.env.local` contains a real API key.
 
 ### Test Coverage
 
@@ -361,8 +408,11 @@ pnpm test -- --coverage
 
 **Test files:**
 
--   `tests/language-model.test.ts` - Text generation, streaming, tools, structured output (mocked)
--   `tests/embedding-model.test.ts` - Embeddings generation and similarity (mocked)
+-   `tests/language-model.test.ts` - Text generation and streaming compatibility, including response metadata, provider metadata, `generateObject()` / `streamObject()` structured output, non-stream tool calls, and streamed tool-call assembly (local, mocked gateway responses)
+-   `tests/embedding-model.test.ts` - Embeddings generation and ordering (local, mocked gateway responses)
+-   `tests/image-model.test.ts` - Image generation compatibility for base64 and URL-backed gateway responses
+-   `tests/audio-model.test.ts` - Experimental speech/transcription compatibility for AI SDK v6
+-   `tests/gateway-test-config.test.ts` - Local regression coverage for paid/live gateway-test gating and env-resolution rules
 -   `tests/gateway-integration.test.ts` - Real gateway tests (requires API key)
 
 ## Advanced Usage
@@ -414,11 +464,11 @@ const result = await generateText({
 	prompt: "Hello!",
 });
 
-console.log("Prompt tokens:", result.usage.promptTokens);
-console.log("Completion tokens:", result.usage.completionTokens);
+console.log("Input tokens:", result.usage.inputTokens);
+console.log("Output tokens:", result.usage.outputTokens);
 console.log(
 	"Total tokens:",
-	result.usage.promptTokens + result.usage.completionTokens
+	result.usage.inputTokens + result.usage.outputTokens
 );
 ```
 
@@ -443,7 +493,7 @@ console.log(
 
 ### "AI Stats API key is required"
 
-Make sure you've set the `AI_STATS_API_KEY` environment variable or passed `apiKey` to `createAIStats()`.
+Make sure you've set `AI_STATS_API_KEY` or `OPENAI_GATEWAY_API_KEY`, or passed `apiKey` to `createAIStats()`.
 
 ### "Gateway request failed: 401"
 

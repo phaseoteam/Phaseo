@@ -3,7 +3,7 @@ title: "Batches"
 description: "Call /batches with the TypeScript SDK."
 ---
 
-**Methods**: `client.createBatch()`, `client.getBatch()`.
+**Methods**: `client.createBatch()`, `client.getBatch()`, `client.cancelBatch()`, `client.getAsyncJobWebSocketUrl("batch", batchId, options)`, `client.batches.create()`, `client.batches.get()`, `client.batches.cancel()`, `client.batches.websocketUrl()`.
 
 ### Example
 ```typescript
@@ -13,16 +13,25 @@ const batch = await client.createBatch({
   completion_window: "24h",
 });
 const status = await client.getBatch(batch.id);
+const cancelling = await client.cancelBatch(batch.id);
+const websocketUrl = client.batches.websocketUrl(batch.id, { intervalMs: 1500 });
 ```
 
 ### Key parameters
 - `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
 - `input_file_id` (required): File id uploaded via `/files`.
 - `completion_window`: e.g., `24h`.
+- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 
 ### Returns
 `BatchResponse`
+
+Responses also include gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when settlement data is available.
+
+Use `client.batches.websocketUrl(...)` when you want to subscribe to the documented `/v1/async/batch/{id}/ws` lifecycle stream instead of polling only.
+Use `client.getAsyncJobWebSocketUrl("batch", batch.id, options)` when you already have a generic async job kind/id pair and do not want to go through the resource helper.
 
 ```json
 {
@@ -30,10 +39,19 @@ const status = await client.getBatch(batch.id);
   "object": "batch",
   "endpoint": "responses",
   "status": "completed",
+  "request_id": "G-01BATCH123",
+  "provider": "openai",
+  "session_id": "agent-run-42",
   "created_at": 1677610602,
   "completed_at": 1677610602,
   "input_file_id": "file_123",
   "output_file_id": "file_456",
-  "error_file_id": null
+  "error_file_id": null,
+  "pricing_lines": [],
+  "billing": {
+    "billed": true,
+    "charged": false,
+    "reason": "zero_cost"
+  }
 }
 ```

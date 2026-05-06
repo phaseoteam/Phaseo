@@ -3,25 +3,19 @@ title: "Responses"
 description: "Call the Responses API with the C# SDK."
 ---
 
-**Method**: `client.GenerateResponse()`
+**Method**: `client.GenerateResponse(...)` or `client.CreateResponse(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new ResponsesRequest(
-    model: "openai/gpt-4.1",
-    input: new List<ResponsesRequestInputItem> {
-        new ResponsesRequestInputItem(new ResponsesRequestInputItemUser(
-            new List<ResponsesRequestInputItemUserContentItem> {
-                new ResponsesRequestInputItemUserContentItem(new ResponsesRequestInputItemUserContentItemOutputText("Summarise this text"))
-            }
-        ))
-    },
-    temperature: 0.7
-);
-
-var response = client.GenerateResponse(request);
+var client = new AIStats(apiKey);
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["input"] = "Summarise this text",
+    ["temperature"] = 0.7
+});
 ```
 
 ### Key parameters

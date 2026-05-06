@@ -18,7 +18,14 @@ func main() {
 	}
 
 	client := aistats.NewAIStats(apiKey, "https://api.phaseo.app/v1")
-	resp, err := client.GetModels(context.Background(), nil)
+	resp, err := client.GetModels(context.Background(), map[string]string{
+		"provider": "anthropic",
+		"provider_status": "beta,not_ready",
+		"provider_availability_reason": "preview_only,provider_not_ready",
+		"capability_status": "coming_soon,internal_testing",
+		"availability": "all",
+		"limit": "5",
+	})
 	if err != nil {
 		panic(err)
 	}

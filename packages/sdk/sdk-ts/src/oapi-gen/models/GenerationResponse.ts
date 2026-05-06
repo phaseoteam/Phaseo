@@ -2,6 +2,7 @@ export interface GenerationResponse {
   app_id?: string | null;
   byok?: boolean;
   cost_nanos?: number;
+  created_at?: string;
   currency?: string;
   endpoint?: string;
   error_code?: string | null;
@@ -13,6 +14,10 @@ export interface GenerationResponse {
   native_response_id?: string | null;
   pricing_lines?: {}[];
   provider?: string;
+  replay_request?: {
+    [key: string]: unknown;
+  } | null;
+  replay_supported?: boolean;
   request_id?: string;
   status_code?: number;
   stream?: boolean;

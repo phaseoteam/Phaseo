@@ -147,6 +147,7 @@ export interface ChatCompletionsRequest {
   safety_identifier?: string | null;
   seed?: number;
   service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+  session_id?: string;
   stop?: string | string[];
   store?: boolean;
   stream?: boolean;

@@ -3,19 +3,19 @@ title: "STT (Speech to Text)"
 description: "Call /audio/transcriptions with the C# SDK."
 ---
 
-**Method**: `client.AudioApi.AudioTranscriptionsPostAsync()`
+**Method**: `client.CreateTranscription(...)`
 
 ### Example
 ```csharp
-var client = new Client(apiKey);
+using AiStatsSdk;
 
-var request = new AudioTranscriptionRequest(
-    model: "openai/gpt-4o-transcribe",
-    file: new FileParameter(new MemoryStream(audioBytes), "audio.mp3"),
-    language: "en"
-);
-
-var response = client.AudioApi.AudioTranscriptionsPostAsync(request).Result;
+var client = new AIStats(apiKey);
+var response = await client.CreateTranscription(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-transcribe",
+    ["audio_b64"] = "base64-audio",
+    ["language"] = "en"
+});
 ```
 
 ### Key parameters

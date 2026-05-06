@@ -1,9 +1,9 @@
 ---
 title: "Files"
-description: "Call /files with the PHP SDK."
+description: "Use the PHP SDK for file upload, metadata, and file-content retrieval."
 ---
 
-**Methods**: FilesApi#filesPost, FilesApi#filesGet, FilesApi#filesFileIdGet
+**Methods**: `uploadFile()`, `listFiles()`, `retrieveFile()`, `retrieveFileContent()`
 
 ### Example
 
@@ -12,31 +12,21 @@ description: "Call /files with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Api\FilesApi;
-use AIStats\Sdk\Configuration;
+use AIStats\Sdk\AIStats;
 
 $apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new AIStats(apiKey: $apiKey);
 
-$filesApi = new FilesApi(null, $config);
+$uploaded = $client->uploadFile([
+    'purpose' => 'batch',
+    'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==',
+]);
 
-// Upload a file
-$uploaded = $filesApi->filesPost('batch', new \SplFileObject('/path/to/file.json'));
-
-// List files
-$files = $filesApi->filesGet();
-
-// Get a specific file
-$file = $filesApi->filesFileIdGet($uploaded->getId());
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
 ```
 
-### Key parameters
-
--   `purpose` (required for upload): e.g., `batch`.
--   `file` (required for upload): File object.
-
-### Returns
-
-FileObject (upload/get) or FileListResponse (list)
+<Note>
+`listFiles()` is wired through the SDK, but `GET /files` currently returns `file_list_not_supported_with_shared_gateway_key`
+on the shared gateway key. Persist uploaded file ids and retrieve them directly instead.
+</Note>
