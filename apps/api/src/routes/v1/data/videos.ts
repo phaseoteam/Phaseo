@@ -203,17 +203,9 @@ export function parseVideoDownloadUrlRequestBody(
 }
 
 function notImplementedYetResponse(): Response {
-	return new Response(JSON.stringify({
-		error: {
-			code: "not_implemented_yet",
-			message: "Video endpoints are temporarily disabled while the public contract is finalized.",
-		},
-	}), {
-		status: 501,
-		headers: {
-			"Content-Type": "application/json",
-			"Cache-Control": "no-store",
-		},
+	return err("not_implemented_yet", {
+		reason: "video_api_temporarily_disabled",
+		message: "Video endpoints are temporarily disabled while the public contract is finalized.",
 	});
 }
 
@@ -394,15 +386,11 @@ videosRoutes.post("/:videoId/cancel", withRuntime(async (req) => {
 			workspace_id: authValue.workspaceId,
 		});
 	}
-	return new Response(JSON.stringify({
-		error: "not_implemented_yet",
+	return err("not_implemented_yet", {
 		reason: "video_cancel_temporarily_disabled",
 		request_id: authValue.requestId,
 		workspace_id: authValue.workspaceId,
 		video_id: id,
-	}), {
-		status: 501,
-		headers: { "Content-Type": "application/json" },
 	});
 }));
 

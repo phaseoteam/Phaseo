@@ -6,4 +6,6 @@ description: "Cancel a video generation request."
 ---
 Reserves the public cancel endpoint while provider-level cancellation support is standardized.
 
-The endpoint exists today, but currently returns `not_implemented_yet` while cancellation behavior is finalized across providers.
+The endpoint exists today, but currently returns a structured `501 not_implemented_yet` error while cancellation behavior is finalized across providers.
+
+Treat cancellation as not yet generally available across the public video surface even though the route and SDK method names exist.

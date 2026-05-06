@@ -2,26 +2,47 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getBatchFileMeta,
 	getBatchJobMeta,
+	isBatchJobBilled,
+	listPendingBatchJobs,
+	markBatchJobBilled,
 	saveBatchFileMeta,
 	saveBatchJobMeta,
 } from "./batch-jobs";
 
-const { getAsyncOperationMock, upsertAsyncOperationMock } = vi.hoisted(() => ({
+const {
+	getAsyncOperationMock,
+	isAsyncOperationBilledMock,
+	listAsyncOperationsMock,
+	markAsyncOperationBilledMock,
+	upsertAsyncOperationMock,
+} = vi.hoisted(() => ({
 	getAsyncOperationMock: vi.fn(),
+	isAsyncOperationBilledMock: vi.fn(),
+	listAsyncOperationsMock: vi.fn(),
+	markAsyncOperationBilledMock: vi.fn(),
 	upsertAsyncOperationMock: vi.fn(),
 }));
 
 vi.mock("@core/async-operations", () => ({
 	getAsyncOperation: getAsyncOperationMock,
+	isAsyncOperationBilled: isAsyncOperationBilledMock,
+	listAsyncOperations: listAsyncOperationsMock,
+	markAsyncOperationBilled: markAsyncOperationBilledMock,
 	upsertAsyncOperation: upsertAsyncOperationMock,
-	isAsyncOperationBilled: vi.fn(async () => false),
-	markAsyncOperationBilled: vi.fn(async () => true),
+	setAsyncOperationStatus: vi.fn(async () => undefined),
+	patchAsyncOperationMeta: vi.fn(async () => undefined),
 }));
 
 describe("batch-jobs metadata", () => {
 	beforeEach(() => {
 		getAsyncOperationMock.mockReset();
+		isAsyncOperationBilledMock.mockReset();
+		listAsyncOperationsMock.mockReset();
+		markAsyncOperationBilledMock.mockReset();
 		upsertAsyncOperationMock.mockReset();
+		isAsyncOperationBilledMock.mockResolvedValue(false);
+		listAsyncOperationsMock.mockResolvedValue([]);
+		markAsyncOperationBilledMock.mockResolvedValue(true);
 	});
 
 	it("stores batch meta with native batch id when provided", async () => {
@@ -143,5 +164,68 @@ describe("batch-jobs metadata", () => {
 			outputFileId: "file_out",
 			errorFileId: "file_err",
 		}));
+	});
+
+	it("delegates billed state helpers through async operations storage", async () => {
+		isAsyncOperationBilledMock.mockResolvedValueOnce(true);
+		markAsyncOperationBilledMock.mockResolvedValueOnce(true);
+
+		await expect(isBatchJobBilled("team_1", "batch_1")).resolves.toBe(true);
+		await expect(markBatchJobBilled("team_1", "batch_1")).resolves.toBe(true);
+
+		expect(isAsyncOperationBilledMock).toHaveBeenCalledWith("team_1", "batch", "batch_1");
+		expect(markAsyncOperationBilledMock).toHaveBeenCalledWith("team_1", "batch", "batch_1");
+	});
+
+	it("lists only pending batch jobs from shared async operations storage", async () => {
+		listAsyncOperationsMock.mockResolvedValueOnce([
+			{
+				workspaceId: "team_1",
+				kind: "batch",
+				internalId: "batch_pending",
+				requestId: null,
+				sessionId: null,
+				appId: null,
+				provider: "openai",
+				nativeId: "batch_pending",
+				model: "openai/gpt-5-mini",
+				status: "pending",
+				meta: { provider: "openai", status: "pending" },
+				billedAt: null,
+				createdAt: "2026-05-05T00:00:00.000Z",
+				updatedAt: "2026-05-05T00:01:00.000Z",
+			},
+			{
+				workspaceId: "team_1",
+				kind: "batch",
+				internalId: "batch_done",
+				requestId: null,
+				sessionId: null,
+				appId: null,
+				provider: "openai",
+				nativeId: "batch_done",
+				model: "openai/gpt-5-mini",
+				status: "completed",
+				meta: { provider: "openai", status: "completed" },
+				billedAt: "2026-05-05T00:02:00.000Z",
+				createdAt: "2026-05-05T00:00:00.000Z",
+				updatedAt: "2026-05-05T00:02:00.000Z",
+			},
+		]);
+
+		const jobs = await listPendingBatchJobs(25);
+
+		expect(listAsyncOperationsMock).toHaveBeenCalledWith({
+			kind: "batch",
+			limit: 25,
+			statuses: [null, "validating", "pending", "in_progress", "finalizing", "cancelling"],
+		});
+		expect(jobs).toHaveLength(1);
+		expect(jobs[0]).toMatchObject({
+			workspaceId: "team_1",
+			batchId: "batch_pending",
+			status: "pending",
+			provider: "openai",
+		});
 	});
 });

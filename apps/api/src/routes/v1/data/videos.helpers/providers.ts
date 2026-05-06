@@ -27,6 +27,21 @@ import {
 	decodeXAiVideoId,
 	resolveVideoProviderKey,
 } from "./openai-google";
+
+function normalizedProvider(record: VideoJobRecord | null, meta: VideoJobMeta | null): string | null {
+	return normalizeText(record?.provider ?? meta?.provider)?.toLowerCase() ?? null;
+}
+
+function nativeIdForProviders(
+	record: VideoJobRecord | null,
+	meta: VideoJobMeta | null,
+	expectedProviders: string[],
+): string | null {
+	const provider = normalizedProvider(record, meta);
+	if (!provider || !expectedProviders.includes(provider)) return null;
+	return normalizeText(record?.nativeId);
+}
+
 export function decodeBytedanceVideoId(videoId: string): string | null {
 	if (!videoId.startsWith(BYTEDANCE_VIDEO_PREFIX)) return null;
 	const b64 = videoId.slice(BYTEDANCE_VIDEO_PREFIX.length).replace(/-/g, "+").replace(/_/g, "/");
@@ -50,39 +65,51 @@ export function decodeRunwayVideoId(videoId: string): string | null {
 }
 
 export function resolveGoogleVertexOperationName(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ??
+	return nativeIdForProviders(record, meta, ["google-vertex"]) ??
 		normalizeText(meta?.googleOperationName) ??
 		decodeGoogleVertexOperationId(videoId);
 }
 
 export function resolveGoogleAiStudioOperationName(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ??
+	return nativeIdForProviders(record, meta, ["google-ai-studio", "google"]) ??
 		normalizeText(meta?.googleOperationName) ??
 		decodeGoogleOperationId(videoId);
 }
 
 export function resolveDashscopeTaskId(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ?? normalizeText(meta?.providerTaskId) ?? decodeDashscopeTaskId(videoId);
+	return nativeIdForProviders(record, meta, ["alibaba", "alibaba-cloud", "qwen"]) ??
+		normalizeText(meta?.providerTaskId) ??
+		decodeDashscopeTaskId(videoId);
 }
 
 export function resolveXAiNativeId(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ?? normalizeText(meta?.providerTaskId) ?? decodeXAiVideoId(videoId);
+	return nativeIdForProviders(record, meta, [XAI_PROVIDER_ID]) ??
+		normalizeText(meta?.providerTaskId) ??
+		decodeXAiVideoId(videoId);
 }
 
 export function resolveMiniMaxTaskId(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ?? normalizeText(meta?.providerTaskId) ?? decodeMiniMaxVideoId(videoId);
+	return nativeIdForProviders(record, meta, [MINIMAX_PROVIDER_ID]) ??
+		normalizeText(meta?.providerTaskId) ??
+		decodeMiniMaxVideoId(videoId);
 }
 
 export function resolveByteplusTaskId(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ?? normalizeText(meta?.providerTaskId) ?? decodeBytedanceVideoId(videoId);
+	return nativeIdForProviders(record, meta, [BYTEDANCE_PROVIDER_ID]) ??
+		normalizeText(meta?.providerTaskId) ??
+		decodeBytedanceVideoId(videoId);
 }
 
 export function resolveRunwayTaskId(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ?? normalizeText(meta?.providerTaskId) ?? decodeRunwayVideoId(videoId);
+	return nativeIdForProviders(record, meta, [RUNWAY_PROVIDER_ID]) ??
+		normalizeText(meta?.providerTaskId) ??
+		decodeRunwayVideoId(videoId);
 }
 
 export function resolveAtlasTaskId(record: VideoJobRecord | null, meta: VideoJobMeta | null, videoId: string): string | null {
-	return normalizeText(record?.nativeId) ?? normalizeText(meta?.providerTaskId) ?? decodeAtlasVideoId(videoId);
+	return nativeIdForProviders(record, meta, [ATLAS_PROVIDER_ID, "atlas-cloud"]) ??
+		normalizeText(meta?.providerTaskId) ??
+		decodeAtlasVideoId(videoId);
 }
 
 export async function fetchDashscopeTask(

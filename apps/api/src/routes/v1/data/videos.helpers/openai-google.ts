@@ -10,8 +10,13 @@ import {
 	resolveVertexAccessToken,
 	resolveVertexApiBase,
 } from "@providers/google-vertex/auth";
+import {
+	extractErrorCode,
+	extractErrorDescription,
+} from "@core/error-handler";
 import { decodeGoogleVertexOperationId, normalizeGoogleVideoModelName } from "@providers/google-video/shared";
 import { err } from "@pipeline/before/http";
+import { classifyProviderFailureDiagnostics } from "@pipeline/execute/guards";
 
 import {
 	ATLAS_VIDEO_PREFIX,
@@ -57,6 +62,71 @@ export async function resolveVideoProviderKey(
 		}
 	}
 	return key;
+}
+
+export async function normalizeVideoUpstreamErrorResponse(args: {
+	response: Response;
+	requestId: string;
+	workspaceId: string;
+	provider: string;
+	reason: string;
+	extra?: Record<string, unknown>;
+}): Promise<Response> {
+	const { response, requestId, workspaceId, provider, reason, extra } = args;
+	const contentType = response.headers.get("content-type") ?? "";
+	const parsedBody = contentType.includes("application/json")
+		? await response.clone().json().catch(() => null)
+		: null;
+	const upstreamBody = await response.clone().text().catch(() => "");
+	const upstreamErrorCode =
+		parsedBody && typeof parsedBody === "object"
+			? extractErrorCode(parsedBody, `http_${response.status}`)
+			: null;
+	const upstreamErrorMessage =
+		parsedBody && typeof parsedBody === "object"
+			? extractErrorDescription((parsedBody as any)?.error ?? parsedBody)
+			: upstreamBody
+				? upstreamBody.slice(0, 200)
+				: null;
+	const upstreamErrorDescription =
+		parsedBody && typeof parsedBody === "object"
+			? extractErrorDescription(parsedBody)
+			: upstreamBody
+				? upstreamBody.slice(0, 200)
+				: null;
+	const upstreamErrorParam =
+		parsedBody && typeof parsedBody === "object" && typeof (parsedBody as any)?.error?.param === "string"
+			? (parsedBody as any).error.param
+			: null;
+	const providerFailureDiagnostics = classifyProviderFailureDiagnostics([{
+		provider,
+		status: response.status,
+		upstream_error_code: upstreamErrorCode,
+		upstream_error_message: upstreamErrorMessage,
+		upstream_error_description: upstreamErrorDescription,
+		upstream_error_param: upstreamErrorParam,
+		upstream_payload_preview: upstreamBody ? upstreamBody.slice(0, 1200) : null,
+	}]);
+
+	return err("upstream_error", {
+		reason,
+		request_id: requestId,
+		workspace_id: workspaceId,
+		provider,
+		upstream_status: response.status,
+		upstream_status_text: response.statusText || null,
+		upstream_body_preview: upstreamBody ? upstreamBody.slice(0, 1200) : null,
+		upstream_error: {
+			code: upstreamErrorCode,
+			message: upstreamErrorMessage,
+			description: upstreamErrorDescription,
+			param: upstreamErrorParam,
+		},
+		...(providerFailureDiagnostics
+			? { provider_failure_diagnostics: providerFailureDiagnostics }
+			: {}),
+		...(extra ?? {}),
+	});
 }
 
 export async function proxyOpenAIVideoRequest(
@@ -127,6 +197,16 @@ export async function proxyOpenAIVideoRequest(
 		});
 	} finally {
 		clearTimeout(timeoutId);
+	}
+
+	if (!res.ok) {
+		return normalizeVideoUpstreamErrorResponse({
+			response: res,
+			requestId: auth.requestId,
+			workspaceId: auth.workspaceId,
+			provider: providerId,
+			reason: "video_provider_upstream_error",
+		});
 	}
 
 	return new Response(res.body, {

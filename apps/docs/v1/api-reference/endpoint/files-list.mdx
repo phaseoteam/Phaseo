@@ -2,8 +2,8 @@
 title: "List files (Beta)"
 badge: "Beta"
 openapi: "GET /files"
-description: "File listing is currently a placeholder endpoint and returns 501 not_implemented."
+description: "Lists files when the underlying provider key supports it. On the shared gateway key this currently returns `file_list_not_supported_with_shared_gateway_key`."
 ---
 
-This route is reserved for upcoming file listing support.
+Use file ids captured at upload time instead of depending on this endpoint when you are using the shared gateway key.
 

@@ -2,8 +2,11 @@
 title: "Batch status (Beta)"
 badge: "Beta"
 openapi: "GET /batches/{batch_id}"
-description: "Batch status is currently a placeholder endpoint and returns 501 not_implemented."
+description: "Retrieve the current status for a previously created batch job."
 ---
 
-This route is reserved for upcoming batch support.
+Fetch the latest upstream batch object for a batch created through `POST /batches`.
 
+Common lifecycle states include `queued`, `processing`, `completed`, `failed`, `cancelled`, and `expired`.
+
+Use `POST /batches/{batch_id}/cancel` when the batch should no longer continue processing.

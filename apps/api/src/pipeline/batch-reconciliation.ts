@@ -7,6 +7,7 @@ import {
 	type BatchJobMeta,
 	type BatchJobRecord,
 } from "@core/batch-jobs";
+import { finalizeBatchJob } from "@core/batch-finalization";
 import { resolveProviderKey } from "@providers/keys";
 
 export type BatchReconciliationSummary = {
@@ -47,6 +48,14 @@ function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 		inputFileId: normalizeText(payload?.input_file_id) ?? base.inputFileId ?? null,
 		outputFileId: normalizeText(payload?.output_file_id) ?? base.outputFileId ?? null,
 		errorFileId: normalizeText(payload?.error_file_id) ?? base.errorFileId ?? null,
+		requestCounts:
+			payload?.request_counts && typeof payload.request_counts === "object" && !Array.isArray(payload.request_counts)
+				? {
+					total: typeof payload.request_counts.total === "number" ? payload.request_counts.total : null,
+					completed: typeof payload.request_counts.completed === "number" ? payload.request_counts.completed : null,
+					failed: typeof payload.request_counts.failed === "number" ? payload.request_counts.failed : null,
+				}
+				: base.requestCounts ?? null,
 	};
 }
 
@@ -146,9 +155,9 @@ export async function runBatchReconciliationJob(args?: {
 			);
 			await persistBatchFileOwnership(job.workspaceId, payload);
 			counts.jobsUpdated += 1;
-			if (nextStatus !== previousStatus) {
-				const phase = mapTerminalPhase(nextStatus);
-				if (phase) {
+			const phase = mapTerminalPhase(nextStatus);
+			if (phase) {
+				if (nextStatus !== previousStatus) {
 					dispatchAsyncWebhookEventInBackground({
 						workspaceId: job.workspaceId,
 						kind: "batch",
@@ -159,6 +168,11 @@ export async function runBatchReconciliationJob(args?: {
 					if (phase === "failed") counts.jobsFailed += 1;
 					if (phase === "cancelled") counts.jobsCancelled += 1;
 				}
+				await finalizeBatchJob({
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					status: nextStatus,
+				});
 			}
 		} catch (error) {
 			counts.jobsErrored += 1;

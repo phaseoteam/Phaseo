@@ -1,0 +1,20 @@
+---
+title: "Video list (Beta)"
+badge: "Beta"
+openapi: "GET /videos"
+description: "List owned video generation jobs for the authenticated workspace."
+---
+Returns the authenticated workspace's owned video jobs in reverse chronological order.
+
+Use query parameters to narrow the response:
+
+- `limit` to cap the number of returned jobs
+- repeated `status` values to filter by lifecycle state
+
+The response is a standard `list` envelope whose `data` array contains the same public `video` objects returned by `POST /videos` and `GET /videos/{video_id}`.
+
+This is useful for building:
+
+- async job dashboards
+- recent-generation history views
+- status-filtered polling views for completed, failed, or in-progress jobs

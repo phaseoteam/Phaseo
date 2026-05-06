@@ -10,6 +10,9 @@ Defaults:
 - model: veo-3.1-fast-generate-preview
 - duration: 4 seconds
 - resolution: 720p
+
+Safety:
+- requires LIVE_RUN=1 before reading local env files or making live provider calls
 """
 
 from __future__ import annotations
@@ -27,6 +30,11 @@ import requests
 
 DEFAULT_MODEL = "veo-3.1-fast-generate-preview"
 DEFAULT_PROMPT = "A cinematic slow pan across rain on a city window at night, realistic lighting, subtle motion."
+
+
+def live_run_enabled() -> bool:
+    value = os.getenv("LIVE_RUN", "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
 
 
 def load_env_file(path: Path) -> None:
@@ -201,6 +209,10 @@ def main() -> int:
     parser.add_argument("--poll-interval", type=float, default=10.0)
     parser.add_argument("--max-polls", type=int, default=6)
     args = parser.parse_args()
+
+    if not live_run_enabled():
+        print("LIVE_RUN=1 is required for vertex_veo_rest_probe.py", file=sys.stderr)
+        return 2
 
     try:
         project = (args.project or resolve_project()).strip()

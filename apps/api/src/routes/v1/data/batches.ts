@@ -18,6 +18,7 @@ import {
 	saveBatchJobMeta,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
+import { finalizeBatchJob, type FinalizeBatchJobResult } from "@core/batch-finalization";
 
 const OPENAI_PROVIDER_ID = "openai";
 const OPENAI_BASE_URL = "https://api.openai.com";
@@ -41,6 +42,16 @@ function toJsonResponse(upstream: Response): Response {
 	});
 }
 
+function toDecoratedJsonResponse(upstream: Response, payload: unknown): Response {
+	const headers = new Headers(upstream.headers);
+	headers.set("Content-Type", "application/json");
+	return new Response(JSON.stringify(payload), {
+		status: upstream.status,
+		statusText: upstream.statusText,
+		headers,
+	});
+}
+
 async function parseUpstreamJson(response: Response): Promise<any | null> {
 	const contentType = response.headers.get("content-type") ?? "";
 	if (!contentType.toLowerCase().includes("application/json")) return null;
@@ -59,7 +70,97 @@ function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 		inputFileId: toText(payload?.input_file_id) ?? base.inputFileId ?? null,
 		outputFileId: toText(payload?.output_file_id) ?? base.outputFileId ?? null,
 		errorFileId: toText(payload?.error_file_id) ?? base.errorFileId ?? null,
+		requestCounts:
+			payload?.request_counts && typeof payload.request_counts === "object" && !Array.isArray(payload.request_counts)
+				? {
+					total: typeof payload.request_counts.total === "number" ? payload.request_counts.total : null,
+					completed: typeof payload.request_counts.completed === "number" ? payload.request_counts.completed : null,
+					failed: typeof payload.request_counts.failed === "number" ? payload.request_counts.failed : null,
+				}
+				: base.requestCounts ?? null,
 	};
+}
+
+function buildBatchPricingLines(meta: BatchJobMeta | null | undefined): Record<string, unknown>[] {
+	const lines = (meta?.pricedUsage as any)?.pricing?.lines;
+	if (Array.isArray(lines)) {
+		return lines.filter((line): line is Record<string, unknown> => Boolean(line) && typeof line === "object");
+	}
+	const totalNanos = typeof meta?.costNanos === "number" ? meta.costNanos : null;
+	if (totalNanos == null) return [];
+	return [
+		{
+			dimension: "batch_requests",
+			pricing_plan: "batch",
+			service_tier: "batch",
+			endpoint: meta?.endpoint ?? null,
+			units:
+				typeof meta?.requestCounts?.completed === "number"
+					? meta.requestCounts.completed
+					: typeof meta?.requestCounts?.total === "number"
+						? meta.requestCounts.total
+						: null,
+			total_nanos: totalNanos,
+			total_usd_str:
+				typeof meta?.costUsd === "number"
+					? meta.costUsd.toFixed(9)
+					: typeof (meta?.pricingBreakdown as any)?.total_usd_str === "string"
+						? (meta?.pricingBreakdown as any).total_usd_str
+						: null,
+		},
+	];
+}
+
+function buildBatchBilling(
+	meta: BatchJobMeta | null | undefined,
+	finalization?: FinalizeBatchJobResult | null,
+): Record<string, unknown> | null {
+	const hasStoredBilling =
+		typeof meta?.charged === "boolean" ||
+		typeof meta?.billingReason === "string" ||
+		typeof meta?.costNanos === "number" ||
+		typeof meta?.costUsd === "number" ||
+		typeof meta?.finalizedAt === "string" ||
+		Boolean(meta?.pricingBreakdown);
+	if (!hasStoredBilling && !finalization) return null;
+	return {
+		billed:
+			typeof finalization?.billed === "boolean"
+				? finalization.billed
+				: typeof meta?.finalizedAt === "string" || typeof meta?.billingReason === "string",
+		charged: typeof finalization?.charged === "boolean" ? finalization.charged : Boolean(meta?.charged),
+		reason: finalization?.reason ?? meta?.billingReason ?? null,
+		cost_nanos: typeof meta?.costNanos === "number" ? meta.costNanos : null,
+		cost_usd: typeof meta?.costUsd === "number" ? meta.costUsd : null,
+		finalized_at: meta?.finalizedAt ?? null,
+		pricing_breakdown:
+			meta?.pricingBreakdown && typeof meta.pricingBreakdown === "object" && !Array.isArray(meta.pricingBreakdown)
+				? meta.pricingBreakdown
+				: null,
+	};
+}
+
+function decorateBatchPayload(args: {
+	payload: any;
+	meta: BatchJobMeta | null | undefined;
+	finalization?: FinalizeBatchJobResult | null;
+}): Record<string, unknown> {
+	const out: Record<string, unknown> =
+		args.payload && typeof args.payload === "object" && !Array.isArray(args.payload)
+			? { ...args.payload }
+			: {};
+	if (args.meta?.requestId) out.request_id = args.meta.requestId;
+	if (args.meta?.provider) out.provider = args.meta.provider;
+	if (args.meta?.sessionId) out.session_id = args.meta.sessionId;
+	if (args.meta?.webhook && typeof args.meta.webhook === "object" && !Array.isArray(args.meta.webhook)) {
+		out.webhook = args.meta.webhook;
+	}
+	out.pricing_lines = buildBatchPricingLines(args.meta);
+	const billing = buildBatchBilling(args.meta, args.finalization);
+	if (billing) {
+		out.billing = billing;
+	}
+	return out;
 }
 
 export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>): {
@@ -69,6 +170,8 @@ export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>)
 	const upstreamPayload = { ...payload };
 	const rawWebhook = upstreamPayload.webhook;
 	delete upstreamPayload.webhook;
+	delete upstreamPayload.session_id;
+	delete upstreamPayload.sessionId;
 	return {
 		upstreamPayload,
 		webhook:
@@ -172,8 +275,9 @@ async function handleCreate(req: Request) {
 	if (upstream.ok) {
 		const batchId = toText(upstreamJson?.id);
 		const keySource = "gateway" as const;
+		let persistedMeta: BatchJobMeta | null = null;
 		if (batchId) {
-			await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
+			persistedMeta = batchMetaFromPayload(upstreamJson, {
 				provider: OPENAI_PROVIDER_ID,
 				requestId,
 				sessionId:
@@ -191,7 +295,8 @@ async function handleCreate(req: Request) {
 				webhook: normalizedWebhook,
 				keySource,
 				byokKeyId: null,
-			})).catch((lookupErr) => {
+			});
+			await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta).catch((lookupErr) => {
 				console.error("batch_job_meta_store_failed", {
 					error: lookupErr,
 					workspaceId: auth.workspaceId,
@@ -228,6 +333,12 @@ async function handleCreate(req: Request) {
 				internalId: batchId,
 				phase: "created",
 			});
+		}
+		if (upstreamJson) {
+			return toDecoratedJsonResponse(upstream, decorateBatchPayload({
+				payload: upstreamJson,
+				meta: persistedMeta,
+			}));
 		}
 	}
 
@@ -269,13 +380,16 @@ async function handleRetrieve(req: Request, id: string) {
 		method: "GET",
 	});
 	const upstreamJson = await parseUpstreamJson(upstream);
+	let refreshedMeta = meta;
+	let finalization: FinalizeBatchJobResult | null = null;
 
 	if (upstream.ok && upstreamJson) {
 		const previousStatus = String(meta.status ?? "").toLowerCase();
-		await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
+		refreshedMeta = batchMetaFromPayload(upstreamJson, {
 			...meta,
 			provider: OPENAI_PROVIDER_ID,
-		})).catch((lookupErr) => {
+		});
+		await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta).catch((lookupErr) => {
 			console.error("batch_job_meta_refresh_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
@@ -314,6 +428,27 @@ async function handleRetrieve(req: Request, id: string) {
 				});
 			}
 		}
+		if (nextStatus === "completed" || nextStatus === "failed" || nextStatus === "expired" || nextStatus === "cancelled" || nextStatus === "canceled") {
+			finalization = await finalizeBatchJob({
+				workspaceId: auth.workspaceId,
+				batchId,
+				status: nextStatus,
+			}).catch((finalizeErr) => {
+				console.error("batch_job_finalize_failed", {
+					error: finalizeErr,
+					workspaceId: auth.workspaceId,
+					batchId,
+					status: nextStatus,
+				});
+				return null;
+			});
+		}
+		const persistedMeta = await getBatchJobMeta(auth.workspaceId, batchId).catch(() => refreshedMeta);
+		return toDecoratedJsonResponse(upstream, decorateBatchPayload({
+			payload: upstreamJson,
+			meta: persistedMeta ?? refreshedMeta,
+			finalization,
+		}));
 	}
 
 	return toJsonResponse(upstream);
@@ -348,13 +483,16 @@ async function handleCancel(req: Request, id: string) {
 		body: "{}",
 	});
 	const upstreamJson = await parseUpstreamJson(upstream);
+	let refreshedMeta = meta;
+	let finalization: FinalizeBatchJobResult | null = null;
 
 	if (upstream.ok && upstreamJson) {
-		await saveBatchJobMeta(auth.workspaceId, batchId, batchMetaFromPayload(upstreamJson, {
+		refreshedMeta = batchMetaFromPayload(upstreamJson, {
 			...meta,
 			provider: OPENAI_PROVIDER_ID,
 			status: "cancelling",
-		})).catch((lookupErr) => {
+		});
+		await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta).catch((lookupErr) => {
 			console.error("batch_job_meta_cancel_refresh_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
@@ -370,6 +508,27 @@ async function handleCancel(req: Request, id: string) {
 				phase: "cancelled",
 			});
 		}
+		if (nextStatus === "cancelled" || nextStatus === "canceled") {
+			finalization = await finalizeBatchJob({
+				workspaceId: auth.workspaceId,
+				batchId,
+				status: nextStatus,
+			}).catch((finalizeErr) => {
+				console.error("batch_job_finalize_failed", {
+					error: finalizeErr,
+					workspaceId: auth.workspaceId,
+					batchId,
+					status: nextStatus,
+				});
+				return null;
+			});
+		}
+		const persistedMeta = await getBatchJobMeta(auth.workspaceId, batchId).catch(() => refreshedMeta);
+		return toDecoratedJsonResponse(upstream, decorateBatchPayload({
+			payload: upstreamJson,
+			meta: persistedMeta ?? refreshedMeta,
+			finalization,
+		}));
 	}
 
 	return toJsonResponse(upstream);
