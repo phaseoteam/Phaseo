@@ -693,10 +693,12 @@ export async function runGatewayCompare(args: CompareArgs) {
 		"";
 	const llmGatewayApiKey =
 		process.env.PERFORMANCE_KEY_LLMGATEWAY ??
+		process.env.LLM_GATEWAY_API_KEY ??
 		process.env.LLMGATEWAY_API_KEY ??
 		"";
 	const vercelAiGatewayApiKey =
 		process.env.PERFORMANCE_KEY_VERCEL_AI_GATEWAY ??
+		process.env.AI_GATEWAY_API_KEY ??
 		process.env.VERCEL_AI_GATEWAY_API_KEY ??
 		"";
 	if (!gatewayApiKey || !openRouterApiKey) {
@@ -704,7 +706,6 @@ export async function runGatewayCompare(args: CompareArgs) {
 			"Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
 		);
 	}
-
 	const enabledTargets: CompareTarget[] = ["ai-stats", "openrouter"];
 	if (llmGatewayApiKey) enabledTargets.push("llmgateway");
 	if (vercelAiGatewayApiKey) enabledTargets.push("vercel-ai-gateway");

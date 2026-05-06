@@ -555,7 +555,7 @@ export default function RequestDetailDialog({
 			),
 		},
 		{
-			label: "Req ID",
+			label: "Request ID",
 			value: request.request_id ? (
 				<div className="flex items-center gap-2">
 					{requestFilterHref ? (
@@ -575,7 +575,7 @@ export default function RequestDetailDialog({
 						variant="ghost"
 						className="text-muted-foreground hover:text-foreground"
 						content={request.request_id}
-						aria-label="Copy req id"
+						aria-label="Copy request id"
 					/>
 				</div>
 			) : (
@@ -583,7 +583,7 @@ export default function RequestDetailDialog({
 			),
 		},
 		{
-			label: "Native response ID",
+			label: "Native request ID",
 			value: request.native_response_id ? (
 				<div className="flex items-center gap-2">
 					<code className="min-w-0 truncate font-mono text-xs">
@@ -594,26 +594,7 @@ export default function RequestDetailDialog({
 						variant="ghost"
 						className="text-muted-foreground hover:text-foreground"
 						content={request.native_response_id}
-						aria-label="Copy native response id"
-					/>
-				</div>
-			) : (
-				"-"
-			),
-		},
-		{
-			label: "Upstream request ID",
-			value: request.upstream_request_id ? (
-				<div className="flex items-center gap-2">
-					<code className="min-w-0 truncate font-mono text-xs">
-						{request.upstream_request_id}
-					</code>
-					<CopyButton
-						size="sm"
-						variant="ghost"
-						className="text-muted-foreground hover:text-foreground"
-						content={request.upstream_request_id}
-						aria-label="Copy upstream request id"
+						aria-label="Copy native request id"
 					/>
 				</div>
 			) : (
@@ -1293,56 +1274,6 @@ export default function RequestDetailDialog({
 						<DetailSection title="Provider response">
 							<div className="space-y-4">
 								<DetailTimingBar items={responseTimelineItems} />
-
-								{attempts.length > 0 ? (
-									<div className="overflow-x-auto rounded-xl border border-border/60">
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead>Attempt</TableHead>
-													<TableHead>Provider</TableHead>
-													<TableHead>Status</TableHead>
-													<TableHead>Outcome</TableHead>
-													<TableHead>Duration</TableHead>
-													<TableHead>Upstream error</TableHead>
-												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{attempts.map((attempt, index) => (
-													<TableRow
-														key={`${attempt.provider ?? "provider"}:${attempt.attempt_number ?? index}`}
-													>
-														<TableCell>{attempt.attempt_number ?? index + 1}</TableCell>
-														<TableCell>{attempt.provider ?? "-"}</TableCell>
-														<TableCell>
-															{attempt.status != null
-																? `${attempt.status}${attempt.status_text ? ` ${attempt.status_text}` : ""}`
-																: "-"}
-														</TableCell>
-														<TableCell>{attempt.outcome ?? "-"}</TableCell>
-														<TableCell>{formatDuration(attempt.duration_ms)}</TableCell>
-														<TableCell>
-															<div className="space-y-1">
-																<div>{attempt.upstream_error_code ?? "-"}</div>
-																{attempt.upstream_error_message ? (
-																	<div className="text-xs text-muted-foreground">
-																		{attempt.upstream_error_message}
-																	</div>
-																) : null}
-																{attempt.upstream_error_description &&
-																attempt.upstream_error_description !== attempt.upstream_error_message ? (
-																	<div className="text-xs text-muted-foreground">
-																		{attempt.upstream_error_description}
-																	</div>
-																) : null}
-															</div>
-														</TableCell>
-													</TableRow>
-												))}
-											</TableBody>
-										</Table>
-									</div>
-								) : null}
 							</div>
 						</DetailSection>
 					</div>

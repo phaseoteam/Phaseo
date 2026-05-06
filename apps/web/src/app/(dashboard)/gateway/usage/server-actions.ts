@@ -73,7 +73,6 @@ export interface RequestRow {
 	model_id: string | null;
 	provider: string | null;
 	native_response_id: string | null;
-	upstream_request_id: string | null;
 	stream: boolean;
 	session_id: string | null;
 	app_id: string | null;
@@ -209,11 +208,6 @@ function toRequestRow(row: any): RequestRow {
 			row.native_response_id.trim().length > 0
 				? row.native_response_id.trim()
 				: null,
-		upstream_request_id:
-			typeof row?.upstream_request_id === "string" &&
-			row.upstream_request_id.trim().length > 0
-				? row.upstream_request_id.trim()
-				: null,
 		stream: row?.stream === true,
 		session_id:
 			typeof row?.session_id === "string" && row.session_id.trim().length > 0
@@ -274,6 +268,7 @@ export async function fetchPaginatedRequests(
 			generation_ms,
 			latency_ms,
 			finish_reason,
+			provider_attempts,
                         success,
                         status_code,
                         error_code,
@@ -340,6 +335,7 @@ export async function fetchPaginatedRequests(
 				generation_ms,
 				latency_ms,
 				finish_reason,
+				provider_attempts,
                                 success,
                                 status_code,
                                 error_code,
@@ -390,6 +386,7 @@ export async function fetchPaginatedRequests(
 					generation_ms,
 					latency_ms,
 					finish_reason,
+					provider_attempts,
                                         success,
                                         status_code,
                                         error_code,
@@ -1403,7 +1400,6 @@ export async function investigateGeneration(
 		model_id,
 		provider,
 		native_response_id,
-		upstream_request_id,
 		stream,
 		session_id,
 		app_id,
@@ -1422,7 +1418,6 @@ export async function investigateGeneration(
 		status_code,
 		error_code,
 		error_message,
-		error_payload,
 		key_id,
 		pricing_lines,
 		throughput,
@@ -1434,6 +1429,8 @@ export async function investigateGeneration(
 		.select(requestSelect)
 		.eq("workspace_id", workspaceId)
 		.eq("request_id", trimmedRequestId)
+		.order("created_at", { ascending: false })
+		.limit(1)
 		.maybeSingle();
 
 	if (error) {
@@ -1448,7 +1445,6 @@ export async function investigateGeneration(
 				model_id,
 				provider,
 				native_response_id,
-				upstream_request_id,
 				stream,
 				session_id,
 				app_id,
@@ -1461,7 +1457,6 @@ export async function investigateGeneration(
 				status_code,
 				error_code,
 				error_message,
-				error_payload,
 				key_id,
 				pricing_lines,
 				throughput,
@@ -1470,6 +1465,8 @@ export async function investigateGeneration(
 			)
 			.eq("workspace_id", workspaceId)
 			.eq("request_id", trimmedRequestId)
+			.order("created_at", { ascending: false })
+			.limit(1)
 			.maybeSingle();
 
 		if (fallbackError) {
@@ -2421,7 +2418,6 @@ export async function fetchSessionRequests(params: {
 			model_id,
 			provider,
 			native_response_id,
-			upstream_request_id,
 			stream,
 			session_id,
 			app_id,
@@ -2660,7 +2656,6 @@ export interface AsyncJobDetailRow extends AsyncJobRow {
 	latency_ms: number | null;
 	generation_ms: number | null;
 	request_native_response_id: string | null;
-	request_upstream_request_id: string | null;
 	request_endpoint: string | null;
 	request_model_id: string | null;
 	request_success: boolean | null;
@@ -3059,7 +3054,6 @@ export async function fetchAsyncJobDetail(input: {
 	let requestCreatedAt: string | null = null;
 	let requestCostNanos: number | null = null;
 	let requestNativeResponseId: string | null = null;
-	let requestUpstreamRequestId: string | null = null;
 	let requestEndpoint: string | null = null;
 	let requestModelId: string | null = null;
 	let requestSuccess: boolean | null = null;
@@ -3075,7 +3069,7 @@ export async function fetchAsyncJobDetail(input: {
 	if (base.request_id) {
 		const { data: requestData } = await admin
 			.from("gateway_requests")
-			.select("created_at,cost_nanos,native_response_id,upstream_request_id,endpoint,model_id,success,status_code,error_code,error_message,error_payload,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
+			.select("created_at,cost_nanos,native_response_id,endpoint,model_id,success,status_code,error_code,error_message,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
 			.eq("workspace_id", workspaceId)
 			.eq("request_id", base.request_id)
 			.order("created_at", { ascending: false })
@@ -3084,14 +3078,12 @@ export async function fetchAsyncJobDetail(input: {
 		requestCreatedAt = normalizeIsoDate(requestData?.created_at);
 		requestCostNanos = normalizeFiniteNumber(requestData?.cost_nanos);
 		requestNativeResponseId = normalizeText(requestData?.native_response_id);
-		requestUpstreamRequestId = normalizeText(requestData?.upstream_request_id);
 		requestEndpoint = normalizeText(requestData?.endpoint);
 		requestModelId = normalizeText(requestData?.model_id);
 		requestSuccess = typeof requestData?.success === "boolean" ? requestData.success : null;
 		requestStatusCode = normalizeFiniteNumber(requestData?.status_code);
 		requestErrorCode = normalizeText(requestData?.error_code);
 		requestErrorMessage = normalizeText(requestData?.error_message);
-		requestErrorPayload = normalizePlainObject(requestData?.error_payload);
 		requestFinishReason = normalizeText(requestData?.finish_reason);
 		requestLatencyMs = normalizeFiniteNumber(requestData?.latency_ms);
 		requestGenerationMs = normalizeFiniteNumber(requestData?.generation_ms);
@@ -3132,7 +3124,6 @@ export async function fetchAsyncJobDetail(input: {
 		request_cost_nanos: requestCostNanos,
 		batch_pricing_lines: parseAsyncJobBatchPricingLines(meta),
 		request_native_response_id: requestNativeResponseId,
-		request_upstream_request_id: requestUpstreamRequestId,
 		request_endpoint: requestEndpoint,
 		request_model_id: requestModelId,
 		request_success: requestSuccess,
